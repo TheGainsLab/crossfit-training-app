@@ -5,7 +5,7 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-apiVersion: '2025-06-30.basil'
+apiVersion: '2024-06-20'
 })
 
 const supabase = createClient(
@@ -110,6 +110,9 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     .single()
 
   const tableName = tableExists ? 'user_subscriptions' : 'subscriptions'
+
+console.log('Available subscription properties:', Object.keys(subscription));
+console.log('Subscription object:', subscription);
 
   // Create subscription record
   const subscriptionData = {
