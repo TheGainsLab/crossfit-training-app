@@ -48,11 +48,13 @@ interface Completion {
   wasRx?: boolean
 }
 
-export default function WorkoutPage({
-  params
-}: {
-  params: { programId: string; week: string; day: string }
+export default async function WorkoutPage({ 
+  params 
+}: { 
+  params: Promise<{ programId: string; week: string; day: string }> 
 }) {
+  const { programId, week, day } = await params
+
   const [workout, setWorkout] = useState<WorkoutData | null>(null)
   const [completions, setCompletions] = useState<Record<string, Completion>>({})
   const [loading, setLoading] = useState(true)
