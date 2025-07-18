@@ -64,8 +64,6 @@ export default async function WorkoutPage({
     'STRENGTH AND POWER': true
   })
 
-const { programId, week, day } = React.use(params)
-
   useEffect(() => {
     fetchWorkout()
     fetchCompletions()
