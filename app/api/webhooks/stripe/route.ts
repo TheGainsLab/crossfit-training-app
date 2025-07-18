@@ -5,7 +5,7 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-apiVersion: '2024-06-20'
+apiVersion: '2025-06-30.basil'
 })
 
 const supabase = createClient(
@@ -121,10 +121,10 @@ console.log('Subscription object:', subscription);
     stripe_customer_id: subscription.customer as string,
     stripe_subscription_id: subscription.id,
     status: subscription.status,
-    current_period_start: new Date(subscription.current_period_start * 1000),
-    current_period_end: new Date(subscription.current_period_end * 1000),
-    trial_start: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-    trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+    current_period_start: new Date((subscription as any).current_period_start * 1000),
+    current_period_end: new Date((subscription as any).current_period_end * 1000),
+    trial_start: (subscription as any).trial_start ? new Date((subscription as any).trial_start * 1000) : null,
+    trial_end: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000) : null,
   }
 
   const { error } = await supabase
@@ -152,9 +152,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     .from(tableName)
     .update({
       status: subscription.status,
-      current_period_start: new Date(subscription.current_period_start * 1000),
-      current_period_end: new Date(subscription.current_period_end * 1000),
-      canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+      current_period_start: new Date((subscription as any).current_period_start * 1000),
+      current_period_end: new Date((subscription as any).current_period_end * 1000),
+      canceled_at: (subscription as any).canceled_at ? new Date((subscription as any).canceled_at * 1000) : null,
       updated_at: new Date()
     })
     .eq('stripe_subscription_id', subscription.id)
@@ -193,7 +193,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log('Payment succeeded for invoice:', invoice.id)
   
-  if (invoice.subscription) {
+  if ((invoice as any).subscription) {
     // Determine which table to use
     const { data: tableExists } = await supabase
       .from('information_schema.tables')
@@ -209,7 +209,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
         status: 'active',
         updated_at: new Date()
       })
-      .eq('stripe_subscription_id', invoice.subscription as string)
+      .eq('stripe_subscription_id', (invoice as any).subscription as string)
 
     if (error) {
       console.error('Error updating subscription after payment:', error)
@@ -220,7 +220,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   console.log('Payment failed for invoice:', invoice.id)
   
-  if (invoice.subscription) {
+  if ((invoice as any).subscription) {
     // Determine which table to use
     const { data: tableExists } = await supabase
       .from('information_schema.tables')
@@ -236,7 +236,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
         status: 'past_due',
         updated_at: new Date()
       })
-      .eq('stripe_subscription_id', invoice.subscription as string)
+      .eq('stripe_subscription_id', (invoice as any).subscription as string)
 
     if (error) {
       console.error('Error updating subscription after failed payment:', error)
