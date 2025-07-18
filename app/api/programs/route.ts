@@ -29,87 +29,95 @@ export async function POST(request: NextRequest) {
       }, { status: 402 }) // 402 Payment Required
     }
 
-    // Step 2: Call your existing Supabase edge function
-    console.log(`✅ User ${userId} has active subscription (${subscriptionCheck.tierName}), generating program...`)
-    
-    try {
-      const programResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-program`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          namedValues,
-          weeksToGenerate
-        })
-      })
+   
+// Step 2: Call your existing Supabase edge function
+console.log(`✅ User ${userId} has active subscription (${subscriptionCheck.tierName}), generating program...`)
 
-      console.log('Edge function response status:', programResponse.status)
-      
-      if (!programResponse.ok) {
-        const errorText = await programResponse.text()
-        console.error('Edge function error:', errorText)
-        
-        // If edge function fails, return a mock response so we can test the payment flow
-        console.log('Falling back to mock response for testing...')
-        const mockProgramData = {
-          success: true,
-          program: {
-            weeks: [
+let programData; // 👈 DECLARE HERE - outside all the blocks
+
+try {
+  const programResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-program`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      namedValues,
+      weeksToGenerate
+    })
+  })
+
+  console.log('Edge function response status:', programResponse.status)
+  
+  if (!programResponse.ok) {
+    const errorText = await programResponse.text()
+    console.error('Edge function error:', errorText)
+    
+    // If edge function fails, return a mock response so we can test the payment flow
+    console.log('Falling back to mock response for testing...')
+    const mockProgramData = {
+      success: true,
+      program: {
+        weeks: [
+          {
+            week: 1,
+            days: [
               {
-                week: 1,
-                days: [
+                day: 1,
+                dayName: "DAY 1",
+                mainLift: "Snatch",
+                blocks: [
                   {
-                    day: 1,
-                    dayName: "DAY 1",
-                    mainLift: "Snatch",
-                    blocks: [
-                      {
-                        block: "SKILLS",
-                        exercises: [
-                          { name: "Double Unders", sets: 3, reps: 20, weightTime: "", notes: "Practice timing" }
-                        ]
-                      }
+                    block: "SKILLS",
+                    exercises: [
+                      { name: "Double Unders", sets: 3, reps: 20, weightTime: "", notes: "Practice timing" }
                     ]
                   }
                 ]
               }
-            ],
-            totalExercises: 1,
-            metadata: {
-              generatedAt: new Date().toISOString(),
-              userSnapshot: { name: "Test User" },
-              weeksGenerated: weeksToGenerate,
-              note: "Mock response - edge function returned error"
-            }
+            ]
           }
-        }
-        
-        // Use mock data but continue with the flow
-        var programData = mockProgramData
-      } else {
-        const programData = await programResponse.json()
-        console.log('✅ Edge function succeeded!')
-      }
-    } catch (fetchError) {
-      console.error('Network error calling edge function:', fetchError)
-      
-      // Fallback to mock response
-      const programData = {
-        success: true,
-        program: {
-          weeks: [{ week: 1, days: [] }],
-          totalExercises: 0,
-          metadata: {
-            generatedAt: new Date().toISOString(),
-            note: "Mock response - network error"
-          }
+        ],
+        totalExercises: 1,
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          userSnapshot: { name: "Test User" },
+          weeksGenerated: weeksToGenerate,
+          note: "Mock response - edge function returned error"
         }
       }
     }
+    
+    // Use mock data but continue with the flow
+    programData = mockProgramData // 👈 ASSIGN (remove 'var')
+  } else {
+    programData = await programResponse.json() // 👈 ASSIGN (remove 'const')
+    console.log('✅ Edge function succeeded!')
+  }
+} catch (fetchError) {
+  console.error('Network error calling edge function:', fetchError)
+  
+  // Fallback to mock response
+  programData = { // 👈 ASSIGN (remove 'const')
+    success: true,
+    program: {
+      weeks: [{ week: 1, days: [] }],
+      totalExercises: 0,
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        note: "Mock response - network error"
+      }
+    }
+  }
+}
 
-    // Step 3: Store the generated program in database
+// Step 3: Store the generated program in database
+// Now programData is accessible here! ✅
+
+
+
+
     const { data: storedProgram, error: storeError } = await supabase
       .from('programs')
       .insert({
