@@ -1,0 +1,21 @@
+{
+  "namedValues": {
+    "What is your name?": ["Test User"],
+    "Enter your email": ["test@example.com"],
+    "Choose your gender": ["Male"],
+    "Which unit system do you prefer?": ["Imperial (lbs)"],
+    "Enter your body weight in your preferred unit (pounds or kilograms, as selected above). We use this to calculate strength and weightlifting targets": ["180"],
+    "Select all equipment available for your training": ["Barbell, Pull-up Bar, Kettlebells"],
+    "Enter your 1-RM Snatch": ["135"],
+    "Enter your 1-RM Back Squat": ["225"],
+    "Enter your 1-RM Clean and Jerk": ["185"],
+    "Enter your 1-RM Front Squat": ["185"],
+    "Enter your 1-RM Deadlift": ["275"],
+    "Enter your 1-RM Bench Press": ["185"],
+    "Basic CrossFit skills [Double Unders]": ["Intermediate - I can string together 10-25 unbroken"],
+    "Upper Body Pulling [Pull-ups (kipping or butterfly)]": ["Advanced - I can do 15+ unbroken"],
+    "Upper Body Pressing [Push-ups]": ["Advanced - I can do 25+ unbroken"]
+  },
+  "userId": 1,
+  "sportId": 1
+}
