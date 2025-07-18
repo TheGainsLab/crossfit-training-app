@@ -7,12 +7,14 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { programId: string; week: string; day: string } }
+  { params }: { params: Promise<{ programId: string; week: string; day: string }> }
 ) {
   try {
-    const { programId, week, day } = params
+    const { programId, week, day } = await params
+
     
     console.log(`🏋️ Fetching workout: Program ${programId}, Week ${week}, Day ${day}`)
 
