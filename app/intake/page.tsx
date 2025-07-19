@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 // Form data structure that matches your database schema
 interface IntakeFormData {
@@ -32,6 +32,17 @@ interface IntakeFormData {
   
   // Section 4: 1RM Lifts (14 lifts, 0-13 index)
   oneRMs: string[] // Array of 14 1RM values
+  
+  // New: Password fields for new users
+  password: string
+  confirmPassword: string
+}
+
+interface StripeSessionData {
+  email: string
+  name: string
+  sessionId: string
+  isValid: boolean
 }
 
 const equipmentOptions = [
@@ -134,7 +145,10 @@ export default function IntakeForm() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>('')
+  const [stripeSession, setStripeSession] = useState<StripeSessionData | null>(null)
+  const [isNewPaidUser, setIsNewPaidUser] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [formData, setFormData] = useState<IntakeFormData>({
     name: '',
@@ -155,14 +169,72 @@ export default function IntakeForm() {
       enteredTimeTrial: '',
       airBikeType: ''
     },
-    oneRMs: new Array(14).fill('')
+    oneRMs: new Array(14).fill(''),
+    password: '',
+    confirmPassword: ''
   })
 
-  // Check authentication and subscription status on mount
+  // Verify Stripe session
+  const verifyStripeSession = async (sessionId: string): Promise<StripeSessionData | null> => {
+    try {
+      console.log('🔍 Verifying Stripe session:', sessionId)
+      
+      // Call Stripe API to verify session
+      const response = await fetch(`/api/verify-stripe-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      })
+
+      if (!response.ok) {
+        console.error('❌ Failed to verify Stripe session')
+        return null
+      }
+
+      const sessionData = await response.json()
+      console.log('✅ Stripe session verified:', sessionData)
+      
+      return {
+        email: sessionData.customer_details?.email || '',
+        name: sessionData.customer_details?.name || '',
+        sessionId: sessionId,
+        isValid: true
+      }
+    } catch (error) {
+      console.error('❌ Error verifying Stripe session:', error)
+      return null
+    }
+  }
+
+  // Check authentication and session on mount
   useEffect(() => {
-    const checkUserAndSubscription = async () => {
+    const checkUserAndSession = async () => {
       try {
-        // Get current user
+        const sessionId = searchParams.get('session_id')
+        
+        if (sessionId) {
+          // New paid user flow - verify Stripe session
+          console.log('🔔 New paid user with session ID:', sessionId)
+          
+          const sessionData = await verifyStripeSession(sessionId)
+          if (sessionData) {
+            setStripeSession(sessionData)
+            setIsNewPaidUser(true)
+            setFormData(prev => ({
+              ...prev,
+              email: sessionData.email,
+              name: sessionData.name
+            }))
+            setLoading(false)
+            return
+          } else {
+            setSubmitMessage('❌ Invalid session. Please contact support or try purchasing again.')
+            setLoading(false)
+            return
+          }
+        }
+
+        // Existing user flow - check authentication
         const { data: { user }, error: authError } = await supabase.auth.getUser()
         
         if (authError || !user) {
@@ -221,8 +293,8 @@ export default function IntakeForm() {
       }
     }
 
-    checkUserAndSubscription()
-  }, [router])
+    checkUserAndSession()
+  }, [router, searchParams])
 
   const updateFormData = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -257,6 +329,19 @@ export default function IntakeForm() {
     updateFormData('equipment', newEquipment)
   }
 
+  const validatePassword = (password: string) => {
+    const hasUppercase = /[A-Z]/.test(password)
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    const isLongEnough = password.length >= 8
+    
+    return {
+      isValid: hasUppercase && hasSpecialChar && isLongEnough,
+      hasUppercase,
+      hasSpecialChar,
+      isLongEnough
+    }
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
       e.preventDefault()
@@ -272,106 +357,14 @@ export default function IntakeForm() {
     setIsSubmitting(true)
     setSubmitMessage('')
 
-    if (!user) {
-      setSubmitMessage('❌ Error: User not authenticated')
-      setIsSubmitting(false)
-      return
-    }
-
     try {
-      // 1. Update user record (don't create new user)
-      const { error: userError } = await supabase
-        .from('users')
-        .update({
-          name: formData.name,
-          email: formData.email,
-          gender: formData.gender,
-          body_weight: formData.bodyWeight ? parseFloat(formData.bodyWeight) : null,
-          units: formData.units,
-          ability_level: 'Beginner', // Default, will be calculated later
-          conditioning_benchmarks: formData.conditioningBenchmarks,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
-
-      if (userError) {
-        throw new Error(`User update failed: ${userError.message}`)
+      if (isNewPaidUser) {
+        // New paid user flow - create account and save data
+        await handleNewPaidUserSubmission()
+      } else {
+        // Existing user flow - update existing user
+        await handleExistingUserSubmission()
       }
-
-      // 2. Delete existing equipment and insert new selections
-      await supabase
-        .from('user_equipment')
-        .delete()
-        .eq('user_id', user.id)
-
-      if (formData.equipment.length > 0) {
-        const equipmentRecords = formData.equipment.map(equipment => ({
-          user_id: user.id,
-          equipment_name: equipment
-        }))
-
-        const { error: equipmentError } = await supabase
-          .from('user_equipment')
-          .insert(equipmentRecords)
-
-        if (equipmentError) {
-          throw new Error(`Equipment insertion failed: ${equipmentError.message}`)
-        }
-      }
-
-      // 3. Delete existing skills and insert new ones
-      await supabase
-        .from('user_skills')
-        .delete()
-        .eq('user_id', user.id)
-
-      const skillRecords = formData.skills.map((skillLevel, index) => ({
-        user_id: user.id,
-        skill_index: index,
-        skill_name: getSkillNameByIndex(index),
-        skill_level: skillLevel
-      })).filter(skill => skill.skill_name) // Only insert valid skills
-
-      if (skillRecords.length > 0) {
-        const { error: skillsError } = await supabase
-          .from('user_skills')
-          .insert(skillRecords)
-
-        if (skillsError) {
-          throw new Error(`Skills insertion failed: ${skillsError.message}`)
-        }
-      }
-
-      // 4. Delete existing 1RMs and insert new ones
-      await supabase
-        .from('user_one_rms')
-        .delete()
-        .eq('user_id', user.id)
-
-      const oneRMRecords = formData.oneRMs.map((oneRMValue, index) => ({
-        user_id: user.id,
-        one_rm_index: index,
-        exercise_name: oneRMLifts[index],
-        one_rm: parseFloat(oneRMValue)
-      })).filter(record => !isNaN(record.one_rm) && record.one_rm > 0)
-
-      if (oneRMRecords.length > 0) {
-        const { error: oneRMError } = await supabase
-          .from('user_one_rms')
-          .insert(oneRMRecords)
-
-        if (oneRMError) {
-          throw new Error(`1RM insertion failed: ${oneRMError.message}`)
-        }
-      }
-
-      setSubmitMessage('✅ Assessment completed successfully! Your personalized program will be generated shortly.')
-      
-      // Redirect to program page after successful submission
-      setTimeout(() => {
-        router.push('/program')
-      }, 2000)
-
     } catch (error) {
       console.error('Submission error:', error)
       setSubmitMessage(`❌ Error: ${error instanceof Error ? error.message : 'Something went wrong'}`)
@@ -380,7 +373,162 @@ export default function IntakeForm() {
     }
   }
 
-  // Helper function to get skill name by index
+  const handleNewPaidUserSubmission = async () => {
+    if (!stripeSession) {
+      throw new Error('No valid session found')
+    }
+
+    // Validate passwords
+    if (formData.password !== formData.confirmPassword) {
+      throw new Error('Passwords do not match')
+    }
+
+    const passwordValidation = validatePassword(formData.password)
+    if (!passwordValidation.isValid) {
+      throw new Error('Password does not meet requirements')
+    }
+
+    console.log('🔧 Creating new user account...')
+
+    // Create Supabase Auth account
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+    })
+
+    if (authError) {
+      throw new Error(`Account creation failed: ${authError.message}`)
+    }
+
+    if (!authData.user) {
+      throw new Error('Failed to create user account')
+    }
+
+    console.log('✅ Auth account created:', authData.user.id)
+
+    // Find existing user record created by webhook
+    const { data: existingUser, error: userFindError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', formData.email)
+      .single()
+
+    if (userFindError || !existingUser) {
+      throw new Error('Unable to find your account. Please contact support.')
+    }
+
+    console.log('✅ Found existing user record:', existingUser.id)
+
+    // Update user record with auth ID and intake data
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        auth_id: authData.user.id, // Link auth account to user record
+        name: formData.name,
+        gender: formData.gender,
+        body_weight: formData.bodyWeight ? parseFloat(formData.bodyWeight) : null,
+        units: formData.units,
+        ability_level: 'Beginner', // Will be calculated later
+        conditioning_benchmarks: formData.conditioningBenchmarks,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingUser.id)
+
+    if (updateError) {
+      throw new Error(`Failed to update user data: ${updateError.message}`)
+    }
+
+    // Save equipment, skills, and 1RMs (same as existing user flow)
+    await saveUserData(existingUser.id)
+
+    setSubmitMessage('✅ Account created successfully! Your personalized program will be generated shortly.')
+    
+    // Redirect to program page after successful submission
+    setTimeout(() => {
+      router.push('/program')
+    }, 2000)
+  }
+
+  const handleExistingUserSubmission = async () => {
+    if (!user) {
+      throw new Error('User not authenticated')
+    }
+
+    // Update user record
+    const { error: userError } = await supabase
+      .from('users')
+      .update({
+        name: formData.name,
+        email: formData.email,
+        gender: formData.gender,
+        body_weight: formData.bodyWeight ? parseFloat(formData.bodyWeight) : null,
+        units: formData.units,
+        ability_level: 'Beginner',
+        conditioning_benchmarks: formData.conditioningBenchmarks,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id)
+
+    if (userError) {
+      throw new Error(`User update failed: ${userError.message}`)
+    }
+
+    await saveUserData(user.id)
+
+    setSubmitMessage('✅ Assessment completed successfully! Your personalized program will be generated shortly.')
+    
+    setTimeout(() => {
+      router.push('/program')
+    }, 2000)
+  }
+
+  const saveUserData = async (userId: number) => {
+    // Save equipment
+    await supabase.from('user_equipment').delete().eq('user_id', userId)
+    if (formData.equipment.length > 0) {
+      const equipmentRecords = formData.equipment.map(equipment => ({
+        user_id: userId,
+        equipment_name: equipment
+      }))
+      const { error: equipmentError } = await supabase
+        .from('user_equipment')
+        .insert(equipmentRecords)
+      if (equipmentError) throw new Error(`Equipment insertion failed: ${equipmentError.message}`)
+    }
+
+    // Save skills
+    await supabase.from('user_skills').delete().eq('user_id', userId)
+    const skillRecords = formData.skills.map((skillLevel, index) => ({
+      user_id: userId,
+      skill_index: index,
+      skill_name: getSkillNameByIndex(index),
+      skill_level: skillLevel
+    })).filter(skill => skill.skill_name)
+    
+    if (skillRecords.length > 0) {
+      const { error: skillsError } = await supabase
+        .from('user_skills')
+        .insert(skillRecords)
+      if (skillsError) throw new Error(`Skills insertion failed: ${skillsError.message}`)
+    }
+
+    // Save 1RMs
+    await supabase.from('user_one_rms').delete().eq('user_id', userId)
+    const oneRMRecords = formData.oneRMs.map((oneRMValue, index) => ({
+      user_id: userId,
+      one_rm_index: index,
+      exercise_name: oneRMLifts[index],
+      one_rm: parseFloat(oneRMValue)
+    })).filter(record => !isNaN(record.one_rm) && record.one_rm > 0)
+
+    if (oneRMRecords.length > 0) {
+      const { error: oneRMError } = await supabase
+        .from('user_one_rms')
+        .insert(oneRMRecords)
+      if (oneRMError) throw new Error(`1RM insertion failed: ${oneRMError.message}`)
+    }
+  }
+
   const getSkillNameByIndex = (index: number): string => {
     for (const category of skillCategories) {
       const skill = category.skills.find(s => s.index === index)
@@ -399,13 +547,17 @@ export default function IntakeForm() {
       case 2:
         return true // Skills are optional with defaults
       case 3:
-        // Conditioning benchmarks are optional, but if time trial is Y, air bike type is required
         if (formData.conditioningBenchmarks.enteredTimeTrial === 'Y') {
           return formData.conditioningBenchmarks.airBikeType !== ''
         }
         return true
       case 4:
-        return true // 1RMs are optional
+        if (isNewPaidUser) {
+          // For new users, validate password requirements
+          const passwordValidation = validatePassword(formData.password)
+          return passwordValidation.isValid && formData.password === formData.confirmPassword
+        }
+        return true // 1RMs are optional for existing users
       default:
         return true
     }
@@ -417,14 +569,16 @@ export default function IntakeForm() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Verifying access...</p>
+          <p className="text-gray-600">
+            {searchParams.get('session_id') ? 'Verifying your payment...' : 'Loading...'}
+          </p>
         </div>
       </div>
     )
   }
 
-  // Show access denied if no valid subscription
-  if (!user || subscriptionStatus !== 'active') {
+  // Show access denied for existing users without subscription
+  if (!isNewPaidUser && (!user || subscriptionStatus !== 'active')) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4">
@@ -456,9 +610,16 @@ export default function IntakeForm() {
             <p className="text-gray-600">
               Help us create your personalized training program
             </p>
-            <p className="text-sm text-green-600 mt-2">
-              ✅ Subscription active - Welcome {formData.name || user.email}!
-            </p>
+            
+            {isNewPaidUser ? (
+              <p className="text-sm text-green-600 mt-2">
+                ✅ Payment confirmed - Welcome {formData.name || stripeSession?.email}! Let's get started.
+              </p>
+            ) : (
+              <p className="text-sm text-green-600 mt-2">
+                ✅ Subscription active - Welcome {formData.name || user?.email}!
+              </p>
+            )}
             
             {/* Progress bar */}
             <div className="mt-6">
@@ -487,7 +648,7 @@ export default function IntakeForm() {
           )}
 
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
-            {/* All the same form sections as before - Section 1: Personal Information */}
+            {/* Section 1: Personal Information */}
             {currentSection === 1 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-6">
@@ -515,9 +676,17 @@ export default function IntakeForm() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => updateFormData('email', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isNewPaidUser}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      isNewPaidUser ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
                     required
                   />
+                  {isNewPaidUser && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      Email from your payment - cannot be changed
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -566,7 +735,7 @@ export default function IntakeForm() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Enter your body weight in your preferred unit (pounds or kilograms, as selected above)
+                    Enter your body weight in your preferred unit *
                   </label>
                   <p className="text-sm text-gray-500 mb-2">
                     We use this to calculate strength and weightlifting targets
@@ -578,6 +747,7 @@ export default function IntakeForm() {
                     onChange={(e) => updateFormData('bodyWeight', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder={formData.units === 'Metric (kg)' ? 'e.g., 70.5' : 'e.g., 155.5'}
+                    required
                   />
                 </div>
 
@@ -794,23 +964,16 @@ export default function IntakeForm() {
                     </div>
                   </div>
                 )}
-
-                {formData.conditioningBenchmarks.enteredTimeTrial === 'N' && (
-                  <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-gray-600">
-                      ✓ No air bike information needed since you didn't enter a time trial result.
-                    </p>
-                  </div>
-                )}
               </div>
             )}
 
-            {/* Section 4: 1RM Lifts - Same as before */}
+            {/* Section 4: 1RM Lifts + Password Creation for New Users */}
             {currentSection === 4 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-                  Section 4: 1RM Lifts
+                  Section 4: 1RM Lifts {isNewPaidUser && '& Account Setup'}
                 </h2>
+                
                 <p className="text-gray-600 mb-6">
                   Enter your recent 1-Rep Max for each lift in {formData.units === 'Metric (kg)' ? 'kilograms' : 'pounds'} 
                   (based on your unit preference in Section 1). Decimals may be used (e.g., 225.5). 
@@ -834,6 +997,87 @@ export default function IntakeForm() {
                     </div>
                   ))}
                 </div>
+
+                {/* Password Creation for New Users */}
+                {isNewPaidUser && (
+                  <div className="mt-12 p-6 bg-blue-50 rounded-lg border border-blue-200">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-4">
+                      Create Your Account Password
+                    </h3>
+                    <p className="text-sm text-blue-700 mb-6">
+                      Set a password to access your training program and return to update your data anytime.
+                    </p>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-blue-800 mb-2">
+                          Password *
+                        </label>
+                        <input
+                          type="password"
+                          value={formData.password}
+                          onChange={(e) => updateFormData('password', e.target.value)}
+                          className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-blue-800 mb-2">
+                          Confirm Password *
+                        </label>
+                        <input
+                          type="password"
+                          value={formData.confirmPassword}
+                          onChange={(e) => updateFormData('confirmPassword', e.target.value)}
+                          className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+
+                      {/* Password Requirements */}
+                      <div className="text-sm">
+                        <p className="font-medium text-blue-800 mb-2">Password Requirements:</p>
+                        {(() => {
+                          const validation = validatePassword(formData.password)
+                          return (
+                            <ul className="space-y-1">
+                              <li className={`flex items-center ${validation.isLongEnough ? 'text-green-600' : 'text-gray-500'}`}>
+                                <span className="mr-2">{validation.isLongEnough ? '✓' : '○'}</span>
+                                At least 8 characters
+                              </li>
+                              <li className={`flex items-center ${validation.hasUppercase ? 'text-green-600' : 'text-gray-500'}`}>
+                                <span className="mr-2">{validation.hasUppercase ? '✓' : '○'}</span>
+                                At least 1 uppercase letter
+                              </li>
+                              <li className={`flex items-center ${validation.hasSpecialChar ? 'text-green-600' : 'text-gray-500'}`}>
+                                <span className="mr-2">{validation.hasSpecialChar ? '✓' : '○'}</span>
+                                At least 1 special character
+                              </li>
+                            </ul>
+                          )
+                        })()}
+                      </div>
+
+                      {/* Password Match Check */}
+                      {formData.confirmPassword && (
+                        <div className="text-sm">
+                          {formData.password === formData.confirmPassword ? (
+                            <p className="text-green-600 flex items-center">
+                              <span className="mr-2">✓</span>
+                              Passwords match
+                            </p>
+                          ) : (
+                            <p className="text-red-600 flex items-center">
+                              <span className="mr-2">✗</span>
+                              Passwords do not match
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -873,7 +1117,10 @@ export default function IntakeForm() {
                         </p>
                         <p className="text-sm text-yellow-700">
                           I have reviewed my information and am ready to submit my assessment. 
-                          This will update my personalized training program.
+                          {isNewPaidUser 
+                            ? ' This will create my account and generate my personalized training program.'
+                            : ' This will update my personalized training program.'
+                          }
                         </p>
                       </div>
                     </label>
@@ -884,7 +1131,10 @@ export default function IntakeForm() {
                     disabled={isSubmitting || !isValidSection(currentSection) || !confirmSubmission}
                     className="w-full px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                   >
-                    {isSubmitting ? 'Updating Your Program...' : 'Update Assessment & Regenerate Program'}
+                    {isSubmitting 
+                      ? (isNewPaidUser ? 'Creating Account & Generating Program...' : 'Updating Your Program...') 
+                      : (isNewPaidUser ? 'Create Account & Generate Program' : 'Update Assessment & Regenerate Program')
+                    }
                   </button>
                   
                   <p className="text-sm text-gray-500 text-center">
