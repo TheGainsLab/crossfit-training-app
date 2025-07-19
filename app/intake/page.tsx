@@ -477,60 +477,27 @@ function IntakeFormContent() {
     }, 2000)
   }
 
-  const saveUserData = async (userId: number) => {
-    // Save equipment
-    await supabase.from('user_equipment').delete().eq('user_id', userId)
-    if (formData.equipment.length > 0) {
-      const equipmentRecords = formData.equipment.map(equipment => ({
-        user_id: userId,
-        equipment_name: equipment
-      }))
-      const { error: equipmentError } = await supabase
-        .from('user_equipment')
-        .insert(equipmentRecords)
-      if (equipmentError) throw new Error(`Equipment insertion failed: ${equipmentError.message}`)
-    }
+const saveUserData = async (userId: number) => {
+  // Call server-side API to save intake data
+  const saveDataResponse = await fetch('/api/save-intake-data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId: userId,
+      equipment: formData.equipment,
+      skills: formData.skills,
+      oneRMs: formData.oneRMs
+    })
+  })
 
-    // Save skills
-    await supabase.from('user_skills').delete().eq('user_id', userId)
-    const skillRecords = formData.skills.map((skillLevel, index) => ({
-      user_id: userId,
-      skill_index: index,
-      skill_name: getSkillNameByIndex(index),
-      skill_level: skillLevel
-    })).filter(skill => skill.skill_name)
-    
-    if (skillRecords.length > 0) {
-      const { error: skillsError } = await supabase
-        .from('user_skills')
-        .insert(skillRecords)
-      if (skillsError) throw new Error(`Skills insertion failed: ${skillsError.message}`)
-    }
-
-    // Save 1RMs
-    await supabase.from('user_one_rms').delete().eq('user_id', userId)
-    const oneRMRecords = formData.oneRMs.map((oneRMValue, index) => ({
-      user_id: userId,
-      one_rm_index: index,
-      exercise_name: oneRMLifts[index],
-      one_rm: parseFloat(oneRMValue)
-    })).filter(record => !isNaN(record.one_rm) && record.one_rm > 0)
-
-    if (oneRMRecords.length > 0) {
-      const { error: oneRMError } = await supabase
-        .from('user_one_rms')
-        .insert(oneRMRecords)
-      if (oneRMError) throw new Error(`1RM insertion failed: ${oneRMError.message}`)
-    }
+  if (!saveDataResponse.ok) {
+    const errorData = await saveDataResponse.json()
+    throw new Error(errorData.error || 'Failed to save intake data')
   }
 
-  const getSkillNameByIndex = (index: number): string => {
-    for (const category of skillCategories) {
-      const skill = category.skills.find(s => s.index === index)
-      if (skill) return skill.name
-    }
-    return ''
-  }
+  console.log('✅ Intake data saved successfully')
+}
+
 
   const nextSection = () => setCurrentSection(prev => Math.min(prev + 1, 4))
   const prevSection = () => setCurrentSection(prev => Math.max(prev - 1, 1))
@@ -1160,3 +1127,4 @@ export default function IntakeForm() {
     </Suspense>
   )
 }
+
