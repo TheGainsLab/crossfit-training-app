@@ -243,29 +243,43 @@ function IntakeFormContent() {
           return
         }
 
-        setUser(user)
+      setUser(user)
 
-        // Get user's subscription status
-        const { data: subscription, error: subError } = await supabase
-          .from('subscriptions')
-          .select('status')
-          .eq('user_id', user.id)
-          .single()
+// First find the database user by auth_id
+const { data: dbUser, error: dbUserError } = await supabase
+  .from('users')
+  .select('id')
+  .eq('auth_id', user.id)
+  .single()
 
-        if (subError) {
-          console.error('Error fetching subscription:', subError)
-          setSubmitMessage('❌ Error: Unable to verify subscription status')
-          setLoading(false)
-          return
-        }
+if (dbUserError || !dbUser) {
+  console.error('Error finding database user:', dbUserError)
+  setSubmitMessage('❌ Error: Unable to find user account')
+  setLoading(false)
+  return
+}
 
-        if (!subscription || subscription.status !== 'active') {
-          setSubmitMessage('❌ Access Denied: Active subscription required to access the intake form')
-          setLoading(false)
-          return
-        }
+// Get user's subscription status using database user_id
+const { data: subscription, error: subError } = await supabase
+  .from('subscriptions')
+  .select('status')
+  .eq('user_id', dbUser.id)
+  .single()
 
-        setSubscriptionStatus(subscription.status)
+if (subError) {
+  console.error('Error fetching subscription:', subError)
+  setSubmitMessage('❌ Error: Unable to verify subscription status')
+  setLoading(false)
+  return
+}
+
+if (!subscription || subscription.status !== 'active') {
+  setSubmitMessage('❌ Access Denied: Active subscription required to access the intake form')
+  setLoading(false)
+  return
+}
+
+setSubscriptionStatus(subscription.status)
 
         // Pre-populate form with existing user data if available
         const { data: userData, error: userError } = await supabase
@@ -1127,4 +1141,5 @@ export default function IntakeForm() {
     </Suspense>
   )
 }
+
 
