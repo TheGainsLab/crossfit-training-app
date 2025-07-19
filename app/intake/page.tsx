@@ -391,57 +391,51 @@ function IntakeFormContent() {
 
     console.log('🔧 Creating new user account...')
 
-    // Create Supabase Auth account
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
+    // Call our server-side account creation API
+    const createAccountResponse = await fetch('/api/create-user-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: formData.email,
+        password: formData.password,
+        userData: {
+          name: formData.name,
+          gender: formData.gender,
+          bodyWeight: formData.bodyWeight,
+          units: formData.units,
+          conditioningBenchmarks: formData.conditioningBenchmarks
+        }
+      })
     })
 
-    if (authError) {
-      throw new Error(`Account creation failed: ${authError.message}`)
+    if (!createAccountResponse.ok) {
+      const errorData = await createAccountResponse.json()
+      throw new Error(errorData.error || 'Account creation failed')
     }
 
-    if (!authData.user) {
-      throw new Error('Failed to create user account')
+    const accountData = await createAccountResponse.json()
+    console.log('✅ Account created successfully:', accountData.user.id)
+
+    // Save equipment, skills, and 1RMs
+    await saveUserData(accountData.user.userId)
+
+    // Sign in the user with the newly created account
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password
+    })
+
+    if (signInError) {
+      console.error('❌ Auto-signin failed:', signInError)
+      // Don't throw error here - account was created successfully
+      setSubmitMessage('✅ Account created successfully! Please sign in to access your program.')
+      setTimeout(() => {
+        router.push('/auth/signin')
+      }, 2000)
+      return
     }
 
-    console.log('✅ Auth account created:', authData.user.id)
-
-    // Find existing user record created by webhook
-    const { data: existingUser, error: userFindError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', formData.email)
-      .single()
-
-    if (userFindError || !existingUser) {
-      throw new Error('Unable to find your account. Please contact support.')
-    }
-
-    console.log('✅ Found existing user record:', existingUser.id)
-
-    // Update user record with auth ID and intake data
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({
-        auth_id: authData.user.id, // Link auth account to user record
-        name: formData.name,
-        gender: formData.gender,
-        body_weight: formData.bodyWeight ? parseFloat(formData.bodyWeight) : null,
-        units: formData.units,
-        ability_level: 'Beginner', // Will be calculated later
-        conditioning_benchmarks: formData.conditioningBenchmarks,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', existingUser.id)
-
-    if (updateError) {
-      throw new Error(`Failed to update user data: ${updateError.message}`)
-    }
-
-    // Save equipment, skills, and 1RMs (same as existing user flow)
-    await saveUserData(existingUser.id)
-
+    console.log('✅ User automatically signed in')
     setSubmitMessage('✅ Account created successfully! Your personalized program will be generated shortly.')
     
     // Redirect to program page after successful submission
@@ -773,7 +767,7 @@ function IntakeFormContent() {
               </div>
             )}
 
-            {/* Section 2: Skills - Same as before */}
+            {/* Section 2: Skills */}
             {currentSection === 2 && (
               <div className="space-y-8">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-6">
@@ -816,7 +810,7 @@ function IntakeFormContent() {
               </div>
             )}
 
-            {/* Section 3: Conditioning Benchmarks - Same as before */}
+            {/* Section 3: Conditioning Benchmarks */}
             {currentSection === 3 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-6">
