@@ -43,8 +43,16 @@ export async function POST(request: NextRequest) {
       }
 
       // Initialize Supabase client with service role key
-const supabaseUrl = process.env.SUPABASE_URL
+      const supabaseUrl = process.env.SUPABASE_URL
       const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+
+// ADD THE DEBUG LOGS RIGHT HERE:
+console.log('🔧 Debug - SUPABASE_URL exists:', !!supabaseUrl)
+console.log('🔧 Debug - SUPABASE_URL value:', supabaseUrl)
+console.log('🔧 Debug - SERVICE_KEY exists:', !!supabaseServiceKey)
+console.log('🔧 Debug - SERVICE_KEY length:', supabaseServiceKey?.length)
+console.log('🔧 Debug - SERVICE_KEY starts with:', supabaseServiceKey?.substring(0, 30))
 
       if (!supabaseUrl || !supabaseServiceKey) {
         console.error('❌ Missing Supabase environment variables')
