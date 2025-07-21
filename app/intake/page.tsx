@@ -500,9 +500,14 @@ const saveUserData = async (userId: number) => {
       userId: userId,
       equipment: formData.equipment,
       skills: formData.skills,
-      oneRMs: formData.oneRMs
+      oneRMs: formData.oneRMs,
+      bodyWeight: formData.bodyWeight,
+      gender: formData.gender,
+      units: formData.units,
+      benchmarks: formData.benchmarks // if you're collecting these
     })
   })
+
 
   if (!saveDataResponse.ok) {
     const errorData = await saveDataResponse.json()
