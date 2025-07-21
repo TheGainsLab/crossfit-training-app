@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/utils/supabase/client'
+import { supabase } from '@/lib/supabase'
 import { User } from '@supabase/supabase-js'
 
 interface Exercise {
@@ -56,7 +56,6 @@ export default function ProgramPage() {
 
   const loadProgram = async () => {
     try {
-      const supabase = createClient()
       
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
