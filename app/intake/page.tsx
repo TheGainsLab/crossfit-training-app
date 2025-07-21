@@ -504,10 +504,9 @@ const saveUserData = async (userId: number) => {
       bodyWeight: formData.bodyWeight,
       gender: formData.gender,
       units: formData.units,
-      benchmarks: formData.benchmarks // if you're collecting these
+      benchmarks: formData.conditioningBenchmarks  // <-- Use the correct property name
     })
   })
-
 
   if (!saveDataResponse.ok) {
     const errorData = await saveDataResponse.json()
