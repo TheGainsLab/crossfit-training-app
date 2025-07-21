@@ -3,7 +3,16 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, equipment, skills, oneRMs } = await request.json()
+    const { 
+      userId, 
+      equipment, 
+      skills, 
+      oneRMs,
+      bodyWeight,
+      gender,
+      units,
+      benchmarks 
+    } = await request.json()
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 })
@@ -26,6 +35,28 @@ export async function POST(request: NextRequest) {
     })
 
     console.log('💾 Saving intake data for user:', userId)
+
+    // Update user details first
+    console.log('👤 Updating user details...')
+    const { error: userUpdateError } = await supabaseAdmin
+      .from('users')
+      .update({
+        body_weight: bodyWeight || null,
+        gender: gender || null,
+        units: units || 'Imperial (lbs)',
+        conditioning_benchmarks: benchmarks || {},
+        program_generation_pending: false,
+        training_data_updated_at: new Date().toISOString()
+      })
+      .eq('id', userId)
+
+    if (userUpdateError) {
+      console.error('❌ User update error:', userUpdateError)
+      return NextResponse.json({ 
+        error: 'User update failed', 
+        details: userUpdateError.message 
+      }, { status: 500 })
+    }
 
     // Save equipment
     console.log('🔧 Saving equipment...')
@@ -119,9 +150,87 @@ export async function POST(request: NextRequest) {
 
     console.log('🎉 All intake data saved successfully')
 
+    // Check user's subscription to determine weeks to generate
+    console.log('📅 Checking subscription...')
+    const { data: subscription, error: subError } = await supabaseAdmin
+      .from('subscriptions')
+      .select('billing_interval, status')
+      .eq('user_id', userId)
+      .in('status', ['active', 'trialing'])
+      .single()
+
+    if (subError || !subscription) {
+      console.error('❌ No active subscription found')
+      return NextResponse.json({ 
+        error: 'No active subscription found',
+        success: false,
+        intakeSaved: true 
+      }, { status: 403 })
+    }
+
+    // Determine weeks to generate based on subscription
+    const weeksToGenerate = subscription.billing_interval === 'quarter' 
+      ? Array.from({length: 13}, (_, i) => i + 1)  // Weeks 1-13
+      : [1, 2, 3, 4]  // Weeks 1-4 for monthly
+
+    console.log(`🏋️ Generating program for ${weeksToGenerate.length} weeks...`)
+
+    // Call generate-program edge function
+    const programResponse = await fetch(
+      `${supabaseUrl}/functions/v1/generate-program`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          user_id: userId, 
+          weeksToGenerate 
+        })
+      }
+    )
+
+    if (!programResponse.ok) {
+      const errorText = await programResponse.text()
+      console.error('❌ Program generation failed:', errorText)
+      return NextResponse.json({ 
+        error: 'Program generation failed',
+        details: errorText,
+        success: false,
+        intakeSaved: true
+      }, { status: 500 })
+    }
+
+    const programResult = await programResponse.json()
+
+    // Store the generated program in the programs table
+    const { data: savedProgram, error: programSaveError } = await supabaseAdmin
+      .from('programs')
+      .insert({
+        user_id: userId,
+        sport_id: 1,
+        program_number: 1,
+        weeks_generated: weeksToGenerate,
+        program_data: programResult.program,
+        user_snapshot: programResult.program.metadata.userSnapshot,
+        ratio_snapshot: programResult.program.metadata.ratioSnapshot
+      })
+      .select('id')
+      .single()
+
+    if (programSaveError) {
+      console.error('Failed to save program to database:', programSaveError)
+      // Continue anyway - program was generated successfully
+    }
+
+    console.log(`✅ Program generated successfully!`)
+
     return NextResponse.json({
       success: true,
-      message: 'Intake data saved successfully'
+      message: 'Intake data saved and program generated successfully',
+      programId: savedProgram?.id,
+      programGenerated: true
     })
 
   } catch (error) {
