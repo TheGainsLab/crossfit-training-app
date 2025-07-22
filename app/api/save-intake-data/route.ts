@@ -226,6 +226,32 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Program generated successfully!`)
 
+console.log(`📊 Generating user profile...`)
+
+const profileResponse = await fetch(
+  `${supabaseUrl}/functions/v1/generate-user-profile`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${supabaseServiceKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ 
+      user_id: userId,
+      sport_id: 1,
+      force_regenerate: false
+    })
+  }
+)
+
+if (!profileResponse.ok) {
+  const errorText = await profileResponse.text()
+  console.error('❌ Profile generation failed:', errorText)
+} else {
+  console.log(`✅ Profile generated successfully!`)
+}
+
+
     return NextResponse.json({
       success: true,
       message: 'Intake data saved and program generated successfully',
@@ -318,3 +344,4 @@ function getSkillNameByIndex(index: number): string {
 export async function GET() {
   return NextResponse.json({ error: 'Method not allowed' }, { status: 405 })
 }
+
