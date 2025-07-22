@@ -42,21 +42,37 @@ interface ProgramData {
   metadata?: any
 }
 
+interface ExerciseTracking {
+  completed: boolean
+  rpe: number | null
+  quality: string | null
+}
+
 export default function ProgramPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [program, setProgram] = useState<ProgramData | null>(null)
+  const [programId, setProgramId] = useState<number | null>(null)
   const [selectedWeek, setSelectedWeek] = useState(1)
   const [selectedDay, setSelectedDay] = useState(1)
   const [user, setUser] = useState<User | null>(null)
+  const [userId, setUserId] = useState<number | null>(null)
+  const [exerciseTracking, setExerciseTracking] = useState<Record<string, ExerciseTracking>>({})
+  const [saving, setSaving] = useState<string | null>(null)
 
   useEffect(() => {
     loadProgram()
   }, [])
 
+  // Load existing workout data when week/day changes
+  useEffect(() => {
+    if (programId && userId) {
+      loadWorkoutData()
+    }
+  }, [selectedWeek, selectedDay, programId, userId])
+
   const loadProgram = async () => {
     try {
-      
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -78,6 +94,7 @@ export default function ProgramPage() {
         setLoading(false)
         return
       }
+      setUserId(userData.id)
 
       // Fetch the latest program for this user
       const { data: programData, error: programError } = await supabase
@@ -94,7 +111,7 @@ export default function ProgramPage() {
         return
       }
 
-      // The program_data column contains the full program
+      setProgramId(programData.id)
       setProgram(programData.program_data)
       setLoading(false)
     } catch (err) {
@@ -102,6 +119,126 @@ export default function ProgramPage() {
       setError('Failed to load program')
       setLoading(false)
     }
+  }
+
+  const loadWorkoutData = async () => {
+    try {
+      // Load existing workout completion data
+      const { data: workoutData, error } = await supabase
+        .from('program_workouts')
+        .select('exercise_name, user_rpe, completed_at')
+        .eq('program_id', programId)
+        .eq('week', selectedWeek)
+        .eq('day', selectedDay)
+
+      if (!error && workoutData) {
+        const tracking: Record<string, ExerciseTracking> = {}
+        workoutData.forEach(workout => {
+          const key = `${selectedWeek}-${selectedDay}-${workout.exercise_name}`
+          tracking[key] = {
+            completed: !!workout.completed_at,
+            rpe: workout.user_rpe,
+            quality: null // We'll need to add quality field to DB
+          }
+        })
+        setExerciseTracking(prev => ({ ...prev, ...tracking }))
+      }
+    } catch (err) {
+      console.error('Error loading workout data:', err)
+    }
+  }
+
+  const updateExerciseTracking = async (
+    exerciseName: string, 
+    block: string,
+    field: 'completed' | 'rpe' | 'quality', 
+    value: boolean | number | string | null
+  ) => {
+    const key = `${selectedWeek}-${selectedDay}-${exerciseName}`
+    setSaving(key)
+
+    // Update local state immediately
+    setExerciseTracking(prev => ({
+      ...prev,
+      [key]: {
+        ...prev[key],
+        [field]: value
+      }
+    }))
+
+    try {
+      // Find the workout in the database
+      const { data: existingWorkout } = await supabase
+        .from('program_workouts')
+        .select('id')
+        .eq('program_id', programId)
+        .eq('week', selectedWeek)
+        .eq('day', selectedDay)
+        .eq('exercise_name', exerciseName)
+        .eq('block', block)
+        .single()
+
+      if (existingWorkout) {
+        // Update existing record
+        const updates: any = {}
+        if (field === 'completed') {
+          updates.completed_at = value ? new Date().toISOString() : null
+        } else if (field === 'rpe') {
+          updates.user_rpe = value
+        }
+        // Note: quality field needs to be added to database
+
+        await supabase
+          .from('program_workouts')
+          .update(updates)
+          .eq('id', existingWorkout.id)
+      } else {
+        // Create new record
+        const currentDay = program?.weeks.find(w => w.week === selectedWeek)?.days.find(d => d.day === selectedDay)
+        const exerciseOrder = currentDay?.blocks.findIndex(b => b.block === block) || 0
+
+        await supabase
+          .from('program_workouts')
+          .insert({
+            program_id: programId,
+            week: selectedWeek,
+            day: selectedDay,
+            block: block,
+            exercise_order: exerciseOrder,
+            exercise_name: exerciseName,
+            completed_at: field === 'completed' && value ? new Date().toISOString() : null,
+            user_rpe: field === 'rpe' ? value : null
+          })
+      }
+
+      // Also log to performance_logs for analytics
+      if (field === 'completed' && value) {
+        await supabase
+          .from('performance_logs')
+          .insert({
+            program_id: programId,
+            user_id: userId,
+            week: selectedWeek,
+            day: selectedDay,
+            block: block,
+            exercise_name: exerciseName,
+            rpe: exerciseTracking[key]?.rpe,
+            completion_quality: exerciseTracking[key]?.quality === 'A' ? 4 :
+                              exerciseTracking[key]?.quality === 'B' ? 3 :
+                              exerciseTracking[key]?.quality === 'C' ? 2 :
+                              exerciseTracking[key]?.quality === 'D' ? 1 : null
+          })
+      }
+    } catch (err) {
+      console.error('Error updating exercise:', err)
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  const getExerciseTracking = (exerciseName: string): ExerciseTracking => {
+    const key = `${selectedWeek}-${selectedDay}-${exerciseName}`
+    return exerciseTracking[key] || { completed: false, rpe: null, quality: null }
   }
 
   if (loading) {
@@ -162,19 +299,20 @@ export default function ProgramPage() {
             {program.weeks.length} weeks generated • {program.totalExercises} total exercises
           </p>
         </div>
-
-<div className="flex gap-4 mb-6">
-  <a 
-    href="/profile" 
-    className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-  >
-    View Profile Analysis
-  </a>
-</div>
-
+   
+        {/* Navigation */}
+        <div className="flex gap-4 mb-6">
+          <a
+            href="/profile"
+            className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+          >
+            View Profile Analysis
+          </a>
+        </div>  
+        
         {/* Week Selector */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex space-x-2 overflow-x-auto">
+          <div className="flex space-x-2 overflow-x-auto">   
             {program.weeks.map((week) => (
               <button
                 key={week.week}
@@ -243,46 +381,100 @@ export default function ProgramPage() {
                   <p className="text-gray-500 italic">No exercises assigned</p>
                 ) : (
                   <div className="space-y-3">
-                    {block.exercises.map((exercise, exIndex) => (
-                      <div 
-                        key={exIndex} 
-                        className="border-l-4 border-blue-500 pl-4 py-2 bg-gray-50 rounded"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900">
-                              {exercise.name}
-                            </h4>
-                            <div className="text-sm text-gray-600 mt-1">
-                              {exercise.sets && (
-                                <span className="mr-4">Sets: {exercise.sets}</span>
-                              )}
-                              {exercise.reps && (
-                                <span className="mr-4">Reps: {exercise.reps}</span>
-                              )}
-                              {exercise.weightTime && (
-                                <span className="mr-4">
-                                  {exercise.weightTime.includes('kg') || exercise.weightTime.includes('lbs') 
-                                    ? `Weight: ${exercise.weightTime}`
-                                    : exercise.weightTime
-                                  }
-                                </span>
+                    {block.exercises.map((exercise, exIndex) => {
+                      const tracking = getExerciseTracking(exercise.name)
+                      const key = `${selectedWeek}-${selectedDay}-${exercise.name}`
+                      const isSaving = saving === key
+                      
+                      return (
+                        <div 
+                          key={exIndex} 
+                          className={`border-l-4 pl-4 py-2 rounded transition-colors ${
+                            tracking.completed ? 'border-green-500 bg-green-50' : 'border-blue-500 bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900">
+                                {exercise.name}
+                              </h4>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {exercise.sets && (
+                                  <span className="mr-4">Sets: {exercise.sets}</span>
+                                )}
+                                {exercise.reps && (
+                                  <span className="mr-4">Reps: {exercise.reps}</span>
+                                )}
+                                {exercise.weightTime && (
+                                  <span className="mr-4">
+                                    {exercise.weightTime.includes('kg') || exercise.weightTime.includes('lbs') 
+                                      ? `Weight: ${exercise.weightTime}`
+                                      : exercise.weightTime
+                                    }
+                                  </span>
+                                )}
+                              </div>
+                              {exercise.notes && (
+                                <p className="text-sm text-gray-500 mt-1 italic">
+                                  {exercise.notes}
+                                </p>
                               )}
                             </div>
-                            {exercise.notes && (
-                              <p className="text-sm text-gray-500 mt-1 italic">
-                                {exercise.notes}
-                              </p>
-                            )}
+                            <div className="flex items-center gap-3 ml-4">
+                              {/* Completed Checkbox */}
+                              <div className="flex flex-col items-center">
+                                <label className="text-xs text-gray-600 mb-1">Done</label>
+                                <input
+                                  type="checkbox"
+                                  checked={tracking.completed}
+                                  onChange={(e) => updateExerciseTracking(exercise.name, block.block, 'completed', e.target.checked)}
+                                  className="h-5 w-5 text-blue-600 rounded cursor-pointer"
+                                  disabled={isSaving}
+                                />
+                              </div>
+
+                              {/* RPE Selector */}
+                              <div className="flex flex-col items-center">
+                                <label className="text-xs text-gray-600 mb-1">RPE</label>
+                                <select
+                                  value={tracking.rpe || ''}
+                                  onChange={(e) => updateExerciseTracking(exercise.name, block.block, 'rpe', e.target.value ? parseInt(e.target.value) : null)}
+                                  className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  disabled={isSaving}
+                                >
+                                  <option value="">-</option>
+                                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                                    <option key={num} value={num}>{num}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Quality Selector */}
+                              <div className="flex flex-col items-center">
+                                <label className="text-xs text-gray-600 mb-1">Quality</label>
+                                <select
+                                  value={tracking.quality || ''}
+                                  onChange={(e) => updateExerciseTracking(exercise.name, block.block, 'quality', e.target.value || null)}
+                                  className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  disabled={isSaving}
+                                >
+                                  <option value="">-</option>
+                                  <option value="A">A</option>
+                                  <option value="B">B</option>
+                                  <option value="C">C</option>
+                                  <option value="D">D</option>
+                                </select>
+                              </div>
+
+                              {/* Saving indicator */}
+                              {isSaving && (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                              )}
+                            </div>
                           </div>
-                          <input
-                            type="checkbox"
-                            className="ml-4 h-5 w-5 text-blue-600 rounded"
-                            title="Mark as complete"
-                          />
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
 
