@@ -163,6 +163,15 @@ export default function ProgramPage() {
           </p>
         </div>
 
+<div className="flex gap-4 mb-6">
+  <a 
+    href="/profile" 
+    className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+  >
+    View Profile Analysis
+  </a>
+</div>
+
         {/* Week Selector */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
           <div className="flex space-x-2 overflow-x-auto">
