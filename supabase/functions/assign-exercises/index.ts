@@ -6,6 +6,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface AssignExercisesRequest {
+  user: any  // User data object passed from generate-program
+  block: string
+  mainLift: string
+  week: number
+  day: number
+  isDeload: boolean
+  numExercises: number
+  weeklySkills?: Record<string, number>
+  weeklyAccessories?: Record<string, number>
+  previousDayAccessories?: string[]
+  previousDaySkills?: string[]
+  dailyStrengthExercises?: string[]
+}
+
 // Default bodyweight exercises fallback (exact from Google Script)
 const defaultBodyweightExercises = [
   { name: 'Air Squat', sets: 3, reps: 15, weightTime: '', notes: 'Bodyweight' },
@@ -158,28 +173,28 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { 
-      user, 
-      block, 
-      mainLift, 
-      week, 
-      day, 
-      isDeload, 
+    const {
+      user,
+      block,
+      mainLift,
+      week,
+      day,
+      isDeload,
       numExercises,
       weeklySkills = {},
       weeklyAccessories = {},
       previousDayAccessories = [],
+      previousDaySkills = [],
       dailyStrengthExercises = []
-    } = await req.json()
+    }: AssignExercisesRequest = await req.json()
 
-    console.log(`🎯 Assigning exercises: ${block} for ${user.name}, Week ${week}, Day ${day}`)
+    console.log(`🏗️ Assigning exercises: ${block} for ${user.name}, Week ${week}, Day ${day}`)
 
     // Get exercises from database
     const { data: exerciseData, error } = await supabase
       .from('exercises')
       .select('*')
       .eq('sport_id', 1) // CrossFit
-      
 
     if (error) {
       console.error('Database error:', error)
@@ -189,9 +204,9 @@ serve(async (req) => {
     if (!exerciseData || exerciseData.length === 0) {
       console.log('No exercises found, using bodyweight fallback')
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          exercises: defaultBodyweightExercises.slice(0, numExercises) 
+        JSON.stringify({
+          success: true,
+          exercises: defaultBodyweightExercises.slice(0, numExercises)
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -210,6 +225,7 @@ serve(async (req) => {
       weeklySkills,
       weeklyAccessories,
       previousDayAccessories,
+      previousDaySkills,
       dailyStrengthExercises,
       supabase
     )
@@ -240,14 +256,12 @@ async function assignExercises(
   numExercises: number,
   weeklySkills: Record<string, number>,
   weeklyAccessories: Record<string, number>,
-previousDayAccessories: string[],
-previousDaySkills: string[],  
-
-
+  previousDayAccessories: string[],
+  previousDaySkills: string[],
   dailyStrengthExercises: string[],
   supabase: any
 ) {
-  console.log(`📋 Starting exercise assignment for ${block}`)
+  console.log(`🏗️ Starting exercise assignment for ${block}`)
 
   // For MetCons, call separate MetCon assignment (this should be handled by assign-metcon function)
   if (block === 'METCONS') {
@@ -255,19 +269,19 @@ previousDaySkills: string[],
     return []
   }
 
-// STRENGTH AND POWER - FIXED VERSION (Process separately from general filtering)
+  // STRENGTH AND POWER - FIXED VERSION (Process separately from general filtering)
   if (block === 'STRENGTH AND POWER') {
-    console.log('🔧 Processing STRENGTH block for:', mainLift)
-    
+    console.log('💪 Processing STRENGTH block for:', mainLift)
+
     // Find strength exercises for this main lift
     const strengthExercises = exerciseData.filter(exercise => {
       if (!exercise.can_be_strength) return false
-      
+
       const liftGroups = exercise.lift_groups || []
       const hasMainLift = liftGroups.includes(mainLift) || liftGroups.includes('All')
-      
+
       if (!hasMainLift) return false
-      
+
       // Equipment filtering
       const requiredEquipment = exercise.required_equipment || []
       if (user.equipment.length === 0) {
@@ -276,55 +290,55 @@ previousDaySkills: string[],
       if (requiredEquipment.length && !requiredEquipment.every((eq: string) => user.equipment.includes(eq))) {
         return false
       }
-      
+
       // Prefer barbell over dumbbells
       const usesBarbell = requiredEquipment.includes('Barbell')
       const usesDumbbells = requiredEquipment.includes('Dumbbells')
       if (user.equipment.includes('Barbell') && usesDumbbells && !usesBarbell) {
         return false
       }
-      
+
       return true
     })
-    
+
     if (strengthExercises.length === 0) {
       console.log('❌ No strength exercises found for:', mainLift)
       return defaultBodyweightExercises.slice(0, 1)
     }
-    
+
     // Pick the first suitable exercise
     const selectedExercise = strengthExercises[0]
     console.log('✅ Selected strength exercise:', selectedExercise.name)
-    
+
     // Get progression data
     const liftType = ['Snatch', 'Clean and Jerk'].includes(mainLift) ? 'Olympic Lifts' :
       ['Back Squat', 'Front Squat'].includes(mainLift) ? 'Squats' : 'Presses'
-    
+
     const liftLevel = mainLift === 'Snatch' ? (user.snatch_level || 'Beginner') :
       mainLift === 'Clean and Jerk' ? (user.clean_jerk_level || 'Beginner') :
       ['Back Squat', 'Front Squat'].includes(mainLift) ? (user.back_squat_level || 'Beginner') :
       (user.press_level || 'Beginner')
-    
-    console.log('📊 Using progression:', { liftType, liftLevel, week })
-    
+
+    console.log('💪 Using progression:', { liftType, liftLevel, week })
+
     const progression = liftingProgressions[liftType][liftLevel].find(p => p.week === week)
-    
+
     if (!progression) {
       console.log('❌ No progression data for week:', week)
       return defaultBodyweightExercises.slice(0, 1)
     }
-    
+
     // CREATE 4 SETS WITH PROGRESSIONS
     const strengthSets = []
-    
+
     for (let setIndex = 0; setIndex < progression.reps.length; setIndex++) {
       let weightTime = ''
-      
+
       // Calculate weight from 1RM if available
       if (selectedExercise.one_rm_reference && selectedExercise.one_rm_reference !== 'None') {
         const oneRMIndex = find1RMIndex(selectedExercise.one_rm_reference)
         const oneRM = user.oneRMs && user.oneRMs[oneRMIndex]
-        
+
         if (oneRM && oneRM > 0) {
           const percent = progression.percentages[setIndex] / 100
           const rawWeight = oneRM * percent
@@ -333,7 +347,7 @@ previousDaySkills: string[],
           console.log(`💪 Set ${setIndex + 1}: ${progression.reps[setIndex]} reps @ ${weightTime} (${progression.percentages[setIndex]}% of ${oneRM})`)
         }
       }
-      
+
       strengthSets.push({
         name: selectedExercise.name,
         sets: 1, // Each row is one set
@@ -342,19 +356,18 @@ previousDaySkills: string[],
         notes: `${liftLevel} - Set ${setIndex + 1}`
       })
     }
-    
+
     console.log(`✅ Created ${strengthSets.length} strength sets`)
     return strengthSets
   }
-
 
   // Apply filtering logic (exact from Google Script)
   let filtered = exerciseData.filter(exercise => {
     // Check if exercise can be used for this block
     const canBe = block === 'SKILLS' ? exercise.can_be_skills :
-                  block === 'TECHNICAL WORK' ? exercise.can_be_technical :
-                  block === 'STRENGTH AND POWER' ? exercise.can_be_strength :
-                  block === 'ACCESSORIES' ? exercise.can_be_accessories : false
+      block === 'TECHNICAL WORK' ? exercise.can_be_technical :
+      block === 'STRENGTH AND POWER' ? exercise.can_be_strength :
+      block === 'ACCESSORIES' ? exercise.can_be_accessories : false
 
     if (!canBe) return false
 
@@ -375,53 +388,55 @@ previousDaySkills: string[],
       return false
     }
 
-// SKILLS block specific filtering (exact logic from Google Script)
-if (block === 'SKILLS') {
-  const exerciseName = exercise.name
-  
-  // Check frequency limits: max 2x/week
-  if (weeklySkills[exerciseName] && weeklySkills[exerciseName] >= 2) {
-    return false
-  }
-  
-  // Check consecutive day restriction for skills
-  if (previousDaySkills.includes(exerciseName)) {
-    return false
-  }
-  
-  // Get the user's specific level for THIS skill
-  const skillIndex = exercise.skill_index
-  // ... rest of existing skills logic continues unchanged
+
+    // SKILLS block specific filtering (exact logic from Google Script)
+    if (block === 'SKILLS') {
+      const exerciseName = exercise.name
+
+      // Check frequency limits: max 2x/week
+      if (weeklySkills[exerciseName] && weeklySkills[exerciseName] >= 2) {
+        return false
+      }
+
+      // Check consecutive day restriction for skills
+      if (previousDaySkills.includes(exerciseName)) {
+        return false
+      }
+
+      // Get the user's specific level for THIS skill
+      const skillIndex = exercise.skill_index
 
       if (skillIndex === null || skillIndex === undefined || skillIndex < 0 || skillIndex > 25) {
         console.log(`Skipping ${exerciseName}: Invalid skillIndex: ${skillIndex}`)
         return false
       }
-      
-      const userSkillLevel = user.skills[skillIndex] === 'Advanced' ? 3 :
-                            user.skills[skillIndex] === 'Intermediate' ? 2 :
-                            user.skills[skillIndex] === 'Beginner' ? 1 : 0
-      
-      const exerciseLevel = exercise.difficulty_level === 'Elite' ? 4 : 
-                          exercise.difficulty_level === 'Advanced' ? 3 :
-                          exercise.difficulty_level === 'Intermediate' ? 2 : 
-                          exercise.difficulty_level === 'Beginner' ? 1 : 0
-      
+
+const userSkillLevel = user.skills[skillIndex].includes('Advanced') ? 3 :
+        user.skills[skillIndex].includes('Intermediate') ? 2 :
+        user.skills[skillIndex].includes('Beginner') ? 1 : 0
+
+      const exerciseLevel = exercise.difficulty_level === 'Elite' ? 4 :
+        exercise.difficulty_level === 'Advanced' ? 3 :
+        exercise.difficulty_level === 'Intermediate' ? 2 :
+        exercise.difficulty_level === 'Beginner' ? 1 : 0
+
+
+
       // Only allow exercises at or below the user's level for THIS specific skill
       if (exerciseLevel > userSkillLevel) {
         console.log(`Skipping ${exerciseName}: Exercise level ${exerciseLevel} > user skill level ${userSkillLevel}`)
         return false
       }
-      
+
       // Elite access requires BOTH: 10+ advanced skills overall AND Advanced in this specific skill
       const advancedSkillCount = user.skills.filter((s: string) => s.includes('Advanced')).length
       const isEliteEligible = advancedSkillCount >= 10
-      
+
       if (exerciseLevel === 4 && (!isEliteEligible || userSkillLevel < 3)) {
         console.log(`Skipping ${exerciseName}: Elite requires 10+ advanced skills AND Advanced in this skill`)
         return false
       }
-      
+
       // Handle Novice skills - only show as scaling when user lacks the base skill
       if (exerciseLevel === 0) { // Novice level
         const scalingFor = exercise.scaling_for
@@ -439,36 +454,35 @@ if (block === 'SKILLS') {
       }
     }
 
-
     // TECHNICAL WORK block specific filtering (exact logic from Google Script)
     if (block === 'TECHNICAL WORK') {
       const dependencies = exercise.technical_dependency || []
       const exerciseName = exercise.name
-      
+
       // Don't assign if already used in Strength & Power today
-      if (dailyStrengthExercises.includes(exerciseName)) {
+      if (Array.isArray(dailyStrengthExercises) && dailyStrengthExercises.includes(exerciseName)) {
         return false
       }
-      
+
       return dependencies.includes(mainLift)
     }
 
     // ACCESSORIES block specific filtering (exact logic from Google Script)
     if (block === 'ACCESSORIES') {
       if (!exercise.accessory_category || exercise.accessory_category === 'None') return false
-      
+
       const exerciseName = exercise.name
-      
+
       // Check frequency limits: max 2x/week
       if (weeklyAccessories[exerciseName] && weeklyAccessories[exerciseName] >= 2) {
         return false
       }
-      
+
       // Check consecutive day restriction
       if (previousDayAccessories.includes(exerciseName)) {
         return false
       }
-      
+
       // Determine needed accessory categories
       const neededCategories = []
       if (user.needs_upper_back) neededCategories.push('Upper Back')
@@ -477,24 +491,32 @@ if (block === 'SKILLS') {
       if (user.needs_upper_body_pressing) neededCategories.push('Upper Body Pressing')
       if (user.needs_upper_body_pulling) neededCategories.push('Upper Body Pulling')
       if (user.needs_core) neededCategories.push('Core')
-      
+
       // Level-constrained weakness filtering
       if (neededCategories.length > 0) {
         // Must be in a needed category
         const isWeaknessCategory = neededCategories.includes(exercise.accessory_category)
         if (!isWeaknessCategory) return false
-        
+
         // AND must be appropriate level (excludes Novice unless user is Novice)
         const exerciseLevel = exercise.difficulty_level
         return checkLevelAppropriate(exerciseLevel, user.ability)
       }
-      
+
       // If no specific needs, assign randomly from all categories
       return true
     }
 
     return true
   })
+
+
+  // Add logging here
+  console.log(`Filtered ${filtered.length} exercises for ${block}`)
+  if (block === 'TECHNICAL WORK') {
+    console.log('Technical exercises found:', filtered.map(e => e.name))
+  }
+
 
   // Fallback to scaled exercises if no matches (exact logic from Google Script)
   if (filtered.length === 0) {
@@ -503,7 +525,7 @@ if (block === 'SKILLS') {
       const scalingFor = exercise.scaling_for
       const scalingOptions = exercise.scaling_options || []
       const userLevel = user.ability === 'Advanced' ? 3 : user.ability === 'Intermediate' ? 2 : 1
-      
+
       return (scalingFor && exerciseData.some((ex: any) => ex.name === scalingFor && (
         (ex.difficulty_level === 'All' && userLevel >= 1) ||
         (ex.difficulty_level === 'Intermediate' && userLevel >= 2) ||
@@ -532,7 +554,7 @@ if (block === 'SKILLS') {
     if (user.needs_upper_body_pressing) neededCategories.push('Upper Body Pressing')
     if (user.needs_upper_body_pulling) neededCategories.push('Upper Body Pulling')
     if (user.needs_core) neededCategories.push('Core')
-    
+
     // If athlete has specific needs, filter by those categories
     if (neededCategories.length > 0) {
       filtered = filtered.filter(exercise => neededCategories.includes(exercise.accessory_category))
@@ -540,139 +562,126 @@ if (block === 'SKILLS') {
   }
 
   // Get ability-based weights for probabilistic selection (exact logic from Google Script)
-  const abilityIndex = user.ability === 'Advanced' ? 'advanced_weight' : 
-                       user.ability === 'Intermediate' ? 'intermediate_weight' : 'beginner_weight'
-  
+  const abilityIndex = user.ability === 'Advanced' ? 'advanced_weight' :
+    user.ability === 'Intermediate' ? 'intermediate_weight' : 'beginner_weight'
+
   const weights = filtered.map(exercise => parseFloat(exercise[abilityIndex]) || parseFloat(exercise.default_weight) || 5)
   const totalWeight = weights.reduce((sum, w) => sum + w, 0)
   const probabilities = weights.map(w => w / totalWeight)
-  
+
   // Probabilistic selection (exact logic from Google Script)
   const selectedIndices: number[] = []
   const exercises: any[] = []
 
   for (let i = 0; i < numExercises; i++) {
     if (!filtered.length) break
-    
+
     const rand = Math.random()
     let cumulative = 0
-    
+
     for (let j = 0; j < probabilities.length; j++) {
-      cumulative += probabilities[j]
-      if (rand <= cumulative && !selectedIndices.includes(j)) {
-        const exercise = filtered[j]
-        const skillIndex = exercise.skill_index || 99
-        const userSkillLevel = skillIndex >= 0 && skillIndex <= 25 ? 
-                              (user.skills[skillIndex] === 'Advanced' ? 3 :
-                               user.skills[skillIndex] === 'Intermediate' ? 2 :
-                               user.skills[skillIndex] === 'Beginner' ? 1 : 0) : 0
-        
-        const advancedSkillCount = user.skills.filter((s: string) => s.includes('Advanced')).length
+  cumulative += probabilities[j]
+  if (rand <= cumulative && !selectedIndices.includes(j)) {
+    const exercise = filtered[j]
+    const skillIndex = exercise.skill_index || 99
+    
+    let effectiveLevel
+    
+    if (block === 'SKILLS' && skillIndex >= 0 && skillIndex <= 25) {
+      // For skills, use the user's declared level directly
+      const userSkillLevelString = user.skills[skillIndex]
+      
+      if (userSkillLevelString === "Don't have it") {
+        effectiveLevel = 'Novice'
+      } else if (userSkillLevelString === 'Beginner') {
+        effectiveLevel = 'Beginner'
+      } else if (userSkillLevelString === 'Intermediate') {
+        effectiveLevel = 'Intermediate'
+      } else if (userSkillLevelString === 'Advanced') {
+        // Check for Elite eligibility only for Advanced users
+        const advancedSkillCount = user.skills.filter(s => s === 'Advanced').length
         const isEliteEligible = advancedSkillCount >= 10
-        
-        const effectiveLevel = block === 'SKILLS' && userSkillLevel === 3 && isEliteEligible ? 'Elite' :
-                              userSkillLevel === 3 ? 'Advanced' :
-                              userSkillLevel === 2 ? 'Intermediate' :
-                              userSkillLevel === 1 ? 'Beginner' : 
-                              block === 'SKILLS' ? 'Novice' : 'Beginner'
-        
+        effectiveLevel = isEliteEligible ? 'Elite' : 'Advanced'
+      } else {
+        // Default fallback
+        effectiveLevel = 'Beginner'
+      }
+
+
+} else if (block === 'TECHNICAL WORK') {
+  // FIXED: Create the variable properly for technical work
+  const liftLevel = mainLift === 'Snatch' ? user.snatch_level || 'Beginner' :
+                   mainLift === 'Clean and Jerk' ? user.clean_jerk_level || 'Beginner' :
+                   ['Back Squat', 'Front Squat'].includes(mainLift) ? user.back_squat_level || 'Beginner' :
+                   user.press_level || 'Beginner';
+  
+  effectiveLevel = liftLevel;
+  console.log(`🔧 Technical work level for ${mainLift}: ${effectiveLevel}`);
+   
+
+    } else if (block === 'ACCESSORIES') {
+      // Add logic for accessories based on one_rm_reference
+      // For now, default to Intermediate
+      effectiveLevel = 'Intermediate'
+    } else {
+      // Default for other blocks
+      effectiveLevel = 'Intermediate'
+    }
+
+
         let programNotes = parseProgramNotes(exercise.program_notes, effectiveLevel, isDeload, false, week)
         if (!programNotes.sets || !programNotes.reps) {
           console.log(`Skipping ${exercise.name}: No valid sets/reps for level ${effectiveLevel}`)
           continue
         }
-        
+
         let weightTime = ''
         let sets = programNotes.sets || ''
         let reps = programNotes.reps || ''
 
-        // STRENGTH AND POWER block special handling (exact logic from Google Script)
-        if (block === 'STRENGTH AND POWER') {
-          const liftType = ['Snatch', 'Clean and Jerk'].includes(mainLift) ? 'Olympic Lifts' :
-                          ['Back Squat', 'Front Squat'].includes(mainLift) ? 'Squats' : 'Presses'
-          
-          const liftLevel = mainLift === 'Snatch' ? user.snatch_level :
-                          mainLift === 'Clean and Jerk' ? user.clean_jerk_level :
-                          ['Back Squat', 'Front Squat'].includes(mainLift) ? user.back_squat_level :
-                          user.press_level
-          
-          const progression = liftingProgressions[liftType][liftLevel].find(p => p.week === week)
-          
-          // Create 4 sets of this exercise using the progression
-          for (let setIndex = 0; setIndex < progression.reps.length; setIndex++) {
-            let weightTime = ''
-            if (exercise.one_rm_reference && exercise.one_rm_reference !== 'None') {
-              const oneRM = user.oneRMs[find1RMIndex(exercise.one_rm_reference)]
-              if (oneRM) {
-                const percent = progression.percentages[setIndex] / 100
-                const rawWeight = oneRM * percent
-                const roundedWeight = roundWeight(rawWeight, user.units)
-                weightTime = roundedWeight.toString()
-              }
+        // Handle all non-Strength blocks (exact logic from Google Script)
+        if (exercise.one_rm_reference && exercise.one_rm_reference !== 'None') {
+          const oneRM = user.oneRMs[find1RMIndex(exercise.one_rm_reference)]
+          if (oneRM) {
+            const percent = programNotes.percent1RM || (isDeload ? 0.5 : 0.65)
+            let calculatedWeight = Math.round(oneRM * percent)
+
+            // Apply weight floors for barbell exercises
+            const requiredEquipment = exercise.required_equipment || []
+            const isBarbell = requiredEquipment.includes('Barbell')
+            if (isBarbell) {
+              const weightFloor = user.gender === 'Female' ?
+                (user.units === 'Metric (kg)' ? 15 : 35) :
+                (user.units === 'Metric (kg)' ? 20 : 45)
+
+              calculatedWeight = Math.max(calculatedWeight, weightFloor)
+              console.log(`Applied weight floor: ${calculatedWeight} for ${exercise.name}`)
             }
 
-            const enhancedNote = generateEnhancedNotes({
-              exerciseName: exercise.name,
-              effectiveLevel: liftLevel,
-              isDeload: isDeload
-            }, user, week, block, exercise)
-
-            exercises.push({
-              name: exercise.name,
-              sets: 1, // Each row is one set
-              reps: progression.reps[setIndex],
-              weightTime: weightTime,
-              notes: truncateNotes(enhancedNote) || liftLevel
-            })
+            const roundedWeight = roundWeight(calculatedWeight, user.units)
+            weightTime = roundedWeight.toString()
           }
-          
-          selectedIndices.push(j)
-          break // Exit the selection loop since we only need one exercise
         } else {
-          // Handle all non-Strength blocks (exact logic from Google Script)
-          if (exercise.one_rm_reference && exercise.one_rm_reference !== 'None') {
-            const oneRM = user.oneRMs[find1RMIndex(exercise.one_rm_reference)]
-            if (oneRM) {
-              const percent = programNotes.percent1RM || (isDeload ? 0.5 : 0.65)
-              let calculatedWeight = Math.round(oneRM * percent)
-              
-              // Apply weight floors for barbell exercises
-              const requiredEquipment = exercise.required_equipment || []
-              const isBarbell = requiredEquipment.includes('Barbell')
-              if (isBarbell) {
-                const weightFloor = user.gender === 'Female' ? 
-                  (user.units === 'Metric (kg)' ? 15 : 35) : 
-                  (user.units === 'Metric (kg)' ? 20 : 45)
-                
-                calculatedWeight = Math.max(calculatedWeight, weightFloor)
-                console.log(`Applied weight floor: ${calculatedWeight} for ${exercise.name}`)
-              }
-              
-              const roundedWeight = roundWeight(calculatedWeight, user.units)
-              weightTime = roundedWeight.toString()
-            }
-          } else {
-            weightTime = programNotes.weightTime || ''
-          }
-
-          const enhancedNote = generateEnhancedNotes({
-            exerciseName: exercise.name,
-            effectiveLevel: effectiveLevel,
-            isDeload: isDeload
-          }, user, week, block, exercise)
-
-          exercises.push({
-            name: exercise.name,
-            sets: sets,
-            reps: reps,
-            weightTime: weightTime,
-            notes: truncateNotes(enhancedNote) || programNotes.notes || effectiveLevel
-          })
-
-          selectedIndices.push(j)
-          probabilities.splice(j, 1)
-          break
+          weightTime = programNotes.weightTime || ''
         }
+
+        const enhancedNote = generateEnhancedNotes({
+          exerciseName: exercise.name,
+          effectiveLevel: effectiveLevel,
+          isDeload: isDeload
+        }, user, week, block, exercise)
+
+        exercises.push({
+          name: exercise.name,
+          sets: sets,
+          reps: reps,
+          weightTime: weightTime,
+          notes: truncateNotes(enhancedNote) || programNotes.notes || effectiveLevel
+        })
+
+        selectedIndices.push(j)
+        probabilities.splice(j, 1)
+        break
       }
     }
   }
@@ -689,10 +698,10 @@ function checkPrerequisite(prereq: string, user: any): boolean {
     const oneRMIndex = find1RMIndex(exercise)
     return user.oneRMs[oneRMIndex] && user.oneRMs[oneRMIndex] >= parseInt(value)
   }
-  
+
   const skillIndex = findSkillIndex(prereq)
   if (skillIndex === -1) return false
-  
+
   const userSkill = user.skills[skillIndex]
   if (!userSkill || userSkill === "Don't have it") return false
 
@@ -782,66 +791,112 @@ function findSkillIndexForScaling(scalingFor: string): number {
     'Strict Pull-ups': 5,
     'Wall Balls': 1
   }
-  
+
   return scalingMap[scalingFor] !== undefined ? scalingMap[scalingFor] : -1
 }
 
-function parseProgramNotes(notes: any, level: string, isDeload: boolean, isTestWeek: boolean, week: number): any {
-  if (!notes || typeof notes !== 'object') {
-    return { sets: 3, reps: 10, notes: 'Default' }
-  }
-  
-  const levelNotes = notes[level]
-  if (!levelNotes) {
-    return { sets: 3, reps: 10, notes: `${level} Default` }
-  }
 
-  const result: any = {}
-  
-  if (levelNotes.sets) {
-    result.sets = isDeload ? Math.round(levelNotes.sets * 0.6) : levelNotes.sets
+
+function parseProgramNotes(notes, level, isDeload, isTestWeek, week) {
+  if (!notes || typeof notes !== 'object') {
+    return {
+      sets: 3,
+      reps: 10,
+      notes: 'Default'
+    };
   }
   
-  if (levelNotes.reps) {
-    result.reps = isDeload ? Math.round(levelNotes.reps * 0.6) : levelNotes.reps
+  const levelNotes = notes[level];
+  if (!levelNotes) {
+    return {
+      sets: 3,
+      reps: 10,
+      notes: `${level} Default`
+    };
   }
   
-  if (levelNotes.percent1RM) {
-    result.percent1RM = levelNotes.percent1RM / 100
+  const result = {};
+  
+  // Check if levelNotes is a string (new format) or object (old format)
+  if (typeof levelNotes === 'string') {
+    // Parse string format like "5x3,85%" or "2x50" or "5x45s"
+    const cleanString = levelNotes.trim().replace(/,$/, '');
+    
+    // Check for time-based (e.g., "5x45s" or "5x4min")
+    const timeMatch = cleanString.match(/(\d+)x(\d+)(s|sec|min|m)/i);
+    if (timeMatch) {
+      result.sets = parseInt(timeMatch[1]);
+      result.weightTime = timeMatch[2] + timeMatch[3];
+      // No reps for time-based exercises
+    } else {
+      // Check for percentage-based (e.g., "5x3,85%")
+      const percentMatch = cleanString.match(/(\d+)x(\d+),(\d+)%/);
+      if (percentMatch) {
+        result.sets = parseInt(percentMatch[1]);
+        result.reps = parseInt(percentMatch[2]);
+        result.percent1RM = parseInt(percentMatch[3]) / 100;
+      } else {
+        // Check for rep-only (e.g., "2x50")
+        const repMatch = cleanString.match(/(\d+)x(\d+)/);
+        if (repMatch) {
+          result.sets = parseInt(repMatch[1]);
+          result.reps = parseInt(repMatch[2]);
+        }
+      }
+    }
+    
+    // Apply deload if needed
+    if (isDeload && result.sets) {
+      result.sets = Math.round(result.sets * 0.6);
+    }
+    if (isDeload && result.reps) {
+      result.reps = Math.round(result.reps * 0.6);
+    }
+    
+  } else {
+    // Handle old object format (keep existing logic)
+    if (levelNotes.sets) {
+      result.sets = isDeload ? Math.round(levelNotes.sets * 0.6) : levelNotes.sets;
+    }
+    if (levelNotes.reps) {
+      result.reps = isDeload ? Math.round(levelNotes.reps * 0.6) : levelNotes.reps;
+    }
+    if (levelNotes.percent1RM) {
+      result.percent1RM = levelNotes.percent1RM / 100;
+    }
+    if (levelNotes.weightTime) {
+      result.weightTime = levelNotes.weightTime;
+    }
+    if (levelNotes.notes) {
+      result.notes = levelNotes.notes;
+    }
   }
   
-  if (levelNotes.weightTime) {
-    result.weightTime = levelNotes.weightTime
+  // Ensure sets and reps are defined (but not for time-based exercises)
+  if (!result.weightTime && (!result.sets || !result.reps)) {
+    result.sets = result.sets || 3;
+    result.reps = result.reps || 10;
+    result.notes = result.notes || `${level} Default`;
   }
   
-  if (levelNotes.notes) {
-    result.notes = levelNotes.notes
-  }
-  
-  // Ensure sets and reps are defined
-  if (!result.sets || !result.reps) {
-    result.sets = result.sets || 3
-    result.reps = result.reps || 10
-    result.notes = result.notes || `${level} Default`
-  }
-  
-  return result
+  return result;
 }
+
 
 function checkLevelAppropriate(exerciseLevel: string, userAbility: string): boolean {
   const levelHierarchy: Record<string, string[]> = {
-    'Novice': ['Novice'],                                    
-    'Beginner': ['Beginner'],                               
-    'Intermediate': ['Beginner', 'Intermediate'],           
-    'Advanced': ['Beginner', 'Intermediate', 'Advanced']    
+    'Novice': ['Novice'],
+    'Beginner': ['Beginner'],
+    'Intermediate': ['Beginner', 'Intermediate'],
+    'Advanced': ['Beginner', 'Intermediate', 'Advanced']
   }
-  
+
   return levelHierarchy[userAbility] && levelHierarchy[userAbility].includes(exerciseLevel)
 }
 
 function roundWeight(weight: number, userUnits: string): number {
   if (!weight || isNaN(weight)) return weight
-  
+
   if (userUnits === 'Metric (kg)') {
     // Round to nearest 2.5 kg
     return Math.round(weight / 2.5) * 2.5
@@ -856,27 +911,28 @@ function generateEnhancedNotes(exerciseData: any, user: any, week: number, block
   if (block === 'METCONS') {
     return null
   }
-  
+
   // Get performance cue from database
   return getPerformanceCue(exerciseRow) || null
 }
 
 function getPerformanceCue(exerciseRow: any): string {
   const cues = exerciseRow.performance_cues || []
-  
+
   if (cues.length === 0) return ''
   if (cues.length === 1) return cues[0]
-  
+
   // Multiple cues - randomly select one
   return cues[Math.floor(Math.random() * cues.length)]
 }
 
 function truncateNotes(notes: string | null): string | null {
   if (!notes || typeof notes !== 'string') return notes
-  
+
   if (notes.length <= 100) return notes
-  
+
   // Truncate at 97 characters and add "..."
   return notes.substring(0, 97) + '...'
 }
+
 

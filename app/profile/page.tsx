@@ -31,15 +31,18 @@ interface ProfileData {
     strict_press: number | null
     weighted_pullup: number | null
   }
-  benchmarks: {
-    mile_run: string | null
-    five_k_run: string | null
-    ten_k_run: string | null
-    one_k_row: string | null
-    two_k_row: string | null
-    five_k_row: string | null
-    ten_min_air_bike: string | null
-  }
+  
+benchmarks: {
+  mile_run: string | null
+  five_k_run: string | null
+  ten_k_run: string | null
+  one_k_row: string | null
+  two_k_row: string | null
+  five_k_row: string | null
+  air_bike_10_min: string | null  // ← Changed to match backend
+}
+
+
   skills_assessment: {
     dont_have: string[]
     beginner: string[]
@@ -312,37 +315,57 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 1RMs */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">One Rep Maxes</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {Object.entries(profile.one_rms).map(([lift, weight]) => (
-              <div key={lift} className="p-3 bg-gray-50 rounded">
-                <p className="text-sm text-gray-600">{lift.split('_').map(word => 
-                  word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ')}</p>
-                <p className="font-semibold">{formatWeight(weight)}</p>
-              </div>
-            ))}
+{/* 1RMs */}
+<div className="bg-white rounded-lg shadow p-6">
+  <h2 className="text-xl font-bold text-gray-900 mb-4">One Rep Maxes</h2>
+  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    {Object.entries(profile.one_rms).map(([lift, weight]) => (
+      <div key={lift} className="p-3 bg-gray-50 rounded">
+        <p className="text-sm text-gray-600">{lift.split('_').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ')}</p>
+        <p className="font-semibold">{formatWeight(weight)}</p>
+      </div>
+    ))}
+  </div>
+</div>
+
+{/* ADD THIS SECTION HERE */}
+{/* Conditioning Benchmarks */}
+<div className="bg-white rounded-lg shadow p-6">
+  <h2 className="text-xl font-bold text-gray-900 mb-4">Conditioning Benchmarks</h2>
+  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    {Object.entries(profile.benchmarks)
+      .filter(([_, time]) => time) // Only show non-null benchmarks
+      .map(([benchmark, time]) => (
+        <div key={benchmark} className="p-3 bg-gray-50 rounded">
+          <p className="text-sm text-gray-600">
+            {benchmark.split('_').map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ')}
+          </p>
+          <p className="font-semibold">{time}</p>
+        </div>
+      ))}
+  </div>
+</div>
+
+{/* Recommendations */}
+{profile.recommendations.length > 0 && (
+  <div className="bg-white rounded-lg shadow p-6">
+    <h2 className="text-xl font-bold text-gray-900 mb-4">Recommendations</h2>
+    <div className="space-y-3">
+      {profile.recommendations.map((rec, index) => (
+        <div key={index} className={`p-4 rounded-lg ${getPriorityColor(rec.priority)}`}>
+          <div className="flex items-start">
+            <span className="font-semibold mr-2 capitalize">{rec.priority}:</span>
+            <p>{rec.message}</p>
           </div>
         </div>
-
-        {/* Recommendations */}
-        {profile.recommendations.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Recommendations</h2>
-            <div className="space-y-3">
-              {profile.recommendations.map((rec, index) => (
-                <div key={index} className={`p-4 rounded-lg ${getPriorityColor(rec.priority)}`}>
-                  <div className="flex items-start">
-                    <span className="font-semibold mr-2 capitalize">{rec.priority}:</span>
-                    <p>{rec.message}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      ))}
+    </div>
+  </div>
+)}
 
         {/* Missing Data */}
         {profile.missing_data.length > 0 && (
@@ -362,3 +385,4 @@ export default function ProfilePage() {
     </div>
   )
 }
+

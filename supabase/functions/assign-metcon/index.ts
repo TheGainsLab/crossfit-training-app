@@ -6,6 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface AssignMetconRequest {
+  user: any  // User data object passed from generate-program
+  week: number
+  day: number
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -16,9 +22,9 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { user, week, day } = await req.json()
+    const { user, week, day }: AssignMetconRequest = await req.json()
 
-    console.log(`🏃 Assigning MetCon for ${user.name}, Week ${week}, Day ${day}`)
+    console.log(`🔥 Assigning MetCon for ${user.name}, Week ${week}, Day ${day}`)
 
     // Get MetCons from database
     const { data: metconData, error } = await supabase
@@ -35,8 +41,8 @@ serve(async (req) => {
       console.log('No MetCons found, creating fallback')
       const fallbackResult = createFallbackMetCon(user)
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           exercises: fallbackResult.exercises,
           workoutId: fallbackResult.workoutId,
           workoutFormat: fallbackResult.format,
@@ -49,13 +55,13 @@ serve(async (req) => {
 
     // Select suitable MetCon (exact Google Script logic)
     const selectedWorkout = selectMetCon(metconData, user)
-    
+
     if (!selectedWorkout) {
       console.log('No suitable MetCon found, creating fallback')
       const fallbackResult = createFallbackMetCon(user)
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           exercises: fallbackResult.exercises,
           workoutId: fallbackResult.workoutId,
           workoutFormat: fallbackResult.format,
@@ -68,13 +74,13 @@ serve(async (req) => {
 
     // Convert MetCon to exercises (exact Google Script logic)
     const conversionResult = convertMetConToExercises(selectedWorkout, user)
-    
+
     // Generate percentile guidance (exact Google Script logic)
     const percentileGuidance = generatePercentileGuidance(selectedWorkout, user)
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         exercises: conversionResult.exercises,
         workoutId: selectedWorkout.workout_id,
         workoutFormat: selectedWorkout.format,
@@ -96,40 +102,40 @@ serve(async (req) => {
 // === METCON SELECTION LOGIC (Exact Google Script Logic) ===
 function selectMetCon(metconData: any[], user: any): any | null {
   console.log('Starting MetCon selection. Available workouts: ' + metconData.length)
-  
+
   if (!metconData || metconData.length === 0) {
     console.log('No MetCon data available')
     return null
   }
-  
+
   // Step 1: Filter out completely empty rows and filter by equipment
   let suitableWorkouts = metconData.filter(workout => {
     // Skip completely empty rows
     if (!workout || !workout.workout_id || workout.workout_id === '' || !workout.format || workout.format === '') {
       return false
     }
-    
+
     const requiredEquipment = workout.required_equipment || []
     console.log(`Workout ${workout.workout_id} requires equipment: ${requiredEquipment.join(', ')}`)
-    
+
     // If workout requires no equipment or says "None"
     if (requiredEquipment.length === 0 || requiredEquipment.includes('None')) {
       return true
     }
-    
+
     // If user has no equipment, only allow bodyweight workouts
     if (user.equipment.length === 0) {
       return requiredEquipment.every((eq: string) => eq === 'None' || eq === '' || eq.toLowerCase() === 'bodyweight')
     }
-    
+
     // Check if user has required equipment
-    return requiredEquipment.every((equipment: string) => 
+    return requiredEquipment.every((equipment: string) =>
       equipment === 'None' || equipment === '' || user.equipment.includes(equipment)
     )
   })
-  
+
   console.log(`After equipment filter: ${suitableWorkouts.length} workouts`)
-  
+
   // Step 2: Filter by level if desired
   if (suitableWorkouts.length > 1) {
     const userLevel = user.ability || 'Beginner'
@@ -137,13 +143,13 @@ function selectMetCon(metconData: any[], user: any): any | null {
       const workoutLevel = workout.level || 'Beginner'
       return workoutLevel.toLowerCase() === userLevel.toLowerCase()
     })
-    
+
     if (levelPreferred.length > 0) {
       suitableWorkouts = levelPreferred
       console.log(`After level filter (${userLevel}): ${suitableWorkouts.length} workouts`)
     }
   }
-  
+
   // Step 3: If no matches, be more lenient with equipment
   if (suitableWorkouts.length === 0) {
     console.log('No equipment matches, using lenient filtering')
@@ -152,9 +158,9 @@ function selectMetCon(metconData: any[], user: any): any | null {
       if (!workout || !workout.workout_id || workout.workout_id === '' || !workout.format || workout.format === '') {
         return false
       }
-      
+
       const requiredEquipment = workout.required_equipment || []
-      
+
       // Allow basic equipment substitutions
       const hasBasicSubstitutes = requiredEquipment.every((equipment: string) => {
         if (equipment === 'None' || equipment === '' || equipment.toLowerCase() === 'bodyweight') return true
@@ -163,29 +169,29 @@ function selectMetCon(metconData: any[], user: any): any | null {
         if (equipment === 'Barbell' && user.equipment.includes('Dumbbells')) return true
         return user.equipment.includes(equipment)
       })
-      
+
       return hasBasicSubstitutes
     })
   }
-  
+
   // Step 4: Final fallback - use any valid workout
   if (suitableWorkouts.length === 0) {
     console.log('Using any available workout as final fallback')
-    suitableWorkouts = metconData.filter(workout => 
+    suitableWorkouts = metconData.filter(workout =>
       workout && workout.workout_id && workout.workout_id !== '' && workout.format && workout.format !== ''
     )
   }
-  
+
   // Step 5: Return null if still nothing (will trigger fallback creation)
   if (suitableWorkouts.length === 0) {
     console.log('No suitable workouts found at all')
     return null
   }
-  
+
   // Select a random workout
   const randomIndex = Math.floor(Math.random() * suitableWorkouts.length)
   const selectedWorkout = suitableWorkouts[randomIndex]
-  
+
   console.log(`Selected workout: ${selectedWorkout.workout_id} - ${selectedWorkout.format} - ${selectedWorkout.time_range}`)
   return selectedWorkout
 }
@@ -194,21 +200,21 @@ function selectMetCon(metconData: any[], user: any): any | null {
 function convertMetConToExercises(workout: any, user: any): { exercises: any[] } {
   console.log('Converting MetCon to exercises...')
   console.log(`Workout: ${workout.workout_id}, Format: ${workout.format}, Time: ${workout.time_range}`)
-  
+
   if (!workout || !workout.tasks) {
     console.log('Invalid workout data, creating fallback')
     return { exercises: createFallbackExercises(user) }
   }
-  
+
   const exercises: any[] = []
   const tasks = workout.tasks || []
-  
+
   console.log(`Processing ${tasks.length} tasks`)
-  
+
   // Process each task in the workout
   tasks.forEach((task: any, index: number) => {
     console.log(`Task ${index + 1}: ${task.reps} ${task.exercise}`)
-    
+
     const hasReps = task.reps && task.reps !== ''
     const hasDistance = task.distance && task.distance !== ''
     const hasTime = task.time && task.time !== ''
@@ -222,9 +228,9 @@ function convertMetConToExercises(workout: any, user: any): { exercises: any[] }
       } else if (task.weight_male && task.weight_male !== '') {
         selectedWeight = task.weight_male
       }
-      
+
       let weightTime = ''
-      
+
       if (selectedWeight && selectedWeight !== '') {
         const roundedWeight = roundWeight(parseFloat(selectedWeight), user.units)
         weightTime += roundedWeight.toString()
@@ -239,12 +245,12 @@ function convertMetConToExercises(workout: any, user: any): { exercises: any[] }
       if (task.calories && task.calories !== '' && hasReps) {
         weightTime += (weightTime ? ', ' : '') + task.calories
       }
-      
+
       let exerciseNotes = ''
       if (index === 0 && workout.workout_notes && workout.workout_notes !== '') {
         exerciseNotes = workout.workout_notes
       }
-      
+
       let displayReps = task.reps
       if (!hasReps && hasCalories) {
         displayReps = task.calories
@@ -261,26 +267,26 @@ function convertMetConToExercises(workout: any, user: any): { exercises: any[] }
         weightTime: weightTime,
         notes: exerciseNotes
       }
-      
+
       exercises.push(exerciseObj)
       console.log(`Added task: ${task.exercise}, ${displayReps} reps, ${weightTime}, Notes: ${exerciseNotes}`)
     }
   })
-  
+
   console.log(`Total tasks added: ${exercises.length}`)
-  
+
   if (exercises.length === 0) {
     console.log('No valid tasks found, creating fallback exercises')
     return { exercises: createFallbackExercises(user) }
   }
-  
+
   return { exercises: exercises }
 }
 
 // === PERCENTILE GUIDANCE GENERATION (Exact Google Script Logic) ===
 function generatePercentileGuidance(workout: any, user: any): any {
   console.log('Generating percentile guidance...')
-  
+
   if (!workout) {
     return {
       excellentScore: '',
@@ -288,27 +294,27 @@ function generatePercentileGuidance(workout: any, user: any): any {
       guidanceRows: []
     }
   }
-  
+
   // Get gender-specific percentile data
   const excellentScore = (user.gender === 'Male') ? workout.male_p90 : workout.female_p90
   const medianScore = (user.gender === 'Male') ? workout.male_p50 : workout.female_p50
   const stdDev = (user.gender === 'Male') ? workout.male_std_dev : workout.female_std_dev
-  
+
   console.log(`Selected for ${user.gender}: P90: ${excellentScore}, P50: ${medianScore}, StdDev: ${stdDev}`)
-  
+
   // Format scores for display
   const displayExcellent = formatScoreForDisplay(excellentScore)
   const displayMedian = formatScoreForDisplay(medianScore)
-  
+
   console.log(`Formatted scores: Excellent: ${displayExcellent}, Median: ${displayMedian}`)
-  
+
   const guidanceRows = [
     { label: 'Excellent Score', value: displayExcellent },
     { label: 'Median Score', value: displayMedian },
     { label: 'Your score', value: '' },
     { label: 'Percentile', value: '' }
   ]
-  
+
   return {
     excellentScore: displayExcellent,
     medianScore: displayMedian,
@@ -320,7 +326,7 @@ function generatePercentileGuidance(workout: any, user: any): any {
 // === FALLBACK CREATION (Exact Google Script Logic) ===
 function createFallbackMetCon(user: any): any {
   console.log('Creating fallback MetCon')
-  
+
   const fallbackExercises = [
     {
       name: 'Air Squats',
@@ -344,7 +350,7 @@ function createFallbackMetCon(user: any): any {
       notes: 'FALLBACK - Bodyweight conditioning'
     }
   ]
-  
+
   return {
     exercises: fallbackExercises,
     workoutId: 'FALLBACK-001',
@@ -392,14 +398,14 @@ function createFallbackExercises(user: any): any[] {
 // === HELPER FUNCTIONS (Exact Google Script Logic) ===
 function formatScoreForDisplay(score: any): string {
   if (!score || score === '') return ''
-  
+
   const scoreStr = score.toString().trim()
-  
+
   // If it's already in time format, return as-is
   if (isTimeFormat(scoreStr)) {
     return scoreStr
   }
-  
+
   // If it's a number, check if it should be displayed as time
   const numericValue = parseFloat(scoreStr)
   if (!isNaN(numericValue)) {
@@ -409,7 +415,7 @@ function formatScoreForDisplay(score: any): string {
     }
     return scoreStr
   }
-  
+
   return scoreStr
 }
 
@@ -427,7 +433,7 @@ function secondsToTime(totalSeconds: number): string {
 
 function roundWeight(weight: number, userUnits: string): number {
   if (!weight || isNaN(weight)) return weight
-  
+
   if (userUnits === 'Metric (kg)') {
     // Round to nearest 2.5 kg
     return Math.round(weight / 2.5) * 2.5

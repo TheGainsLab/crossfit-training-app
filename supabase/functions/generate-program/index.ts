@@ -11,6 +11,11 @@ const days = ['DAY 1', 'DAY 2', 'DAY 3', 'DAY 4', 'DAY 5']
 const mainLifts = ['Snatch', 'Back Squat', 'Press', 'Clean and Jerk', 'Front Squat']
 const blocks = ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS']
 
+interface GenerateProgramRequest {
+  user_id: number
+  weeksToGenerate?: number[]
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -22,64 +27,77 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
+    
+    const { user_id, weeksToGenerate = [1, 2, 3, 4] }: GenerateProgramRequest = await req.json()
+    
+    if (!user_id) {
+      return new Response(
+        JSON.stringify({ error: 'Missing user_id in request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
-    const { namedValues, weeksToGenerate = [1, 2, 3, 4] } = await req.json()
-
-    console.log(`🎯 Starting program generation for weeks: ${weeksToGenerate.join(', ')}`)
-
-    // Step 1: Determine user ability (call edge function)
-    console.log('📊 Step 1: Determining user ability...')
+    console.log(`🚀 Starting program generation for user ${user_id}, weeks: ${weeksToGenerate.join(', ')}`)
+    
+    // Step 1: Fetch complete user data
+    console.log('📊 Step 1: Fetching user data...')
+    const userData = await fetchCompleteUserData(supabase, user_id)
+    console.log(`✅ User data fetched: ${userData.name}, ${userData.gender}, ${userData.equipment.length} equipment items`)
+    
+    // Step 2: Determine user ability
+    console.log('🎯 Step 2: Determining user ability...')
     const abilityResponse = await fetch(`${supabaseUrl}/functions/v1/determine-user-ability`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ namedValues })
+      body: JSON.stringify({ user_id })
     })
-
+    
     if (!abilityResponse.ok) {
       throw new Error('Failed to determine user ability: ' + await abilityResponse.text())
     }
-
+    
     const abilityResult = await abilityResponse.json()
     console.log(`✅ User ability: ${abilityResult.ability} (${abilityResult.advancedCount} advanced skills)`)
-
-    // Step 2: Process user data from intake form
-    console.log('👤 Step 2: Processing user data...')
-    const user = processUserData(namedValues, abilityResult)
-    console.log(`✅ User processed: ${user.name}, ${user.gender}, ${user.equipment.length} equipment items`)
-
-    // Step 3: Calculate ratios and technical data (call edge function)
-    console.log('🔢 Step 3: Calculating ratios...')
+    
+    // Merge ability data with user data
+    const user = {
+      ...userData,
+      skills: abilityResult.skills,
+      ability: abilityResult.ability
+    }
+    
+    // Step 3: Calculate ratios
+    console.log('🧮 Step 3: Calculating ratios...')
     const ratiosResponse = await fetch(`${supabaseUrl}/functions/v1/calculate-ratios`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ user })
+      body: JSON.stringify({ user_id })
     })
-
+    
     if (!ratiosResponse.ok) {
       throw new Error('Failed to calculate ratios: ' + await ratiosResponse.text())
     }
-
+    
     const ratiosResult = await ratiosResponse.json()
     const ratios = ratiosResult.ratios
     console.log(`✅ Ratios calculated: Snatch level: ${ratios.snatch_level}, needs analysis complete`)
-
+    
     // Step 4: Generate program structure
     console.log('🏗️ Step 4: Generating program structure...')
-
-const program = await generateProgramStructure(user, ratios, weeksToGenerate, supabase, supabaseUrl, supabaseKey)
-
+    const program = await generateProgramStructure(user, ratios, weeksToGenerate, supabase, supabaseUrl, supabaseKey)
+    
     const executionTime = Date.now() - startTime
     console.log(`🎉 Program generation complete in ${executionTime}ms`)
-
+    
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         program: {
           ...program,
           metadata: {
@@ -94,7 +112,7 @@ const program = await generateProgramStructure(user, ratios, weeksToGenerate, su
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-
+    
   } catch (error) {
     console.error('Program generation error:', error)
     return new Response(
@@ -104,64 +122,88 @@ const program = await generateProgramStructure(user, ratios, weeksToGenerate, su
   }
 })
 
-// === USER DATA PROCESSING (Exact Google Script Logic) ===
-function processUserData(namedValues: any, abilityResult: any): any {
-  console.log('Processing user intake data...')
-  
-  // Extract basic user info
-  const user = {
-    name: namedValues['What is your name?']?.[0] || 'Unknown User',
-    email: namedValues['Enter your email']?.[0] || '',
-    gender: namedValues['Choose your gender']?.[0] || 'Male',
-    units: namedValues['Which unit system do you prefer?']?.[0] || 'Imperial (lbs)',
-    bodyWeight: parseFloat(namedValues['Enter your body weight in your preferred unit (pounds or kilograms, as selected above). We use this to calculate strength and weightlifting targets']?.[0] || '0') || 0,
-    
-    // Equipment processing
-    equipment: namedValues['Select all equipment available for your training']?.[0] ? 
-      namedValues['Select all equipment available for your training'][0].split(',').map((e: string) => e.trim()) : [],
-    
-    // Skills from ability calculation
-    skills: abilityResult.skills,
-    ability: abilityResult.ability,
-    
-    // 1RMs processing
-    oneRMs: [
-      parseFloat(namedValues['Enter your 1-RM Snatch']?.[0] || '0') || 0,
-      parseFloat(namedValues['Enter your 1-RM Power Snatch']?.[0] || '0') || 0,
-      parseFloat(namedValues['Enter your 1-RM Clean and Jerk']?.[0] || '0') || 0,
-      parseFloat(namedValues['Enter your 1-RM Power Clean']?.[0] || '0') || 0,
-      parseFloat(namedValues['Enter your 1-RM Clean (clean only)']?.[0] || '0') || 0,
-      parseFloat(namedValues['Enter your 1-RM Jerk (from rack or blocks, max Split or Power Jerk)']?.[0] || '0') || 0,
-      parseFloat(namedValues['Enter your 1-RM Back Squat']?.[0] || '0') || 0,
-      parseFloat(namedValues['Enter your 1-RM Front Squat']?.[0] || '0') || 0,
-      parseFloat(namedValues['Enter your 1-RM Overhead Squat']?.[0] || '0') || 0,
-      parseFloat(namedValues['Enter your 1-RM Deadlift']?.[0] || '0') || 0,
-      parseFloat(namedValues['Enter your 1-RM Bench Press']?.[0] || '0') || 0,
-      parseFloat(namedValues['Enter your 1-RM Push Press']?.[0] || '0') || 0,
-      parseFloat(namedValues['Enter your 1-RM Strict Press']?.[0] || '0') || 0,
-      parseFloat(namedValues['Enter your 1-RM Weighted Pullup (do not include body weight)']?.[0] || '0') || 0
-    ],
-    
-    // Benchmarks processing
-    benchmarks: [
-      namedValues['Enter your 1 Mile Run time in mm:ss format']?.[0] || '',
-      namedValues['Enter your 5K Run time in mm:ss format']?.[0] || '',
-      namedValues['Enter your 10K Run time in mm:ss format']?.[0] || '',
-      namedValues['Enter your 1K Row time in mm:ss format']?.[0] || '',
-      namedValues['Enter your 2K Row time in mm:ss format']?.[0] || '',
-      namedValues['Enter your 5K Row time in mm:ss format']?.[0] || '',
-      namedValues['Enter your 10-Minute Air Bike Time Trial result (in calories)']?.[0] || ''
-    ]
+// === FETCH COMPLETE USER DATA ===
+async function fetchCompleteUserData(supabase: any, user_id: number) {
+  console.log(`📊 Fetching complete user data for user ${user_id}`)
+
+  // Fetch basic user info
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select(`
+      name,
+      email,
+      gender,
+      body_weight,
+      units,
+      ability_level,
+      conditioning_benchmarks
+    `)
+    .eq('id', user_id)
+    .single()
+
+  if (userError) {
+    throw new Error(`Failed to fetch user data: ${userError.message}`)
   }
-  
-  console.log(`User data processed: ${user.name}, ${user.ability} level, ${user.equipment.length} equipment items`)
-  return user
+
+  // Fetch equipment
+  const { data: equipment, error: equipmentError } = await supabase
+    .from('user_equipment')
+    .select('equipment_name')
+    .eq('user_id', user_id)
+
+  if (equipmentError) {
+    throw new Error(`Failed to fetch equipment: ${equipmentError.message}`)
+  }
+
+  // Fetch 1RMs (latest for each exercise)
+  const { data: oneRMs, error: oneRMsError } = await supabase
+    .from('latest_user_one_rms')
+    .select('one_rm_index, one_rm')
+    .eq('user_id', user_id)
+    .order('one_rm_index')
+
+  if (oneRMsError) {
+    throw new Error(`Failed to fetch 1RMs: ${oneRMsError.message}`)
+  }
+
+  // Convert equipment to array
+  const equipmentArray = equipment?.map(eq => eq.equipment_name) || []
+
+  // Convert 1RMs to array format (14 1RMs total)
+  const oneRMsArray = Array(14).fill(0)
+  oneRMs?.forEach(rm => {
+    if (rm.one_rm_index >= 0 && rm.one_rm_index < 14) {
+      oneRMsArray[rm.one_rm_index] = rm.one_rm
+    }
+  })
+
+  // Convert benchmarks from JSONB to array format (7 benchmarks)
+  const benchmarks = user.conditioning_benchmarks || {}
+  const benchmarksArray = [
+    benchmarks.mile_run || '',
+    benchmarks.five_k_run || '',
+    benchmarks.ten_k_run || '',
+    benchmarks.one_k_row || '',
+    benchmarks.two_k_row || '',
+    benchmarks.five_k_row || '',
+    benchmarks.ten_min_air_bike || ''
+  ]
+
+  return {
+    name: user.name || 'Unknown User',
+    email: user.email || '',
+    gender: user.gender || 'Male',
+    units: user.units || 'Imperial (lbs)',
+    bodyWeight: user.body_weight || 0,
+    equipment: equipmentArray,
+    oneRMs: oneRMsArray,
+    benchmarks: benchmarksArray,
+    ability: user.ability_level || 'Beginner'
+  }
 }
 
 // === PROGRAM STRUCTURE GENERATION (Exact Google Script Logic) ===
-
 async function generateProgramStructure(user: any, ratios: any, weeksToGenerate: number[], supabase: any, supabaseUrl: string, supabaseKey: string): Promise<any> {
-
   console.log('Generating program structure...')
   
   const weeks: any[] = []
@@ -178,17 +220,16 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
       week: week,
       days: []
     }
-
-let previousDayAccessories: string[] = []
-let previousDaySkills: string[] = []
-
-   
+    
+    let previousDayAccessories: string[] = []
+    let previousDaySkills: string[] = []
+    
     for (let day = 0; day < days.length; day++) {
       const dayNumber = day + 1
       const mainLift = mainLifts[day % 5]
       const isDeload = [4, 8, 12].includes(week)
       
-      console.log(`  📋 Generating ${days[day]} (${mainLift})...`)
+      console.log(`  📅 Generating ${days[day]} (${mainLift})...`)
       
       const dayData = {
         day: dayNumber,
@@ -199,25 +240,10 @@ let previousDaySkills: string[] = []
       }
       
       let dailyStrengthExercises: string[] = []
-
-
       
       // Generate each block
       for (const block of blocks) {
-        console.log(`    🎯 Generating ${block}...`)
-
-// Filter blocks based on subscription tier
-// if (subscriptionTier === 'STRENGTH_FOCUSED') {
-  //  if (block === 'SKILLS' || block === 'METCONS') {
-    //  console.log(` ⏭️ Skipping ${block} for Strength Focused tier`)
-     // dayData.blocks.push({
-      //  block: block,
-       // exercises: []
-     //  })
-      // continue
-   // }
-   // }
-
+        console.log(`    🏗️ Generating ${block}...`)
         
         let blockExercises: any[] = []
         
@@ -260,24 +286,20 @@ let previousDaySkills: string[] = []
               'Authorization': `Bearer ${supabaseKey}`,
               'Content-Type': 'application/json'
             },
-
-
             body: JSON.stringify({
-  user: { ...user, ...ratios },
-  block: block,
-  mainLift: mainLift,
-  week: week,
-  day: dayNumber,
-  isDeload: isDeload,
-  numExercises: numExercises,
-  weeklySkills: weeklySkills,
-  weeklyAccessories: weeklyAccessories,
-  previousDayAccessories: previousDayAccessories,
-  previousDaySkills: previousDaySkills,
-  dailyStrengthExercises: dailyStrengthExercises
-})
-
-
+              user: { ...user, ...ratios },
+              block: block,
+              mainLift: mainLift,
+              week: week,
+              day: dayNumber,
+              isDeload: isDeload,
+              numExercises: numExercises,
+              weeklySkills: weeklySkills,
+              weeklyAccessories: weeklyAccessories,
+              previousDayAccessories: previousDayAccessories,
+              previousDaySkills: previousDaySkills,
+              dailyStrengthExercises: dailyStrengthExercises
+            })
           })
           
           if (exerciseResponse.ok) {
@@ -290,12 +312,12 @@ let previousDaySkills: string[] = []
             }
             
             // Update frequency tracking
-if (block === 'SKILLS') {
-  blockExercises.forEach(ex => {
-    weeklySkills[ex.name] = (weeklySkills[ex.name] || 0) + 1
-  })
-  previousDaySkills = blockExercises.map(ex => ex.name)
-}
+            if (block === 'SKILLS') {
+              blockExercises.forEach(ex => {
+                weeklySkills[ex.name] = (weeklySkills[ex.name] || 0) + 1
+              })
+              previousDaySkills = blockExercises.map(ex => ex.name)
+            }
             
             if (block === 'ACCESSORIES') {
               blockExercises.forEach(ex => {
@@ -358,4 +380,3 @@ function getNumExercisesForBlock(block: string, mainLift: string, ratios: any): 
       return 2
   }
 }
-
