@@ -410,170 +410,167 @@ export default function ProgramPage() {
             </div>
 
             {/* Workout Blocks */}
-{currentDay.blocks.map((block, blockIndex) => {
-  const blockStyles = getBlockStyles(block.block)
-  
-  return (
-    <div 
-      key={blockIndex} 
-      className={`bg-white rounded-lg shadow-md border-2 ${blockStyles.borderColor} p-6 mb-2`}
-    >
-
-                <h3 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
-                  {block.block}
-                </h3>
-                
-                {block.exercises.length === 0 ? (
-                  <p className="text-gray-500 italic">No exercises assigned</p>
-                ) : (
-
+            {currentDay.blocks.map((block, blockIndex) => {
+              const blockStyles = getBlockStyles(block.block)
+              
+              return (
+                <div 
+                  key={blockIndex} 
+                  className={`bg-white rounded-lg shadow-md border-2 ${blockStyles.borderColor} p-6 mb-2`}
+                >
+                  <h3 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
+                    {block.block}
+                  </h3>
                   
-<div className="space-y-3">
-  {(() => {
-    // Group exercises by name
-    const groupedExercises = block.exercises.reduce((acc, exercise, index) => {
-      const exerciseName = exercise.name;
-      if (!acc[exerciseName]) {
-        acc[exerciseName] = [];
-      }
-      acc[exerciseName].push({ ...exercise, originalIndex: index });
-      return acc;
-    }, {} as Record<string, (Exercise & { originalIndex: number })[]>);
+                  {block.exercises.length === 0 ? (
+                    <p className="text-gray-500 italic">No exercises assigned</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {(() => {
+                        // Group exercises by name
+                        const groupedExercises = block.exercises.reduce((acc, exercise, index) => {
+                          const exerciseName = exercise.name;
+                          if (!acc[exerciseName]) {
+                            acc[exerciseName] = [];
+                          }
+                          acc[exerciseName].push({ ...exercise, originalIndex: index });
+                          return acc;
+                        }, {} as Record<string, (Exercise & { originalIndex: number })[]>);
 
-    return Object.entries(groupedExercises).map(([exerciseName, exerciseGroup]) => {
-      // For tracking, use the first exercise of the group
-      const tracking = getExerciseTracking(exerciseName);
-      const key = `${selectedWeek}-${selectedDay}-${exerciseName}`;
-      const isSaving = saving === key;
-      
-      return (
-        <div 
-          key={exerciseName} 
-          className={`border-l-4 pl-4 py-3 rounded transition-colors ${
-            tracking.completed 
-              ? `border-l-green-600 ${blockStyles.bgColor}` 
-              : `${blockStyles.leftBorderColor} bg-gray-50`
-          }`}
-        >
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <h4 className="font-semibold text-gray-900 text-lg mb-3">
-                {exerciseName.toUpperCase()}
-              </h4>
-              
-              {/* Display each set */}
-              <div className="space-y-1">
-                {exerciseGroup.map((set, setIndex) => (
-                  <div key={setIndex} className="text-sm text-gray-700">
-                    <span className="font-medium">Set {setIndex + 1}:</span>
-                    {set.reps && <span className="ml-2">{set.reps} reps</span>}
-                    {set.weightTime && (
-                      <span className="ml-2 font-semibold">
-                        @ {set.weightTime}
-                        {!set.weightTime.includes('kg') && !set.weightTime.includes('lbs') && 
-                         !set.weightTime.includes('s') && !set.weightTime.includes('min') && ' lbs'}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-              
-              {/* Show notes from first set (they should all be the same) */}
-              {exerciseGroup[0].notes && (
-                <p className="text-sm text-gray-500 mt-2 italic">
-                  {exerciseGroup[0].notes}
-                </p>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-3 ml-4">
-              {/* Completed Checkbox */}
-              <div className="flex flex-col items-center">
-                <label className="text-xs text-gray-600 mb-1">Done</label>
-                <input
-                  type="checkbox"
-                  checked={tracking.completed}
-                  onChange={(e) => updateExerciseTracking(exerciseName, block.block, 'completed', e.target.checked)}
-                  className="h-5 w-5 text-blue-600 rounded cursor-pointer"
-                  disabled={isSaving}
-                />
-              </div>
+                        return Object.entries(groupedExercises).map(([exerciseName, exerciseGroup]) => {
+                          // For tracking, use the first exercise of the group
+                          const tracking = getExerciseTracking(exerciseName);
+                          const key = `${selectedWeek}-${selectedDay}-${exerciseName}`;
+                          const isSaving = saving === key;
+                          
+                          return (
+                            <div 
+                              key={exerciseName} 
+                              className={`border-l-4 pl-4 py-3 rounded transition-colors ${
+                                tracking.completed 
+                                  ? `border-l-green-600 ${blockStyles.bgColor}` 
+                                  : `${blockStyles.leftBorderColor} bg-gray-50`
+                              }`}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-gray-900 text-lg mb-3">
+                                    {exerciseName.toUpperCase()}
+                                  </h4>
+                                  
+                                  {/* Display each set */}
+                                  <div className="space-y-1">
+                                    {exerciseGroup.map((set, setIndex) => (
+                                      <div key={setIndex} className="text-sm text-gray-700">
+                                        <span className="font-medium">Set {setIndex + 1}:</span>
+                                        {set.reps && <span className="ml-2">{set.reps} reps</span>}
+                                        {set.weightTime && (
+                                          <span className="ml-2 font-semibold">
+                                            @ {set.weightTime}
+                                            {!set.weightTime.includes('kg') && !set.weightTime.includes('lbs') && 
+                                             !set.weightTime.includes('s') && !set.weightTime.includes('min') && ' lbs'}
+                                          </span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                  
+                                  {/* Show notes from first set (they should all be the same) */}
+                                  {exerciseGroup[0].notes && (
+                                    <p className="text-sm text-gray-500 mt-2 italic">
+                                      {exerciseGroup[0].notes}
+                                    </p>
+                                  )}
+                                </div>
+                                
+                                <div className="flex items-center gap-3 ml-4">
+                                  {/* Completed Checkbox */}
+                                  <div className="flex flex-col items-center">
+                                    <label className="text-xs text-gray-600 mb-1">Done</label>
+                                    <input
+                                      type="checkbox"
+                                      checked={tracking.completed}
+                                      onChange={(e) => updateExerciseTracking(exerciseName, block.block, 'completed', e.target.checked)}
+                                      className="h-5 w-5 text-blue-600 rounded cursor-pointer"
+                                      disabled={isSaving}
+                                    />
+                                  </div>
 
-              {/* RPE Selector */}
-              <div className="flex flex-col items-center">
-                <label className="text-xs text-gray-600 mb-1">RPE</label>
-                <select
-                  value={tracking.rpe || ''}
-                  onChange={(e) => updateExerciseTracking(exerciseName, block.block, 'rpe', e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isSaving}
-                >
-                  <option value="">-</option>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                    <option key={num} value={num}>{num}</option>
-                  ))}
-                </select>
-              </div>
+                                  {/* RPE Selector */}
+                                  <div className="flex flex-col items-center">
+                                    <label className="text-xs text-gray-600 mb-1">RPE</label>
+                                    <select
+                                      value={tracking.rpe || ''}
+                                      onChange={(e) => updateExerciseTracking(exerciseName, block.block, 'rpe', e.target.value ? parseInt(e.target.value) : null)}
+                                      className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      disabled={isSaving}
+                                    >
+                                      <option value="">-</option>
+                                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                                        <option key={num} value={num}>{num}</option>
+                                      ))}
+                                    </select>
+                                  </div>
 
-              {/* Quality Selector */}
-              <div className="flex flex-col items-center">
-                <label className="text-xs text-gray-600 mb-1">Quality</label>
-                <select
-                  value={tracking.quality || ''}
-                  onChange={(e) => updateExerciseTracking(exerciseName, block.block, 'quality', e.target.value || null)}
-                  className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isSaving}
-                >
-                  <option value="">-</option>
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
-                  <option value="D">D</option>
-                </select>
-              </div>
+                                  {/* Quality Selector */}
+                                  <div className="flex flex-col items-center">
+                                    <label className="text-xs text-gray-600 mb-1">Quality</label>
+                                    <select
+                                      value={tracking.quality || ''}
+                                      onChange={(e) => updateExerciseTracking(exerciseName, block.block, 'quality', e.target.value || null)}
+                                      className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      disabled={isSaving}
+                                    >
+                                      <option value="">-</option>
+                                      <option value="A">A</option>
+                                      <option value="B">B</option>
+                                      <option value="C">C</option>
+                                      <option value="D">D</option>
+                                    </select>
+                                  </div>
 
-              {/* Saving indicator */}
-              {isSaving && (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    });
-  })()}
-</div>
-
-                )}
-
-                {/* MetCon specific display */}
-                {block.block === 'METCONS' && currentDay.metconData && (
-                  <div className="mt-4 p-4 bg-blue-50 rounded">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="font-semibold">Format:</span> {currentDay.metconData.workoutFormat}
-                      </div>
-                      <div>
-                        <span className="font-semibold">Time:</span> {currentDay.metconData.timeRange}
-                      </div>
-                      {currentDay.metconData.percentileGuidance && (
-                        <>
-                          <div>
-                            <span className="font-semibold">Target (50%):</span> {currentDay.metconData.percentileGuidance.medianScore}
-                          </div>
-                          <div>
-                            <span className="font-semibold">Excellent (90%):</span> {currentDay.metconData.percentileGuidance.excellentScore}
-                          </div>
-                        </>
-                      )}
+                                  {/* Saving indicator */}
+                                  {isSaving && (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+
+                  {/* MetCon specific display */}
+                  {block.block === 'METCONS' && currentDay.metconData && (
+                    <div className="mt-4 p-4 bg-blue-50 rounded">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-semibold">Format:</span> {currentDay.metconData.workoutFormat}
+                        </div>
+                        <div>
+                          <span className="font-semibold">Time:</span> {currentDay.metconData.timeRange}
+                        </div>
+                        {currentDay.metconData.percentileGuidance && (
+                          <>
+                            <div>
+                              <span className="font-semibold">Target (50%):</span> {currentDay.metconData.percentileGuidance.medianScore}
+                            </div>
+                            <div>
+                              <span className="font-semibold">Excellent (90%):</span> {currentDay.metconData.percentileGuidance.excellentScore}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
     </div>
   )
-
+}
