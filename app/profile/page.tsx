@@ -430,19 +430,55 @@ export default function ProfilePage() {
             <div>
               <h3 className="font-semibold text-gray-800 mb-3">KEY PERFORMANCE INDICATORS</h3>
               <div className="space-y-2">
-                {keyRatios.map(ratioKey => {
-                  const ratioData = profile.ratio_analysis[ratioKey]
-                  if (!ratioData) return null
-                  
-                  return (
-                    <div key={ratioKey} className="flex justify-between items-center">
-                      <span className="text-gray-700">{formatRatioName(ratioKey)}</span>
-                      <span className={`font-semibold ${getRatioColor(ratioData)}`}>
-                        {extractRatioValue(ratioData)}
-                      </span>
-                    </div>
-                  )
-                })}
+                {/* Snatch / Back Squat */}
+                {profile.one_rms.snatch && profile.one_rms.back_squat && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">Snatch / Back Squat</span>
+                    <span className="font-semibold">
+                      {Math.round((profile.one_rms.snatch / profile.one_rms.back_squat) * 100)}%
+                    </span>
+                  </div>
+                )}
+                
+                {/* C&J / Back Squat */}
+                {profile.one_rms.clean_and_jerk && profile.one_rms.back_squat && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">C&J / Back Squat</span>
+                    <span className="font-semibold">
+                      {Math.round((profile.one_rms.clean_and_jerk / profile.one_rms.back_squat) * 100)}%
+                    </span>
+                  </div>
+                )}
+                
+                {/* Back Squat / Body Weight */}
+                {profile.one_rms.back_squat && profile.user_summary.body_weight && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">Back Squat / Body Weight</span>
+                    <span className="font-semibold">
+                      {(profile.one_rms.back_squat / profile.user_summary.body_weight).toFixed(1)}x
+                    </span>
+                  </div>
+                )}
+                
+                {/* Deadlift / Body Weight */}
+                {profile.one_rms.deadlift && profile.user_summary.body_weight && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">Deadlift / Body Weight</span>
+                    <span className="font-semibold">
+                      {(profile.one_rms.deadlift / profile.user_summary.body_weight).toFixed(1)}x
+                    </span>
+                  </div>
+                )}
+                
+                {/* Bench Press / Body Weight */}
+                {profile.one_rms.bench_press && profile.user_summary.body_weight && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">Bench Press / Body Weight</span>
+                    <span className="font-semibold">
+                      {(profile.one_rms.bench_press / profile.user_summary.body_weight).toFixed(1)}x
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -450,16 +486,75 @@ export default function ProfilePage() {
               <div>
                 <h3 className="font-semibold text-gray-800 mb-3 mt-6">ALL RATIOS</h3>
                 <div className="space-y-2">
-                  {Object.entries(profile.ratio_analysis)
-                    .filter(([key]) => !keyRatios.includes(key))
-                    .map(([key, value]) => (
-                      <div key={key} className="flex justify-between items-center">
-                        <span className="text-gray-700">{formatRatioName(key)}</span>
-                        <span className={`font-semibold ${getRatioColor(value)}`}>
-                          {extractRatioValue(value)}
-                        </span>
-                      </div>
-                    ))}
+                  {/* Jerk / Clean */}
+                  {profile.one_rms.jerk_only && profile.one_rms.clean_only && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">Jerk / Clean</span>
+                      <span className="font-semibold">
+                        {Math.round((profile.one_rms.jerk_only / profile.one_rms.clean_only) * 100)}%
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Power Clean / Clean */}
+                  {profile.one_rms.power_clean && profile.one_rms.clean_only && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">Power Clean / Clean</span>
+                      <span className="font-semibold">
+                        {Math.round((profile.one_rms.power_clean / profile.one_rms.clean_only) * 100)}%
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Power Snatch / Snatch */}
+                  {profile.one_rms.power_snatch && profile.one_rms.snatch && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">Power Snatch / Snatch</span>
+                      <span className="font-semibold">
+                        {Math.round((profile.one_rms.power_snatch / profile.one_rms.snatch) * 100)}%
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Snatch / C&J */}
+                  {profile.one_rms.snatch && profile.one_rms.clean_and_jerk && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">Snatch / C&J</span>
+                      <span className="font-semibold">
+                        {Math.round((profile.one_rms.snatch / profile.one_rms.clean_and_jerk) * 100)}%
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Front Squat / Back Squat */}
+                  {profile.one_rms.front_squat && profile.one_rms.back_squat && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">Front Squat / Back Squat</span>
+                      <span className="font-semibold">
+                        {Math.round((profile.one_rms.front_squat / profile.one_rms.back_squat) * 100)}%
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Overhead Squat / Snatch */}
+                  {profile.one_rms.overhead_squat && profile.one_rms.snatch && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">Overhead Squat / Snatch</span>
+                      <span className="font-semibold">
+                        {Math.round((profile.one_rms.overhead_squat / profile.one_rms.snatch) * 100)}%
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Push Press / Strict Press */}
+                  {profile.one_rms.push_press && profile.one_rms.strict_press && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">Push Press / Strict Press</span>
+                      <span className="font-semibold">
+                        {Math.round((profile.one_rms.push_press / profile.one_rms.strict_press) * 100)}%
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
