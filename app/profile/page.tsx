@@ -32,16 +32,15 @@ interface ProfileData {
     weighted_pullup: number | null
   }
   
-benchmarks: {
-  mile_run: string | null
-  five_k_run: string | null
-  ten_k_run: string | null
-  one_k_row: string | null
-  two_k_row: string | null
-  five_k_row: string | null
-  air_bike_10_min: string | null  // ← Changed to match backend
-}
-
+  benchmarks: {
+    mile_run: string | null
+    five_k_run: string | null
+    ten_k_run: string | null
+    one_k_row: string | null
+    two_k_row: string | null
+    five_k_row: string | null
+    air_bike_10_min: string | null
+  }
 
   skills_assessment: {
     dont_have: string[]
@@ -84,11 +83,49 @@ benchmarks: {
   generated_at: string
 }
 
+// Helper function to group lifts by category
+const liftCategories = {
+  olympic: {
+    name: 'OLYMPIC LIFTS',
+    lifts: ['snatch', 'clean_and_jerk']
+  },
+  olympic_variations: {
+    name: 'OLYMPIC VARIATIONS',
+    lifts: ['power_snatch', 'power_clean', 'clean_only', 'jerk_only']
+  },
+  strength: {
+    name: 'STRENGTH LIFTS',
+    lifts: ['back_squat', 'front_squat', 'overhead_squat', 'bench_press']
+  },
+  pulling: {
+    name: 'PULLING',
+    lifts: ['deadlift', 'weighted_pullup']
+  },
+  pressing: {
+    name: 'PRESSING',
+    lifts: ['push_press', 'strict_press']
+  }
+}
+
+// Define which lifts to show in collapsed view
+const collapsedLifts = ['snatch', 'clean_and_jerk', 'back_squat', 'front_squat', 'bench_press']
+
+// Define key performance ratios
+const keyRatios = [
+  'snatch_to_back_squat',
+  'clean_jerk_to_back_squat',
+  'back_squat_to_bodyweight',
+  'deadlift_to_bodyweight',
+  'bench_press_to_bodyweight'
+]
+
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [user, setUser] = useState<User | null>(null)
+  const [showAllLifts, setShowAllLifts] = useState(false)
+  const [showAllRatios, setShowAllRatios] = useState(false)
 
   useEffect(() => {
     loadProfile()
@@ -146,6 +183,46 @@ export default function ProfilePage() {
   const formatWeight = (weight: number | null) => {
     if (!weight) return 'Not recorded'
     return `${weight} ${profile?.user_summary.units.includes('kg') ? 'kg' : 'lbs'}`
+  }
+
+  const formatLiftName = (liftKey: string) => {
+    return liftKey.split('_').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ')
+  }
+
+  const extractRatioValue = (ratioString: string) => {
+    // Extract percentage or multiplier from ratio string
+    const percentMatch = ratioString.match(/(\d+\.?\d*)%/)
+    if (percentMatch) return percentMatch[1] + '%'
+    
+    const multiplierMatch = ratioString.match(/(\d+\.?\d*)x/)
+    if (multiplierMatch) return multiplierMatch[1] + 'x'
+    
+    // For missing data
+    if (ratioString.includes('Missing')) return 'N/A'
+    
+    return ratioString
+  }
+
+  const formatRatioName = (ratioKey: string) => {
+    // Special formatting for certain ratios
+    const nameMap: { [key: string]: string } = {
+      'snatch_to_back_squat': 'Snatch to Back Squat',
+      'clean_jerk_to_back_squat': 'C&J to Back Squat',
+      'back_squat_to_bodyweight': 'Back Squat to Body Weight',
+      'deadlift_to_bodyweight': 'Deadlift to Body Weight',
+      'bench_press_to_bodyweight': 'Bench Press to Body Weight',
+      'jerk_to_clean': 'Jerk to Clean',
+      'power_clean_to_clean': 'Power Clean to Clean',
+      'power_snatch_to_snatch': 'Power Snatch to Snatch',
+      'snatch_to_clean_jerk': 'Snatch to C&J',
+      'front_squat_to_back_squat': 'Front Squat to Back Squat'
+    }
+    
+    return nameMap[ratioKey] || ratioKey.split('_').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ')
   }
 
   const getRatioColor = (message: string) => {
@@ -245,42 +322,155 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Key Performance Indicators */}
+        {/* Enhanced Max Lifts Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Key Performance Indicators</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-gray-50 rounded">
-              <p className="text-2xl font-bold text-blue-600">{profile.lift_levels.snatch_level}</p>
-              <p className="text-sm text-gray-600">Snatch Level</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">MAX LIFTS</h2>
+          <div className="border-t-2 border-gray-900 mb-6"></div>
+          
+          {/* Always show Olympic and main Strength lifts */}
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-3">OLYMPIC LIFTS</h3>
+              <div className="space-y-2">
+                {liftCategories.olympic.lifts.map(liftKey => (
+                  profile.one_rms[liftKey as keyof typeof profile.one_rms] !== null && (
+                    <div key={liftKey} className="flex justify-between items-center">
+                      <span className="text-gray-700">{formatLiftName(liftKey)}</span>
+                      <span className="font-semibold">{formatWeight(profile.one_rms[liftKey as keyof typeof profile.one_rms])}</span>
+                    </div>
+                  )
+                ))}
+              </div>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded">
-              <p className="text-2xl font-bold text-blue-600">{profile.lift_levels.clean_jerk_level}</p>
-              <p className="text-sm text-gray-600">Clean & Jerk Level</p>
+
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-3">STRENGTH LIFTS</h3>
+              <div className="space-y-2">
+                {['back_squat', 'front_squat', 'bench_press'].map(liftKey => (
+                  profile.one_rms[liftKey as keyof typeof profile.one_rms] !== null && (
+                    <div key={liftKey} className="flex justify-between items-center">
+                      <span className="text-gray-700">{formatLiftName(liftKey)}</span>
+                      <span className="font-semibold">{formatWeight(profile.one_rms[liftKey as keyof typeof profile.one_rms])}</span>
+                    </div>
+                  )
+                ))}
+              </div>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded">
-              <p className="text-2xl font-bold text-blue-600">{profile.lift_levels.back_squat_level}</p>
-              <p className="text-sm text-gray-600">Back Squat Level</p>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded">
-              <p className="text-2xl font-bold text-blue-600">{profile.lift_levels.press_level}</p>
-              <p className="text-sm text-gray-600">Press Level</p>
-            </div>
+
+            {/* Expanded view - show all lifts */}
+            {showAllLifts && (
+              <>
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-3">OLYMPIC VARIATIONS</h3>
+                  <div className="space-y-2">
+                    {liftCategories.olympic_variations.lifts.map(liftKey => (
+                      profile.one_rms[liftKey as keyof typeof profile.one_rms] !== null && (
+                        <div key={liftKey} className="flex justify-between items-center">
+                          <span className="text-gray-700">{formatLiftName(liftKey)}</span>
+                          <span className="font-semibold">{formatWeight(profile.one_rms[liftKey as keyof typeof profile.one_rms])}</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+
+                {/* Overhead Squat in Strength section when expanded */}
+                {profile.one_rms.overhead_squat !== null && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">Overhead Squat</span>
+                    <span className="font-semibold">{formatWeight(profile.one_rms.overhead_squat)}</span>
+                  </div>
+                )}
+
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-3">PULLING</h3>
+                  <div className="space-y-2">
+                    {liftCategories.pulling.lifts.map(liftKey => (
+                      profile.one_rms[liftKey as keyof typeof profile.one_rms] !== null && (
+                        <div key={liftKey} className="flex justify-between items-center">
+                          <span className="text-gray-700">{formatLiftName(liftKey)}</span>
+                          <span className="font-semibold">{formatWeight(profile.one_rms[liftKey as keyof typeof profile.one_rms])}</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-3">PRESSING</h3>
+                  <div className="space-y-2">
+                    {liftCategories.pressing.lifts.map(liftKey => (
+                      profile.one_rms[liftKey as keyof typeof profile.one_rms] !== null && (
+                        <div key={liftKey} className="flex justify-between items-center">
+                          <span className="text-gray-700">{formatLiftName(liftKey)}</span>
+                          <span className="font-semibold">{formatWeight(profile.one_rms[liftKey as keyof typeof profile.one_rms])}</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
+
+          <button
+            onClick={() => setShowAllLifts(!showAllLifts)}
+            className="mt-6 text-blue-600 hover:text-blue-800 font-medium"
+          >
+            [{showAllLifts ? '- Show fewer lifts' : '+ Show all 14 lifts'}]
+          </button>
         </div>
 
-        {/* Strength Ratios */}
+        {/* Enhanced Strength Ratios */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Strength Ratio Analysis</h2>
-          <div className="space-y-3">
-            {Object.entries(profile.ratio_analysis).map(([key, value]) => (
-              <div key={key} className="flex justify-between items-center py-2 border-b">
-                <span className="text-gray-700">{key.split('_').map(word => 
-                  word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ')}</span>
-                <span className={`font-medium ${getRatioColor(value)}`}>{value}</span>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">STRENGTH RATIO ANALYSIS</h2>
+          <div className="border-t-2 border-gray-900 mb-6"></div>
+          
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-3">KEY PERFORMANCE INDICATORS</h3>
+              <div className="space-y-2">
+                {keyRatios.map(ratioKey => {
+                  const ratioData = profile.ratio_analysis[ratioKey]
+                  if (!ratioData) return null
+                  
+                  return (
+                    <div key={ratioKey} className="flex justify-between items-center">
+                      <span className="text-gray-700">{formatRatioName(ratioKey)}</span>
+                      <span className={`font-semibold ${getRatioColor(ratioData)}`}>
+                        {extractRatioValue(ratioData)}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
-            ))}
+            </div>
+
+            {showAllRatios && (
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-3 mt-6">ALL RATIOS</h3>
+                <div className="space-y-2">
+                  {Object.entries(profile.ratio_analysis)
+                    .filter(([key]) => !keyRatios.includes(key))
+                    .map(([key, value]) => (
+                      <div key={key} className="flex justify-between items-center">
+                        <span className="text-gray-700">{formatRatioName(key)}</span>
+                        <span className={`font-semibold ${getRatioColor(value)}`}>
+                          {extractRatioValue(value)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
+
+          <button
+            onClick={() => setShowAllRatios(!showAllRatios)}
+            className="mt-6 text-blue-600 hover:text-blue-800 font-medium"
+          >
+            [{showAllRatios ? '- Show fewer ratios' : '+ View all ratios'}]
+          </button>
         </div>
 
         {/* Identified Needs */}
@@ -315,57 +505,41 @@ export default function ProfilePage() {
           </div>
         </div>
 
-{/* 1RMs */}
-<div className="bg-white rounded-lg shadow p-6">
-  <h2 className="text-xl font-bold text-gray-900 mb-4">One Rep Maxes</h2>
-  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-    {Object.entries(profile.one_rms).map(([lift, weight]) => (
-      <div key={lift} className="p-3 bg-gray-50 rounded">
-        <p className="text-sm text-gray-600">{lift.split('_').map(word => 
-          word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' ')}</p>
-        <p className="font-semibold">{formatWeight(weight)}</p>
-      </div>
-    ))}
-  </div>
-</div>
-
-{/* ADD THIS SECTION HERE */}
-{/* Conditioning Benchmarks */}
-<div className="bg-white rounded-lg shadow p-6">
-  <h2 className="text-xl font-bold text-gray-900 mb-4">Conditioning Benchmarks</h2>
-  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-    {Object.entries(profile.benchmarks)
-      .filter(([_, time]) => time) // Only show non-null benchmarks
-      .map(([benchmark, time]) => (
-        <div key={benchmark} className="p-3 bg-gray-50 rounded">
-          <p className="text-sm text-gray-600">
-            {benchmark.split('_').map(word => 
-              word.charAt(0).toUpperCase() + word.slice(1)
-            ).join(' ')}
-          </p>
-          <p className="font-semibold">{time}</p>
-        </div>
-      ))}
-  </div>
-</div>
-
-{/* Recommendations */}
-{profile.recommendations.length > 0 && (
-  <div className="bg-white rounded-lg shadow p-6">
-    <h2 className="text-xl font-bold text-gray-900 mb-4">Recommendations</h2>
-    <div className="space-y-3">
-      {profile.recommendations.map((rec, index) => (
-        <div key={index} className={`p-4 rounded-lg ${getPriorityColor(rec.priority)}`}>
-          <div className="flex items-start">
-            <span className="font-semibold mr-2 capitalize">{rec.priority}:</span>
-            <p>{rec.message}</p>
+        {/* Conditioning Benchmarks */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Conditioning Benchmarks</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Object.entries(profile.benchmarks)
+              .filter(([_, time]) => time) // Only show non-null benchmarks
+              .map(([benchmark, time]) => (
+                <div key={benchmark} className="p-3 bg-gray-50 rounded">
+                  <p className="text-sm text-gray-600">
+                    {benchmark.split('_').map(word => 
+                      word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ')}
+                  </p>
+                  <p className="font-semibold">{time}</p>
+                </div>
+              ))}
           </div>
         </div>
-      ))}
-    </div>
-  </div>
-)}
+
+        {/* Recommendations */}
+        {profile.recommendations.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Recommendations</h2>
+            <div className="space-y-3">
+              {profile.recommendations.map((rec, index) => (
+                <div key={index} className={`p-4 rounded-lg ${getPriorityColor(rec.priority)}`}>
+                  <div className="flex items-start">
+                    <span className="font-semibold mr-2 capitalize">{rec.priority}:</span>
+                    <p>{rec.message}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Missing Data */}
         {profile.missing_data.length > 0 && (
@@ -385,4 +559,3 @@ export default function ProfilePage() {
     </div>
   )
 }
-
