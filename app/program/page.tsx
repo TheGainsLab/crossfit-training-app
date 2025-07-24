@@ -48,6 +48,45 @@ interface ExerciseTracking {
   quality: string | null
 }
 
+// Add this helper function at the top of your component, before the return statement:
+
+const getBlockStyles = (blockName: string) => {
+  const styles = {
+    'SKILLS': {
+      borderColor: 'border-blue-500',
+      leftBorderColor: 'border-l-blue-500',
+      bgColor: 'bg-blue-50'
+    },
+    'TECHNICAL WORK': {
+      borderColor: 'border-orange-500', 
+      leftBorderColor: 'border-l-orange-500',
+      bgColor: 'bg-orange-50'
+    },
+    'STRENGTH AND POWER': {
+      borderColor: 'border-green-500',
+      leftBorderColor: 'border-l-green-500', 
+      bgColor: 'bg-green-50'
+    },
+    'ACCESSORIES': {
+      borderColor: 'border-purple-500',
+      leftBorderColor: 'border-l-purple-500',
+      bgColor: 'bg-purple-50'
+    },
+    'METCONS': {
+      borderColor: 'border-red-500',
+      leftBorderColor: 'border-l-red-500',
+      bgColor: 'bg-red-50'
+    }
+  }
+  
+  return styles[blockName] || {
+    borderColor: 'border-gray-300',
+    leftBorderColor: 'border-l-gray-300', 
+    bgColor: 'bg-gray-50'
+  }
+}
+
+
 export default function ProgramPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -371,8 +410,15 @@ export default function ProgramPage() {
             </div>
 
             {/* Workout Blocks */}
-            {currentDay.blocks.map((block, blockIndex) => (
-              <div key={blockIndex} className="bg-white rounded-lg shadow p-6">
+{currentDay.blocks.map((block, blockIndex) => {
+  const blockStyles = getBlockStyles(block.block)
+  
+  return (
+    <div 
+      key={blockIndex} 
+      className={`bg-white rounded-lg shadow-md border-2 ${blockStyles.borderColor} p-6 mb-2`}
+    >
+
                 <h3 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
                   {block.block}
                 </h3>
@@ -380,102 +426,124 @@ export default function ProgramPage() {
                 {block.exercises.length === 0 ? (
                   <p className="text-gray-500 italic">No exercises assigned</p>
                 ) : (
-                  <div className="space-y-3">
-                    {block.exercises.map((exercise, exIndex) => {
-                      const tracking = getExerciseTracking(exercise.name)
-                      const key = `${selectedWeek}-${selectedDay}-${exercise.name}`
-                      const isSaving = saving === key
-                      
-                      return (
-                        <div 
-                          key={exIndex} 
-                          className={`border-l-4 pl-4 py-2 rounded transition-colors ${
-                            tracking.completed ? 'border-green-500 bg-green-50' : 'border-blue-500 bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-900">
-                                {exercise.name}
-                              </h4>
-                              <div className="text-sm text-gray-600 mt-1">
-                                {exercise.sets && (
-                                  <span className="mr-4">Sets: {exercise.sets}</span>
-                                )}
-                                {exercise.reps && (
-                                  <span className="mr-4">Reps: {exercise.reps}</span>
-                                )}
-                                {exercise.weightTime && (
-                                  <span className="mr-4">
-                                    {exercise.weightTime.includes('kg') || exercise.weightTime.includes('lbs') 
-                                      ? `Weight: ${exercise.weightTime}`
-                                      : exercise.weightTime
-                                    }
-                                  </span>
-                                )}
-                              </div>
-                              {exercise.notes && (
-                                <p className="text-sm text-gray-500 mt-1 italic">
-                                  {exercise.notes}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3 ml-4">
-                              {/* Completed Checkbox */}
-                              <div className="flex flex-col items-center">
-                                <label className="text-xs text-gray-600 mb-1">Done</label>
-                                <input
-                                  type="checkbox"
-                                  checked={tracking.completed}
-                                  onChange={(e) => updateExerciseTracking(exercise.name, block.block, 'completed', e.target.checked)}
-                                  className="h-5 w-5 text-blue-600 rounded cursor-pointer"
-                                  disabled={isSaving}
-                                />
-                              </div>
 
-                              {/* RPE Selector */}
-                              <div className="flex flex-col items-center">
-                                <label className="text-xs text-gray-600 mb-1">RPE</label>
-                                <select
-                                  value={tracking.rpe || ''}
-                                  onChange={(e) => updateExerciseTracking(exercise.name, block.block, 'rpe', e.target.value ? parseInt(e.target.value) : null)}
-                                  className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  disabled={isSaving}
-                                >
-                                  <option value="">-</option>
-                                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                                    <option key={num} value={num}>{num}</option>
-                                  ))}
-                                </select>
-                              </div>
+                  
+<div className="space-y-3">
+  {(() => {
+    // Group exercises by name
+    const groupedExercises = block.exercises.reduce((acc, exercise, index) => {
+      const exerciseName = exercise.name;
+      if (!acc[exerciseName]) {
+        acc[exerciseName] = [];
+      }
+      acc[exerciseName].push({ ...exercise, originalIndex: index });
+      return acc;
+    }, {} as Record<string, (Exercise & { originalIndex: number })[]>);
 
-                              {/* Quality Selector */}
-                              <div className="flex flex-col items-center">
-                                <label className="text-xs text-gray-600 mb-1">Quality</label>
-                                <select
-                                  value={tracking.quality || ''}
-                                  onChange={(e) => updateExerciseTracking(exercise.name, block.block, 'quality', e.target.value || null)}
-                                  className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  disabled={isSaving}
-                                >
-                                  <option value="">-</option>
-                                  <option value="A">A</option>
-                                  <option value="B">B</option>
-                                  <option value="C">C</option>
-                                  <option value="D">D</option>
-                                </select>
-                              </div>
-
-                              {/* Saving indicator */}
-                              {isSaving && (
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
+    return Object.entries(groupedExercises).map(([exerciseName, exerciseGroup]) => {
+      // For tracking, use the first exercise of the group
+      const tracking = getExerciseTracking(exerciseName);
+      const key = `${selectedWeek}-${selectedDay}-${exerciseName}`;
+      const isSaving = saving === key;
+      
+      return (
+        <div 
+          key={exerciseName} 
+          className={`border-l-4 pl-4 py-3 rounded transition-colors ${
+            tracking.completed 
+              ? `border-l-green-600 ${blockStyles.bgColor}` 
+              : `${blockStyles.leftBorderColor} bg-gray-50`
+          }`}
+        >
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <h4 className="font-semibold text-gray-900 text-lg mb-3">
+                {exerciseName.toUpperCase()}
+              </h4>
+              
+              {/* Display each set */}
+              <div className="space-y-1">
+                {exerciseGroup.map((set, setIndex) => (
+                  <div key={setIndex} className="text-sm text-gray-700">
+                    <span className="font-medium">Set {setIndex + 1}:</span>
+                    {set.reps && <span className="ml-2">{set.reps} reps</span>}
+                    {set.weightTime && (
+                      <span className="ml-2 font-semibold">
+                        @ {set.weightTime}
+                        {!set.weightTime.includes('kg') && !set.weightTime.includes('lbs') && 
+                         !set.weightTime.includes('s') && !set.weightTime.includes('min') && ' lbs'}
+                      </span>
+                    )}
                   </div>
+                ))}
+              </div>
+              
+              {/* Show notes from first set (they should all be the same) */}
+              {exerciseGroup[0].notes && (
+                <p className="text-sm text-gray-500 mt-2 italic">
+                  {exerciseGroup[0].notes}
+                </p>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-3 ml-4">
+              {/* Completed Checkbox */}
+              <div className="flex flex-col items-center">
+                <label className="text-xs text-gray-600 mb-1">Done</label>
+                <input
+                  type="checkbox"
+                  checked={tracking.completed}
+                  onChange={(e) => updateExerciseTracking(exerciseName, block.block, 'completed', e.target.checked)}
+                  className="h-5 w-5 text-blue-600 rounded cursor-pointer"
+                  disabled={isSaving}
+                />
+              </div>
+
+              {/* RPE Selector */}
+              <div className="flex flex-col items-center">
+                <label className="text-xs text-gray-600 mb-1">RPE</label>
+                <select
+                  value={tracking.rpe || ''}
+                  onChange={(e) => updateExerciseTracking(exerciseName, block.block, 'rpe', e.target.value ? parseInt(e.target.value) : null)}
+                  className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isSaving}
+                >
+                  <option value="">-</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Quality Selector */}
+              <div className="flex flex-col items-center">
+                <label className="text-xs text-gray-600 mb-1">Quality</label>
+                <select
+                  value={tracking.quality || ''}
+                  onChange={(e) => updateExerciseTracking(exerciseName, block.block, 'quality', e.target.value || null)}
+                  className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isSaving}
+                >
+                  <option value="">-</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                  <option value="D">D</option>
+                </select>
+              </div>
+
+              {/* Saving indicator */}
+              {isSaving && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    });
+  })()}
+</div>
+
                 )}
 
                 {/* MetCon specific display */}
