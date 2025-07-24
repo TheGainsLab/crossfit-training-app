@@ -50,8 +50,9 @@ interface ExerciseTracking {
 
 // Add this helper function at the top of your component, before the return statement:
 
+
 const getBlockStyles = (blockName: string) => {
-  const styles = {
+  const styles: Record<string, { borderColor: string; leftBorderColor: string; bgColor: string }> = {
     'SKILLS': {
       borderColor: 'border-blue-500',
       leftBorderColor: 'border-l-blue-500',
@@ -85,7 +86,6 @@ const getBlockStyles = (blockName: string) => {
     bgColor: 'bg-gray-50'
   }
 }
-
 
 export default function ProgramPage() {
   const [loading, setLoading] = useState(true)
