@@ -83,18 +83,26 @@ export async function POST(request: NextRequest) {
       console.log('✅ Equipment saved:', equipment.length, 'items')
     }
 
-    // Save skills
-    console.log('🎯 Saving skills...')
-    await supabaseAdmin.from('user_skills').delete().eq('user_id', userId)
+  // Save skills
+console.log('🎯 Saving skills...')
+await supabaseAdmin.from('user_skills').delete().eq('user_id', userId)
+
+if (skills && skills.length > 0) {
+  const skillRecords = skills.map((skillLevel: string, index: number) => {
+    // Extract just the category from strings like "Advanced (More than 15)"
+    let cleanLevel = skillLevel;
+    if (skillLevel && skillLevel.includes('(')) {
+      cleanLevel = skillLevel.split('(')[0].trim();
+    }
     
-    if (skills && skills.length > 0) {
-      const skillRecords = skills.map((skillLevel: string, index: number) => ({
-        user_id: userId,
-        skill_index: index,
-        skill_name: getSkillNameByIndex(index),
-        skill_level: skillLevel
-      })).filter((skill: any) => skill.skill_name)
-      
+    return {
+      user_id: userId,
+      skill_index: index,
+      skill_name: getSkillNameByIndex(index),
+      skill_level: cleanLevel  // Now saves clean values
+    }
+  }).filter((skill: any) => skill.skill_name)
+
       if (skillRecords.length > 0) {
         const { error: skillsError } = await supabaseAdmin
           .from('user_skills')
@@ -344,4 +352,6 @@ function getSkillNameByIndex(index: number): string {
 export async function GET() {
   return NextResponse.json({ error: 'Method not allowed' }, { status: 405 })
 }
+
+
 
