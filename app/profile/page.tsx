@@ -107,6 +107,40 @@ const liftCategories = {
   }
 }
 
+// Define skill categories
+const skillCategories = [
+  {
+    name: 'Basic CrossFit Skills',
+    skills: ['Double Unders', 'Wall Balls']
+  },
+  {
+    name: 'Upper Body Pulling',
+    skills: ['Toes to Bar', 'Pull-ups (kipping or butterfly)', 'Chest to Bar Pull-ups', 'Strict Pull-ups']
+  },
+  {
+    name: 'Upper Body Pressing',
+    skills: ['Push-ups', 'Ring Dips', 'Strict Ring Dips', 'Strict Handstand Push-ups', 
+             'Wall Facing Handstand Push-ups', 'Deficit Handstand Push-ups (4")']
+  },
+  {
+    name: 'Additional Common Skills',
+    skills: ['Alternating Pistols', 'GHD Sit-ups', 'Wall Walks']
+  },
+  {
+    name: 'Advanced Upper Body Pulling',
+    skills: ['Ring Muscle Ups', 'Bar Muscle Ups', 'Rope Climbs']
+  },
+  {
+    name: 'Holds',
+    skills: ['Wall Facing Handstand Hold', 'Freestanding Handstand Hold']
+  },
+  {
+    name: 'Advanced Gymnastics',
+    skills: ['Legless Rope Climbs', 'Pegboard Ascent', 'Handstand Walk (10m or 25\')', 
+             'Seated Legless Rope Climbs', 'Strict Ring Muscle Ups', 'Handstand Walk Obstacle Crossings']
+  }
+]
+
 // Define which lifts to show in collapsed view
 const collapsedLifts = ['snatch', 'clean_and_jerk', 'back_squat', 'front_squat', 'bench_press']
 
@@ -126,6 +160,48 @@ export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null)
   const [showAllLifts, setShowAllLifts] = useState(false)
   const [showAllRatios, setShowAllRatios] = useState(false)
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([])
+
+  const toggleCategory = (categoryName: string) => {
+    setExpandedCategories(prev => 
+      prev.includes(categoryName) 
+        ? prev.filter(name => name !== categoryName)
+        : [...prev, categoryName]
+    )
+  }
+
+  const getSkillLevel = (skillName: string) => {
+    if (profile?.skills_assessment.advanced.includes(skillName)) return 'Advanced'
+    if (profile?.skills_assessment.intermediate.includes(skillName)) return 'Intermediate'
+    if (profile?.skills_assessment.beginner.includes(skillName)) return 'Beginner'
+    return 'Don\'t Have'
+  }
+
+  const getSkillIcon = (level: string) => {
+    switch(level) {
+      case 'Advanced': return '●'
+      case 'Intermediate': return '◑'
+      case 'Beginner': return '◐'
+      default: return '○'
+    }
+  }
+
+  const getSkillColor = (level: string) => {
+    switch(level) {
+      case 'Advanced': return 'text-green-600'
+      case 'Intermediate': return 'text-blue-600'
+      case 'Beginner': return 'text-yellow-600'
+      default: return 'text-gray-400'
+    }
+  }
+
+  const getCategoryStats = (skills: string[]) => {
+    const completed = skills.filter(skill => 
+      profile?.skills_assessment.advanced.includes(skill) ||
+      profile?.skills_assessment.intermediate.includes(skill)
+    ).length
+    return `${completed}/${skills.length}`
+  }
 
   useEffect(() => {
     loadProfile()
@@ -600,22 +676,137 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Conditioning Benchmarks */}
+        {/* Enhanced Conditioning Benchmarks */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Conditioning Benchmarks</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {Object.entries(profile.benchmarks)
-              .filter(([_, time]) => time) // Only show non-null benchmarks
-              .map(([benchmark, time]) => (
-                <div key={benchmark} className="p-3 bg-gray-50 rounded">
-                  <p className="text-sm text-gray-600">
-                    {benchmark.split('_').map(word => 
-                      word.charAt(0).toUpperCase() + word.slice(1)
-                    ).join(' ')}
-                  </p>
-                  <p className="font-semibold">{time}</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">CONDITIONING BENCHMARKS</h2>
+          <div className="border-t-2 border-gray-900 mb-6"></div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Running Column */}
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-3">RUNNING</h3>
+              <div className="space-y-2">
+                {profile.benchmarks.mile_run && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Mile</span>
+                    <span className="font-semibold">{profile.benchmarks.mile_run}</span>
+                  </div>
+                )}
+                {profile.benchmarks.five_k_run && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">5K</span>
+                    <span className="font-semibold">{profile.benchmarks.five_k_run}</span>
+                  </div>
+                )}
+                {profile.benchmarks.ten_k_run && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">10K</span>
+                    <span className="font-semibold">{profile.benchmarks.ten_k_run}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Rowing Column */}
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-3">ROWING</h3>
+              <div className="space-y-2">
+                {profile.benchmarks.one_k_row && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">1K</span>
+                    <span className="font-semibold">{profile.benchmarks.one_k_row}</span>
+                  </div>
+                )}
+                {profile.benchmarks.two_k_row && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">2K</span>
+                    <span className="font-semibold">{profile.benchmarks.two_k_row}</span>
+                  </div>
+                )}
+                {profile.benchmarks.five_k_row && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">5K</span>
+                    <span className="font-semibold">{profile.benchmarks.five_k_row}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bike Column */}
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-3">BIKE</h3>
+              <div className="space-y-2">
+                {profile.benchmarks.air_bike_10_min && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">10min</span>
+                    <span className="font-semibold">{profile.benchmarks.air_bike_10_min}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Movement Skills Repository */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">MOVEMENT SKILLS</h2>
+          <div className="border-t-2 border-gray-900 mb-4"></div>
+          
+          {/* Skills Progress Bar */}
+          <div className="mb-6">
+            <div className="flex justify-between text-sm text-gray-600 mb-2">
+              <span>Skills Mastered: {profile.skills_assessment.advanced_count}/{profile.skills_assessment.total_skills_assessed}</span>
+              <span>{Math.round((profile.skills_assessment.advanced_count / profile.skills_assessment.total_skills_assessed) * 100)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(profile.skills_assessment.advanced_count / profile.skills_assessment.total_skills_assessed) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Skills Categories */}
+          <div className="space-y-3">
+            {skillCategories.map((category) => {
+              const isExpanded = expandedCategories.includes(category.name)
+              const categoryStats = getCategoryStats(category.skills)
+              
+              return (
+                <div key={category.name} className="border rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleCategory(category.name)}
+                    className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+                  >
+                    <div className="flex items-center">
+                      <span className="mr-2 text-gray-600">{isExpanded ? '▼' : '▶'}</span>
+                      <h3 className="font-semibold text-gray-800">{category.name}</h3>
+                    </div>
+                    <span className="text-sm text-gray-600">({categoryStats})</span>
+                  </button>
+                  
+                  {isExpanded && (
+                    <div className="p-4 space-y-2">
+                      {category.skills.map(skill => {
+                        const level = getSkillLevel(skill)
+                        const icon = getSkillIcon(level)
+                        const color = getSkillColor(level)
+                        
+                        return (
+                          <div key={skill} className="flex justify-between items-center py-1">
+                            <div className="flex items-center">
+                              <span className={`mr-3 text-lg ${color}`}>{icon}</span>
+                              <span className="text-gray-700">{skill}</span>
+                            </div>
+                            <span className={`text-sm ${color}`}>{level}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
-              ))}
+              )
+            })}
           </div>
         </div>
 
