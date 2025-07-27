@@ -480,6 +480,7 @@ export default function ProgramPage() {
 )}  
 
 </div>
+</div>
 
                   
                   {/* Exercises wrapped in container */}
