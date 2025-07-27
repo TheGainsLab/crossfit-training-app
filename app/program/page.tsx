@@ -629,7 +629,7 @@ export default function ProgramPage() {
                                   <div className="flex-1">
 
 
-                                    <h4 className="font-semibold text-gray-900">
+                                   <h4 className="font-semibold text-gray-900">
   {/* Special formatting for METCONS block */}
   {block.block === 'METCONS' && exercise.reps ? (
     <>{exercise.reps} {exercise.name}</>
@@ -638,24 +638,39 @@ export default function ProgramPage() {
   )}
 </h4>
 <div className="text-sm text-gray-600 mt-1">
-  {/* Only show sets/reps for non-METCON blocks */}
-  {block.block !== 'METCONS' && (
+  {/* Special formatting for Technical Work and Accessories */}
+  {(block.block === 'TECHNICAL WORK' || block.block === 'ACCESSORIES') ? (
     <>
-      {exercise.sets && (
-        <span className="mr-4">Sets: {exercise.sets}</span>
+      {exercise.sets && exercise.reps && (
+        <div>{exercise.sets} sets × {exercise.reps} reps</div>
       )}
-      {exercise.reps && (
-        <span className="mr-4">Reps: {exercise.reps}</span>
+      {exercise.weightTime && (
+        <div>{formatWeight(exercise.weightTime)}</div>
       )}
     </>
-  )}
-  {exercise.weightTime && (
-    <span className="mr-4">
-      {exercise.weightTime.includes('kg') || exercise.weightTime.includes('lbs')
-        ? `Weight: ${exercise.weightTime}`
-        : exercise.weightTime
-      }
-    </span>
+  ) : (
+    /* Original formatting for other blocks */
+    <>
+      {/* Only show sets/reps for non-METCON blocks */}
+      {block.block !== 'METCONS' && (
+        <>
+          {exercise.sets && (
+            <span className="mr-4">Sets: {exercise.sets}</span>
+          )}
+          {exercise.reps && (
+            <span className="mr-4">Reps: {exercise.reps}</span>
+          )}
+        </>
+      )}
+      {exercise.weightTime && (
+        <span className="mr-4">
+          {exercise.weightTime.includes('kg') || exercise.weightTime.includes('lbs')
+            ? `Weight: ${exercise.weightTime}`
+            : exercise.weightTime
+          }
+        </span>
+      )}
+    </>
   )}
 </div>
 
