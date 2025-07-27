@@ -443,6 +443,12 @@ export default function ProgramPage() {
               )}
             </div>
 
+{/* Workout Blocks */}
+{currentDay.blocks.map((block, blockIndex) => {
+  const blockStyles = getBlockStyles(block.block)
+  
+  return (
+    <div key={blockIndex} className="bg-white rounded-xl shadow-md overflow-hidden">
 
         {/* Updated block header */}
 <div className="flex items-center gap-4 p-6 border-b border-gray-200">
