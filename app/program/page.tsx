@@ -29,6 +29,7 @@ interface Day {
     workoutFormat: string
     timeRange: string
     percentileGuidance: any
+    workoutNotes?: string  // Add this line
   }
 }
 
