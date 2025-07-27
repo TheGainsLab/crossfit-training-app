@@ -470,14 +470,15 @@ export default function ProgramPage() {
         {currentDay.metconData.workoutNotes}
       </p>
     )}
-    {/* Add target and excellent scores */}
-    {block.block === 'METCONS' && currentDay.metconData?.percentileGuidance && (
-      <div className="text-sm text-gray-600 mt-2">
-        <span className="font-medium">Target (50%):</span> {currentDay.metconData.percentileGuidance.medianScore}
-        <span className="ml-4 font-medium">Excellent (90%):</span> {currentDay.metconData.percentileGuidance.excellentScore}
-      </div>
-    )}
+
+{/* Add target and excellent scores */}
+{block.block === 'METCONS' && currentDay.metconData?.percentileGuidance && (
+  <div className="text-sm text-gray-600 mt-2">
+    <span className="font-bold">Target (50%):</span> {currentDay.metconData.percentileGuidance.medianScore}
+    <span className="ml-4 font-bold">Excellent (90%):</span> {currentDay.metconData.percentileGuidance.excellentScore}
   </div>
+)}  
+
 </div>
 
                   
