@@ -443,19 +443,30 @@ export default function ProgramPage() {
               )}
             </div>
 
-            {/* Workout Blocks */}
-            {currentDay.blocks.map((block, blockIndex) => {
-              const blockStyles = getBlockStyles(block.block)
-              
-              return (
-                <div key={blockIndex} className="bg-white rounded-xl shadow-md overflow-hidden">
-                  {/* Updated block header */}
-                  <div className="flex items-center gap-4 p-6 border-b border-gray-200">
-                    <div className={`w-1 h-8 ${blockStyles.accentBg} rounded-full`}></div>
-                    <h3 className={`text-2xl font-bold ${blockStyles.headerColor}`}>
-                      {block.block}
-                    </h3>
-                  </div>
+
+        {/* Updated block header */}
+<div className="flex items-center gap-4 p-6 border-b border-gray-200">
+  <div className={`w-1 h-8 ${blockStyles.accentBg} rounded-full`}></div>
+  <div className="flex-1">
+    <h3 className={`text-2xl font-bold ${blockStyles.headerColor}`}>
+      {block.block}
+      {/* Add workout format for METCONS */}
+      {block.block === 'METCONS' && currentDay.metconData?.workoutFormat && (
+        <span className="ml-3 text-lg font-medium">
+          - {currentDay.metconData.workoutFormat}
+        </span>
+      )}
+    </h3>
+    {/* Add workout notes below the title */}
+    {block.block === 'METCONS' && currentDay.metconData?.workoutNotes && (
+      <p className="text-sm text-gray-600 mt-1">
+        {currentDay.metconData.workoutNotes}
+      </p>
+    )}
+  </div>
+</div>
+
+
                   
                   {/* Exercises wrapped in container */}
                   <div className="p-6">
@@ -603,25 +614,40 @@ export default function ProgramPage() {
                               >
                                 <div className="flex justify-between items-start">
                                   <div className="flex-1">
+
+
                                     <h4 className="font-semibold text-gray-900">
-                                      {exercise.name}
-                                    </h4>
-                                    <div className="text-sm text-gray-600 mt-1">
-                                      {exercise.sets && (
-                                        <span className="mr-4">Sets: {exercise.sets}</span>
-                                      )}
-                                      {exercise.reps && (
-                                        <span className="mr-4">Reps: {exercise.reps}</span>
-                                      )}
-                                      {exercise.weightTime && (
-                                        <span className="mr-4">
-                                          {exercise.weightTime.includes('kg') || exercise.weightTime.includes('lbs') 
-                                            ? `Weight: ${exercise.weightTime}`
-                                            : exercise.weightTime
-                                          }
-                                        </span>
-                                      )}
-                                    </div>
+  {/* Special formatting for METCONS block */}
+  {block.block === 'METCONS' && exercise.reps ? (
+    <>{exercise.reps} {exercise.name}</>
+  ) : (
+    exercise.name
+  )}
+</h4>
+<div className="text-sm text-gray-600 mt-1">
+  {/* Only show sets/reps for non-METCON blocks */}
+  {block.block !== 'METCONS' && (
+    <>
+      {exercise.sets && (
+        <span className="mr-4">Sets: {exercise.sets}</span>
+      )}
+      {exercise.reps && (
+        <span className="mr-4">Reps: {exercise.reps}</span>
+      )}
+    </>
+  )}
+  {exercise.weightTime && (
+    <span className="mr-4">
+      {exercise.weightTime.includes('kg') || exercise.weightTime.includes('lbs')
+        ? `Weight: ${exercise.weightTime}`
+        : exercise.weightTime
+      }
+    </span>
+  )}
+</div>
+
+
+
                                     {exercise.notes && (
                                       <p className="text-sm text-gray-500 mt-1 italic">
                                         {exercise.notes}
@@ -693,38 +719,7 @@ export default function ProgramPage() {
                       </div>
                     )}
 
-                    {/* Updated MetCon specific display */}
-                    {block.block === 'METCONS' && currentDay.metconData && (
-                      <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
-                        <h5 className="font-semibold text-red-900 mb-3">Workout Details</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="font-medium text-gray-700">Format:</span>
-                            <span className="ml-2 text-gray-900">{currentDay.metconData.workoutFormat}</span>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Time Domain:</span>
-                            <span className="ml-2 text-gray-900">{currentDay.metconData.timeRange}</span>
-                          </div>
-                          {currentDay.metconData.percentileGuidance && (
-                            <>
-                              <div>
-                                <span className="font-medium text-gray-700">Target (50%):</span>
-                                <span className="ml-2 text-gray-900 font-semibold">
-                                  {currentDay.metconData.percentileGuidance.medianScore}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="font-medium text-gray-700">Excellent (90%):</span>
-                                <span className="ml-2 text-gray-900 font-semibold">
-                                  {currentDay.metconData.percentileGuidance.excellentScore}
-                                </span>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                 
                   </div>
                 </div>
               )
@@ -735,3 +730,4 @@ export default function ProgramPage() {
     </div>
   )
 }
+

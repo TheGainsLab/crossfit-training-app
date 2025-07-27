@@ -40,17 +40,19 @@ serve(async (req) => {
     if (!metconData || metconData.length === 0) {
       console.log('No MetCons found, creating fallback')
       const fallbackResult = createFallbackMetCon(user)
-      return new Response(
-        JSON.stringify({
-          success: true,
-          exercises: fallbackResult.exercises,
-          workoutId: fallbackResult.workoutId,
-          workoutFormat: fallbackResult.format,
-          timeRange: fallbackResult.timeRange,
-          percentileGuidance: fallbackResult.percentileGuidance
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+     
+return new Response(
+  JSON.stringify({
+    success: true,
+    exercises: fallbackResult.exercises,
+    workoutId: fallbackResult.workoutId,
+    workoutFormat: fallbackResult.format,
+    timeRange: fallbackResult.timeRange,
+    percentileGuidance: fallbackResult.percentileGuidance,
+    workoutNotes: ''  // Add this line
+  }),
+  { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+)
     }
 
     // Select suitable MetCon (exact Google Script logic)
@@ -59,18 +61,21 @@ serve(async (req) => {
     if (!selectedWorkout) {
       console.log('No suitable MetCon found, creating fallback')
       const fallbackResult = createFallbackMetCon(user)
-      return new Response(
-        JSON.stringify({
-          success: true,
-          exercises: fallbackResult.exercises,
-          workoutId: fallbackResult.workoutId,
-          workoutFormat: fallbackResult.format,
-          timeRange: fallbackResult.timeRange,
-          percentileGuidance: fallbackResult.percentileGuidance
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+     
+return new Response(
+  JSON.stringify({
+    success: true,
+    exercises: fallbackResult.exercises,
+    workoutId: fallbackResult.workoutId,
+    workoutFormat: fallbackResult.format,
+    timeRange: fallbackResult.timeRange,
+    percentileGuidance: fallbackResult.percentileGuidance,
+    workoutNotes: ''  // Add this line
+  }),
+  { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+)
     }
+
 
     // Convert MetCon to exercises (exact Google Script logic)
     const conversionResult = convertMetConToExercises(selectedWorkout, user)
@@ -78,17 +83,29 @@ serve(async (req) => {
     // Generate percentile guidance (exact Google Script logic)
     const percentileGuidance = generatePercentileGuidance(selectedWorkout, user)
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        exercises: conversionResult.exercises,
-        workoutId: selectedWorkout.workout_id,
-        workoutFormat: selectedWorkout.format,
-        timeRange: selectedWorkout.time_range,
-        percentileGuidance: percentileGuidance
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+return new Response(
+  JSON.stringify({
+    success: true,
+    exercises: conversionResult.exercises,
+    workoutId: selectedWorkout.workout_id,
+    workoutFormat: selectedWorkout.format,
+    timeRange: selectedWorkout.time_range,
+    percentileGuidance: percentileGuidance,
+    workoutNotes: selectedWorkout.workout_notes || ''
+  }),
+  { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+)
+
+
+
+
+
+
+
+
+
+
+
 
   } catch (error) {
     console.error('MetCon assignment error:', error)
@@ -246,11 +263,6 @@ function convertMetConToExercises(workout: any, user: any): { exercises: any[] }
         weightTime += (weightTime ? ', ' : '') + task.calories
       }
 
-      let exerciseNotes = ''
-      if (index === 0 && workout.workout_notes && workout.workout_notes !== '') {
-        exerciseNotes = workout.workout_notes
-      }
-
       let displayReps = task.reps
       if (!hasReps && hasCalories) {
         displayReps = task.calories
@@ -260,13 +272,15 @@ function convertMetConToExercises(workout: any, user: any): { exercises: any[] }
         displayReps = task.time
       }
 
-      const exerciseObj = {
-        name: task.exercise,
-        sets: '',
-        reps: displayReps,
-        weightTime: weightTime,
-        notes: exerciseNotes
-      }
+    const exerciseObj = {
+  name: task.exercise,
+  sets: '',
+  reps: displayReps,
+  weightTime: weightTime,
+  notes: ''  // Changed from exerciseNotes to empty string
+}
+
+
 
       exercises.push(exerciseObj)
       console.log(`Added task: ${task.exercise}, ${displayReps} reps, ${weightTime}, Notes: ${exerciseNotes}`)

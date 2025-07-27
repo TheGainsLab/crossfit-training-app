@@ -266,15 +266,17 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
             const metconResult = await metconResponse.json()
             blockExercises = metconResult.exercises || []
             
-            // Add MetCon metadata
-            if (metconResult.workoutId) {
-              dayData.metconData = {
-                workoutId: metconResult.workoutId,
-                workoutFormat: metconResult.workoutFormat,
-                timeRange: metconResult.timeRange,
-                percentileGuidance: metconResult.percentileGuidance
-              }
-            }
+           // Add MetCon metadata
+if (metconResult.workoutId) {
+  dayData.metconData = {
+    workoutId: metconResult.workoutId,
+    workoutFormat: metconResult.workoutFormat,
+    timeRange: metconResult.timeRange,
+    percentileGuidance: metconResult.percentileGuidance,
+    workoutNotes: metconResult.workoutNotes || ''  // Add this line
+  }
+}
+
           }
         } else {
           // Call assign-exercises function
