@@ -283,7 +283,7 @@ function convertMetConToExercises(workout: any, user: any): { exercises: any[] }
 
 
       exercises.push(exerciseObj)
-      console.log(`Added task: ${task.exercise}, ${displayReps} reps, ${weightTime}, Notes: ${exerciseNotes}`)
+     console.log(`Added task: ${task.exercise}, ${displayReps} reps, ${weightTime}, Notes: `)
     }
   })
 

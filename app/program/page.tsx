@@ -451,7 +451,7 @@ export default function ProgramPage() {
   return (
     <div key={blockIndex} className="bg-white rounded-xl shadow-md overflow-hidden">
 
-        {/* Updated block header */}
+      {/* Updated block header */}
 <div className="flex items-center gap-4 p-6 border-b border-gray-200">
   <div className={`w-1 h-8 ${blockStyles.accentBg} rounded-full`}></div>
   <div className="flex-1">
@@ -470,9 +470,15 @@ export default function ProgramPage() {
         {currentDay.metconData.workoutNotes}
       </p>
     )}
+    {/* Add target and excellent scores */}
+    {block.block === 'METCONS' && currentDay.metconData?.percentileGuidance && (
+      <div className="text-sm text-gray-600 mt-2">
+        <span className="font-medium">Target (50%):</span> {currentDay.metconData.percentileGuidance.medianScore}
+        <span className="ml-4 font-medium">Excellent (90%):</span> {currentDay.metconData.percentileGuidance.excellentScore}
+      </div>
+    )}
   </div>
 </div>
-
 
                   
                   {/* Exercises wrapped in container */}
