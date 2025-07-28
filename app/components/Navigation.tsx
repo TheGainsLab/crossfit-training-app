@@ -58,11 +58,11 @@ export default function Navigation() {
     return pathname === path || pathname?.startsWith(path + '/')
   }
 
-  const navLinks = [
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: '/program', label: 'Training' },
-    { href: '/profile', label: 'Profile' },
-  ]
+const navLinks = [
+  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/program', label: 'Today\'s Workout' },
+  { href: '/profile', label: 'Profile' },
+]
 
   return (
     <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
