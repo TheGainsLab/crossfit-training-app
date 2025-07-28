@@ -1,9 +1,8 @@
-
 'use client'
 
 import React, { useState, useEffect } from 'react'
-
 import Link from 'next/link'
+import { use } from 'react'
 
 interface Exercise {
   name: string
@@ -48,15 +47,8 @@ interface Completion {
   wasRx?: boolean
 }
 
-
-export default function WorkoutPage({ 
-  params 
-}: { 
-  params: { programId: string; week: string; day: string } 
-}) {
-  const { programId, week, day } = params
-
-
+// Client component that handles all the hooks
+function WorkoutPageClient({ programId, week, day }: { programId: string; week: string; day: string }) {
   const [workout, setWorkout] = useState<WorkoutData | null>(null)
   const [completions, setCompletions] = useState<Record<string, Completion>>({})
   const [loading, setLoading] = useState(true)
@@ -358,6 +350,17 @@ export default function WorkoutPage({
       </main>
     </div>
   )
+}
+
+// Main page component that handles the async params
+export default function WorkoutPage({ 
+  params 
+}: { 
+  params: Promise<{ programId: string; week: string; day: string }> 
+}) {
+  const resolvedParams = use(params)
+  
+  return <WorkoutPageClient {...resolvedParams} />
 }
 
 // Exercise Card Component
