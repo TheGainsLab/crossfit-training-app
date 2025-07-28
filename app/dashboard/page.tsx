@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
+import { User } from '@supabase/supabase-js'
 
 interface WorkoutSummary {
   programId: number
@@ -18,20 +20,89 @@ export default function DashboardPage() {
   const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  // For demo purposes, we'll use Program 3, Week 1, Day 1
-  // In production, this would calculate based on user's program start date
-  const currentProgram = 3
-  const currentWeek = 1
-  const currentDay = 1
+  const [currentProgram, setCurrentProgram] = useState<number | null>(null)
+  const [currentWeek, setCurrentWeek] = useState(1)
+  const [currentDay, setCurrentDay] = useState(1)
+  const [user, setUser] = useState<User | null>(null)
+  const [userId, setUserId] = useState<number | null>(null)
 
   useEffect(() => {
-    fetchTodaysWorkout()
+    loadUserAndProgram()
   }, [])
+
+  useEffect(() => {
+    if (currentProgram && currentWeek && currentDay) {
+      fetchTodaysWorkout()
+    }
+  }, [currentProgram, currentWeek, currentDay])
+
+  const loadUserAndProgram = async () => {
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setError('Not authenticated')
+        setLoading(false)
+        return
+      }
+      setUser(user)
+
+      // Get user ID from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (userError || !userData) {
+        setError('User not found')
+        setLoading(false)
+        return
+      }
+      setUserId(userData.id)
+
+      // Get latest program for this user
+      const { data: programData, error: programError } = await supabase
+        .from('programs')
+        .select('id, generated_at')
+        .eq('user_id', userData.id)
+        .order('generated_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (programError || !programData) {
+        setError('No program found. Please complete the intake assessment.')
+        setLoading(false)
+        return
+      }
+
+      setCurrentProgram(programData.id)
+
+      // Calculate current week and day based on program start date
+      const programStartDate = new Date(programData.generated_at)
+      const today = new Date()
+      const daysSinceStart = Math.floor((today.getTime() - programStartDate.getTime()) / (1000 * 60 * 60 * 24))
+      
+      // Assuming 5 training days per week with weekends off
+      const totalTrainingDays = daysSinceStart - (Math.floor(daysSinceStart / 7) * 2)
+      const weekNumber = Math.floor(totalTrainingDays / 5) + 1
+      const dayNumber = (totalTrainingDays % 5) + 1
+
+      // Cap at 12 weeks and 5 days
+      const calculatedWeek = Math.min(Math.max(1, weekNumber), 12)
+      const calculatedDay = Math.min(Math.max(1, dayNumber), 5)
+
+      setCurrentWeek(calculatedWeek)
+      setCurrentDay(calculatedDay)
+    } catch (err) {
+      console.error('Error loading user program:', err)
+      setError('Failed to load program data')
+      setLoading(false)
+    }
+  }
 
   const fetchTodaysWorkout = async () => {
     try {
-      setLoading(true)
       const response = await fetch(`/api/workouts/${currentProgram}/week/${currentWeek}/day/${currentDay}`)
       
       if (!response.ok) {
@@ -39,7 +110,7 @@ export default function DashboardPage() {
       }
 
       const data = await response.json()
-      
+
       if (data.success) {
         setTodaysWorkout({
           programId: data.workout.programId,
@@ -52,9 +123,9 @@ export default function DashboardPage() {
           totalBlocks: data.workout.totalBlocks
         })
       }
+      setLoading(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
-    } finally {
       setLoading(false)
     }
   }
@@ -91,14 +162,16 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-600 text-5xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Workout Not Found</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Dashboard</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button 
-            onClick={fetchTodaysWorkout}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
-            Try Again
-          </button>
+          {error.includes('No program found') && (
+            <Link
+              href="/intake"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Complete Assessment
+            </Link>
+          )}
         </div>
       </div>
     )
@@ -137,7 +210,7 @@ export default function DashboardPage() {
                     <p className="text-blue-100 text-lg">{todaysWorkout.dayName} - {todaysWorkout.mainLift} Focus</p>
                     {todaysWorkout.isDeload && (
                       <span className="inline-block bg-yellow-500 text-yellow-900 px-3 py-1 rounded-full text-sm font-medium mt-2">
-                        🔄 Deload Week
+                        ⚡ Deload Week
                       </span>
                     )}
                   </div>
@@ -171,9 +244,9 @@ export default function DashboardPage() {
                     <p className="text-sm text-gray-600">MetCon</p>
                   </div>
                 </div>
-                
-                <Link 
-                  href={`/dashboard/workout/${todaysWorkout.programId}/week/${todaysWorkout.week}/day/${todaysWorkout.day}`}
+
+                <Link
+                  href={`/dashboard/workout/${currentProgram}/week/${currentWeek}/day/${currentDay}`}
                   className="block w-full bg-blue-600 text-white text-center py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors"
                 >
                   Start Today's Workout →
@@ -212,7 +285,7 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Current Program</span>
-                    <span className="font-semibold">#{todaysWorkout.programId}</span>
+                    <span className="font-semibold">#{currentProgram}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Week Progress</span>
@@ -234,16 +307,16 @@ export default function DashboardPage() {
 
             {/* Action Cards */}
             <div className="grid md:grid-cols-3 gap-4">
-              <Link 
+              <Link
                 href="/dashboard/progress"
                 className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
               >
-                <div className="text-3xl mb-2">📈</div>
+                <div className="text-3xl mb-2">📊</div>
                 <h3 className="font-semibold text-gray-900 mb-1">View Progress</h3>
                 <p className="text-gray-600 text-sm">See your strength gains and improvements</p>
               </Link>
 
-              <Link 
+              <Link
                 href="/dashboard/program"
                 className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
               >
@@ -252,7 +325,7 @@ export default function DashboardPage() {
                 <p className="text-gray-600 text-sm">Browse your complete 12-week plan</p>
               </Link>
 
-              <Link 
+              <Link
                 href="/dashboard/settings"
                 className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
               >
