@@ -29,8 +29,34 @@ export default function SignIn() {
       }
 
       if (data.user) {
-        setMessage('✅ Signed in successfully!')
-        router.push('/intake')
+        setMessage('✅ Signed in successfully! Redirecting...')
+        
+        // Check if user has a program
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_id', data.user.id)
+          .single()
+
+        if (userData) {
+          const { data: programData } = await supabase
+            .from('programs')
+            .select('id')
+            .eq('user_id', userData.id)
+            .limit(1)
+            .single()
+
+          if (programData) {
+            // User has a program, go to dashboard
+            router.push('/dashboard')
+          } else {
+            // No program yet, go to intake
+            router.push('/intake')
+          }
+        } else {
+          // No user record found, go to intake
+          router.push('/intake')
+        }
       }
     } catch (error) {
       setMessage('❌ An unexpected error occurred')
