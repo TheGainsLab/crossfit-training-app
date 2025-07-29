@@ -43,6 +43,7 @@ interface Completion {
   repsCompleted?: string
   weightUsed?: number
   rpe?: number
+  quality?: string
   notes?: string
   wasRx?: boolean
 }
@@ -375,12 +376,13 @@ function ExerciseCard({
   completion?: Completion
   onComplete: (completion: Partial<Completion>) => void
 }) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true) // Changed to true - always show expanded
   const [formData, setFormData] = useState({
     setsCompleted: completion?.setsCompleted || '',
     repsCompleted: completion?.repsCompleted || '',
     weightUsed: completion?.weightUsed || '',
     rpe: completion?.rpe || '',
+    quality: completion?.quality || '',
     notes: completion?.notes || '',
     wasRx: completion?.wasRx ?? true
   })
@@ -402,6 +404,7 @@ function ExerciseCard({
       repsCompleted: formData.repsCompleted.toString(),
       weightUsed: formData.weightUsed ? parseFloat(formData.weightUsed.toString()) : undefined,
       rpe: formData.rpe ? parseInt(formData.rpe.toString()) : undefined,
+      quality: formData.quality || undefined,
       notes: formData.notes.toString(),
       wasRx: formData.wasRx
     })
@@ -458,15 +461,6 @@ function ExerciseCard({
         </div>
 
         <div className="flex space-x-2">
-          {!isCompleted && (
-            <button
-              onClick={handleQuickComplete}
-              className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
-            >
-              ✅ Mark Complete (Rx)
-            </button>
-          )}
-          
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className={`px-4 py-2 rounded-lg transition-colors ${
@@ -475,14 +469,14 @@ function ExerciseCard({
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
-            {isExpanded ? 'Less' : 'Details'}
+            {isExpanded ? 'Hide Form' : 'Show Form'}
           </button>
         </div>
 
         {/* Expanded Form */}
         {isExpanded && (
           <div className="mt-4 pt-4 border-t space-y-3">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Sets</label>
                 <input
@@ -524,6 +518,20 @@ function ExerciseCard({
                   className="w-full p-2 border rounded text-sm"
                   placeholder="7"
                 />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Quality</label>
+                <select
+                  value={formData.quality}
+                  onChange={(e) => setFormData(prev => ({ ...prev, quality: e.target.value }))}
+                  className="w-full p-2 border rounded text-sm"
+                >
+                  <option value="">-</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                  <option value="D">D</option>
+                </select>
               </div>
             </div>
             

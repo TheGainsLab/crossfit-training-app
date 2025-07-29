@@ -21,6 +21,7 @@ interface CompletionData {
   caloriesCompleted?: number  // For calorie-based exercises
   distanceCompleted?: string  // For distance-based exercises
   rpe?: number  // Rate of Perceived Exertion (1-10)
+  quality?: string  // Quality grade (A, B, C, D)
   notes?: string
   wasRx?: boolean  // Did they do the workout as prescribed?
   scalingUsed?: string  // What scaling modifications were used
@@ -61,6 +62,13 @@ export async function POST(request: NextRequest) {
     if (completionData.rpe && (completionData.rpe < 1 || completionData.rpe > 10)) {
       return NextResponse.json(
         { error: 'RPE must be between 1 and 10' },
+        { status: 400 }
+      )
+    }
+
+    if (completionData.quality && !['A', 'B', 'C', 'D'].includes(completionData.quality)) {
+      return NextResponse.json(
+        { error: 'Quality must be A, B, C, or D' },
         { status: 400 }
       )
     }
@@ -139,6 +147,66 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to save workout completion', details: result.error.message },
         { status: 500 }
       )
+    }
+
+    // Also log to performance_logs for analytics (including quality grade)
+    console.log('📊 Logging to performance_logs for analytics...')
+    
+    // First, try to find the program_workout_id
+    const { data: programWorkout } = await supabase
+      .from('program_workouts')
+      .select('id')
+      .eq('program_id', completionData.programId)
+      .eq('week', completionData.week)
+      .eq('day', completionData.day)
+      .eq('exercise_name', completionData.exerciseName)
+      .eq('block', completionData.block)
+      .single()
+
+    // Check if performance log already exists
+    const { data: existingPerfLog } = await supabase
+      .from('performance_logs')
+      .select('id')
+      .eq('program_id', completionData.programId)
+      .eq('user_id', completionData.userId)
+      .eq('week', completionData.week)
+      .eq('day', completionData.day)
+      .eq('exercise_name', completionData.exerciseName)
+      .single()
+
+    // Convert quality letter grade to numeric if needed
+    const qualityNumeric = completionData.quality ? 
+      { 'A': 4, 'B': 3, 'C': 2, 'D': 1 }[completionData.quality] : null
+
+    const perfLogData = {
+      program_id: completionData.programId,
+      user_id: completionData.userId,
+      program_workout_id: programWorkout?.id,
+      week: completionData.week,
+      day: completionData.day,
+      block: completionData.block,
+      exercise_name: completionData.exerciseName,
+      sets: completionData.setsCompleted?.toString(),
+      reps: completionData.repsCompleted?.toString(),
+      weight_time: completionData.weightUsed?.toString(),
+      result: completionData.notes,
+      rpe: completionData.rpe,
+      completion_quality: qualityNumeric,
+      quality_grade: completionData.quality,
+      logged_at: new Date().toISOString()
+    }
+
+    if (existingPerfLog) {
+      // Update existing performance log
+      await supabase
+        .from('performance_logs')
+        .update(perfLogData)
+        .eq('id', existingPerfLog.id)
+    } else {
+      // Create new performance log
+      await supabase
+        .from('performance_logs')
+        .insert(perfLogData)
     }
 
     console.log('✅ Workout completion saved successfully')
