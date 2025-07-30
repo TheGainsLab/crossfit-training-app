@@ -65,7 +65,7 @@ export default function DashboardPage() {
       console.log('✅ API Response:', data)
     } catch (error) {
       console.error('❌ Test failed:', error)
-      setTestResult({ error: error.message })
+      setTestResult({ error: error instanceof Error ? error.message : 'Unknown error' })
     } finally {
       setIsTestLoading(false)
     }
