@@ -1,4 +1,3 @@
-
 // /app/api/analytics/[userId]/exercise-deep-dive/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
@@ -36,15 +35,29 @@ export async function GET(
       )
     }
 
-    // Initialize Supabase client with SSR - FIXED COOKIES HANDLING
+    // Initialize Supabase client with user session (not service role)
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // Use anon key, not service role
       {
         cookies: {
           get(name: string) {
             return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              cookieStore.set(name, value, options)
+            } catch (error) {
+              // Handle cookie setting errors
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.set(name, '', { ...options, maxAge: 0 })
+            } catch (error) {
+              // Handle cookie removal errors
+            }
           },
         },
       }
@@ -53,11 +66,14 @@ export async function GET(
     // Verify user authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
+      console.log('Auth error:', authError)
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized', details: 'Auth session missing!' },
         { status: 401 }
       )
     }
+
+    console.log('Authenticated user:', user.id)
 
     // Verify user owns this data (assuming auth_id maps to user)
     const { data: userData, error: userError } = await supabase
@@ -68,6 +84,7 @@ export async function GET(
       .single()
 
     if (userError || !userData) {
+      console.log('User verification error:', userError)
       return NextResponse.json(
         { error: 'Unauthorized access to user data' },
         { status: 403 }
