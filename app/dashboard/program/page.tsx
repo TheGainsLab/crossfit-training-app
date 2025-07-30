@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
 interface ProgramOverview {
@@ -41,6 +41,8 @@ export default function ProgramOverviewPage() {
 
   const loadProgramOverview = async () => {
     try {
+      const supabase = createClient()
+      
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {

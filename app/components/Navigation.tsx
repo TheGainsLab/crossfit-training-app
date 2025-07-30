@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 
 export default function Navigation() {
@@ -18,6 +18,7 @@ export default function Navigation() {
 
   const loadUser = async () => {
     try {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUser(user)
@@ -42,6 +43,7 @@ export default function Navigation() {
 
   const handleLogout = async () => {
     try {
+      const supabase = createClient()
       await supabase.auth.signOut()
       window.location.href = '/auth/signin'
     } catch (error) {
@@ -166,4 +168,3 @@ const navLinks = [
     </nav>
   )
 }
-
