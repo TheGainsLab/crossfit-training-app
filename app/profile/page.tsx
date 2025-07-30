@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 
 interface ProfileData {
@@ -165,7 +165,8 @@ export default function ProfilePage() {
   useEffect(() => {
     const loadUserSkills = async () => {
       if (!user) return
-      
+    
+        const supabase = createClient() // Add this line  
       try {
         const { data: userData } = await supabase
           .from('users')
@@ -248,10 +249,14 @@ export default function ProfilePage() {
     loadProfile()
   }, [])
 
-  const loadProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
+const loadProfile = async () => {
+  try {
+    const supabase = createClient() // Add this line
+    setLoading(true)
+    
+    const { data: { user } } = await supabase.auth.getUser()  
+
+    if (!user) {
         setError('Not authenticated')
         setLoading(false)
         return

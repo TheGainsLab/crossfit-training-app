@@ -26,6 +26,12 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [userId, setUserId] = useState<number | null>(null)
 
+  // API Testing States - REMOVE AFTER TESTING
+  const [testResult, setTestResult] = useState<any>(null)
+  const [isTestLoading, setIsTestLoading] = useState(false)
+  const [testExercise, setTestExercise] = useState('Bar Muscle Ups')
+  const [testBlock, setTestBlock] = useState('SKILLS')
+
   useEffect(() => {
     loadUserAndProgram()
   }, [])
@@ -35,6 +41,35 @@ export default function DashboardPage() {
       fetchTodaysWorkout()
     }
   }, [currentProgram, currentWeek, currentDay])
+
+  // API Test Function - REMOVE AFTER TESTING
+  const testExerciseDeepDive = async () => {
+    if (!userId) {
+      alert('User ID not loaded yet')
+      return
+    }
+
+    setIsTestLoading(true)
+    setTestResult(null)
+    
+    try {
+      const params = new URLSearchParams({
+        exercise: testExercise,
+        block: testBlock,
+        timeRange: '90'
+      })
+      
+      const response = await fetch(`/api/analytics/${userId}/exercise-deep-dive?${params}`)
+      const data = await response.json()
+      setTestResult(data)
+      console.log('✅ API Response:', data)
+    } catch (error) {
+      console.error('❌ Test failed:', error)
+      setTestResult({ error: error.message })
+    } finally {
+      setIsTestLoading(false)
+    }
+  }
 
   const loadUserAndProgram = async () => {
     try {
@@ -199,6 +234,59 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
+        {/* API TEST SECTION - REMOVE AFTER TESTING */}
+        <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-bold text-orange-800 mb-4">🧪 API Test Section (Remove After Testing)</h2>
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Exercise:</label>
+              <input 
+                type="text"
+                value={testExercise}
+                onChange={(e) => setTestExercise(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Block:</label>
+              <select 
+                value={testBlock}
+                onChange={(e) => setTestBlock(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="SKILLS">SKILLS</option>
+                <option value="STRENGTH">STRENGTH</option>
+                <option value="METCONS">METCONS</option>
+                <option value="ACCESSORIES">ACCESSORIES</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="mb-4">
+            <p className="text-sm text-gray-600">User ID: {userId || 'Loading...'}</p>
+          </div>
+
+          <button 
+            onClick={testExerciseDeepDive}
+            disabled={isTestLoading || !userId}
+            className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {isTestLoading ? 'Testing API...' : 'Test Exercise Deep Dive API'}
+          </button>
+          
+          {testResult && (
+            <div className="mt-6">
+              <h3 className="font-semibold text-gray-900 mb-2">API Response:</h3>
+              <div className="bg-white border rounded-lg p-4 max-h-96 overflow-auto">
+                <pre className="text-xs text-gray-700">
+                  {JSON.stringify(testResult, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
+        </div>
+        {/* END API TEST SECTION */}
+
         {todaysWorkout && (
           <>
             {/* Today's Workout Card */}
