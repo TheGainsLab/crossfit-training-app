@@ -1,3 +1,5 @@
+
+// /app/api/analytics/[userId]/exercise-deep-dive/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
@@ -34,94 +36,52 @@ export async function GET(
       )
     }
 
-    console.log(`📊 Processing analytics request for User ${userIdNum}: ${exercise} in ${block}`)
-
-    // Initialize Supabase client with proper SSR cookies
+    // Initialize Supabase client with SSR - FIXED COOKIES HANDLING
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // Use ANON key for client-side auth
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
         cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing user sessions.
-            }
+          get(name: string) {
+            return cookieStore.get(name)?.value
           },
         },
       }
     )
 
-    // Get authenticated user from session
+    // Verify user authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError) {
-      console.error('❌ Auth error:', authError)
+    if (authError || !user) {
       return NextResponse.json(
-        { error: 'Authentication failed', details: authError.message },
+        { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required - please log in' },
-        { status: 401 }
-      )
-    }
-
-    console.log(`✅ Authenticated user: ${user.email}`)
-
-    // Verify user owns this data
+    // Verify user owns this data (assuming auth_id maps to user)
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('id, email')
+      .select('id')
       .eq('auth_id', user.id)
       .eq('id', userIdNum)
       .single()
 
-    if (userError) {
-      console.error('❌ User verification error:', userError)
+    if (userError || !userData) {
       return NextResponse.json(
-        { error: 'User verification failed', details: userError.message },
-        { status: 500 }
-      )
-    }
-
-    if (!userData) {
-      return NextResponse.json(
-        { error: 'Access denied - you can only view your own analytics' },
+        { error: 'Unauthorized access to user data' },
         { status: 403 }
       )
     }
 
-    console.log(`✅ User verified: ${userData.email} (ID: ${userData.id})`)
+    console.log(`📊 Generating exercise deep dive for User ${userIdNum}: ${exercise} in ${block}`)
 
     // Calculate date range
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - timeRange)
 
-    // Query performance data using SERVICE_ROLE_KEY for database access
-    const serviceSupabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!, // Use service role for database queries
-      {
-        cookies: {
-          getAll: () => [],
-          setAll: () => {},
-        },
-      }
-    )
-
-    const { data: performanceData, error: perfError } = await serviceSupabase
+    // Query performance data
+    const { data: performanceData, error: perfError } = await supabase
       .from('performance_logs')
       .select('*')
       .eq('user_id', userIdNum)
@@ -140,21 +100,15 @@ export async function GET(
 
     if (!performanceData || performanceData.length === 0) {
       return NextResponse.json(
-        { 
-          error: 'No performance data found', 
-          message: `No data found for "${exercise}" in "${block}" block within the last ${timeRange} days.`,
-          suggestion: 'Try a different exercise, block, or extend the time range.'
-        },
+        { error: 'No performance data found for this exercise in the specified block' },
         { status: 404 }
       )
     }
 
-    console.log(`✅ Found ${performanceData.length} performance records`)
-
     // Query MetCon data if this is a MetCon exercise
     let metconData = []
     if (block === 'METCONS') {
-      const { data: metconResults, error: metconError } = await serviceSupabase
+      const { data: metconResults, error: metconError } = await supabase
         .from('program_metcons')
         .select(`
           *,
@@ -178,7 +132,6 @@ export async function GET(
           }
           return false
         })
-        console.log(`✅ Found ${metconData.length} MetCon records`)
       }
     }
 
@@ -200,8 +153,8 @@ export async function GET(
     const volumeChart = formatVolumeChart(metrics)
     const metconChart = metrics.metcon ? formatMetConChart(metrics) : undefined
 
-    // Get exercise category (optional)
-    const { data: exerciseInfo } = await serviceSupabase
+    // Get exercise category (you might want to query the exercises table for this)
+    const { data: exerciseInfo } = await supabase
       .from('exercises')
       .select('accessory_category, difficulty_level')
       .eq('name', exercise)
@@ -235,9 +188,9 @@ export async function GET(
           quality: {
             direction: metrics.quality.trend,
             current: metrics.quality.current,
-            best: 4,
-            worst: 1,
-            change: metrics.quality.current - 1
+            best: 4, // A grade
+            worst: 1, // D grade
+            change: metrics.quality.current - 1 // Change from worst possible
           }
         },
         volume: {
@@ -272,7 +225,7 @@ export async function GET(
       }
     }
 
-    console.log(`✅ Analytics generated successfully: ${performanceData.length} sessions, ${insights.length} insights`)
+    console.log(`✅ Exercise deep dive generated: ${performanceData.length} sessions, ${insights.length} insights`)
 
     return NextResponse.json(response)
 
