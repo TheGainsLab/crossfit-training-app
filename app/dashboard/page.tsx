@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 
 interface WorkoutSummary {
@@ -74,6 +74,7 @@ export default function DashboardPage() {
   const loadUserAndProgram = async () => {
     try {
       // Get current user
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         setError('Not authenticated')
@@ -264,6 +265,8 @@ export default function DashboardPage() {
           
           <div className="mb-4">
             <p className="text-sm text-gray-600">User ID: {userId || 'Loading...'}</p>
+            <p className="text-sm text-gray-600">Auth User ID: {user?.id || 'No user'}</p>
+            <p className="text-sm text-gray-600">User Email: {user?.email || 'No email'}</p>
           </div>
 
           <button 

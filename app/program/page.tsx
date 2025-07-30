@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 export default function ProgramPage() {
@@ -14,6 +14,8 @@ export default function ProgramPage() {
 
   const redirectToCurrentWorkout = async () => {
     try {
+      const supabase = createClient()
+      
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {

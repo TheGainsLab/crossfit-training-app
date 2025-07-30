@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 export default function LandingPage() {
@@ -11,6 +11,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     const checkUser = async () => {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
       setLoading(false)

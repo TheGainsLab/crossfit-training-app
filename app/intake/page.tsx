@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 // Form data structure that matches your database schema
@@ -211,6 +211,7 @@ function IntakeFormContent() {
   useEffect(() => {
     const checkUserAndSession = async () => {
       try {
+        const supabase = createClient()
         const sessionId = searchParams.get('session_id')
         
         if (sessionId) {
@@ -434,6 +435,7 @@ setSubscriptionStatus(subscription.status)
     await saveUserData(accountData.user.userId)
 
     // Sign in the user with the newly created account
+    const supabase = createClient()
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: formData.email,
       password: formData.password
@@ -463,6 +465,8 @@ setSubscriptionStatus(subscription.status)
       throw new Error('User not authenticated')
     }
 
+    const supabase = createClient()
+    
     // Update user record
     const { error: userError } = await supabase
       .from('users')
@@ -1145,5 +1149,3 @@ export default function IntakeForm() {
     </Suspense>
   )
 }
-
-

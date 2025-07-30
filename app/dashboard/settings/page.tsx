@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
 interface UserSettings {
@@ -45,6 +45,8 @@ export default function SettingsPage() {
 
   const loadUserSettings = async () => {
     try {
+      const supabase = createClient()
+      
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -118,6 +120,8 @@ export default function SettingsPage() {
     setMessage('')
 
     try {
+      const supabase = createClient()
+      
       // Update user settings
       const { error: updateError } = await supabase
         .from('users')
