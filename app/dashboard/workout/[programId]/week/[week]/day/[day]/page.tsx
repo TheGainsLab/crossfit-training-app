@@ -170,7 +170,8 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
   }
 
 const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
-  try {
+  console.log('🚀 logCompletion called for:', exerciseName) // ADD THIS LINE 
+try {
     const userId = await getCurrentUserId() // ✅ Get userId FIRST
     
     const response = await fetch('/api/workouts/complete', {
