@@ -131,3 +131,47 @@ export function generateCoachCollaborativeRecommendations(metrics: ExerciseMetri
 
   return recommendations
 }
+export function generateMetConInsights(timeDomainData: any): string[] {
+  // TODO: Implement MetCon-specific insights
+  return [
+    'MetCon analysis in progress',
+    'Time domain performance data being processed',
+    'Equipment impact analysis coming soon'
+  ]
+}
+
+export function generateBlockInsights(blockData: any): string[] {
+  // TODO: Implement block-specific insights  
+  return [
+    'Block analysis in progress',
+    'RPE trends being calculated',
+    'Exercise progression data being processed'
+  ]
+}
+
+export function generateStrengthInsights(strengthData: any): string[] {
+  // TODO: Implement strength-specific insights
+  return [
+    'Strength progression analysis in progress',
+    'Lift ratios being calculated',
+    '1RM estimations coming soon'
+  ]
+}
+
+export function generateSkillsInsights(skillsData: any): string[] {
+  // TODO: Implement skills-specific insights
+  return [
+    'Skills progression analysis in progress',
+    'Quality grade distributions being calculated',
+    'Practice frequency recommendations coming soon'
+  ]
+}
+
+export function generateDashboardInsights(dashboardData: any): string[] {
+  // TODO: Implement dashboard-level insights
+  return [
+    'Overall training analysis in progress',
+    'Cross-block performance comparison coming soon',
+    'Comprehensive recommendations being generated'
+  ]
+}
