@@ -70,12 +70,6 @@ export interface ChartDataset {
   }[]
 }
 
-export interface Recommendation {
-  type: 'collaboration' | 'development' | 'effort' | 'consistency' | 'frequency' | 'general'
-  priority: 'high' | 'medium' | 'low'
-  text: string
-  icon: string
-}
 
 export interface ExerciseDeepDiveResponse {
   success: boolean
