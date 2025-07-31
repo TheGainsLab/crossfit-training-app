@@ -140,14 +140,17 @@ export function generateMetConInsights(timeDomainData: any): string[] {
   ]
 }
 
-export function generateBlockInsights(blockData: any): string[] {
-  // TODO: Implement block-specific insights  
+
+
+export function generateBlockInsights(blockData: any, blockName?: string): string[] {
+  // TODO: Implement block-specific insights
   return [
-    'Block analysis in progress',
+    `${blockName || 'Block'} analysis in progress`,
     'RPE trends being calculated',
     'Exercise progression data being processed'
   ]
 }
+
 
 export function generateStrengthInsights(strengthData: any): string[] {
   // TODO: Implement strength-specific insights
