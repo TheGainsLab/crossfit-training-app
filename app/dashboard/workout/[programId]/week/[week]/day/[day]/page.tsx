@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -48,6 +49,33 @@ interface Completion {
   wasRx?: boolean
 }
 
+interface Completion {
+  exerciseName: string
+  setsCompleted?: number
+  repsCompleted?: string
+  weightUsed?: number
+  rpe?: number
+  quality?: string
+  notes?: string
+  wasRx?: boolean
+}
+
+// ADD THIS HELPER FUNCTION HERE
+const getCurrentUserId = async () => {
+  const { createClient } = await import('@/lib/supabase/client')
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+  
+  const { data: userData } = await supabase
+    .from('users')
+    .select('id')
+    .eq('auth_id', user.id)
+    .single()
+  
+  return userData.id
+}
+
 // Client component that handles all the hooks
 function WorkoutPageClient({ programId, week, day }: { programId: string; week: string; day: string }) {
   const [workout, setWorkout] = useState<WorkoutData | null>(null)
@@ -58,7 +86,8 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
     'SKILLS': true,
     'STRENGTH AND POWER': true
   })
-
+  
+ 
   useEffect(() => {
     fetchWorkout()
     fetchCompletions()
@@ -86,7 +115,8 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
 
   const fetchCompletions = async () => {
     try {
-      const response = await fetch(`/api/workouts/complete?userId=1&programId=${programId}&week=${week}&day=${day}`)
+      const userId = await getCurrentUserId()
+      const response = await fetch(`/api/workouts/complete?userId=${userId}&programId=${programId}&week=${week}&day=${day}`)
       
       if (response.ok) {
         const data = await response.json()
@@ -120,7 +150,7 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
         },
         body: JSON.stringify({
           programId: parseInt(programId),
-          userId: 1, // TODO: Get from auth
+          userId: await getCurrentUserId(),
           week: parseInt(week),
           day: parseInt(day),
           block,
@@ -570,3 +600,4 @@ function ExerciseCard({
     </div>
   )
 }
+
