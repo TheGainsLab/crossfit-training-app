@@ -173,7 +173,8 @@ const logCompletion = async (exerciseName: string, block: string, completion: Pa
   console.log('🚀 logCompletion called for:', exerciseName) // ADD THIS LINE 
 try {
     const userId = await getCurrentUserId() // ✅ Get userId FIRST
-    
+      console.log('🔢 About to make POST with userId:', userId)     
+
     const response = await fetch('/api/workouts/complete', {
       method: 'POST',
       headers: {
@@ -189,6 +190,7 @@ try {
         ...completion
       })
     })
+     console.log('📡 POST response:', response.status) // ADD THIS TOO
 
       if (response.ok) {
         const data = await response.json()
