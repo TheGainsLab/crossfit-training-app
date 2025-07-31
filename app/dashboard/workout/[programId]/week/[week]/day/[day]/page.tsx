@@ -73,6 +73,7 @@ const getCurrentUserId = async () => {
     .eq('auth_id', user.id)
     .single()
   
+  if (!userData) throw new Error('User not found in database')  
   return userData.id
 }
 
