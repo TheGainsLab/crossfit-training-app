@@ -194,13 +194,14 @@ function analyzeBlockPerformance(input: DashboardInput): BlockPerformance {
     const rpeKey = `${blockKey}_avg_rpe`
     const qualityKey = `${blockKey}_avg_quality`
     
-    let exercisesCompleted = 0
-    let totalRPE = 0
-    let totalQuality = 0
-    let sessionCount = 0
-    const rpeValues = []
-    const qualityValues = []
-    const exercises = new Set<string>()
+let exercisesCompleted = 0
+let totalRPE = 0
+let totalQuality = 0
+let sessionCount = 0  
+const rpeValues: number[] = []
+const qualityValues: number[] = []
+const exercises = new Set<string>()    
+
 
     // Process performance data
     blockSessions.forEach(session => {
