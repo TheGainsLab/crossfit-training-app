@@ -60,20 +60,47 @@ interface Completion {
   wasRx?: boolean
 }
 
-// ADD THIS HELPER FUNCTION HERE
 const getCurrentUserId = async () => {
+  console.log('🔍 getCurrentUserId called')
+  
   const { createClient } = await import('@/lib/supabase/client')
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
   
-  const { data: userData } = await supabase
+  console.log('📱 Getting auth user...')
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError) {
+    console.error('❌ Auth error:', authError)
+    throw new Error('Auth error: ' + authError.message)
+  }
+  
+  if (!user) {
+    console.error('❌ No user found in auth')
+    throw new Error('Not authenticated')
+  }
+  
+  console.log('✅ Auth user found:', user.id)
+  
+  console.log('🔍 Looking up database user...')
+  const { data: userData, error: dbError } = await supabase
     .from('users')
-    .select('id')
+    .select('id, auth_id, email')
     .eq('auth_id', user.id)
     .single()
   
-  if (!userData) throw new Error('User not found in database')  
+  if (dbError) {
+    console.error('❌ Database error:', dbError)
+    throw new Error('Database error: ' + dbError.message)
+  }
+  
+  console.log('📊 Database query result:', userData)
+  
+  if (!userData) {
+    console.error('❌ No database user found')
+    throw new Error('User not found in database')
+  }
+  
+  console.log('✅ Returning user ID:', userData.id)
   return userData.id
 }
 
@@ -142,23 +169,25 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
     }
   }
 
-  const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
-    try {
-      const response = await fetch('/api/workouts/complete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          programId: parseInt(programId),
-          userId: await getCurrentUserId(),
-          week: parseInt(week),
-          day: parseInt(day),
-          block,
-          exerciseName,
-          ...completion
-        })
+const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
+  try {
+    const userId = await getCurrentUserId() // ✅ Get userId FIRST
+    
+    const response = await fetch('/api/workouts/complete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        programId: parseInt(programId),
+        userId, // ✅ Use the resolved value
+        week: parseInt(week),
+        day: parseInt(day),
+        block,
+        exerciseName,
+        ...completion
       })
+    })
 
       if (response.ok) {
         const data = await response.json()
