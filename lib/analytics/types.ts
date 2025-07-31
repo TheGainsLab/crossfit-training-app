@@ -141,3 +141,11 @@ export interface ExerciseDeepDiveResponse {
     blockContext: string
   }
 }
+
+// ADD THIS AT THE END:
+export interface Recommendation {
+  type: string
+  priority: 'high' | 'medium' | 'low'
+  text: string
+  icon: string
+}
