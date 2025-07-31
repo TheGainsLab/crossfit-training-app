@@ -124,10 +124,12 @@ export function processBlockAnalysisData(
       progressionSignals
     }
 
-  } catch (error) {
-    console.error(`❌ Error processing block analysis data: ${error.message}`)
-    return null
-  }
+} catch (error) {
+  const errorMessage = error instanceof Error ? error.message : String(error)
+  console.error(`❌ Error processing block analysis data: ${errorMessage}`)
+  return null
+}
+
 }
 
 /**
