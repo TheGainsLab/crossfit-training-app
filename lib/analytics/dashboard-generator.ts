@@ -117,10 +117,12 @@ export function generateOverallDashboard(input: DashboardInput): DashboardData |
       keyInsights
     }
 
-  } catch (error) {
-    console.error(`❌ Error generating dashboard: ${error.message}`)
-    return null
-  }
+} catch (error) {
+  const errorMessage = error instanceof Error ? error.message : String(error)
+  console.error(`❌ Error generating dashboard: ${errorMessage}`)
+  return null
+}
+
 }
 
 /**
