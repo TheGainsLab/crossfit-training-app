@@ -159,10 +159,12 @@ export function processStrengthData(
       periodization
     }
 
-  } catch (error) {
-    console.error(`❌ Error processing strength data: ${error.message}`)
-    return null
-  }
+} catch (error) {
+  const errorMessage = error instanceof Error ? error.message : String(error)
+  console.error(`❌ Error processing strength data: ${errorMessage}`)
+  return null
+}
+
 }
 
 /**
