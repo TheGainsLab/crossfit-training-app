@@ -122,10 +122,13 @@ export function processMetConTimeDomainData(
       overallAverages
     }
 
-  } catch (error) {
-    console.error(`❌ Error processing MetCon time domain data: ${error.message}`)
-    return null
-  }
+} catch (error) {
+  const errorMessage = error instanceof Error ? error.message : String(error)
+  console.error(`❌ Error processing MetCon time domain data: ${errorMessage}`)
+  return null
+}
+
+
 }
 
 /**
