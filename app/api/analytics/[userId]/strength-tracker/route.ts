@@ -5,6 +5,8 @@ import { cookies } from 'next/headers'
 import { processStrengthData } from '@/lib/analytics/strength-tracker'
 import { formatStrengthCharts } from '@/lib/analytics/chart-formatters'
 import { generateStrengthInsights } from '@/lib/analytics/insights-generator'
+import { Recommendation } from '@/lib/analytics/types'  // ← ADD THIS
+
 
 export async function GET(
   request: NextRequest,
@@ -247,8 +249,11 @@ function calculateStrengthSummary(strengthAnalysis: any) {
 /**
  * Generate strength-specific recommendations
  */
-function generateStrengthRecommendations(strengthAnalysis: any) {
-  const recommendations = []
+
+
+function generateStrengthRecommendations(strengthAnalysis: any): Recommendation[] {
+  const recommendations: Recommendation[] = []  // ← Add explicit typing
+
   const rpeTarget = { min: 5.5, max: 8.0 } // Strength RPE targets
 
   if (!strengthAnalysis.movements) {
