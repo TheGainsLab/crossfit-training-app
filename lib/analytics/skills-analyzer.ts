@@ -172,10 +172,13 @@ export function processSkillsData(
       consistencyMetrics
     }
 
-  } catch (error) {
-    console.error(`❌ Error processing skills data: ${error.message}`)
-    return null
-  }
+
+} catch (error) {
+  const errorMessage = error instanceof Error ? error.message : String(error)
+  console.error(`❌ Error processing skills data: ${errorMessage}`)
+  return null
+}
+
 }
 
 /**
