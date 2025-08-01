@@ -14,6 +14,7 @@ interface CompletionData {
   day: number
   block: string
   exerciseName: string
+  setNumber?: number 
   setsCompleted?: number
   repsCompleted?: number | string  // Can be number or string like "8-10" or "AMRAP"
   weightUsed?: number
@@ -75,17 +76,18 @@ export async function POST(request: NextRequest) {
 
     console.log(`📊 Logging completion: ${completionData.exerciseName} - Week ${completionData.week}, Day ${completionData.day}`)
 
-    // Check if this exact completion already exists (prevent duplicates)
-    const { data: existingCompletion } = await supabase
-      .from('workout_completions')
-      .select('id')
-      .eq('user_id', completionData.userId)
-      .eq('program_id', completionData.programId)
-      .eq('week', completionData.week)
-      .eq('day', completionData.day)
-      .eq('block', completionData.block)
-      .eq('exercise_name', completionData.exerciseName)
-      .single()
+// Check if this exact completion already exists (prevent duplicates)
+const { data: existingCompletion } = await supabase
+  .from('workout_completions')
+  .select('id')
+  .eq('user_id', completionData.userId)
+  .eq('program_id', completionData.programId)
+  .eq('week', completionData.week)
+  .eq('day', completionData.day)
+  .eq('block', completionData.block)
+  .eq('exercise_name', completionData.exerciseName)
+  .eq('set_number', completionData.setNumber || 1)  // ← ADD THIS LINE
+  .single()
 
     let result
     if (existingCompletion) {
@@ -94,6 +96,7 @@ export async function POST(request: NextRequest) {
       const { data, error } = await supabase
         .from('workout_completions')
         .update({
+          set_number: completionData.setNumber || 1,  // ← ADD THIS LINE       
           sets_completed: completionData.setsCompleted,
           reps_completed: completionData.repsCompleted?.toString(),
           weight_used: completionData.weightUsed,
@@ -123,6 +126,7 @@ export async function POST(request: NextRequest) {
           day: completionData.day,
           block: completionData.block,
           exercise_name: completionData.exerciseName,
+          set_number: completionData.setNumber || 1,  // ← ADD THIS LINE    
           sets_completed: completionData.setsCompleted,
           reps_completed: completionData.repsCompleted?.toString(),
           weight_used: completionData.weightUsed,
@@ -187,6 +191,7 @@ export async function POST(request: NextRequest) {
       block: completionData.block,
       exercise_name: completionData.exerciseName,
       sets: completionData.setsCompleted?.toString(),
+      set_number: completionData.setNumber || 1,  // ← ADD THIS LINE    
       reps: completionData.repsCompleted?.toString(),
       weight_time: completionData.weightUsed?.toString(),
       result: completionData.notes,

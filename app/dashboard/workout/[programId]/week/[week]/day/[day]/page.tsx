@@ -170,11 +170,19 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
   }
 
 const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
-  console.log('🚀 logCompletion called for:', exerciseName) // ADD THIS LINE 
-try {
-    const userId = await getCurrentUserId() // ✅ Get userId FIRST
-      console.log('🔢 About to make POST with userId:', userId)     
-
+  console.log('🚀 logCompletion called for:', exerciseName)
+  
+  // Extract set number from exercise name if it exists
+  const setMatch = exerciseName.match(/Set (\d+)$/);
+  const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+  
+  // Clean exercise name (remove "- Set X" part)
+  const cleanExerciseName = exerciseName.replace(/ - Set \d+$/, '');
+  
+  try {
+    const userId = await getCurrentUserId()
+    console.log('🔢 About to make POST with userId:', userId, 'setNumber:', setNumber)
+    
     const response = await fetch('/api/workouts/complete', {
       method: 'POST',
       headers: {
@@ -182,29 +190,31 @@ try {
       },
       body: JSON.stringify({
         programId: parseInt(programId),
-        userId, // ✅ Use the resolved value
+        userId,
         week: parseInt(week),
         day: parseInt(day),
         block,
-        exerciseName,
+        exerciseName: cleanExerciseName,
+        setNumber,
         ...completion
       })
     })
-     console.log('📡 POST response:', response.status) // ADD THIS TOO
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          setCompletions(prev => ({
-            ...prev,
-            [exerciseName]: { exerciseName, ...completion }
-          }))
-        }
+    
+    console.log('📡 POST response:', response.status)
+    
+    if (response.ok) {
+      const data = await response.json()
+      if (data.success) {
+        setCompletions(prev => ({
+          ...prev,
+          [exerciseName]: { exerciseName, ...completion }
+        }))
       }
-    } catch (err) {
-      console.error('Failed to log completion:', err)
     }
+  } catch (err) {
+    console.error('Failed to log completion:', err)
   }
+}
 
   const toggleBlock = (blockName: string) => {
     setExpandedBlocks(prev => ({
