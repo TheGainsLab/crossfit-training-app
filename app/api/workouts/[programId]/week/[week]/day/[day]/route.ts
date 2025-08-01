@@ -158,6 +158,26 @@ export async function GET(
 
     console.log(`✅ Found workout: ${targetDay.dayName} - ${targetDay.mainLift}`)
 
+// ADD THIS SECTION HERE (before the workout object)
+// Fetch user gender for proper MetCon benchmarks
+let userGender = 'male' // Default fallback
+try {
+  const { data: userData, error: userError } = await supabase
+    .from('users') 
+    .select('gender')
+.eq('id', program.user_id)  // Use the user_id from the program we already fetched    
+    .single()
+  
+  if (userData && !userError) {
+    userGender = userData.gender || 'male'
+    console.log('👤 User gender:', userGender)
+  }
+} catch (error) {
+  console.log('⚠️ Could not fetch user gender, using default')
+}
+
+
+
     // Format the workout for frontend consumption
     const workout = {
       programId: programIdNum,
@@ -166,7 +186,8 @@ export async function GET(
       dayName: targetDay.dayName,
       mainLift: targetDay.mainLift,
       isDeload: targetDay.isDeload,
-      blocks: targetDay.blocks.map((block: any) => ({
+ userGender: userGender,  // ← ADD THIS LINE      
+blocks: targetDay.blocks.map((block: any) => ({
         blockName: block.block,
         exercises: block.exercises.map((exercise: any) => ({
           name: exercise.name,

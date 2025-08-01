@@ -25,6 +25,7 @@ interface WorkoutData {
   dayName: string
   mainLift: string
   isDeload: boolean
+ userGender: string  // ← ADD THIS LINE
   blocks: Block[]
 metconData?: {
   id: number
