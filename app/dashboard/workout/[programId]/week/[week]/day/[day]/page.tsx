@@ -57,10 +57,9 @@ metconData?: {
     male: string
     female: string
   }
+} 
+ totalExercises: number 
 }
-
-
-
 
 
 interface Completion {
