@@ -107,7 +107,7 @@ export async function GET(
     // Fetch the program from database
     const { data: program, error: fetchError } = await supabase
       .from('programs')
-.select('program_data, weeks_generated, generated_at')
+      .select('program_data, weeks_generated, generated_at, user_id')
       .eq('id', programIdNum)
       .single()
 
