@@ -7,6 +7,66 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// ADD THE ENHANCED FUNCTION HERE (after supabase setup, before the GET function)
+async function enhanceMetconData(metconData: any) {
+  try {
+    // Look up the complete metcon data by matching workout_id
+    const { data: metcon, error } = await supabase
+      .from('metcons')
+      .select(`
+        id,
+        workout_id,
+        format,
+        workout_notes,
+        time_range,
+        tasks,
+        male_p90,
+        male_p50,
+        male_std_dev,
+        female_p90,
+        female_p50,
+        female_std_dev,
+        max_weight_male,
+        max_weight_female
+      `)
+      .eq('workout_id', metconData.workoutId)
+      .single()
+
+    if (error || !metcon) {
+      console.warn('⚠️ Could not find metcon data for:', metconData.workoutId)
+      return metconData // Return original data without enhancements
+    }
+
+    // Return fully enhanced data structure
+    return {
+      id: metcon.id,
+      workoutId: metcon.workout_id,
+      workoutFormat: metcon.format,
+      workoutNotes: metcon.workout_notes,
+      timeRange: metcon.time_range,
+      tasks: metcon.tasks,
+      percentileGuidance: {
+        male: {
+          excellentScore: metcon.male_p90,
+          medianScore: metcon.male_p50,
+          stdDev: metcon.male_std_dev
+        },
+        female: {
+          excellentScore: metcon.female_p90,
+          medianScore: metcon.female_p50,
+          stdDev: metcon.female_std_dev
+        }
+      },
+      rxWeights: {
+        male: metcon.max_weight_male,
+        female: metcon.max_weight_female
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error enhancing metcon data:', error)
+    return metconData // Return original data on error
+  }
+}
 
 export async function GET(
   request: NextRequest,
@@ -144,3 +204,4 @@ export async function GET(
     )
   }
 }
+

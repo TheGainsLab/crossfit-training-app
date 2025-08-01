@@ -26,17 +26,42 @@ interface WorkoutData {
   mainLift: string
   isDeload: boolean
   blocks: Block[]
-  metconData?: {
-    workoutId: string
-    workoutFormat: string
-    timeRange: string
-    percentileGuidance: {
+metconData?: {
+  id: number
+  workoutId: string
+  workoutFormat: string
+  workoutNotes: string
+  timeRange: string
+  tasks: Array<{
+    reps: string
+    time: string
+    calories: string
+    distance: string
+    exercise: string
+    weight_male: string
+    weight_female: string
+  }>
+  percentileGuidance: {
+    male: {
       excellentScore: string
       medianScore: string
+      stdDev: string
+    }
+    female: {
+      excellentScore: string
+      medianScore: string
+      stdDev: string
     }
   }
-  totalExercises: number
+  rxWeights: {
+    male: string
+    female: string
+  }
 }
+
+
+
+
 
 interface Completion {
   exerciseName: string
@@ -400,13 +425,14 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
     ) : (
       
 block.blockName === 'METCONS' ? (
- <MetConCard
+
+<MetConCard
   metconData={workout.metconData}
-  exercises={block.exercises}
   onComplete={(workoutScore, taskCompletions) => {
     logMetConCompletion(workoutScore, taskCompletions)
   }}
 />
+
 ) : (
   block.exercises.map((exercise, exerciseIndex) => {
     console.log('Exercise object:', exercise);
@@ -708,29 +734,35 @@ function ExerciseCard({
   )
 }
 
-// ADD THE METCONCARD COMPONENT HERE (after line 644):
-
 function MetConCard({ 
   metconData, 
-  exercises, 
   onComplete 
 }: { 
   metconData?: {
+    id: number
     workoutId: string
     workoutFormat: string
+    workoutNotes: string
     timeRange: string
+    tasks: Array<{
+      reps: string
+      exercise: string
+      weight_male: string
+      weight_female: string
+    }>
     percentileGuidance: {
-      excellentScore: string
-      medianScore: string
+      male: { excellentScore: string, medianScore: string }
+      female: { excellentScore: string, medianScore: string }
     }
+    rxWeights: { male: string, female: string }
   }
-  exercises: Exercise[]
   onComplete: (workoutScore: string, taskCompletions: {exerciseName: string, rpe: number, quality: string}[]) => void
 }) {
   const [workoutScore, setWorkoutScore] = useState('')
   const [taskRPEs, setTaskRPEs] = useState<{[key: string]: number}>({})
   const [taskQualities, setTaskQualities] = useState<{[key: string]: string}>({})
   const [notes, setNotes] = useState('')
+  const [gender, setGender] = useState<'male' | 'female'>('male')
 
   const handleTaskRPE = (exerciseName: string, rpe: number) => {
     setTaskRPEs(prev => ({...prev, [exerciseName]: rpe}))
@@ -741,16 +773,19 @@ function MetConCard({
   }
 
   const handleSubmit = () => {
-    const taskCompletions = exercises.map(exercise => ({
-      exerciseName: exercise.name,
-      rpe: taskRPEs[exercise.name] || 5,
-      quality: taskQualities[exercise.name] || 'C'
-    }))
+    const taskCompletions = metconData?.tasks.map(task => ({
+      exerciseName: task.exercise,
+      rpe: taskRPEs[task.exercise] || 5,
+      quality: taskQualities[task.exercise] || 'C'
+    })) || []
     
     onComplete(workoutScore, taskCompletions)
   }
 
   if (!metconData) return null
+
+  const currentBenchmarks = metconData.percentileGuidance[gender]
+  const currentRxWeight = metconData.rxWeights[gender]
 
   return (
     <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6">
@@ -759,31 +794,62 @@ function MetConCard({
         <h3 className="text-xl font-bold text-gray-900 mb-2">
           🔥 {metconData.workoutId}
         </h3>
-        <p className="text-gray-700 mb-2">{metconData.workoutFormat}</p>
+        <p className="text-gray-700 mb-2 font-medium">{metconData.workoutNotes}</p>
+        <p className="text-sm text-gray-600 mb-1">{metconData.workoutFormat}</p>
         <p className="text-sm text-gray-600 mb-4">Time Range: {metconData.timeRange}</p>
         
-        {/* Benchmarks */}
-        <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-6">
+        {/* Gender Selection */}
+        <div className="flex justify-center mb-4">
+          <div className="flex bg-white rounded-lg p-1 border">
+            <button
+              onClick={() => setGender('male')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                gender === 'male' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              Male
+            </button>
+            <button
+              onClick={() => setGender('female')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                gender === 'female' 
+                  ? 'bg-pink-500 text-white' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              Female
+            </button>
+          </div>
+        </div>
+        
+        {/* Enhanced Benchmarks */}
+        <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mb-6">
           <div className="bg-white rounded-lg p-3">
-            <div className="text-sm text-gray-600">Excellent Score</div>
-            <div className="font-bold text-green-600">{metconData.percentileGuidance.excellentScore}</div>
+            <div className="text-sm text-gray-600">Excellent</div>
+            <div className="font-bold text-green-600">{currentBenchmarks.excellentScore}</div>
           </div>
           <div className="bg-white rounded-lg p-3">
-            <div className="text-sm text-gray-600">Median Score</div>
-            <div className="font-bold text-blue-600">{metconData.percentileGuidance.medianScore}</div>
+            <div className="text-sm text-gray-600">Median</div>
+            <div className="font-bold text-blue-600">{currentBenchmarks.medianScore}</div>
+          </div>
+          <div className="bg-white rounded-lg p-3">
+            <div className="text-sm text-gray-600">Rx Weight</div>
+            <div className="font-bold text-orange-600">{currentRxWeight}</div>
           </div>
         </div>
       </div>
 
-      {/* Tasks */}
+      {/* Tasks from Database */}
       <div className="space-y-4 mb-6">
-        {exercises.map((exercise, index) => (
+        {metconData.tasks.map((task, index) => (
           <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
             <div className="flex justify-between items-center mb-3">
               <div>
-                <h4 className="font-semibold text-gray-900">{exercise.name}</h4>
+                <h4 className="font-semibold text-gray-900">{task.exercise}</h4>
                 <p className="text-sm text-gray-600">
-                  {exercise.reps} reps {exercise.weightTime && `@ ${exercise.weightTime}`}
+                  {task.reps} reps {task.weight_male && `@ ${gender === 'male' ? task.weight_male : task.weight_female} lbs`}
                 </p>
               </div>
             </div>
@@ -796,16 +862,16 @@ function MetConCard({
                   type="number"
                   min="1"
                   max="10"
-                  value={taskRPEs[exercise.name] || ''}
-                  onChange={(e) => handleTaskRPE(exercise.name, parseInt(e.target.value))}
+                  value={taskRPEs[task.exercise] || ''}
+                  onChange={(e) => handleTaskRPE(task.exercise, parseInt(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Quality</label>
                 <select
-                  value={taskQualities[exercise.name] || 'C'}
-                  onChange={(e) => handleTaskQuality(exercise.name, e.target.value)}
+                  value={taskQualities[task.exercise] || 'C'}
+                  onChange={(e) => handleTaskQuality(task.exercise, e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
                   <option value="A">A - Excellent</option>
@@ -851,4 +917,3 @@ function MetConCard({
     </div>
   )
 }
-
