@@ -336,7 +336,7 @@ const logCompletion = async (exerciseName: string, block: string, completion: Pa
               </div>
             </button>
 
-          {/* Block Content */}
+        {/* Block Content */}
 {expandedBlocks[block.blockName] && (
   <div className="px-4 pb-4 space-y-4">
     {block.exercises.length === 0 ? (
@@ -346,16 +346,22 @@ const logCompletion = async (exerciseName: string, block: string, completion: Pa
       </div>
     ) : (
       block.exercises.map((exercise, exerciseIndex) => {
-        console.log('Exercise object:', exercise);  // ← ADD THIS LINE
-        return (  // ← ADD THIS LINE
+        console.log('Exercise object:', exercise);
+        return (
           <ExerciseCard
             key={exerciseIndex}
             exercise={exercise}
             block={block.blockName}
             completion={completions[exercise.name]}
-            onComplete={(completion) => logCompletion(exercise.name, block.blockName, completion)}
+            onComplete={(completion) => {
+              // Extract set info from exercise notes
+              const setMatch = exercise.notes.match(/Set (\d+)/);
+              const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+              const exerciseWithSet = `${exercise.name} - Set ${setNumber}`;
+              logCompletion(exerciseWithSet, block.blockName, completion);
+            }}
           />
-        )  // ← ADD THIS CLOSING PARENTHESIS
+        )
       })
     )}
   </div>
