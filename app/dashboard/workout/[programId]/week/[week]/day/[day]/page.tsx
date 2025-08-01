@@ -460,29 +460,6 @@ block.blockName === 'METCONS' ? (
         ))}
 
         {/* MetCon Special Section */}
-        {workout.metconData && (
-          <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6 mt-6">
-            <div className="text-center">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                🔥 {workout.metconData.workoutId}
-              </h3>
-              <p className="text-gray-700 mb-4">{workout.metconData.workoutFormat}</p>
-              <p className="text-sm text-gray-600 mb-4">Time Range: {workout.metconData.timeRange}</p>
-              
-              <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-                <div className="bg-white rounded-lg p-3">
-                  <div className="text-sm text-gray-600">Excellent Score</div>
-                  <div className="font-bold text-green-600">{workout.metconData.percentileGuidance.excellentScore}</div>
-                </div>
-                <div className="bg-white rounded-lg p-3">
-                  <div className="text-sm text-gray-600">Median Score</div>
-                  <div className="font-bold text-blue-600">{workout.metconData.percentileGuidance.medianScore}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Navigation */}
         <div className="flex justify-between mt-8 pt-6 border-t">
           <Link 
