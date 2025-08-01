@@ -345,24 +345,37 @@ const logCompletion = async (exerciseName: string, block: string, completion: Pa
         <p>No exercises in this block today</p>
       </div>
     ) : (
-      block.exercises.map((exercise, exerciseIndex) => {
-        console.log('Exercise object:', exercise);
-        return (
-          <ExerciseCard
-            key={exerciseIndex}
-            exercise={exercise}
-            block={block.blockName}
-            completion={completions[exercise.name]}
-            onComplete={(completion) => {
-              // Extract set info from exercise notes
-              const setMatch = exercise.notes.match(/Set (\d+)/);
-              const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
-              const exerciseWithSet = `${exercise.name} - Set ${setNumber}`;
-              logCompletion(exerciseWithSet, block.blockName, completion);
-            }}
-          />
-        )
-      })
+      
+block.blockName === 'METCONS' ? (
+  <MetConCard
+    metconData={workout.metconData}
+    exercises={block.exercises}
+    onComplete={(workoutScore, taskCompletions) => {
+      // TODO: Handle MetCon completion
+      console.log('MetCon completed:', { workoutScore, taskCompletions });
+    }}
+  />
+) : (
+  block.exercises.map((exercise, exerciseIndex) => {
+    console.log('Exercise object:', exercise);
+    return (
+      <ExerciseCard
+        key={exerciseIndex}
+        exercise={exercise}
+        block={block.blockName}
+        completion={completions[exercise.name]}
+        onComplete={(completion) => {
+          // Extract set info from exercise notes
+          const setMatch = exercise.notes.match(/Set (\d+)/);
+          const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+          const exerciseWithSet = `${exercise.name} - Set ${setNumber}`;
+          logCompletion(exerciseWithSet, block.blockName, completion);
+        }}
+      />
+    )
+  })
+)
+
     )}
   </div>
 )}
@@ -643,3 +656,146 @@ function ExerciseCard({
   )
 }
 
+// ADD THE METCONCARD COMPONENT HERE (after line 644):
+
+function MetConCard({ 
+  metconData, 
+  exercises, 
+  onComplete 
+}: { 
+  metconData?: {
+    workoutId: string
+    workoutFormat: string
+    timeRange: string
+    percentileGuidance: {
+      excellentScore: string
+      medianScore: string
+    }
+  }
+  exercises: Exercise[]
+  onComplete: (workoutScore: string, taskCompletions: {exerciseName: string, rpe: number, quality: string}[]) => void
+}) {
+  const [workoutScore, setWorkoutScore] = useState('')
+  const [taskRPEs, setTaskRPEs] = useState<{[key: string]: number}>({})
+  const [taskQualities, setTaskQualities] = useState<{[key: string]: string}>({})
+  const [notes, setNotes] = useState('')
+
+  const handleTaskRPE = (exerciseName: string, rpe: number) => {
+    setTaskRPEs(prev => ({...prev, [exerciseName]: rpe}))
+  }
+
+  const handleTaskQuality = (exerciseName: string, quality: string) => {
+    setTaskQualities(prev => ({...prev, [exerciseName]: quality}))
+  }
+
+  const handleSubmit = () => {
+    const taskCompletions = exercises.map(exercise => ({
+      exerciseName: exercise.name,
+      rpe: taskRPEs[exercise.name] || 5,
+      quality: taskQualities[exercise.name] || 'C'
+    }))
+    
+    onComplete(workoutScore, taskCompletions)
+  }
+
+  if (!metconData) return null
+
+  return (
+    <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6">
+      {/* Workout Header */}
+      <div className="text-center mb-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">
+          🔥 {metconData.workoutId}
+        </h3>
+        <p className="text-gray-700 mb-2">{metconData.workoutFormat}</p>
+        <p className="text-sm text-gray-600 mb-4">Time Range: {metconData.timeRange}</p>
+        
+        {/* Benchmarks */}
+        <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-6">
+          <div className="bg-white rounded-lg p-3">
+            <div className="text-sm text-gray-600">Excellent Score</div>
+            <div className="font-bold text-green-600">{metconData.percentileGuidance.excellentScore}</div>
+          </div>
+          <div className="bg-white rounded-lg p-3">
+            <div className="text-sm text-gray-600">Median Score</div>
+            <div className="font-bold text-blue-600">{metconData.percentileGuidance.medianScore}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tasks */}
+      <div className="space-y-4 mb-6">
+        {exercises.map((exercise, index) => (
+          <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <h4 className="font-semibold text-gray-900">{exercise.name}</h4>
+                <p className="text-sm text-gray-600">
+                  {exercise.reps} reps {exercise.weightTime && `@ ${exercise.weightTime}`}
+                </p>
+              </div>
+            </div>
+            
+            {/* RPE and Quality inputs */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">RPE (1-10)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={taskRPEs[exercise.name] || ''}
+                  onChange={(e) => handleTaskRPE(exercise.name, parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Quality</label>
+                <select
+                  value={taskQualities[exercise.name] || 'C'}
+                  onChange={(e) => handleTaskQuality(exercise.name, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                >
+                  <option value="A">A - Excellent</option>
+                  <option value="B">B - Good</option>
+                  <option value="C">C - Average</option>
+                  <option value="D">D - Poor</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Overall Score */}
+      <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Your Score</label>
+        <input
+          type="text"
+          placeholder="e.g., 674 total reps, 12:34, 8 rounds + 15"
+          value={workoutScore}
+          onChange={(e) => setWorkoutScore(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
+        />
+        
+        <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+        <textarea
+          placeholder="How did it feel? Any observations..."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          rows={3}
+        />
+      </div>
+
+      {/* Submit Button */}
+      <button
+        onClick={handleSubmit}
+        disabled={!workoutScore.trim()}
+        className="w-full bg-orange-600 text-white py-3 px-4 rounded-lg hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+      >
+        Log MetCon Completion
+      </button>
+    </div>
+  )
+}
