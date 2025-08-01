@@ -49,16 +49,6 @@ interface Completion {
   wasRx?: boolean
 }
 
-interface Completion {
-  exerciseName: string
-  setsCompleted?: number
-  repsCompleted?: string
-  weightUsed?: number
-  rpe?: number
-  quality?: string
-  notes?: string
-  wasRx?: boolean
-}
 
 const getCurrentUserId = async () => {
   console.log('🔍 getCurrentUserId called')
@@ -346,27 +336,30 @@ const logCompletion = async (exerciseName: string, block: string, completion: Pa
               </div>
             </button>
 
-            {/* Block Content */}
-            {expandedBlocks[block.blockName] && (
-              <div className="px-4 pb-4 space-y-4">
-                {block.exercises.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <div className="text-4xl mb-2">✨</div>
-                    <p>No exercises in this block today</p>
-                  </div>
-                ) : (
-                  block.exercises.map((exercise, exerciseIndex) => (
-                    <ExerciseCard
-                      key={exerciseIndex}
-                      exercise={exercise}
-                      block={block.blockName}
-                      completion={completions[exercise.name]}
-                      onComplete={(completion) => logCompletion(exercise.name, block.blockName, completion)}
-                    />
-                  ))
-                )}
-              </div>
-            )}
+          {/* Block Content */}
+{expandedBlocks[block.blockName] && (
+  <div className="px-4 pb-4 space-y-4">
+    {block.exercises.length === 0 ? (
+      <div className="text-center py-8 text-gray-500">
+        <div className="text-4xl mb-2">✨</div>
+        <p>No exercises in this block today</p>
+      </div>
+    ) : (
+      block.exercises.map((exercise, exerciseIndex) => {
+        console.log('Exercise object:', exercise);  // ← ADD THIS LINE
+        return (  // ← ADD THIS LINE
+          <ExerciseCard
+            key={exerciseIndex}
+            exercise={exercise}
+            block={block.blockName}
+            completion={completions[exercise.name]}
+            onComplete={(completion) => logCompletion(exercise.name, block.blockName, completion)}
+          />
+        )  // ← ADD THIS CLOSING PARENTHESIS
+      })
+    )}
+  </div>
+)}
           </div>
         ))}
 
