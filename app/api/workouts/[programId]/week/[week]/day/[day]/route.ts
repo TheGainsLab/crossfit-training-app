@@ -198,7 +198,7 @@ blocks: targetDay.blocks.map((block: any) => ({
         }))
       })),
       // Include MetCon metadata if available
-      metconData: targetDay.metconData || null,
+metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData) : null,
       // Summary information
       totalExercises: targetDay.blocks.reduce((sum: number, block: any) => sum + (block.exercises?.length || 0), 0),
       totalBlocks: targetDay.blocks.length
