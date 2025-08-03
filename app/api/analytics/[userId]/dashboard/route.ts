@@ -4,7 +4,6 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { generateOverallDashboard } from '@/lib/analytics/dashboard-generator'
 import { formatDashboardCharts } from '@/lib/analytics/chart-formatters'
-import { generateDashboardInsights } from '@/lib/analytics/insights-generator'
 
 export async function GET(
   request: NextRequest,
@@ -164,8 +163,7 @@ export async function GET(
     }
 
     // Generate insights
-    const insights = generateDashboardInsights(dashboardData)
-
+const insights = dashboardData.keyInsights || []
     // Format chart data
     const charts = formatDashboardCharts(dashboardData)
 
