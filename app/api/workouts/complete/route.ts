@@ -28,6 +28,191 @@ interface CompletionData {
   scalingUsed?: string  // What scaling modifications were used
 }
 
+// =============================================================================
+// WEEKLY SUMMARY FUNCTIONS - NEW ADDITION
+// =============================================================================
+
+/**
+ * Update weekly summary after workout completion
+ * Translates Google Apps Script logic to TypeScript/Supabase
+ */
+async function updateWeeklySummary(data: {
+  userId: number;
+  programId: number;
+  week: number;
+}) {
+  try {
+    console.log(`📊 Updating weekly summary for User ${data.userId}, Week ${data.week}`);
+    
+    // Step 1: Aggregate data by training block
+    const blockAggregations = await aggregateByTrainingBlock(data);
+    
+    // Step 2: Get MetCon percentile data
+    const metconData = await getMetconAggregation(data);
+    
+    // Step 3: Calculate overall totals
+    const overallTotals = await calculateOverallTotals(data);
+    
+    // Step 4: Upsert into weekly_summaries
+    const summaryData = {
+      program_id: data.programId,
+      user_id: data.userId,
+      week: data.week,
+      
+      // Training block aggregations
+      skills_completed: blockAggregations.SKILLS?.count || 0,
+      skills_avg_rpe: blockAggregations.SKILLS?.avgRpe || null,
+      skills_avg_quality: blockAggregations.SKILLS?.avgQuality || null,
+      
+      technical_completed: blockAggregations['TECHNICAL WORK']?.count || 0,
+      technical_avg_rpe: blockAggregations['TECHNICAL WORK']?.avgRpe || null,
+      technical_avg_quality: blockAggregations['TECHNICAL WORK']?.avgQuality || null,
+      
+      strength_completed: blockAggregations['STRENGTH AND POWER']?.count || 0,
+      strength_avg_rpe: blockAggregations['STRENGTH AND POWER']?.avgRpe || null,
+      strength_avg_quality: blockAggregations['STRENGTH AND POWER']?.avgQuality || null,
+      
+      accessories_completed: blockAggregations.ACCESSORIES?.count || 0,
+      accessories_avg_rpe: blockAggregations.ACCESSORIES?.avgRpe || null,
+      accessories_avg_quality: blockAggregations.ACCESSORIES?.avgQuality || null,
+      
+      metcons_completed: metconData.count,
+      metcons_avg_percentile: metconData.avgPercentile,
+      
+      // Overall totals
+      total_exercises_completed: overallTotals.totalExercises,
+      overall_avg_rpe: overallTotals.avgRpe,
+      overall_avg_quality: overallTotals.avgQuality,
+      
+      calculated_at: new Date().toISOString()
+    };
+    
+    // Upsert (insert or update if exists)
+    const { error } = await supabase
+      .from('weekly_summaries')
+      .upsert(summaryData, {
+        onConflict: 'user_id,week',
+        ignoreDuplicates: false
+      });
+    
+    if (error) {
+      console.error('❌ Error updating weekly summary:', error);
+      return;
+    }
+    
+    console.log(`✅ Updated weekly summary: ${overallTotals.totalExercises} exercises, avg RPE ${overallTotals.avgRpe}`);
+    
+  } catch (error) {
+    console.error('❌ Error in updateWeeklySummary:', error);
+  }
+}
+
+/**
+ * Aggregate performance data by training block
+ */
+async function aggregateByTrainingBlock(data: { userId: number; week: number }) {
+  const { data: performanceData, error } = await supabase
+    .from('performance_logs')
+    .select('block, rpe, completion_quality')
+    .eq('user_id', data.userId)
+    .eq('week', data.week);
+    
+  if (error) {
+    console.error('❌ Error fetching performance data:', error);
+    return {};
+  }
+  
+  const aggregations: Record<string, any> = {};
+  
+  // Group by block and calculate averages
+  performanceData?.forEach((entry: any) => {
+    const block = entry.block;
+    
+    if (!aggregations[block]) {
+      aggregations[block] = {
+        count: 0,
+        totalRpe: 0,
+        totalQuality: 0
+      };
+    }
+    
+    aggregations[block].count++;
+    aggregations[block].totalRpe += entry.rpe || 0;
+    aggregations[block].totalQuality += entry.completion_quality || 0;
+  });
+  
+  // Calculate averages
+  Object.keys(aggregations).forEach(block => {
+    const blockData = aggregations[block];
+    aggregations[block] = {
+      count: blockData.count,
+      avgRpe: blockData.count > 0 ? Math.round((blockData.totalRpe / blockData.count) * 10) / 10 : null,
+      avgQuality: blockData.count > 0 ? Math.round((blockData.totalQuality / blockData.count) * 10) / 10 : null
+    };
+  });
+  
+  return aggregations;
+}
+
+/**
+ * Get MetCon aggregation data
+ */
+async function getMetconAggregation(data: { programId: number; week: number }) {
+  const { data: metconData, error } = await supabase
+    .from('program_metcons')
+    .select('percentile')
+    .eq('program_id', data.programId)
+    .eq('week', data.week)
+    .not('user_score', 'is', null);
+    
+  if (error || !metconData?.length) {
+    return { count: 0, avgPercentile: null };
+  }
+  
+  const percentiles = metconData.map((m: any) => parseFloat(m.percentile)).filter(p => !isNaN(p));
+  const avgPercentile = percentiles.length > 0 
+    ? Math.round((percentiles.reduce((sum, p) => sum + p, 0) / percentiles.length) * 100) / 100
+    : null;
+    
+  return {
+    count: percentiles.length,
+    avgPercentile
+  };
+}
+
+/**
+ * Calculate overall totals across all blocks
+ */
+async function calculateOverallTotals(data: { userId: number; week: number }) {
+  const { data: performanceData, error } = await supabase
+    .from('performance_logs')
+    .select('rpe, completion_quality')
+    .eq('user_id', data.userId)
+    .eq('week', data.week);
+    
+  if (error || !performanceData?.length) {
+    return { totalExercises: 0, avgRpe: null, avgQuality: null };
+  }
+  
+  const totalExercises = performanceData.length;
+  const validRpe = performanceData.filter((p: any) => p.rpe).map((p: any) => p.rpe);
+  const validQuality = performanceData.filter((p: any) => p.completion_quality).map((p: any) => p.completion_quality);
+  
+  const avgRpe = validRpe.length > 0 
+    ? Math.round((validRpe.reduce((sum: number, rpe: number) => sum + rpe, 0) / validRpe.length) * 10) / 10
+    : null;
+    
+  const avgQuality = validQuality.length > 0
+    ? Math.round((validQuality.reduce((sum: number, q: number) => sum + q, 0) / validQuality.length) * 10) / 10
+    : null;
+    
+  return { totalExercises, avgRpe, avgQuality };
+}
+
+// =============================================================================
+// EXISTING ROUTE HANDLERS
+// =============================================================================
+
 export async function POST(request: NextRequest) {
   try {
     console.log('📝 Exercise completion logging called')
@@ -76,18 +261,18 @@ export async function POST(request: NextRequest) {
 
     console.log(`📊 Logging completion: ${completionData.exerciseName} - Week ${completionData.week}, Day ${completionData.day}`)
 
-// Check if this exact completion already exists (prevent duplicates)
-const { data: existingCompletion } = await supabase
-  .from('workout_completions')
-  .select('id')
-  .eq('user_id', completionData.userId)
-  .eq('program_id', completionData.programId)
-  .eq('week', completionData.week)
-  .eq('day', completionData.day)
-  .eq('block', completionData.block)
-  .eq('exercise_name', completionData.exerciseName)
-  .eq('set_number', completionData.setNumber || 1)  // ← ADD THIS LINE
-  .single()
+    // Check if this exact completion already exists (prevent duplicates)
+    const { data: existingCompletion } = await supabase
+      .from('workout_completions')
+      .select('id')
+      .eq('user_id', completionData.userId)
+      .eq('program_id', completionData.programId)
+      .eq('week', completionData.week)
+      .eq('day', completionData.day)
+      .eq('block', completionData.block)
+      .eq('exercise_name', completionData.exerciseName)
+      .eq('set_number', completionData.setNumber || 1)
+      .single()
 
     let result
     if (existingCompletion) {
@@ -96,7 +281,7 @@ const { data: existingCompletion } = await supabase
       const { data, error } = await supabase
         .from('workout_completions')
         .update({
-          set_number: completionData.setNumber || 1,  // ← ADD THIS LINE       
+          set_number: completionData.setNumber || 1,
           sets_completed: completionData.setsCompleted,
           reps_completed: completionData.repsCompleted?.toString(),
           weight_used: completionData.weightUsed,
@@ -126,7 +311,7 @@ const { data: existingCompletion } = await supabase
           day: completionData.day,
           block: completionData.block,
           exercise_name: completionData.exerciseName,
-          set_number: completionData.setNumber || 1,  // ← ADD THIS LINE    
+          set_number: completionData.setNumber || 1,
           sets_completed: completionData.setsCompleted,
           reps_completed: completionData.repsCompleted?.toString(),
           weight_used: completionData.weightUsed,
@@ -191,7 +376,7 @@ const { data: existingCompletion } = await supabase
       block: completionData.block,
       exercise_name: completionData.exerciseName,
       sets: completionData.setsCompleted?.toString(),
-      set_number: completionData.setNumber || 1,  // ← ADD THIS LINE    
+      set_number: completionData.setNumber || 1,
       reps: completionData.repsCompleted?.toString(),
       weight_time: completionData.weightUsed?.toString(),
       result: completionData.notes,
@@ -215,6 +400,20 @@ const { data: existingCompletion } = await supabase
     }
 
     console.log('✅ Workout completion saved successfully')
+
+    // =============================================================================
+    // NEW: UPDATE WEEKLY SUMMARY AFTER SUCCESSFUL COMPLETION
+    // =============================================================================
+    try {
+      await updateWeeklySummary({
+        userId: completionData.userId,
+        programId: completionData.programId,
+        week: completionData.week
+      });
+    } catch (summaryError) {
+      console.error('❌ Error updating weekly summary (non-blocking):', summaryError);
+      // Don't fail the entire request if weekly summary update fails
+    }
 
     // Get completion stats for this workout session
     const { data: sessionStats } = await supabase
