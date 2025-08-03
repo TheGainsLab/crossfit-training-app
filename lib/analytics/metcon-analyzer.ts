@@ -29,9 +29,9 @@ export interface MetConTimeDomainData {
   }
 }
 
-/**
- * Process MetCon data by time domain (mirrors Google Script logic)
- */
+// Fixed section of your metcon-analyzer.ts
+// Replace the tasks processing section with this updated code
+
 export function processMetConTimeDomainData(
   metconData: any[], 
   timeDomainFilter: string = 'all'
@@ -74,22 +74,39 @@ export function processMetConTimeDomainData(
 
       // Process exercises within this MetCon
       if (Array.isArray(tasks)) {
-        tasks.forEach((task: string) => {
-          // Extract exercise name from task description
-          const exerciseName = extractExerciseFromTask(task)
+        // FIXED: Handle object tasks instead of string parsing
+        const uniqueExercises = new Set<string>()
+        
+        tasks.forEach((task: any) => {
+          let exerciseName: string | null = null
+          
+          // Handle object tasks (your actual format)
+          if (typeof task === 'object' && task.exercise) {
+            exerciseName = task.exercise
+          } 
+          // Handle string tasks (fallback for legacy data)
+          else if (typeof task === 'string') {
+            exerciseName = extractExerciseFromTask(task)
+          }
           
           if (exerciseName) {
-            if (!exercises[exerciseName]) {
-              exercises[exerciseName] = {}
-            }
-            
-            if (!exercises[exerciseName][timeRange]) {
-              exercises[exerciseName][timeRange] = { count: 0, percentiles: [] }
-            }
-            
-            exercises[exerciseName][timeRange].count++
-            exercises[exerciseName][timeRange].percentiles.push(percentile)
+            // Use Set to avoid duplicate exercises in same MetCon
+            uniqueExercises.add(exerciseName)
           }
+        })
+        
+        // Add each unique exercise for this MetCon
+        uniqueExercises.forEach(exerciseName => {
+          if (!exercises[exerciseName]) {
+            exercises[exerciseName] = {}
+          }
+          
+          if (!exercises[exerciseName][timeRange]) {
+            exercises[exerciseName][timeRange] = { count: 0, percentiles: [] }
+          }
+          
+          exercises[exerciseName][timeRange].count++
+          exercises[exerciseName][timeRange].percentiles.push(percentile)
         })
       }
     })
@@ -122,13 +139,11 @@ export function processMetConTimeDomainData(
       overallAverages
     }
 
-} catch (error) {
-  const errorMessage = error instanceof Error ? error.message : String(error)
-  console.error(`❌ Error processing MetCon time domain data: ${errorMessage}`)
-  return null
-}
-
-
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error(`❌ Error processing MetCon time domain data: ${errorMessage}`)
+    return null
+  }
 }
 
 /**
@@ -265,3 +280,4 @@ export function getCrossTimeDomainExercises(timeDomainData: MetConTimeDomainData
 
   return crossDomainExercises.sort((a, b) => b.avgPercentile - a.avgPercentile)
 }
+
