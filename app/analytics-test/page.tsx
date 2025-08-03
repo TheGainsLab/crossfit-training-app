@@ -7,26 +7,30 @@ export default function AnalyticsTest() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    async function testAnalytics() {
-      try {
-        const response = await fetch('/api/analytics/47/dashboard?timeRange=30&includeMetCons=true')
-        const result = await response.json()
-        
-        if (result.success) {
-          setData(result.data)
-        } else {
-          setError(result.error)
-        }
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
 
-    testAnalytics()
-  }, [])
+
+useEffect(() => {
+  async function testAnalytics() {
+    try {
+      const response = await fetch('/api/analytics/47/dashboard?timeRange=30&includeMetCons=true')
+      const result = await response.json()
+      
+      if (result.success) {
+        setData(result.data)
+      } else {
+        setError(result.error)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  testAnalytics()
+}, [])
+
+
 
   if (loading) return <div>Loading analytics...</div>
   if (error) return <div>Error: {error}</div>
