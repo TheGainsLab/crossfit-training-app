@@ -86,15 +86,15 @@ async function updateWeeklySummary(data: {
       
       calculated_at: new Date().toISOString()
     };
-    
-    // Upsert (insert or update if exists)
-    const { error } = await supabase
-      .from('weekly_summaries')
-      .upsert(summaryData, {
-        onConflict: 'user_id,week',
-        ignoreDuplicates: false
-      });
-    
+
+// Upsert (insert or update if exists)
+const { error } = await supabase
+  .from('weekly_summaries')
+  .upsert(summaryData, {
+    onConflict: 'program_id,week',
+    ignoreDuplicates: false
+  });    
+
     if (error) {
       console.error('❌ Error updating weekly summary:', error);
       return;
