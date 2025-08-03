@@ -1,40 +1,35 @@
-// Create app/analytics-test/page.tsx
 'use client'
 import { useEffect, useState } from 'react'
 
 export default function AnalyticsTest() {
-  const [data, setData] = useState(null)
+  const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
 
-
-
-useEffect(() => {
-  async function testAnalytics() {
-    try {
-      const response = await fetch('/api/analytics/47/dashboard?timeRange=30&includeMetCons=true')
-      const result = await response.json()
-      
-      if (result.success) {
-        setData(result.data)
-      } else {
-        setError(result.error)
+  useEffect(() => {
+    async function testAnalytics() {
+      try {
+        const response = await fetch('/api/analytics/47/dashboard?timeRange=30&includeMetCons=true')
+        const result = await response.json()
+        
+        if (result.success) {
+          setData(result.data)
+        } else {
+          setError(result.error)
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error')
+      } finally {
+        setLoading(false)
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
-    } finally {
-      setLoading(false)
     }
-  }
 
-  testAnalytics()
-}, [])
+    testAnalytics()
+  }, [])
 
-
-
-  if (loading) return <div>Loading analytics...</div>
-  if (error) return <div>Error: {error}</div>
-  if (!data) return <div>No data</div>
+  if (loading) return <div className="p-8">Loading analytics...</div>
+  if (error) return <div className="p-8 text-red-500">Error: {error}</div>
+  if (!data) return <div className="p-8">No data</div>
 
   return (
     <div className="p-8">
@@ -43,7 +38,7 @@ useEffect(() => {
       {/* Key Insights */}
       <section className="mb-6">
         <h2 className="text-xl font-semibold mb-2">AI Insights:</h2>
-        {data.insights?.map((insight, i) => (
+        {data.insights?.map((insight: string, i: number) => (
           <div key={i} className="bg-blue-50 p-2 mb-2 rounded">
             💡 {insight}
           </div>
@@ -63,8 +58,8 @@ useEffect(() => {
 
       {/* Raw Data */}
       <details className="mt-4">
-        <summary>Raw Analytics Data</summary>
-        <pre className="bg-gray-100 p-4 text-xs overflow-auto">
+        <summary className="cursor-pointer">Raw Analytics Data</summary>
+        <pre className="bg-gray-100 p-4 text-xs overflow-auto max-h-96">
           {JSON.stringify(data, null, 2)}
         </pre>
       </details>
