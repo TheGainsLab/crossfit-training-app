@@ -14,7 +14,7 @@ export async function GET(
     const { searchParams } = new URL(request.url)
     
     const timeRange = parseInt(searchParams.get('timeRange') || '30')
-    const includeMetCons = searchParams.get('includeMetCons') !== 'false'
+const includeMetCons = false  // Temporarily disable MetCons
     const dashboardType = searchParams.get('type') || 'overview' // overview, detailed, summary
 
     const userIdNum = parseInt(userId)
