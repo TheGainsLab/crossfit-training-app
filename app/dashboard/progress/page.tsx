@@ -89,64 +89,66 @@ export default function AnalyticsProgressPage() {
     }
   }
 
+
   const fetchAllAnalytics = async () => {
-    if (!userId) return
+  if (!userId) return
+  
+  setAnalyticsLoading(true)
+  try {
+    console.log('📊 Fetching all analytics for user:', userId)
     
-    setAnalyticsLoading(true)
-    try {
-      console.log('📊 Fetching all analytics for user:', userId)
-      
-      // Fetch all analytics in parallel using your working APIs
-      const [blockResponse, skillsResponse, strengthResponse, metconResponse] = await Promise.all([
-        fetch(`/api/analytics/${userId}/block-analyzer`).catch(e => ({ ok: false, error: e })),
-        fetch(`/api/analytics/${userId}/skills-analytics`).catch(e => ({ ok: false, error: e })),
-        fetch(`/api/analytics/${userId}/strength-tracker`).catch(e => ({ ok: false, error: e })),
-        fetch(`/api/analytics/${userId}/metcon-analyzer`).catch(e => ({ ok: false, error: e }))
-      ])
+    // Fetch all analytics in parallel using your working APIs
+    const responses = await Promise.allSettled([
+      fetch(`/api/analytics/${userId}/block-analyzer`),
+      fetch(`/api/analytics/${userId}/skills-analytics`),
+      fetch(`/api/analytics/${userId}/strength-tracker`),
+      fetch(`/api/analytics/${userId}/metcon-analyzer`)
+    ])
 
-      // Process Block Analytics
-      if (blockResponse.ok) {
-        const blockData = await blockResponse.json()
-        console.log('✅ Block analytics loaded:', blockData)
-        setBlockAnalytics(blockData)
-      } else {
-        console.log('❌ Block analytics failed')
-      }
-
-      // Process Skills Analytics  
-      if (skillsResponse.ok) {
-        const skillsData = await skillsResponse.json()
-        console.log('✅ Skills analytics loaded:', skillsData)
-        setSkillsAnalytics(skillsData)
-      } else {
-        console.log('❌ Skills analytics failed')
-      }
-
-      // Process Strength Analytics
-      if (strengthResponse.ok) {
-        const strengthData = await strengthResponse.json()
-        console.log('✅ Strength analytics loaded:', strengthData)
-        setStrengthAnalytics(strengthData)
-      } else {
-        console.log('❌ Strength analytics failed')
-      }
-
-      // Process MetCon Analytics
-      if (metconResponse.ok) {
-        const metconData = await metconResponse.json()
-        console.log('✅ MetCon analytics loaded:', metconData)
-        setMetConAnalytics(metconData)
-      } else {
-        console.log('❌ MetCon analytics failed')
-      }
-
-    } catch (error) {
-      console.error('Error fetching analytics:', error)
-      setError('Failed to load analytics data')
-    } finally {
-      setAnalyticsLoading(false)
+    // Process Block Analytics
+    if (responses[0].status === 'fulfilled' && responses[0].value.ok) {
+      const blockData = await responses[0].value.json()
+      console.log('✅ Block analytics loaded:', blockData)
+      setBlockAnalytics(blockData)
+    } else {
+      console.log('❌ Block analytics failed')
     }
+
+    // Process Skills Analytics  
+    if (responses[1].status === 'fulfilled' && responses[1].value.ok) {
+      const skillsData = await responses[1].value.json()
+      console.log('✅ Skills analytics loaded:', skillsData)
+      setSkillsAnalytics(skillsData)
+    } else {
+      console.log('❌ Skills analytics failed')
+    }
+
+    // Process Strength Analytics
+    if (responses[2].status === 'fulfilled' && responses[2].value.ok) {
+      const strengthData = await responses[2].value.json()
+      console.log('✅ Strength analytics loaded:', strengthData)
+      setStrengthAnalytics(strengthData)
+    } else {
+      console.log('❌ Strength analytics failed')
+    }
+
+    // Process MetCon Analytics
+    if (responses[3].status === 'fulfilled' && responses[3].value.ok) {
+      const metconData = await responses[3].value.json()
+      console.log('✅ MetCon analytics loaded:', metconData)
+      setMetConAnalytics(metconData)
+    } else {
+      console.log('❌ MetCon analytics failed')
+    }
+
+  } catch (error) {
+    console.error('Error fetching analytics:', error)
+    setError('Failed to load analytics data')
+  } finally {
+    setAnalyticsLoading(false)
   }
+}
+
 
   // Overview Summary Component
   const OverviewSummary = () => (
