@@ -175,58 +175,64 @@ export default function DashboardPage() {
     }
   }
 
-  const fetchDashboardAnalytics = async () => {
-    if (!userId) return
+const fetchDashboardAnalytics = async () => {
+  if (!userId) return
+  
+  setAnalyticsLoading(true)
+  try {
+    const response = await fetch(`/api/analytics/${userId}/dashboard`)
+    const apiResponse = await response.json()
     
-    setAnalyticsLoading(true)
-    try {
-      const response = await fetch(`/api/analytics/${userId}/dashboard`)
-      const data = await response.json()
-      
-  console.log('🔍 API Response Status:', response.status)
-    console.log('🔍 API Response Data:', data)
-
-      // Transform the API response into our widget format
-      const analytics: DashboardAnalytics = {
-        weeklyPerformance: {
-          averageRPE: data.weeklyStats?.averageRPE || 0,
-          averageQuality: data.weeklyStats?.averageQuality || 0,
-          completionRate: data.completionRate || 0,
-          trend: data.performanceTrend || 'stable'
+    console.log('🔍 API Response Status:', response.status)
+    console.log('🔍 API Response Data:', apiResponse)
+    
+    // Extract the actual data from the nested structure
+    const data = apiResponse.data
+    const dashboard = data.dashboard
+    const summary = data.summary
+    
+    const analytics: DashboardAnalytics = {
+      weeklyPerformance: {
+        averageRPE: summary?.averageRPE || dashboard?.overallMetrics?.averageRPE || 0,
+        averageQuality: summary?.averageQuality || dashboard?.overallMetrics?.averageQuality || 0,
+        completionRate: summary?.completionRate || dashboard?.overallMetrics?.completionRate || 0,
+        trend: summary?.overallProgress || dashboard?.progressionTrends?.overall || 'stable'
+      },
+      blockStatus: {
+        skills: {
+          completion: dashboard?.blockPerformance?.SKILLS?.completionRate || 0,
+          status: dashboard?.blockPerformance?.SKILLS?.status || 'on-track',
+          alert: dashboard?.blockPerformance?.SKILLS?.alert
         },
-        blockStatus: {
-          skills: {
-            completion: data.blockProgress?.skills?.completion || 0,
-            status: data.blockProgress?.skills?.status || 'on-track',
-            alert: data.blockProgress?.skills?.alert
-          },
-          strength: {
-            completion: data.blockProgress?.strength?.completion || 0,
-            status: data.blockProgress?.strength?.status || 'on-track',
-            alert: data.blockProgress?.strength?.alert
-          },
-          metcons: {
-            completion: data.blockProgress?.metcons?.completion || 0,
-            status: data.blockProgress?.metcons?.status || 'on-track',
-            alert: data.blockProgress?.metcons?.alert
-          },
-          accessories: {
-            completion: data.blockProgress?.accessories?.completion || 0,
-            status: data.blockProgress?.accessories?.status || 'on-track',
-            alert: data.blockProgress?.accessories?.alert
-          }
+        strength: {
+          completion: dashboard?.blockPerformance?.['STRENGTH AND POWER']?.completionRate || 0,
+          status: dashboard?.blockPerformance?.['STRENGTH AND POWER']?.status || 'on-track',
+          alert: dashboard?.blockPerformance?.['STRENGTH AND POWER']?.alert
         },
-        coachingInsights: data.coachingRecommendations || [],
-        topAchievement: data.topAchievement
-      }
-       console.log('🔍 Transformed Analytics:', analytics)
-      setDashboardAnalytics(analytics)
-    } catch (error) {
-      console.error('Error fetching dashboard analytics:', error)
-    } finally {
-      setAnalyticsLoading(false)
+        metcons: {
+          completion: dashboard?.blockPerformance?.METCONS?.completionRate || 0,
+          status: dashboard?.blockPerformance?.METCONS?.status || 'on-track',
+          alert: dashboard?.blockPerformance?.METCONS?.alert
+        },
+        accessories: {
+          completion: dashboard?.blockPerformance?.ACCESSORIES?.completionRate || 0,
+          status: dashboard?.blockPerformance?.ACCESSORIES?.status || 'on-track',
+          alert: dashboard?.blockPerformance?.ACCESSORIES?.alert
+        }
+      },
+      coachingInsights: data.insights || [],
+      topAchievement: summary?.topAchievement
     }
+    
+    console.log('🔍 Transformed Analytics:', analytics)
+    setDashboardAnalytics(analytics)
+  } catch (error) {
+    console.error('Error fetching dashboard analytics:', error)
+  } finally {
+    setAnalyticsLoading(false)
   }
+}
+
 
   const loadUserAndProgram = async () => {
     try {
