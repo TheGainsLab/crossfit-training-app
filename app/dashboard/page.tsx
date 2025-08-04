@@ -31,6 +31,25 @@ interface CompletionMap {
   [key: string]: DayCompletion // key format: "week-day"
 }
 
+// ADD these new interfaces after CompletionMap
+interface DashboardAnalytics {
+  weeklyPerformance: {
+    averageRPE: number
+    averageQuality: number
+    completionRate: number
+    trend: 'improving' | 'stable' | 'declining'
+  }
+  blockStatus: {
+    skills: { completion: number; status: string; alert?: string }
+    strength: { completion: number; status: string; alert?: string }
+    metcons: { completion: number; status: string; alert?: string }
+    accessories: { completion: number; status: string; alert?: string }
+  }
+  coachingInsights: string[]
+  topAchievement?: string
+}
+
+
 export default function DashboardPage() {
   const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -42,6 +61,10 @@ export default function DashboardPage() {
   const [userId, setUserId] = useState<number | null>(null)
   const [completionStatus, setCompletionStatus] = useState<CompletionMap>({})
   const [completionLoading, setCompletionLoading] = useState(false)
+// ADD these new state variables after your existing useState declarations
+const [dashboardAnalytics, setDashboardAnalytics] = useState<DashboardAnalytics | null>(null)
+const [analyticsLoading, setAnalyticsLoading] = useState(false)
+
 
   useEffect(() => {
     loadUserAndProgram()
@@ -150,6 +173,58 @@ export default function DashboardPage() {
     }
   }
 
+// ADD this function after fetchCompletionData
+const fetchDashboardAnalytics = async () => {
+  if (!userId) return
+  
+  setAnalyticsLoading(true)
+  try {
+    const response = await fetch(`/api/analytics/${userId}/dashboard`)
+    const data = await response.json()
+    
+    // Transform the API response into our widget format
+    const analytics: DashboardAnalytics = {
+      weeklyPerformance: {
+        averageRPE: data.weeklyStats?.averageRPE || 0,
+        averageQuality: data.weeklyStats?.averageQuality || 0,
+        completionRate: data.completionRate || 0,
+        trend: data.performanceTrend || 'stable'
+      },
+      blockStatus: {
+        skills: {
+          completion: data.blockProgress?.skills?.completion || 0,
+          status: data.blockProgress?.skills?.status || 'on-track',
+          alert: data.blockProgress?.skills?.alert
+        },
+        strength: {
+          completion: data.blockProgress?.strength?.completion || 0,
+          status: data.blockProgress?.strength?.status || 'on-track',
+          alert: data.blockProgress?.strength?.alert
+        },
+        metcons: {
+          completion: data.blockProgress?.metcons?.completion || 0,
+          status: data.blockProgress?.metcons?.status || 'on-track',
+          alert: data.blockProgress?.metcons?.alert
+        },
+        accessories: {
+          completion: data.blockProgress?.accessories?.completion || 0,
+          status: data.blockProgress?.accessories?.status || 'on-track',
+          alert: data.blockProgress?.accessories?.alert
+        }
+      },
+      coachingInsights: data.coachingRecommendations || [],
+      topAchievement: data.topAchievement
+    }
+    
+    setDashboardAnalytics(analytics)
+  } catch (error) {
+    console.error('Error fetching dashboard analytics:', error)
+  } finally {
+    setAnalyticsLoading(false)
+  }
+}
+
+
   const loadUserAndProgram = async () => {
     try {
       // Get current user
@@ -223,6 +298,331 @@ export default function DashboardPage() {
     
     return null // No badge for untouched days
   }
+
+
+// Add these interfaces to your existing interfaces section
+interface DashboardAnalytics {
+  weeklyPerformance: {
+    averageRPE: number
+    averageQuality: number
+    completionRate: number
+    trend: 'improving' | 'stable' | 'declining'
+  }
+  blockStatus: {
+    skills: { completion: number; status: string; alert?: string }
+    strength: { completion: number; status: string; alert?: string }
+    metcons: { completion: number; status: string; alert?: string }
+    accessories: { completion: number; status: string; alert?: string }
+  }
+  coachingInsights: string[]
+  topAchievement?: string
+}
+
+// Add these state variables to your existing state
+const [dashboardAnalytics, setDashboardAnalytics] = useState<DashboardAnalytics | null>(null)
+const [analyticsLoading, setAnalyticsLoading] = useState(false)
+
+// Add this function to fetch dashboard analytics
+const fetchDashboardAnalytics = async () => {
+  if (!userId) return
+  
+  setAnalyticsLoading(true)
+  try {
+    const response = await fetch(`/api/analytics/${userId}/dashboard`)
+    const data = await response.json()
+    
+    // Transform the API response into our widget format
+    const analytics: DashboardAnalytics = {
+      weeklyPerformance: {
+        averageRPE: data.weeklyStats?.averageRPE || 0,
+        averageQuality: data.weeklyStats?.averageQuality || 0,
+        completionRate: data.completionRate || 0,
+        trend: data.performanceTrend || 'stable'
+      },
+      blockStatus: {
+        skills: {
+          completion: data.blockProgress?.skills?.completion || 0,
+          status: data.blockProgress?.skills?.status || 'on-track',
+          alert: data.blockProgress?.skills?.alert
+        },
+        strength: {
+          completion: data.blockProgress?.strength?.completion || 0,
+          status: data.blockProgress?.strength?.status || 'on-track',
+          alert: data.blockProgress?.strength?.alert
+        },
+        metcons: {
+          completion: data.blockProgress?.metcons?.completion || 0,
+          status: data.blockProgress?.metcons?.status || 'on-track',
+          alert: data.blockProgress?.metcons?.alert
+        },
+        accessories: {
+          completion: data.blockProgress?.accessories?.completion || 0,
+          status: data.blockProgress?.accessories?.status || 'on-track',
+          alert: data.blockProgress?.accessories?.alert
+        }
+      },
+      coachingInsights: data.coachingRecommendations || [],
+      topAchievement: data.topAchievement
+    }
+    
+    setDashboardAnalytics(analytics)
+  } catch (error) {
+    console.error('Error fetching dashboard analytics:', error)
+  } finally {
+    setAnalyticsLoading(false)
+  }
+}
+
+// Add this useEffect to fetch analytics
+useEffect(() => {
+  if (userId && currentProgram) {
+    fetchDashboardAnalytics()
+  }
+}, [userId, currentProgram])
+
+// Analytics Widget Components
+const WeeklyPerformanceWidget: React.FC<{ analytics: DashboardAnalytics }> = ({ analytics }) => {
+  const { weeklyPerformance } = analytics
+  
+  const getTrendIcon = (trend: string) => {
+    switch (trend) {
+      case 'improving': return '📈'
+      case 'declining': return '📉'
+      default: return '➡️'
+    }
+  }
+
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
+      case 'improving': return 'text-green-600'
+      case 'declining': return 'text-red-600'
+      default: return 'text-gray-600'
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-gray-900">📊 This Week's Performance</h3>
+        <span className={`text-sm font-medium ${getTrendColor(weeklyPerformance.trend)}`}>
+          {getTrendIcon(weeklyPerformance.trend)} {weeklyPerformance.trend}
+        </span>
+      </div>
+      
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Average RPE</span>
+          <span className="font-semibold">{weeklyPerformance.averageRPE.toFixed(1)}/10</span>
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Quality Score</span>
+          <span className="font-semibold">
+            {weeklyPerformance.averageQuality >= 3.5 ? 'A' : 
+             weeklyPerformance.averageQuality >= 2.5 ? 'B' : 
+             weeklyPerformance.averageQuality >= 1.5 ? 'C' : 'D'}+
+          </span>
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Completion Rate</span>
+          <span className="font-semibold">{Math.round(weeklyPerformance.completionRate)}%</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const BlockStatusWidget: React.FC<{ analytics: DashboardAnalytics }> = ({ analytics }) => {
+  const { blockStatus } = analytics
+  
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ahead': return 'text-green-600'
+      case 'behind': return 'text-red-600'
+      case 'alert': return 'text-orange-600'
+      default: return 'text-gray-600'
+    }
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'ahead': return '⭐'
+      case 'behind': return '⚠️'
+      case 'alert': return '🔥'
+      default: return '✅'
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="font-semibold text-gray-900 mb-4">🎯 Training Block Status</h3>
+      
+      <div className="space-y-3">
+        {Object.entries(blockStatus).map(([block, data]) => (
+          <div key={block} className="flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <span className="text-gray-600 capitalize">{block}</span>
+              {data.alert && (
+                <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                  {data.alert}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-500">{data.completion}%</span>
+              <span className={getStatusColor(data.status)}>
+                {getStatusIcon(data.status)}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const CoachingInsightsWidget: React.FC<{ analytics: DashboardAnalytics }> = ({ analytics }) => {
+  const { coachingInsights, topAchievement } = analytics
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="font-semibold text-gray-900 mb-4">🧠 AI Coaching Insights</h3>
+      
+      {topAchievement && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-green-600">🏆</span>
+            <span className="text-sm text-green-800 font-medium">{topAchievement}</span>
+          </div>
+        </div>
+      )}
+      
+      <div className="space-y-3">
+        {coachingInsights.slice(0, 3).map((insight, index) => (
+          <div key={index} className="flex items-start space-x-2">
+            <span className="text-blue-600 mt-1">•</span>
+            <span className="text-sm text-gray-700">{insight}</span>
+          </div>
+        ))}
+        
+        {coachingInsights.length === 0 && (
+          <p className="text-sm text-gray-500 italic">
+            Complete more workouts to get personalized coaching insights!
+          </p>
+        )}
+      </div>
+      
+      <div className="mt-4">
+        <Link
+          href="/dashboard/progress"
+          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+        >
+          View detailed analysis →
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+// ADD this main analytics section component
+const AnalyticsWidgetsSection = () => {
+  if (analyticsLoading) {
+    return (
+      <div className="mb-8">
+        <div className="grid md:grid-cols-3 gap-6">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-white rounded-lg shadow p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded"></div>
+                  <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                  <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (!dashboardAnalytics) {
+    return (
+      <div className="mb-8">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div className="flex items-center space-x-2">
+            <span className="text-blue-600">📊</span>
+            <span className="text-blue-800 font-medium">Analytics loading...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mb-8">
+      <div className="grid md:grid-cols-3 gap-6">
+        <WeeklyPerformanceWidget analytics={dashboardAnalytics} />
+        <BlockStatusWidget analytics={dashboardAnalytics} />
+        <CoachingInsightsWidget analytics={dashboardAnalytics} />
+      </div>
+    </div>
+  )
+}
+
+// Main Analytics Widgets Section (add this to your JSX)
+const AnalyticsWidgetsSection = () => {
+  if (analyticsLoading) {
+    return (
+      <div className="mb-8">
+        <div className="grid md:grid-cols-3 gap-6">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-white rounded-lg shadow p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded"></div>
+                  <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                  <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (!dashboardAnalytics) {
+    return (
+      <div className="mb-8">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div className="flex items-center space-x-2">
+            <span className="text-blue-600">📊</span>
+            <span className="text-blue-800 font-medium">Analytics loading...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mb-8">
+      <div className="grid md:grid-cols-3 gap-6">
+        <WeeklyPerformanceWidget analytics={dashboardAnalytics} />
+        <BlockStatusWidget analytics={dashboardAnalytics} />
+        <CoachingInsightsWidget analytics={dashboardAnalytics} />
+      </div>
+    </div>
+  )
+}
+
+// Add this to your main JSX return, right after the header and before todaysWorkout check:
+{/* Analytics Widgets Section */}
+<AnalyticsWidgetsSection />
+
 
   const fetchTodaysWorkout = async () => {
     try {
@@ -320,9 +720,12 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        {todaysWorkout && (
+{/* Main Content */}
+<main className="max-w-4xl mx-auto px-4 py-8">
+  {/* Analytics Widgets Section */}
+  <AnalyticsWidgetsSection />
+  
+  {todaysWorkout && (     
           <>
             {/* Today's Workout Card */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
@@ -500,3 +903,4 @@ export default function DashboardPage() {
     </div>
   )
 }
+
