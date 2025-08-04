@@ -106,16 +106,16 @@ export async function GET(
       
       // MetCon data (if requested)
       includeMetCons ? supabase
-        .from('program_metcons')
-        .select(`
-          *,
-          metcons!inner(
-            workout_id,
-            time_range,
-            tasks,
-            workout_format
-          )
-        `)
+  .from('program_metcons')
+  .select(`
+    *,
+    metcons!inner(
+      workout_id,
+      time_range,
+      tasks
+    )
+  `)
+
         .eq('user_id', userIdNum)
         .gte('completed_at', startDate.toISOString())
         .order('completed_at', { ascending: true }) : Promise.resolve({ data: [], error: null })
@@ -360,3 +360,5 @@ function generateDashboardRecommendations(dashboardData: any) {
     return priorityOrder[b.priority as keyof typeof priorityOrder] - priorityOrder[a.priority as keyof typeof priorityOrder]
   })
 }
+
+
