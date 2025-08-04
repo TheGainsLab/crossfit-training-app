@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 
+// Keep your existing interface
 interface WorkoutSummary {
   programId: number
   week: number
@@ -16,6 +17,20 @@ interface WorkoutSummary {
   totalBlocks: number
 }
 
+// ADD these new interfaces
+interface DayCompletion {
+  week: number
+  day: number
+  totalExercises: number
+  completedExercises: number
+  isFullyComplete: boolean
+  completionPercentage: number
+}
+
+interface CompletionMap {
+  [key: string]: DayCompletion // key format: "week-day"
+}
+
 export default function DashboardPage() {
   const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -25,12 +40,8 @@ export default function DashboardPage() {
   const [currentDay, setCurrentDay] = useState(1)
   const [user, setUser] = useState<User | null>(null)
   const [userId, setUserId] = useState<number | null>(null)
-
-  // API Testing States - REMOVE AFTER TESTING
-  const [testResult, setTestResult] = useState<any>(null)
-  const [isTestLoading, setIsTestLoading] = useState(false)
-  const [testExercise, setTestExercise] = useState('Bar Muscle Ups')
-  const [testBlock, setTestBlock] = useState('SKILLS')
+  const [completionStatus, setCompletionStatus] = useState<CompletionMap>({})
+  const [completionLoading, setCompletionLoading] = useState(false)
 
   useEffect(() => {
     loadUserAndProgram()
@@ -42,32 +53,100 @@ export default function DashboardPage() {
     }
   }, [currentProgram, currentWeek, currentDay])
 
-  // API Test Function - REMOVE AFTER TESTING
-  const testExerciseDeepDive = async () => {
-    if (!userId) {
-      alert('User ID not loaded yet')
-      return
+  // ADD this new useEffect
+  useEffect(() => {
+    if (currentProgram && userId) {
+      fetchCompletionData()
     }
+  }, [currentProgram, userId])
 
-    setIsTestLoading(true)
-    setTestResult(null)
-    
+  // Completion tracking functions
+  const fetchCompletionStatus = async (programId: number, userId: number): Promise<CompletionMap> => {
     try {
-      const params = new URLSearchParams({
-        exercise: testExercise,
-        block: testBlock,
-        timeRange: '90'
-      })
+      const supabase = createClient()
       
-      const response = await fetch(`/api/analytics/${userId}/exercise-deep-dive?${params}`)
-      const data = await response.json()
-      setTestResult(data)
-      console.log('✅ API Response:', data)
+      // Get completed exercises from performance_logs
+      const { data: completedLogs, error: logsError } = await supabase
+        .from('performance_logs')
+        .select('week, day, block, exercise_name, set_number')
+        .eq('program_id', programId)
+        .eq('user_id', userId)
+
+      if (logsError) {
+        console.error('Error fetching performance logs:', logsError)
+        return {}
+      }
+
+      // Get program structure to count total exercises
+      const { data: programData, error: programError } = await supabase
+        .from('programs')
+        .select('program_data')
+        .eq('id', programId)
+        .single()
+
+      if (programError || !programData) {
+        console.error('Error fetching program data:', programError)
+        return {}
+      }
+
+      // Count completed exercises per day
+      const completedByDay: { [key: string]: Set<string> } = {}
+      
+      completedLogs?.forEach(log => {
+        const dayKey = `${log.week}-${log.day}`
+        if (!completedByDay[dayKey]) {
+          completedByDay[dayKey] = new Set()
+        }
+        // Create unique exercise identifier
+        const exerciseKey = `${log.block}-${log.exercise_name}-${log.set_number}`
+        completedByDay[dayKey].add(exerciseKey)
+      })
+
+      // Count total exercises per day from program structure
+      const completionMap: CompletionMap = {}
+      
+      programData.program_data.weeks.forEach((week: any) => {
+        week.days.forEach((day: any) => {
+          const dayKey = `${week.week}-${day.day}`
+          
+          // Count total exercises across all blocks
+          let totalExercises = 0
+          day.blocks.forEach((block: any) => {
+            totalExercises += block.exercises.length
+          })
+
+          // Get completed count
+          const completedCount = completedByDay[dayKey]?.size || 0
+          
+          completionMap[dayKey] = {
+            week: week.week,
+            day: day.day,
+            totalExercises,
+            completedExercises: completedCount,
+            isFullyComplete: completedCount === totalExercises && totalExercises > 0,
+            completionPercentage: totalExercises > 0 ? Math.round((completedCount / totalExercises) * 100) : 0
+          }
+        })
+      })
+
+      return completionMap
     } catch (error) {
-      console.error('❌ Test failed:', error)
-      setTestResult({ error: error instanceof Error ? error.message : 'Unknown error' })
+      console.error('Error in fetchCompletionStatus:', error)
+      return {}
+    }
+  }
+
+  const fetchCompletionData = async () => {
+    if (!currentProgram || !userId) return
+    
+    setCompletionLoading(true)
+    try {
+      const completion = await fetchCompletionStatus(currentProgram, userId)
+      setCompletionStatus(completion)
+    } catch (error) {
+      console.error('Error fetching completion status:', error)
     } finally {
-      setIsTestLoading(false)
+      setCompletionLoading(false)
     }
   }
 
@@ -114,27 +193,35 @@ export default function DashboardPage() {
 
       setCurrentProgram(programData.id)
 
-      // Calculate current week and day based on program start date
-      const programStartDate = new Date(programData.generated_at)
-      const today = new Date()
-      const daysSinceStart = Math.floor((today.getTime() - programStartDate.getTime()) / (1000 * 60 * 60 * 24))
-      
-      // Assuming 5 training days per week with weekends off
-      const totalTrainingDays = daysSinceStart - (Math.floor(daysSinceStart / 7) * 2)
-      const weekNumber = Math.floor(totalTrainingDays / 5) + 1
-      const dayNumber = (totalTrainingDays % 5) + 1
-
-      // Cap at 12 weeks and 5 days
-      const calculatedWeek = Math.min(Math.max(1, weekNumber), 12)
-      const calculatedDay = Math.min(Math.max(1, dayNumber), 5)
-
-      setCurrentWeek(calculatedWeek)
-      setCurrentDay(calculatedDay)
+      // Default to Week 1, Day 1
+      setCurrentWeek(1)
+      setCurrentDay(1)
     } catch (err) {
       console.error('Error loading user program:', err)
       setError('Failed to load program data')
       setLoading(false)
     }
+  }
+
+  // Add the DayCompletionBadge component
+  const DayCompletionBadge: React.FC<{ completion: DayCompletion }> = ({ completion }) => {
+    if (completion.isFullyComplete) {
+      return (
+        <div className="flex items-center justify-center w-6 h-6 bg-green-500 text-white rounded-full text-xs font-bold">
+          ✓
+        </div>
+      )
+    }
+    
+    if (completion.completedExercises > 0) {
+      return (
+        <div className="flex items-center justify-center px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+          {completion.completedExercises}/{completion.totalExercises}
+        </div>
+      )
+    }
+    
+    return null // No badge for untouched days
   }
 
   const fetchTodaysWorkout = async () => {
@@ -235,61 +322,6 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* API TEST SECTION - REMOVE AFTER TESTING */}
-        <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-bold text-orange-800 mb-4">🧪 API Test Section (Remove After Testing)</h2>
-          <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Exercise:</label>
-              <input 
-                type="text"
-                value={testExercise}
-                onChange={(e) => setTestExercise(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Block:</label>
-              <select 
-                value={testBlock}
-                onChange={(e) => setTestBlock(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="SKILLS">SKILLS</option>
-                <option value="STRENGTH">STRENGTH</option>
-                <option value="METCONS">METCONS</option>
-                <option value="ACCESSORIES">ACCESSORIES</option>
-              </select>
-            </div>
-          </div>
-          
-          <div className="mb-4">
-            <p className="text-sm text-gray-600">User ID: {userId || 'Loading...'}</p>
-            <p className="text-sm text-gray-600">Auth User ID: {user?.id || 'No user'}</p>
-            <p className="text-sm text-gray-600">User Email: {user?.email || 'No email'}</p>
-          </div>
-
-          <button 
-            onClick={testExerciseDeepDive}
-            disabled={isTestLoading || !userId}
-            className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {isTestLoading ? 'Testing API...' : 'Test Exercise Deep Dive API'}
-          </button>
-          
-          {testResult && (
-            <div className="mt-6">
-              <h3 className="font-semibold text-gray-900 mb-2">API Response:</h3>
-              <div className="bg-white border rounded-lg p-4 max-h-96 overflow-auto">
-                <pre className="text-xs text-gray-700">
-                  {JSON.stringify(testResult, null, 2)}
-                </pre>
-              </div>
-            </div>
-          )}
-        </div>
-        {/* END API TEST SECTION */}
-
         {todaysWorkout && (
           <>
             {/* Today's Workout Card */}
@@ -347,30 +379,43 @@ export default function DashboardPage() {
 
             {/* Quick Navigation */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
-              {/* Week Navigation */}
+              {/* Week Navigation - UPDATED WITH COMPLETION BADGES */}
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">This Week's Training</h3>
                 <div className="space-y-2">
-                  {[1, 2, 3, 4, 5].map(day => (
-                    <Link
-                      key={day}
-                      href={`/dashboard/workout/${currentProgram}/week/${currentWeek}/day/${day}`}
-                      className={`block p-3 rounded-lg border transition-colors ${
-                        day === currentDay 
-                          ? 'bg-blue-50 border-blue-200 text-blue-700' 
-                          : 'hover:bg-gray-50 border-gray-200'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">Day {day}</span>
-                        {day === currentDay && <span className="text-sm text-blue-600">← Today</span>}
-                      </div>
-                    </Link>
-                  ))}
+                  {[1, 2, 3, 4, 5].map(day => {
+                    const dayKey = `${currentWeek}-${day}`
+                    const dayCompletion = completionStatus[dayKey]
+                    
+                    return (
+                      <Link
+                        key={day}
+                        href={`/dashboard/workout/${currentProgram}/week/${currentWeek}/day/${day}`}
+                        className={`block p-3 rounded-lg border transition-colors ${
+                          day === currentDay 
+                            ? 'bg-blue-50 border-blue-200 text-blue-700' 
+                            : 'hover:bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center space-x-3">
+                            <span className="font-medium">Day {day}</span>
+                            {day === currentDay && <span className="text-sm text-blue-600">← Today</span>}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {dayCompletion && <DayCompletionBadge completion={dayCompletion} />}
+                            {completionLoading && (
+                              <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    )
+                  })}
                 </div>
               </div>
 
-              {/* Quick Stats */}
+              {/* Quick Stats - UPDATED WITH COMPLETION STATS */}
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Quick Stats</h3>
                 <div className="space-y-4">
@@ -382,6 +427,30 @@ export default function DashboardPage() {
                     <span className="text-gray-600">Week Progress</span>
                     <span className="font-semibold">{currentWeek} of 12</span>
                   </div>
+                  
+                  {/* Add completion progress */}
+                  {Object.keys(completionStatus).length > 0 && (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">This Week</span>
+                        <span className="font-semibold">
+                          {[1,2,3,4,5].filter(day => {
+                            const dayKey = `${currentWeek}-${day}`
+                            return completionStatus[dayKey]?.isFullyComplete
+                          }).length}/5 days complete
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Overall Progress</span>
+                        <span className="font-semibold">
+                          {Object.values(completionStatus).filter(c => c.isFullyComplete).length}/
+                          {Object.keys(completionStatus).length} days
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Main Focus</span>
                     <span className="font-semibold">{todaysWorkout.mainLift}</span>
