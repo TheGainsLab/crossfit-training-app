@@ -183,6 +183,9 @@ export default function DashboardPage() {
       const response = await fetch(`/api/analytics/${userId}/dashboard`)
       const data = await response.json()
       
+  console.log('🔍 API Response Status:', response.status)
+    console.log('🔍 API Response Data:', data)
+
       // Transform the API response into our widget format
       const analytics: DashboardAnalytics = {
         weeklyPerformance: {
@@ -216,7 +219,7 @@ export default function DashboardPage() {
         coachingInsights: data.coachingRecommendations || [],
         topAchievement: data.topAchievement
       }
-      
+       console.log('🔍 Transformed Analytics:', analytics)
       setDashboardAnalytics(analytics)
     } catch (error) {
       console.error('Error fetching dashboard analytics:', error)
@@ -768,3 +771,4 @@ export default function DashboardPage() {
     </div>
   )
 }
+
