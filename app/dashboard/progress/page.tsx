@@ -1,199 +1,205 @@
-'use client'
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import { User } from '@supabase/supabase-js';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  RadialLinearScale,
+  ArcElement
+} from 'chart.js';
+import { Line, Bar, Radar, Doughnut } from 'react-chartjs-2';
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
-
-// Analytics data interfaces
-interface BlockAnalytics {
-  weeklyData: any[]
-  blockTrends: any
-  exerciseBreakdown: any
-  progressionSignals: string[]
-}
-
-interface SkillsAnalytics {
-  skillsProgression: any
-  movementMastery: any
-  practiceConsistency: any
-}
-
-interface StrengthAnalytics {
-  strengthRatios: any
-  liftingProgression: any
-  periodizationPhases: any
-}
-
-interface MetConAnalytics {
-  metconPerformance: any
-  conditioningTrends: any
-  exerciseAnalytics: any
-  recommendations: string[]
-}
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  RadialLinearScale,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 export default function AnalyticsProgressPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [userId, setUserId] = useState<number | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [user, setUser] = useState<User | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Analytics data states
-  const [blockAnalytics, setBlockAnalytics] = useState<BlockAnalytics | null>(null)
-  const [skillsAnalytics, setSkillsAnalytics] = useState<SkillsAnalytics | null>(null)
-  const [strengthAnalytics, setStrengthAnalytics] = useState<StrengthAnalytics | null>(null)
-  const [metconAnalytics, setMetConAnalytics] = useState<MetConAnalytics | null>(null)
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [blockData, setBlockData] = useState<any>(null);
+  const [skillsData, setSkillsData] = useState<any>(null);
+  const [strengthData, setStrengthData] = useState<any>(null);
+  const [metconData, setMetconData] = useState<any>(null);
 
-  const [analyticsLoading, setAnalyticsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'overview' | 'blocks' | 'skills' | 'strength' | 'metcons'>('overview')
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'blocks' | 'skills' | 'strength' | 'metcons'>('overview');
 
   useEffect(() => {
-    loadUser()
-  }, [])
+    loadUser();
+  }, []);
 
   useEffect(() => {
     if (userId) {
-      fetchAllAnalytics()
+      fetchAllAnalytics();
     }
-  }, [userId])
+  }, [userId]);
 
   const loadUser = async () => {
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        setError('Not authenticated')
-        return
+        setError('Not authenticated');
+        return;
       }
-      setUser(user)
+      setUser(user);
 
       // Get user ID from users table
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('id')
         .eq('auth_id', user.id)
-        .single()
+        .single();
 
       if (userError || !userData) {
-        setError('User not found')
-        return
+        setError('User not found');
+        return;
       }
       
-      setUserId(userData.id)
+      setUserId(userData.id);
     } catch (err) {
-      console.error('Error loading user:', err)
-      setError('Failed to load user data')
+      console.error('Error loading user:', err);
+      setError('Failed to load user data');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
+  };
 
   const fetchAllAnalytics = async () => {
-  if (!userId) return
-  
-  setAnalyticsLoading(true)
-  try {
-    console.log('📊 Fetching all analytics for user:', userId)
+    if (!userId) return;
     
-    // Fetch all analytics in parallel using your working APIs
-    const responses = await Promise.allSettled([
-      fetch(`/api/analytics/${userId}/block-analyzer`),
-      fetch(`/api/analytics/${userId}/skills-analytics`),
-      fetch(`/api/analytics/${userId}/strength-tracker`),
-      fetch(`/api/analytics/${userId}/metcon-analyzer`)
-    ])
+    setAnalyticsLoading(true);
+    try {
+      console.log('📊 Fetching all analytics for user:', userId);
+      
+      // Fetch all analytics in parallel
+      const [dashboardRes, blockRes, skillsRes, strengthRes, metconRes] = await Promise.allSettled([
+        fetch(`/api/analytics/${userId}/dashboard`),
+        fetch(`/api/analytics/${userId}/block-analyzer`),
+        fetch(`/api/analytics/${userId}/skills-analytics`),
+        fetch(`/api/analytics/${userId}/strength-tracker`),
+        fetch(`/api/analytics/${userId}/metcon-analyzer`)
+      ]);
 
-    // Process Block Analytics
-    if (responses[0].status === 'fulfilled' && responses[0].value.ok) {
-      const blockData = await responses[0].value.json()
-      console.log('✅ Block analytics loaded:', blockData)
-      setBlockAnalytics(blockData)
-    } else {
-      console.log('❌ Block analytics failed')
+      // Process Dashboard Data
+      if (dashboardRes.status === 'fulfilled' && dashboardRes.value.ok) {
+        const data = await dashboardRes.value.json();
+        setDashboardData(data);
+        console.log('✅ Dashboard data loaded');
+      }
+
+      // Process Block Analytics
+      if (blockRes.status === 'fulfilled' && blockRes.value.ok) {
+        const data = await blockRes.value.json();
+        setBlockData(data);
+        console.log('✅ Block analytics loaded');
+      }
+
+      // Process Skills Analytics  
+      if (skillsRes.status === 'fulfilled' && skillsRes.value.ok) {
+        const data = await skillsRes.value.json();
+        setSkillsData(data);
+        console.log('✅ Skills analytics loaded');
+      }
+
+      // Process Strength Analytics
+      if (strengthRes.status === 'fulfilled' && strengthRes.value.ok) {
+        const data = await strengthRes.value.json();
+        setStrengthData(data);
+        console.log('✅ Strength analytics loaded');
+      }
+
+      // Process MetCon Analytics
+      if (metconRes.status === 'fulfilled' && metconRes.value.ok) {
+        const data = await metconRes.value.json();
+        setMetconData(data);
+        console.log('✅ MetCon analytics loaded');
+      }
+
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      setError('Failed to load analytics data');
+    } finally {
+      setAnalyticsLoading(false);
     }
-
-    // Process Skills Analytics  
-    if (responses[1].status === 'fulfilled' && responses[1].value.ok) {
-      const skillsData = await responses[1].value.json()
-      console.log('✅ Skills analytics loaded:', skillsData)
-      setSkillsAnalytics(skillsData)
-    } else {
-      console.log('❌ Skills analytics failed')
-    }
-
-    // Process Strength Analytics
-    if (responses[2].status === 'fulfilled' && responses[2].value.ok) {
-      const strengthData = await responses[2].value.json()
-      console.log('✅ Strength analytics loaded:', strengthData)
-      setStrengthAnalytics(strengthData)
-    } else {
-      console.log('❌ Strength analytics failed')
-    }
-
-    // Process MetCon Analytics
-    if (responses[3].status === 'fulfilled' && responses[3].value.ok) {
-      const metconData = await responses[3].value.json()
-      console.log('✅ MetCon analytics loaded:', metconData)
-      setMetConAnalytics(metconData)
-    } else {
-      console.log('❌ MetCon analytics failed')
-    }
-
-  } catch (error) {
-    console.error('Error fetching analytics:', error)
-    setError('Failed to load analytics data')
-  } finally {
-    setAnalyticsLoading(false)
-  }
-}
-
+  };
 
   // Overview Summary Component
-  const OverviewSummary = () => (
-    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Total Exercises</p>
-            <p className="text-3xl font-bold text-gray-900">41</p>
+  const OverviewSummary = () => {
+    if (!dashboardData?.data?.dashboard) {
+      return <div>Loading overview data...</div>;
+    }
+
+    const { overallMetrics } = dashboardData.data.dashboard;
+
+    return (
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Total Exercises</p>
+              <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalExercises}</p>
+            </div>
+            <div className="text-blue-600">📊</div>
           </div>
-          <div className="text-blue-600">📊</div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Average RPE</p>
+              <p className="text-3xl font-bold text-gray-900">{overallMetrics.averageRPE}</p>
+            </div>
+            <div className="text-green-600">💪</div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Training Consistency</p>
+              <p className="text-3xl font-bold text-gray-900">{overallMetrics.consistencyScore}%</p>
+            </div>
+            <div className="text-purple-600">🎯</div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Training Days</p>
+              <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalTrainingDays}</p>
+            </div>
+            <div className="text-orange-600">⭐</div>
+          </div>
         </div>
       </div>
-      
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Average RPE</p>
-            <p className="text-3xl font-bold text-gray-900">5.7</p>
-          </div>
-          <div className="text-green-600">💪</div>
-        </div>
-      </div>
-      
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Training Consistency</p>
-            <p className="text-3xl font-bold text-gray-900">85%</p>
-          </div>
-          <div className="text-purple-600">🎯</div>
-        </div>
-      </div>
-      
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Quality Score</p>
-            <p className="text-3xl font-bold text-gray-900">B+</p>
-          </div>
-          <div className="text-orange-600">⭐</div>
-        </div>
-      </div>
-    </div>
-  )
+    );
+  };
 
   // Tab Navigation
   const TabNavigation = () => (
@@ -221,100 +227,214 @@ export default function AnalyticsProgressPage() {
         ))}
       </nav>
     </div>
-  )
+  );
 
-  // Block Analytics Component
-  const BlockAnalyticsView = () => (
-    <div className="space-y-8">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Training Block Performance</h3>
-        {blockAnalytics ? (
+  // Block Analytics Component with Real Charts
+  const BlockAnalyticsView = () => {
+    if (!dashboardData?.data?.dashboard) {
+      return <div className="bg-white rounded-lg shadow p-6">Loading block analytics...</div>;
+    }
+
+    const { blockPerformance } = dashboardData.data.dashboard;
+
+    // Create chart data from block performance
+    const blockChartData = {
+      labels: Object.keys(blockPerformance).map(block => {
+        const blockNames: { [key: string]: string } = {
+          'SKILLS': 'Skills',
+          'TECHNICAL WORK': 'Technical',
+          'STRENGTH AND POWER': 'Strength',
+          'ACCESSORIES': 'Accessories',
+          'METCONS': 'MetCons'
+        };
+        return blockNames[block] || block;
+      }),
+      datasets: [
+        {
+          label: 'Performance Score',
+          data: Object.values(blockPerformance).map((block: any) => block.overallScore),
+          backgroundColor: [
+            'rgba(54, 162, 235, 0.6)',
+            'rgba(255, 99, 132, 0.6)',
+            'rgba(255, 205, 86, 0.6)',
+            'rgba(75, 192, 192, 0.6)',
+            'rgba(153, 102, 255, 0.6)'
+          ],
+          borderColor: [
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 99, 132, 1)',
+            'rgba(255, 205, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)'
+          ],
+          borderWidth: 1
+        }
+      ]
+    };
+
+    const chartOptions = {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: false
+        },
+        title: {
+          display: true,
+          text: 'Training Block Performance'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100
+        }
+      }
+    };
+
+    return (
+      <div className="space-y-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Training Block Performance</h3>
+          <div className="h-64 mb-6">
+            <Bar data={blockChartData} options={chartOptions} />
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(blockPerformance).map(([blockKey, blockData]: [string, any]) => (
+              <div key={blockKey} className="p-4 border rounded-lg">
+                <h4 className="font-medium text-gray-900">{blockKey}</h4>
+                <p className="text-2xl font-bold text-blue-600">{blockData.overallScore}%</p>
+                <p className="text-sm text-gray-600">{blockData.exercisesCompleted} exercises</p>
+                <p className="text-sm text-gray-600">RPE: {blockData.averageRPE}</p>
+                {blockData.needsAttention && (
+                  <span className="inline-block mt-2 px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
+                    Needs Attention
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Skills Analytics Component
+  const SkillsAnalyticsView = () => {
+    if (!skillsData?.data) {
+      return <div className="bg-white rounded-lg shadow p-6">Loading skills analytics...</div>;
+    }
+
+    return (
+      <div className="space-y-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Development</h3>
           <div className="space-y-4">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {['Skills', 'Strength', 'MetCons', 'Accessories'].map((block) => (
-                <div key={block} className="p-4 border rounded-lg">
-                  <h4 className="font-medium text-gray-900">{block}</h4>
-                  <p className="text-2xl font-bold text-blue-600">85%</p>
-                  <p className="text-sm text-gray-600">Completion Rate</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-6">
-              <h4 className="font-medium text-gray-900 mb-2">Progression Signals</h4>
-              <div className="space-y-2">
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm text-green-800">🚀 Skills block showing excellent progress</p>
-                </div>
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">⚠️ Strength block may need deload consideration</p>
-                </div>
-              </div>
-            </div>
+            <p className="text-gray-600">Skills analytics data loaded successfully!</p>
+            <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64">
+              {JSON.stringify(skillsData.data, null, 2)}
+            </pre>
           </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-500">Block analytics loading...</p>
-          </div>
-        )}
+        </div>
       </div>
-    </div>
-  )
+    );
+  };
 
-  // Skills Analytics Component  
-  const SkillsAnalyticsView = () => (
-    <div className="space-y-8">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Development</h3>
-        {skillsAnalytics ? (
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-900">Beginner Skills</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm">Push-ups</span>
-                  <span className="text-green-600">✅</span>
-                </div>
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm">Air Squats</span>
-                  <span className="text-green-600">✅</span>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-900">Intermediate Skills</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
-                  <span className="text-sm">Pull-ups</span>
-                  <span className="text-yellow-600">🔄</span>
-                </div>
-                <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
-                  <span className="text-sm">Handstand</span>
-                  <span className="text-yellow-600">🔄</span>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-900">Advanced Skills</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center p-2 bg-red-50 rounded">
-                  <span className="text-sm">Muscle-ups</span>
-                  <span className="text-red-600">🎯</span>
-                </div>
-                <div className="flex justify-between items-center p-2 bg-red-50 rounded">
-                  <span className="text-sm">Pistol Squats</span>
-                  <span className="text-red-600">🎯</span>
-                </div>
-              </div>
-            </div>
+  // Strength Analytics Component
+  const StrengthAnalyticsView = () => {
+    if (!strengthData?.data) {
+      return <div className="bg-white rounded-lg shadow p-6">Loading strength analytics...</div>;
+    }
+
+    return (
+      <div className="space-y-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Strength Analysis</h3>
+          <div className="space-y-4">
+            <p className="text-gray-600">Strength analytics data loaded successfully!</p>
+            <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64">
+              {JSON.stringify(strengthData.data, null, 2)}
+            </pre>
           </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-500">Skills analytics loading...</p>
-          </div>
-        )}
+        </div>
       </div>
-    </div>
-  )
+    );
+  };
+
+  // MetCon Analytics Component  
+  const MetConAnalyticsView = () => {
+    if (!metconData?.data) {
+      return <div className="bg-white rounded-lg shadow p-6">Loading MetCon analytics...</div>;
+    }
+
+    const { timeDomainAnalysis } = metconData.data;
+
+    // Create time domain chart
+    const timeDomainChartData = {
+      labels: Object.keys(timeDomainAnalysis.timeDomains),
+      datasets: [
+        {
+          label: 'Average Percentile',
+          data: Object.values(timeDomainAnalysis.timeDomains).map((domain: any) => domain.avgPercentile),
+          backgroundColor: 'rgba(255, 99, 132, 0.6)',
+          borderColor: 'rgba(255, 99, 132, 1)',
+          borderWidth: 1
+        }
+      ]
+    };
+
+    return (
+      <div className="space-y-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Conditioning Performance</h3>
+          <div className="h-64 mb-6">
+            <Bar data={timeDomainChartData} options={{
+              responsive: true,
+              plugins: {
+                legend: {
+                  display: false
+                },
+                title: {
+                  display: true,
+                  text: 'Performance by Time Domain'
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: 100
+                }
+              }
+            }} />
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3">Time Domain Performance</h4>
+              <div className="space-y-2">
+                {Object.entries(timeDomainAnalysis.timeDomains).map(([timeRange, data]: [string, any]) => (
+                  <div key={timeRange} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <span className="text-sm font-medium">{timeRange}</span>
+                    <span className="text-sm text-gray-600">{data.avgPercentile}% avg</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3">Summary</h4>
+              <div className="space-y-2 text-sm">
+                <p><strong>Total Workouts:</strong> {metconData.data.summary.totalWorkouts}</p>
+                <p><strong>Time Domains:</strong> {metconData.data.summary.timeDomainsCovered}</p>
+                <p><strong>Average Percentile:</strong> {metconData.data.summary.averagePercentile}%</p>
+                <p><strong>Strongest Domain:</strong> {metconData.data.summary.strongestDomain}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Loading and error states
   if (loading) {
@@ -325,7 +445,7 @@ export default function AnalyticsProgressPage() {
           <p className="text-gray-600">Loading analytics...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -343,7 +463,7 @@ export default function AnalyticsProgressPage() {
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -386,22 +506,12 @@ export default function AnalyticsProgressPage() {
               {activeTab === 'overview' && <OverviewSummary />}
               {activeTab === 'blocks' && <BlockAnalyticsView />}
               {activeTab === 'skills' && <SkillsAnalyticsView />}
-              {activeTab === 'strength' && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Strength Analysis</h3>
-                  <p className="text-gray-600">Strength analytics coming soon...</p>
-                </div>
-              )}
-              {activeTab === 'metcons' && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Conditioning Performance</h3>
-                  <p className="text-gray-600">MetCon analytics coming soon...</p>
-                </div>
-              )}
+              {activeTab === 'strength' && <StrengthAnalyticsView />}
+              {activeTab === 'metcons' && <MetConAnalyticsView />}
             </>
           )}
         </div>
       </main>
     </div>
-  )
+  );
 }
