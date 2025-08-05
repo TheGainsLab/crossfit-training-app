@@ -122,21 +122,26 @@ export async function GET(
       )
     }
 
-    // Query MetCon data if this is a MetCon exercise
-    let metconData = []
-    if (block === 'METCONS') {
-      const { data: metconResults, error: metconError } = await supabase
-        .from('program_metcons')
-        .select(`
-          *,
-          metcons!inner(
-            workout_id,
-            time_range,
-            tasks
-          )
-        `)
-        .eq('user_id', userIdNum)
-        .gte('completed_at', startDate.toISOString())
+// Query MetCon data if this is a MetCon exercise - FIXED: Join through programs table
+let metconData = []
+if (block === 'METCONS') {
+  const { data: metconResults, error: metconError } = await supabase
+    .from('program_metcons')
+    .select(`
+      *,
+      metcons!inner(
+        workout_id,
+        time_range,
+        tasks
+      ),
+      programs(
+        user_id
+      )
+    `)
+    .eq('programs.user_id', userIdNum)  // ✅ Fixed: Join through programs table
+    .gte('completed_at', startDate.toISOString())
+
+
 
       if (!metconError && metconResults) {
         // Filter MetCons that contain this exercise
