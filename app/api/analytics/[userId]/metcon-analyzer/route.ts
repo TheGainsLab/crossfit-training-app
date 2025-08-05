@@ -83,7 +83,7 @@ export async function GET(
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - timeRange)
 
-    // Query MetCon performance data - FIXED: Removed non-existent workout_format column
+    // Query MetCon performance data - FIXED: Join through programs table to get user data
     const { data: metconData, error: metconError } = await supabase
       .from('program_metcons')
       .select(`
@@ -92,9 +92,12 @@ export async function GET(
           workout_id,
           time_range,
           tasks
+        ),
+        programs(
+          user_id
         )
       `)
-      .eq('user_id', userIdNum)
+      .eq('programs.user_id', userIdNum)
       .gte('completed_at', startDate.toISOString())
       .order('completed_at', { ascending: true })
 
