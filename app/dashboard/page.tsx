@@ -174,9 +174,6 @@ export default function DashboardPage() {
     }
   }
 
-
-
-
 const fetchDashboardAnalytics = async () => {
   if (!userId) return
   
@@ -197,6 +194,7 @@ const fetchDashboardAnalytics = async () => {
   } finally {
     setAnalyticsLoading(false)
   }
+}
 
 
 
