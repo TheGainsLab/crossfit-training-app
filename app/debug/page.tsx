@@ -5,9 +5,9 @@ import React, { useState, useEffect } from 'react';
 
 const APIDebugger = () => {
   const [testUserId] = useState('47'); // Using your test user
-  const [apiResults, setApiResults] = useState({});
+  const [apiResults, setApiResults] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const routes = [
     'dashboard',
@@ -18,7 +18,7 @@ const APIDebugger = () => {
     'exercise-deep-dive'
   ];
 
-  const testRoute = async (route) => {
+  const testRoute = async (route: string) => {
     try {
       console.log(`Testing route: ${route}`);
       const response = await fetch(`/api/analytics/${testUserId}/${route}`);
@@ -35,7 +35,7 @@ const APIDebugger = () => {
         [route]: { success: true, data, timestamp: new Date().toISOString() }
       }));
       
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ ${route} failed:`, error);
       setErrors(prev => ({
         ...prev,
@@ -59,7 +59,7 @@ const APIDebugger = () => {
     setLoading(false);
   };
 
-  const RouteStatus = ({ route }) => {
+  const RouteStatus = ({ route }: { route: string }) => {
     const result = apiResults[route];
     const error = errors[route];
     
