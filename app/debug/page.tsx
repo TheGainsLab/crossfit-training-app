@@ -9,14 +9,14 @@ const APIDebugger = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const routes = [
-    'dashboard',
-    'block-analyzer', 
-    'metcon-analyzer',
-    'skills-analytics',
-    'strength-tracker',
-    'exercise-deep-dive'
-  ];
+const routes = [
+  'dashboard',
+  'block-analyzer',
+  'metcon-analyzer',
+  'skills-analytics',
+  'strength-tracker',
+  'exercise-deep-dive?exercise=Double%20Unders&block=METCONS'  // ✅ Has parameters
+];
 
   const testRoute = async (route: string) => {
     try {
