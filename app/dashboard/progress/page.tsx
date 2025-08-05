@@ -321,47 +321,277 @@ export default function AnalyticsProgressPage() {
     );
   };
 
-  // Skills Analytics Component
-  const SkillsAnalyticsView = () => {
-    if (!skillsData?.data) {
-      return <div className="bg-white rounded-lg shadow p-6">Loading skills analytics...</div>;
-    }
 
+
+// Skills Analytics Component - FIXED
+const SkillsAnalyticsView = () => {
+  if (!skillsData?.data) {
+    return <div className="bg-white rounded-lg shadow p-6">Loading skills analytics...</div>;
+  }
+
+  const skillsAnalysis = skillsData.data.skillsAnalysis;
+  
+  if (!skillsAnalysis?.movements) {
     return (
-      <div className="space-y-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Development</h3>
-          <div className="space-y-4">
-            <p className="text-gray-600">Skills analytics data loaded successfully!</p>
-            <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64">
-              {JSON.stringify(skillsData.data, null, 2)}
-            </pre>
-          </div>
-        </div>
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Development</h3>
+        <p className="text-gray-600">No skills movement data available yet. Complete more skills exercises to see detailed analytics!</p>
       </div>
     );
+  }
+
+  // Create chart data from skills movements
+  const movementNames = Object.keys(skillsAnalysis.movements);
+  const movementData = movementNames.map(name => {
+    const movement = skillsAnalysis.movements[name];
+    const sessions = movement.sessions || [];
+    return {
+      name,
+      sessionCount: sessions.length,
+      avgRPE: sessions.length > 0 ? 
+        sessions.reduce((sum: number, session: any) => sum + (session.rpe || 0), 0) / sessions.length : 0,
+      avgQuality: sessions.length > 0 ? 
+        sessions.reduce((sum: number, session: any) => sum + (session.quality || 0), 0) / sessions.length : 0,
+      lastSession: sessions.length > 0 ? sessions[sessions.length - 1] : null
+    };
+  });
+
+  const skillsChartData = {
+    labels: movementData.map(m => m.name),
+    datasets: [
+      {
+        label: 'Session Count',
+        data: movementData.map(m => m.sessionCount),
+        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }
+    ]
   };
 
-  // Strength Analytics Component
-  const StrengthAnalyticsView = () => {
-    if (!strengthData?.data) {
-      return <div className="bg-white rounded-lg shadow p-6">Loading strength analytics...</div>;
-    }
+  const rpeChartData = {
+    labels: movementData.map(m => m.name),
+    datasets: [
+      {
+        label: 'Average RPE',
+        data: movementData.map(m => m.avgRPE),
+        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 1
+      }
+    ]
+  };
 
-    return (
-      <div className="space-y-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Strength Analysis</h3>
-          <div className="space-y-4">
-            <p className="text-gray-600">Strength analytics data loaded successfully!</p>
-            <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-64">
-              {JSON.stringify(strengthData.data, null, 2)}
-            </pre>
+  return (
+    <div className="space-y-8">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Development Progress</h3>
+        
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <h4 className="font-medium text-gray-900 mb-3">Practice Frequency</h4>
+            <div className="h-64">
+              <Bar data={skillsChartData} options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  title: { display: true, text: 'Sessions per Movement' }
+                },
+                scales: {
+                  y: { beginAtZero: true }
+                }
+              }} />
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="font-medium text-gray-900 mb-3">Average RPE</h4>
+            <div className="h-64">
+              <Bar data={rpeChartData} options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  title: { display: true, text: 'Effort Level by Movement' }
+                },
+                scales: {
+                  y: { beginAtZero: true, max: 10 }
+                }
+              }} />
+            </div>
           </div>
         </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {movementData.map((movement, index) => (
+            <div key={movement.name} className="p-4 border rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">{movement.name}</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Sessions:</span>
+                  <span className="font-medium">{movement.sessionCount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Avg RPE:</span>
+                  <span className="font-medium">{movement.avgRPE.toFixed(1)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Avg Quality:</span>
+                  <span className="font-medium">{movement.avgQuality.toFixed(1)}</span>
+                </div>
+                {movement.lastSession && (
+                  <div className="text-xs text-gray-500 mt-2">
+                    Last: Week {movement.lastSession.week}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+// Strength Analytics Component - FIXED  
+const StrengthAnalyticsView = () => {
+  if (!strengthData?.data) {
+    return <div className="bg-white rounded-lg shadow p-6">Loading strength analytics...</div>;
+  }
+
+  const strengthAnalysis = strengthData.data.strengthAnalysis;
+  
+  if (!strengthAnalysis?.movements) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Strength Analysis</h3>
+        <p className="text-gray-600">No strength movement data available yet. Complete more strength exercises to see detailed analytics!</p>
       </div>
     );
+  }
+
+  // Create chart data from strength movements
+  const movementNames = Object.keys(strengthAnalysis.movements);
+  const movementData = movementNames.map(name => {
+    const movement = strengthAnalysis.movements[name];
+    const sessions = movement.sessions || [];
+    return {
+      name,
+      sessionCount: sessions.length,
+      maxWeight: sessions.length > 0 ? 
+        Math.max(...sessions.map((s: any) => s.weight || 0)) : 0,
+      avgWeight: sessions.length > 0 ? 
+        sessions.reduce((sum: number, session: any) => sum + (session.weight || 0), 0) / sessions.length : 0,
+      totalVolume: sessions.reduce((sum: number, session: any) => 
+        sum + ((session.weight || 0) * (session.sets || 0) * (session.reps || 0)), 0),
+      lastSession: sessions.length > 0 ? sessions[sessions.length - 1] : null
+    };
+  });
+
+  const weightProgressData = {
+    labels: movementData.map(m => m.name),
+    datasets: [
+      {
+        label: 'Max Weight (lbs)',
+        data: movementData.map(m => m.maxWeight),
+        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1
+      }
+    ]
   };
+
+  const volumeData = {
+    labels: movementData.map(m => m.name),
+    datasets: [
+      {
+        label: 'Total Volume',
+        data: movementData.map(m => m.totalVolume),
+        backgroundColor: 'rgba(153, 102, 255, 0.6)',
+        borderColor: 'rgba(153, 102, 255, 1)',
+        borderWidth: 1
+      }
+    ]
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Strength Progress Analysis</h3>
+        
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <h4 className="font-medium text-gray-900 mb-3">Max Weight Progression</h4>
+            <div className="h-64">
+              <Bar data={weightProgressData} options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  title: { display: true, text: 'Peak Loads by Movement' }
+                },
+                scales: {
+                  y: { beginAtZero: true }
+                }
+              }} />
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="font-medium text-gray-900 mb-3">Training Volume</h4>
+            <div className="h-64">
+              <Bar data={volumeData} options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  title: { display: true, text: 'Total Volume by Movement' }
+                },
+                scales: {
+                  y: { beginAtZero: true }
+                }
+              }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {movementData.map((movement, index) => (
+            <div key={movement.name} className="p-4 border rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">{movement.name}</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Sessions:</span>
+                  <span className="font-medium">{movement.sessionCount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Max Weight:</span>
+                  <span className="font-medium">{movement.maxWeight} lbs</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Avg Weight:</span>
+                  <span className="font-medium">{movement.avgWeight.toFixed(1)} lbs</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Volume:</span>
+                  <span className="font-medium">{movement.totalVolume.toLocaleString()}</span>
+                </div>
+                {movement.lastSession && (
+                  <div className="text-xs text-gray-500 mt-2">
+                    Last: Week {movement.lastSession.week}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
   // MetCon Analytics Component  
   const MetConAnalyticsView = () => {
@@ -517,3 +747,4 @@ export default function AnalyticsProgressPage() {
     </div>
   );
 }
+
