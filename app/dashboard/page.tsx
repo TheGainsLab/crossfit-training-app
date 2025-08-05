@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -32,22 +33,20 @@ interface CompletionMap {
 }
 
 // ADD these new interfaces after CompletionMap
+
 interface DashboardAnalytics {
-  weeklyPerformance: {
-    averageRPE: number
-    averageQuality: number
-    completionRate: number
-    trend: 'improving' | 'stable' | 'declining'
-  }
-  blockStatus: {
-    skills: { completion: number; status: string; alert?: string }
-    strength: { completion: number; status: string; alert?: string }
-    metcons: { completion: number; status: string; alert?: string }
-    accessories: { completion: number; status: string; alert?: string }
-  }
-  coachingInsights: string[]
-  topAchievement?: string
+  success: boolean;
+  data: {
+    dashboard: {
+      overallMetrics: any;
+      blockPerformance: any;
+      progressionTrends: any;
+      keyInsights: string[];
+    };
+  };
+  metadata: any;
 }
+
 
 export default function DashboardPage() {
   const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
@@ -175,6 +174,9 @@ export default function DashboardPage() {
     }
   }
 
+
+
+
 const fetchDashboardAnalytics = async () => {
   if (!userId) return
   
@@ -186,52 +188,16 @@ const fetchDashboardAnalytics = async () => {
     console.log('🔍 API Response Status:', response.status)
     console.log('🔍 API Response Data:', apiResponse)
     
-    // Extract the actual data from the nested structure
-    const data = apiResponse.data
-    const dashboard = data.dashboard
-    const summary = data.summary
+    // Store the raw API response - let the widgets handle the data extraction
+    setDashboardAnalytics(apiResponse)
     
-    const analytics: DashboardAnalytics = {
-      weeklyPerformance: {
-        averageRPE: summary?.averageRPE || dashboard?.overallMetrics?.averageRPE || 0,
-        averageQuality: summary?.averageQuality || dashboard?.overallMetrics?.averageQuality || 0,
-        completionRate: summary?.completionRate || dashboard?.overallMetrics?.completionRate || 0,
-        trend: summary?.overallProgress || dashboard?.progressionTrends?.overall || 'stable'
-      },
-      blockStatus: {
-        skills: {
-          completion: dashboard?.blockPerformance?.SKILLS?.completionRate || 0,
-          status: dashboard?.blockPerformance?.SKILLS?.status || 'on-track',
-          alert: dashboard?.blockPerformance?.SKILLS?.alert
-        },
-        strength: {
-          completion: dashboard?.blockPerformance?.['STRENGTH AND POWER']?.completionRate || 0,
-          status: dashboard?.blockPerformance?.['STRENGTH AND POWER']?.status || 'on-track',
-          alert: dashboard?.blockPerformance?.['STRENGTH AND POWER']?.alert
-        },
-        metcons: {
-          completion: dashboard?.blockPerformance?.METCONS?.completionRate || 0,
-          status: dashboard?.blockPerformance?.METCONS?.status || 'on-track',
-          alert: dashboard?.blockPerformance?.METCONS?.alert
-        },
-        accessories: {
-          completion: dashboard?.blockPerformance?.ACCESSORIES?.completionRate || 0,
-          status: dashboard?.blockPerformance?.ACCESSORIES?.status || 'on-track',
-          alert: dashboard?.blockPerformance?.ACCESSORIES?.alert
-        }
-      },
-      coachingInsights: data.insights || [],
-      topAchievement: summary?.topAchievement
-    }
-    
-    console.log('🔍 Transformed Analytics:', analytics)
-    setDashboardAnalytics(analytics)
   } catch (error) {
     console.error('Error fetching dashboard analytics:', error)
+    setDashboardAnalytics(null)
   } finally {
     setAnalyticsLoading(false)
   }
-}
+
 
 
   const loadUserAndProgram = async () => {
@@ -308,149 +274,212 @@ const fetchDashboardAnalytics = async () => {
     return null // No badge for untouched days
   }
 
-  const WeeklyPerformanceWidget: React.FC<{ analytics: DashboardAnalytics }> = ({ analytics }) => {
-    const { weeklyPerformance } = analytics
-    
-    const getTrendIcon = (trend: string) => {
-      switch (trend) {
-        case 'improving': return '📈'
-        case 'declining': return '📉'
-        default: return '➡️'
-      }
-    }
+const WeeklyPerformanceWidget: React.FC<{ analytics: any }> = ({ analytics }) => {
+  if (!analytics?.data?.dashboard) {
+    return <div className="bg-white rounded-lg shadow p-6">Loading performance data...</div>
+  }
 
-    const getTrendColor = (trend: string) => {
-      switch (trend) {
-        case 'improving': return 'text-green-600'
-        case 'declining': return 'text-red-600'
-        default: return 'text-gray-600'
-      }
+  const { overallMetrics, progressionTrends } = analytics.data.dashboard
+  
+  const getTrendIcon = (trend: string) => {
+    switch (trend) {
+      case 'improving': return '📈'
+      case 'declining': return '📉'
+      default: return '➡️'
     }
+  }
 
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-900">📊 This Week's Performance</h3>
-          <span className={`text-sm font-medium ${getTrendColor(weeklyPerformance.trend)}`}>
-            {getTrendIcon(weeklyPerformance.trend)} {weeklyPerformance.trend}
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
+      case 'improving': return 'text-green-600'
+      case 'declining': return 'text-red-600'
+      default: return 'text-gray-600'
+    }
+  }
+
+  const getQualityGrade = (quality: number) => {
+    if (quality >= 3.5) return 'A'
+    if (quality >= 2.5) return 'B'  
+    if (quality >= 1.5) return 'C'
+    return 'D'
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-gray-900">📊 Performance Overview</h3>
+        <span className={`text-sm font-medium ${getTrendColor(progressionTrends.rpe)}`}>
+          {getTrendIcon(progressionTrends.rpe)} {progressionTrends.rpe}
+        </span>
+      </div>
+      
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Training Days</span>
+          <span className="font-semibold">{overallMetrics.totalTrainingDays} days</span>
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Average RPE</span>
+          <span className="font-semibold">{overallMetrics.averageRPE}/10</span>
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Quality Score</span>
+          <span className="font-semibold">
+            {getQualityGrade(overallMetrics.averageQuality)} ({overallMetrics.averageQuality}/4.0)
           </span>
         </div>
         
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Average RPE</span>
-            <span className="font-semibold">{weeklyPerformance.averageRPE.toFixed(1)}/10</span>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Consistency</span>
+          <span className="font-semibold">{overallMetrics.consistencyScore}%</span>
+        </div>
+
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Current Phase</span>
+          <span className="font-semibold text-blue-600">{overallMetrics.trainingPhase}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+const BlockStatusWidget: React.FC<{ analytics: any }> = ({ analytics }) => {
+  if (!analytics?.data?.dashboard) {
+    return <div className="bg-white rounded-lg shadow p-6">Loading block data...</div>
+  }
+
+  const { blockPerformance } = analytics.data.dashboard
+  
+  const getStatusColor = (needsAttention: boolean, score: number) => {
+    if (needsAttention) return 'text-orange-600'
+    if (score >= 70) return 'text-green-600'
+    if (score >= 50) return 'text-yellow-600'
+    return 'text-red-600'
+  }
+
+  const getStatusIcon = (needsAttention: boolean, score: number) => {
+    if (needsAttention) return '⚠️'
+    if (score >= 70) return '✅'
+    if (score >= 50) return '🔄'
+    return '🎯'
+  }
+
+  const blockNames: { [key: string]: string } = {
+    'SKILLS': 'Skills',
+    'TECHNICAL WORK': 'Technical',
+    'STRENGTH AND POWER': 'Strength',
+    'ACCESSORIES': 'Accessories',
+    'METCONS': 'MetCons'
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="font-semibold text-gray-900 mb-4">🎯 Training Block Status</h3>
+      
+      <div className="space-y-3">
+        {Object.entries(blockPerformance).map(([blockKey, blockData]: [string, any]) => (
+          <div key={blockKey} className="flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <span className="text-gray-600">{blockNames[blockKey] || blockKey}</span>
+              {blockData.needsAttention && (
+                <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                  Attention
+                </span>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-500">
+                {blockData.exercisesCompleted} exercises
+              </span>
+              <span className="text-sm text-gray-500">
+                {blockData.overallScore}%
+              </span>
+              <span className={getStatusColor(blockData.needsAttention, blockData.overallScore)}>
+                {getStatusIcon(blockData.needsAttention, blockData.overallScore)}
+              </span>
+            </div>
           </div>
-          
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Quality Score</span>
-            <span className="font-semibold">
-              {weeklyPerformance.averageQuality >= 3.5 ? 'A' : 
-               weeklyPerformance.averageQuality >= 2.5 ? 'B' : 
-               weeklyPerformance.averageQuality >= 1.5 ? 'C' : 'D'}+
+        ))}
+      </div>
+    </div>
+  )
+}
+
+
+const CoachingInsightsWidget: React.FC<{ analytics: any }> = ({ analytics }) => {
+  if (!analytics?.data?.dashboard) {
+    return <div className="bg-white rounded-lg shadow p-6">Loading insights...</div>
+  }
+
+  const { keyInsights, blockPerformance } = analytics.data.dashboard
+
+  // Find the strongest block
+  const strongestBlock = Object.entries(blockPerformance)
+    .reduce((best: any, [block, performance]: [string, any]) => 
+      performance.overallScore > best.score 
+        ? { block, score: performance.overallScore }
+        : best
+    , { block: 'None', score: 0 })
+
+  const blockNames: { [key: string]: string } = {
+    'SKILLS': 'Skills',
+    'TECHNICAL WORK': 'Technical',
+    'STRENGTH AND POWER': 'Strength',
+    'ACCESSORIES': 'Accessories',
+    'METCONS': 'MetCons'
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="font-semibold text-gray-900 mb-4">🧠 AI Coaching Insights</h3>
+      
+      {strongestBlock.score > 60 && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-green-600">🏆</span>
+            <span className="text-sm text-green-800 font-medium">
+              Strongest area: {blockNames[strongestBlock.block] || strongestBlock.block} ({strongestBlock.score}% performance)
             </span>
           </div>
-          
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Completion Rate</span>
-            <span className="font-semibold">{Math.round(weeklyPerformance.completionRate)}%</span>
-          </div>
         </div>
-      </div>
-    )
-  }
-
-  const BlockStatusWidget: React.FC<{ analytics: DashboardAnalytics }> = ({ analytics }) => {
-    const { blockStatus } = analytics
-    
-    const getStatusColor = (status: string) => {
-      switch (status) {
-        case 'ahead': return 'text-green-600'
-        case 'behind': return 'text-red-600'
-        case 'alert': return 'text-orange-600'
-        default: return 'text-gray-600'
-      }
-    }
-
-    const getStatusIcon = (status: string) => {
-      switch (status) {
-        case 'ahead': return '⭐'
-        case 'behind': return '⚠️'
-        case 'alert': return '🔥'
-        default: return '✅'
-      }
-    }
-
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">🎯 Training Block Status</h3>
-        
-        <div className="space-y-3">
-          {Object.entries(blockStatus).map(([block, data]) => (
-            <div key={block} className="flex justify-between items-center">
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-600 capitalize">{block}</span>
-                {data.alert && (
-                  <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
-                    {data.alert}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">{data.completion}%</span>
-                <span className={getStatusColor(data.status)}>
-                  {getStatusIcon(data.status)}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  const CoachingInsightsWidget: React.FC<{ analytics: DashboardAnalytics }> = ({ analytics }) => {
-    const { coachingInsights, topAchievement } = analytics
-
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">🧠 AI Coaching Insights</h3>
-        
-        {topAchievement && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-            <div className="flex items-center space-x-2">
-              <span className="text-green-600">🏆</span>
-              <span className="text-sm text-green-800 font-medium">{topAchievement}</span>
-            </div>
+      )}
+      
+      <div className="space-y-3">
+        {keyInsights.slice(0, 3).map((insight: string, index: number) => (
+          <div key={index} className="flex items-start space-x-2">
+            <span className="text-blue-600 mt-1">•</span>
+            <span className="text-sm text-gray-700">{insight}</span>
           </div>
+        ))}
+        
+        {keyInsights.length === 0 && (
+          <p className="text-sm text-gray-500 italic">
+            Complete more workouts to get personalized coaching insights!
+          </p>
         )}
-        
-        <div className="space-y-3">
-          {coachingInsights.slice(0, 3).map((insight, index) => (
-            <div key={index} className="flex items-start space-x-2">
-              <span className="text-blue-600 mt-1">•</span>
-              <span className="text-sm text-gray-700">{insight}</span>
-            </div>
-          ))}
-          
-          {coachingInsights.length === 0 && (
-            <p className="text-sm text-gray-500 italic">
-              Complete more workouts to get personalized coaching insights!
-            </p>
-          )}
-        </div>
-        
-        <div className="mt-4">
-          <Link
-            href="/dashboard/progress"
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-          >
-            View detailed analysis →
-          </Link>
-        </div>
       </div>
-    )
-  }
+      
+      <div className="mt-4">
+        <Link
+          href="/dashboard/progress"
+          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+        >
+          View detailed analysis →
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+
+
+
+
+
+
 
   const AnalyticsWidgetsSection = () => {
     if (analyticsLoading) {
@@ -777,4 +806,5 @@ const fetchDashboardAnalytics = async () => {
     </div>
   )
 }
+
 
