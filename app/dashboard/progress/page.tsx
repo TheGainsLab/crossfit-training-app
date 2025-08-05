@@ -40,41 +40,42 @@ const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
   };
 
   // Function to get percentile for exercise in time domain
-  const getPercentile = (exercise: string, timeDomain: string): number | null => {
-    const exerciseData = data.exercises[exercise];
-    if (!exerciseData) return null;
-    
-    // Check exact match first
-    if (exerciseData[timeDomain]) {
-      return exerciseData[timeDomain].avgPercentile;
+const getPercentile = (exercise: string, timeDomain: string): number | null => {
+  const exerciseData = data.exercises[exercise];
+  if (!exerciseData) return null;
+  
+  // Check exact match first
+  if (exerciseData[timeDomain]) {
+    return exerciseData[timeDomain].avgPercentile;
+  }
+  
+  // Check for similar time domain formats with proper typing
+  const normalizedDomain = timeDomain.replace(/:/g, ':').replace(/–/g, '-');
+  for (const [key, value] of Object.entries(exerciseData)) {
+    const normalizedKey = key.replace(/:/g, ':').replace(/–/g, '-');
+    if (normalizedKey === normalizedDomain) {
+      return (value as any).avgPercentile;  // ← Fixed with type assertion
     }
-    
-    // Check for similar time domain formats
-    const normalizedDomain = timeDomain.replace(/:/g, ':').replace(/–/g, '-');
-    for (const [key, value] of Object.entries(exerciseData)) {
-      const normalizedKey = key.replace(/:/g, ':').replace(/–/g, '-');
-      if (normalizedKey === normalizedDomain) {
-        return value.avgPercentile;
-      }
-    }
-    
-    return null;
-  };
+  }
+  
+  return null;
+};
 
-  const getSessionCount = (exercise: string, timeDomain: string): number => {
-    const exerciseData = data.exercises[exercise];
-    if (!exerciseData) return 0;
-    
-    for (const [key, value] of Object.entries(exerciseData)) {
-      const normalizedKey = key.replace(/:/g, ':').replace(/–/g, '-');
-      const normalizedDomain = timeDomain.replace(/:/g, ':').replace(/–/g, '-');
-      if (normalizedKey === normalizedDomain) {
-        return value.count;
-      }
+const getSessionCount = (exercise: string, timeDomain: string): number => {
+  const exerciseData = data.exercises[exercise];
+  if (!exerciseData) return 0;
+  
+  for (const [key, value] of Object.entries(exerciseData)) {
+    const normalizedKey = key.replace(/:/g, ':').replace(/–/g, '-');
+    const normalizedDomain = timeDomain.replace(/:/g, ':').replace(/–/g, '-');
+    if (normalizedKey === normalizedDomain) {
+      return (value as any).count;  // ← Fixed with type assertion
     }
-    
-    return 0;
-  };
+  }
+  
+  return 0;
+};
+
 
   if (exercises.length === 0) {
     return (
