@@ -322,8 +322,7 @@ export default function AnalyticsProgressPage() {
   };
 
 
-
-// Skills Analytics Component - FIXED
+// Skills Analytics Component - CORRECTED DATA PATH
 const SkillsAnalyticsView = () => {
   if (!skillsData?.data) {
     return <div className="bg-white rounded-lg shadow p-6">Loading skills analytics...</div>;
@@ -331,7 +330,7 @@ const SkillsAnalyticsView = () => {
 
   const skillsAnalysis = skillsData.data.skillsAnalysis;
   
-  if (!skillsAnalysis?.movements) {
+  if (!skillsAnalysis?.skills) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Development</h3>
@@ -340,19 +339,19 @@ const SkillsAnalyticsView = () => {
     );
   }
 
-  // Create chart data from skills movements
-  const movementNames = Object.keys(skillsAnalysis.movements);
+  // Create chart data from skills movements - FIXED: using .skills instead of .movements
+  const movementNames = Object.keys(skillsAnalysis.skills);
   const movementData = movementNames.map(name => {
-    const movement = skillsAnalysis.movements[name];
+    const movement = skillsAnalysis.skills[name];
     const sessions = movement.sessions || [];
     return {
       name,
       sessionCount: sessions.length,
-      avgRPE: sessions.length > 0 ? 
-        sessions.reduce((sum: number, session: any) => sum + (session.rpe || 0), 0) / sessions.length : 0,
-      avgQuality: sessions.length > 0 ? 
-        sessions.reduce((sum: number, session: any) => sum + (session.quality || 0), 0) / sessions.length : 0,
-      lastSession: sessions.length > 0 ? sessions[sessions.length - 1] : null
+      avgRPE: movement.avgRPE || 0,
+      avgQuality: movement.avgQuality || 0,
+      totalReps: movement.totalReps || 0,
+      lastSession: sessions.length > 0 ? sessions[sessions.length - 1] : null,
+      qualityGrade: movement.qualityGrade || 'D'
     };
   });
 
@@ -360,8 +359,8 @@ const SkillsAnalyticsView = () => {
     labels: movementData.map(m => m.name),
     datasets: [
       {
-        label: 'Session Count',
-        data: movementData.map(m => m.sessionCount),
+        label: 'Total Reps',
+        data: movementData.map(m => m.totalReps),
         backgroundColor: 'rgba(54, 162, 235, 0.6)',
         borderColor: 'rgba(54, 162, 235, 1)',
         borderWidth: 1
@@ -389,14 +388,14 @@ const SkillsAnalyticsView = () => {
         
         <div className="grid md:grid-cols-2 gap-6 mb-6">
           <div>
-            <h4 className="font-medium text-gray-900 mb-3">Practice Frequency</h4>
+            <h4 className="font-medium text-gray-900 mb-3">Total Reps Completed</h4>
             <div className="h-64">
               <Bar data={skillsChartData} options={{
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                   legend: { display: false },
-                  title: { display: true, text: 'Sessions per Movement' }
+                  title: { display: true, text: 'Reps per Movement' }
                 },
                 scales: {
                   y: { beginAtZero: true }
@@ -433,12 +432,16 @@ const SkillsAnalyticsView = () => {
                   <span className="font-medium">{movement.sessionCount}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Avg RPE:</span>
-                  <span className="font-medium">{movement.avgRPE.toFixed(1)}</span>
+                  <span className="text-gray-600">Total Reps:</span>
+                  <span className="font-medium">{movement.totalReps}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Avg Quality:</span>
-                  <span className="font-medium">{movement.avgQuality.toFixed(1)}</span>
+                  <span className="text-gray-600">Avg RPE:</span>
+                  <span className="font-medium">{movement.avgRPE}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Quality Grade:</span>
+                  <span className="font-medium">{movement.qualityGrade}</span>
                 </div>
                 {movement.lastSession && (
                   <div className="text-xs text-gray-500 mt-2">
@@ -454,8 +457,7 @@ const SkillsAnalyticsView = () => {
   );
 };
 
-
-// Strength Analytics Component - FIXED  
+// Strength Analytics Component - CORRECTED (this one was mostly right)
 const StrengthAnalyticsView = () => {
   if (!strengthData?.data) {
     return <div className="bg-white rounded-lg shadow p-6">Loading strength analytics...</div>;
@@ -476,17 +478,14 @@ const StrengthAnalyticsView = () => {
   const movementNames = Object.keys(strengthAnalysis.movements);
   const movementData = movementNames.map(name => {
     const movement = strengthAnalysis.movements[name];
-    const sessions = movement.sessions || [];
     return {
       name,
-      sessionCount: sessions.length,
-      maxWeight: sessions.length > 0 ? 
-        Math.max(...sessions.map((s: any) => s.weight || 0)) : 0,
-      avgWeight: sessions.length > 0 ? 
-        sessions.reduce((sum: number, session: any) => sum + (session.weight || 0), 0) / sessions.length : 0,
-      totalVolume: sessions.reduce((sum: number, session: any) => 
-        sum + ((session.weight || 0) * (session.sets || 0) * (session.reps || 0)), 0),
-      lastSession: sessions.length > 0 ? sessions[sessions.length - 1] : null
+      sessionCount: movement.sessions?.length || 0,
+      maxWeight: movement.maxWeight || 0,
+      currentWeight: movement.currentWeight || 0,
+      totalVolume: movement.totalVolume || 0,
+      avgRPE: movement.avgRPE || 0,
+      lastSession: movement.sessions && movement.sessions.length > 0 ? movement.sessions[movement.sessions.length - 1] : null
     };
   });
 
@@ -571,8 +570,8 @@ const StrengthAnalyticsView = () => {
                   <span className="font-medium">{movement.maxWeight} lbs</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Avg Weight:</span>
-                  <span className="font-medium">{movement.avgWeight.toFixed(1)} lbs</span>
+                  <span className="text-gray-600">Avg RPE:</span>
+                  <span className="font-medium">{movement.avgRPE}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Volume:</span>
@@ -580,7 +579,7 @@ const StrengthAnalyticsView = () => {
                 </div>
                 {movement.lastSession && (
                   <div className="text-xs text-gray-500 mt-2">
-                    Last: Week {movement.lastSession.week}
+                    Last: Week {movement.lastSession.week} - {movement.lastSession.weight} lbs
                   </div>
                 )}
               </div>
