@@ -19,6 +19,156 @@ import {
 } from 'chart.js';
 import { Line, Bar, Radar, Doughnut } from 'react-chartjs-2';
 
+
+// ADD THE HEAT MAP COMPONENT HERE (right after imports)
+const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
+  // Get all unique time domains and exercises
+  const timeDomains = ['1:00-5:00', '5:00-10:00', '10:00-15:00', '15:00-20:00', '20:00-30:00', '30:00+'];
+  const exercises = Object.keys(data.exercises || {});
+
+  // Function to get color based on percentile
+  const getHeatMapColor = (percentile: number | null) => {
+    if (percentile === null) return 'bg-gray-100 text-gray-400';
+    
+    if (percentile >= 80) return 'bg-green-600 text-white';
+    if (percentile >= 70) return 'bg-green-500 text-white';
+    if (percentile >= 60) return 'bg-green-400 text-white';
+    if (percentile >= 50) return 'bg-yellow-400 text-black';
+    if (percentile >= 40) return 'bg-orange-400 text-white';
+    if (percentile >= 30) return 'bg-orange-500 text-white';
+    return 'bg-red-500 text-white';
+  };
+
+  // Function to get percentile for exercise in time domain
+  const getPercentile = (exercise: string, timeDomain: string): number | null => {
+    const exerciseData = data.exercises[exercise];
+    if (!exerciseData) return null;
+    
+    // Check exact match first
+    if (exerciseData[timeDomain]) {
+      return exerciseData[timeDomain].avgPercentile;
+    }
+    
+    // Check for similar time domain formats
+    const normalizedDomain = timeDomain.replace(/:/g, ':').replace(/–/g, '-');
+    for (const [key, value] of Object.entries(exerciseData)) {
+      const normalizedKey = key.replace(/:/g, ':').replace(/–/g, '-');
+      if (normalizedKey === normalizedDomain) {
+        return value.avgPercentile;
+      }
+    }
+    
+    return null;
+  };
+
+  const getSessionCount = (exercise: string, timeDomain: string): number => {
+    const exerciseData = data.exercises[exercise];
+    if (!exerciseData) return 0;
+    
+    for (const [key, value] of Object.entries(exerciseData)) {
+      const normalizedKey = key.replace(/:/g, ':').replace(/–/g, '-');
+      const normalizedDomain = timeDomain.replace(/:/g, ':').replace(/–/g, '-');
+      if (normalizedKey === normalizedDomain) {
+        return value.count;
+      }
+    }
+    
+    return 0;
+  };
+
+  if (exercises.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">🔥 Exercise Performance Heat Map</h3>
+        <p className="text-gray-600">Complete more MetCon workouts to see exercise-specific performance data!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        🔥 Exercise Performance Heat Map
+      </h3>
+      <p className="text-sm text-gray-600 mb-6">
+        Performance percentiles for each exercise across different time domains
+      </p>
+      
+      {/* Heat Map Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr>
+              <th className="text-left p-3 font-medium text-gray-900">Exercise</th>
+              {timeDomains.map(domain => (
+                <th key={domain} className="text-center p-3 font-medium text-gray-900 min-w-[100px]">
+                  {domain}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {exercises.map(exercise => (
+              <tr key={exercise} className="border-t">
+                <td className="p-3 font-medium text-gray-900 bg-gray-50">
+                  {exercise}
+                </td>
+                {timeDomains.map(domain => {
+                  const percentile = getPercentile(exercise, domain);
+                  const sessions = getSessionCount(exercise, domain);
+                  const colorClass = getHeatMapColor(percentile);
+                  
+                  return (
+                    <td key={domain} className="p-1">
+                      <div className={`
+                        ${colorClass} 
+                        rounded p-3 text-center font-semibold transition-all hover:scale-105 cursor-pointer
+                        ${percentile ? 'shadow-sm' : ''}
+                      `}>
+                        {percentile ? (
+                          <div>
+                            <div className="text-lg">{percentile}%</div>
+                            {sessions > 0 && (
+                              <div className="text-xs opacity-75">{sessions} sessions</div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-lg">—</div>
+                        )}
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Legend */}
+      <div className="mt-6 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <span className="text-sm font-medium text-gray-700">Performance:</span>
+          <div className="flex items-center space-x-2">
+            <div className="bg-red-500 w-4 h-4 rounded"></div>
+            <span className="text-xs text-gray-600">Poor</span>
+            <div className="bg-orange-400 w-4 h-4 rounded"></div>
+            <span className="text-xs text-gray-600">Below Avg</span>
+            <div className="bg-yellow-400 w-4 h-4 rounded"></div>
+            <span className="text-xs text-gray-600">Average</span>
+            <div className="bg-green-400 w-4 h-4 rounded"></div>
+            <span className="text-xs text-gray-600">Good</span>
+            <div className="bg-green-600 w-4 h-4 rounded"></div>
+            <span className="text-xs text-gray-600">Excellent</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+
 // Register Chart.js components
 ChartJS.register(
   CategoryScale,
@@ -592,80 +742,84 @@ const StrengthAnalyticsView = () => {
 };
 
 
-  // MetCon Analytics Component  
-  const MetConAnalyticsView = () => {
-    if (!metconData?.data) {
-      return <div className="bg-white rounded-lg shadow p-6">Loading MetCon analytics...</div>;
-    }
+// MetCon Analytics Component  
+const MetConAnalyticsView = () => {
+  if (!metconData?.data) {
+    return <div className="bg-white rounded-lg shadow p-6">Loading MetCon analytics...</div>;
+  }
 
-    const { timeDomainAnalysis } = metconData.data;
+  const { timeDomainAnalysis } = metconData.data;
 
-    // Create time domain chart
-    const timeDomainChartData = {
-      labels: Object.keys(timeDomainAnalysis.timeDomains),
-      datasets: [
-        {
-          label: 'Average Percentile',
-          data: Object.values(timeDomainAnalysis.timeDomains).map((domain: any) => domain.avgPercentile),
-          backgroundColor: 'rgba(255, 99, 132, 0.6)',
-          borderColor: 'rgba(255, 99, 132, 1)',
-          borderWidth: 1
-        }
-      ]
-    };
+  // Create time domain chart
+  const timeDomainChartData = {
+    labels: Object.keys(timeDomainAnalysis.timeDomains),
+    datasets: [
+      {
+        label: 'Average Percentile',
+        data: Object.values(timeDomainAnalysis.timeDomains).map((domain: any) => domain.avgPercentile),
+        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 1
+      }
+    ]
+  };
 
-    return (
-      <div className="space-y-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Conditioning Performance</h3>
-          <div className="h-64 mb-6">
-            <Bar data={timeDomainChartData} options={{
-              responsive: true,
-              plugins: {
-                legend: {
-                  display: false
-                },
-                title: {
-                  display: true,
-                  text: 'Performance by Time Domain'
-                }
+  return (
+    <div className="space-y-8">
+      {/* ADD THE HEAT MAP HERE - FIRST */}
+      <MetConExerciseHeatMap data={timeDomainAnalysis} />
+      
+      {/* Keep your existing chart below */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Conditioning Performance</h3>
+        <div className="h-64 mb-6">
+          <Bar data={timeDomainChartData} options={{
+            responsive: true,
+            plugins: {
+              legend: {
+                display: false
               },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  max: 100
-                }
+              title: {
+                display: true,
+                text: 'Performance by Time Domain'
               }
-            }} />
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100
+              }
+            }
+          }} />
+        </div>
+        
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-medium text-gray-900 mb-3">Time Domain Performance</h4>
+            <div className="space-y-2">
+              {Object.entries(timeDomainAnalysis.timeDomains).map(([timeRange, data]: [string, any]) => (
+                <div key={timeRange} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <span className="text-sm font-medium">{timeRange}</span>
+                  <span className="text-sm text-gray-600">{data.avgPercentile}% avg</span>
+                </div>
+              ))}
+            </div>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-medium text-gray-900 mb-3">Time Domain Performance</h4>
-              <div className="space-y-2">
-                {Object.entries(timeDomainAnalysis.timeDomains).map(([timeRange, data]: [string, any]) => (
-                  <div key={timeRange} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                    <span className="text-sm font-medium">{timeRange}</span>
-                    <span className="text-sm text-gray-600">{data.avgPercentile}% avg</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="font-medium text-gray-900 mb-3">Summary</h4>
-              <div className="space-y-2 text-sm">
-                <p><strong>Total Workouts:</strong> {metconData.data.summary.totalWorkouts}</p>
-                <p><strong>Time Domains:</strong> {metconData.data.summary.timeDomainsCovered}</p>
-                <p><strong>Average Percentile:</strong> {metconData.data.summary.averagePercentile}%</p>
-                <p><strong>Strongest Domain:</strong> {metconData.data.summary.strongestDomain}</p>
-              </div>
+          <div>
+            <h4 className="font-medium text-gray-900 mb-3">Summary</h4>
+            <div className="space-y-2 text-sm">
+              <p><strong>Total Workouts:</strong> {metconData.data.summary.totalWorkouts}</p>
+              <p><strong>Time Domains:</strong> {metconData.data.summary.timeDomainsCovered}</p>
+              <p><strong>Average Percentile:</strong> {metconData.data.summary.averagePercentile}%</p>
+              <p><strong>Strongest Domain:</strong> {metconData.data.summary.strongestDomain}</p>
             </div>
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   // Loading and error states
   if (loading) {
