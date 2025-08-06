@@ -718,7 +718,9 @@ const loadProfile = async () => {
                                 )}
                               </div>
                             ) : (
-                              <div className="text-sm text-gray-600 mt-1">✓ Well developed</div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                <span className="font-medium">✓ Strong pulling:</span> Weighted pullup ({formatWeight(profile.one_rms.weighted_pullup)}) is {Math.round(pullupBenchRatio * 100)}% of bench press and {pullupBodyweightRatio.toFixed(2)}x bodyweight (targets: 40%+ and 0.33x+).
+                              </div>
                             )}
                           </div>
                         </div>
@@ -742,7 +744,9 @@ const loadProfile = async () => {
                                 )}
                               </div>
                             ) : (
-                              <div className="text-sm text-gray-600 mt-1">✓ Sufficient strength</div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                <span className="font-medium">✓ Sufficient strength:</span> Bench press is {benchBodyweightRatio.toFixed(1)}x bodyweight and push press is {Math.round(pushPressStrictRatio * 100)}% of strict press (targets: 0.9x+ and &lt;150%).
+                              </div>
                             )}
                           </div>
                         </div>
@@ -759,7 +763,9 @@ const loadProfile = async () => {
                                 <span className="font-medium">Why:</span> Front squat ({formatWeight(profile.one_rms.front_squat)}) is {Math.round((profile.one_rms.front_squat! / profile.one_rms.back_squat!) * 100)}% of back squat. Target: 85%+.
                               </div>
                             ) : (
-                              <div className="text-sm text-gray-600 mt-1">✓ Well developed</div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                <span className="font-medium">✓ Well developed:</span> Front squat ({formatWeight(profile.one_rms.front_squat)}) is {Math.round((profile.one_rms.front_squat! / profile.one_rms.back_squat!) * 100)}% of back squat (target: 85%+).
+                              </div>
                             )}
                           </div>
                         </div>
@@ -776,7 +782,9 @@ const loadProfile = async () => {
                                 <span className="font-medium">Why:</span> Deadlift ({formatWeight(profile.one_rms.deadlift)}) is {(profile.one_rms.deadlift! / profile.user_summary.body_weight!).toFixed(1)}x bodyweight. Target: 2.0x bodyweight.
                               </div>
                             ) : (
-                              <div className="text-sm text-gray-600 mt-1">✓ Balanced development</div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                <span className="font-medium">✓ Balanced development:</span> Deadlift ({formatWeight(profile.one_rms.deadlift)}) is {(profile.one_rms.deadlift! / profile.user_summary.body_weight!).toFixed(1)}x bodyweight (target: 2.0x+).
+                              </div>
                             )}
                           </div>
                         </div>
