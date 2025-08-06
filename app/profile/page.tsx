@@ -734,11 +734,11 @@ const loadProfile = async () => {
                               <div className="text-sm text-gray-600 mt-1">
                                 <span className="font-medium">Why:</span> 
                                 {benchBodyweightRatio < 0.9 && pushPressStrictRatio > 1.5 ? (
-                                  <>Bench press is {benchBodyweightRatio.toFixed(1)}x bodyweight (target: 0.9x) and push press is {Math.round(pushPressStrictRatio * 100)}% of strict press (target: <150%).</>
+                                  <>Bench press is {benchBodyweightRatio.toFixed(1)}x bodyweight (target: 0.9x) and push press is {Math.round(pushPressStrictRatio * 100)}% of strict press (target: &lt;150%).</>
                                 ) : benchBodyweightRatio < 0.9 ? (
                                   <>Bench press ({formatWeight(profile.one_rms.bench_press)}) is {benchBodyweightRatio.toFixed(1)}x bodyweight. Target: 0.9x bodyweight.</>
                                 ) : (
-                                  <>Push press is {Math.round(pushPressStrictRatio * 100)}% of strict press, indicating leg compensation. Target: <150%.</>
+                                  <>Push press is {Math.round(pushPressStrictRatio * 100)}% of strict press, indicating leg compensation. Target: &lt;150%.</>
                                 )}
                               </div>
                             ) : (
