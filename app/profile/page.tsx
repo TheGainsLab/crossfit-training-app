@@ -75,11 +75,6 @@ interface ProfileData {
     needs_core: boolean
   }
   missing_data: string[]
-  recommendations: Array<{
-    priority: string
-    category: string
-    message: string
-  }>
   generated_at: string
 }
 
@@ -150,7 +145,6 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [showAllLifts, setShowAllLifts] = useState(false)
-  const [showAllRatios, setShowAllRatios] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<string[]>([])
   const [userSkills, setUserSkills] = useState<{[key: string]: string}>({})
 
@@ -159,6 +153,30 @@ export default function ProfilePage() {
     if (!numerator || !denominator || denominator === 0) return 'N/A'
     const ratio = numerator / denominator
     return asPercent ? `${Math.round(ratio * 100)}%` : ratio.toFixed(1) + 'x'
+  }
+
+  // Helper to get ratio status and target info
+  const getRatioStatus = (numerator: number | null, denominator: number | null, target: number) => {
+    if (!numerator || !denominator || denominator === 0) return { status: 'unknown', ratio: 'N/A' }
+    const ratio = numerator / denominator
+    const percentage = Math.round(ratio * 100)
+    return {
+      status: percentage >= target ? 'good' : 'needs_work',
+      ratio: `${percentage}%`,
+      target: `${target}%`
+    }
+  }
+
+  // Helper to get bodyweight ratio status
+  const getBodyweightRatioStatus = (lift: number | null, bodyweight: number | null, maleTarget: number, femaleTarget: number, gender: string) => {
+    if (!lift || !bodyweight || bodyweight === 0) return { status: 'unknown', ratio: 'N/A' }
+    const ratio = lift / bodyweight
+    const target = gender === 'Male' ? maleTarget : femaleTarget
+    return {
+      status: ratio >= target ? 'good' : ratio >= (target * 0.8) ? 'okay' : 'needs_work',
+      ratio: `${ratio.toFixed(1)}x`,
+      target: `${target}x`
+    }
   }
 
   // Load user skills directly from database
@@ -309,14 +327,7 @@ const loadProfile = async () => {
     ).join(' ')
   }
 
-  const getPriorityColor = (priority: string) => {
-    if (priority === 'high') return 'bg-red-100 text-red-800'
-    if (priority === 'medium') return 'bg-yellow-100 text-yellow-800'
-    return 'bg-gray-100 text-gray-800'
-  }
-
-
-// Loading state
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -366,270 +377,299 @@ const loadProfile = async () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4 space-y-6">
-        {/* Header */}
+        {/* Consolidated Header */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Athlete Profile & Analysis
           </h1>
-          <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-            <span>Generated: {new Date(profile.generated_at).toLocaleDateString()}</span>
-            <span>•</span>
-            <span>Ability Level: <span className="font-semibold text-gray-900">{profile.user_summary.ability_level}</span></span>
-            <span>•</span>
-            <span>Advanced Skills: <span className="font-semibold text-gray-900">{profile.skills_assessment.advanced_count}/{profile.skills_assessment.total_skills_assessed}</span></span>
+          <div className="text-lg text-gray-800 font-semibold">
+            {profile.user_summary.name} • {formatWeight(profile.user_summary.body_weight)}
+          </div>
+          <div className="text-sm text-gray-600 mt-1">
+            Generated: {new Date(profile.generated_at).toLocaleDateString()}
           </div>
         </div>
 
-        {/* Basic Info */}
+        {/* New Strength Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Basic Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Name</p>
-              <p className="font-semibold">{profile.user_summary.name}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Body Weight</p>
-              <p className="font-semibold">{formatWeight(profile.user_summary.body_weight)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Gender</p>
-              <p className="font-semibold">{profile.user_summary.gender}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Equipment Available</p>
-              <p className="font-semibold">{profile.user_summary.equipment.length} items</p>
-            </div>
-          </div>
-        </div>
-
-{/* Enhanced Max Lifts Section */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">MAX LIFTS</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">STRENGTH SNAPSHOT</h2>
           <div className="border-t-2 border-gray-900 mb-6"></div>
           
-          <div className="space-y-6">
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-3">OLYMPIC LIFTS</h3>
-              <div className="space-y-2">
-                {liftCategories.olympic.lifts.map(liftKey => {
-                  const value = profile.one_rms[liftKey]
-                  return value !== null ? (
-                    <div key={liftKey} className="flex justify-between items-center">
-                      <span className="text-gray-700">{formatLiftName(liftKey)}</span>
-                      <span className="font-semibold">{formatWeight(value)}</span>
+          {/* Olympic Lift Performance */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-gray-800 mb-3">Olympic Lift Performance</h3>
+            <div className="space-y-2">
+              {(() => {
+                const snatchStatus = getRatioStatus(profile.one_rms.snatch, profile.one_rms.back_squat, 60)
+                const cjStatus = getRatioStatus(profile.one_rms.clean_and_jerk, profile.one_rms.back_squat, 75)
+                
+                return (
+                  <>
+                    <div className={`flex justify-between items-center p-3 rounded-lg ${
+                      snatchStatus.status === 'good' ? 'bg-green-50' : 'bg-red-50'
+                    }`}>
+                      <div className="flex items-center">
+                        <span className={`mr-3 text-lg ${
+                          snatchStatus.status === 'good' ? 'text-green-500' : 'text-red-500'
+                        }`}>
+                          {snatchStatus.status === 'good' ? '✅' : '❌'}
+                        </span>
+                        <span className="text-gray-700">
+                          Snatch: {formatWeight(profile.one_rms.snatch)} ({snatchStatus.ratio} of squat)
+                        </span>
+                      </div>
+                      <span className={`text-sm font-medium ${
+                        snatchStatus.status === 'good' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        Target: {snatchStatus.target}
+                      </span>
                     </div>
-                  ) : null
-                })}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-3">STRENGTH LIFTS</h3>
-              <div className="space-y-2">
-                {['back_squat', 'front_squat', 'bench_press'].map(liftKey => {
-                  const value = profile.one_rms[liftKey as LiftKey]
-                  return value !== null ? (
-                    <div key={liftKey} className="flex justify-between items-center">
-                      <span className="text-gray-700">{formatLiftName(liftKey)}</span>
-                      <span className="font-semibold">{formatWeight(value)}</span>
+                    
+                    <div className={`flex justify-between items-center p-3 rounded-lg ${
+                      cjStatus.status === 'good' ? 'bg-green-50' : 'bg-red-50'
+                    }`}>
+                      <div className="flex items-center">
+                        <span className={`mr-3 text-lg ${
+                          cjStatus.status === 'good' ? 'text-green-500' : 'text-red-500'
+                        }`}>
+                          {cjStatus.status === 'good' ? '✅' : '❌'}
+                        </span>
+                        <span className="text-gray-700">
+                          C&J: {formatWeight(profile.one_rms.clean_and_jerk)} ({cjStatus.ratio} of squat)
+                        </span>
+                      </div>
+                      <span className={`text-sm font-medium ${
+                        cjStatus.status === 'good' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        Target: {cjStatus.target}
+                      </span>
                     </div>
-                  ) : null
-                })}
-              </div>
+                  </>
+                )
+              })()}
             </div>
-
-            {/* Expanded view - show all lifts */}
-            {showAllLifts && (
-              <>
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-3">OLYMPIC VARIATIONS</h3>
-                  <div className="space-y-2">
-                    {liftCategories.olympic_variations.lifts.map(liftKey => {
-                      const value = profile.one_rms[liftKey]
-                      return value !== null ? (
-                        <div key={liftKey} className="flex justify-between items-center">
-                          <span className="text-gray-700">{formatLiftName(liftKey)}</span>
-                          <span className="font-semibold">{formatWeight(value)}</span>
-                        </div>
-                      ) : null
-                    })}
-                  </div>
-                </div>
-
-                {profile.one_rms.overhead_squat !== null && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Overhead Squat</span>
-                    <span className="font-semibold">{formatWeight(profile.one_rms.overhead_squat)}</span>
-                  </div>
-                )}
-
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-3">PULLING</h3>
-                  <div className="space-y-2">
-                    {liftCategories.pulling.lifts.map(liftKey => {
-                      const value = profile.one_rms[liftKey]
-                      return value !== null ? (
-                        <div key={liftKey} className="flex justify-between items-center">
-                          <span className="text-gray-700">{formatLiftName(liftKey)}</span>
-                          <span className="font-semibold">{formatWeight(value)}</span>
-                        </div>
-                      ) : null
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-3">PRESSING</h3>
-                  <div className="space-y-2">
-                    {liftCategories.pressing.lifts.map(liftKey => {
-                      const value = profile.one_rms[liftKey]
-                      return value !== null ? (
-                        <div key={liftKey} className="flex justify-between items-center">
-                          <span className="text-gray-700">{formatLiftName(liftKey)}</span>
-                          <span className="font-semibold">{formatWeight(value)}</span>
-                        </div>
-                      ) : null
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
           </div>
 
+          {/* Foundation Strength */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-gray-800 mb-3">Foundation Strength</h3>
+            <div className="space-y-2">
+              {(() => {
+                const backSquatStatus = getBodyweightRatioStatus(profile.one_rms.back_squat, profile.user_summary.body_weight, 2.0, 1.5, profile.user_summary.gender)
+                const deadliftStatus = getBodyweightRatioStatus(profile.one_rms.deadlift, profile.user_summary.body_weight, 2.5, 2.0, profile.user_summary.gender)
+                const benchStatus = getBodyweightRatioStatus(profile.one_rms.bench_press, profile.user_summary.body_weight, 1.5, 1.0, profile.user_summary.gender)
+                
+                return (
+                  <>
+                    <div className={`flex justify-between items-center p-3 rounded-lg ${
+                      backSquatStatus.status === 'good' ? 'bg-green-50' : 
+                      backSquatStatus.status === 'okay' ? 'bg-yellow-50' : 'bg-red-50'
+                    }`}>
+                      <div className="flex items-center">
+                        <span className={`mr-3 text-lg ${
+                          backSquatStatus.status === 'good' ? 'text-green-500' : 
+                          backSquatStatus.status === 'okay' ? 'text-yellow-500' : 'text-red-500'
+                        }`}>
+                          {backSquatStatus.status === 'good' ? '✅' : backSquatStatus.status === 'okay' ? '⚠️' : '❌'}
+                        </span>
+                        <span className="text-gray-700">Back Squat: {formatWeight(profile.one_rms.back_squat)}</span>
+                      </div>
+                      <span className={`text-sm font-medium ${
+                        backSquatStatus.status === 'good' ? 'text-green-600' : 
+                        backSquatStatus.status === 'okay' ? 'text-yellow-600' : 'text-red-600'
+                      }`}>
+                        {backSquatStatus.ratio} bodyweight
+                      </span>
+                    </div>
+                    
+                    <div className={`flex justify-between items-center p-3 rounded-lg ${
+                      deadliftStatus.status === 'good' ? 'bg-green-50' : 
+                      deadliftStatus.status === 'okay' ? 'bg-yellow-50' : 'bg-red-50'
+                    }`}>
+                      <div className="flex items-center">
+                        <span className={`mr-3 text-lg ${
+                          deadliftStatus.status === 'good' ? 'text-green-500' : 
+                          deadliftStatus.status === 'okay' ? 'text-yellow-500' : 'text-red-500'
+                        }`}>
+                          {deadliftStatus.status === 'good' ? '✅' : deadliftStatus.status === 'okay' ? '⚠️' : '❌'}
+                        </span>
+                        <span className="text-gray-700">Deadlift: {formatWeight(profile.one_rms.deadlift)}</span>
+                      </div>
+                      <span className={`text-sm font-medium ${
+                        deadliftStatus.status === 'good' ? 'text-green-600' : 
+                        deadliftStatus.status === 'okay' ? 'text-yellow-600' : 'text-red-600'
+                      }`}>
+                        {deadliftStatus.ratio} bodyweight
+                      </span>
+                    </div>
+                    
+                    <div className={`flex justify-between items-center p-3 rounded-lg ${
+                      benchStatus.status === 'good' ? 'bg-green-50' : 
+                      benchStatus.status === 'okay' ? 'bg-yellow-50' : 'bg-red-50'
+                    }`}>
+                      <div className="flex items-center">
+                        <span className={`mr-3 text-lg ${
+                          benchStatus.status === 'good' ? 'text-green-500' : 
+                          benchStatus.status === 'okay' ? 'text-yellow-500' : 'text-red-500'
+                        }`}>
+                          {benchStatus.status === 'good' ? '✅' : benchStatus.status === 'okay' ? '⚠️' : '❌'}
+                        </span>
+                        <span className="text-gray-700">Bench Press: {formatWeight(profile.one_rms.bench_press)}</span>
+                      </div>
+                      <span className={`text-sm font-medium ${
+                        benchStatus.status === 'good' ? 'text-green-600' : 
+                        benchStatus.status === 'okay' ? 'text-yellow-600' : 'text-red-600'
+                      }`}>
+                        {benchStatus.ratio} bodyweight
+                      </span>
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+          </div>
+
+          {/* Expandable Details */}
+          {showAllLifts && (
+            <div className="border-t border-gray-200 pt-6">
+              <h3 className="font-semibold text-gray-800 mb-4">Complete Lift & Ratio Details</h3>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* All Max Lifts Column */}
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-3">ALL MAX LIFTS</h4>
+                  <div className="space-y-2 text-sm">
+                    {Object.entries(profile.one_rms).map(([liftKey, value]) => {
+                      if (value === null || ['snatch', 'clean_and_jerk', 'back_squat', 'deadlift', 'bench_press'].includes(liftKey)) return null
+                      return (
+                        <div key={liftKey} className="flex justify-between">
+                          <span className="text-gray-600">{formatLiftName(liftKey)}</span>
+                          <span className="font-medium">{formatWeight(value)}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* All Ratios Column */}
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-3">ALL RATIOS</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Front Squat / Back Squat</span>
+                      <span className="font-medium">{safeRatio(profile.one_rms.front_squat, profile.one_rms.back_squat)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Power Snatch / Snatch</span>
+                      <span className="font-medium">{safeRatio(profile.one_rms.power_snatch, profile.one_rms.snatch)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Power Clean / Clean</span>
+                      <span className="font-medium">{safeRatio(profile.one_rms.power_clean, profile.one_rms.clean_only)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Jerk / Clean</span>
+                      <span className="font-medium">{safeRatio(profile.one_rms.jerk_only, profile.one_rms.clean_only)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Snatch / C&J</span>
+                      <span className="font-medium">{safeRatio(profile.one_rms.snatch, profile.one_rms.clean_and_jerk)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Overhead Squat / Snatch</span>
+                      <span className="font-medium">{safeRatio(profile.one_rms.overhead_squat, profile.one_rms.snatch)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Push Press / Strict Press</span>
+                      <span className="font-medium">{safeRatio(profile.one_rms.push_press, profile.one_rms.strict_press)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Toggle Button */}
           <button
             onClick={() => setShowAllLifts(!showAllLifts)}
             className="mt-6 text-blue-600 hover:text-blue-800 font-medium"
           >
-            [{showAllLifts ? '- Show fewer lifts' : '+ Show all 14 lifts'}]
+            [{showAllLifts ? '- Hide Complete Details' : '+ View Complete Lift & Ratio Details'}]
           </button>
         </div>
 
-{/* Enhanced Strength Ratios - WITH SAFE CALCULATIONS */}
+{/* Enhanced Conditioning Benchmarks */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">STRENGTH RATIO ANALYSIS</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">CONDITIONING BENCHMARKS</h2>
           <div className="border-t-2 border-gray-900 mb-6"></div>
           
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Running Column */}
             <div>
-              <h3 className="font-semibold text-gray-800 mb-3">KEY PERFORMANCE INDICATORS</h3>
+              <h3 className="font-semibold text-gray-800 mb-3">RUNNING</h3>
               <div className="space-y-2">
-                {/* Snatch / Back Squat */}
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Snatch / Back Squat</span>
-                  <span className="font-semibold">
-                    {safeRatio(profile.one_rms.snatch, profile.one_rms.back_squat)}
-                  </span>
-                </div>
-                
-                {/* C&J / Back Squat */}
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700">C&J / Back Squat</span>
-                  <span className="font-semibold">
-                    {safeRatio(profile.one_rms.clean_and_jerk, profile.one_rms.back_squat)}
-                  </span>
-                </div>
-                
-                {/* Back Squat / Body Weight */}
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Back Squat / Body Weight</span>
-                  <span className="font-semibold">
-                    {safeRatio(profile.one_rms.back_squat, profile.user_summary.body_weight, false)}
-                  </span>
-                </div>
-                
-                {/* Deadlift / Body Weight */}
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Deadlift / Body Weight</span>
-                  <span className="font-semibold">
-                    {safeRatio(profile.one_rms.deadlift, profile.user_summary.body_weight, false)}
-                  </span>
-                </div>
-                
-                {/* Bench Press / Body Weight */}
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Bench Press / Body Weight</span>
-                  <span className="font-semibold">
-                    {safeRatio(profile.one_rms.bench_press, profile.user_summary.body_weight, false)}
-                  </span>
-                </div>
+                {profile.benchmarks.mile_run && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Mile</span>
+                    <span className="font-semibold">{profile.benchmarks.mile_run}</span>
+                  </div>
+                )}
+                {profile.benchmarks.five_k_run && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">5K</span>
+                    <span className="font-semibold">{profile.benchmarks.five_k_run}</span>
+                  </div>
+                )}
+                {profile.benchmarks.ten_k_run && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">10K</span>
+                    <span className="font-semibold">{profile.benchmarks.ten_k_run}</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {showAllRatios && (
-              <div>
-                <h3 className="font-semibold text-gray-800 mb-3 mt-6">ALL RATIOS</h3>
-                <div className="space-y-2">
-                  {/* Jerk / Clean */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Jerk / Clean</span>
-                    <span className="font-semibold">
-                      {safeRatio(profile.one_rms.jerk_only, profile.one_rms.clean_only)}
-                    </span>
+            {/* Rowing Column */}
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-3">ROWING</h3>
+              <div className="space-y-2">
+                {profile.benchmarks.one_k_row && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">1K</span>
+                    <span className="font-semibold">{profile.benchmarks.one_k_row}</span>
                   </div>
-                  
-                  {/* Power Clean / Clean */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Power Clean / Clean</span>
-                    <span className="font-semibold">
-                      {safeRatio(profile.one_rms.power_clean, profile.one_rms.clean_only)}
-                    </span>
+                )}
+                {profile.benchmarks.two_k_row && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">2K</span>
+                    <span className="font-semibold">{profile.benchmarks.two_k_row}</span>
                   </div>
-                  
-                  {/* Power Snatch / Snatch */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Power Snatch / Snatch</span>
-                    <span className="font-semibold">
-                      {safeRatio(profile.one_rms.power_snatch, profile.one_rms.snatch)}
-                    </span>
+                )}
+                {profile.benchmarks.five_k_row && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">5K</span>
+                    <span className="font-semibold">{profile.benchmarks.five_k_row}</span>
                   </div>
-                  
-                  {/* Snatch / C&J */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Snatch / C&J</span>
-                    <span className="font-semibold">
-                      {safeRatio(profile.one_rms.snatch, profile.one_rms.clean_and_jerk)}
-                    </span>
-                  </div>
-                  
-                  {/* Front Squat / Back Squat */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Front Squat / Back Squat</span>
-                    <span className="font-semibold">
-                      {safeRatio(profile.one_rms.front_squat, profile.one_rms.back_squat)}
-                    </span>
-                  </div>
-                  
-                  {/* Overhead Squat / Snatch */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Overhead Squat / Snatch</span>
-                    <span className="font-semibold">
-                      {safeRatio(profile.one_rms.overhead_squat, profile.one_rms.snatch)}
-                    </span>
-                  </div>
-                  
-                  {/* Push Press / Strict Press */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Push Press / Strict Press</span>
-                    <span className="font-semibold">
-                      {safeRatio(profile.one_rms.push_press, profile.one_rms.strict_press)}
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
 
-          <button
-            onClick={() => setShowAllRatios(!showAllRatios)}
-            className="mt-6 text-blue-600 hover:text-blue-800 font-medium"
-          >
-            [{showAllRatios ? '- Show fewer ratios' : '+ View all ratios'}]
-          </button>
+            {/* Bike Column */}
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-3">BIKE</h3>
+              <div className="space-y-2">
+                {profile.benchmarks.air_bike_10_min && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">10min</span>
+                    <span className="font-semibold">{profile.benchmarks.air_bike_10_min}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
-
-{/* Enhanced Programming Focus Areas */}
+        {/* Programming Focus Areas - KEPT AS IS FOR NOW */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Programming Focus Areas</h2>
           
@@ -808,77 +848,6 @@ const loadProfile = async () => {
           </div>
         </div>
 
-{/* Enhanced Conditioning Benchmarks */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">CONDITIONING BENCHMARKS</h2>
-          <div className="border-t-2 border-gray-900 mb-6"></div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Running Column */}
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-3">RUNNING</h3>
-              <div className="space-y-2">
-                {profile.benchmarks.mile_run && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">Mile</span>
-                    <span className="font-semibold">{profile.benchmarks.mile_run}</span>
-                  </div>
-                )}
-                {profile.benchmarks.five_k_run && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">5K</span>
-                    <span className="font-semibold">{profile.benchmarks.five_k_run}</span>
-                  </div>
-                )}
-                {profile.benchmarks.ten_k_run && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">10K</span>
-                    <span className="font-semibold">{profile.benchmarks.ten_k_run}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Rowing Column */}
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-3">ROWING</h3>
-              <div className="space-y-2">
-                {profile.benchmarks.one_k_row && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">1K</span>
-                    <span className="font-semibold">{profile.benchmarks.one_k_row}</span>
-                  </div>
-                )}
-                {profile.benchmarks.two_k_row && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">2K</span>
-                    <span className="font-semibold">{profile.benchmarks.two_k_row}</span>
-                  </div>
-                )}
-                {profile.benchmarks.five_k_row && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">5K</span>
-                    <span className="font-semibold">{profile.benchmarks.five_k_row}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Bike Column */}
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-3">BIKE</h3>
-              <div className="space-y-2">
-                {profile.benchmarks.air_bike_10_min && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">10min</span>
-                    <span className="font-semibold">{profile.benchmarks.air_bike_10_min}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Movement Skills Repository */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">MOVEMENT SKILLS</h2>
@@ -951,23 +920,6 @@ const loadProfile = async () => {
             })}
           </div>
         </div>
-
-{/* Recommendations */}
-        {profile.recommendations.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Recommendations</h2>
-            <div className="space-y-3">
-              {profile.recommendations.map((rec, index) => (
-                <div key={index} className={`p-4 rounded-lg ${getPriorityColor(rec.priority)}`}>
-                  <div className="flex items-start">
-                    <span className="font-semibold mr-2 capitalize">{rec.priority}:</span>
-                    <p>{rec.message}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Missing Data */}
         {profile.missing_data.length > 0 && (
