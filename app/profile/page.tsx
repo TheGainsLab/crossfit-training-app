@@ -678,116 +678,112 @@ const loadProfile = async () => {
             <div>
               <h3 className="font-semibold text-gray-800 mb-4">Accessory Needs</h3>
               <div className="space-y-3">
-                {/* Upper Body Pulling */}
-                <div className={`p-3 rounded-lg ${profile.accessory_needs.needs_upper_body_pulling ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <div className="flex items-start">
-                    <span className={`w-4 h-4 rounded-full mt-0.5 mr-3 flex-shrink-0 ${profile.accessory_needs.needs_upper_body_pulling ? 'bg-red-500' : 'bg-green-500'}`}></span>
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">Upper Body Pulling</div>
-                      {profile.accessory_needs.needs_upper_body_pulling ? (
-                        <div className="text-sm text-gray-600 mt-1">
-                          <span className="font-medium">Why:</span> Your Snatch ({safeRatio(profile.one_rms.snatch, profile.one_rms.back_squat)}) 
-                          or C&J ({safeRatio(profile.one_rms.clean_and_jerk, profile.one_rms.back_squat)}) 
-                          to Back Squat ratio is low. Stronger pulling will help you get the bar higher.
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-600 mt-1">✓ Well developed</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                {(() => {
+                  // Calculate actual accessory needs using real logic
+                  const needsUpperBack = profile.one_rms.front_squat && profile.one_rms.back_squat ? 
+                    (profile.one_rms.front_squat / profile.one_rms.back_squat) < 0.85 : false
+                  
+                  const needsPosteriorChain = profile.one_rms.deadlift && profile.user_summary.body_weight ?
+                    (profile.one_rms.deadlift / profile.user_summary.body_weight) < 2.0 : false
+                  
+                  const benchBodyweightRatio = profile.one_rms.bench_press && profile.user_summary.body_weight ?
+                    profile.one_rms.bench_press / profile.user_summary.body_weight : 0
+                  const pushPressStrictRatio = profile.one_rms.push_press && profile.one_rms.strict_press ?
+                    profile.one_rms.push_press / profile.one_rms.strict_press : 0
+                  const needsUpperBodyPressing = benchBodyweightRatio < 0.9 || pushPressStrictRatio > 1.5
+                  
+                  const pullupBenchRatio = profile.one_rms.weighted_pullup && profile.one_rms.bench_press ?
+                    profile.one_rms.weighted_pullup / profile.one_rms.bench_press : 0
+                  const pullupBodyweightRatio = profile.one_rms.weighted_pullup && profile.user_summary.body_weight ?
+                    profile.one_rms.weighted_pullup / profile.user_summary.body_weight : 0
+                  const needsUpperBodyPulling = pullupBenchRatio < 0.4 || pullupBodyweightRatio < 0.33
 
-                {/* Upper Body Pressing */}
-                <div className={`p-3 rounded-lg ${profile.accessory_needs.needs_upper_body_pressing ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <div className="flex items-start">
-                    <span className={`w-4 h-4 rounded-full mt-0.5 mr-3 flex-shrink-0 ${profile.accessory_needs.needs_upper_body_pressing ? 'bg-red-500' : 'bg-green-500'}`}></span>
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">Upper Body Pressing</div>
-                      {profile.accessory_needs.needs_upper_body_pressing ? (
-                        <div className="text-sm text-gray-600 mt-1">
-                          <span className="font-medium">Why:</span> Your Bench Press to Body Weight ratio 
-                          ({safeRatio(profile.one_rms.bench_press, profile.user_summary.body_weight, false)}) is below optimal. 
-                          Target: {profile.user_summary.gender === 'Male' ? '1.5x' : '1.0x'} bodyweight.
+                  return (
+                    <>
+                      {/* Upper Body Pulling */}
+                      <div className={`p-3 rounded-lg ${needsUpperBodyPulling ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                        <div className="flex items-start">
+                          <span className={`w-4 h-4 rounded-full mt-0.5 mr-3 flex-shrink-0 ${needsUpperBodyPulling ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">Upper Body Pulling</div>
+                            {needsUpperBodyPulling ? (
+                              <div className="text-sm text-gray-600 mt-1">
+                                <span className="font-medium">Why:</span> 
+                                {pullupBenchRatio < 0.4 && pullupBodyweightRatio < 0.33 ? (
+                                  <>Weighted pullup ({formatWeight(profile.one_rms.weighted_pullup)}) is {Math.round(pullupBenchRatio * 100)}% of bench press and {pullupBodyweightRatio.toFixed(2)}x bodyweight. Target: 40% of bench OR 0.33x bodyweight.</>
+                                ) : pullupBenchRatio < 0.4 ? (
+                                  <>Weighted pullup ({formatWeight(profile.one_rms.weighted_pullup)}) is only {Math.round(pullupBenchRatio * 100)}% of bench press. Target: 40%.</>
+                                ) : (
+                                  <>Weighted pullup ({formatWeight(profile.one_rms.weighted_pullup)}) is only {pullupBodyweightRatio.toFixed(2)}x bodyweight. Target: 0.33x.</>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-600 mt-1">✓ Well developed</div>
+                            )}
+                          </div>
                         </div>
-                      ) : (
-                        <div className="text-sm text-gray-600 mt-1">✓ Sufficient strength</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                      </div>
 
-                {/* Core */}
-                <div className={`p-3 rounded-lg ${profile.accessory_needs.needs_core ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <div className="flex items-start">
-                    <span className={`w-4 h-4 rounded-full mt-0.5 mr-3 flex-shrink-0 ${profile.accessory_needs.needs_core ? 'bg-red-500' : 'bg-green-500'}`}></span>
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">Core</div>
-                      {profile.accessory_needs.needs_core ? (
-                        <div className="text-sm text-gray-600 mt-1">
-                          <span className="font-medium">Why:</span> Your Front Squat ({safeRatio(profile.one_rms.front_squat, profile.one_rms.back_squat)}) 
-                          or OHS ratios indicate core stability needs work. Target: FS = 85-90% of BS.
+                      {/* Upper Body Pressing */}
+                      <div className={`p-3 rounded-lg ${needsUpperBodyPressing ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                        <div className="flex items-start">
+                          <span className={`w-4 h-4 rounded-full mt-0.5 mr-3 flex-shrink-0 ${needsUpperBodyPressing ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">Upper Body Pressing</div>
+                            {needsUpperBodyPressing ? (
+                              <div className="text-sm text-gray-600 mt-1">
+                                <span className="font-medium">Why:</span> 
+                                {benchBodyweightRatio < 0.9 && pushPressStrictRatio > 1.5 ? (
+                                  <>Bench press is {benchBodyweightRatio.toFixed(1)}x bodyweight (target: 0.9x) and push press is {Math.round(pushPressStrictRatio * 100)}% of strict press (target: <150%).</>
+                                ) : benchBodyweightRatio < 0.9 ? (
+                                  <>Bench press ({formatWeight(profile.one_rms.bench_press)}) is {benchBodyweightRatio.toFixed(1)}x bodyweight. Target: 0.9x bodyweight.</>
+                                ) : (
+                                  <>Push press is {Math.round(pushPressStrictRatio * 100)}% of strict press, indicating leg compensation. Target: <150%.</>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-600 mt-1">✓ Sufficient strength</div>
+                            )}
+                          </div>
                         </div>
-                      ) : (
-                        <div className="text-sm text-gray-600 mt-1">✓ Strong foundation</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                      </div>
 
-                {/* Upper Back */}
-                <div className={`p-3 rounded-lg ${profile.accessory_needs.needs_upper_back ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <div className="flex items-start">
-                    <span className={`w-4 h-4 rounded-full mt-0.5 mr-3 flex-shrink-0 ${profile.accessory_needs.needs_upper_back ? 'bg-red-500' : 'bg-green-500'}`}></span>
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">Upper Back</div>
-                      {profile.accessory_needs.needs_upper_back ? (
-                        <div className="text-sm text-gray-600 mt-1">
-                          <span className="font-medium">Why:</span> Low Front Squat or Overhead Squat performance suggests 
-                          upper back strength/mobility limitations.
+                      {/* Upper Back */}
+                      <div className={`p-3 rounded-lg ${needsUpperBack ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                        <div className="flex items-start">
+                          <span className={`w-4 h-4 rounded-full mt-0.5 mr-3 flex-shrink-0 ${needsUpperBack ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">Upper Back</div>
+                            {needsUpperBack ? (
+                              <div className="text-sm text-gray-600 mt-1">
+                                <span className="font-medium">Why:</span> Front squat ({formatWeight(profile.one_rms.front_squat)}) is {Math.round((profile.one_rms.front_squat! / profile.one_rms.back_squat!) * 100)}% of back squat. Target: 85%+.
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-600 mt-1">✓ Well developed</div>
+                            )}
+                          </div>
                         </div>
-                      ) : (
-                        <div className="text-sm text-gray-600 mt-1">✓ Well developed</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                      </div>
 
-                {/* Leg Strength */}
-                <div className={`p-3 rounded-lg ${profile.accessory_needs.needs_leg_strength ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <div className="flex items-start">
-                    <span className={`w-4 h-4 rounded-full mt-0.5 mr-3 flex-shrink-0 ${profile.accessory_needs.needs_leg_strength ? 'bg-red-500' : 'bg-green-500'}`}></span>
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">Leg Strength</div>
-                      {profile.accessory_needs.needs_leg_strength ? (
-                        <div className="text-sm text-gray-600 mt-1">
-                          <span className="font-medium">Why:</span> Your Push Press to Strict Press ratio suggests 
-                          insufficient leg drive. You should push press 30-40% more than strict press.
+                      {/* Posterior Chain */}
+                      <div className={`p-3 rounded-lg ${needsPosteriorChain ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                        <div className="flex items-start">
+                          <span className={`w-4 h-4 rounded-full mt-0.5 mr-3 flex-shrink-0 ${needsPosteriorChain ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">Posterior Chain</div>
+                            {needsPosteriorChain ? (
+                              <div className="text-sm text-gray-600 mt-1">
+                                <span className="font-medium">Why:</span> Deadlift ({formatWeight(profile.one_rms.deadlift)}) is {(profile.one_rms.deadlift! / profile.user_summary.body_weight!).toFixed(1)}x bodyweight. Target: 2.0x bodyweight.
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-600 mt-1">✓ Balanced development</div>
+                            )}
+                          </div>
                         </div>
-                      ) : (
-                        <div className="text-sm text-gray-600 mt-1">✓ Sufficient for current level</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Posterior Chain */}
-                <div className={`p-3 rounded-lg ${profile.accessory_needs.needs_posterior_chain ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <div className="flex items-start">
-                    <span className={`w-4 h-4 rounded-full mt-0.5 mr-3 flex-shrink-0 ${profile.accessory_needs.needs_posterior_chain ? 'bg-red-500' : 'bg-green-500'}`}></span>
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">Posterior Chain</div>
-                      {profile.accessory_needs.needs_posterior_chain ? (
-                        <div className="text-sm text-gray-600 mt-1">
-                          <span className="font-medium">Why:</span> Your Deadlift to Body Weight ratio 
-                          ({safeRatio(profile.one_rms.deadlift, profile.user_summary.body_weight, false)}) needs improvement. 
-                          Target: {profile.user_summary.gender === 'Male' ? '2.5x' : '2.0x'} bodyweight.
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-600 mt-1">✓ Balanced development</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             </div>
 
