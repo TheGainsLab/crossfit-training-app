@@ -945,47 +945,66 @@ const loadProfile = async () => {
             </div>
           </div>
 
-          {/* Skills Categories */}
+          {/* Skills Grouped by Proficiency */}
           <div className="space-y-3">
-            {skillCategories.map((category) => {
-              const isExpanded = expandedCategories.includes(category.name)
-              const categoryStats = getCategoryStats(category.skills)
-              
-              return (
-                <div key={category.name} className="border rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => toggleCategory(category.name)}
-                    className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
-                  >
-                    <div className="flex items-center">
-                      <span className="mr-2 text-gray-600">{isExpanded ? '▼' : '▶'}</span>
-                      <h3 className="font-semibold text-gray-800">{category.name}</h3>
-                    </div>
-                    <span className="text-sm text-gray-600">({categoryStats})</span>
-                  </button>
-                  
-                  {isExpanded && (
-                    <div className="p-4 space-y-2">
-                      {category.skills.map(skill => {
-                        const level = getSkillLevel(skill)
-                        const icon = getSkillIcon(level)
-                        const color = getSkillColor(level)
-                        
-                        return (
-                          <div key={skill} className="flex justify-between items-center py-1">
-                            <div className="flex items-center">
-                              <span className={`mr-3 text-lg ${color}`}>{icon}</span>
-                              <span className="text-gray-700">{skill}</span>
-                            </div>
-                            <span className={`text-sm ${color}`}>{level}</span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
+            {(() => {
+              // Get all skills from all categories
+              const allSkills = skillCategories.flatMap(category => 
+                category.skills.map(skill => ({
+                  name: skill,
+                  category: category.name,
+                  level: getSkillLevel(skill),
+                  icon: getSkillIcon(getSkillLevel(skill)),
+                  color: getSkillColor(getSkillLevel(skill))
+                }))
               )
-            })}
+
+              // Group skills by proficiency level
+              const skillsByLevel = {
+                'Advanced': allSkills.filter(skill => skill.level === 'Advanced'),
+                'Intermediate': allSkills.filter(skill => skill.level === 'Intermediate'),
+                'Beginner': allSkills.filter(skill => skill.level === 'Beginner'),
+                'Skills to Develop': allSkills.filter(skill => skill.level === "Don't Have")
+              }
+
+              return Object.entries(skillsByLevel).map(([levelName, skills]) => {
+                if (skills.length === 0) return null
+                
+                const isExpanded = expandedCategories.includes(levelName)
+                const displayName = levelName === "Don't Have" ? "Skills to Develop" : levelName
+                
+                return (
+                  <div key={levelName} className="border rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => toggleCategory(levelName)}
+                      className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+                    >
+                      <div className="flex items-center">
+                        <span className="mr-2 text-gray-600">{isExpanded ? '▼' : '▶'}</span>
+                        <h3 className="font-semibold text-gray-800">{displayName.toUpperCase()}</h3>
+                      </div>
+                      <span className="text-sm text-gray-600">({skills.length})</span>
+                    </button>
+                    
+                    {isExpanded && (
+                      <div className="p-4 space-y-2">
+                        {skills.map(skill => (
+                          <div key={skill.name} className="flex justify-between items-center py-1">
+                            <div className="flex items-center">
+                              <span className={`mr-3 text-lg ${skill.color}`}>{skill.icon}</span>
+                              <div>
+                                <span className="text-gray-700">{skill.name}</span>
+                                <span className="text-gray-500 text-sm ml-2">({skill.category})</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              }).filter(Boolean)
+            })()}
           </div>
         </div>
 
