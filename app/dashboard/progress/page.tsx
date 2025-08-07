@@ -903,7 +903,32 @@ const MetConAnalyticsView = () => {
             </div>
           ) : (
             <>
-              {activeTab === 'overview' && <OverviewSummary />}
+              {activeTab === 'overview' && (
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Performance Overview</h3>
+                  <p className="text-gray-600">
+                    Your performance metrics are displayed in the summary cards above. Use the navigation tabs to explore detailed analytics for specific training areas.
+                  </p>
+                  <div className="mt-6 grid md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <h4 className="font-medium text-blue-900 mb-2">Quick Tips</h4>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        <li>• Track your progress across all training blocks</li>
+                        <li>• Monitor consistency and effort levels</li>
+                        <li>• Identify strengths and areas for focus</li>
+                      </ul>
+                    </div>
+                    <div className="p-4 bg-green-50 rounded-lg">
+                      <h4 className="font-medium text-green-900 mb-2">Navigation</h4>
+                      <ul className="text-sm text-green-800 space-y-1">
+                        <li>• <strong>Training Blocks:</strong> Overall block performance</li>
+                        <li>• <strong>Skills/Strength:</strong> Movement-specific data</li>
+                        <li>• <strong>Conditioning:</strong> MetCon analysis & heat maps</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
               {activeTab === 'blocks' && <BlockAnalyticsView />}
               {activeTab === 'skills' && <SkillsAnalyticsView />}
               {activeTab === 'strength' && <StrengthAnalyticsView />}
