@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -6,7 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 
-// Keep your existing interface
+// Keep your existing interfaces
 interface WorkoutSummary {
   programId: number
   week: number
@@ -17,22 +16,6 @@ interface WorkoutSummary {
   totalExercises: number
   totalBlocks: number
 }
-
-// ADD these new interfaces
-interface DayCompletion {
-  week: number
-  day: number
-  totalExercises: number
-  completedExercises: number
-  isFullyComplete: boolean
-  completionPercentage: number
-}
-
-interface CompletionMap {
-  [key: string]: DayCompletion // key format: "week-day"
-}
-
-// ADD these new interfaces after CompletionMap
 
 interface DashboardAnalytics {
   success: boolean;
@@ -47,7 +30,6 @@ interface DashboardAnalytics {
   metadata: any;
 }
 
-
 export default function DashboardPage() {
   const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -57,8 +39,6 @@ export default function DashboardPage() {
   const [currentDay, setCurrentDay] = useState(1)
   const [user, setUser] = useState<User | null>(null)
   const [userId, setUserId] = useState<number | null>(null)
-  const [completionStatus, setCompletionStatus] = useState<CompletionMap>({})
-  const [completionLoading, setCompletionLoading] = useState(false)
   const [dashboardAnalytics, setDashboardAnalytics] = useState<DashboardAnalytics | null>(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
@@ -73,130 +53,26 @@ export default function DashboardPage() {
   }, [currentProgram, currentWeek, currentDay])
 
   useEffect(() => {
-    if (currentProgram && userId) {
-      fetchCompletionData()
-    }
-  }, [currentProgram, userId])
-
-  useEffect(() => {
     if (userId && currentProgram) {
       fetchDashboardAnalytics()
     }
   }, [userId, currentProgram])
 
-  // Completion tracking functions
-  const fetchCompletionStatus = async (programId: number, userId: number): Promise<CompletionMap> => {
-    try {
-      const supabase = createClient()
-      
-      // Get completed exercises from performance_logs
-      const { data: completedLogs, error: logsError } = await supabase
-        .from('performance_logs')
-        .select('week, day, block, exercise_name, set_number')
-        .eq('program_id', programId)
-        .eq('user_id', userId)
-
-      if (logsError) {
-        console.error('Error fetching performance logs:', logsError)
-        return {}
-      }
-
-      // Get program structure to count total exercises
-      const { data: programData, error: programError } = await supabase
-        .from('programs')
-        .select('program_data')
-        .eq('id', programId)
-        .single()
-
-      if (programError || !programData) {
-        console.error('Error fetching program data:', programError)
-        return {}
-      }
-
-      // Count completed exercises per day
-      const completedByDay: { [key: string]: Set<string> } = {}
-      
-      completedLogs?.forEach(log => {
-        const dayKey = `${log.week}-${log.day}`
-        if (!completedByDay[dayKey]) {
-          completedByDay[dayKey] = new Set()
-        }
-        // Create unique exercise identifier
-        const exerciseKey = `${log.block}-${log.exercise_name}-${log.set_number}`
-        completedByDay[dayKey].add(exerciseKey)
-      })
-
-      // Count total exercises per day from program structure
-      const completionMap: CompletionMap = {}
-      
-      programData.program_data.weeks.forEach((week: any) => {
-        week.days.forEach((day: any) => {
-          const dayKey = `${week.week}-${day.day}`
-          
-          // Count total exercises across all blocks
-          let totalExercises = 0
-          day.blocks.forEach((block: any) => {
-            totalExercises += block.exercises.length
-          })
-
-          // Get completed count
-          const completedCount = completedByDay[dayKey]?.size || 0
-          
-          completionMap[dayKey] = {
-            week: week.week,
-            day: day.day,
-            totalExercises,
-            completedExercises: completedCount,
-            isFullyComplete: completedCount === totalExercises && totalExercises > 0,
-            completionPercentage: totalExercises > 0 ? Math.round((completedCount / totalExercises) * 100) : 0
-          }
-        })
-      })
-
-      return completionMap
-    } catch (error) {
-      console.error('Error in fetchCompletionStatus:', error)
-      return {}
-    }
-  }
-
-  const fetchCompletionData = async () => {
-    if (!currentProgram || !userId) return
+  const fetchDashboardAnalytics = async () => {
+    if (!userId) return
     
-    setCompletionLoading(true)
+    setAnalyticsLoading(true)
     try {
-      const completion = await fetchCompletionStatus(currentProgram, userId)
-      setCompletionStatus(completion)
+      const response = await fetch(`/api/analytics/${userId}/dashboard`)
+      const apiResponse = await response.json()
+      setDashboardAnalytics(apiResponse)
     } catch (error) {
-      console.error('Error fetching completion status:', error)
+      console.error('Error fetching dashboard analytics:', error)
+      setDashboardAnalytics(null)
     } finally {
-      setCompletionLoading(false)
+      setAnalyticsLoading(false)
     }
   }
-
-const fetchDashboardAnalytics = async () => {
-  if (!userId) return
-  
-  setAnalyticsLoading(true)
-  try {
-    const response = await fetch(`/api/analytics/${userId}/dashboard`)
-    const apiResponse = await response.json()
-    
-    console.log('🔍 API Response Status:', response.status)
-    console.log('🔍 API Response Data:', apiResponse)
-    
-    // Store the raw API response - let the widgets handle the data extraction
-    setDashboardAnalytics(apiResponse)
-    
-  } catch (error) {
-    console.error('Error fetching dashboard analytics:', error)
-    setDashboardAnalytics(null)
-  } finally {
-    setAnalyticsLoading(false)
-  }
-}
-
-
 
   const loadUserAndProgram = async () => {
     try {
@@ -240,8 +116,6 @@ const fetchDashboardAnalytics = async () => {
       }
 
       setCurrentProgram(programData.id)
-
-      // Default to Week 1, Day 1
       setCurrentWeek(1)
       setCurrentDay(1)
     } catch (err) {
@@ -251,275 +125,128 @@ const fetchDashboardAnalytics = async () => {
     }
   }
 
-  // Component definitions
-  const DayCompletionBadge: React.FC<{ completion: DayCompletion }> = ({ completion }) => {
-    if (completion.isFullyComplete) {
+  // New simplified widgets
+  const ProgressTrackingWidget: React.FC<{ analytics: any }> = ({ analytics }) => {
+    if (!analytics?.data?.dashboard) {
       return (
-        <div className="flex items-center justify-center w-6 h-6 bg-green-500 text-white rounded-full text-xs font-bold">
-          ✓
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+            <div className="space-y-2">
+              <div className="h-3 bg-gray-200 rounded"></div>
+              <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+              <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+            </div>
+          </div>
         </div>
       )
     }
+
+    const { blockPerformance, overallMetrics } = analytics.data.dashboard
     
-    if (completion.completedExercises > 0) {
+    // Calculate completion percentages for demo - replace with real data
+    const totalSessions = overallMetrics?.totalTrainingDays || 0
+    const overallCompletion = Math.min((totalSessions / 60) * 100, 100) // Assuming 60 sessions in program
+
+    const blockData = [
+      { name: 'Skills', completed: blockPerformance?.['SKILLS']?.exercisesCompleted || 0 },
+      { name: 'Technical', completed: blockPerformance?.['TECHNICAL WORK']?.exercisesCompleted || 0 },
+      { name: 'Strength', completed: blockPerformance?.['STRENGTH AND POWER']?.exercisesCompleted || 0 },
+      { name: 'Accessories', completed: blockPerformance?.['ACCESSORIES']?.exercisesCompleted || 0 },
+      { name: 'MetCons', completed: blockPerformance?.['METCONS']?.exercisesCompleted || 0 }
+    ]
+
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">📊 Progress Tracking</h3>
+        
+        <div className="space-y-3 mb-6">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Total Sessions</span>
+            <span className="font-semibold">{totalSessions}</span>
+          </div>
+          
+          {blockData.map((block) => (
+            <div key={block.name} className="flex justify-between items-center">
+              <span className="text-gray-600">{block.name} Blocks</span>
+              <span className="font-semibold">{block.completed}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Overall completion bar */}
+        <div className="mb-2">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-sm text-gray-600">Overall Completion</span>
+            <span className="text-sm font-medium">{Math.round(overallCompletion)}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-3">
+            <div 
+              className="bg-blue-600 h-3 rounded-full transition-all duration-300" 
+              style={{ width: `${overallCompletion}%` }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const PerformanceTrendsWidget: React.FC<{ analytics: any }> = ({ analytics }) => {
+    if (!analytics?.data?.dashboard) {
       return (
-        <div className="flex items-center justify-center px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-          {completion.completedExercises}/{completion.totalExercises}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+            <div className="space-y-2">
+              <div className="h-3 bg-gray-200 rounded"></div>
+              <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+            </div>
+          </div>
         </div>
       )
     }
+
+    const { overallMetrics } = analytics.data.dashboard
     
-    return null // No badge for untouched days
-  }
+    // Calculate blocks per week - replace with real calculation
+    const totalBlocks = Object.values(analytics.data.dashboard.blockPerformance || {})
+      .reduce((sum: number, block: any) => sum + (block.exercisesCompleted || 0), 0)
+    const weeksActive = Math.max(Math.ceil(overallMetrics?.totalTrainingDays / 5) || 1, 1)
+    const blocksPerWeek = Math.round((totalBlocks / weeksActive) * 10) / 10
 
-const WeeklyPerformanceWidget: React.FC<{ analytics: any }> = ({ analytics }) => {
-  if (!analytics?.data?.dashboard) {
-    return <div className="bg-white rounded-lg shadow p-6">Loading performance data...</div>
-  }
+    // Mock last workout date - replace with real data
+    const lastWorkoutDate = new Date()
+    lastWorkoutDate.setDate(lastWorkoutDate.getDate() - 1) // Yesterday for demo
 
-  const { overallMetrics, progressionTrends } = analytics.data.dashboard
-  
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case 'improving': return '📈'
-      case 'declining': return '📉'
-      default: return '➡️'
-    }
-  }
-
-  const getTrendColor = (trend: string) => {
-    switch (trend) {
-      case 'improving': return 'text-green-600'
-      case 'declining': return 'text-red-600'
-      default: return 'text-gray-600'
-    }
-  }
-
-  const getQualityGrade = (quality: number) => {
-    if (quality >= 3.5) return 'A'
-    if (quality >= 2.5) return 'B'  
-    if (quality >= 1.5) return 'C'
-    return 'D'
-  }
-
-  return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-900">📊 Performance Overview</h3>
-        <span className={`text-sm font-medium ${getTrendColor(progressionTrends.rpe)}`}>
-          {getTrendIcon(progressionTrends.rpe)} {progressionTrends.rpe}
-        </span>
-      </div>
+    const formatDate = (date: Date) => {
+      const today = new Date()
+      const diffTime = Math.abs(today.getTime() - date.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
       
-      <div className="space-y-3">
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">Training Days</span>
-          <span className="font-semibold">{overallMetrics.totalTrainingDays} days</span>
-        </div>
-        
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">Average RPE</span>
-          <span className="font-semibold">{overallMetrics.averageRPE}/10</span>
-        </div>
-        
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">Quality Score</span>
-          <span className="font-semibold">
-            {getQualityGrade(overallMetrics.averageQuality)} ({overallMetrics.averageQuality}/4.0)
-          </span>
-        </div>
-        
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">Consistency</span>
-          <span className="font-semibold">{overallMetrics.consistencyScore}%</span>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">Current Phase</span>
-          <span className="font-semibold text-blue-600">{overallMetrics.trainingPhase}</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-
-const BlockStatusWidget: React.FC<{ analytics: any }> = ({ analytics }) => {
-  if (!analytics?.data?.dashboard) {
-    return <div className="bg-white rounded-lg shadow p-6">Loading block data...</div>
-  }
-
-  const { blockPerformance } = analytics.data.dashboard
-  
-  const getStatusColor = (needsAttention: boolean, score: number) => {
-    if (needsAttention) return 'text-orange-600'
-    if (score >= 70) return 'text-green-600'
-    if (score >= 50) return 'text-yellow-600'
-    return 'text-red-600'
-  }
-
-  const getStatusIcon = (needsAttention: boolean, score: number) => {
-    if (needsAttention) return '⚠️'
-    if (score >= 70) return '✅'
-    if (score >= 50) return '🔄'
-    return '🎯'
-  }
-
-  const blockNames: { [key: string]: string } = {
-    'SKILLS': 'Skills',
-    'TECHNICAL WORK': 'Technical',
-    'STRENGTH AND POWER': 'Strength',
-    'ACCESSORIES': 'Accessories',
-    'METCONS': 'MetCons'
-  }
-
-  return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="font-semibold text-gray-900 mb-4">🎯 Training Block Status</h3>
+      if (diffDays === 1) return 'Yesterday'
+      if (diffDays === 2) return '2 days ago'
+      if (diffDays <= 7) return `${diffDays} days ago`
       
-      <div className="space-y-3">
-        {Object.entries(blockPerformance).map(([blockKey, blockData]: [string, any]) => (
-          <div key={blockKey} className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <span className="text-gray-600">{blockNames[blockKey] || blockKey}</span>
-              {blockData.needsAttention && (
-                <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
-                  Attention
-                </span>
-              )}
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-500">
-                {blockData.exercisesCompleted} exercises
-              </span>
-              <span className="text-sm text-gray-500">
-                {blockData.overallScore}%
-              </span>
-              <span className={getStatusColor(blockData.needsAttention, blockData.overallScore)}>
-                {getStatusIcon(blockData.needsAttention, blockData.overallScore)}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-
-const CoachingInsightsWidget: React.FC<{ analytics: any }> = ({ analytics }) => {
-  if (!analytics?.data?.dashboard) {
-    return <div className="bg-white rounded-lg shadow p-6">Loading insights...</div>
-  }
-
-  const { keyInsights, blockPerformance } = analytics.data.dashboard
-
-  // Find the strongest block
-  const strongestBlock = Object.entries(blockPerformance)
-    .reduce((best: any, [block, performance]: [string, any]) => 
-      performance.overallScore > best.score 
-        ? { block, score: performance.overallScore }
-        : best
-    , { block: 'None', score: 0 })
-
-  const blockNames: { [key: string]: string } = {
-    'SKILLS': 'Skills',
-    'TECHNICAL WORK': 'Technical',
-    'STRENGTH AND POWER': 'Strength',
-    'ACCESSORIES': 'Accessories',
-    'METCONS': 'MetCons'
-  }
-
-  return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="font-semibold text-gray-900 mb-4">🧠 AI Coaching Insights</h3>
-      
-      {strongestBlock.score > 60 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-          <div className="flex items-center space-x-2">
-            <span className="text-green-600">🏆</span>
-            <span className="text-sm text-green-800 font-medium">
-              Strongest area: {blockNames[strongestBlock.block] || strongestBlock.block} ({strongestBlock.score}% performance)
-            </span>
-          </div>
-        </div>
-      )}
-      
-      <div className="space-y-3">
-        {keyInsights.slice(0, 3).map((insight: string, index: number) => (
-          <div key={index} className="flex items-start space-x-2">
-            <span className="text-blue-600 mt-1">•</span>
-            <span className="text-sm text-gray-700">{insight}</span>
-          </div>
-        ))}
-        
-        {keyInsights.length === 0 && (
-          <p className="text-sm text-gray-500 italic">
-            Complete more workouts to get personalized coaching insights!
-          </p>
-        )}
-      </div>
-      
-      <div className="mt-4">
-        <Link
-          href="/dashboard/progress"
-          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-        >
-          View detailed analysis →
-        </Link>
-      </div>
-    </div>
-  )
-}
-
-
-
-
-
-
-
-
-  const AnalyticsWidgetsSection = () => {
-    if (analyticsLoading) {
-      return (
-        <div className="mb-8">
-          <div className="grid md:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-lg shadow p-6">
-                <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                  <div className="space-y-2">
-                    <div className="h-3 bg-gray-200 rounded"></div>
-                    <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-                    <div className="h-3 bg-gray-200 rounded w-4/6"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-    }
-
-    if (!dashboardAnalytics) {
-      return (
-        <div className="mb-8">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <div className="flex items-center space-x-2">
-              <span className="text-blue-600">📊</span>
-              <span className="text-blue-800 font-medium">Analytics loading...</span>
-            </div>
-          </div>
-        </div>
-      )
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+      })
     }
 
     return (
-      <div className="mb-8">
-        <div className="grid md:grid-cols-3 gap-6">
-          <WeeklyPerformanceWidget analytics={dashboardAnalytics} />
-          <BlockStatusWidget analytics={dashboardAnalytics} />
-          <CoachingInsightsWidget analytics={dashboardAnalytics} />
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">📈 Performance Trends</h3>
+        
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Blocks per Week</span>
+            <span className="font-semibold">{blocksPerWeek}</span>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Last Workout</span>
+            <span className="font-semibold">{formatDate(lastWorkoutDate)}</span>
+          </div>
         </div>
       </div>
     )
@@ -623,8 +350,60 @@ const CoachingInsightsWidget: React.FC<{ analytics: any }> = ({ analytics }) => 
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Analytics Widgets Section */}
-        <AnalyticsWidgetsSection />
+        {/* Top Section: Simplified Widgets + Analytics Link */}
+        <div className="mb-8">
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            {analyticsLoading ? (
+              <>
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                    <div className="space-y-2">
+                      <div className="h-3 bg-gray-200 rounded"></div>
+                      <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                      <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                    <div className="space-y-2">
+                      <div className="h-3 bg-gray-200 rounded"></div>
+                      <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : dashboardAnalytics ? (
+              <>
+                <ProgressTrackingWidget analytics={dashboardAnalytics} />
+                <PerformanceTrendsWidget analytics={dashboardAnalytics} />
+              </>
+            ) : (
+              <div className="col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="flex items-center space-x-2">
+                  <span className="text-blue-600">📊</span>
+                  <span className="text-blue-800 font-medium">Analytics loading...</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* View Progress Link */}
+          <div className="text-center">
+            <Link
+              href="/dashboard/progress"
+              className="inline-flex items-center px-6 py-3 bg-white rounded-lg shadow hover:shadow-lg transition-shadow border border-gray-200"
+            >
+              <span className="text-2xl mr-3">📊</span>
+              <div className="text-left">
+                <div className="font-semibold text-gray-900">View Detailed Analytics</div>
+                <div className="text-sm text-gray-600">Dive deep into your performance data</div>
+              </div>
+            </Link>
+          </div>
+        </div>
         
         {todaysWorkout && (     
           <>
@@ -649,29 +428,6 @@ const CoachingInsightsWidget: React.FC<{ analytics: any }> = ({ analytics }) => 
               </div>
               
               <div className="p-6">
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl mb-1">🎯</div>
-                    <p className="text-sm text-gray-600">Skills</p>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl mb-1">🔧</div>
-                    <p className="text-sm text-gray-600">Technical</p>
-                  </div>
-                  <div className="text-center p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
-                    <div className="text-2xl mb-1">💪</div>
-                    <p className="text-sm text-blue-600 font-medium">Strength</p>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl mb-1">🔨</div>
-                    <p className="text-sm text-gray-600">Accessories</p>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl mb-1">🔥</div>
-                    <p className="text-sm text-gray-600">MetCon</p>
-                  </div>
-                </div>
-
                 <Link
                   href={`/dashboard/workout/${currentProgram}/week/${currentWeek}/day/${currentDay}`}
                   className="block w-full bg-blue-600 text-white text-center py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors"
@@ -681,105 +437,8 @@ const CoachingInsightsWidget: React.FC<{ analytics: any }> = ({ analytics }) => 
               </div>
             </div>
 
-            {/* Quick Navigation */}
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              {/* Week Navigation - UPDATED WITH COMPLETION BADGES */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">This Week's Training</h3>
-                <div className="space-y-2">
-                  {[1, 2, 3, 4, 5].map(day => {
-                    const dayKey = `${currentWeek}-${day}`
-                    const dayCompletion = completionStatus[dayKey]
-                    
-                    return (
-                      <Link
-                        key={day}
-                        href={`/dashboard/workout/${currentProgram}/week/${currentWeek}/day/${day}`}
-                        className={`block p-3 rounded-lg border transition-colors ${
-                          day === currentDay 
-                            ? 'bg-blue-50 border-blue-200 text-blue-700' 
-                            : 'hover:bg-gray-50 border-gray-200'
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center space-x-3">
-                            <span className="font-medium">Day {day}</span>
-                            {day === currentDay && <span className="text-sm text-blue-600">← Today</span>}
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {dayCompletion && <DayCompletionBadge completion={dayCompletion} />}
-                            {completionLoading && (
-                              <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-                            )}
-                          </div>
-                        </div>
-                      </Link>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Quick Stats - UPDATED WITH COMPLETION STATS */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Quick Stats</h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Current Program</span>
-                    <span className="font-semibold">#{currentProgram}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Week Progress</span>
-                    <span className="font-semibold">{currentWeek} of 12</span>
-                  </div>
-                  
-                  {/* Add completion progress */}
-                  {Object.keys(completionStatus).length > 0 && (
-                    <>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">This Week</span>
-                        <span className="font-semibold">
-                          {[1,2,3,4,5].filter(day => {
-                            const dayKey = `${currentWeek}-${day}`
-                            return completionStatus[dayKey]?.isFullyComplete
-                          }).length}/5 days complete
-                        </span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Overall Progress</span>
-                        <span className="font-semibold">
-                          {Object.values(completionStatus).filter(c => c.isFullyComplete).length}/
-                          {Object.keys(completionStatus).length} days
-                        </span>
-                      </div>
-                    </>
-                  )}
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Main Focus</span>
-                    <span className="font-semibold">{todaysWorkout.mainLift}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full" 
-                      style={{ width: `${(currentWeek / 12) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Cards */}
-            <div className="grid md:grid-cols-3 gap-4">
-              <Link
-                href="/dashboard/progress"
-                className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-              >
-                <div className="text-3xl mb-2">📊</div>
-                <h3 className="font-semibold text-gray-900 mb-1">View Progress</h3>
-                <p className="text-gray-600 text-sm">See your strength gains and improvements</p>
-              </Link>
-
+            {/* Bottom Navigation */}
+            <div className="grid md:grid-cols-2 gap-6">
               <Link
                 href="/dashboard/program"
                 className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
@@ -804,5 +463,3 @@ const CoachingInsightsWidget: React.FC<{ analytics: any }> = ({ analytics }) => 
     </div>
   )
 }
-
-
