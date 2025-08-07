@@ -799,45 +799,109 @@ const loadProfile = async () => {
 {/* Technical Focus */}
             <div>
               <h3 className="font-semibold text-gray-800 mb-4">Technical Focus</h3>
-              <div className="space-y-3 text-gray-700">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <div className="font-medium">Snatch: {profile.technical_focus.snatch_technical_count} exercises/day</div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    Based on your {profile.lift_levels.snatch_level} snatch level
-                  </div>
-                </div>
-                
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <div className="font-medium">Clean & Jerk: {profile.technical_focus.clean_jerk_technical_count} exercises/day</div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    Based on your {profile.lift_levels.clean_jerk_level} C&J level
-                  </div>
-                </div>
-                
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <div className="font-medium">Back Squat Focus: {profile.technical_focus.back_squat_focus}</div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    Programming emphasis based on your squat ratios
-                  </div>
-                </div>
-                
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <div className="font-medium">Front Squat Focus: {profile.technical_focus.front_squat_focus}</div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    {profile.technical_focus.front_squat_focus === 'overhead_complex' ? 
-                      'Combining with overhead work to improve positions' : 
-                      'Targeted work for your needs'}
-                  </div>
-                </div>
-                
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <div className="font-medium">Press Focus: {profile.technical_focus.press_focus}</div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    {profile.technical_focus.press_focus === 'stability_unilateral' ? 
-                      'Single-arm work to address imbalances' : 
-                      'Focused on your specific needs'}
-                  </div>
-                </div>
+              <div className="space-y-4">
+                {(() => {
+                  // Calculate snatch deficits using actual logic
+                  const snatchStrengthDeficit = profile.one_rms.snatch && profile.one_rms.back_squat ? 
+                    (profile.one_rms.snatch / profile.one_rms.back_squat) < 0.62 : true
+                  
+                  const snatchReceivingDeficit = profile.one_rms.power_snatch && profile.one_rms.snatch ?
+                    (profile.one_rms.power_snatch / profile.one_rms.snatch) > 0.88 : true
+                  
+                  const snatchOverheadDeficit = profile.one_rms.overhead_squat && profile.one_rms.back_squat ?
+                    (profile.one_rms.overhead_squat / profile.one_rms.back_squat) < 0.65 : true
+
+                  // Calculate C&J deficits using actual logic
+                  const cjStrengthDeficit = profile.one_rms.clean_and_jerk && profile.one_rms.back_squat ?
+                    (profile.one_rms.clean_and_jerk / profile.one_rms.back_squat) < 0.74 : true
+                    
+                  const cjReceivingDeficit = profile.one_rms.power_clean && profile.one_rms.clean_only ?
+                    (profile.one_rms.power_clean / profile.one_rms.clean_only) > 0.88 : true
+                    
+                  const cjJerkDeficit = profile.one_rms.jerk_only && profile.one_rms.clean_only ?
+                    (profile.one_rms.jerk_only / profile.one_rms.clean_only) < 0.9 : true
+
+                  return (
+                    <>
+                      {/* Snatch Technical Work */}
+                      <div className="border rounded-lg p-4">
+                        <div className="font-medium text-gray-900 mb-3">
+                          Snatch Technical Work: {profile.technical_focus.snatch_technical_count} exercises/day
+                        </div>
+                        <div className="space-y-2">
+                          {/* Strength Deficit */}
+                          <div className={`flex items-center text-sm ${snatchStrengthDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                            <span className="mr-2">{snatchStrengthDeficit ? '❌' : '✅'}</span>
+                            <span>
+                              {snatchStrengthDeficit ? 'Strength Deficit: ' : 'Strength: '}
+                              Snatch ({formatWeight(profile.one_rms.snatch)}) is {safeRatio(profile.one_rms.snatch, profile.one_rms.back_squat)} of back squat (target: 62%+)
+                            </span>
+                          </div>
+                          
+                          {/* Receiving Position */}
+                          <div className={`flex items-center text-sm ${snatchReceivingDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                            <span className="mr-2">{snatchReceivingDeficit ? '❌' : '✅'}</span>
+                            <span>
+                              {snatchReceivingDeficit ? 'Receiving Position: ' : 'Receiving Position: '}
+                              Power snatch is {safeRatio(profile.one_rms.power_snatch, profile.one_rms.snatch)} of snatch (target: &lt;88%)
+                            </span>
+                          </div>
+                          
+                          {/* Overhead Stability */}
+                          <div className={`flex items-center text-sm ${snatchOverheadDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                            <span className="mr-2">{snatchOverheadDeficit ? '❌' : '✅'}</span>
+                            <span>
+                              {snatchOverheadDeficit ? 'Overhead Stability: ' : 'Overhead Stability: '}
+                              Overhead squat is {safeRatio(profile.one_rms.overhead_squat, profile.one_rms.back_squat)} of back squat (target: 65%+)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Clean & Jerk Technical Work */}
+                      <div className="border rounded-lg p-4">
+                        <div className="font-medium text-gray-900 mb-3">
+                          Clean & Jerk Technical Work: {profile.technical_focus.clean_jerk_technical_count} exercises/day
+                        </div>
+                        <div className="space-y-2">
+                          {/* Overall Strength */}
+                          <div className={`flex items-center text-sm ${cjStrengthDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                            <span className="mr-2">{cjStrengthDeficit ? '❌' : '✅'}</span>
+                            <span>
+                              {cjStrengthDeficit ? 'Overall Strength: ' : 'Overall Strength: '}
+                              C&J ({formatWeight(profile.one_rms.clean_and_jerk)}) is {safeRatio(profile.one_rms.clean_and_jerk, profile.one_rms.back_squat)} of back squat (target: 74%+)
+                            </span>
+                          </div>
+                          
+                          {/* Receiving Position */}
+                          <div className={`flex items-center text-sm ${cjReceivingDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                            <span className="mr-2">{cjReceivingDeficit ? '❌' : '✅'}</span>
+                            <span>
+                              {cjReceivingDeficit ? 'Receiving Position: ' : 'Receiving Position: '}
+                              Power clean is {safeRatio(profile.one_rms.power_clean, profile.one_rms.clean_only)} of clean (target: &lt;88%)
+                            </span>
+                          </div>
+                          
+                          {/* Jerk Performance */}
+                          <div className={`flex items-center text-sm ${cjJerkDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                            <span className="mr-2">{cjJerkDeficit ? '❌' : '✅'}</span>
+                            <span>
+                              {cjJerkDeficit ? 'Jerk Weakness: ' : 'Jerk Performance: '}
+                              Jerk is {safeRatio(profile.one_rms.jerk_only, profile.one_rms.clean_only)} of clean (target: 90%+)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Other Training Days Note */}
+                      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-sm text-blue-900">
+                          <span className="font-semibold">Other training days:</span> Back squat, front squat, and press days use rotating exercise selections based on movement patterns and your equipment availability.
+                        </p>
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             </div>
           </div>
