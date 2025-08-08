@@ -85,10 +85,10 @@ export async function GET(
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - timeRange)
 
-    // Query performance data for skills and technical work
-    const skillBlocks = skillType === 'all' 
-      ? ['SKILLS', 'TECHNICAL WORK'] 
-      : [skillType.toUpperCase()]
+    // Query performance data for skills 
+const skillBlocks = skillType === 'all' 
+  ? ['SKILLS']  // Only pull from SKILLS block
+  : [skillType.toUpperCase()]
 
     const { data: performanceData, error: perfError } = await supabase
       .from('performance_logs')
