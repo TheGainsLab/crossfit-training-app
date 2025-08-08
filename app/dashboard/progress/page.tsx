@@ -434,10 +434,11 @@ const totalExercises = blockSummaries.reduce((sum: number, block: any) => sum + 
 
   // Prepare pie chart data
   const pieChartData = {
-    labels: blockSummaries.map(block => block.blockName),
-    datasets: [{
-      data: blockSummaries.map(block => block.exercisesCompleted),
-      backgroundColor: [
+labels: blockSummaries.map((block: any) => block.blockName),
+datasets: [{
+data: blockSummaries.map((block: any) => block.exercisesCompleted),
+
+backgroundColor: [
         '#3B82F6', // Blue - Skills
         '#EF4444', // Red - Technical  
         '#F59E0B', // Orange - Strength
