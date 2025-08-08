@@ -410,7 +410,6 @@ export default function AnalyticsProgressPage() {
     </div>
   );
 
-
 const BlockAnalyticsView = () => {
   if (!blockData?.data) {
     return <div className="bg-white rounded-lg shadow p-6">Loading block analytics...</div>;
@@ -429,16 +428,15 @@ const BlockAnalyticsView = () => {
   }
 
   // Calculate totals
-const totalExercises = blockSummaries.reduce((sum: number, block: any) => sum + block.exercisesCompleted, 0);  
-
+  const totalExercises = blockSummaries.reduce((sum: number, block: any) => sum + block.exercisesCompleted, 0);
+  const activeBlocks = blockSummaries.filter((block: any) => block.exercisesCompleted > 0).length;
 
   // Prepare pie chart data
   const pieChartData = {
-labels: blockSummaries.map((block: any) => block.blockName),
-datasets: [{
-data: blockSummaries.map((block: any) => block.exercisesCompleted),
-
-backgroundColor: [
+    labels: blockSummaries.map((block: any) => block.blockName),
+    datasets: [{
+      data: blockSummaries.map((block: any) => block.exercisesCompleted),
+      backgroundColor: [
         '#3B82F6', // Blue - Skills
         '#EF4444', // Red - Technical  
         '#F59E0B', // Orange - Strength
@@ -487,10 +485,10 @@ backgroundColor: [
 
   // Prepare RPE comparison bar chart
   const rpeChartData = {
-    labels: blockSummaries.filter(block => block.avgRPE !== null).map(block => block.blockName),
+    labels: blockSummaries.filter((block: any) => block.avgRPE !== null).map((block: any) => block.blockName),
     datasets: [{
       label: 'Average RPE',
-      data: blockSummaries.filter(block => block.avgRPE !== null).map(block => block.avgRPE),
+      data: blockSummaries.filter((block: any) => block.avgRPE !== null).map((block: any) => block.avgRPE),
       backgroundColor: 'rgba(59, 130, 246, 0.6)',
       borderColor: 'rgba(59, 130, 246, 1)',
       borderWidth: 1
@@ -522,10 +520,9 @@ backgroundColor: [
   };
 
   // Find most active block
-const mostActiveBlock = blockSummaries.reduce((max: any, block: any) => 
-  block.exercisesCompleted > max.exercisesCompleted ? block : max
-);
-
+  const mostActiveBlock = blockSummaries.reduce((max: any, block: any) => 
+    block.exercisesCompleted > max.exercisesCompleted ? block : max
+  );
 
   return (
     <div id="blocks-panel" role="tabpanel" aria-labelledby="blocks-tab" className="space-y-8">
@@ -543,11 +540,8 @@ const mostActiveBlock = blockSummaries.reduce((max: any, block: any) =>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-purple-600">
-
-
-{blockSummaries.reduce((sum: number, block: any) => sum + block.weeksActive, 0)}
-           
- </div>
+              {blockSummaries.reduce((sum: number, block: any) => sum + block.weeksActive, 0)}
+            </div>
             <div className="text-sm text-gray-600">Total Week-Blocks</div>
           </div>
         </div>
@@ -576,7 +570,7 @@ const mostActiveBlock = blockSummaries.reduce((max: any, block: any) =>
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Block Performance Details</h3>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {blockSummaries.map((block) => (
+          {blockSummaries.map((block: any) => (
             <div key={block.blockName} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-semibold text-gray-900">{block.blockName}</h4>
@@ -650,8 +644,8 @@ const mostActiveBlock = blockSummaries.reduce((max: any, block: any) =>
             <h4 className="font-medium text-gray-900 mb-2">Quality Distribution</h4>
             <div className="space-y-1">
               {blockSummaries
-                .filter(block => block.qualityGrade !== 'N/A')
-                .map(block => (
+                .filter((block: any) => block.qualityGrade !== 'N/A')
+                .map((block: any) => (
                   <div key={block.blockName} className="flex justify-between text-sm">
                     <span>{block.blockName}:</span>
                     <span className="font-medium">{block.qualityGrade}</span>
