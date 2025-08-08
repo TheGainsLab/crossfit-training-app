@@ -5,7 +5,7 @@ export interface BlockAnalysisData {
   weeklyData: WeeklyBlockData[]
   blockTrends: BlockTrends
   exerciseBreakdown: ExerciseBreakdown
-  progressionSignals: ProgressionSignal[]
+  blockSummaries: BlockSummary[]
 }
 
 export interface WeeklyBlockData {
@@ -62,12 +62,37 @@ export interface ExerciseBreakdown {
   }
 }
 
-export interface ProgressionSignal {
-  block: string
-  signal_type: 'progression_ready' | 'needs_attention' | 'on_track'
-  message: string
-  priority: 'high' | 'medium' | 'low'
-  week: number
+export interface BlockSummary {
+  blockName: string
+  exercisesCompleted: number
+  percentageOfTotal: number
+  avgRPE: number | null
+  avgQuality: number | null
+  qualityGrade: string
+  qualityTrend: 'improving' | 'declining' | 'stable'
+  rpeTrend: 'improving' | 'declining' | 'stable'
+  volumeTrend: 'improving' | 'declining' | 'stable'
+  weeksActive: number
+  lastActiveWeek: number | null
+}
+
+// Quality grade conversion utilities
+export function convertQualityToGrade(numericQuality: number): string {
+  if (numericQuality >= 3.5) return 'A'
+  if (numericQuality >= 2.5) return 'B'  
+  if (numericQuality >= 1.5) return 'C'
+  return 'D'
+}
+
+export function convertQualityToGradeDetailed(numericQuality: number): string {
+  if (numericQuality >= 3.7) return 'A'
+  if (numericQuality >= 3.3) return 'A-'
+  if (numericQuality >= 2.7) return 'B+'
+  if (numericQuality >= 2.3) return 'B'
+  if (numericQuality >= 1.7) return 'B-'
+  if (numericQuality >= 1.3) return 'C+'
+  if (numericQuality >= 1.0) return 'C'
+  return 'D'
 }
 
 /**
@@ -112,8 +137,8 @@ export function processBlockAnalysisData(
     // Calculate exercise breakdown
     const exerciseBreakdown = calculateExerciseBreakdown(weeklyData, blockFilter)
 
-    // Generate progression signals
-    const progressionSignals = generateProgressionSignals(weeklyData, blockTrends)
+    // Generate clean block summaries
+    const blockSummaries = generateBlockSummaries(weeklyData, blockTrends, exerciseBreakdown)
 
     console.log(`✅ Block analysis processed: ${weeklyData.length} weeks, ${Object.keys(exerciseBreakdown).length} blocks`)
 
@@ -121,15 +146,14 @@ export function processBlockAnalysisData(
       weeklyData,
       blockTrends,
       exerciseBreakdown,
-      progressionSignals
+      blockSummaries
     }
 
-} catch (error) {
-  const errorMessage = error instanceof Error ? error.message : String(error)
-  console.error(`❌ Error processing block analysis data: ${errorMessage}`)
-  return null
-}
-
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error(`❌ Error processing block analysis data: ${errorMessage}`)
+    return null
+  }
 }
 
 /**
@@ -255,101 +279,80 @@ function calculateExerciseBreakdown(
 }
 
 /**
- * Generate progression signals based on trends and targets
+ * Generate clean block summaries for display
  */
-function generateProgressionSignals(
-  weeklyData: WeeklyBlockData[], 
-  blockTrends: BlockTrends
-): ProgressionSignal[] {
-  const signals: ProgressionSignal[] = []
-  const latestWeek = Math.max(...weeklyData.map(w => w.week))
-
-  // RPE target ranges by block
-  const rpeTargets = {
-    skills: { min: 3.5, max: 6.5 },
-    technical: { min: 2.5, max: 5.5 },
-    strength: { min: 5.5, max: 8.0 },
-    accessories: { min: 4.5, max: 7.0 }
+function generateBlockSummaries(
+  weeklyData: WeeklyBlockData[],
+  blockTrends: BlockTrends,
+  exerciseBreakdown: ExerciseBreakdown
+): BlockSummary[] {
+  const blockNames: { [key: string]: string } = {
+    'skills': 'Skills',
+    'technical': 'Technical',
+    'strength': 'Strength',
+    'accessories': 'Accessories',
+    'metcons': 'MetCons'
   }
 
-  // Check each block for progression signals
-  Object.entries(blockTrends).forEach(([blockName, trends]) => {
-    if (blockName === 'metcons') {
-      // MetCon-specific signals
-      const metconTrends = trends as MetConTrendData
-      if (metconTrends.weeks_active > 0) {
-        if (metconTrends.current_avg_percentile >= 80) {
-          signals.push({
-            block: blockName,
-            signal_type: 'progression_ready',
-            message: `Strong MetCon performance (${metconTrends.current_avg_percentile}th percentile avg)`,
-            priority: 'medium',
-            week: latestWeek
-          })
-        } else if (metconTrends.current_avg_percentile < 40) {
-          signals.push({
-            block: blockName,
-            signal_type: 'needs_attention',
-            message: `MetCon performance below average (${metconTrends.current_avg_percentile}th percentile)`,
-            priority: 'medium',
-            week: latestWeek
-          })
-        }
+  const summaries: BlockSummary[] = []
+  
+  // Calculate total exercises across all blocks
+  const totalExercises = Object.values(exerciseBreakdown).reduce(
+    (sum, block) => sum + block.total_exercises, 0
+  )
+
+  // Process each block
+  Object.keys(blockNames).forEach(blockKey => {
+    const blockName = blockNames[blockKey]
+    const breakdown = exerciseBreakdown[blockKey]
+    const trends = blockTrends[blockKey as keyof BlockTrends]
+
+    if (breakdown) {
+      // Find the most recent week with activity for this block
+      const completedKey = `${blockKey}_completed` as keyof WeeklyBlockData
+      const activeWeeks = weeklyData.filter(week => (week[completedKey] as number) > 0)
+      const lastActiveWeek = activeWeeks.length > 0 
+        ? Math.max(...activeWeeks.map(week => week.week))
+        : null
+
+      const exercisesCompleted = breakdown.total_exercises
+      const percentageOfTotal = totalExercises > 0 
+        ? Math.round((exercisesCompleted / totalExercises) * 100) 
+        : 0
+
+      let avgRPE: number | null = null
+      let avgQuality: number | null = null
+      let qualityGrade = 'N/A'
+
+      if (blockKey === 'metcons') {
+        // For MetCons, use percentile data
+        avgQuality = breakdown.avg_quality
+        qualityGrade = avgQuality ? `${Math.round(avgQuality)}th %ile` : 'N/A'
+      } else {
+        // For other blocks, use RPE and quality grades
+        avgRPE = breakdown.avg_rpe > 0 ? breakdown.avg_rpe : null
+        avgQuality = breakdown.avg_quality > 0 ? breakdown.avg_quality : null
+        qualityGrade = avgQuality ? convertQualityToGradeDetailed(avgQuality) : 'N/A'
       }
-    } else {
-      // Regular block signals
-      const blockTrendData = trends as BlockTrendData
-      const targetRange = rpeTargets[blockName as keyof typeof rpeTargets]
 
-      if (blockTrendData.weeks_active > 0 && targetRange) {
-        // Check RPE vs targets
-        if (blockTrendData.current_avg_rpe < targetRange.min && blockTrendData.current_avg_quality >= 3.5) {
-          signals.push({
-            block: blockName,
-            signal_type: 'progression_ready',
-            message: `Low RPE (${blockTrendData.current_avg_rpe}) with high quality - ready for progression`,
-            priority: 'high',
-            week: latestWeek
-          })
-        } else if (blockTrendData.current_avg_rpe > targetRange.max) {
-          signals.push({
-            block: blockName,
-            signal_type: 'needs_attention',
-            message: `High RPE (${blockTrendData.current_avg_rpe}) - consider scaling back intensity`,
-            priority: 'high',
-            week: latestWeek
-          })
-        }
-
-        // Check quality trends
-        if (blockTrendData.quality_trend === 'declining' && blockTrendData.current_avg_quality < 2.5) {
-          signals.push({
-            block: blockName,
-            signal_type: 'needs_attention',
-            message: `Declining quality scores - focus on technique`,
-            priority: 'medium',
-            week: latestWeek
-          })
-        }
-
-        // Check improvement trends
-        if (blockTrendData.rpe_trend === 'improving' && blockTrendData.quality_trend === 'improving') {
-          signals.push({
-            block: blockName,
-            signal_type: 'on_track',
-            message: `Positive trends in both effort and quality`,
-            priority: 'low',
-            week: latestWeek
-          })
-        }
-      }
+      summaries.push({
+        blockName,
+        exercisesCompleted,
+        percentageOfTotal,
+        avgRPE,
+        avgQuality,
+        qualityGrade,
+        qualityTrend: trends ? (trends as BlockTrendData).quality_trend || 'stable' : 'stable',
+        rpeTrend: trends ? (trends as BlockTrendData).rpe_trend || 'stable' : 'stable',
+        volumeTrend: trends ? (trends as BlockTrendData).volume_trend || 'stable' : 'stable',
+        weeksActive: trends ? trends.weeks_active || 0 : 0,
+        lastActiveWeek
+      })
     }
   })
 
-  return signals.sort((a, b) => {
-    const priorityOrder = { high: 3, medium: 2, low: 1 }
-    return priorityOrder[b.priority] - priorityOrder[a.priority]
-  })
+  // Sort by exercise count (most active first)
+  return summaries.sort((a, b) => b.exercisesCompleted - a.exercisesCompleted)
 }
 
 /**
@@ -397,5 +400,30 @@ export function getWeeklyQualityData(weeklyData: WeeklyBlockData[], blockName?: 
     technical: weeklyData.map(w => w.technical_avg_quality || null),
     strength: weeklyData.map(w => w.strength_avg_quality || null),
     accessories: weeklyData.map(w => w.accessories_avg_quality || null)
+  }
+}
+
+/**
+ * Get summary statistics for overview
+ */
+export function getBlockAnalyticsSummary(blockSummaries: BlockSummary[]) {
+  const totalExercises = blockSummaries.reduce((sum, block) => sum + block.exercisesCompleted, 0)
+  const activeBlocks = blockSummaries.filter(block => block.exercisesCompleted > 0).length
+  const totalWeekBlocks = blockSummaries.reduce((sum, block) => sum + block.weeksActive, 0)
+  
+  const mostActiveBlock = blockSummaries.reduce((max, block) => 
+    block.exercisesCompleted > max.exercisesCompleted ? block : max
+  )
+
+  const qualityDistribution = blockSummaries
+    .filter(block => block.qualityGrade !== 'N/A' && !block.qualityGrade.includes('%ile'))
+    .map(block => ({ name: block.blockName, grade: block.qualityGrade }))
+
+  return {
+    totalExercises,
+    activeBlocks,
+    totalWeekBlocks,
+    mostActiveBlock,
+    qualityDistribution
   }
 }
