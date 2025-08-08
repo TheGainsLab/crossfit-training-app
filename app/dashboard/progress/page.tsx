@@ -430,7 +430,8 @@ const BlockAnalyticsView = () => {
 
   // Calculate totals
   const totalExercises = blockSummaries.reduce((sum, block) => sum + block.exercisesCompleted, 0);
-  const activeBlocks = blockSummaries.filter(block => block.exercisesCompleted > 0).length;
+const totalExercises = blockSummaries.reduce((sum: number, block: any) => sum + block.exercisesCompleted, 0);  
+
 
   // Prepare pie chart data
   const pieChartData = {
@@ -521,9 +522,10 @@ const BlockAnalyticsView = () => {
   };
 
   // Find most active block
-  const mostActiveBlock = blockSummaries.reduce((max, block) => 
-    block.exercisesCompleted > max.exercisesCompleted ? block : max
-  );
+const mostActiveBlock = blockSummaries.reduce((max: any, block: any) => 
+  block.exercisesCompleted > max.exercisesCompleted ? block : max
+);
+
 
   return (
     <div id="blocks-panel" role="tabpanel" aria-labelledby="blocks-tab" className="space-y-8">
@@ -541,8 +543,11 @@ const BlockAnalyticsView = () => {
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-purple-600">
-              {blockSummaries.reduce((sum, block) => sum + block.weeksActive, 0)}
-            </div>
+
+
+{blockSummaries.reduce((sum: number, block: any) => sum + block.weeksActive, 0)}
+           
+ </div>
             <div className="text-sm text-gray-600">Total Week-Blocks</div>
           </div>
         </div>
