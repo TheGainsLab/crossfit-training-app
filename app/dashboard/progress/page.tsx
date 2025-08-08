@@ -45,7 +45,8 @@ function formatLastActive(weeksActive: number): string {
   return `${weeksActive} weeks active`
 }
 
-// ADD THE HEAT MAP COMPONENT HERE (right after imports)
+
+// Enhanced Heat Map Component with Exercise and Time Domain Averages
 const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
   // Get all unique time domains and exercises
   const timeDomains = ['1:00-5:00', '5:00-10:00', '10:00-15:00', '15:00-20:00', '20:00-30:00', '30:00+'];
@@ -65,42 +66,100 @@ const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
   };
 
   // Function to get percentile for exercise in time domain
-const getPercentile = (exercise: string, timeDomain: string): number | null => {
-  const exerciseData = data.exercises[exercise];
-  if (!exerciseData) return null;
-  
-  // Check exact match first
-  if (exerciseData[timeDomain]) {
-    return exerciseData[timeDomain].avgPercentile;
-  }
-  
-  // Check for similar time domain formats with proper typing
-  const normalizedDomain = timeDomain.replace(/:/g, ':').replace(/–/g, '-');
-  for (const [key, value] of Object.entries(exerciseData)) {
-    const normalizedKey = key.replace(/:/g, ':').replace(/–/g, '-');
-    if (normalizedKey === normalizedDomain) {
-      return (value as any).avgPercentile;  // ← Fixed with type assertion
+  const getPercentile = (exercise: string, timeDomain: string): number | null => {
+    const exerciseData = data.exercises[exercise];
+    if (!exerciseData) return null;
+    
+    // Check exact match first
+    if (exerciseData[timeDomain]) {
+      return exerciseData[timeDomain].avgPercentile;
     }
-  }
-  
-  return null;
-};
-
-const getSessionCount = (exercise: string, timeDomain: string): number => {
-  const exerciseData = data.exercises[exercise];
-  if (!exerciseData) return 0;
-  
-  for (const [key, value] of Object.entries(exerciseData)) {
-    const normalizedKey = key.replace(/:/g, ':').replace(/–/g, '-');
+    
+    // Check for similar time domain formats with proper typing
     const normalizedDomain = timeDomain.replace(/:/g, ':').replace(/–/g, '-');
-    if (normalizedKey === normalizedDomain) {
-      return (value as any).count;  // ← Fixed with type assertion
+    for (const [key, value] of Object.entries(exerciseData)) {
+      const normalizedKey = key.replace(/:/g, ':').replace(/–/g, '-');
+      if (normalizedKey === normalizedDomain) {
+        return (value as any).avgPercentile;
+      }
     }
-  }
-  
-  return 0;
-};
+    
+    return null;
+  };
 
+  const getSessionCount = (exercise: string, timeDomain: string): number => {
+    const exerciseData = data.exercises[exercise];
+    if (!exerciseData) return 0;
+    
+    for (const [key, value] of Object.entries(exerciseData)) {
+      const normalizedKey = key.replace(/:/g, ':').replace(/–/g, '-');
+      const normalizedDomain = timeDomain.replace(/:/g, ':').replace(/–/g, '-');
+      if (normalizedKey === normalizedDomain) {
+        return (value as any).count;
+      }
+    }
+    
+    return 0;
+  };
+
+  // Calculate exercise averages (weighted by session count)
+  const calculateExerciseAverage = (exercise: string): number | null => {
+    const exerciseData = data.exercises[exercise];
+    if (!exerciseData) return null;
+
+    let totalWeightedScore = 0;
+    let totalSessions = 0;
+
+    timeDomains.forEach(domain => {
+      const percentile = getPercentile(exercise, domain);
+      const sessions = getSessionCount(exercise, domain);
+      
+      if (percentile !== null && sessions > 0) {
+        totalWeightedScore += percentile * sessions;
+        totalSessions += sessions;
+      }
+    });
+
+    return totalSessions > 0 ? Math.round(totalWeightedScore / totalSessions) : null;
+  };
+
+  // Calculate time domain averages (weighted by session count)
+  const calculateTimeDomainAverage = (timeDomain: string): number | null => {
+    let totalWeightedScore = 0;
+    let totalSessions = 0;
+
+    exercises.forEach(exercise => {
+      const percentile = getPercentile(exercise, timeDomain);
+      const sessions = getSessionCount(exercise, timeDomain);
+      
+      if (percentile !== null && sessions > 0) {
+        totalWeightedScore += percentile * sessions;
+        totalSessions += sessions;
+      }
+    });
+
+    return totalSessions > 0 ? Math.round(totalWeightedScore / totalSessions) : null;
+  };
+
+  // Calculate overall fitness score
+  const calculateOverallFitnessScore = (): number | null => {
+    let totalWeightedScore = 0;
+    let totalSessions = 0;
+
+    exercises.forEach(exercise => {
+      timeDomains.forEach(domain => {
+        const percentile = getPercentile(exercise, domain);
+        const sessions = getSessionCount(exercise, domain);
+        
+        if (percentile !== null && sessions > 0) {
+          totalWeightedScore += percentile * sessions;
+          totalSessions += sessions;
+        }
+      });
+    });
+
+    return totalSessions > 0 ? Math.round(totalWeightedScore / totalSessions) : null;
+  };
 
   if (exercises.length === 0) {
     return (
@@ -110,6 +169,8 @@ const getSessionCount = (exercise: string, timeDomain: string): number => {
       </div>
     );
   }
+
+  const overallFitnessScore = calculateOverallFitnessScore();
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -131,9 +192,14 @@ const getSessionCount = (exercise: string, timeDomain: string): number => {
                   {domain}
                 </th>
               ))}
+              {/* Exercise Average Header */}
+              <th className="text-center p-3 font-bold text-gray-900 min-w-[100px] bg-blue-50 border-l-2 border-blue-200">
+                Exercise Avg
+              </th>
             </tr>
           </thead>
           <tbody>
+            {/* Individual Exercise Rows */}
             {exercises.map(exercise => (
               <tr key={exercise} className="border-t">
                 <td className="p-3 font-medium text-gray-900 bg-gray-50">
@@ -165,13 +231,92 @@ const getSessionCount = (exercise: string, timeDomain: string): number => {
                     </td>
                   );
                 })}
+                {/* Exercise Average Cell */}
+                <td className="p-1 border-l-2 border-blue-200 bg-blue-50">
+                  {(() => {
+                    const avgPercentile = calculateExerciseAverage(exercise);
+                    const colorClass = getHeatMapColor(avgPercentile);
+                    return (
+                      <div className={`
+                        ${colorClass}
+                        rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer
+                        shadow-md border-2 border-white
+                        ${avgPercentile ? 'ring-1 ring-blue-300' : ''}
+                      `} style={{ minHeight: '60px' }}>
+                        {avgPercentile ? (
+                          <div>
+                            <div className="text-lg font-bold">Avg: {avgPercentile}%</div>
+                            <div className="text-xs opacity-75 font-medium">Overall</div>
+                          </div>
+                        ) : (
+                          <div className="text-lg font-bold">—</div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </td>
               </tr>
             ))}
+            
+            {/* Time Domain Averages Row */}
+            <tr className="border-t-2 border-blue-200 bg-blue-50">
+              <td className="p-3 font-bold text-gray-900 bg-blue-100 border-r-2 border-blue-200">
+                Time Domain Avg
+              </td>
+              {timeDomains.map(domain => {
+                const avgPercentile = calculateTimeDomainAverage(domain);
+                const colorClass = getHeatMapColor(avgPercentile);
+                
+                return (
+                  <td key={domain} className="p-1">
+                    <div className={`
+                      ${colorClass}
+                      rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer
+                      shadow-md border-2 border-white
+                      ${avgPercentile ? 'ring-1 ring-blue-300' : ''}
+                    `} style={{ minHeight: '60px' }}>
+                      {avgPercentile ? (
+                        <div>
+                          <div className="text-lg font-bold">Avg: {avgPercentile}%</div>
+                          <div className="text-xs opacity-75 font-medium">Domain</div>
+                        </div>
+                      ) : (
+                        <div className="text-lg font-bold">—</div>
+                      )}
+                    </div>
+                  </td>
+                );
+              })}
+              
+              {/* Overall Fitness Score Cell */}
+              <td className="p-1 border-l-2 border-blue-200 bg-blue-100">
+                {(() => {
+                  const colorClass = getHeatMapColor(overallFitnessScore);
+                  return (
+                    <div className={`
+                      ${colorClass}
+                      rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer
+                      shadow-lg border-4 border-white
+                      ${overallFitnessScore ? 'ring-2 ring-blue-400' : ''}
+                    `} style={{ minHeight: '60px' }}>
+                      {overallFitnessScore ? (
+                        <div>
+                          <div className="text-xl font-bold">{overallFitnessScore}%</div>
+                          <div className="text-xs opacity-75 font-bold">FITNESS</div>
+                        </div>
+                      ) : (
+                        <div className="text-xl font-bold">—</div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
 
-      {/* Legend */}
+      {/* Enhanced Legend */}
       <div className="mt-6 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <span className="text-sm font-medium text-gray-700">Performance:</span>
@@ -188,12 +333,24 @@ const getSessionCount = (exercise: string, timeDomain: string): number => {
             <span className="text-xs text-gray-600">Excellent</span>
           </div>
         </div>
+        <div className="text-sm text-gray-500">
+          <span className="font-medium">Bold cells</span> show weighted averages
+        </div>
       </div>
+
+      {/* Summary Insights */}
+      {overallFitnessScore && (
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <h4 className="font-medium text-gray-900 mb-2">Fitness Summary</h4>
+          <p className="text-sm text-gray-700">
+            Your overall fitness score is <strong>{overallFitnessScore}%</strong> based on {exercises.length} exercises 
+            across {timeDomains.length} time domains. Scores are weighted by training frequency to reflect your actual fitness level.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
-
-
 
 // Register Chart.js components
 ChartJS.register(
