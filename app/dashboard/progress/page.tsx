@@ -19,6 +19,31 @@ import {
 } from 'chart.js';
 import { Line, Bar, Radar, Doughnut } from 'react-chartjs-2';
 
+// Quality grade conversion utilities
+function convertQualityToGradeDetailed(numericQuality: number): string {
+  if (numericQuality >= 3.7) return 'A'
+  if (numericQuality >= 3.3) return 'A-'
+  if (numericQuality >= 2.7) return 'B+'
+  if (numericQuality >= 2.3) return 'B'
+  if (numericQuality >= 1.7) return 'B-'
+  if (numericQuality >= 1.3) return 'C+'
+  if (numericQuality >= 1.0) return 'C'
+  return 'D'
+}
+
+function getTrendIcon(trend: string): string {
+  switch (trend) {
+    case 'improving': return '↗️'
+    case 'declining': return '↘️'
+    default: return '➡️'
+  }
+}
+
+function formatLastActive(weeksActive: number): string {
+  if (weeksActive === 0) return 'No activity'
+  if (weeksActive === 1) return 'This week'
+  return `${weeksActive} weeks active`
+}
 
 // ADD THE HEAT MAP COMPONENT HERE (right after imports)
 const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
@@ -385,96 +410,256 @@ export default function AnalyticsProgressPage() {
     </div>
   );
 
-  // Block Analytics Component with Real Charts
-  const BlockAnalyticsView = () => {
-    if (!dashboardData?.data?.dashboard) {
-      return <div className="bg-white rounded-lg shadow p-6">Loading block analytics...</div>;
-    }
 
-    const { blockPerformance } = dashboardData.data.dashboard;
+const BlockAnalyticsView = () => {
+  if (!blockData?.data) {
+    return <div className="bg-white rounded-lg shadow p-6">Loading block analytics...</div>;
+  }
 
-    // Create chart data from block performance
-    const blockChartData = {
-      labels: Object.keys(blockPerformance).map(block => {
-        const blockNames: { [key: string]: string } = {
-          'SKILLS': 'Skills',
-          'TECHNICAL WORK': 'Technical',
-          'STRENGTH AND POWER': 'Strength',
-          'ACCESSORIES': 'Accessories',
-          'METCONS': 'MetCons'
-        };
-        return blockNames[block] || block;
-      }),
-      datasets: [
-        {
-          label: 'Performance Score',
-          data: Object.values(blockPerformance).map((block: any) => block.overallScore),
-          backgroundColor: [
-            'rgba(54, 162, 235, 0.6)',
-            'rgba(255, 99, 132, 0.6)',
-            'rgba(255, 205, 86, 0.6)',
-            'rgba(75, 192, 192, 0.6)',
-            'rgba(153, 102, 255, 0.6)'
-          ],
-          borderColor: [
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 99, 132, 1)',
-            'rgba(255, 205, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)'
-          ],
-          borderWidth: 1
-        }
-      ]
-    };
+  // Get block summaries from the updated block analyzer
+  const blockSummaries = blockData.data.blockSummaries || [];
+  
+  if (blockSummaries.length === 0) {
+    return (
+      <div id="blocks-panel" role="tabpanel" aria-labelledby="blocks-tab" className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Training Block Analysis</h3>
+        <p className="text-gray-600">No training block data available yet. Complete more exercises to see detailed analytics!</p>
+      </div>
+    );
+  }
 
-    const chartOptions = {
-      responsive: true,
-      plugins: {
-        legend: {
-          display: false
-        },
-        title: {
-          display: true,
-          text: 'Training Block Performance'
+  // Calculate totals
+  const totalExercises = blockSummaries.reduce((sum, block) => sum + block.exercisesCompleted, 0);
+  const activeBlocks = blockSummaries.filter(block => block.exercisesCompleted > 0).length;
+
+  // Prepare pie chart data
+  const pieChartData = {
+    labels: blockSummaries.map(block => block.blockName),
+    datasets: [{
+      data: blockSummaries.map(block => block.exercisesCompleted),
+      backgroundColor: [
+        '#3B82F6', // Blue - Skills
+        '#EF4444', // Red - Technical  
+        '#F59E0B', // Orange - Strength
+        '#10B981', // Green - Accessories
+        '#8B5CF6'  // Purple - MetCons
+      ],
+      borderColor: [
+        '#1D4ED8',
+        '#DC2626', 
+        '#D97706',
+        '#059669',
+        '#7C3AED'
+      ],
+      borderWidth: 2,
+      hoverBorderWidth: 3
+    }]
+  };
+
+  const pieChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom' as const,
+        labels: {
+          padding: 20,
+          usePointStyle: true,
+          font: {
+            size: 12
+          }
         }
       },
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: 100
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const label = context.label || '';
+            const value = context.parsed;
+            const block = blockSummaries[context.dataIndex];
+            const percentage = block?.percentageOfTotal || 0;
+            return `${label}: ${value} exercises (${percentage}%)`;
+          }
         }
       }
-    };
+    }
+  };
 
-    return (
-      <div id="blocks-panel" role="tabpanel" aria-labelledby="blocks-tab" className="space-y-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Training Block Performance</h3>
-          <div className="h-64 mb-6">
-            <Bar data={blockChartData} options={chartOptions} />
+  // Prepare RPE comparison bar chart
+  const rpeChartData = {
+    labels: blockSummaries.filter(block => block.avgRPE !== null).map(block => block.blockName),
+    datasets: [{
+      label: 'Average RPE',
+      data: blockSummaries.filter(block => block.avgRPE !== null).map(block => block.avgRPE),
+      backgroundColor: 'rgba(59, 130, 246, 0.6)',
+      borderColor: 'rgba(59, 130, 246, 1)',
+      borderWidth: 1
+    }]
+  };
+
+  const rpeChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      title: {
+        display: true,
+        text: 'Average RPE by Training Block'
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 10,
+        title: {
+          display: true,
+          text: 'RPE (1-10)'
+        }
+      }
+    }
+  };
+
+  // Find most active block
+  const mostActiveBlock = blockSummaries.reduce((max, block) => 
+    block.exercisesCompleted > max.exercisesCompleted ? block : max
+  );
+
+  return (
+    <div id="blocks-panel" role="tabpanel" aria-labelledby="blocks-tab" className="space-y-8">
+      {/* Summary Stats */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Training Volume Overview</h3>
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-blue-600">{totalExercises}</div>
+            <div className="text-sm text-gray-600">Total Exercises</div>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(blockPerformance).map(([blockKey, blockData]: [string, any]) => (
-              <div key={blockKey} className="p-4 border rounded-lg">
-                <h4 className="font-medium text-gray-900">{blockKey}</h4>
-                <p className="text-2xl font-bold text-blue-600">{blockData.overallScore}%</p>
-                <p className="text-sm text-gray-600">{blockData.exercisesCompleted} exercises</p>
-                <p className="text-sm text-gray-600">RPE: {blockData.averageRPE}</p>
-                {blockData.needsAttention && (
-                  <span className="inline-block mt-2 px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                    Needs Attention
-                  </span>
-                )}
-              </div>
-            ))}
+          <div className="text-center">
+            <div className="text-3xl font-bold text-green-600">{activeBlocks}</div>
+            <div className="text-sm text-gray-600">Active Blocks</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-purple-600">
+              {blockSummaries.reduce((sum, block) => sum + block.weeksActive, 0)}
+            </div>
+            <div className="text-sm text-gray-600">Total Week-Blocks</div>
           </div>
         </div>
       </div>
-    );
-  };
 
+      {/* Exercise Distribution and RPE Analysis */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Pie Chart - Exercise Distribution */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Exercise Distribution</h3>
+          <div className="h-80">
+            <Doughnut data={pieChartData} options={pieChartOptions} />
+          </div>
+        </div>
+
+        {/* RPE Comparison */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Effort Levels by Block</h3>
+          <div className="h-80">
+            <Bar data={rpeChartData} options={rpeChartOptions} />
+          </div>
+        </div>
+      </div>
+
+      {/* Detailed Block Breakdown */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">Block Performance Details</h3>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {blockSummaries.map((block) => (
+            <div key={block.blockName} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-gray-900">{block.blockName}</h4>
+                <div className="text-2xl font-bold text-blue-600">{block.exercisesCompleted}</div>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Volume:</span>
+                  <span className="font-medium">{block.percentageOfTotal}% of total</span>
+                </div>
+                
+                {block.avgRPE && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Avg RPE:</span>
+                    <span className="font-medium">{block.avgRPE}/10 {getTrendIcon(block.rpeTrend)}</span>
+                  </div>
+                )}
+                
+                {block.avgQuality && !block.qualityGrade.includes('%ile') && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Avg Quality:</span>
+                    <span className="font-medium">{block.qualityGrade} {getTrendIcon(block.qualityTrend)}</span>
+                  </div>
+                )}
+
+                {block.qualityGrade.includes('%ile') && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Performance:</span>
+                    <span className="font-medium">{block.qualityGrade} {getTrendIcon(block.qualityTrend)}</span>
+                  </div>
+                )}
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Activity:</span>
+                  <span className="font-medium">{formatLastActive(block.weeksActive)}</span>
+                </div>
+              </div>
+
+              {/* Quality Grade Badge */}
+              {block.qualityGrade !== 'N/A' && !block.qualityGrade.includes('%ile') && (
+                <div className="mt-3">
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    block.qualityGrade.startsWith('A') ? 'bg-green-100 text-green-800' :
+                    block.qualityGrade.startsWith('B') ? 'bg-blue-100 text-blue-800' :
+                    block.qualityGrade.startsWith('C') ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    Quality: {block.qualityGrade}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Key Insights - Factual Only */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Training Patterns</h3>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-medium text-gray-900 mb-2">Most Active Block</h4>
+            <p className="text-gray-700">
+              <strong>{mostActiveBlock.blockName}</strong> with {mostActiveBlock.exercisesCompleted} exercises 
+              ({mostActiveBlock.percentageOfTotal}% of total volume)
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="font-medium text-gray-900 mb-2">Quality Distribution</h4>
+            <div className="space-y-1">
+              {blockSummaries
+                .filter(block => block.qualityGrade !== 'N/A')
+                .map(block => (
+                  <div key={block.blockName} className="flex justify-between text-sm">
+                    <span>{block.blockName}:</span>
+                    <span className="font-medium">{block.qualityGrade}</span>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Skills Analytics Component - CORRECTED DATA PATH
 const SkillsAnalyticsView = () => {
@@ -939,4 +1124,4 @@ const MetConAnalyticsView = () => {
       </main>
     </div>
   );
-}
+
