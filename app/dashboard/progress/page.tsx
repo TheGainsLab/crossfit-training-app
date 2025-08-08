@@ -416,8 +416,8 @@ const BlockAnalyticsView = () => {
   }
 
   // Get block summaries from the updated block analyzer
-const blockSummaries = blockData.data.blockAnalysis?.blockSummaries || [];  
-
+  const blockSummaries = blockData.data.blockSummaries || [];
+  
   if (blockSummaries.length === 0) {
     return (
       <div id="blocks-panel" role="tabpanel" aria-labelledby="blocks-tab" className="bg-white rounded-lg shadow p-6">
@@ -660,7 +660,207 @@ const blockSummaries = blockData.data.blockAnalysis?.blockSummaries || [];
   );
 };
 
-// Skills Analytics Component - CORRECTED DATA PATH
+// Enhanced Skill Card Component
+const EnhancedSkillCard: React.FC<{ skill: any }> = ({ skill }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Badge calculation functions
+  const getRepBadge = (totalReps: number) => {
+    if (totalReps >= 1000) return { emoji: '🏆', text: 'Master', color: 'bg-purple-100 text-purple-800' };
+    if (totalReps >= 500) return { emoji: '💎', text: 'Diamond', color: 'bg-blue-100 text-blue-800' };
+    if (totalReps >= 250) return { emoji: '🥇', text: 'Gold', color: 'bg-yellow-100 text-yellow-800' };
+    if (totalReps >= 100) return { emoji: '🥈', text: 'Silver', color: 'bg-gray-100 text-gray-800' };
+    if (totalReps >= 50) return { emoji: '🥉', text: 'Bronze', color: 'bg-orange-100 text-orange-800' };
+    return null;
+  };
+
+  const getPracticeBadge = (daysSince: number) => {
+    if (daysSince <= 3) return { emoji: '🟢', text: 'Active', color: 'bg-green-100 text-green-800' };
+    if (daysSince <= 7) return { emoji: '🟡', text: 'Recent', color: 'bg-yellow-100 text-yellow-800' };
+    if (daysSince <= 14) return { emoji: '🟠', text: 'Stale', color: 'bg-orange-100 text-orange-800' };
+    return { emoji: '🔴', text: 'Neglected', color: 'bg-red-100 text-red-800' };
+  };
+
+  const getNextMilestone = (totalReps: number) => {
+    const milestones = [50, 100, 250, 500, 1000];
+    const nextMilestone = milestones.find(m => m > totalReps);
+    if (!nextMilestone) return null;
+    
+    const remaining = nextMilestone - totalReps;
+    const badgeNames = { 50: 'Bronze 🥉', 100: 'Silver 🥈', 250: 'Gold 🥇', 500: 'Diamond 💎', 1000: 'Master 🏆' };
+    return {
+      remaining,
+      badge: badgeNames[nextMilestone as keyof typeof badgeNames]
+    };
+  };
+
+  // Get special badges
+  const getSpecialBadges = () => {
+    const badges = [];
+    const thisWeek = Math.max(...skill.sessions.map((s: any) => s.week));
+    const thisWeekSessions = skill.sessions.filter((s: any) => s.week === thisWeek);
+    if (thisWeekSessions.length >= 3) {
+      badges.push({ emoji: '🔥', text: 'Hot Streak', color: 'bg-red-100 text-red-800' });
+    }
+    return badges;
+  };
+
+  const repBadge = getRepBadge(skill.totalReps);
+  const practiceBadge = getPracticeBadge(skill.daysSinceLast);
+  const specialBadges = getSpecialBadges();
+  const nextMilestone = getNextMilestone(skill.totalReps);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200">
+      {/* Header with skill name and level */}
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h4 className="font-semibold text-gray-900 text-lg">{skill.name}</h4>
+          {skill.intakeLevel && (
+            <span className="text-sm text-gray-500 italic">{skill.intakeLevel}</span>
+          )}
+        </div>
+        
+        {/* Badges */}
+        <div className="flex flex-wrap gap-1 justify-end">
+          {repBadge && (
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${repBadge.color}`}>
+              {repBadge.emoji} {repBadge.text}
+            </span>
+          )}
+          {specialBadges.map((badge: any, index: number) => (
+            <span key={index} className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
+              {badge.emoji} {badge.text}
+            </span>
+          ))}
+          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${practiceBadge.color}`}>
+            {practiceBadge.emoji} {skill.daysSinceLast}d ago
+          </span>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+        <div className="flex justify-between">
+          <span className="text-gray-600">Sessions:</span>
+          <span className="font-medium">{skill.sessions.length}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Total Reps:</span>
+          <span className="font-medium">{skill.totalReps}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Avg RPE:</span>
+          <span className="font-medium">{skill.avgRPE?.toFixed(1) || 0}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Quality Grade:</span>
+          <span className="font-medium">{skill.qualityGrade}</span>
+        </div>
+      </div>
+
+      {/* Next Milestone */}
+      {nextMilestone && (
+        <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-blue-800 font-medium">
+              {nextMilestone.remaining} more reps for {nextMilestone.badge}
+            </span>
+            <div className="w-16 bg-blue-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ 
+                  width: `${Math.max(10, (skill.totalReps / (skill.totalReps + nextMilestone.remaining)) * 100)}%` 
+                }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Expand/Collapse Button */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full text-center text-blue-600 hover:text-blue-700 text-sm font-medium py-2 border-t border-gray-200 transition-colors"
+      >
+        {isExpanded ? '↑ Hide training history' : '↓ View training history'}
+      </button>
+
+      {/* Expanded Training History */}
+      {isExpanded && (
+        <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+          <h5 className="font-medium text-gray-900">Training History</h5>
+          
+          {skill.sessions.length > 0 ? (
+            <div className="space-y-2">
+              {skill.sessions
+                .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .slice(0, 5)
+                .map((session: any, index: number) => (
+                  <div key={index} className="bg-gray-50 rounded p-3">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="text-sm font-medium">
+                        Week {session.week} • {formatDate(session.date)}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        RPE {session.rpe} • Quality {session.quality}/4
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-700">
+                      {session.sets} sets × {session.reps} reps = {session.sets * session.reps} total
+                    </div>
+                    {session.notes && (
+                      <div className="text-xs text-gray-600 mt-1 italic">
+                        "{session.notes}"
+                      </div>
+                    )}
+                  </div>
+                ))}
+              
+              {skill.sessions.length > 5 && (
+                <div className="text-center text-sm text-gray-500">
+                  ... and {skill.sessions.length - 5} more sessions
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 italic">No training sessions recorded yet.</p>
+          )}
+
+          {/* Quick Stats in Expanded View */}
+          <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+            <div>
+              <span className="text-xs text-gray-500 block">Volume Trend</span>
+              <div className="flex items-center space-x-1 mt-1">
+                {skill.sessions.slice(-4).map((session: any, i: number) => (
+                  <div 
+                    key={i}
+                    className="bg-blue-200 rounded"
+                    style={{ 
+                      height: `${Math.max(4, (session.sets * session.reps / Math.max(...skill.sessions.map((s: any) => s.sets * s.reps))) * 20)}px`,
+                      width: '8px'
+                    }}
+                  ></div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="text-xs text-gray-500 block">Last Practiced</span>
+              <span className="text-sm font-medium">{formatDate(skill.lastPerformed)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Skills Analytics Component - ENHANCED WITH NEW CARDS
 const SkillsAnalyticsView = () => {
   if (!skillsData?.data) {
     return <div className="bg-white rounded-lg shadow p-6">Loading skills analytics...</div>;
@@ -677,21 +877,18 @@ const SkillsAnalyticsView = () => {
     );
   }
 
-  // Create chart data from skills movements - FIXED: using .skills instead of .movements
-  const movementNames = Object.keys(skillsAnalysis.skills);
-  const movementData = movementNames.map(name => {
-    const movement = skillsAnalysis.skills[name];
-    const sessions = movement.sessions || [];
-    return {
-      name,
-      sessionCount: sessions.length,
-      avgRPE: movement.avgRPE || 0,
-      avgQuality: movement.avgQuality || 0,
-      totalReps: movement.totalReps || 0,
-      lastSession: sessions.length > 0 ? sessions[sessions.length - 1] : null,
-      qualityGrade: movement.qualityGrade || 'D'
-    };
-  });
+  // Convert skills object to array for mapping
+  const skillsArray = Object.values(skillsAnalysis.skills);
+
+  // Create chart data from skills movements
+  const movementData = skillsArray.map((skill: any) => ({
+    name: skill.name,
+    sessionCount: skill.sessions?.length || 0,
+    avgRPE: skill.avgRPE || 0,
+    avgQuality: skill.avgQuality || 0,
+    totalReps: skill.totalReps || 0,
+    qualityGrade: skill.qualityGrade || 'D'
+  }));
 
   const skillsChartData = {
     labels: movementData.map(m => m.name),
@@ -719,10 +916,40 @@ const SkillsAnalyticsView = () => {
     ]
   };
 
+  // Calculate summary stats
+  const totalSkills = skillsArray.length;
+  const masteredSkills = skillsArray.filter((skill: any) => skill.qualityGrade === 'A').length;
+  const totalReps = skillsArray.reduce((sum: number, skill: any) => sum + (skill.totalReps || 0), 0);
+  const avgRPE = skillsArray.reduce((sum: number, skill: any) => sum + (skill.avgRPE || 0), 0) / totalSkills;
+
   return (
     <div id="skills-panel" role="tabpanel" aria-labelledby="skills-tab" className="space-y-8">
+      {/* Summary Stats */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Development Progress</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Development Overview</h3>
+        <div className="grid md:grid-cols-4 gap-6">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-blue-600">{totalSkills}</div>
+            <div className="text-sm text-gray-600">Skills Practiced</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-green-600">{masteredSkills}</div>
+            <div className="text-sm text-gray-600">Grade A Skills</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-purple-600">{totalReps.toLocaleString()}</div>
+            <div className="text-sm text-gray-600">Total Reps</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-orange-600">{avgRPE.toFixed(1)}</div>
+            <div className="text-sm text-gray-600">Average RPE</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Progress Charts</h3>
         
         <div className="grid md:grid-cols-2 gap-6 mb-6">
           <div>
@@ -759,35 +986,14 @@ const SkillsAnalyticsView = () => {
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {movementData.map((movement, index) => (
-            <div key={movement.name} className="p-4 border rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">{movement.name}</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Sessions:</span>
-                  <span className="font-medium">{movement.sessionCount}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Reps:</span>
-                  <span className="font-medium">{movement.totalReps}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Avg RPE:</span>
-                  <span className="font-medium">{movement.avgRPE}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Quality Grade:</span>
-                  <span className="font-medium">{movement.qualityGrade}</span>
-                </div>
-                {movement.lastSession && (
-                  <div className="text-xs text-gray-500 mt-2">
-                    Last: Week {movement.lastSession.week}
-                  </div>
-                )}
-              </div>
-            </div>
+      {/* Enhanced Skill Cards */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">Individual Skills Progress</h3>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {skillsArray.map((skill: any, index: number) => (
+            <EnhancedSkillCard key={skill.name || index} skill={skill} />
           ))}
         </div>
       </div>
