@@ -416,8 +416,8 @@ const BlockAnalyticsView = () => {
   }
 
   // Get block summaries from the updated block analyzer
-  const blockSummaries = blockData.data.blockSummaries || [];
-  
+const blockSummaries = blockData.data.blockAnalysis?.blockSummaries || [];  
+
   if (blockSummaries.length === 0) {
     return (
       <div id="blocks-panel" role="tabpanel" aria-labelledby="blocks-tab" className="bg-white rounded-lg shadow p-6">
