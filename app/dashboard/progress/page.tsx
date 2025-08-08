@@ -429,7 +429,6 @@ const BlockAnalyticsView = () => {
   }
 
   // Calculate totals
-  const totalExercises = blockSummaries.reduce((sum, block) => sum + block.exercisesCompleted, 0);
 const totalExercises = blockSummaries.reduce((sum: number, block: any) => sum + block.exercisesCompleted, 0);  
 
 
