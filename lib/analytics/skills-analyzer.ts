@@ -118,7 +118,8 @@ export function processSkillsData(
         sets,
         reps,
         rpe: parseFloat(session.rpe) || 0,
-        quality: parseFloat(session.quality_grade) || 0,
+        
+quality: parseFloat(session.completion_quality) || 0,
         result: session.result || '',
         notes: session.notes
       }
