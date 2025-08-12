@@ -62,11 +62,11 @@ export default function ExerciseDeepDivePage() {
     }
   }, [userId]);
 
-  useEffect(() => {
-    if (selectedBlock) {
-      updateAvailableExercises();
-    }
-  }, [selectedBlock, skillsData, strengthData]);
+useEffect(() => {
+  if (selectedBlock) {
+    updateAvailableExercises();
+  }
+}, [selectedBlock, skillsData, strengthData, userId]); // Add userId here
 
   useEffect(() => {
     if (selectedExercise && selectedBlock && userId) {
@@ -128,37 +128,60 @@ export default function ExerciseDeepDivePage() {
     }
   };
 
-  const updateAvailableExercises = () => {
-    let exercises: string[] = [];
+// Replace the updateAvailableExercises function with this version:
 
-    if (selectedBlock === 'SKILLS' || selectedBlock === 'TECHNICAL WORK') {
-      if (skillsData?.data?.skillsAnalysis?.skills) {
-        exercises = Object.keys(skillsData.data.skillsAnalysis.skills)
-          .filter(exerciseName => {
-            const exercise = skillsData.data.skillsAnalysis.skills[exerciseName];
-            return exercise.block === selectedBlock;
-          });
-      }
-    } else if (selectedBlock === 'STRENGTH AND POWER') {
-      if (strengthData?.data?.strengthAnalysis?.movements) {
-        exercises = Object.keys(strengthData.data.strengthAnalysis.movements);
-      }
-    } else if (selectedBlock === 'METCONS') {
-      // For MetCons, we'll use common MetCon exercises
-      exercises = [
-        'Double Unders', 'Thrusters', 'Pull-ups', 'Burpees', 'Box Jumps',
-        'Wall Balls', 'Rowing', 'Running', 'Kettlebell Swings'
-      ];
-    } else if (selectedBlock === 'ACCESSORIES') {
-      // Common accessory exercises
-      exercises = [
-        'Ring Rows', 'Weighted Pull Ups', 'Dumbbell Press', 'Lateral Raises'
-      ];
+const updateAvailableExercises = async () => {
+  if (!userId || !selectedBlock) return;
+  
+  let exercises: string[] = [];
+
+  if (selectedBlock === 'SKILLS' || selectedBlock === 'TECHNICAL WORK') {
+    if (skillsData?.data?.skillsAnalysis?.skills) {
+      exercises = Object.keys(skillsData.data.skillsAnalysis.skills)
+        .filter(exerciseName => {
+          const exercise = skillsData.data.skillsAnalysis.skills[exerciseName];
+          return exercise.block === selectedBlock;
+        });
     }
+  } else if (selectedBlock === 'STRENGTH AND POWER') {
+    if (strengthData?.data?.strengthAnalysis?.movements) {
+      exercises = Object.keys(strengthData.data.strengthAnalysis.movements);
+    }
+  } else {
+    // For all other blocks (METCONS, ACCESSORIES, TECHNICAL WORK), 
+    // fetch actual exercises from performance_logs
+    try {
+      const supabase = createClient();
+      const { data: performanceData, error } = await supabase
+        .from('performance_logs')
+        .select('exercise_name')
+        .eq('user_id', userId)
+        .eq('block', selectedBlock);
 
-    setAvailableExercises(exercises);
-    setSelectedExercise(''); // Reset exercise selection
-  };
+      if (!error && performanceData) {
+        // Get unique exercise names for this block
+        const uniqueExercises = [...new Set(performanceData.map(row => row.exercise_name))];
+        exercises = uniqueExercises.filter(name => name); // Remove any null/undefined names
+      }
+    } catch (error) {
+      console.error('Error fetching exercises for block:', selectedBlock, error);
+      exercises = [];
+    }
+  }
+
+  setAvailableExercises(exercises);
+  setSelectedExercise(''); // Reset exercise selection
+};
+
+// Also update the useEffect to make it async:
+useEffect(() => {
+  if (selectedBlock) {
+    updateAvailableExercises();
+  }
+}, [selectedBlock, skillsData, strengthData, userId]); // Add userId to dependencies
+
+ 
+
 
   const fetchExerciseDeepDive = async () => {
     if (!userId || !selectedExercise || !selectedBlock) return;
@@ -477,3 +500,4 @@ export default function ExerciseDeepDivePage() {
     </div>
   );
 }
+
