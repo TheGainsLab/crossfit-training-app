@@ -494,8 +494,9 @@ console.log('Data:', completions)
 
 
 // Map performance_logs data to completion format
+
 const mappedCompletions = completions?.map(log => ({
-  exercise_name: log.exercise_name,
+  exercise_name: log.set_number > 1 ? `${log.exercise_name} - Set ${log.set_number}` : log.exercise_name,
   sets_completed: parseInt(log.sets) || 0,
   reps_completed: log.reps,
   weight_used: parseFloat(log.weight_time) || 0,
@@ -510,6 +511,8 @@ return NextResponse.json({
   completions: mappedCompletions,
   totalCompleted: mappedCompletions.length
 })
+
+
 
 
   } catch (error) {
