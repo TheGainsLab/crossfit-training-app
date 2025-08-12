@@ -4,6 +4,28 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+} from 'chart.js'
+import { Bar, Doughnut } from 'react-chartjs-2'
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
 // Keep your existing interfaces
 interface WorkoutSummary {
@@ -30,6 +52,222 @@ interface DashboardAnalytics {
   metadata: any;
 }
 
+// Training Blocks Visualization Component
+const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ analytics, blockData }) => {
+  if (!blockData?.data?.blockAnalysis?.blockSummaries) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+          <div className="space-y-2">
+            <div className="h-3 bg-gray-200 rounded"></div>
+            <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+            <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const blockSummaries = blockData.data.blockAnalysis.blockSummaries
+  
+  if (blockSummaries.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">🎯 Training Blocks</h3>
+        <p className="text-gray-600">Complete more exercises to see training block analytics!</p>
+      </div>
+    )
+  }
+
+  // Calculate totals
+  const totalExercises = blockSummaries.reduce((sum: number, block: any) => sum + block.exercisesCompleted, 0)
+  
+  // Prepare donut chart data
+  const donutChartData = {
+    labels: blockSummaries.map((block: any) => block.blockName),
+    datasets: [{
+      data: blockSummaries.map((block: any) => block.exercisesCompleted),
+      backgroundColor: [
+        '#3B82F6', // Blue - Strength
+        '#EF4444', // Red - Skills
+        '#F59E0B', // Orange - Accessories  
+        '#10B981', // Green - Technical
+        '#8B5CF6'  // Purple - MetCons
+      ],
+      borderColor: [
+        '#1D4ED8',
+        '#DC2626', 
+        '#D97706',
+        '#059669',
+        '#7C3AED'
+      ],
+      borderWidth: 2,
+      hoverBorderWidth: 3
+    }]
+  }
+
+  const donutChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom' as const,
+        labels: {
+          padding: 15,
+          usePointStyle: true,
+          font: {
+            size: 11
+          }
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const label = context.label || '';
+            const value = context.parsed;
+            const block = blockSummaries[context.dataIndex];
+            const percentage = block?.percentageOfTotal || 0;
+            return `${label}: ${value} exercises (${percentage}%)`;
+          }
+        }
+      }
+    }
+  }
+
+  // Prepare RPE bar chart
+  const rpeChartData = {
+    labels: blockSummaries.filter((block: any) => block.avgRPE !== null).map((block: any) => block.blockName),
+    datasets: [{
+      label: 'Average RPE',
+      data: blockSummaries.filter((block: any) => block.avgRPE !== null).map((block: any) => block.avgRPE),
+      backgroundColor: 'rgba(59, 130, 246, 0.6)',
+      borderColor: 'rgba(59, 130, 246, 1)',
+      borderWidth: 1
+    }]
+  }
+
+  const rpeChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 10,
+        title: {
+          display: true,
+          text: 'RPE (1-10)'
+        }
+      }
+    }
+  }
+
+  // Helper functions
+  const getTrendIcon = (trend: string): string => {
+    switch (trend) {
+      case 'improving': return '↗️'
+      case 'declining': return '↘️'
+      default: return '➡️'
+    }
+  }
+
+  const formatLastActive = (weeksActive: number): string => {
+    if (weeksActive === 0) return 'No activity'
+    if (weeksActive === 1) return 'This week'
+    return `${weeksActive} weeks active`
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Donut Chart and RPE Chart */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Exercise Distribution Donut Chart */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="font-semibold text-gray-900 mb-4">🎯 Training Block Distribution</h3>
+          <div className="h-64">
+            <Doughnut data={donutChartData} options={donutChartOptions} />
+          </div>
+        </div>
+
+        {/* RPE Comparison Bar Chart */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="font-semibold text-gray-900 mb-4">💪 Average RPE by Block</h3>
+          <div className="h-64">
+            <Bar data={rpeChartData} options={rpeChartOptions} />
+          </div>
+        </div>
+      </div>
+
+      {/* Block Performance Cards */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="font-semibold text-gray-900 mb-6">Block Performance Details</h3>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {blockSummaries.map((block: any) => (
+            <div key={block.blockName} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-gray-900">{block.blockName}</h4>
+                <div className="text-2xl font-bold text-blue-600">{block.exercisesCompleted}</div>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Volume:</span>
+                  <span className="font-medium">{block.percentageOfTotal}% of total</span>
+                </div>
+                
+                {block.avgRPE && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Avg RPE:</span>
+                    <span className="font-medium">{block.avgRPE}/10 {getTrendIcon(block.rpeTrend)}</span>
+                  </div>
+                )}
+                
+                {block.avgQuality && !block.qualityGrade.includes('%ile') && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Avg Quality:</span>
+                    <span className="font-medium">{block.qualityGrade} {getTrendIcon(block.qualityTrend)}</span>
+                  </div>
+                )}
+
+                {block.qualityGrade.includes('%ile') && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Performance:</span>
+                    <span className="font-medium">{block.qualityGrade} {getTrendIcon(block.qualityTrend)}</span>
+                  </div>
+                )}
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Activity:</span>
+                  <span className="font-medium">{formatLastActive(block.weeksActive)}</span>
+                </div>
+              </div>
+
+              {/* Quality Grade Badge */}
+              {block.qualityGrade !== 'N/A' && !block.qualityGrade.includes('%ile') && (
+                <div className="mt-3">
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    block.qualityGrade.startsWith('A') ? 'bg-green-100 text-green-800' :
+                    block.qualityGrade.startsWith('B') ? 'bg-blue-100 text-blue-800' :
+                    block.qualityGrade.startsWith('C') ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    Quality: {block.qualityGrade}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -40,6 +278,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [userId, setUserId] = useState<number | null>(null)
   const [dashboardAnalytics, setDashboardAnalytics] = useState<DashboardAnalytics | null>(null)
+  const [blockData, setBlockData] = useState<any>(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
   useEffect(() => {
@@ -54,21 +293,37 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (userId && currentProgram) {
-      fetchDashboardAnalytics()
+      fetchAnalytics()
     }
   }, [userId, currentProgram])
 
-  const fetchDashboardAnalytics = async () => {
+  const fetchAnalytics = async () => {
     if (!userId) return
     
     setAnalyticsLoading(true)
     try {
-      const response = await fetch(`/api/analytics/${userId}/dashboard`)
-      const apiResponse = await response.json()
-      setDashboardAnalytics(apiResponse)
+      // Fetch both dashboard and block analytics
+      const [dashboardRes, blockRes] = await Promise.allSettled([
+        fetch(`/api/analytics/${userId}/dashboard`),
+        fetch(`/api/analytics/${userId}/block-analyzer`)
+      ])
+
+      // Process Dashboard Data
+      if (dashboardRes.status === 'fulfilled' && dashboardRes.value.ok) {
+        const data = await dashboardRes.value.json()
+        setDashboardAnalytics(data)
+      }
+
+      // Process Block Analytics
+      if (blockRes.status === 'fulfilled' && blockRes.value.ok) {
+        const data = await blockRes.value.json()
+        setBlockData(data)
+      }
+
     } catch (error) {
       console.error('Error fetching dashboard analytics:', error)
       setDashboardAnalytics(null)
+      setBlockData(null)
     } finally {
       setAnalyticsLoading(false)
     }
@@ -123,133 +378,6 @@ export default function DashboardPage() {
       setError('Failed to load program data')
       setLoading(false)
     }
-  }
-
-  // New simplified widgets
-  const ProgressTrackingWidget: React.FC<{ analytics: any }> = ({ analytics }) => {
-    if (!analytics?.data?.dashboard) {
-      return (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-            <div className="space-y-2">
-              <div className="h-3 bg-gray-200 rounded"></div>
-              <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-              <div className="h-3 bg-gray-200 rounded w-4/6"></div>
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    const { blockPerformance, overallMetrics } = analytics.data.dashboard
-    
-    // Calculate completion percentages for demo - replace with real data
-    const totalSessions = overallMetrics?.totalTrainingDays || 0
-    const overallCompletion = Math.min((totalSessions / 60) * 100, 100) // Assuming 60 sessions in program
-
-    const blockData = [
-      { name: 'Skills', completed: blockPerformance?.['SKILLS']?.exercisesCompleted || 0 },
-      { name: 'Technical', completed: blockPerformance?.['TECHNICAL WORK']?.exercisesCompleted || 0 },
-      { name: 'Strength', completed: blockPerformance?.['STRENGTH AND POWER']?.exercisesCompleted || 0 },
-      { name: 'Accessories', completed: blockPerformance?.['ACCESSORIES']?.exercisesCompleted || 0 },
-      { name: 'MetCons', completed: blockPerformance?.['METCONS']?.exercisesCompleted || 0 }
-    ]
-
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">📊 Progress Tracking</h3>
-        
-        <div className="space-y-3 mb-6">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Total Sessions</span>
-            <span className="font-semibold">{totalSessions}</span>
-          </div>
-          
-          {blockData.map((block) => (
-            <div key={block.name} className="flex justify-between items-center">
-              <span className="text-gray-600">{block.name} Blocks</span>
-              <span className="font-semibold">{block.completed}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Overall completion bar */}
-        <div className="mb-2">
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-sm text-gray-600">Overall Completion</span>
-            <span className="text-sm font-medium">{Math.round(overallCompletion)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div 
-              className="bg-blue-600 h-3 rounded-full transition-all duration-300" 
-              style={{ width: `${overallCompletion}%` }}
-            ></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const PerformanceTrendsWidget: React.FC<{ analytics: any }> = ({ analytics }) => {
-    if (!analytics?.data?.dashboard) {
-      return (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-            <div className="space-y-2">
-              <div className="h-3 bg-gray-200 rounded"></div>
-              <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    const { overallMetrics } = analytics.data.dashboard
-    
-    // Calculate blocks per week - replace with real calculation
-    const totalBlocks = Object.values(analytics.data.dashboard.blockPerformance || {})
-      .reduce((sum: number, block: any) => sum + (block.exercisesCompleted || 0), 0)
-    const weeksActive = Math.max(Math.ceil(overallMetrics?.totalTrainingDays / 5) || 1, 1)
-    const blocksPerWeek = Math.round((totalBlocks / weeksActive) * 10) / 10
-
-    // Mock last workout date - replace with real data
-    const lastWorkoutDate = new Date()
-    lastWorkoutDate.setDate(lastWorkoutDate.getDate() - 1) // Yesterday for demo
-
-    const formatDate = (date: Date) => {
-      const today = new Date()
-      const diffTime = Math.abs(today.getTime() - date.getTime())
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      
-      if (diffDays === 1) return 'Yesterday'
-      if (diffDays === 2) return '2 days ago'
-      if (diffDays <= 7) return `${diffDays} days ago`
-      
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric' 
-      })
-    }
-
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">📈 Performance Trends</h3>
-        
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Blocks per Week</span>
-            <span className="font-semibold">{blocksPerWeek}</span>
-          </div>
-          
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Last Workout</span>
-            <span className="font-semibold">{formatDate(lastWorkoutDate)}</span>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   const fetchTodaysWorkout = async () => {
@@ -350,48 +478,25 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Top Section: Simplified Widgets + Analytics Link */}
+        {/* Training Blocks Visualization Section */}
         <div className="mb-8">
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            {analyticsLoading ? (
-              <>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                    <div className="space-y-2">
-                      <div className="h-3 bg-gray-200 rounded"></div>
-                      <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-                      <div className="h-3 bg-gray-200 rounded w-4/6"></div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                    <div className="space-y-2">
-                      <div className="h-3 bg-gray-200 rounded"></div>
-                      <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : dashboardAnalytics ? (
-              <>
-                <ProgressTrackingWidget analytics={dashboardAnalytics} />
-                <PerformanceTrendsWidget analytics={dashboardAnalytics} />
-              </>
-            ) : (
-              <div className="col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-6">
-                <div className="flex items-center space-x-2">
-                  <span className="text-blue-600">📊</span>
-                  <span className="text-blue-800 font-medium">Analytics loading...</span>
+          {analyticsLoading ? (
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded"></div>
+                  <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                  <div className="h-3 bg-gray-200 rounded w-4/6"></div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <TrainingBlocksWidget analytics={dashboardAnalytics} blockData={blockData} />
+          )}
 
           {/* View Progress Link */}
-          <div className="text-center">
+          <div className="text-center mt-6">
             <Link
               href="/dashboard/progress"
               className="inline-flex items-center px-6 py-3 bg-white rounded-lg shadow hover:shadow-lg transition-shadow border border-gray-200"
@@ -399,7 +504,7 @@ export default function DashboardPage() {
               <span className="text-2xl mr-3">📊</span>
               <div className="text-left">
                 <div className="font-semibold text-gray-900">View Detailed Analytics</div>
-                <div className="text-sm text-gray-600">Dive deep into your performance data</div>
+                <div className="text-sm text-gray-600">Skills progress, strength analysis & conditioning insights</div>
               </div>
             </Link>
           </div>

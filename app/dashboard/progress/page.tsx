@@ -380,7 +380,7 @@ export default function AnalyticsProgressPage() {
   const [metconData, setMetconData] = useState<any>(null);
 
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'blocks' | 'skills' | 'strength' | 'metcons'>('overview');
+const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 'metcons'>('overview');
 
   useEffect(() => {
     loadUser();
@@ -542,7 +542,6 @@ export default function AnalyticsProgressPage() {
       <nav className="flex flex-wrap gap-3" role="tablist" aria-label="Analytics Navigation">
         {[
           { id: 'overview', name: 'Overview', icon: '📊' },
-          { id: 'blocks', name: 'Training Blocks', icon: '🎯' },
           { id: 'skills', name: 'Skills Progress', icon: '🤸' },
           { id: 'strength', name: 'Strength Analysis', icon: '💪' },
           { id: 'metcons', name: 'Conditioning', icon: '🔥' }
@@ -1483,7 +1482,6 @@ const MetConAnalyticsView = () => {
                   </div>
                 </div>
               )}
-              {activeTab === 'blocks' && <BlockAnalyticsView />}
               {activeTab === 'skills' && <SkillsAnalyticsView />}
               {activeTab === 'strength' && <StrengthAnalyticsView />}
               {activeTab === 'metcons' && <MetConAnalyticsView />}
