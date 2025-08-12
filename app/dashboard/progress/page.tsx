@@ -568,6 +568,13 @@ export default function AnalyticsProgressPage() {
   );
 
 const BlockAnalyticsView = () => {
+ // ADD THIS DEBUG BLOCK:
+  console.log('🔍 Block Analytics Debug:');
+  console.log('blockData:', blockData);
+  console.log('blockData?.data:', blockData?.data);
+  console.log('blockSummaries:', blockData?.data?.blockSummaries);
+  console.log('blockSummaries length:', blockData?.data?.blockSummaries?.length);
+
   if (!blockData?.data) {
     return <div className="bg-white rounded-lg shadow p-6">Loading block analytics...</div>;
   }
