@@ -476,7 +476,14 @@ export async function GET(request: NextRequest) {
       .eq('day', parseInt(day))
       
 .order('logged_at', { ascending: true })
-    if (error) {
+// ADD THESE LINES HERE:
+console.log('🔍 Raw performance_logs query result:')
+console.log('Count:', completions?.length || 0)
+console.log('Data:', completions)   
+
+
+
+ if (error) {
       console.error('❌ Failed to fetch completions:', error)
       return NextResponse.json(
         { error: 'Failed to fetch workout completions', details: error.message },
