@@ -322,18 +322,16 @@ export async function getActualMetConExercises(userId: number, supabase: any): P
 
   if (error || !performanceData) {
     console.log('No performance data found for MetCons:', error);
-    return new Set();
+    return new Set<string>();  // ← Fixed
   }
 
   // Return set of unique exercise names
-  const actualExercises = new Set(
+  const actualExercises = new Set<string>(  // ← Fixed
     performanceData
-      .map((record: any) => record.exercise_name)
+      .map((record: any) => record.exercise_name as string)  // ← Fixed
       .filter((name: string) => name && name.trim().length > 0)
   );
 
   console.log('Actual MetCon exercises from performance_logs:', Array.from(actualExercises));
   return actualExercises;
 }
-
-
