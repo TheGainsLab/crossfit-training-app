@@ -313,12 +313,20 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
     }
   }
 
-  const calculateProgress = () => {
-    if (!workout) return 0
-    const totalExercises = workout.blocks.reduce((sum, block) => sum + block.exercises.length, 0)
-    const completedExercises = Object.keys(completions).length
-    return totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0
-  }
+const calculateProgress = () => {
+  if (!workout) return 0
+  const totalExercises = workout.blocks.reduce((sum, block) => sum + block.exercises.length, 0)
+  const completedExercises = Object.keys(completions).length
+  
+  // DEBUG: Log the data
+  console.log('🔢 PROGRESS DEBUG:')
+  console.log('Total exercises:', totalExercises)
+  console.log('Completed exercises:', completedExercises)  
+  console.log('Completions object:', completions)
+  console.log('Workout blocks:', workout.blocks.map(b => ({name: b.blockName, count: b.exercises.length})))
+  
+  return totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0
+}
 
   if (loading) {
     return (
