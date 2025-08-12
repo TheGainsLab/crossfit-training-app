@@ -135,7 +135,8 @@ const updateAvailableExercises = async () => {
   
   let exercises: string[] = [];
 
-  if (selectedBlock === 'SKILLS' || selectedBlock === 'TECHNICAL WORK') {
+
+if (selectedBlock === 'SKILLS') {
     if (skillsData?.data?.skillsAnalysis?.skills) {
       exercises = Object.keys(skillsData.data.skillsAnalysis.skills)
         .filter(exerciseName => {
@@ -500,4 +501,5 @@ useEffect(() => {
     </div>
   );
 }
+
 
