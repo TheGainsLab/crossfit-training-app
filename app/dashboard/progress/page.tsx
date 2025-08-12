@@ -46,7 +46,7 @@ function formatLastActive(weeksActive: number): string {
 }
 
 // Add this component definition to your analytics page
-const RecentActivityOverview = () => {
+const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId }) => {
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
 
@@ -1356,8 +1356,8 @@ const MetConAnalyticsView = () => {
             </div>
           ) : (
             <>
-              {activeTab === 'overview' && <RecentActivityOverview />}
-              {activeTab === 'skills' && <SkillsAnalyticsView />}
+{activeTab === 'overview' && <RecentActivityOverview userId={userId} />}              
+{activeTab === 'skills' && <SkillsAnalyticsView />}
               {activeTab === 'strength' && <StrengthAnalyticsView />}
               {activeTab === 'metcons' && <MetConAnalyticsView />}
             </>
