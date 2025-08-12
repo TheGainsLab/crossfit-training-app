@@ -52,6 +52,8 @@ export function processMetConTimeDomainData(
       const timeRange = record.metcons?.time_range || 'Unknown'
       const percentile = record.percentile
       const tasks = record.metcons?.tasks || []
+  console.log('Raw MetCon tasks for record:', record.workout_id, tasks)
+
 
       // Skip records without valid data
       if (!timeRange || !percentile || timeRange === 'Unknown') {
