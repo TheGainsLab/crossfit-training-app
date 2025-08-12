@@ -139,75 +139,65 @@ export async function GET(
  * Process performance data into recent training sessions
  */
 function processRecentActivity(performanceData: any[]) {
-  // Group exercises by date
-  const dayGroups: { [key: string]: any[] } = {}
+  // Group exercises by week and day (program structure)
+  const sessionGroups: { [key: string]: any[] } = {}
   
   performanceData.forEach(exercise => {
-    const exerciseDate = new Date(exercise.logged_at)
-    const dateKey = exerciseDate.toISOString().split('T')[0] // YYYY-MM-DD
+    const week = exercise.week || 1
+    const day = exercise.day || 1
+    const sessionKey = `W${week}D${day}` // e.g., "W1D2"
     
-    if (!dayGroups[dateKey]) {
-      dayGroups[dateKey] = []
+    if (!sessionGroups[sessionKey]) {
+      sessionGroups[sessionKey] = []
     }
-    dayGroups[dateKey].push(exercise)
+    sessionGroups[sessionKey].push(exercise)
   })
 
-  // Convert to array and sort by date (newest first)
-  const sortedDays = Object.entries(dayGroups)
-    .map(([date, exercises]) => ({ date, exercises }))
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  // Convert to array and sort by most recent logged_at timestamp within each session
+  const sessions = Object.entries(sessionGroups)
+    .map(([sessionKey, exercises]) => {
+      // Sort exercises by logged_at to get the most recent timestamp for this session
+      const sortedExercises = exercises.sort((a, b) => 
+        new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime()
+      )
+      
+      // Group exercises by block
+      const blockGroups: { [key: string]: any[] } = {}
+      exercises.forEach(exercise => {
+        const blockName = exercise.block || 'Unknown'
+        if (!blockGroups[blockName]) {
+          blockGroups[blockName] = []
+        }
+        blockGroups[blockName].push(exercise)
+      })
 
-  // Process each day into session format
-  const sessions = sortedDays.map(({ date, exercises }) => {
-    // Group exercises by block
-    const blockGroups: { [key: string]: any[] } = {}
-    exercises.forEach(exercise => {
-      const blockName = exercise.block || 'Unknown'
-      if (!blockGroups[blockName]) {
-        blockGroups[blockName] = []
+      // Create block summary
+      const blocks = Object.entries(blockGroups).map(([blockName, blockExercises]) => ({
+        blockName,
+        exerciseCount: blockExercises.length
+      }))
+
+      // Get session info from first exercise
+      const firstExercise = sortedExercises[0]
+      const week = firstExercise.week
+      const day = firstExercise.day
+      const programId = firstExercise.program_id || null
+      
+      // Use the most recent exercise timestamp as the session date
+      const sessionDate = new Date(firstExercise.logged_at).toISOString().split('T')[0]
+
+      return {
+        sessionKey,
+        date: sessionDate,
+        week,
+        day,
+        totalExercises: exercises.length,
+        programId,
+        blocks: blocks.sort((a, b) => b.exerciseCount - a.exerciseCount), // Sort by exercise count
+        mostRecentTimestamp: new Date(firstExercise.logged_at).getTime() // For sorting sessions
       }
-      blockGroups[blockName].push(exercise)
     })
-
-    // Create block summary
-    const blocks = Object.entries(blockGroups).map(([blockName, blockExercises]) => ({
-      blockName,
-      exerciseCount: blockExercises.length
-    }))
-
-    // Try to extract week/day from the first exercise (if available)
-    const firstExercise = exercises[0]
-    const week = firstExercise.week || extractWeekFromDate(date)
-    const day = firstExercise.day || extractDayFromDate(date)
-    const programId = firstExercise.program_id || null
-
-    return {
-      date,
-      week,
-      day,
-      totalExercises: exercises.length,
-      programId,
-      blocks: blocks.sort((a, b) => b.exerciseCount - a.exerciseCount) // Sort by exercise count
-    }
-  })
+    .sort((a, b) => b.mostRecentTimestamp - a.mostRecentTimestamp) // Sort by most recent activity
 
   return sessions
-}
-
-/**
- * Extract week number from date (fallback if not in exercise data)
- */
-function extractWeekFromDate(dateString: string): number {
-  const date = new Date(dateString)
-  const startOfYear = new Date(date.getFullYear(), 0, 1)
-  const days = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000))
-  return Math.ceil((days + startOfYear.getDay() + 1) / 7)
-}
-
-/**
- * Extract day number from date (fallback if not in exercise data)
- */
-function extractDayFromDate(dateString: string): number {
-  const date = new Date(dateString)
-  return date.getDay() === 0 ? 7 : date.getDay() // Sunday = 7, Monday = 1, etc.
 }
