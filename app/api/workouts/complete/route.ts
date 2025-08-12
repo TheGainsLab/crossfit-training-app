@@ -468,14 +468,14 @@ export async function GET(request: NextRequest) {
     console.log(`📊 Fetching completions for User ${userId}, Program ${programId}, Week ${week}, Day ${day}`)
 
     const { data: completions, error } = await supabase
-      .from('workout_completions')
+.from('performance_logs')
       .select('*')
       .eq('user_id', parseInt(userId))
       .eq('program_id', parseInt(programId))
       .eq('week', parseInt(week))
       .eq('day', parseInt(day))
-      .order('completed_at', { ascending: true })
-
+      
+.order('logged_at', { ascending: true })
     if (error) {
       console.error('❌ Failed to fetch completions:', error)
       return NextResponse.json(
@@ -484,11 +484,26 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      completions: completions || [],
-      totalCompleted: completions?.length || 0
-    })
+
+
+// Map performance_logs data to completion format
+const mappedCompletions = completions?.map(log => ({
+  exercise_name: log.exercise_name,
+  sets_completed: parseInt(log.sets) || 0,
+  reps_completed: log.reps,
+  weight_used: parseFloat(log.weight_time) || 0,
+  rpe: log.rpe,
+  quality: log.quality_grade,
+  notes: log.result,
+  was_rx: true
+})) || []
+
+return NextResponse.json({
+  success: true,
+  completions: mappedCompletions,
+  totalCompleted: mappedCompletions.length
+})
+
 
   } catch (error) {
     console.error('❌ Unexpected error fetching completions:', error)
