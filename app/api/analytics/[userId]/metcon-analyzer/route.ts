@@ -117,7 +117,25 @@ export async function GET(
     }
 
     // Process the MetCon data by time domain
-    const timeDomainAnalysis = processMetConTimeDomainData(metconData, timeDomain)
+    
+// Get the user's actual MetCon exercises from performance_logs
+const { data: actualPerformanceData } = await supabase
+  .from('performance_logs')
+  .select('exercise_name')
+  .eq('user_id', userIdNum)
+  .eq('block', 'METCONS');
+
+const actualExercises = new Set(
+  (actualPerformanceData || [])
+    .map((record: any) => record.exercise_name)
+    .filter((name: string) => name && name.trim().length > 0)
+);
+
+console.log('User actual MetCon exercises:', Array.from(actualExercises));
+
+const timeDomainAnalysis = processMetConTimeDomainData(metconData, timeDomain, actualExercises)
+
+
     
     if (!timeDomainAnalysis) {
       return NextResponse.json(

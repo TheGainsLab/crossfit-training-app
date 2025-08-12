@@ -32,9 +32,11 @@ export interface MetConTimeDomainData {
 // Fixed section of your metcon-analyzer.ts
 // Replace the tasks processing section with this updated code
 
+
 export function processMetConTimeDomainData(
   metconData: any[], 
-  timeDomainFilter: string = 'all'
+  timeDomainFilter: string = 'all',
+  actualExercises?: Set<string>  // Add this parameter
 ): MetConTimeDomainData | null {
   try {
     console.log(`📊 Processing ${metconData.length} MetCon records for time domain analysis`)
@@ -52,8 +54,8 @@ export function processMetConTimeDomainData(
       const timeRange = record.metcons?.time_range || 'Unknown'
       const percentile = record.percentile
       const tasks = record.metcons?.tasks || []
-  console.log('Raw MetCon tasks for record:', record.workout_id, tasks)
 
+      console.log('Raw MetCon tasks for record:', record.workout_id, tasks)
 
       // Skip records without valid data
       if (!timeRange || !percentile || timeRange === 'Unknown') {
@@ -76,7 +78,6 @@ export function processMetConTimeDomainData(
 
       // Process exercises within this MetCon
       if (Array.isArray(tasks)) {
-        // FIXED: Handle object tasks instead of string parsing
         const uniqueExercises = new Set<string>()
         
         tasks.forEach((task: any) => {
@@ -92,8 +93,28 @@ export function processMetConTimeDomainData(
           }
           
           if (exerciseName) {
-            // Use Set to avoid duplicate exercises in same MetCon
-            uniqueExercises.add(exerciseName)
+            // FILTER: Only include exercises that the user actually performed
+            if (actualExercises && actualExercises.size > 0) {
+              // Check if this exercise matches any of the user's actual exercises
+              const isActualExercise = Array.from(actualExercises).some(actual => 
+                actual.toLowerCase().includes(exerciseName!.toLowerCase()) ||
+                exerciseName!.toLowerCase().includes(actual.toLowerCase())
+              );
+              
+              if (isActualExercise) {
+                // Use the actual exercise name from performance_logs
+                const matchedExercise = Array.from(actualExercises).find(actual => 
+                  actual.toLowerCase().includes(exerciseName!.toLowerCase()) ||
+                  exerciseName!.toLowerCase().includes(actual.toLowerCase())
+                );
+                if (matchedExercise) {
+                  uniqueExercises.add(matchedExercise);
+                }
+              }
+            } else {
+              // Fallback: include all exercises if no filter provided
+              uniqueExercises.add(exerciseName)
+            }
           }
         })
         
@@ -134,6 +155,7 @@ export function processMetConTimeDomainData(
     })
 
     console.log(`✅ Processed ${Object.keys(timeDomains).length} time domains, ${Object.keys(exercises).length} exercises`)
+    console.log('Final exercises included:', Object.keys(exercises))
 
     return {
       timeDomains: timeDomains as any,
@@ -147,6 +169,11 @@ export function processMetConTimeDomainData(
     return null
   }
 }
+
+
+
+
+
 
 /**
  * Extract exercise name from MetCon task description
@@ -282,4 +309,31 @@ export function getCrossTimeDomainExercises(timeDomainData: MetConTimeDomainData
 
   return crossDomainExercises.sort((a, b) => b.avgPercentile - a.avgPercentile)
 }
+
+// Add this new function to your metcon-analyzer.ts file:
+
+export async function getActualMetConExercises(userId: number, supabase: any): Promise<Set<string>> {
+  // Get the actual exercises the user performed in MetCons block
+  const { data: performanceData, error } = await supabase
+    .from('performance_logs')
+    .select('exercise_name')
+    .eq('user_id', userId)
+    .eq('block', 'METCONS');
+
+  if (error || !performanceData) {
+    console.log('No performance data found for MetCons:', error);
+    return new Set();
+  }
+
+  // Return set of unique exercise names
+  const actualExercises = new Set(
+    performanceData
+      .map((record: any) => record.exercise_name)
+      .filter((name: string) => name && name.trim().length > 0)
+  );
+
+  console.log('Actual MetCon exercises from performance_logs:', Array.from(actualExercises));
+  return actualExercises;
+}
+
 
