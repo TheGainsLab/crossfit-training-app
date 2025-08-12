@@ -45,6 +45,162 @@ function formatLastActive(weeksActive: number): string {
   return `${weeksActive} weeks active`
 }
 
+// Add this component definition to your analytics page
+const RecentActivityOverview = () => {
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+
+  useEffect(() => {
+    if (userId) {
+      fetchRecentActivity();
+    }
+  }, [userId]);
+
+  const fetchRecentActivity = async () => {
+    if (!userId) return;
+    
+    setActivityLoading(true);
+    try {
+      // You'll need to create this API endpoint
+      const response = await fetch(`/api/analytics/${userId}/recent-activity`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setRecentActivity(data.data.recentSessions || []);
+      }
+    } catch (error) {
+      console.error('Error fetching recent activity:', error);
+      setRecentActivity([]);
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const diffTime = Math.abs(today.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays === 2) return '2 days ago';
+    if (diffDays <= 7) return `${diffDays} days ago`;
+    
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const getBlockIcon = (blockName: string) => {
+    const icons: { [key: string]: string } = {
+      'SKILLS': '🤸',
+      'TECHNICAL WORK': '⚙️',
+      'STRENGTH AND POWER': '💪',
+      'ACCESSORIES': '🎯',
+      'METCONS': '🔥'
+    };
+    return icons[blockName] || '📊';
+  };
+
+  if (activityLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 Recent Training Activity</h3>
+        <div className="space-y-4">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (recentActivity.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 Recent Training Activity</h3>
+        <p className="text-gray-600">No recent training sessions found. Complete some exercises to see your activity here!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">📈 Recent Training Activity</h3>
+      
+      <div className="space-y-4">
+        {recentActivity.slice(0, 5).map((session, index) => (
+          <div 
+            key={session.sessionId || index} 
+            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+          >
+            {/* Date and Session Info */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <div className="text-lg font-semibold text-gray-900">
+                  {formatDate(session.date)}
+                </div>
+                <div className="text-sm text-gray-500">
+                  Week {session.week}, Day {session.day}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-medium text-blue-600">
+                  {session.totalExercises} exercises
+                </div>
+              </div>
+            </div>
+
+            {/* Training Blocks */}
+            <div className="flex flex-wrap gap-2">
+              {session.blocks && session.blocks.map((block: any) => (
+                <span 
+                  key={block.blockName}
+                  className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                >
+                  <span className="mr-1">{getBlockIcon(block.blockName)}</span>
+                  {block.blockName}
+                  {block.exerciseCount > 0 && (
+                    <span className="ml-1 text-blue-600">({block.exerciseCount})</span>
+                  )}
+                </span>
+              ))}
+            </div>
+
+            {/* Optional: Add a subtle link to view full session */}
+            {session.programId && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <Link 
+                  href={`/dashboard/workout/${session.programId}/week/${session.week}/day/${session.day}`}
+                  className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  View full session →
+                </Link>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Show more link if there are more sessions */}
+      {recentActivity.length > 5 && (
+        <div className="mt-6 text-center">
+          <button 
+            onClick={() => {/* Implement show more */}}
+            className="text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Show more sessions
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 
 // Enhanced Heat Map Component with Exercise and Time Domain Averages
 const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
@@ -1200,32 +1356,7 @@ const MetConAnalyticsView = () => {
             </div>
           ) : (
             <>
-              {activeTab === 'overview' && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Performance Overview</h3>
-                  <p className="text-gray-600">
-                    Your performance metrics are displayed in the summary cards above. Use the navigation tabs to explore detailed analytics for specific training areas.
-                  </p>
-                  <div className="mt-6 grid md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-blue-50 rounded-lg">
-                      <h4 className="font-medium text-blue-900 mb-2">Quick Tips</h4>
-                      <ul className="text-sm text-blue-800 space-y-1">
-                        <li>• Track your progress across all training blocks</li>
-                        <li>• Monitor consistency and effort levels</li>
-                        <li>• Identify strengths and areas for focus</li>
-                      </ul>
-                    </div>
-                    <div className="p-4 bg-green-50 rounded-lg">
-                      <h4 className="font-medium text-green-900 mb-2">Navigation</h4>
-                      <ul className="text-sm text-green-800 space-y-1">
-                        <li>• <strong>Training Blocks:</strong> Overall block performance</li>
-                        <li>• <strong>Skills/Strength:</strong> Movement-specific data</li>
-                        <li>• <strong>Conditioning:</strong> MetCon analysis & heat maps</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {activeTab === 'overview' && <RecentActivityOverview />}
               {activeTab === 'skills' && <SkillsAnalyticsView />}
               {activeTab === 'strength' && <StrengthAnalyticsView />}
               {activeTab === 'metcons' && <MetConAnalyticsView />}
