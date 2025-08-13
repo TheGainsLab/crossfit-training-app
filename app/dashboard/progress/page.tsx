@@ -201,12 +201,39 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
   );
 };
 
+// Updated MetConExerciseHeatMap component that uses real data from the new API
+const MetConExerciseHeatMap: React.FC<{ userId: number | null }> = ({ userId }) => {
+  const [heatmapData, setHeatmapData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-// Enhanced Heat Map Component with Exercise and Time Domain Averages
-const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
-  // Get all unique time domains and exercises
-  const timeDomains = ['1:00-5:00', '5:00-10:00', '10:00-15:00', '15:00-20:00', '20:00-30:00', '30:00+'];
-  const exercises = Object.keys(data.exercises || {});
+  useEffect(() => {
+    if (userId) {
+      fetchHeatmapData();
+    }
+  }, [userId]);
+
+  const fetchHeatmapData = async () => {
+    if (!userId) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/analytics/${userId}/exercise-heatmap`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setHeatmapData(data.data);
+      } else {
+        setError(data.error || 'Failed to load heat map data');
+      }
+    } catch (error) {
+      console.error('Error fetching heat map data:', error);
+      setError('Failed to load heat map data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Function to get color based on percentile
   const getHeatMapColor = (percentile: number | null) => {
@@ -223,110 +250,113 @@ const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
 
   // Function to get percentile for exercise in time domain
   const getPercentile = (exercise: string, timeDomain: string): number | null => {
-    const exerciseData = data.exercises[exercise];
-    if (!exerciseData) return null;
+    if (!heatmapData?.heatmapCells) return null;
     
-    // Check exact match first
-    if (exerciseData[timeDomain]) {
-      return exerciseData[timeDomain].avgPercentile;
-    }
+    const cell = heatmapData.heatmapCells.find((cell: any) => 
+      cell.exercise_name === exercise && cell.time_range === timeDomain
+    );
     
-    // Check for similar time domain formats with proper typing
-    const normalizedDomain = timeDomain.replace(/:/g, ':').replace(/–/g, '-');
-    for (const [key, value] of Object.entries(exerciseData)) {
-      const normalizedKey = key.replace(/:/g, ':').replace(/–/g, '-');
-      if (normalizedKey === normalizedDomain) {
-        return (value as any).avgPercentile;
-      }
-    }
-    
-    return null;
+    return cell ? cell.avg_percentile : null;
   };
 
   const getSessionCount = (exercise: string, timeDomain: string): number => {
-    const exerciseData = data.exercises[exercise];
-    if (!exerciseData) return 0;
+    if (!heatmapData?.heatmapCells) return 0;
     
-    for (const [key, value] of Object.entries(exerciseData)) {
-      const normalizedKey = key.replace(/:/g, ':').replace(/–/g, '-');
-      const normalizedDomain = timeDomain.replace(/:/g, ':').replace(/–/g, '-');
-      if (normalizedKey === normalizedDomain) {
-        return (value as any).count;
-      }
-    }
+    const cell = heatmapData.heatmapCells.find((cell: any) => 
+      cell.exercise_name === exercise && cell.time_range === timeDomain
+    );
     
-    return 0;
+    return cell ? cell.session_count : 0;
   };
 
-  // Calculate exercise averages (weighted by session count)
+  // Calculate exercise averages
   const calculateExerciseAverage = (exercise: string): number | null => {
-    const exerciseData = data.exercises[exercise];
-    if (!exerciseData) return null;
-
-    let totalWeightedScore = 0;
-    let totalSessions = 0;
-
-    timeDomains.forEach(domain => {
-      const percentile = getPercentile(exercise, domain);
-      const sessions = getSessionCount(exercise, domain);
-      
-      if (percentile !== null && sessions > 0) {
-        totalWeightedScore += percentile * sessions;
-        totalSessions += sessions;
-      }
-    });
-
-    return totalSessions > 0 ? Math.round(totalWeightedScore / totalSessions) : null;
+    if (!heatmapData?.exerciseAverages) return null;
+    
+    const exerciseAvg = heatmapData.exerciseAverages.find((avg: any) => 
+      avg.exercise_name === exercise
+    );
+    
+    return exerciseAvg ? exerciseAvg.overall_avg_percentile : null;
   };
 
-  // Calculate time domain averages (weighted by session count)
+  // Calculate time domain averages
   const calculateTimeDomainAverage = (timeDomain: string): number | null => {
+    if (!heatmapData?.heatmapCells) return null;
+    
+    const domainCells = heatmapData.heatmapCells.filter((cell: any) => 
+      cell.time_range === timeDomain
+    );
+    
+    if (domainCells.length === 0) return null;
+    
     let totalWeightedScore = 0;
     let totalSessions = 0;
-
-    exercises.forEach(exercise => {
-      const percentile = getPercentile(exercise, timeDomain);
-      const sessions = getSessionCount(exercise, timeDomain);
-      
-      if (percentile !== null && sessions > 0) {
-        totalWeightedScore += percentile * sessions;
-        totalSessions += sessions;
-      }
+    
+    domainCells.forEach((cell: any) => {
+      totalWeightedScore += cell.avg_percentile * cell.session_count;
+      totalSessions += cell.session_count;
     });
-
+    
     return totalSessions > 0 ? Math.round(totalWeightedScore / totalSessions) : null;
   };
 
-  // Calculate overall fitness score
-  const calculateOverallFitnessScore = (): number | null => {
-    let totalWeightedScore = 0;
-    let totalSessions = 0;
-
-    exercises.forEach(exercise => {
-      timeDomains.forEach(domain => {
-        const percentile = getPercentile(exercise, domain);
-        const sessions = getSessionCount(exercise, domain);
-        
-        if (percentile !== null && sessions > 0) {
-          totalWeightedScore += percentile * sessions;
-          totalSessions += sessions;
-        }
-      });
-    });
-
-    return totalSessions > 0 ? Math.round(totalWeightedScore / totalSessions) : null;
-  };
-
-  if (exercises.length === 0) {
+  // Loading state
+  if (loading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">🔥 Exercise Performance Heat Map</h3>
-        <p className="text-gray-600">Complete more MetCon workouts to see exercise-specific performance data!</p>
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+          <div className="space-y-3">
+            {[1,2,3,4,5].map(i => (
+              <div key={i} className="flex space-x-3">
+                <div className="h-12 bg-gray-200 rounded w-32"></div>
+                {[1,2,3,4,5,6].map(j => (
+                  <div key={j} className="h-12 bg-gray-200 rounded w-20"></div>
+                ))}
+                <div className="h-12 bg-gray-200 rounded w-24"></div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
-  const overallFitnessScore = calculateOverallFitnessScore();
+  // Error state
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">🔥 Exercise Performance Heat Map</h3>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-700">{error}</p>
+          <button 
+            onClick={fetchHeatmapData}
+            className="mt-2 text-red-600 hover:text-red-700 font-medium"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // No data state
+  if (!heatmapData || !heatmapData.exercises || heatmapData.exercises.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">🔥 Exercise Performance Heat Map</h3>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+          <div className="text-4xl mb-3">💪</div>
+          <p className="text-blue-800 font-medium mb-2">No MetCon Data Yet</p>
+          <p className="text-blue-600">Complete more MetCon workouts to see exercise-specific performance data!</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { exercises, timeDomains, globalFitnessScore } = heatmapData;
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -343,12 +373,11 @@ const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
           <thead>
             <tr>
               <th className="text-left p-3 font-medium text-gray-900">Exercise</th>
-              {timeDomains.map(domain => (
+              {timeDomains.map((domain: string) => (
                 <th key={domain} className="text-center p-3 font-medium text-gray-900 min-w-[100px]">
                   {domain}
                 </th>
               ))}
-              {/* Exercise Average Header */}
               <th className="text-center p-3 font-bold text-gray-900 min-w-[100px] bg-blue-50 border-l-2 border-blue-200">
                 Exercise Avg
               </th>
@@ -356,12 +385,12 @@ const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
           </thead>
           <tbody>
             {/* Individual Exercise Rows */}
-            {exercises.map(exercise => (
+            {exercises.map((exercise: string) => (
               <tr key={exercise} className="border-t">
                 <td className="p-3 font-medium text-gray-900 bg-gray-50">
                   {exercise}
                 </td>
-                {timeDomains.map(domain => {
+                {timeDomains.map((domain: string) => {
                   const percentile = getPercentile(exercise, domain);
                   const sessions = getSessionCount(exercise, domain);
                   const colorClass = getHeatMapColor(percentile);
@@ -392,6 +421,9 @@ const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
                   {(() => {
                     const avgPercentile = calculateExerciseAverage(exercise);
                     const colorClass = getHeatMapColor(avgPercentile);
+                    const exerciseData = heatmapData.exerciseAverages.find((avg: any) => avg.exercise_name === exercise);
+                    const totalSessions = exerciseData?.total_sessions || 0;
+                    
                     return (
                       <div className={`
                         ${colorClass}
@@ -402,7 +434,7 @@ const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
                         {avgPercentile ? (
                           <div>
                             <div className="text-lg font-bold">Avg: {avgPercentile}%</div>
-                            <div className="text-xs opacity-75 font-medium">Overall</div>
+                            <div className="text-xs opacity-75 font-medium">{totalSessions} total</div>
                           </div>
                         ) : (
                           <div className="text-lg font-bold">—</div>
@@ -419,7 +451,7 @@ const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
               <td className="p-3 font-bold text-gray-900 bg-blue-100 border-r-2 border-blue-200">
                 Time Domain Avg
               </td>
-              {timeDomains.map(domain => {
+              {timeDomains.map((domain: string) => {
                 const avgPercentile = calculateTimeDomainAverage(domain);
                 const colorClass = getHeatMapColor(avgPercentile);
                 
@@ -444,20 +476,20 @@ const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
                 );
               })}
               
-              {/* Overall Fitness Score Cell */}
+              {/* Global Fitness Score Cell */}
               <td className="p-1 border-l-2 border-blue-200 bg-blue-100">
                 {(() => {
-                  const colorClass = getHeatMapColor(overallFitnessScore);
+                  const colorClass = getHeatMapColor(globalFitnessScore);
                   return (
                     <div className={`
                       ${colorClass}
                       rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer
                       shadow-lg border-4 border-white
-                      ${overallFitnessScore ? 'ring-2 ring-blue-400' : ''}
+                      ${globalFitnessScore ? 'ring-2 ring-blue-400' : ''}
                     `} style={{ minHeight: '60px' }}>
-                      {overallFitnessScore ? (
+                      {globalFitnessScore ? (
                         <div>
-                          <div className="text-xl font-bold">{overallFitnessScore}%</div>
+                          <div className="text-xl font-bold">{globalFitnessScore}%</div>
                           <div className="text-xs opacity-75 font-bold">FITNESS</div>
                         </div>
                       ) : (
@@ -495,18 +527,22 @@ const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
       </div>
 
       {/* Summary Insights */}
-      {overallFitnessScore && (
+      {globalFitnessScore && (
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
           <h4 className="font-medium text-gray-900 mb-2">Fitness Summary</h4>
           <p className="text-sm text-gray-700">
-            Your overall fitness score is <strong>{overallFitnessScore}%</strong> based on {exercises.length} exercises 
-            across {timeDomains.length} time domains. Scores are weighted by training frequency to reflect your actual fitness level.
+            Your overall fitness score is <strong>{globalFitnessScore}%</strong> based on {exercises.length} exercises 
+            across {timeDomains.length} time domains from {heatmapData.totalCompletedWorkouts} completed workouts. 
+            Scores are weighted by training frequency to reflect your actual fitness level.
           </p>
         </div>
       )}
     </div>
   );
 };
+
+
+
 
 // Register Chart.js components
 ChartJS.register(
@@ -913,7 +949,7 @@ const EnhancedSkillCard: React.FC<{ skill: any }> = ({ skill }) => {
               </div>
             </div>
             <div>
-              <span className="text-xs text-gray-500 block">Last Practiced</span>
+              <span className="text-is text-gray-500 block">Last Practiced</span>
               <span className="text-sm font-medium">{formatDate(skill.lastPerformed)}</span>
             </div>
           </div>
@@ -1224,8 +1260,8 @@ const MetConAnalyticsView = () => {
   return (
     <div id="metcons-panel" role="tabpanel" aria-labelledby="metcons-tab" className="space-y-8">
       {/* ADD THE HEAT MAP HERE - FIRST */}
-      <MetConExerciseHeatMap data={timeDomainAnalysis} />
-      
+   <MetConExerciseHeatMap userId={userId} />    
+       
       {/* Keep your existing chart below */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Conditioning Performance</h3>
@@ -1367,3 +1403,4 @@ const MetConAnalyticsView = () => {
     </div>
   );
 }
+
