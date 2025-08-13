@@ -201,40 +201,9 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
   );
 };
 
-// Updated MetConExerciseHeatMap component that uses real data from the new API
-const MetConExerciseHeatMap: React.FC<{ userId: number | null }> = ({ userId }) => {
-  const [heatmapData, setHeatmapData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (userId) {
-      fetchHeatmapData();
-    }
-  }, [userId]);
-
-  const fetchHeatmapData = async () => {
-    if (!userId) return;
-    
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/analytics/${userId}/exercise-heatmap`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setHeatmapData(data.data);
-      } else {
-        setError(data.error || 'Failed to load heat map data');
-      }
-    } catch (error) {
-      console.error('Error fetching heat map data:', error);
-      setError('Failed to load heat map data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+// Updated MetConExerciseHeatMap component that receives data as props
+const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
   // Function to get color based on percentile
   const getHeatMapColor = (percentile: number | null) => {
     if (percentile === null) return 'bg-gray-100 text-gray-400';
@@ -250,9 +219,9 @@ const MetConExerciseHeatMap: React.FC<{ userId: number | null }> = ({ userId }) 
 
   // Function to get percentile for exercise in time domain
   const getPercentile = (exercise: string, timeDomain: string): number | null => {
-    if (!heatmapData?.heatmapCells) return null;
+    if (!data?.heatmapCells) return null;
     
-    const cell = heatmapData.heatmapCells.find((cell: any) => 
+    const cell = data.heatmapCells.find((cell: any) => 
       cell.exercise_name === exercise && cell.time_range === timeDomain
     );
     
@@ -260,9 +229,9 @@ const MetConExerciseHeatMap: React.FC<{ userId: number | null }> = ({ userId }) 
   };
 
   const getSessionCount = (exercise: string, timeDomain: string): number => {
-    if (!heatmapData?.heatmapCells) return 0;
+    if (!data?.heatmapCells) return 0;
     
-    const cell = heatmapData.heatmapCells.find((cell: any) => 
+    const cell = data.heatmapCells.find((cell: any) => 
       cell.exercise_name === exercise && cell.time_range === timeDomain
     );
     
@@ -271,9 +240,9 @@ const MetConExerciseHeatMap: React.FC<{ userId: number | null }> = ({ userId }) 
 
   // Calculate exercise averages
   const calculateExerciseAverage = (exercise: string): number | null => {
-    if (!heatmapData?.exerciseAverages) return null;
+    if (!data?.exerciseAverages) return null;
     
-    const exerciseAvg = heatmapData.exerciseAverages.find((avg: any) => 
+    const exerciseAvg = data.exerciseAverages.find((avg: any) => 
       avg.exercise_name === exercise
     );
     
@@ -282,9 +251,9 @@ const MetConExerciseHeatMap: React.FC<{ userId: number | null }> = ({ userId }) 
 
   // Calculate time domain averages
   const calculateTimeDomainAverage = (timeDomain: string): number | null => {
-    if (!heatmapData?.heatmapCells) return null;
+    if (!data?.heatmapCells) return null;
     
-    const domainCells = heatmapData.heatmapCells.filter((cell: any) => 
+    const domainCells = data.heatmapCells.filter((cell: any) => 
       cell.time_range === timeDomain
     );
     
@@ -301,49 +270,8 @@ const MetConExerciseHeatMap: React.FC<{ userId: number | null }> = ({ userId }) 
     return totalSessions > 0 ? Math.round(totalWeightedScore / totalSessions) : null;
   };
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">🔥 Exercise Performance Heat Map</h3>
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
-          <div className="space-y-3">
-            {[1,2,3,4,5].map(i => (
-              <div key={i} className="flex space-x-3">
-                <div className="h-12 bg-gray-200 rounded w-32"></div>
-                {[1,2,3,4,5,6].map(j => (
-                  <div key={j} className="h-12 bg-gray-200 rounded w-20"></div>
-                ))}
-                <div className="h-12 bg-gray-200 rounded w-24"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">🔥 Exercise Performance Heat Map</h3>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-700">{error}</p>
-          <button 
-            onClick={fetchHeatmapData}
-            className="mt-2 text-red-600 hover:text-red-700 font-medium"
-          >
-            Try again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // No data state
-  if (!heatmapData || !heatmapData.exercises || heatmapData.exercises.length === 0) {
+  if (!data || !data.exercises || data.exercises.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">🔥 Exercise Performance Heat Map</h3>
@@ -356,7 +284,7 @@ const MetConExerciseHeatMap: React.FC<{ userId: number | null }> = ({ userId }) 
     );
   }
 
-  const { exercises, timeDomains, globalFitnessScore } = heatmapData;
+  const { exercises, timeDomains, globalFitnessScore } = data;
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -421,7 +349,7 @@ const MetConExerciseHeatMap: React.FC<{ userId: number | null }> = ({ userId }) 
                   {(() => {
                     const avgPercentile = calculateExerciseAverage(exercise);
                     const colorClass = getHeatMapColor(avgPercentile);
-                    const exerciseData = heatmapData.exerciseAverages.find((avg: any) => avg.exercise_name === exercise);
+                    const exerciseData = data.exerciseAverages.find((avg: any) => avg.exercise_name === exercise);
                     const totalSessions = exerciseData?.total_sessions || 0;
                     
                     return (
@@ -532,7 +460,7 @@ const MetConExerciseHeatMap: React.FC<{ userId: number | null }> = ({ userId }) 
           <h4 className="font-medium text-gray-900 mb-2">Fitness Summary</h4>
           <p className="text-sm text-gray-700">
             Your overall fitness score is <strong>{globalFitnessScore}%</strong> based on {exercises.length} exercises 
-            across {timeDomains.length} time domains from {heatmapData.totalCompletedWorkouts} completed workouts. 
+            across {timeDomains.length} time domains from {data.totalCompletedWorkouts} completed workouts. 
             Scores are weighted by training frequency to reflect your actual fitness level.
           </p>
         </div>
@@ -540,7 +468,6 @@ const MetConExerciseHeatMap: React.FC<{ userId: number | null }> = ({ userId }) 
     </div>
   );
 };
-
 
 
 
@@ -1236,12 +1163,52 @@ const StrengthAnalyticsView = () => {
 
 
 // MetCon Analytics Component  
+
 const MetConAnalyticsView = () => {
-  if (!metconData?.data) {
+  const [heatmapData, setHeatmapData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (userId) {
+      fetchHeatmapData();
+    }
+  }, [userId]);
+
+  const fetchHeatmapData = async () => {
+    if (!userId) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/analytics/${userId}/exercise-heatmap`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setHeatmapData(data.data);
+      } else {
+        setError(data.error || 'Failed to load heat map data');
+      }
+    } catch (error) {
+      console.error('Error fetching heat map data:', error);
+      setError('Failed to load heat map data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
     return <div className="bg-white rounded-lg shadow p-6">Loading MetCon analytics...</div>;
   }
 
-  const { timeDomainAnalysis } = metconData.data;
+  if (error) {
+    return <div className="bg-white rounded-lg shadow p-6">Error: {error}</div>;
+  }
+
+  if (!heatmapData) {
+    return <div className="bg-white rounded-lg shadow p-6">No data available</div>;
+  }
+
 
   // Create time domain chart
   const timeDomainChartData = {
@@ -1260,7 +1227,8 @@ const MetConAnalyticsView = () => {
   return (
     <div id="metcons-panel" role="tabpanel" aria-labelledby="metcons-tab" className="space-y-8">
       {/* ADD THE HEAT MAP HERE - FIRST */}
-   <MetConExerciseHeatMap userId={userId} />    
+<MetConExerciseHeatMap data={heatmapData} />
+
        
       {/* Keep your existing chart below */}
       <div className="bg-white rounded-lg shadow p-6">
@@ -1403,4 +1371,5 @@ const MetConAnalyticsView = () => {
     </div>
   );
 }
+
 
