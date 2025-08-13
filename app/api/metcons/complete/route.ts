@@ -68,6 +68,7 @@ function parseWorkoutScore(score: string): { value: number; type: 'time' | 'reps
 
 /**
  * Parse benchmark score (from metcons table)
+ * Handles MM:SS, HH:MM:SS (where HH is actually MM for workouts under 2 hours), and numeric formats
  */
 function parseBenchmarkScore(benchmarkStr: string): number {
   if (!benchmarkStr) return 0
@@ -78,7 +79,23 @@ function parseBenchmarkScore(benchmarkStr: string): number {
   // Time format
   if (cleaned.includes(':')) {
     const parts = cleaned.split(':').map(p => parseInt(p))
-    if (parts.length === 2) {
+    
+    if (parts.length === 3) {
+      // HH:MM:SS format - but for CrossFit workouts, first part is usually minutes
+      const firstPart = parts[0]
+      const secondPart = parts[1] 
+      const thirdPart = parts[2]
+      
+      if (firstPart < 2) {
+        // Treat as actual hours:minutes:seconds (rare, but possible for very long workouts)
+        return firstPart * 3600 + secondPart * 60 + thirdPart
+      } else {
+        // Treat as minutes:seconds:hundredths (common database format issue)
+        // "37:47:00" = 37 minutes, 47 seconds, 0 hundredths
+        return firstPart * 60 + secondPart + (thirdPart / 100)
+      }
+    } else if (parts.length === 2) {
+      // MM:SS format (standard)
       return parts[0] * 60 + parts[1]
     }
   }
