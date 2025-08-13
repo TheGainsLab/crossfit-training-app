@@ -140,16 +140,16 @@ export async function GET(
         FROM user_workout_exercises
         GROUP BY exercise_name, time_range
       ),
-      
-      exercise_overall_averages AS (
-        SELECT 
-          exercise_name,
-          COUNT(*) as total_sessions,
-          ROUND(AVG(percentile)) as overall_avg_percentile
-        FROM user_workout_exercises
-        GROUP BY exercise_name
-      ),
-      
+     
+     exercise_overall_averages AS (
+  SELECT 
+    exercise_name,
+    SUM(session_count) as total_sessions,
+    ROUND(SUM(avg_percentile * session_count) / SUM(session_count)) as overall_avg_percentile
+  FROM exercise_time_aggregates
+  GROUP BY exercise_name
+),
+
       time_domain_order AS (
         SELECT time_range, 
           CASE time_range
@@ -173,7 +173,7 @@ export async function GET(
         eoa.overall_avg_percentile,
         COALESCE(tdo.sort_order, 7) as sort_order
       FROM exercise_time_aggregates eta
-      FULL OUTER JOIN exercise_overall_averages eoa ON eta.exercise_name = eoa.exercise_name
+      LEFT JOIN exercise_overall_averages eoa ON eta.exercise_name = eoa.exercise_name
       LEFT JOIN time_domain_order tdo ON eta.time_range = tdo.time_range
       ORDER BY eta.exercise_name, COALESCE(tdo.sort_order, 7);
     `
@@ -359,3 +359,4 @@ function processRawDataToHeatmap(rawData: any[]): ExerciseHeatmapCell[] {
 
   return result
 }
+
