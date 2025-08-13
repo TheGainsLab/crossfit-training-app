@@ -153,41 +153,71 @@ export async function POST(request: NextRequest) {
     
     console.log('🔥 MetCon completion request:', completionData)
 
-    // 1. Look up the correct metcon for this program/week/day
-    const { data: programMetcon, error: lookupError } = await supabase
-      .from('program_metcons')
-      .select('metcon_id')
-      .eq('program_id', completionData.programId)
-      .eq('week', completionData.week)
-      .eq('day', completionData.day)
+    // Step 1: Get the program data to find the MetCon for this week/day
+    console.log(`📋 Fetching program ${completionData.programId}...`)
+    const { data: program, error: programError } = await supabase
+      .from('programs')
+      .select('program_data, user_id')
+      .eq('id', completionData.programId)
       .single()
 
-    if (lookupError || !programMetcon) {
-      console.error('❌ Error finding metcon mapping:', lookupError)
+    if (programError || !program) {
+      console.error('❌ Error fetching program:', programError)
       return NextResponse.json({ 
         success: false, 
-        error: 'No MetCon found for this program/week/day combination' 
+        error: 'Program not found' 
       }, { status: 404 })
     }
 
-    const metconId = programMetcon.metcon_id
+    // Step 2: Extract MetCon data from the program JSON
+    console.log(`🔍 Extracting MetCon for Week ${completionData.week}, Day ${completionData.day}...`)
+    const programData = program.program_data
+    const weeks = programData.weeks || []
+    
+    const targetWeek = weeks.find((w: any) => w.week === completionData.week)
+    if (!targetWeek) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Week ${completionData.week} not found in program` 
+      }, { status: 404 })
+    }
 
-    // 2. Get the metcon benchmarks
+    const targetDay = targetWeek.days?.find((d: any) => d.day === completionData.day)
+    if (!targetDay) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Day ${completionData.day} not found in week ${completionData.week}` 
+      }, { status: 404 })
+    }
+
+    const metconData = targetDay.metconData
+    if (!metconData || !metconData.workoutId) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'No MetCon found for this day' 
+      }, { status: 404 })
+    }
+
+    console.log(`✅ Found MetCon: ${metconData.workoutId}`)
+
+    // Step 3: Get the MetCon benchmarks from the database
+    console.log(`🎯 Fetching benchmarks for ${metconData.workoutId}...`)
     const { data: metcon, error: metconError } = await supabase
       .from('metcons')
-.select('male_p50, male_p90, male_std_dev, female_p50, female_p90, female_std_dev, workout_id, format')
-      .eq('id', metconId)
+      .select('id, male_p50, male_p90, male_std_dev, female_p50, female_p90, female_std_dev, workout_id, format')
+      .eq('workout_id', metconData.workoutId)
       .single()
 
     if (metconError || !metcon) {
-      console.error('❌ Error fetching metcon:', metconError)
+      console.error('❌ Error fetching metcon benchmarks:', metconError)
       return NextResponse.json({ 
         success: false, 
-        error: 'Metcon benchmark data not found' 
+        error: 'MetCon benchmark data not found' 
       }, { status: 404 })
     }
 
-    // 3. Get user gender
+    // Step 4: Get user gender
+    console.log('👤 Fetching user gender...')
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('gender')
@@ -202,7 +232,8 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
 
-    // 4. Parse user score
+    // Step 5: Parse user score
+    console.log(`🧮 Parsing score: ${completionData.workoutScore}`)
     let parsedUserScore
     try {
       parsedUserScore = parseWorkoutScore(completionData.workoutScore)
@@ -214,20 +245,20 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // 5. Get appropriate benchmarks based on gender
+    // Step 6: Get appropriate benchmarks based on gender
     const isMale = userData.gender?.toLowerCase() === 'male'
     const benchmarkMean = parseBenchmarkScore(isMale ? metcon.male_p50 : metcon.female_p50)
     const benchmarkStdDev = parseBenchmarkScore(isMale ? metcon.male_std_dev : metcon.female_std_dev)
 
     if (benchmarkMean === 0 || benchmarkStdDev === 0) {
-      console.error('❌ Invalid benchmark data for metcon:', metconId)
+      console.error('❌ Invalid benchmark data for metcon:', metcon.id)
       return NextResponse.json({ 
         success: false, 
         error: 'Invalid benchmark data for this workout' 
       }, { status: 500 })
     }
 
-    // 6. Calculate percentile
+    // Step 7: Calculate percentile
     const lowerIsBetter = isLowerBetter(parsedUserScore.type)
     const percentile = calculatePercentile(
       parsedUserScore.value,
@@ -247,7 +278,7 @@ export async function POST(request: NextRequest) {
       performanceTier
     })
 
-    // 7. Check if completion already exists
+    // Step 8: Check if completion already exists (for updates)
     const { data: existingCompletion } = await supabase
       .from('program_metcons')
       .select('id')
@@ -259,6 +290,7 @@ export async function POST(request: NextRequest) {
     let result
     if (existingCompletion) {
       // Update existing completion
+      console.log('🔄 Updating existing completion...')
       const { data, error } = await supabase
         .from('program_metcons')
         .update({
@@ -277,13 +309,14 @@ export async function POST(request: NextRequest) {
       result = { data, error }
     } else {
       // Create new completion
+      console.log('✨ Creating new completion...')
       const { data, error } = await supabase
         .from('program_metcons')
         .insert({
           program_id: completionData.programId,
           week: completionData.week,
           day: completionData.day,
-          metcon_id: metconId,
+          metcon_id: metcon.id,
           user_score: completionData.workoutScore,
           percentile: percentile.toFixed(2),
           performance_tier: performanceTier,
@@ -306,13 +339,17 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    console.log('✅ MetCon completion saved with real percentile:', result.data)
+    console.log('✅ MetCon completion saved successfully:', result.data)
 
     return NextResponse.json({ 
       success: true, 
       data: result.data,
       percentile: percentile,
       performanceTier: performanceTier,
+      metconInfo: {
+        workoutId: metcon.workout_id,
+        format: metcon.format
+      },
       calculation: {
         userScore: parsedUserScore.value,
         benchmarkMean,
