@@ -512,6 +512,7 @@ export default function WorkoutPage({
 }
 
 // Improved Exercise Card Component with RPE Slider and Quality Buttons
+// Improved Exercise Card Component with RPE Slider and Quality Buttons
 function ExerciseCard({ 
   exercise, 
   block, 
@@ -780,6 +781,7 @@ function ExerciseCard({
     </div>
   )
 }
+
 
 function MetConCard({ 
   metconData, 
@@ -1053,6 +1055,7 @@ function MetConCard({
     </div>
   )
 }
+
 
 
 
