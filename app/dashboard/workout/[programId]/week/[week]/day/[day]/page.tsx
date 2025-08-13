@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -512,7 +511,7 @@ export default function WorkoutPage({
   return <WorkoutPageClient {...resolvedParams} />
 }
 
-// Exercise Card Component
+// Improved Exercise Card Component with RPE Slider and Quality Buttons
 function ExerciseCard({ 
   exercise, 
   block, 
@@ -524,39 +523,68 @@ function ExerciseCard({
   completion?: Completion
   onComplete: (completion: Partial<Completion>) => void
 }) {
-  const [isExpanded, setIsExpanded] = useState(true) // Changed to true - always show expanded
+  const [isExpanded, setIsExpanded] = useState(true)
   const [formData, setFormData] = useState({
     setsCompleted: completion?.setsCompleted || '',
     repsCompleted: completion?.repsCompleted || '',
     weightUsed: completion?.weightUsed || '',
-    rpe: completion?.rpe || '',
+    rpe: completion?.rpe || 7,
     quality: completion?.quality || '',
-    notes: completion?.notes || '',
-    wasRx: completion?.wasRx ?? true
+    notes: completion?.notes || ''
   })
 
   const isCompleted = completion !== undefined
-
-  const handleQuickComplete = () => {
-    onComplete({
-      setsCompleted: typeof exercise.sets === 'number' ? exercise.sets : undefined,
-      repsCompleted: exercise.reps.toString(),
-      weightUsed: exercise.weightTime ? parseFloat(exercise.weightTime) : undefined,
-      wasRx: true
-    })
-  }
 
   const handleDetailedSubmit = () => {
     onComplete({
       setsCompleted: formData.setsCompleted ? parseInt(formData.setsCompleted.toString()) : undefined,
       repsCompleted: formData.repsCompleted.toString(),
       weightUsed: formData.weightUsed ? parseFloat(formData.weightUsed.toString()) : undefined,
-      rpe: formData.rpe ? parseInt(formData.rpe.toString()) : undefined,
+      rpe: formData.rpe,
       quality: formData.quality || undefined,
-      notes: formData.notes.toString(),
-      wasRx: formData.wasRx
+      notes: formData.notes.toString()
     })
     setIsExpanded(false)
+  }
+
+  // Quality button component
+  const QualityButton = ({ grade, isSelected, onClick }: { grade: string, isSelected: boolean, onClick: () => void }) => {
+    const getButtonStyle = () => {
+      const baseStyle = "px-4 py-3 rounded-lg font-semibold text-sm transition-all duration-200 border-2"
+      
+      if (isSelected) {
+        switch (grade) {
+          case 'A': return `${baseStyle} bg-green-500 text-white border-green-500 shadow-md`
+          case 'B': return `${baseStyle} bg-blue-500 text-white border-blue-500 shadow-md`
+          case 'C': return `${baseStyle} bg-yellow-500 text-white border-yellow-500 shadow-md`
+          case 'D': return `${baseStyle} bg-red-500 text-white border-red-500 shadow-md`
+          default: return `${baseStyle} bg-gray-500 text-white border-gray-500`
+        }
+      } else {
+        return `${baseStyle} bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50`
+      }
+    }
+
+    const getGradeLabel = () => {
+      switch (grade) {
+        case 'A': return 'A - Excellent'
+        case 'B': return 'B - Good'
+        case 'C': return 'C - Average'
+        case 'D': return 'D - Poor'
+        default: return grade
+      }
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={getButtonStyle()}
+        title={getGradeLabel()}
+      >
+        {grade}
+      </button>
+    )
   }
 
   return (
@@ -621,100 +649,134 @@ function ExerciseCard({
           </button>
         </div>
 
-        {/* Expanded Form */}
+        {/* Improved Form */}
         {isExpanded && (
-          <div className="mt-4 pt-4 border-t space-y-3">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="mt-4 pt-4 border-t space-y-4">
+            {/* Basic Inputs - Stacked for mobile, side-by-side on larger screens */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Sets</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Sets</label>
                 <input
                   type="number"
                   value={formData.setsCompleted}
                   onChange={(e) => setFormData(prev => ({ ...prev, setsCompleted: e.target.value }))}
-                  className="w-full p-2 border rounded text-sm"
-                  placeholder={exercise.sets.toString()}
+                  className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="How many sets?"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Reps</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Reps</label>
                 <input
                   type="text"
                   value={formData.repsCompleted}
                   onChange={(e) => setFormData(prev => ({ ...prev, repsCompleted: e.target.value }))}
-                  className="w-full p-2 border rounded text-sm"
-                  placeholder={exercise.reps.toString()}
+                  className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Reps completed"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Weight</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Weight</label>
                 <input
                   type="number"
                   value={formData.weightUsed}
                   onChange={(e) => setFormData(prev => ({ ...prev, weightUsed: e.target.value }))}
-                  className="w-full p-2 border rounded text-sm"
-                  placeholder={exercise.weightTime}
+                  className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Weight used"
                 />
               </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">RPE (1-10)</label>
+            </div>
+
+            {/* RPE Slider */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                RPE (Rate of Perceived Exertion): <span className="font-bold text-blue-600">{formData.rpe}/10</span>
+              </label>
+              <div className="px-2">
                 <input
-                  type="number"
+                  type="range"
                   min="1"
                   max="10"
                   value={formData.rpe}
-                  onChange={(e) => setFormData(prev => ({ ...prev, rpe: e.target.value }))}
-                  className="w-full p-2 border rounded text-sm"
-                  placeholder="7"
+                  onChange={(e) => setFormData(prev => ({ ...prev, rpe: parseInt(e.target.value) }))}
+                  className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  style={{
+                    background: `linear-gradient(to right, #ef4444 0%, #f97316 20%, #eab308 40%, #22c55e 60%, #3b82f6 80%, #8b5cf6 100%)`
+                  }}
                 />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>1 - Very Easy</span>
+                  <span>5 - Moderate</span>
+                  <span>10 - Max Effort</span>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Quality</label>
-                <select
-                  value={formData.quality}
-                  onChange={(e) => setFormData(prev => ({ ...prev, quality: e.target.value }))}
-                  className="w-full p-2 border rounded text-sm"
-                >
-                  <option value="">-</option>
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
-                  <option value="D">D</option>
-                </select>
+            </div>
+
+            {/* Quality Buttons */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Quality</label>
+              <div className="grid grid-cols-4 gap-3">
+                {['A', 'B', 'C', 'D'].map((grade) => (
+                  <QualityButton
+                    key={grade}
+                    grade={grade}
+                    isSelected={formData.quality === grade}
+                    onClick={() => setFormData(prev => ({ 
+                      ...prev, 
+                      quality: prev.quality === grade ? '' : grade 
+                    }))}
+                  />
+                ))}
+              </div>
+              <div className="text-xs text-gray-500 mt-2 text-center">
+                A = Excellent • B = Good • C = Average • D = Poor
               </div>
             </div>
             
+            {/* Notes */}
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                className="w-full p-2 border rounded text-sm"
-                rows={2}
+                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                rows={3}
                 placeholder="How did it feel? Any observations..."
               />
             </div>
 
-            <div className="flex items-center space-x-4">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={formData.wasRx}
-                  onChange={(e) => setFormData(prev => ({ ...prev, wasRx: e.target.checked }))}
-                  className="rounded"
-                />
-                <span className="text-sm text-gray-700">Completed as prescribed (Rx)</span>
-              </label>
-            </div>
-
             <button
               onClick={handleDetailedSubmit}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-base"
             >
-              {isCompleted ? 'Update Completion' : 'Log Completion'}
+              {isCompleted ? 'Update Completion' : 'Mark Complete'}
             </button>
           </div>
         )}
       </div>
+
+      {/* Add custom CSS for the slider */}
+      <style jsx>{`
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: 2px solid #3b82f6;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .slider::-moz-range-thumb {
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: 2px solid #3b82f6;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+      `}</style>
     </div>
   )
 }
@@ -991,7 +1053,6 @@ function MetConCard({
     </div>
   )
 }
-
 
 
 
