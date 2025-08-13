@@ -512,7 +512,7 @@ export default function WorkoutPage({
 }
 
 // Improved Exercise Card Component with RPE Slider and Quality Buttons
-// Improved Exercise Card Component with RPE Slider and Quality Buttons
+// Clean Exercise Card Component with Chevron Toggle and Completion Checkmark
 function ExerciseCard({ 
   exercise, 
   block, 
@@ -524,7 +524,7 @@ function ExerciseCard({
   completion?: Completion
   onComplete: (completion: Partial<Completion>) => void
 }) {
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(!completion) // Smart default: expand if not completed
   const [formData, setFormData] = useState({
     setsCompleted: completion?.setsCompleted || '',
     repsCompleted: completion?.repsCompleted || '',
@@ -545,6 +545,7 @@ function ExerciseCard({
       quality: formData.quality || undefined,
       notes: formData.notes.toString()
     })
+    // Auto-collapse after completion
     setIsExpanded(false)
   }
 
@@ -566,22 +567,12 @@ function ExerciseCard({
       }
     }
 
-    const getGradeLabel = () => {
-      switch (grade) {
-        case 'A': return 'A - Excellent'
-        case 'B': return 'B - Good'
-        case 'C': return 'C - Average'
-        case 'D': return 'D - Poor'
-        default: return grade
-      }
-    }
-
     return (
       <button
         type="button"
         onClick={onClick}
         className={getButtonStyle()}
-        title={getGradeLabel()}
+        title={`${grade} - ${grade === 'A' ? 'Excellent' : grade === 'B' ? 'Good' : grade === 'C' ? 'Average' : 'Poor'}`}
       >
         {grade}
       </button>
@@ -594,15 +585,20 @@ function ExerciseCard({
         ? 'border-green-200 bg-green-50' 
         : 'border-gray-200 hover:border-gray-300'
     }`}>
-      <div className="p-4">
-        <div className="flex items-start justify-between">
+      
+      {/* Clickable Header with Chevron */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full p-4 text-left hover:bg-white/50 transition-colors rounded-lg"
+      >
+        <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
               <h3 className="text-lg font-semibold text-gray-900">{exercise.name}</h3>
-              {isCompleted && <span className="text-green-600 text-xl">✅</span>}
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
+            {/* Exercise Summary Info - Always visible */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Sets:</span>
                 <span className="ml-1 font-medium">{exercise.sets || '-'}</span>
@@ -618,42 +614,46 @@ function ExerciseCard({
               {completion && (
                 <div>
                   <span className="text-gray-600">RPE:</span>
-                  <span className="ml-1 font-medium">{completion.rpe || '-'}/10</span>
+                  <span className="ml-1 font-medium text-green-600">{completion.rpe || '-'}/10</span>
                 </div>
               )}
             </div>
+          </div>
+          
+          {/* Right Side Icons */}
+          <div className="flex items-center space-x-2 ml-4">
+            {/* Green Checkmark for Completed exercises when collapsed */}
+            {isCompleted && !isExpanded && (
+              <span className="text-green-600 text-xl">✅</span>
+            )}
+            {/* Chevron indicating expand/collapse state */}
+            <span className="text-gray-400 text-lg">
+              {isExpanded ? '▼' : '▶'}
+            </span>
+          </div>
+        </div>
+      </button>
 
+      {/* Expanded Form Content */}
+      {isExpanded && (
+        <div className="px-4 pb-4 space-y-4">
+          <div className="border-t pt-4">
+            
+            {/* Exercise Notes */}
             {exercise.notes && (
-              <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-3">
+              <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-4">
                 <p className="text-sm text-blue-800">💡 {exercise.notes}</p>
               </div>
             )}
 
+            {/* Completion Notes */}
             {completion?.notes && (
-              <div className="bg-gray-50 border border-gray-200 rounded p-2 mb-3">
+              <div className="bg-gray-50 border border-gray-200 rounded p-2 mb-4">
                 <p className="text-sm text-gray-700">📝 {completion.notes}</p>
               </div>
             )}
-          </div>
-        </div>
 
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              isExpanded 
-                ? 'bg-gray-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            {isExpanded ? 'Hide Form' : 'Show Form'}
-          </button>
-        </div>
-
-        {/* Improved Form */}
-        {isExpanded && (
-          <div className="mt-4 pt-4 border-t space-y-4">
-            {/* Basic Inputs - Stacked for mobile, side-by-side on larger screens */}
+            {/* Basic Inputs - Mobile-first responsive */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Sets</label>
@@ -679,6 +679,7 @@ function ExerciseCard({
                 <label className="block text-sm font-medium text-gray-700 mb-2">Weight</label>
                 <input
                   type="number"
+                  step="0.1"
                   value={formData.weightUsed}
                   onChange={(e) => setFormData(prev => ({ ...prev, weightUsed: e.target.value }))}
                   className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -699,7 +700,7 @@ function ExerciseCard({
                   max="10"
                   value={formData.rpe}
                   onChange={(e) => setFormData(prev => ({ ...prev, rpe: parseInt(e.target.value) }))}
-                  className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                   style={{
                     background: `linear-gradient(to right, #ef4444 0%, #f97316 20%, #eab308 40%, #22c55e 60%, #3b82f6 80%, #8b5cf6 100%)`
                   }}
@@ -745,6 +746,7 @@ function ExerciseCard({
               />
             </div>
 
+            {/* Submit Button */}
             <button
               onClick={handleDetailedSubmit}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-base"
@@ -752,12 +754,12 @@ function ExerciseCard({
               {isCompleted ? 'Update Completion' : 'Mark Complete'}
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Add custom CSS for the slider */}
+      {/* Custom CSS for the slider */}
       <style jsx>{`
-        .slider::-webkit-slider-thumb {
+        input[type="range"]::-webkit-slider-thumb {
           appearance: none;
           height: 20px;
           width: 20px;
@@ -768,7 +770,7 @@ function ExerciseCard({
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        .slider::-moz-range-thumb {
+        input[type="range"]::-moz-range-thumb {
           height: 20px;
           width: 20px;
           border-radius: 50%;
@@ -776,6 +778,7 @@ function ExerciseCard({
           border: 2px solid #3b82f6;
           cursor: pointer;
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          border: none;
         }
       `}</style>
     </div>
