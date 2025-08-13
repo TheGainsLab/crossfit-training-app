@@ -155,9 +155,11 @@ async function aggregateByTrainingBlock(data: { userId: number; week: number }) 
 }
 
 /**
- * Get MetCon aggregation data
+ * Get MetCon aggregation data - FIXED VERSION
+ * Counts actual MetCon completions, not just program_metcons entries
  */
 async function getMetconAggregation(data: { programId: number; week: number }) {
+  // First, try to get from program_metcons (new method with actual scores)
   const { data: metconData, error } = await supabase
     .from('program_metcons')
     .select('percentile')
@@ -165,20 +167,47 @@ async function getMetconAggregation(data: { programId: number; week: number }) {
     .eq('week', data.week)
     .not('user_score', 'is', null);
     
-  if (error || !metconData?.length) {
+  // If we have data from program_metcons, use it
+  if (!error && metconData && metconData.length > 0) {
+    const percentiles = metconData.map((m: any) => parseFloat(m.percentile)).filter(p => !isNaN(p));
+    const avgPercentile = percentiles.length > 0 
+      ? Math.round((percentiles.reduce((sum, p) => sum + p, 0) / percentiles.length) * 100) / 100
+      : null;
+      
+    return {
+      count: percentiles.length, // Count of actual MetCon completions with scores
+      avgPercentile
+    };
+  }
+  
+  // Fallback: Count distinct MetCon sessions from performance_logs
+  console.log(`⚠️ No program_metcons data found for program ${data.programId}, week ${data.week}. Using performance_logs fallback.`);
+  
+  const { data: performanceData, error: perfError } = await supabase
+    .from('performance_logs')
+    .select('day, logged_at')
+    .eq('program_id', data.programId)
+    .eq('week', data.week)
+    .eq('block', 'METCONS');
+    
+  if (perfError || !performanceData || performanceData.length === 0) {
+    console.log(`⚠️ No MetCon performance data found for program ${data.programId}, week ${data.week}`);
     return { count: 0, avgPercentile: null };
   }
   
-  const percentiles = metconData.map((m: any) => parseFloat(m.percentile)).filter(p => !isNaN(p));
-  const avgPercentile = percentiles.length > 0 
-    ? Math.round((percentiles.reduce((sum, p) => sum + p, 0) / percentiles.length) * 100) / 100
-    : null;
-    
+  // Count unique days with MetCon exercises
+  const uniqueDays = new Set(performanceData.map(p => p.day));
+  const sessionCount = uniqueDays.size;
+  
+  console.log(`📊 Found ${sessionCount} MetCon sessions (days: ${Array.from(uniqueDays).join(', ')}) for program ${data.programId}, week ${data.week}`);
+  
   return {
-    count: percentiles.length,
-    avgPercentile
+    count: sessionCount, // Count of distinct MetCon session days
+    avgPercentile: null   // No percentile data available from performance_logs
   };
 }
+
+
 
 /**
  * Calculate overall totals across all blocks
