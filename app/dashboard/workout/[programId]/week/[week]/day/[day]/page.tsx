@@ -511,53 +511,16 @@ export default function WorkoutPage({
   return <WorkoutPageClient {...resolvedParams} />
 }
 
-// Improved Exercise Card Component with RPE Slider and Quality Buttons
-
-import React, { useState } from 'react'
-
-interface Exercise {
-  name: string
-  sets: number | string
-  reps: number | string
-  weightTime: string
-  notes: string
-}
-
-interface Completion {
-  exerciseName: string
-  setsCompleted?: number
-  repsCompleted?: string
-  weightUsed?: number
-  rpe?: number
-  quality?: string
-  notes?: string
-  wasRx?: boolean
-}
-
-// Demo data for the card
-const demoExercise: Exercise = {
-  name: "Bar Muscle Ups",
-  sets: 2,
-  reps: 5,
-  weightTime: "BW",
-  notes: "Initiate with shoulders, follow to arch, extend, drive hips to bar"
-}
-
-const demoCompletion: Completion = {
-  exerciseName: "Bar Muscle Ups",
-  rpe: 7
-}
-
-function ImprovedExerciseCard({ 
-  exercise = demoExercise, 
-  block = "SKILLS", 
-  completion = undefined, 
-  onComplete = (completion) => console.log('Completion:', completion)
+function ExerciseCard({ 
+  exercise, 
+  block, 
+  completion, 
+  onComplete 
 }: { 
-  exercise?: Exercise
-  block?: string
+  exercise: Exercise
+  block: string
   completion?: Completion
-  onComplete?: (completion: Partial<Completion>) => void
+  onComplete: (completion: Partial<Completion>) => void
 }) {
   const [isExpanded, setIsExpanded] = useState(!completion)
   const [formData, setFormData] = useState({
@@ -626,204 +589,203 @@ function ImprovedExerciseCard({
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4 bg-gray-100">
-      <div className={`bg-white rounded-xl shadow-sm border-2 transition-all ${
-        isCompleted 
-          ? 'border-green-200 bg-green-50' 
-          : 'border-gray-200 hover:border-gray-300'
-      }`}>
-        
-        {/* SECTION 1: Exercise Header */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full p-6 text-left hover:bg-gray-50 transition-colors rounded-xl"
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              {/* Exercise Title */}
-              <div className="flex items-center space-x-3 mb-4">
-                <h3 className="text-xl font-bold text-gray-900">{exercise.name}</h3>
-                {isCompleted && <span className="text-green-600 text-xl">✅</span>}
+    <div className={`bg-white rounded-xl shadow-sm border-2 transition-all ${
+      isCompleted 
+        ? 'border-green-200 bg-green-50' 
+        : 'border-gray-200 hover:border-gray-300'
+    }`}>
+      
+      {/* SECTION 1: Exercise Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full p-6 text-left hover:bg-gray-50 transition-colors rounded-xl"
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            {/* Exercise Title */}
+            <div className="flex items-center space-x-3 mb-4">
+              <h3 className="text-xl font-bold text-gray-900">{exercise.name}</h3>
+              {isCompleted && <span className="text-green-600 text-xl">✅</span>}
+            </div>
+            
+            {/* Exercise Specs - Clean Grid */}
+            <div className="grid grid-cols-3 gap-6 text-sm">
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-500 font-medium">Sets:</span>
+                <span className="text-gray-900 font-semibold text-base">{exercise.sets || '-'}</span>
               </div>
-              
-              {/* Exercise Specs - Clean Grid */}
-              <div className="grid grid-cols-3 gap-6 text-sm">
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-500 font-medium">Sets:</span>
-                  <span className="text-gray-900 font-semibold text-base">{exercise.sets || '-'}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-500 font-medium">Reps:</span>
-                  <span className="text-gray-900 font-semibold text-base">{exercise.reps || '-'}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-500 font-medium">Weight:</span>
-                  <span className="text-gray-900 font-semibold text-base">{exercise.weightTime || 'BW'}</span>
-                </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-500 font-medium">Reps:</span>
+                <span className="text-gray-900 font-semibold text-base">{exercise.reps || '-'}</span>
               </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-500 font-medium">Weight:</span>
+                <span className="text-gray-900 font-semibold text-base">{exercise.weightTime || 'BW'}</span>
+              </div>
+            </div>
 
-              {/* Completion Summary (when collapsed and completed) */}
-              {completion && !isExpanded && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex items-center space-x-4 text-sm">
-                    <span className="text-gray-600">RPE: <span className="font-semibold text-green-600">{completion.rpe}/10</span></span>
-                    {completion.quality && (
-                      <span className="text-gray-600">Quality: <span className="font-semibold">{completion.quality}</span></span>
-                    )}
-                  </div>
+            {/* Completion Summary (when collapsed and completed) */}
+            {completion && !isExpanded && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center space-x-4 text-sm">
+                  <span className="text-gray-600">RPE: <span className="font-semibold text-green-600">{completion.rpe}/10</span></span>
+                  {completion.quality && (
+                    <span className="text-gray-600">Quality: <span className="font-semibold">{completion.quality}</span></span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Chevron */}
+          <div className="ml-4 flex-shrink-0">
+            <span className="text-gray-400 text-xl">
+              {isExpanded ? '▼' : '▶'}
+            </span>
+          </div>
+        </div>
+      </button>
+
+      {/* SECTION 2: Exercise Notes (when expanded) */}
+      {isExpanded && exercise.notes && (
+        <div className="mx-6 mb-6">
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+            <div className="flex items-start space-x-3">
+              <span className="text-blue-600 text-lg">💡</span>
+              <p className="text-blue-800 text-sm leading-relaxed">{exercise.notes}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 3: Completion Form (when expanded and not completed) */}
+      {isExpanded && !isCompleted && (
+        <div className="px-6 pb-6 space-y-6">
+          
+          {/* Performance Inputs Section */}
+          <div className="bg-gray-50 rounded-lg p-5">
+            <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Performance Data</h4>
+            <div className={`grid grid-cols-1 gap-4 ${exercise.weightTime === 'BW' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Sets Completed</label>
+                <input
+                  type="number"
+                  value={formData.setsCompleted}
+                  onChange={(e) => setFormData(prev => ({ ...prev, setsCompleted: e.target.value }))}
+                  className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Reps Completed</label>
+                <input
+                  type="text"
+                  value={formData.repsCompleted}
+                  onChange={(e) => setFormData(prev => ({ ...prev, repsCompleted: e.target.value }))}
+                  className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0"
+                />
+              </div>
+              {exercise.weightTime !== 'BW' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Weight Used</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formData.weightUsed}
+                    onChange={(e) => setFormData(prev => ({ ...prev, weightUsed: e.target.value }))}
+                    className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="lbs"
+                  />
                 </div>
               )}
             </div>
-            
-            {/* Chevron */}
-            <div className="ml-4 flex-shrink-0">
-              <span className="text-gray-400 text-xl">
-                {isExpanded ? '▼' : '▶'}
-              </span>
-            </div>
           </div>
-        </button>
 
-        {/* SECTION 2: Exercise Notes (when expanded) */}
-        {isExpanded && exercise.notes && (
-          <div className="mx-6 mb-6">
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
-              <div className="flex items-start space-x-3">
-                <span className="text-blue-600 text-lg">💡</span>
-                <p className="text-blue-800 text-sm leading-relaxed">{exercise.notes}</p>
+          {/* RPE Section */}
+          <div className="bg-gray-50 rounded-lg p-5">
+            <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Effort Level</h4>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">Rate of Perceived Exertion (RPE)</label>
+                <span className="text-lg font-bold text-blue-600">{formData.rpe}/10</span>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* SECTION 3: Completion Form (when expanded and not completed) */}
-        {isExpanded && !isCompleted && (
-          <div className="px-6 pb-6 space-y-6">
-            
-            {/* Performance Inputs Section */}
-            <div className="bg-gray-50 rounded-lg p-5">
-              <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Performance Data</h4>
-              <div className={`grid grid-cols-1 gap-4 ${exercise.weightTime === 'BW' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Sets Completed</label>
-                  <input
-                    type="number"
-                    value={formData.setsCompleted}
-                    onChange={(e) => setFormData(prev => ({ ...prev, setsCompleted: e.target.value }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Reps Completed</label>
-                  <input
-                    type="text"
-                    value={formData.repsCompleted}
-                    onChange={(e) => setFormData(prev => ({ ...prev, repsCompleted: e.target.value }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="0"
-                  />
-                </div>
-                {exercise.weightTime !== 'BW' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Weight Used</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={formData.weightUsed}
-                      onChange={(e) => setFormData(prev => ({ ...prev, weightUsed: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="lbs"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* RPE Section */}
-            <div className="bg-gray-50 rounded-lg p-5">
-              <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Effort Level</h4>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">Rate of Perceived Exertion (RPE)</label>
-                  <span className="text-lg font-bold text-blue-600">{formData.rpe}/10</span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={formData.rpe}
-                  onChange={(e) => setFormData(prev => ({ ...prev, rpe: parseInt(e.target.value) }))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                />
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>1 - Very Easy</span>
-                  <span>5 - Moderate</span>
-                  <span>10 - Max Effort</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quality Section */}
-            <div className="bg-gray-50 rounded-lg p-5">
-              <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Movement Quality</h4>
-              <div className="flex gap-3">
-                {['A', 'B', 'C', 'D'].map((grade) => (
-                  <QualityButton
-                    key={grade}
-                    grade={grade}
-                    isSelected={formData.quality === grade}
-                    onClick={() => setFormData(prev => ({ 
-                      ...prev, 
-                      quality: prev.quality === grade ? '' : grade 
-                    }))}
-                  />
-                ))}
-              </div>
-            </div>
-            
-            {/* Notes Section */}
-            <div className="bg-gray-50 rounded-lg p-5">
-              <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Additional Notes</h4>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                rows={3}
-                placeholder="How did it feel? Any observations, modifications, or thoughts..."
+              <input
+                type="range"
+                min="1"
+                max="10"
+                value={formData.rpe}
+                onChange={(e) => setFormData(prev => ({ ...prev, rpe: parseInt(e.target.value) }))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
               />
-            </div>
-
-            {/* Submit Section */}
-            <div className="pt-2">
-              <button
-                onClick={handleDetailedSubmit}
-                className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-base shadow-sm"
-              >
-                Mark Exercise Complete
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* SECTION 4: Completed State (when expanded and completed) */}
-        {isExpanded && isCompleted && (
-          <div className="px-6 pb-6">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-5 text-center">
-              <div className="text-green-600 text-3xl mb-2">✅</div>
-              <p className="text-green-800 font-medium mb-2">Exercise Completed</p>
-              <div className="text-sm text-green-700 space-y-1">
-                {completion.rpe && <p>RPE: {completion.rpe}/10</p>}
-                {completion.quality && <p>Quality: {completion.quality}</p>}
-                {completion.notes && <p className="italic">"{completion.notes}"</p>}
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>1 - Very Easy</span>
+                <span>5 - Moderate</span>
+                <span>10 - Max Effort</span>
               </div>
             </div>
           </div>
-        )}
-      </div>
 
+          {/* Quality Section */}
+          <div className="bg-gray-50 rounded-lg p-5">
+            <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Movement Quality</h4>
+            <div className="flex gap-3">
+              {['A', 'B', 'C', 'D'].map((grade) => (
+                <QualityButton
+                  key={grade}
+                  grade={grade}
+                  isSelected={formData.quality === grade}
+                  onClick={() => setFormData(prev => ({ 
+                    ...prev, 
+                    quality: prev.quality === grade ? '' : grade 
+                  }))}
+                />
+              ))}
+            </div>
+          </div>
+          
+          {/* Notes Section */}
+          <div className="bg-gray-50 rounded-lg p-5">
+            <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Additional Notes</h4>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              rows={3}
+              placeholder="How did it feel? Any observations, modifications, or thoughts..."
+            />
+          </div>
+
+          {/* Submit Section */}
+          <div className="pt-2">
+            <button
+              onClick={handleDetailedSubmit}
+              className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-base shadow-sm"
+            >
+              Mark Exercise Complete
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 4: Completed State (when expanded and completed) */}
+      {isExpanded && isCompleted && (
+        <div className="px-6 pb-6">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-5 text-center">
+            <div className="text-green-600 text-3xl mb-2">✅</div>
+            <p className="text-green-800 font-medium mb-2">Exercise Completed</p>
+            <div className="text-sm text-green-700 space-y-1">
+              {completion.rpe && <p>RPE: {completion.rpe}/10</p>}
+              {completion.quality && <p>Quality: {completion.quality}</p>}
+              {completion.notes && <p className="italic">"{completion.notes}"</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom CSS for the slider */}
       <style jsx>{`
-        .slider::-webkit-slider-thumb {
+        input[type="range"]::-webkit-slider-thumb {
           appearance: none;
           height: 20px;
           width: 20px;
@@ -833,7 +795,7 @@ function ImprovedExerciseCard({
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        .slider::-moz-range-thumb {
+        input[type="range"]::-moz-range-thumb {
           height: 20px;
           width: 20px;
           border-radius: 50%;
@@ -846,24 +808,6 @@ function ImprovedExerciseCard({
     </div>
   )
 }
-
-export default function ExerciseCardDemo() {
-  return (
-    <div className="p-8 space-y-8">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Improved Exercise Card</h1>
-        <p className="text-gray-600">Clear visual sections with better organization</p>
-      </div>
-      
-      <ImprovedExerciseCard />
-      
-      <div className="text-center">
-        <p className="text-sm text-gray-500">Click the card to expand/collapse the form</p>
-      </div>
-    </div>
-  )
-}
-
 
 
 function MetConCard({ 
