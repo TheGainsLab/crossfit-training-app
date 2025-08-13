@@ -1,4 +1,4 @@
-'use client'
+\'use client'
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -876,7 +876,7 @@ const EnhancedSkillCard: React.FC<{ skill: any }> = ({ skill }) => {
               </div>
             </div>
             <div>
-              <span className="text-is text-gray-500 block">Last Practiced</span>
+             <span className="text-xs text-gray-500 block">Last Practiced</span>
               <span className="text-sm font-medium">{formatDate(skill.lastPerformed)}</span>
             </div>
           </div>
@@ -1164,6 +1164,7 @@ const StrengthAnalyticsView = () => {
 
 // MetCon Analytics Component  
 
+// MetCon Analytics Component - ALL ISSUES FIXED
 const MetConAnalyticsView = () => {
   const [heatmapData, setHeatmapData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -1209,14 +1210,26 @@ const MetConAnalyticsView = () => {
     return <div className="bg-white rounded-lg shadow p-6">No data available</div>;
   }
 
-
-  // Create time domain chart
+  // Create time domain chart from heatmap data
   const timeDomainChartData = {
-    labels: Object.keys(timeDomainAnalysis.timeDomains),
+    labels: heatmapData?.timeDomains || [],
     datasets: [
       {
         label: 'Average Percentile',
-        data: Object.values(timeDomainAnalysis.timeDomains).map((domain: any) => domain.avgPercentile),
+        data: (heatmapData?.timeDomains || []).map((domain: string) => {
+          // Calculate average for this time domain from heatmap cells
+          const domainCells = heatmapData?.heatmapCells?.filter((cell: any) => cell.time_range === domain) || [];
+          if (domainCells.length === 0) return 0;
+          
+          let totalWeighted = 0;
+          let totalSessions = 0;
+          domainCells.forEach((cell: any) => {
+            totalWeighted += cell.avg_percentile * cell.session_count;
+            totalSessions += cell.session_count;
+          });
+          
+          return totalSessions > 0 ? Math.round(totalWeighted / totalSessions) : 0;
+        }),
         backgroundColor: 'rgba(255, 99, 132, 0.6)',
         borderColor: 'rgba(255, 99, 132, 1)',
         borderWidth: 1
@@ -1224,13 +1237,54 @@ const MetConAnalyticsView = () => {
     ]
   };
 
+  // Calculate summary data from heatmap data
+  const calculateSummaryData = () => {
+    if (!heatmapData) return null;
+
+    const totalWorkouts = heatmapData.totalCompletedWorkouts || 0;
+    const timeDomainsCovered = heatmapData.timeDomains?.length || 0;
+    const averagePercentile = heatmapData.globalFitnessScore || 0;
+    
+    // Find strongest domain
+    let strongestDomain = 'None';
+    let highestAvg = 0;
+    
+    if (heatmapData.timeDomains) {
+      heatmapData.timeDomains.forEach((domain: string) => {
+        const domainCells = heatmapData.heatmapCells?.filter((cell: any) => cell.time_range === domain) || [];
+        if (domainCells.length === 0) return;
+        
+        let totalWeighted = 0;
+        let totalSessions = 0;
+        domainCells.forEach((cell: any) => {
+          totalWeighted += cell.avg_percentile * cell.session_count;
+          totalSessions += cell.session_count;
+        });
+        
+        const avg = totalSessions > 0 ? Math.round(totalWeighted / totalSessions) : 0;
+        if (avg > highestAvg) {
+          highestAvg = avg;
+          strongestDomain = domain;
+        }
+      });
+    }
+
+    return {
+      totalWorkouts,
+      timeDomainsCovered,
+      averagePercentile,
+      strongestDomain
+    };
+  };
+
+  const summaryData = calculateSummaryData();
+
   return (
     <div id="metcons-panel" role="tabpanel" aria-labelledby="metcons-tab" className="space-y-8">
-      {/* ADD THE HEAT MAP HERE - FIRST */}
-<MetConExerciseHeatMap data={heatmapData} />
-
+      {/* Heat Map */}
+      <MetConExerciseHeatMap data={heatmapData} />
        
-      {/* Keep your existing chart below */}
+      {/* Chart Section */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Conditioning Performance</h3>
         <div className="h-64 mb-6">
@@ -1258,23 +1312,41 @@ const MetConAnalyticsView = () => {
           <div>
             <h4 className="font-medium text-gray-900 mb-3">Time Domain Performance</h4>
             <div className="space-y-2">
-              {Object.entries(timeDomainAnalysis.timeDomains).map(([timeRange, data]: [string, any]) => (
-                <div key={timeRange} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm font-medium">{timeRange}</span>
-                  <span className="text-sm text-gray-600">{data.avgPercentile}% avg</span>
-                </div>
-              ))}
+              {(heatmapData?.timeDomains || []).map((timeRange: string) => {
+                // Calculate average for this time domain
+                const domainCells = heatmapData?.heatmapCells?.filter((cell: any) => cell.time_range === timeRange) || [];
+                let avgPercentile = 0;
+                
+                if (domainCells.length > 0) {
+                  let totalWeighted = 0;
+                  let totalSessions = 0;
+                  domainCells.forEach((cell: any) => {
+                    totalWeighted += cell.avg_percentile * cell.session_count;
+                    totalSessions += cell.session_count;
+                  });
+                  avgPercentile = totalSessions > 0 ? Math.round(totalWeighted / totalSessions) : 0;
+                }
+
+                return (
+                  <div key={timeRange} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <span className="text-sm font-medium">{timeRange}</span>
+                    <span className="text-sm text-gray-600">{avgPercentile}% avg</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
           
           <div>
             <h4 className="font-medium text-gray-900 mb-3">Summary</h4>
-            <div className="space-y-2 text-sm">
-              <p><strong>Total Workouts:</strong> {metconData.data.summary.totalWorkouts}</p>
-              <p><strong>Time Domains:</strong> {metconData.data.summary.timeDomainsCovered}</p>
-              <p><strong>Average Percentile:</strong> {metconData.data.summary.averagePercentile}%</p>
-              <p><strong>Strongest Domain:</strong> {metconData.data.summary.strongestDomain}</p>
-            </div>
+            {summaryData && (
+              <div className="space-y-2 text-sm">
+                <p><strong>Total Workouts:</strong> {summaryData.totalWorkouts}</p>
+                <p><strong>Time Domains:</strong> {summaryData.timeDomainsCovered}</p>
+                <p><strong>Average Percentile:</strong> {summaryData.averagePercentile}%</p>
+                <p><strong>Strongest Domain:</strong> {summaryData.strongestDomain}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1371,5 +1443,6 @@ const MetConAnalyticsView = () => {
     </div>
   );
 }
+
 
 
