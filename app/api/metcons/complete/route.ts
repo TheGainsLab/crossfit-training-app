@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
     // 2. Get the metcon benchmarks
     const { data: metcon, error: metconError } = await supabase
       .from('metcons')
-      .select('male_p50, male_std_dev, female_p50, female_std_dev, workout_id, format')
+.select('male_p50, male_p90, male_std_dev, female_p50, female_p90, female_std_dev, workout_id, format')
       .eq('id', metconId)
       .single()
 
