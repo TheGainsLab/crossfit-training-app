@@ -296,8 +296,8 @@ export async function GET(
   }
 }
 
-// Fallback function to process raw data if RPC fails
-function processRawDataToHeatmap(rawData: any[]): ExerciseHeatmapCell[] {
+
+function processRawDataToHeatmap(rawData: any[]): any[] {
   const exerciseTimeMap = new Map<string, Map<string, { count: number, totalPercentile: number }>>()
   const exerciseOverallMap = new Map<string, { count: number, totalPercentile: number }>()
 
@@ -325,7 +325,7 @@ function processRawDataToHeatmap(rawData: any[]): ExerciseHeatmapCell[] {
       timeData.count++
       timeData.totalPercentile += percentile
 
-      // Track overall
+      // Track overall (FIXED: this was missing the calculation)
       if (!exerciseOverallMap.has(exerciseName)) {
         exerciseOverallMap.set(exerciseName, { count: 0, totalPercentile: 0 })
       }
@@ -335,8 +335,8 @@ function processRawDataToHeatmap(rawData: any[]): ExerciseHeatmapCell[] {
     })
   })
 
-  // Convert to heat map format
-  const result: ExerciseHeatmapCell[] = []
+  // Convert to heat map format with CORRECT exercise averages
+  const result: any[] = []
   
   exerciseTimeMap.forEach((timeMap, exerciseName) => {
     const overallData = exerciseOverallMap.get(exerciseName)!
@@ -352,6 +352,8 @@ function processRawDataToHeatmap(rawData: any[]): ExerciseHeatmapCell[] {
         time_range: timeRange,
         session_count: data.count,
         avg_percentile: Math.round(data.totalPercentile / data.count),
+        total_sessions: overallData.count, // ← This was missing
+        overall_avg_percentile: Math.round(overallData.totalPercentile / overallData.count), // ← This was wrong
         sort_order: sortOrder
       })
     })
@@ -359,4 +361,8 @@ function processRawDataToHeatmap(rawData: any[]): ExerciseHeatmapCell[] {
 
   return result
 }
+
+
+
+
 
