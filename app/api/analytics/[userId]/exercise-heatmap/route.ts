@@ -95,150 +95,73 @@ export async function GET(
 
     console.log(`🔥 Generating exercise heat map for User ${userIdNum}`)
 
-    // Step 1: Get user's most recent program
-    const { data: programData, error: programError } = await supabase
-      .from('programs')
-      .select('id')
-      .eq('user_id', userIdNum)
-      .order('generated_at', { ascending: false })
-      .limit(1)
-      .single()
-
-    if (programError || !programData) {
-      return NextResponse.json(
-        { error: 'No program found for user' },
-        { status: 404 }
-      )
-    }
-
-    const programId = programData.id
-    console.log(`📋 Using program ${programId} for User ${userIdNum}`)
-
-    // Step 2: Execute main heat map query
-    const heatmapQuery = `
-      WITH user_workout_exercises AS (
-        SELECT 
-          pm.program_id,
-          pm.percentile::numeric as percentile,
-          pm.completed_at,
-          m.time_range,
-          m.workout_id,
-          jsonb_array_elements(m.tasks)->>'exercise' as exercise_name
-        FROM program_metcons pm
-        JOIN metcons m ON pm.metcon_id = m.id
-        WHERE pm.percentile IS NOT NULL 
-          AND pm.completed_at IS NOT NULL
-          AND pm.program_id = $1
-      ),
-      
-      exercise_time_aggregates AS (
-        SELECT 
-          exercise_name,
-          time_range,
-          COUNT(*) as session_count,
-          ROUND(AVG(percentile)) as avg_percentile
-        FROM user_workout_exercises
-        GROUP BY exercise_name, time_range
-      ),
-     
-     exercise_overall_averages AS (
-  SELECT 
-    exercise_name,
-    SUM(session_count) as total_sessions,
-    ROUND(SUM(avg_percentile * session_count) / SUM(session_count)) as overall_avg_percentile
-  FROM exercise_time_aggregates
-  GROUP BY exercise_name
-),
-
-      time_domain_order AS (
-        SELECT time_range, 
-          CASE time_range
-            WHEN '1:00–5:00' THEN 1
-            WHEN '5:00–10:00' THEN 2  
-            WHEN '10:00–15:00' THEN 3
-            WHEN '15:00–20:00' THEN 4
-            WHEN '20:00–30:00' THEN 5
-            WHEN '30:00+' THEN 6
-            ELSE 7
-          END as sort_order
-        FROM (SELECT DISTINCT time_range FROM metcons WHERE time_range IS NOT NULL) t
-      )
-      
-      SELECT 
-        eta.exercise_name,
-        eta.time_range,
-        eta.session_count,
-        eta.avg_percentile,
-        eoa.total_sessions,
-        eoa.overall_avg_percentile,
-        COALESCE(tdo.sort_order, 7) as sort_order
-      FROM exercise_time_aggregates eta
-      LEFT JOIN exercise_overall_averages eoa ON eta.exercise_name = eoa.exercise_name
-      LEFT JOIN time_domain_order tdo ON eta.time_range = tdo.time_range
-      ORDER BY eta.exercise_name, COALESCE(tdo.sort_order, 7);
-    `
-
-    const { data: heatmapCells, error: heatmapError } = await supabase
-      .rpc('execute_raw_sql', {
-        query: heatmapQuery,
-        params: [programId]
-      })
-
-    // If RPC doesn't work, fall back to direct query construction
-    let finalHeatmapData: any[]
-    if (heatmapError) {
-      console.log('🔄 RPC failed, using direct query execution')
-      
-      const { data: rawData, error: directError } = await supabase
-        .from('program_metcons')
-        .select(`
-          percentile,
-          completed_at,
-          metcons!inner(
-            time_range,
-            workout_id,
-            tasks
-          )
-        `)
-        .eq('program_id', programId)
-        .not('percentile', 'is', null)
-        .not('completed_at', 'is', null)
-
-      if (directError || !rawData) {
-        return NextResponse.json(
-          { error: 'Failed to fetch workout data', details: directError?.message },
-          { status: 500 }
-        )
-      }
-
-      // Process raw data into heat map structure
-      finalHeatmapData = processRawDataToHeatmap(rawData)
-    } else {
-      finalHeatmapData = heatmapCells
-    }
-
-    // Step 3: Get global fitness score
-    const { data: globalScoreData, error: globalError } = await supabase
+    // Step 1: Get completed MetCons with exercise data
+    // FIXED: Use same approach as metcon-analyzer
+    const { data: rawData, error: dataError } = await supabase
       .from('program_metcons')
-      .select('percentile')
-      .eq('program_id', programId)
+      .select(`
+        percentile,
+        completed_at,
+        week,
+        day,
+        metcons!inner(
+          time_range,
+          workout_id,
+          tasks
+        ),
+        programs!inner(
+          user_id
+        )
+      `)
+      .eq('programs.user_id', userIdNum)
       .not('percentile', 'is', null)
       .not('completed_at', 'is', null)
 
-    if (globalError) {
-      console.error('⚠️ Failed to fetch global score:', globalError)
+    if (dataError || !rawData) {
+      console.error('❌ Failed to fetch workout data:', dataError)
+      return NextResponse.json(
+        { error: 'Failed to fetch workout data', details: dataError?.message },
+        { status: 500 }
+      )
     }
 
-    const globalFitnessScore = globalScoreData && globalScoreData.length > 0
+    if (rawData.length === 0) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          exercises: [],
+          timeDomains: [],
+          heatmapCells: [],
+          exerciseAverages: [],
+          globalFitnessScore: 0,
+          totalCompletedWorkouts: 0
+        },
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          userId: userIdNum,
+          totalExercises: 0,
+          totalTimeDomains: 0,
+          totalCompletedWorkouts: 0
+        }
+      })
+    }
+
+    console.log(`📊 Processing ${rawData.length} completed MetCons`)
+
+    // Step 2: Process raw data into heat map structure
+    const heatmapData = processRawDataToHeatmap(rawData)
+
+    // Step 3: Calculate global fitness score
+    const globalFitnessScore = rawData.length > 0
       ? Math.round(
-          globalScoreData.reduce((sum, row) => sum + parseFloat(row.percentile), 0) / 
-          globalScoreData.length
+          rawData.reduce((sum, row) => sum + parseFloat(row.percentile), 0) / 
+          rawData.length
         )
       : 0
 
-    // Step 4: Process and structure the response data
-    const exercises = [...new Set(finalHeatmapData.map(row => row.exercise_name))].sort()
-    const timeDomains = [...new Set(finalHeatmapData.map(row => row.time_range).filter(Boolean))]
+    // Step 4: Structure the response data
+    const exercises = [...new Set(heatmapData.map(row => row.exercise_name))].sort()
+    const timeDomains = [...new Set(heatmapData.map(row => row.time_range).filter(Boolean))]
       .sort((a, b) => {
         const order: { [key: string]: number } = {
           '1:00–5:00': 1, '5:00–10:00': 2, '10:00–15:00': 3, 
@@ -247,36 +170,32 @@ export async function GET(
         return (order[a] || 7) - (order[b] || 7)
       })
 
-    const exerciseAverages = finalHeatmapData
-      .filter(row => row.overall_avg_percentile !== null)
-      .reduce((acc: ExerciseOverallAverage[], row) => {
-        if (!acc.find(ex => ex.exercise_name === row.exercise_name)) {
-          acc.push({
-            exercise_name: row.exercise_name,
-            total_sessions: row.total_sessions || 0,
-            overall_avg_percentile: row.overall_avg_percentile || 0
-          })
-        }
-        return acc
-      }, [])
+    // Extract unique exercise averages
+    const exerciseAverages = exercises.map(exerciseName => {
+      const exerciseData = heatmapData.find(row => row.exercise_name === exerciseName)
+      return {
+        exercise_name: exerciseName,
+        total_sessions: exerciseData?.total_sessions || 0,
+        overall_avg_percentile: exerciseData?.overall_avg_percentile || 0
+      }
+    })
 
     const responseData: HeatmapData = {
       exercises,
       timeDomains,
-      heatmapCells: finalHeatmapData.filter(row => row.time_range !== null),
+      heatmapCells: heatmapData.filter(row => row.time_range !== null),
       exerciseAverages,
       globalFitnessScore,
-      totalCompletedWorkouts: globalScoreData?.length || 0
+      totalCompletedWorkouts: rawData.length
     }
 
-    console.log(`✅ Heat map generated: ${exercises.length} exercises, ${timeDomains.length} time domains`)
+    console.log(`✅ Heat map generated: ${exercises.length} exercises, ${timeDomains.length} time domains, ${responseData.heatmapCells.length} cells`)
 
     return NextResponse.json({
       success: true,
       data: responseData,
       metadata: {
         generatedAt: new Date().toISOString(),
-        programId,
         userId: userIdNum,
         totalExercises: exercises.length,
         totalTimeDomains: timeDomains.length,
@@ -296,10 +215,11 @@ export async function GET(
   }
 }
 
-
 function processRawDataToHeatmap(rawData: any[]): any[] {
   const exerciseTimeMap = new Map<string, Map<string, { count: number, totalPercentile: number }>>()
   const exerciseOverallMap = new Map<string, { count: number, totalPercentile: number }>()
+
+  console.log('🔍 Processing raw data for heat map...')
 
   // Process each workout
   rawData.forEach(workout => {
@@ -307,10 +227,18 @@ function processRawDataToHeatmap(rawData: any[]): any[] {
     const timeRange = workout.metcons.time_range
     const tasks = workout.metcons.tasks || []
 
+    if (!timeRange) {
+      console.log(`⚠️ Skipping workout without time_range: ${workout.metcons.workout_id}`)
+      return
+    }
+
     // Extract exercises from tasks
     tasks.forEach((task: any) => {
       const exerciseName = task.exercise
-      if (!exerciseName) return
+      if (!exerciseName) {
+        console.log(`⚠️ Task missing exercise name:`, task)
+        return
+      }
 
       // Track by time domain
       if (!exerciseTimeMap.has(exerciseName)) {
@@ -325,7 +253,7 @@ function processRawDataToHeatmap(rawData: any[]): any[] {
       timeData.count++
       timeData.totalPercentile += percentile
 
-      // Track overall (FIXED: this was missing the calculation)
+      // Track overall averages
       if (!exerciseOverallMap.has(exerciseName)) {
         exerciseOverallMap.set(exerciseName, { count: 0, totalPercentile: 0 })
       }
@@ -335,7 +263,9 @@ function processRawDataToHeatmap(rawData: any[]): any[] {
     })
   })
 
-  // Convert to heat map format with CORRECT exercise averages
+  console.log(`📊 Found ${exerciseTimeMap.size} unique exercises across ${exerciseOverallMap.size} exercise variations`)
+
+  // Convert to heat map format
   const result: any[] = []
   
   exerciseTimeMap.forEach((timeMap, exerciseName) => {
@@ -352,17 +282,14 @@ function processRawDataToHeatmap(rawData: any[]): any[] {
         time_range: timeRange,
         session_count: data.count,
         avg_percentile: Math.round(data.totalPercentile / data.count),
-        total_sessions: overallData.count, // ← This was missing
-        overall_avg_percentile: Math.round(overallData.totalPercentile / overallData.count), // ← This was wrong
+        total_sessions: overallData.count,
+        overall_avg_percentile: Math.round(overallData.totalPercentile / overallData.count),
         sort_order: sortOrder
       })
     })
   })
 
+  console.log(`✅ Generated ${result.length} heat map cells`)
+
   return result
 }
-
-
-
-
-
