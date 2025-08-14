@@ -139,6 +139,156 @@ const skillCategories = [
   }
 ]
 
+// Olympic Lift Progress Bar Component
+const OlympicProgress = ({ lift, weight, current, target, unit = "%" }) => {
+  const percentage = Math.min((current / target) * 100, 100)
+  const isClose = current >= target * 0.9
+  const isBalanced = current >= target
+  
+  return (
+    <div className="mb-4">
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex items-center space-x-3">
+          <span className="font-medium text-gray-900">{lift}:</span>
+          <span className="text-lg font-semibold text-gray-800">{weight}</span>
+          <span className="text-sm text-gray-600">({Math.round(current * 100)}{unit} of squat)</span>
+        </div>
+        <div className={`text-sm font-medium px-3 py-1 rounded-full ${
+          isBalanced ? 'bg-green-100 text-green-700' : 
+          isClose ? 'bg-amber-100 text-amber-700' : 
+          'bg-blue-100 text-blue-700'
+        }`}>
+          {isBalanced ? 'Balanced' : isClose ? 'Nearly Balanced' : 'Developing'}
+        </div>
+      </div>
+      
+      <div className="relative">
+        {/* Progress Bar Background */}
+        <div className="w-full bg-gray-200 rounded-full h-3">
+          <div 
+            className={`h-3 rounded-full transition-all duration-300 ${
+              isBalanced ? 'bg-gradient-to-r from-green-400 to-green-500' :
+              isClose ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
+              'bg-gradient-to-r from-blue-400 to-blue-500'
+            }`}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+        
+        {/* Target Line */}
+        <div className="absolute top-0 right-0 transform translate-x-2">
+          <div className="w-0.5 h-3 bg-gray-600"></div>
+          <div className="text-xs text-gray-600 mt-1 -translate-x-1/2">
+            Target: {Math.round(target * 100)}{unit}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Foundation Strength Progress Bar Component
+const FoundationProgress = ({ lift, weight, ratio }) => {
+  const levels = [
+    { name: 'Beginner', value: 1.0, color: 'bg-gray-300' },
+    { name: 'Intermediate', value: 1.5, color: 'bg-blue-400' },
+    { name: 'Advanced', value: 2.0, color: 'bg-green-400' },
+    { name: 'Elite', value: 2.5, color: 'bg-purple-400' }
+  ]
+  
+  // Calculate current level
+  let currentLevel = 'Beginner'
+  if (ratio >= 2.5) currentLevel = 'Elite'
+  else if (ratio >= 2.0) currentLevel = 'Advanced'
+  else if (ratio >= 1.5) currentLevel = 'Intermediate'
+  
+  // Calculate position percentage (0-100% across the full bar)
+  const maxValue = 2.5
+  const position = Math.min((ratio / maxValue) * 100, 100)
+  
+  return (
+    <div className="mb-6">
+      <div className="flex justify-between items-center mb-3">
+        <div className="flex items-center space-x-3">
+          <span className="font-medium text-gray-900">{lift}:</span>
+          <span className="text-lg font-semibold text-gray-800">{weight}</span>
+          <span className="text-sm text-gray-600">({ratio}x bodyweight)</span>
+        </div>
+        <div className={`text-sm font-medium px-3 py-1 rounded-full ${
+          currentLevel === 'Elite' ? 'bg-purple-100 text-purple-700' :
+          currentLevel === 'Advanced' ? 'bg-green-100 text-green-700' :
+          currentLevel === 'Intermediate' ? 'bg-blue-100 text-blue-700' :
+          'bg-gray-100 text-gray-700'
+        }`}>
+          {currentLevel}
+        </div>
+      </div>
+      
+      {/* Progress Bar with Level Markers */}
+      <div className="relative">
+        {/* Background Bar */}
+        <div className="w-full bg-gray-200 rounded-full h-4 relative overflow-hidden">
+          {/* Level Sections */}
+          <div className="absolute inset-0 flex">
+            <div className="flex-1 bg-gray-300 border-r border-white"></div>
+            <div className="flex-1 bg-blue-200 border-r border-white"></div>
+            <div className="flex-1 bg-green-200 border-r border-white"></div>
+            <div className="flex-1 bg-purple-200"></div>
+          </div>
+          
+          {/* Progress Fill */}
+          <div 
+            className={`absolute top-0 left-0 h-4 rounded-full transition-all duration-500 ${
+              currentLevel === 'Elite' ? 'bg-gradient-to-r from-purple-400 to-purple-500' :
+              currentLevel === 'Advanced' ? 'bg-gradient-to-r from-green-400 to-green-500' :
+              currentLevel === 'Intermediate' ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
+              'bg-gradient-to-r from-gray-400 to-gray-500'
+            }`}
+            style={{ width: `${position}%` }}
+          />
+          
+          {/* Current Position Marker */}
+          <div 
+            className="absolute top-0 w-0.5 h-4 bg-gray-800"
+            style={{ left: `${position}%` }}
+          />
+        </div>
+        
+        {/* Level Labels */}
+        <div className="flex justify-between mt-2 text-xs text-gray-600">
+          <div className="flex flex-col items-start">
+            <span>1.0</span>
+            <span className="font-medium">Beginner</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span>1.5</span>
+            <span className="font-medium">Intermediate</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span>2.0</span>
+            <span className="font-medium">Advanced</span>
+          </div>
+          <div className="flex flex-col items-end">
+            <span>2.5</span>
+            <span className="font-medium">Elite</span>
+          </div>
+        </div>
+        
+        {/* Current Value Marker */}
+        <div 
+          className="absolute -top-8 transform -translate-x-1/2"
+          style={{ left: `${position}%` }}
+        >
+          <div className="bg-gray-800 text-white px-2 py-1 rounded text-xs font-medium">
+            {ratio}
+          </div>
+          <div className="w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-gray-800 mx-auto"></div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -390,158 +540,6 @@ const loadProfile = async () => {
           </div>
         </div>
 
-        
-
-// Olympic Lift Progress Bar Component
-  const OlympicProgress = ({ lift, weight, current, target, unit = "%" }) => {
-    const percentage = Math.min((current / target) * 100, 100)
-    const isClose = current >= target * 0.9
-    const isBalanced = current >= target
-    
-    return (
-      <div className="mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center space-x-3">
-            <span className="font-medium text-gray-900">{lift}:</span>
-            <span className="text-lg font-semibold text-gray-800">{weight}</span>
-            <span className="text-sm text-gray-600">({Math.round(current * 100)}{unit} of squat)</span>
-          </div>
-          <div className={`text-sm font-medium px-3 py-1 rounded-full ${
-            isBalanced ? 'bg-green-100 text-green-700' : 
-            isClose ? 'bg-amber-100 text-amber-700' : 
-            'bg-blue-100 text-blue-700'
-          }`}>
-            {isBalanced ? 'Balanced' : isClose ? 'Nearly Balanced' : 'Developing'}
-          </div>
-        </div>
-        
-        <div className="relative">
-          {/* Progress Bar Background */}
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div 
-              className={`h-3 rounded-full transition-all duration-300 ${
-                isBalanced ? 'bg-gradient-to-r from-green-400 to-green-500' :
-                isClose ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
-                'bg-gradient-to-r from-blue-400 to-blue-500'
-              }`}
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
-          
-          {/* Target Line */}
-          <div className="absolute top-0 right-0 transform translate-x-2">
-            <div className="w-0.5 h-3 bg-gray-600"></div>
-            <div className="text-xs text-gray-600 mt-1 -translate-x-1/2">
-              Target: {Math.round(target * 100)}{unit}
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-  
-  // Foundation Strength Progress Bar Component
-  const FoundationProgress = ({ lift, weight, ratio }) => {
-    const levels = [
-      { name: 'Beginner', value: 1.0, color: 'bg-gray-300' },
-      { name: 'Intermediate', value: 1.5, color: 'bg-blue-400' },
-      { name: 'Advanced', value: 2.0, color: 'bg-green-400' },
-      { name: 'Elite', value: 2.5, color: 'bg-purple-400' }
-    ]
-    
-    // Calculate current level
-    let currentLevel = 'Beginner'
-    if (ratio >= 2.5) currentLevel = 'Elite'
-    else if (ratio >= 2.0) currentLevel = 'Advanced'
-    else if (ratio >= 1.5) currentLevel = 'Intermediate'
-    
-    // Calculate position percentage (0-100% across the full bar)
-    const maxValue = 2.5
-    const position = Math.min((ratio / maxValue) * 100, 100)
-    
-    return (
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center space-x-3">
-            <span className="font-medium text-gray-900">{lift}:</span>
-            <span className="text-lg font-semibold text-gray-800">{weight}</span>
-            <span className="text-sm text-gray-600">({ratio}x bodyweight)</span>
-          </div>
-          <div className={`text-sm font-medium px-3 py-1 rounded-full ${
-            currentLevel === 'Elite' ? 'bg-purple-100 text-purple-700' :
-            currentLevel === 'Advanced' ? 'bg-green-100 text-green-700' :
-            currentLevel === 'Intermediate' ? 'bg-blue-100 text-blue-700' :
-            'bg-gray-100 text-gray-700'
-          }`}>
-            {currentLevel}
-          </div>
-        </div>
-        
-        {/* Progress Bar with Level Markers */}
-        <div className="relative">
-          {/* Background Bar */}
-          <div className="w-full bg-gray-200 rounded-full h-4 relative overflow-hidden">
-            {/* Level Sections */}
-            <div className="absolute inset-0 flex">
-              <div className="flex-1 bg-gray-300 border-r border-white"></div>
-              <div className="flex-1 bg-blue-200 border-r border-white"></div>
-              <div className="flex-1 bg-green-200 border-r border-white"></div>
-              <div className="flex-1 bg-purple-200"></div>
-            </div>
-            
-            {/* Progress Fill */}
-            <div 
-              className={`absolute top-0 left-0 h-4 rounded-full transition-all duration-500 ${
-                currentLevel === 'Elite' ? 'bg-gradient-to-r from-purple-400 to-purple-500' :
-                currentLevel === 'Advanced' ? 'bg-gradient-to-r from-green-400 to-green-500' :
-                currentLevel === 'Intermediate' ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
-                'bg-gradient-to-r from-gray-400 to-gray-500'
-              }`}
-              style={{ width: `${position}%` }}
-            />
-            
-            {/* Current Position Marker */}
-            <div 
-              className="absolute top-0 w-0.5 h-4 bg-gray-800"
-              style={{ left: `${position}%` }}
-            />
-          </div>
-          
-          {/* Level Labels */}
-          <div className="flex justify-between mt-2 text-xs text-gray-600">
-            <div className="flex flex-col items-start">
-              <span>1.0</span>
-              <span className="font-medium">Beginner</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span>1.5</span>
-              <span className="font-medium">Intermediate</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span>2.0</span>
-              <span className="font-medium">Advanced</span>
-            </div>
-            <div className="flex flex-col items-end">
-              <span>2.5</span>
-              <span className="font-medium">Elite</span>
-            </div>
-          </div>
-          
-          {/* Current Value Marker */}
-          <div 
-            className="absolute -top-8 transform -translate-x-1/2"
-            style={{ left: `${position}%` }}
-          >
-            <div className="bg-gray-800 text-white px-2 py-1 rounded text-xs font-medium">
-              {ratio}
-            </div>
-            <div className="w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-gray-800 mx-auto"></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
         {/* New Strength Section */}
         <div className="space-y-6">
           {/* Olympic Lift Performance Card */}
@@ -662,7 +660,6 @@ const loadProfile = async () => {
             </button>
           </div>
         </div>
-
 
 {/* Enhanced Conditioning Benchmarks */}
         <div className="bg-white rounded-lg shadow p-6">
@@ -860,7 +857,6 @@ const loadProfile = async () => {
                 })()}
               </div>
             </div>
-
 
 {/* Technical Focus */}
             <div>
