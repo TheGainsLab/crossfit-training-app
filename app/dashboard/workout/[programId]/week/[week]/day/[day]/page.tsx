@@ -681,7 +681,7 @@ function ExerciseCard({
                       asRx: isChecked,
                       // Auto-fill with prescribed values when checked
                       setsCompleted: isChecked ? exercise.sets : prev.setsCompleted,
-                      repsCompleted: isChecked ? exercise.reps : prev.repsCompleted,
+                      repsCompleted: isChecked ? exercise.reps.toString() : prev.repsCompleted,
                       weightUsed: isChecked && exercise.weightTime !== 'BW' ? exercise.weightTime : prev.weightUsed
                     }))
                   }}
@@ -845,6 +845,7 @@ function ExerciseCard({
     </div>
   )
 }
+
 
 
 function MetConCard({ 
@@ -1119,7 +1120,6 @@ function MetConCard({
     </div>
   )
 }
-
 
 
 
