@@ -154,7 +154,7 @@ const skillCategories = [
 ]
 
 // Olympic Lift Progress Bar Component
-const OlympicProgress = ({ lift, weight, current, target, unit = "%" }) => {
+const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicProgressProps) => {
   const percentage = Math.min((current / target) * 100, 100)
   const isClose = current >= target * 0.9
   const isBalanced = current >= target
