@@ -183,6 +183,7 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
     }
   }
 
+
 const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
   console.log('🚀 logCompletion called for:', exerciseName)
   
@@ -196,6 +197,13 @@ const logCompletion = async (exerciseName: string, block: string, completion: Pa
   try {
     const userId = await getCurrentUserId()
     console.log('🔢 About to make POST with userId:', userId, 'setNumber:', setNumber)
+    
+    // OPTIMISTIC UPDATE: Update UI immediately
+    setCompletions(prev => ({
+      ...prev,
+      [exerciseName]: { exerciseName, ...completion }
+    }))
+    console.log('✅ Optimistic UI update applied')
     
     const response = await fetch('/api/workouts/complete', {
       method: 'POST',
@@ -219,14 +227,30 @@ const logCompletion = async (exerciseName: string, block: string, completion: Pa
     if (response.ok) {
       const data = await response.json()
       if (data.success) {
+        console.log('💾 Database update confirmed')
+        // Optionally update with server response data if it differs
         setCompletions(prev => ({
           ...prev,
           [exerciseName]: { exerciseName, ...completion }
         }))
+      } else {
+        throw new Error('Server returned unsuccessful response')
       }
+    } else {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
   } catch (err) {
-    console.error('Failed to log completion:', err)
+    console.error('❌ Failed to log completion:', err)
+    
+    // ROLLBACK: Remove optimistic update on failure
+    setCompletions(prev => {
+      const updated = { ...prev }
+      delete updated[exerciseName]
+      return updated
+    })
+    
+    // TODO: Show user-friendly error message
+    alert('Failed to save completion. Please try again.')
   }
 }
 
