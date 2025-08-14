@@ -78,6 +78,22 @@ interface ProfileData {
   generated_at: string
 }
 
+// Add these interfaces after your existing ProfileData interface
+interface OlympicProgressProps {
+  lift: string
+  weight: string
+  current: number
+  target: number
+  unit?: string
+}
+
+interface FoundationProgressProps {
+  lift: string
+  weight: string
+  ratio: number | string
+}
+
+
 // Type guard for lift keys
 type LiftKey = keyof ProfileData['one_rms']
 
@@ -140,7 +156,8 @@ const skillCategories = [
 ]
 
 // Olympic Lift Progress Bar Component
-const OlympicProgress = ({ lift, weight, current, target, unit = "%" }) => {
+
+const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicProgressProps) => {
   const percentage = Math.min((current / target) * 100, 100)
   const isClose = current >= target * 0.9
   const isBalanced = current >= target
@@ -188,7 +205,8 @@ const OlympicProgress = ({ lift, weight, current, target, unit = "%" }) => {
 }
 
 // Foundation Strength Progress Bar Component
-const FoundationProgress = ({ lift, weight, ratio }) => {
+
+const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) => {
   const levels = [
     { name: 'Beginner', value: 1.0, color: 'bg-gray-300' },
     { name: 'Intermediate', value: 1.5, color: 'bg-blue-400' },
