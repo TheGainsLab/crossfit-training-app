@@ -15,6 +15,9 @@ import {
   ArcElement
 } from 'chart.js'
 import { Bar, Doughnut } from 'react-chartjs-2'
+import ProgramNavigationWidget from './ProgramNavigationWidget'  // ADD THIS LINE HERE
+
+
 
 // Register Chart.js components
 ChartJS.register(
@@ -432,7 +435,21 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Training Blocks Visualization Section */}
+      
+ {/* ADD NAVIGATION WIDGET HERE */}
+  {currentProgram && (
+    <ProgramNavigationWidget 
+      currentWeek={currentWeek}
+      currentDay={currentDay}
+      programId={currentProgram}
+      onNavigate={(week, day) => {
+        setCurrentWeek(week)
+        setCurrentDay(day)
+      }}
+    />
+  )}
+ 
+ {/* Training Blocks Visualization Section */}
         <div className="mb-8">
           {analyticsLoading ? (
             <div className="bg-white rounded-lg shadow p-6">
