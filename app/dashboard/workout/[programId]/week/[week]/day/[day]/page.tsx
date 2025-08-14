@@ -529,7 +529,8 @@ function ExerciseCard({
     weightUsed: completion?.weightUsed || '',
     rpe: completion?.rpe || 7,
     quality: completion?.quality || '',
-    notes: completion?.notes || ''
+    notes: completion?.notes || '',
+    asRx: completion?.wasRx || false
   })
 
   const isCompleted = completion !== undefined
@@ -541,7 +542,8 @@ function ExerciseCard({
       weightUsed: formData.weightUsed ? parseFloat(formData.weightUsed.toString()) : undefined,
       rpe: formData.rpe,
       quality: formData.quality || undefined,
-      notes: formData.notes.toString()
+      notes: formData.notes.toString(),
+      wasRx: formData.asRx
     })
     setIsExpanded(false)
   }
@@ -665,14 +667,43 @@ function ExerciseCard({
           {/* Performance Inputs Section */}
           <div className="bg-gray-50 rounded-lg p-5">
             <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Performance Data</h4>
+            
+            {/* As Rx Checkbox */}
+            <div className="mb-4">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.asRx}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked
+                    setFormData(prev => ({
+                      ...prev,
+                      asRx: isChecked,
+                      // Auto-fill with prescribed values when checked
+                      setsCompleted: isChecked ? exercise.sets : prev.setsCompleted,
+                      repsCompleted: isChecked ? exercise.reps : prev.repsCompleted,
+                      weightUsed: isChecked && exercise.weightTime !== 'BW' ? exercise.weightTime : prev.weightUsed
+                    }))
+                  }}
+                  className="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-base font-medium text-gray-700">
+                  Completed as prescribed (As Rx)
+                </span>
+              </label>
+            </div>
+
             <div className={`grid grid-cols-1 gap-4 ${exercise.weightTime === 'BW' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Sets Completed</label>
                 <input
                   type="number"
                   value={formData.setsCompleted}
-                  onChange={(e) => setFormData(prev => ({ ...prev, setsCompleted: e.target.value }))}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(e) => setFormData(prev => ({ ...prev, setsCompleted: e.target.value, asRx: false }))}
+                  disabled={formData.asRx}
+                  className={`w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    formData.asRx ? 'bg-gray-100 text-gray-500' : ''
+                  }`}
                   placeholder="0"
                 />
               </div>
@@ -681,8 +712,11 @@ function ExerciseCard({
                 <input
                   type="text"
                   value={formData.repsCompleted}
-                  onChange={(e) => setFormData(prev => ({ ...prev, repsCompleted: e.target.value }))}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(e) => setFormData(prev => ({ ...prev, repsCompleted: e.target.value, asRx: false }))}
+                  disabled={formData.asRx}
+                  className={`w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    formData.asRx ? 'bg-gray-100 text-gray-500' : ''
+                  }`}
                   placeholder="0"
                 />
               </div>
@@ -693,8 +727,11 @@ function ExerciseCard({
                     type="number"
                     step="0.1"
                     value={formData.weightUsed}
-                    onChange={(e) => setFormData(prev => ({ ...prev, weightUsed: e.target.value }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onChange={(e) => setFormData(prev => ({ ...prev, weightUsed: e.target.value, asRx: false }))}
+                    disabled={formData.asRx}
+                    className={`w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      formData.asRx ? 'bg-gray-100 text-gray-500' : ''
+                    }`}
                     placeholder="lbs"
                   />
                 </div>
