@@ -431,86 +431,52 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
-      
-        {/* ADD NAVIGATION WIDGET HERE */}
-        {currentProgram && (
-          <ProgramNavigationWidget 
-            currentWeek={currentWeek}
-            currentDay={currentDay}
-            programId={currentProgram}
-            onNavigate={(week, day) => {
-              setCurrentWeek(week)
-              setCurrentDay(day)
-            }}
-          />
-        )}
- 
-        {/* Training Blocks Visualization Section */}
-        <div className="mb-8">
-          {analyticsLoading ? (
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                <div className="space-y-2">
-                  <div className="h-3 bg-gray-200 rounded"></div>
-                  <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-                  <div className="h-3 bg-gray-200 rounded w-4/6"></div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <TrainingBlocksWidget analytics={dashboardAnalytics} blockData={blockData} />
-          )}
+     {/* Main Content */}
+<main className="max-w-4xl mx-auto px-4 py-8">
+
+  {/* ADD NAVIGATION WIDGET HERE */}
+  {currentProgram && (
+    <ProgramNavigationWidget 
+      currentWeek={currentWeek}
+      currentDay={currentDay}
+      programId={currentProgram}
+      onNavigate={(week, day) => {
+        setCurrentWeek(week)
+        setCurrentDay(day)
+      }}
+    />
+  )}
+
+  {/* Training Blocks Visualization Section */}
+  <div className="mb-8">
+    {analyticsLoading ? (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+          <div className="space-y-2">
+            <div className="h-3 bg-gray-200 rounded"></div>
+            <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+            <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+          </div>
         </div>
+      </div>
+    ) : (
+      <TrainingBlocksWidget analytics={dashboardAnalytics} blockData={blockData} />
+    )}
+  </div>
 
-        {todaysWorkout && (     
-          <>
-            {/* Today's Workout Card */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-3xl font-bold mb-2">Today's Training</h2>
-                    <p className="text-blue-100 text-lg">{todaysWorkout.dayName} - {todaysWorkout.mainLift} Focus</p>
-                    {todaysWorkout.isDeload && (
-                      <span className="inline-block bg-yellow-500 text-yellow-900 px-3 py-1 rounded-full text-sm font-medium mt-2">
-                        ⚡ Deload Week
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-4xl font-bold">🏋️</div>
-                    <p className="text-blue-200 mt-2">{todaysWorkout.totalExercises} exercises</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-6">
-                <Link
-                  href={`/dashboard/workout/${currentProgram}/week/${currentWeek}/day/${currentDay}`}
-                  className="block w-full bg-blue-600 text-white text-center py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors"
-                >
-                  Start Today's Workout →
-                </Link>
-              </div>
-            </div>
-
-            {/* Bottom Navigation */}
-            <div className="flex justify-center">             
-              <Link
-                href="/dashboard/settings"
-                className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-              >
-                <div className="text-3xl mb-2">⚙️</div>
-                <h3 className="font-semibold text-gray-900 mb-1">Settings</h3>
-                <p className="text-gray-600 text-sm">Update 1RMs and preferences</p>
-              </Link>
-            </div>
-          </>
-        )}
-      </main>
-    </div>
-  )
+  {/* Bottom Navigation */}
+  <div className="flex justify-center">             
+    <Link
+      href="/dashboard/settings"
+      className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+    >
+      <div className="text-3xl mb-2">⚙️</div>
+      <h3 className="font-semibold text-gray-900 mb-1">Settings</h3>
+      <p className="text-gray-600 text-sm">Update 1RMs and preferences</p>
+    </Link>
+  </div>
+</main>
+</div>
+)
 }
