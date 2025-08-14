@@ -1,4 +1,4 @@
- 'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -16,8 +16,6 @@ import {
 } from 'chart.js'
 import { Bar, Doughnut } from 'react-chartjs-2'
 import ProgramNavigationWidget from './ProgramNavigationWidget'  // ADD THIS LINE HERE
-
-
 
 // Register Chart.js components
 ChartJS.register(
@@ -436,20 +434,20 @@ export default function DashboardPage() {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
       
- {/* ADD NAVIGATION WIDGET HERE */}
-  {currentProgram && (
-    <ProgramNavigationWidget 
-      currentWeek={currentWeek}
-      currentDay={currentDay}
-      programId={currentProgram}
-      onNavigate={(week, day) => {
-        setCurrentWeek(week)
-        setCurrentDay(day)
-      }}
-    />
-  )}
+        {/* ADD NAVIGATION WIDGET HERE */}
+        {currentProgram && (
+          <ProgramNavigationWidget 
+            currentWeek={currentWeek}
+            currentDay={currentDay}
+            programId={currentProgram}
+            onNavigate={(week, day) => {
+              setCurrentWeek(week)
+              setCurrentDay(day)
+            }}
+          />
+        )}
  
- {/* Training Blocks Visualization Section */}
+        {/* Training Blocks Visualization Section */}
         <div className="mb-8">
           {analyticsLoading ? (
             <div className="bg-white rounded-lg shadow p-6">
@@ -465,6 +463,7 @@ export default function DashboardPage() {
           ) : (
             <TrainingBlocksWidget analytics={dashboardAnalytics} blockData={blockData} />
           )}
+        </div>
 
         {todaysWorkout && (     
           <>
@@ -499,8 +498,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Bottom Navigation */}
-<div className="flex justify-center">             
-
+            <div className="flex justify-center">             
               <Link
                 href="/dashboard/settings"
                 className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
@@ -516,4 +514,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
