@@ -1,4 +1,4 @@
-'use client'
+ 'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -53,6 +53,7 @@ interface DashboardAnalytics {
 }
 
 // Training Blocks Visualization Component
+// Training Blocks Visualization Component - Streamlined Version
 const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ analytics, blockData }) => {
   if (!blockData?.data?.blockAnalysis?.blockSummaries) {
     return (
@@ -74,33 +75,40 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
   if (blockSummaries.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">🎯 Training Blocks</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">🎯 Training Block Overview</h3>
         <p className="text-gray-600">Complete more exercises to see training block analytics!</p>
       </div>
     )
   }
 
-  // Calculate totals
-  const totalExercises = blockSummaries.reduce((sum: number, block: any) => sum + block.exercisesCompleted, 0)
+  // Define the desired order for blocks
+  const blockOrder = ['Skills', 'Technical', 'Strength', 'Accessories', 'MetCons']
   
-  // Prepare donut chart data
+  // Sort block summaries according to the desired order
+  const sortedBlockSummaries = [...blockSummaries].sort((a, b) => {
+    const aIndex = blockOrder.indexOf(a.blockName)
+    const bIndex = blockOrder.indexOf(b.blockName)
+    return aIndex - bIndex
+  })
+
+  // Prepare donut chart data with ordered blocks
   const donutChartData = {
-    labels: blockSummaries.map((block: any) => block.blockName),
+    labels: sortedBlockSummaries.map((block: any) => block.blockName),
     datasets: [{
-      data: blockSummaries.map((block: any) => block.exercisesCompleted),
+      data: sortedBlockSummaries.map((block: any) => block.exercisesCompleted),
       backgroundColor: [
-        '#3B82F6', // Blue - Strength
-        '#EF4444', // Red - Skills
-        '#F59E0B', // Orange - Accessories  
+        '#3B82F6', // Blue - Skills
         '#10B981', // Green - Technical
-        '#8B5CF6'  // Purple - MetCons
+        '#EF4444', // Red - Strength
+        '#8B5CF6', // Purple - Accessories
+        '#F59E0B'  // Orange - MetCons
       ],
       borderColor: [
         '#1D4ED8',
-        '#DC2626', 
-        '#D97706',
         '#059669',
-        '#7C3AED'
+        '#DC2626', 
+        '#7C3AED',
+        '#D97706'
       ],
       borderWidth: 2,
       hoverBorderWidth: 3
@@ -118,6 +126,20 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
           usePointStyle: true,
           font: {
             size: 11
+          },
+          generateLabels: function(chart: any) {
+            const data = chart.data;
+            return data.labels.map((label: string, index: number) => {
+              const block = sortedBlockSummaries[index];
+              return {
+                text: `${label} ${block.percentageOfTotal}%`,
+                fillStyle: data.datasets[0].backgroundColor[index],
+                strokeStyle: data.datasets[0].borderColor[index],
+                lineWidth: 2,
+                hidden: false,
+                index: index
+              };
+            });
           }
         }
       },
@@ -126,7 +148,7 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
           label: function(context: any) {
             const label = context.label || '';
             const value = context.parsed;
-            const block = blockSummaries[context.dataIndex];
+            const block = sortedBlockSummaries[context.dataIndex];
             const percentage = block?.percentageOfTotal || 0;
             return `${label}: ${value} exercises (${percentage}%)`;
           }
@@ -135,135 +157,67 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
     }
   }
 
-  // Prepare RPE bar chart
-  const rpeChartData = {
-    labels: blockSummaries.filter((block: any) => block.avgRPE !== null).map((block: any) => block.blockName),
-    datasets: [{
-      label: 'Average RPE',
-      data: blockSummaries.filter((block: any) => block.avgRPE !== null).map((block: any) => block.avgRPE),
-      backgroundColor: 'rgba(59, 130, 246, 0.6)',
-      borderColor: 'rgba(59, 130, 246, 1)',
-      borderWidth: 1
-    }]
-  }
-
-  const rpeChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        max: 10,
-        title: {
-          display: true,
-          text: 'RPE (1-10)'
-        }
-      }
+  // Helper function to format performance metric
+  const formatPerformanceMetric = (block: any): string => {
+    // For MetCons, show percentile
+    if (block.blockName === 'MetCons' && block.qualityGrade.includes('%ile')) {
+      return block.qualityGrade;
     }
-  }
-
-  // Helper functions
-  const getTrendIcon = (trend: string): string => {
-    switch (trend) {
-      case 'improving': return '↗️'
-      case 'declining': return '↘️'
-      default: return '➡️'
+    // For other blocks, show quality grade if available
+    if (block.qualityGrade && block.qualityGrade !== 'N/A' && !block.qualityGrade.includes('%ile')) {
+      return block.qualityGrade;
     }
-  }
-
-  const formatLastActive = (weeksActive: number): string => {
-    if (weeksActive === 0) return 'No activity'
-    if (weeksActive === 1) return 'This week'
-    return `${weeksActive} weeks active`
+    // Fallback
+    return 'Active';
   }
 
   return (
-    <div className="space-y-6">
-      {/* Donut Chart and RPE Chart */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Exercise Distribution Donut Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">🎯 Training Block Distribution</h3>
-          <div className="h-64">
-            <Doughnut data={donutChartData} options={donutChartOptions} />
-          </div>
-        </div>
-
-        {/* RPE Comparison Bar Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">💪 Average RPE by Block</h3>
-          <div className="h-64">
-            <Bar data={rpeChartData} options={rpeChartOptions} />
-          </div>
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="font-semibold text-gray-900 mb-6">🎯 Training Block Overview</h3>
+      
+      {/* Donut Chart */}
+      <div className="mb-8">
+        <div className="h-64">
+          <Doughnut data={donutChartData} options={donutChartOptions} />
         </div>
       </div>
 
-      {/* Block Performance Cards */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-gray-900 mb-6">Block Performance Details</h3>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {blockSummaries.map((block: any) => (
-            <div key={block.blockName} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-900">{block.blockName}</h4>
-                <div className="text-2xl font-bold text-blue-600">{block.exercisesCompleted}</div>
-              </div>
-              
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Volume:</span>
-                  <span className="font-medium">{block.percentageOfTotal}% of total</span>
-                </div>
-                
-                {block.avgRPE && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Avg RPE:</span>
-                    <span className="font-medium">{block.avgRPE}/10 {getTrendIcon(block.rpeTrend)}</span>
-                  </div>
-                )}
-                
-                {block.avgQuality && !block.qualityGrade.includes('%ile') && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Avg Quality:</span>
-                    <span className="font-medium">{block.qualityGrade} {getTrendIcon(block.qualityTrend)}</span>
-                  </div>
-                )}
-
-                {block.qualityGrade.includes('%ile') && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Performance:</span>
-                    <span className="font-medium">{block.qualityGrade} {getTrendIcon(block.qualityTrend)}</span>
-                  </div>
-                )}
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Activity:</span>
-                  <span className="font-medium">{formatLastActive(block.weeksActive)}</span>
-                </div>
-              </div>
-
-              {/* Quality Grade Badge */}
-              {block.qualityGrade !== 'N/A' && !block.qualityGrade.includes('%ile') && (
-                <div className="mt-3">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    block.qualityGrade.startsWith('A') ? 'bg-green-100 text-green-800' :
-                    block.qualityGrade.startsWith('B') ? 'bg-blue-100 text-blue-800' :
-                    block.qualityGrade.startsWith('C') ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    Quality: {block.qualityGrade}
-                  </span>
-                </div>
-              )}
+      {/* Condensed Block Cards */}
+      <div className="space-y-3 mb-6">
+        {sortedBlockSummaries.map((block: any) => (
+          <div key={block.blockName} className="flex justify-between items-center py-3 px-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <span className="font-medium text-gray-900">{block.blockName}:</span>
+              <span className="text-gray-600">
+                {block.exercisesCompleted} session{block.exercisesCompleted !== 1 ? 's' : ''}
+              </span>
             </div>
-          ))}
-        </div>
+            <div className="text-right">
+              <span className="font-medium text-gray-900">
+                {formatPerformanceMetric(block)}
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
+
+      {/* View Detailed Analytics Link */}
+      <Link
+        href="/dashboard/progress"
+        className="block w-full text-center py-4 px-6 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors group"
+      >
+        <div className="flex items-center justify-center space-x-3">
+          <span className="text-2xl">📊</span>
+          <div className="text-left">
+            <div className="font-semibold text-gray-900 group-hover:text-blue-700">
+              View Detailed Analytics
+            </div>
+            <div className="text-sm text-gray-600">
+              Skills progress, strength analysis & conditioning insights
+            </div>
+          </div>
+        </div>
+      </Link>
     </div>
   )
 }
@@ -568,3 +522,4 @@ export default function DashboardPage() {
     </div>
   )
 }
+
