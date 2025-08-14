@@ -466,21 +466,6 @@ export default function DashboardPage() {
             <TrainingBlocksWidget analytics={dashboardAnalytics} blockData={blockData} />
           )}
 
-          {/* View Progress Link */}
-          <div className="text-center mt-6">
-            <Link
-              href="/dashboard/progress"
-              className="inline-flex items-center px-6 py-3 bg-white rounded-lg shadow hover:shadow-lg transition-shadow border border-gray-200"
-            >
-              <span className="text-2xl mr-3">📊</span>
-              <div className="text-left">
-                <div className="font-semibold text-gray-900">View Detailed Analytics</div>
-                <div className="text-sm text-gray-600">Skills progress, strength analysis & conditioning insights</div>
-              </div>
-            </Link>
-          </div>
-        </div>
-        
         {todaysWorkout && (     
           <>
             {/* Today's Workout Card */}
@@ -514,15 +499,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Bottom Navigation */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <Link
-                href="/dashboard/program"
-                className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-              >
-                <div className="text-3xl mb-2">📅</div>
-                <h3 className="font-semibold text-gray-900 mb-1">Full Program</h3>
-                <p className="text-gray-600 text-sm">Browse your complete 12-week plan</p>
-              </Link>
+<div className="flex justify-center">             
 
               <Link
                 href="/dashboard/settings"
