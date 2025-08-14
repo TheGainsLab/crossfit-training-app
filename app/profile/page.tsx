@@ -78,7 +78,6 @@ interface ProfileData {
   generated_at: string
 }
 
-// Add these interfaces after your existing ProfileData interface
 interface OlympicProgressProps {
   lift: string
   weight: string
@@ -90,9 +89,8 @@ interface OlympicProgressProps {
 interface FoundationProgressProps {
   lift: string
   weight: string
-  ratio: number | string
+  ratio: number
 }
-
 
 // Type guard for lift keys
 type LiftKey = keyof ProfileData['one_rms']
@@ -156,8 +154,7 @@ const skillCategories = [
 ]
 
 // Olympic Lift Progress Bar Component
-
-const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicProgressProps) => {
+const OlympicProgress = ({ lift, weight, current, target, unit = "%" }) => {
   const percentage = Math.min((current / target) * 100, 100)
   const isClose = current >= target * 0.9
   const isBalanced = current >= target
@@ -205,8 +202,10 @@ const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicP
 }
 
 // Foundation Strength Progress Bar Component
-
 const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) => {
+  // Convert ratio to number if it's a string
+  const numericRatio = typeof ratio === 'string' ? parseFloat(ratio) : ratio
+  
   const levels = [
     { name: 'Beginner', value: 1.0, color: 'bg-gray-300' },
     { name: 'Intermediate', value: 1.5, color: 'bg-blue-400' },
@@ -216,13 +215,13 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
   
   // Calculate current level
   let currentLevel = 'Beginner'
-  if (ratio >= 2.5) currentLevel = 'Elite'
-  else if (ratio >= 2.0) currentLevel = 'Advanced'
-  else if (ratio >= 1.5) currentLevel = 'Intermediate'
+  if (numericRatio >= 2.5) currentLevel = 'Elite'
+  else if (numericRatio >= 2.0) currentLevel = 'Advanced'
+  else if (numericRatio >= 1.5) currentLevel = 'Intermediate'
   
   // Calculate position percentage (0-100% across the full bar)
   const maxValue = 2.5
-  const position = Math.min((ratio / maxValue) * 100, 100)
+  const position = Math.min((numericRatio / maxValue) * 100, 100)
   
   return (
     <div className="mb-6">
@@ -230,7 +229,7 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
         <div className="flex items-center space-x-3">
           <span className="font-medium text-gray-900">{lift}:</span>
           <span className="text-lg font-semibold text-gray-800">{weight}</span>
-          <span className="text-sm text-gray-600">({ratio}x bodyweight)</span>
+          <span className="text-sm text-gray-600">({numericRatio}x bodyweight)</span>
         </div>
         <div className={`text-sm font-medium px-3 py-1 rounded-full ${
           currentLevel === 'Elite' ? 'bg-purple-100 text-purple-700' :
@@ -298,7 +297,7 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
           style={{ left: `${position}%` }}
         >
           <div className="bg-gray-800 text-white px-2 py-1 rounded text-xs font-medium">
-            {ratio}
+            {numericRatio}
           </div>
           <div className="w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-gray-800 mx-auto"></div>
         </div>
@@ -594,19 +593,19 @@ const loadProfile = async () => {
             <FoundationProgress 
               lift="Back Squat"
               weight={formatWeight(profile.one_rms.back_squat)}
-              ratio={profile.one_rms.back_squat && profile.user_summary.body_weight ? (profile.one_rms.back_squat / profile.user_summary.body_weight).toFixed(1) : 0}
+              ratio={profile.one_rms.back_squat && profile.user_summary.body_weight ? parseFloat((profile.one_rms.back_squat / profile.user_summary.body_weight).toFixed(1)) : 0}
             />
             
             <FoundationProgress 
               lift="Deadlift"
               weight={formatWeight(profile.one_rms.deadlift)}
-              ratio={profile.one_rms.deadlift && profile.user_summary.body_weight ? (profile.one_rms.deadlift / profile.user_summary.body_weight).toFixed(1) : 0}
+              ratio={profile.one_rms.deadlift && profile.user_summary.body_weight ? parseFloat((profile.one_rms.deadlift / profile.user_summary.body_weight).toFixed(1)) : 0}
             />
             
             <FoundationProgress 
               lift="Bench Press"
               weight={formatWeight(profile.one_rms.bench_press)}
-              ratio={profile.one_rms.bench_press && profile.user_summary.body_weight ? (profile.one_rms.bench_press / profile.user_summary.body_weight).toFixed(1) : 0}
+              ratio={profile.one_rms.bench_press && profile.user_summary.body_weight ? parseFloat((profile.one_rms.bench_press / profile.user_summary.body_weight).toFixed(1)) : 0}
             />
 
             {/* Expandable Details */}
