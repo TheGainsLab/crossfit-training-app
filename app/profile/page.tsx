@@ -780,7 +780,7 @@ const loadProfile = async () => {
           </div>
         </div>
 
-{/* Enhanced Conditioning Benchmarks */}
+        {/* Enhanced Conditioning Benchmarks */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">CONDITIONING BENCHMARKS</h2>
           <div className="border-t-2 border-gray-900 mb-6"></div>
@@ -851,11 +851,6 @@ const loadProfile = async () => {
           </div>
         </div>
 
-        {/* Programming Focus Areas */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Programming Focus Areas</h2>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Programming Focus Areas */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-6">Programming Focus Areas</h2>
@@ -1177,7 +1172,6 @@ const loadProfile = async () => {
               )
             })()}
           </div>
-        </div>
         </div>
 
         {/* Movement Skills Repository */}
