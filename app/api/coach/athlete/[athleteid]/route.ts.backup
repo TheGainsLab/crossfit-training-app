@@ -207,15 +207,15 @@ export async function GET(
       skills = skillsData || []
     }
 
-    // Calculate training metrics
-    const totalSessions = recentPerformance?.length || 0
-    const avgRPE = totalSessions > 0 
-      ? Math.round((recentPerformance.reduce((sum, log) => sum + (log.rpe || 0), 0) / totalSessions) * 10) / 10
-      : 0
+// Calculate training metrics
+const totalSessions = recentPerformance?.length || 0
+const avgRPE = totalSessions > 0 
+  ? Math.round(((recentPerformance?.reduce((sum, log) => sum + (log.rpe || 0), 0) || 0) / totalSessions) * 10) / 10
+  : 0
 
-    const avgQuality = totalSessions > 0
-      ? Math.round((recentPerformance.reduce((sum, log) => sum + (log.completion_quality || 0), 0) / totalSessions) * 10) / 10
-      : 0
+const avgQuality = totalSessions > 0
+  ? Math.round(((recentPerformance?.reduce((sum, log) => sum + (log.completion_quality || 0), 0) || 0) / totalSessions) * 10) / 10
+  : 0
 
     // Group performance by block
     const blockStats = recentPerformance?.reduce((acc: any, log) => {

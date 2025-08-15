@@ -249,19 +249,19 @@ const avgQuality = totalSessions > 0
       ? Math.floor((Date.now() - new Date(lastSession.logged_at).getTime()) / (1000 * 60 * 60 * 24))
       : null
 
-    console.log(`✅ Retrieved detailed data for athlete ${athlete.name}`)
+    console.log(`✅ Retrieved detailed data for athlete ${athlete[0].name}`)
 
     return NextResponse.json({
       success: true,
       athlete: {
-        id: athlete.id,
-        name: athlete.name,
-        email: hasFullAccess ? athlete.email : null, // Email only for full access
-        abilityLevel: athlete.ability_level,
-        bodyWeight: hasEditAccess ? athlete.body_weight : null,
-        units: hasEditAccess ? athlete.units : null,
-        gender: hasEditAccess ? athlete.gender : null,
-        joinedAt: athlete.created_at
+        id: athlete[0].id,
+        name: athlete[0].name,
+        email: hasFullAccess ? athlete[0].email : null, // Email only for full access
+        abilityLevel: athlete[0].ability_level,
+        bodyWeight: hasEditAccess ? athlete[0].body_weight : null,
+        units: hasEditAccess ? athlete[0].units : null,
+        gender: hasEditAccess ? athlete[0].gender : null,
+        joinedAt: athlete[0].created_at
       },
       coachingDetails: {
         relationshipId: relationship.id,
