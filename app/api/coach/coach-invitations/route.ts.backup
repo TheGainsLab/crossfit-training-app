@@ -159,15 +159,15 @@ export async function GET(request: NextRequest) {
         updatedAt: rel.updated_at,
         assignedAt: rel.assigned_at,
         coach: {
-          id: coach[0].id,
-          name: coach[0].coach_name,
-          bio: coach[0].bio,
-          specialties: coach[0].specialties || [],
-          certifications: coach[0].certifications || [],
-          experienceYears: coach[0].experience_years,
-          contactName: coach[0].users?.name,
+          id: coach.id,
+          name: coach.coach_name,
+          bio: coach.bio,
+          specialties: coach.specialties || [],
+          certifications: coach.certifications || [],
+          experienceYears: coach.experience_years,
+          contactName: coach.users?.name,
           // Email only for active relationships
-          email: rel.status === 'active' ? coach[0].users?.email : null
+          email: rel.status === 'active' ? coach.users?.email : null
         },
         // Helper properties for UI
         isPending: rel.status === 'pending',
