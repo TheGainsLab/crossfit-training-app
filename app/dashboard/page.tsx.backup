@@ -759,7 +759,7 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Active Athletes</p>
-                  <p className="text-2xl font-bold text-green-600">{summary.recentlyActiveathletes}</p>
+                  <p className="text-2xl font-bold text-green-600">{(summary as any).recentlyActiveathletes}</p>
                 </div>
                 <div className="text-green-600">✅</div>
               </div>
@@ -769,7 +769,7 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Need Attention</p>
-                  <p className="text-2xl font-bold text-red-600">{summary.athletesNeedingAttention}</p>
+                  <p className="text-2xl font-bold text-red-600">{(summary as any).athletesNeedingAttention}</p>
                 </div>
                 <div className="text-red-600">🚨</div>
               </div>
@@ -779,7 +779,7 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Warnings</p>
-                  <p className="text-2xl font-bold text-yellow-600">{summary.athletesWithWarnings}</p>
+                  <p className="text-2xl font-bold text-yellow-600">{(summary as any).athletesWithWarnings}</p>
                 </div>
                 <div className="text-yellow-600">⚠️</div>
               </div>
@@ -789,7 +789,7 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Avg Sessions</p>
-                  <p className="text-2xl font-bold text-blue-600">{summary.averageSessionsPerAthlete}</p>
+                  <p className="text-2xl font-bold text-blue-600">{(summary as any).averageSessionsPerAthlete}</p>
                 </div>
                 <div className="text-blue-600">📊</div>
               </div>

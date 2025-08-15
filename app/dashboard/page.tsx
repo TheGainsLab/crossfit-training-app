@@ -573,23 +573,23 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h3 className="font-semibold text-gray-900 text-lg">{athlete.athlete.name}</h3>
-            <p className="text-sm text-gray-500 capitalize">{athlete.athlete.abilityLevel}</p>
+            <h3 className="font-semibold text-gray-900 text-lg">{(athlete as any).(athlete as any).name}</h3>
+            <p className="text-sm text-gray-500 capitalize">{(athlete as any).(athlete as any).abilityLevel}</p>
           </div>
-          <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getHealthStatusColor(athlete.recentActivity.healthStatus)}`}>
-            {getHealthStatusIcon(athlete.recentActivity.healthStatus)} {athlete.recentActivity.healthStatus.replace('_', ' ')}
+          <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getHealthStatusColor((athlete as any).recentActivity.healthStatus)}`}>
+            {getHealthStatusIcon((athlete as any).recentActivity.healthStatus)} {(athlete as any).recentActivity.healthStatus.replace('_', ' ')}
           </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="text-center p-2 bg-gray-50 rounded">
-            <div className="text-xl font-bold text-gray-900">{athlete.recentActivity.sessionsLast14Days}</div>
+            <div className="text-xl font-bold text-gray-900">{(athlete as any).recentActivity.sessionsLast14Days}</div>
             <div className="text-xs text-gray-600">Sessions (14d)</div>
           </div>
           <div className="text-center p-2 bg-gray-50 rounded">
             <div className="text-xl font-bold text-gray-900">
-              {athlete.recentActivity.daysSinceLastSession === null ? '—' : `${athlete.recentActivity.daysSinceLastSession}d`}
+              {(athlete as any).recentActivity.daysSinceLastSession === null ? '—' : `${(athlete as any).recentActivity.daysSinceLastSession}d`}
             </div>
             <div className="text-xs text-gray-600">Since Last</div>
           </div>
@@ -599,18 +599,18 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs text-gray-500">Access Level:</span>
           <span className={`px-2 py-1 rounded text-xs font-medium ${
-            athlete.coachingDetails.permissionLevel === 'full' ? 'bg-purple-100 text-purple-800' :
-            athlete.coachingDetails.permissionLevel === 'edit' ? 'bg-blue-100 text-blue-800' :
+            (athlete as any).coachingDetails.permissionLevel === 'full' ? 'bg-purple-100 text-purple-800' :
+            (athlete as any).coachingDetails.permissionLevel === 'edit' ? 'bg-blue-100 text-blue-800' :
             'bg-gray-100 text-gray-800'
           }`}>
-            {athlete.coachingDetails.permissionLevel}
+            {(athlete as any).coachingDetails.permissionLevel}
           </span>
         </div>
 
         {/* Current Program */}
-        {athlete.currentProgram && (
+        {(athlete as any).currentProgram && (
           <div className="text-xs text-gray-500 mb-3">
-            Program #{athlete.currentProgram.id} • Generated {new Date(athlete.currentProgram.generatedAt).toLocaleDateString()}
+            Program #{(athlete as any).currentProgram.id} • Generated {new Date((athlete as any).currentProgram.generatedAt).toLocaleDateString()}
           </div>
         )}
 
@@ -830,7 +830,7 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {athletes.map((athlete) => (
-                <AthleteCard key={athlete.relationshipId} athlete={athlete} />
+                <AthleteCard key={(athlete as any).relationshipId} athlete={athlete} />
               ))}
             </div>
           )}
@@ -845,7 +845,7 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
             <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {selectedAthlete.athlete.name} - Detailed View
+                  {selectedAthlete.(athlete as any).name} - Detailed View
                 </h3>
                 <button
                   onClick={() => setSelectedAthlete(null)}
