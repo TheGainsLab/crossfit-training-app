@@ -578,7 +578,6 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
 
 
 
-}
 export default function DashboardPage() {
   const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
   const [loading, setLoading] = useState(true)
