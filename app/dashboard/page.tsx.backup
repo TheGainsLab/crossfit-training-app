@@ -603,7 +603,7 @@ const checkCoachRole = async () => {
         )}
       </div>
     </div>
-  );}   
+  );   
 const CoachDashboard = ({ coachData }: { coachData: any }) => {
     const [athletes, setAthletes] = useState([])
     const [athletesLoading, setAthletesLoading] = useState(true)
@@ -959,3 +959,4 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
 
 
 
+}

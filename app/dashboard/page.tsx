@@ -223,6 +223,362 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
   )
 }
 
+const CoachDashboard = ({ coachData }: { coachData: any }) => {
+    const [athletes, setAthletes] = useState([])
+    const [athletesLoading, setAthletesLoading] = useState(true)
+    const [summary, setSummary] = useState(null)
+    const [selectedAthlete, setSelectedAthlete] = useState(null)
+    const [showInviteModal, setShowInviteModal] = useState(false)
+
+    useEffect(() => {
+      if (coachData) {
+        fetchAthletes()
+      }
+    }, [coachData])
+
+    const fetchAthletes = async () => {
+      setAthletesLoading(true)
+      try {
+        const response = await fetch('/api/coach/athletes')
+        const data = await response.json()
+        
+        if (data.success) {
+          setAthletes(data.athletes || [])
+          setSummary(data.summary)
+        } else {
+          console.error('Failed to fetch athletes:', data.error)
+          setAthletes([])
+        }
+      } catch (error) {
+        console.error('Error fetching athletes:', error)
+        setAthletes([])
+      } finally {
+        setAthletesLoading(false)
+      }
+    }
+
+    const getHealthStatusColor = (status: string) => {
+      switch (status) {
+        case 'good': return 'bg-green-100 text-green-800 border-green-200'
+        case 'warning': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        case 'needs_attention': return 'bg-red-100 text-red-800 border-red-200'
+        default: return 'bg-gray-100 text-gray-800 border-gray-200'
+      }
+    }
+
+    const getHealthStatusIcon = (status: string) => {
+      switch (status) {
+        case 'good': return '✅'
+        case 'warning': return '⚠️'
+        case 'needs_attention': return '🚨'
+        default: return '❓'
+      }
+    }
+
+    const AthleteCard = ({ athlete }: { athlete: any }) => (
+      <div className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow p-4">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h3 className="font-semibold text-gray-900 text-lg">{(athlete as any).name}</h3>
+            <p className="text-sm text-gray-500 capitalize">{(athlete as any).abilityLevel}</p>
+          </div>
+          <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getHealthStatusColor((athlete as any).recentActivity.healthStatus)}`}>
+            {getHealthStatusIcon((athlete as any).recentActivity.healthStatus)} {(athlete as any).recentActivity.healthStatus.replace('_', ' ')}
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-xl font-bold text-gray-900">{(athlete as any).recentActivity.sessionsLast14Days}</div>
+            <div className="text-xs text-gray-600">Sessions (14d)</div>
+          </div>
+          <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-xl font-bold text-gray-900">
+              {(athlete as any).recentActivity.daysSinceLastSession === null ? '—' : `${(athlete as any).recentActivity.daysSinceLastSession}d`}
+            </div>
+            <div className="text-xs text-gray-600">Since Last</div>
+          </div>
+        </div>
+
+        {/* Permission Level */}
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs text-gray-500">Access Level:</span>
+          <span className={`px-2 py-1 rounded text-xs font-medium ${
+            (athlete as any).coachingDetails.permissionLevel === 'full' ? 'bg-purple-100 text-purple-800' :
+            (athlete as any).coachingDetails.permissionLevel === 'edit' ? 'bg-blue-100 text-blue-800' :
+            'bg-gray-100 text-gray-800'
+          }`}>
+            {(athlete as any).coachingDetails.permissionLevel}
+          </span>
+        </div>
+
+        {/* Current Program */}
+        {(athlete as any).currentProgram && (
+          <div className="text-xs text-gray-500 mb-3">
+            Program #{(athlete as any).currentProgram.id} • Generated {new Date((athlete as any).currentProgram.generatedAt).toLocaleDateString()}
+          </div>
+        )}
+
+        {/* Action Button */}
+        <button
+          onClick={() => setSelectedAthlete(athlete)}
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+        >
+          View Details →
+        </button>
+      </div>
+    )
+
+    const InviteAthleteModal = () => {
+      const [email, setEmail] = useState('')
+      const [message, setMessage] = useState('')
+      const [permission, setPermission] = useState('view')
+      const [inviting, setInviting] = useState(false)
+
+      const handleInvite = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!email.trim()) return
+
+        setInviting(true)
+        try {
+          const response = await fetch('/api/coach/assign-athlete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              athleteEmail: email,
+              permissionLevel: permission,
+              message: message
+            })
+          })
+
+          const data = await response.json()
+          if (data.success) {
+            alert('Invitation sent successfully!')
+            setShowInviteModal(false)
+            setEmail('')
+            setMessage('')
+            fetchAthletes() // Refresh the list
+          } else {
+            alert(`Failed to send invitation: ${data.error}`)
+          }
+        } catch (error) {
+          console.error('Error sending invitation:', error)
+          alert('Error sending invitation')
+        } finally {
+          setInviting(false)
+        }
+      }
+
+      if (!showInviteModal) return null
+
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Invite Athlete</h3>
+            
+            <form onSubmit={handleInvite} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Athlete Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="athlete@example.com"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Permission Level
+                </label>
+                <select
+                  value={permission}
+                  onChange={(e) => setPermission(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="view">View Only</option>
+                  <option value="edit">Edit Access</option>
+                  <option value="full">Full Access</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Personal Message (Optional)
+                </label>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Hi! I'd like to be your coach..."
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(false)}
+                  className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded font-medium hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={inviting}
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {inviting ? 'Sending...' : 'Send Invite'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Coach Header */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Coach Dashboard</h2>
+              <p className="text-gray-600">Manage your athletes and track their progress</p>
+            </div>
+            <div className="text-right">
+              <div className="text-3xl font-bold text-blue-600">{athletes.length}</div>
+              <div className="text-sm text-gray-600">Total Athletes</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Summary Stats */}
+        {summary && (
+          <div className="grid md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow-sm border p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Active Athletes</p>
+                  <p className="text-2xl font-bold text-green-600">{(summary as any).recentlyActiveathletes}</p>
+                </div>
+                <div className="text-green-600">✅</div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm border p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Need Attention</p>
+                  <p className="text-2xl font-bold text-red-600">{(summary as any).athletesNeedingAttention}</p>
+                </div>
+                <div className="text-red-600">🚨</div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm border p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Warnings</p>
+                  <p className="text-2xl font-bold text-yellow-600">{(summary as any).athletesWithWarnings}</p>
+                </div>
+                <div className="text-yellow-600">⚠️</div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm border p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Avg Sessions</p>
+                  <p className="text-2xl font-bold text-blue-600">{(summary as any).averageSessionsPerAthlete}</p>
+                </div>
+                <div className="text-blue-600">📊</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Athletes Section */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Your Athletes</h3>
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
+              + Invite Athlete
+            </button>
+          </div>
+
+          {athletesLoading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1,2,3].map(i => (
+                <div key={i} className="animate-pulse bg-gray-100 rounded-lg h-48"></div>
+              ))}
+            </div>
+          ) : athletes.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-4xl mb-4">👥</div>
+              <h4 className="text-lg font-medium text-gray-900 mb-2">No Athletes Yet</h4>
+              <p className="text-gray-600 mb-4">Start building your coaching roster by inviting athletes!</p>
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                Send Your First Invitation
+              </button>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {athletes.map((athlete) => (
+                <AthleteCard key={(athlete as any).relationshipId} athlete={athlete} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Invite Modal */}
+        <InviteAthleteModal />
+
+        {/* Athlete Detail Modal - TODO: Implement this */}
+        {selectedAthlete && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {(selectedAthlete as any).name} - Detailed View
+                </h3>
+                <button
+                  onClick={() => setSelectedAthlete(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <p className="text-gray-600">Detailed athlete analytics would go here...</p>
+                <p className="text-sm text-gray-500">
+                  This would show the full analytics dashboard for this athlete,
+                  using the /api/coach/athlete/{(selectedAthlete as any).id} endpoint.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+
+
+}
 export default function DashboardPage() {
   const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -604,359 +960,3 @@ const checkCoachRole = async () => {
       </div>
     </div>
   );   
-const CoachDashboard = ({ coachData }: { coachData: any }) => {
-    const [athletes, setAthletes] = useState([])
-    const [athletesLoading, setAthletesLoading] = useState(true)
-    const [summary, setSummary] = useState(null)
-    const [selectedAthlete, setSelectedAthlete] = useState(null)
-    const [showInviteModal, setShowInviteModal] = useState(false)
-
-    useEffect(() => {
-      if (coachData) {
-        fetchAthletes()
-      }
-    }, [coachData])
-
-    const fetchAthletes = async () => {
-      setAthletesLoading(true)
-      try {
-        const response = await fetch('/api/coach/athletes')
-        const data = await response.json()
-        
-        if (data.success) {
-          setAthletes(data.athletes || [])
-          setSummary(data.summary)
-        } else {
-          console.error('Failed to fetch athletes:', data.error)
-          setAthletes([])
-        }
-      } catch (error) {
-        console.error('Error fetching athletes:', error)
-        setAthletes([])
-      } finally {
-        setAthletesLoading(false)
-      }
-    }
-
-    const getHealthStatusColor = (status: string) => {
-      switch (status) {
-        case 'good': return 'bg-green-100 text-green-800 border-green-200'
-        case 'warning': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-        case 'needs_attention': return 'bg-red-100 text-red-800 border-red-200'
-        default: return 'bg-gray-100 text-gray-800 border-gray-200'
-      }
-    }
-
-    const getHealthStatusIcon = (status: string) => {
-      switch (status) {
-        case 'good': return '✅'
-        case 'warning': return '⚠️'
-        case 'needs_attention': return '🚨'
-        default: return '❓'
-      }
-    }
-
-    const AthleteCard = ({ athlete }: { athlete: any }) => (
-      <div className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow p-4">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h3 className="font-semibold text-gray-900 text-lg">{(athlete as any).name}</h3>
-            <p className="text-sm text-gray-500 capitalize">{(athlete as any).abilityLevel}</p>
-          </div>
-          <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getHealthStatusColor((athlete as any).recentActivity.healthStatus)}`}>
-            {getHealthStatusIcon((athlete as any).recentActivity.healthStatus)} {(athlete as any).recentActivity.healthStatus.replace('_', ' ')}
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="text-center p-2 bg-gray-50 rounded">
-            <div className="text-xl font-bold text-gray-900">{(athlete as any).recentActivity.sessionsLast14Days}</div>
-            <div className="text-xs text-gray-600">Sessions (14d)</div>
-          </div>
-          <div className="text-center p-2 bg-gray-50 rounded">
-            <div className="text-xl font-bold text-gray-900">
-              {(athlete as any).recentActivity.daysSinceLastSession === null ? '—' : `${(athlete as any).recentActivity.daysSinceLastSession}d`}
-            </div>
-            <div className="text-xs text-gray-600">Since Last</div>
-          </div>
-        </div>
-
-        {/* Permission Level */}
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs text-gray-500">Access Level:</span>
-          <span className={`px-2 py-1 rounded text-xs font-medium ${
-            (athlete as any).coachingDetails.permissionLevel === 'full' ? 'bg-purple-100 text-purple-800' :
-            (athlete as any).coachingDetails.permissionLevel === 'edit' ? 'bg-blue-100 text-blue-800' :
-            'bg-gray-100 text-gray-800'
-          }`}>
-            {(athlete as any).coachingDetails.permissionLevel}
-          </span>
-        </div>
-
-        {/* Current Program */}
-        {(athlete as any).currentProgram && (
-          <div className="text-xs text-gray-500 mb-3">
-            Program #{(athlete as any).currentProgram.id} • Generated {new Date((athlete as any).currentProgram.generatedAt).toLocaleDateString()}
-          </div>
-        )}
-
-        {/* Action Button */}
-        <button
-          onClick={() => setSelectedAthlete(athlete)}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-        >
-          View Details →
-        </button>
-      </div>
-    )
-
-    const InviteAthleteModal = () => {
-      const [email, setEmail] = useState('')
-      const [message, setMessage] = useState('')
-      const [permission, setPermission] = useState('view')
-      const [inviting, setInviting] = useState(false)
-
-      const handleInvite = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!email.trim()) return
-
-        setInviting(true)
-        try {
-          const response = await fetch('/api/coach/assign-athlete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              athleteEmail: email,
-              permissionLevel: permission,
-              message: message
-            })
-          })
-
-          const data = await response.json()
-          if (data.success) {
-            alert('Invitation sent successfully!')
-            setShowInviteModal(false)
-            setEmail('')
-            setMessage('')
-            fetchAthletes() // Refresh the list
-          } else {
-            alert(`Failed to send invitation: ${data.error}`)
-          }
-        } catch (error) {
-          console.error('Error sending invitation:', error)
-          alert('Error sending invitation')
-        } finally {
-          setInviting(false)
-        }
-      }
-
-      if (!showInviteModal) return null
-
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Invite Athlete</h3>
-            
-            <form onSubmit={handleInvite} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Athlete Email
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="athlete@example.com"
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Permission Level
-                </label>
-                <select
-                  value={permission}
-                  onChange={(e) => setPermission(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="view">View Only</option>
-                  <option value="edit">Edit Access</option>
-                  <option value="full">Full Access</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Personal Message (Optional)
-                </label>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Hi! I'd like to be your coach..."
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowInviteModal(false)}
-                  className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded font-medium hover:bg-gray-300 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={inviting}
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
-                  {inviting ? 'Sending...' : 'Send Invite'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )
-    }
-
-    return (
-      <div className="space-y-6">
-        {/* Coach Header */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Coach Dashboard</h2>
-              <p className="text-gray-600">Manage your athletes and track their progress</p>
-            </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-blue-600">{athletes.length}</div>
-              <div className="text-sm text-gray-600">Total Athletes</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Summary Stats */}
-        {summary && (
-          <div className="grid md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg shadow-sm border p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Active Athletes</p>
-                  <p className="text-2xl font-bold text-green-600">{(summary as any).recentlyActiveathletes}</p>
-                </div>
-                <div className="text-green-600">✅</div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-sm border p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Need Attention</p>
-                  <p className="text-2xl font-bold text-red-600">{(summary as any).athletesNeedingAttention}</p>
-                </div>
-                <div className="text-red-600">🚨</div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-sm border p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Warnings</p>
-                  <p className="text-2xl font-bold text-yellow-600">{(summary as any).athletesWithWarnings}</p>
-                </div>
-                <div className="text-yellow-600">⚠️</div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-sm border p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Avg Sessions</p>
-                  <p className="text-2xl font-bold text-blue-600">{(summary as any).averageSessionsPerAthlete}</p>
-                </div>
-                <div className="text-blue-600">📊</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Athletes Section */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Your Athletes</h3>
-            <button
-              onClick={() => setShowInviteModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-            >
-              + Invite Athlete
-            </button>
-          </div>
-
-          {athletesLoading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1,2,3].map(i => (
-                <div key={i} className="animate-pulse bg-gray-100 rounded-lg h-48"></div>
-              ))}
-            </div>
-          ) : athletes.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-4xl mb-4">👥</div>
-              <h4 className="text-lg font-medium text-gray-900 mb-2">No Athletes Yet</h4>
-              <p className="text-gray-600 mb-4">Start building your coaching roster by inviting athletes!</p>
-              <button
-                onClick={() => setShowInviteModal(true)}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-              >
-                Send Your First Invitation
-              </button>
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {athletes.map((athlete) => (
-                <AthleteCard key={(athlete as any).relationshipId} athlete={athlete} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Invite Modal */}
-        <InviteAthleteModal />
-
-        {/* Athlete Detail Modal - TODO: Implement this */}
-        {selectedAthlete && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {(selectedAthlete as any).name} - Detailed View
-                </h3>
-                <button
-                  onClick={() => setSelectedAthlete(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                <p className="text-gray-600">Detailed athlete analytics would go here...</p>
-                <p className="text-sm text-gray-500">
-                  This would show the full analytics dashboard for this athlete,
-                  using the /api/coach/athlete/{(selectedAthlete as any).id} endpoint.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-
-
-}
