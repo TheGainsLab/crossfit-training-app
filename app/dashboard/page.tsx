@@ -845,7 +845,7 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
             <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {selectedAthlete.(athlete as any).name} - Detailed View
+                  {(selectedAthlete as any).name} - Detailed View
                 </h3>
                 <button
                   onClick={() => setSelectedAthlete(null)}
