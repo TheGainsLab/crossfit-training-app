@@ -630,7 +630,7 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
       const [permission, setPermission] = useState('view')
       const [inviting, setInviting] = useState(false)
 
-      const handleInvite = async (e) => {
+      const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!email.trim()) return
 
