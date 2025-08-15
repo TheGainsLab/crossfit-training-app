@@ -557,7 +557,7 @@ const checkCoachRole = async () => {
         {viewMode === "coach" ? (
           <CoachDashboard coachData={coachData} />
         ) : (
-        {/* Program Navigation */}
+          <div className="space-y-6">        {/* Program Navigation */}
         {currentProgram && (
           <ProgramNavigationWidget 
             currentWeek={currentWeek}

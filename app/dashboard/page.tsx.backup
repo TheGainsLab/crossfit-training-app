@@ -557,9 +557,50 @@ const checkCoachRole = async () => {
         {viewMode === "coach" ? (
           <CoachDashboard coachData={coachData} />
         ) : (
-          <div className="text-center py-12">
-      </div>    </div>
-  );
+        {/* Program Navigation */}
+        {currentProgram && (
+          <ProgramNavigationWidget 
+            currentWeek={currentWeek}
+            currentDay={currentDay}
+            programId={currentProgram}
+            onNavigate={(week, day) => {
+              setCurrentWeek(week)
+              setCurrentDay(day)
+            }}
+          />
+        )}
+
+        {/* Training Blocks Visualization */}
+        <div className="mb-8">
+          {analyticsLoading ? (
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded"></div>
+                  <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                  <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <TrainingBlocksWidget analytics={dashboardAnalytics} blockData={blockData} />
+          )}
+        </div>
+
+        {/* Settings Link */}
+        <div className="flex justify-center">
+          <Link
+            href="/dashboard/settings"
+            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="text-3xl mb-2">⚙️</div>
+            <h3 className="font-semibold text-gray-900 mb-1">Settings</h3>
+            <p className="text-gray-600 text-sm">Update 1RMs and preferences</p>
+          </Link>
+        </div>
+        )}
+      </div>  );
 }   
 const CoachDashboard = ({ coachData }: { coachData: any }) => {
     const [athletes, setAthletes] = useState([])
