@@ -1,4 +1,4 @@
-// /app/api/athlete/accept-coach/[relationshipId]/route.ts
+w// /app/api/athlete/accept-coach/[relationshipId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
@@ -211,8 +211,8 @@ export async function POST(
           status: 'inactive',
           coach: {
             id: coach[0].id,
-            name: coach.coach_name
-          },
+name: coach[0].coach_name        
+  },
           declinedAt: updatedRelationship.updated_at,
           declineMessage: message || null
         }
