@@ -859,7 +859,7 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
                 <p className="text-gray-600">Detailed athlete analytics would go here...</p>
                 <p className="text-sm text-gray-500">
                   This would show the full analytics dashboard for this athlete,
-                  using the /api/coach/athlete/{id} endpoint.
+                  using the /api/coach/athlete/{(selectedAthlete as any).id} endpoint.
                 </p>
               </div>
             </div>
