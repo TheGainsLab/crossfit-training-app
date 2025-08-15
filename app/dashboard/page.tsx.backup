@@ -568,7 +568,7 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
       }
     }
 
-    const AthleteCard = ({ athlete }) => (
+    const AthleteCard = ({ athlete }: { athlete: any }) => (
       <div className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow p-4">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
