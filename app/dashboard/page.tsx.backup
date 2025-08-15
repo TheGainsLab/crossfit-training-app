@@ -451,7 +451,7 @@ const checkCoachRole = async () => {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
-              Welcome, Coach {coachData?.name}! 
+              Welcome, Coach {(coachData as any)?.name}! 
             </h3>
             <p className="text-sm text-gray-600">
               Switch between your athlete training and coaching dashboard
