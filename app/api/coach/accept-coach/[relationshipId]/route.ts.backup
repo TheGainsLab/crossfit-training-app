@@ -181,13 +181,11 @@ export async function POST(
         relationship: {
           id: updatedRelationship.id,
           status: 'active',
-         
- coach: {
+          coach: {
             id: coach[0].id,
- name: coach[0].coach_name, 
- bio: coach[0].bio  
+            name: coach.coach_name,
+            bio: coach.bio
           },
-
           athlete: {
             id: userData.id,
             name: userData.name
