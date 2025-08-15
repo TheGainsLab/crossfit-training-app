@@ -181,11 +181,13 @@ export async function POST(
         relationship: {
           id: updatedRelationship.id,
           status: 'active',
-          coach: {
+         
+ coach: {
             id: coach[0].id,
-            name: coach.coach_name,
-            bio: coach.bio
+ name: coach[0].coach_name, 
+ bio: coach[0].bio  
           },
+
           athlete: {
             id: userData.id,
             name: userData.name
@@ -209,8 +211,8 @@ export async function POST(
           status: 'inactive',
           coach: {
             id: coach[0].id,
-            name: coach.coach_name
-          },
+name: coach[0].coach_name        
+  },
           declinedAt: updatedRelationship.updated_at,
           declineMessage: message || null
         }
@@ -349,14 +351,14 @@ export async function GET(
         isPrimary: relationship.primary_coach,
         message: relationship.invitation_message,
         createdAt: relationship.created_at,
-        coach: {
-          id: relationship.coaches.id,
-          name: relationship.coaches.coach_name,
-          bio: relationship.coaches.bio,
-          specialties: relationship.coaches.specialties || [],
-          experienceYears: relationship.coaches.experience_years
-        }
-      }
+
+coach: {
+  id: relationship.coaches[0].id,                    // Line 355
+  name: relationship.coaches[0].coach_name,          // Line 356
+  bio: relationship.coaches[0].bio,                  // Line 357
+  specialties: relationship.coaches[0].specialties || [],  // Line 358
+  experienceYears: relationship.coaches[0].experience_years  // Line 359
+ },
     })
 
   } catch (error) {

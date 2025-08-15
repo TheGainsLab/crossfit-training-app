@@ -359,7 +359,7 @@ coach: {
   specialties: relationship.coaches[0].specialties || [],  // Line 358
   experienceYears: relationship.coaches[0].experience_years  // Line 359
  },
-    })
+}    })
 
   } catch (error) {
     console.error('❌ Unexpected error in get invitation details:', error)
