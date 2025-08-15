@@ -203,9 +203,9 @@ export async function GET(request: NextRequest) {
 
     // Calculate summary stats
     const totalAthletes = athletesWithMetrics.length
-    const athletesNeedingAttention = athletesWithMetrics.filter(a => a.recentActivity.healthStatus === 'needs_attention').length
-    const athletesWithWarnings = athletesWithMetrics.filter(a => a.recentActivity.healthStatus === 'warning').length
-    const recentlyActiveathletes = athletesWithMetrics.filter(a => a.recentActivity.healthStatus === 'good').length
+    const athletesNeedingAttention = athletesWithMetrics.filter(a => a?.recentActivity.healthStatus === 'needs_attention').length
+    const athletesWithWarnings = athletesWithMetrics.filter(a => a?.recentActivity.healthStatus === 'warning').length
+    const recentlyActiveathletes = athletesWithMetrics.filter(a => a?.recentActivity.healthStatus === 'good').length
 
     console.log(`✅ Retrieved ${totalAthletes} athletes for coach ${coachData.id}`)
 

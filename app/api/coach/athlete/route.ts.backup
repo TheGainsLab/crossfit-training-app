@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
       if (!athlete) return null
 
       // Calculate recent sessions for this athlete
-      const athleteSessions = recentSessions?.filter(session => session.user_id === athlete.id) || []
+      const athleteSessions = recentSessions?.filter(session => session.user_id === athlete[0].id) || []
       const recentSessionCount = athleteSessions.length
       
       // Calculate days since last session
@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
         : null
 
       // Get latest program
-      const latestProgram = latestPrograms?.find(prog => prog.user_id === athlete.id)
+      const latestProgram = latestPrograms?.find(prog => prog.user_id === athlete[0].id)
 
       // Calculate health status
       let healthStatus = 'good'
@@ -177,11 +177,11 @@ export async function GET(request: NextRequest) {
       return {
         relationshipId: rel.id,
         athlete: {
-          id: athlete.id,
-          name: athlete.name,
-          email: athlete.email,
-          abilityLevel: athlete.ability_level,
-          joinedAt: athlete.created_at
+          id: athlete[0].id,
+          name: athlete[0].name,
+          email: athlete[0].email,
+          abilityLevel: athlete[0].ability_level,
+          joinedAt: athlete[0].created_at
         },
         coachingDetails: {
           permissionLevel: rel.permission_level,
