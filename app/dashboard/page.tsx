@@ -559,7 +559,7 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
       }
     }
 
-    const getHealthStatusIcon = (status) => {
+    const getHealthStatusIcon = (status: string) => {
       switch (status) {
         case 'good': return '✅'
         case 'warning': return '⚠️'
