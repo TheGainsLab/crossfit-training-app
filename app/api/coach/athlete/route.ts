@@ -218,7 +218,7 @@ export async function GET(request: NextRequest) {
         athletesWithWarnings,
         recentlyActiveathletes,
         averageSessionsPerAthlete: totalAthletes > 0 
-          ? Math.round(athletesWithMetrics.reduce((sum, a) => sum + a.recentActivity.sessionsLast14Days, 0) / totalAthletes * 10) / 10
+          ? Math.round(athletesWithMetrics.reduce((sum, a) => sum + (a?.recentActivity?.sessionsLast14Days || 0), 0) / totalAthletes * 10) / 10
           : 0
       }
     })
