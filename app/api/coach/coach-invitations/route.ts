@@ -180,23 +180,23 @@ export async function GET(request: NextRequest) {
     // Calculate summary statistics
     const summary = {
       total: processedInvitations.length,
-      pending: processedInvitations.filter(inv => inv.status === 'pending').length,
-      active: processedInvitations.filter(inv => inv.status === 'active').length,
-      inactive: processedInvitations.filter(inv => inv.status === 'inactive').length
+      pending: processedInvitations.filter(inv => inv?.status === 'pending').length,
+      active: processedInvitations.filter(inv => inv?.status === 'active').length,
+      inactive: processedInvitations.filter(inv => inv?.status === 'inactive').length
     }
 
     // Group by status for easier frontend handling
     const groupedInvitations = {
-      pending: processedInvitations.filter(inv => inv.status === 'pending'),
-      active: processedInvitations.filter(inv => inv.status === 'active'),
-      inactive: processedInvitations.filter(inv => inv.status === 'inactive')
+      pending: processedInvitations.filter(inv => inv?.status === 'pending'),
+      active: processedInvitations.filter(inv => inv?.status === 'active'),
+      inactive: processedInvitations.filter(inv => inv?.status === 'inactive')
     }
 
     console.log(`✅ Retrieved ${processedInvitations.length} invitations (${summary.pending} pending, ${summary.active} active)`)
 
     return NextResponse.json({
       success: true,
-      invitations: status === 'all' ? processedInvitations : processedInvitations.filter(inv => inv.status === status),
+      invitations: status === 'all' ? processedInvitations : processedInvitations.filter(inv => inv?.status === status),
       groupedInvitations: status === 'all' ? groupedInvitations : undefined,
       summary,
       athlete: {

@@ -165,9 +165,9 @@ export async function GET(request: NextRequest) {
           specialties: coach[0].specialties || [],
           certifications: coach[0].certifications || [],
           experienceYears: coach[0].experience_years,
-          contactName: coach[0].users?.name,
+          contactName: coach[0].users?.[0].name,
           // Email only for active relationships
-          email: rel.status === 'active' ? coach[0].users?.email : null
+          email: rel.status === 'active' ? coach[0].users?.[0].email : null
         },
         // Helper properties for UI
         isPending: rel.status === 'pending',
