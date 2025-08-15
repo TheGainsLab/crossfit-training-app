@@ -513,7 +513,9 @@ const checkCoachRole = async () => {
         </div>
       </header>
 
-   
+    </div>
+  );
+}   
 const CoachDashboard = ({ coachData }) => {
     const [athletes, setAthletes] = useState([])
     const [athletesLoading, setAthletesLoading] = useState(true)

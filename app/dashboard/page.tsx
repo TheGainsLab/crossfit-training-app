@@ -870,7 +870,4 @@ const CoachDashboard = ({ coachData }) => {
   }
 
 
-</div>
-)
-}
 
