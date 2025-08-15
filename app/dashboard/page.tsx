@@ -599,9 +599,11 @@ const checkCoachRole = async () => {
             <p className="text-gray-600 text-sm">Update 1RMs and preferences</p>
           </Link>
         </div>
+          </div>
         )}
-      </div>  );
-}   
+      </div>
+    </div>
+  );   
 const CoachDashboard = ({ coachData }: { coachData: any }) => {
     const [athletes, setAthletes] = useState([])
     const [athletesLoading, setAthletesLoading] = useState(true)
