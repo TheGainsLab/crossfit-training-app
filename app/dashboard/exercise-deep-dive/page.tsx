@@ -291,7 +291,7 @@ const ExerciseComparison = () => {
               <div className="text-xs text-gray-600">Sessions</div>
             </div>
             <div className="text-center p-3 bg-gray-50 rounded">
-              <div className="text-xl font-bold text-gray-900">{data.summary?.totalReps || 0}</div>
+<div className="text-xl font-bold text-gray-900">{data.volume?.totalReps || 0}</div>              
               <div className="text-xs text-gray-600">Total Reps</div>
             </div>
             <div className="text-center p-3 bg-gray-50 rounded">
