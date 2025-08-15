@@ -351,14 +351,16 @@ export async function GET(
         isPrimary: relationship.primary_coach,
         message: relationship.invitation_message,
         createdAt: relationship.created_at,
-        coach: {
-          id: relationship.coaches.id,
-          name: relationship.coaches.coach_name,
-          bio: relationship.coaches.bio,
-          specialties: relationship.coaches.specialties || [],
-          experienceYears: relationship.coaches.experience_years
-        }
-      }
+
+coach: {
+  id: relationship.coaches[0].id,                    // Line 355
+  name: relationship.coaches[0].coach_name,          // Line 356
+  bio: relationship.coaches[0].bio,                  // Line 357
+  specialties: relationship.coaches[0].specialties || [],  // Line 358
+  experienceYears: relationship.coaches[0].experience_years  // Line 359
+     
+
+ }
     })
 
   } catch (error) {
