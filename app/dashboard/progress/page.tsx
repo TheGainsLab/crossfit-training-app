@@ -656,34 +656,44 @@ const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 
   };
 
   // Enhanced Tab Navigation with Prominent Styling
+
   const TabNavigation = () => (
-    <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-8 p-4">
-      <nav className="flex flex-wrap gap-3" role="tablist" aria-label="Analytics Navigation">
-        {[
-          { id: 'overview', name: 'Overview', icon: '📊' },
-          { id: 'skills', name: 'Skills Progress', icon: '🤸' },
-          { id: 'strength', name: 'Strength Analysis', icon: '💪' },
-          { id: 'metcons', name: 'Conditioning', icon: '🔥' }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            aria-controls={`${tab.id}-panel`}
-            className={`flex items-center space-x-3 px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-              activeTab === tab.id
-                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg scale-105 ring-2 ring-blue-500 ring-offset-2'
-                : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200'
-            }`}
-          >
-            <span className="text-xl">{tab.icon}</span>
-            <span className="font-medium">{tab.name}</span>
-          </button>
-        ))}
-      </nav>
-    </div>
-  );
+  <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-8 p-4">
+    <nav className="flex flex-wrap gap-3" role="tablist" aria-label="Analytics Navigation">
+      {[
+        { id: 'overview', name: 'Overview', icon: '📊' },
+        { id: 'skills', name: 'Skills', icon: '🤸' },
+        { id: 'strength', name: 'Strength', icon: '💪' },
+        { id: 'metcons', name: 'MetCons', icon: '🔥' }
+      ].map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id as any)}
+          role="tab"
+          aria-selected={activeTab === tab.id}
+          aria-controls={`${tab.id}-panel`}
+          className={`flex items-center space-x-3 px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+            activeTab === tab.id
+              ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg scale-105 ring-2 ring-blue-500 ring-offset-2'
+              : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200'
+          }`}
+        >
+          <span className="text-xl">{tab.icon}</span>
+          <span className="font-medium">{tab.name}</span>
+        </button>
+      ))}
+      
+      {/* Exercise Deep Dive Button */}
+      <Link
+        href="/dashboard/exercise-deep-dive"
+        className="flex items-center space-x-3 px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-900 hover:shadow-md border border-green-200"
+      >
+        <span className="text-xl">🔍</span>
+        <span className="font-medium">Exercise Deep Dive</span>
+      </Link>
+    </nav>
+  </div>
+);
 
 
 // Enhanced Skill Card Component
@@ -1388,6 +1398,7 @@ const MetConAnalyticsView = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
 
+
 <header className="bg-white shadow-sm border-b">
   <div className="max-w-7xl mx-auto px-4 py-6">
     <div className="flex items-center justify-between">
@@ -1396,12 +1407,6 @@ const MetConAnalyticsView = () => {
         <p className="text-gray-600">Comprehensive training insights and progress tracking</p>
       </div>
       <div className="flex items-center space-x-4">
-        <Link
-          href="/dashboard/exercise-deep-dive"
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Exercise Deep Dive →
-        </Link>
         <Link
           href="/dashboard"
           className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
@@ -1412,6 +1417,7 @@ const MetConAnalyticsView = () => {
     </div>
   </div>
 </header>
+
 
 
 
