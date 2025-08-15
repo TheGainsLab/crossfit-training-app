@@ -558,9 +558,6 @@ const checkCoachRole = async () => {
           <CoachDashboard coachData={coachData} />
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-600">Your athlete training dashboard content would go here</p>
-          </div>
-        )}
       </div>    </div>
   );
 }   

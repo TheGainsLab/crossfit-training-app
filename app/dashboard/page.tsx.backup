@@ -513,7 +513,55 @@ const checkCoachRole = async () => {
         </div>
       </header>
 
-    </div>
+
+      {/* Coach Toggle */}
+      {isCoach && (
+        <div className="bg-white rounded-lg shadow-sm border p-4 mb-6 max-w-4xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Welcome, Coach {(coachData as any)?.name}!
+              </h3>
+              <p className="text-sm text-gray-600">
+                Switch between your athlete training and coaching dashboard
+              </p>
+            </div>
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode("athlete")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === "athlete"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                🏋️ My Training
+              </button>
+              <button
+                onClick={() => setViewMode("coach")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === "coach"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                👥 Coach Portal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {viewMode === "coach" ? (
+          <CoachDashboard coachData={coachData} />
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-600">Your athlete training dashboard content would go here</p>
+          </div>
+        )}
+      </div>    </div>
   );
 }   
 const CoachDashboard = ({ coachData }: { coachData: any }) => {
