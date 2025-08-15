@@ -573,8 +573,8 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h3 className="font-semibold text-gray-900 text-lg">{(athlete as any).(athlete as any).name}</h3>
-            <p className="text-sm text-gray-500 capitalize">{(athlete as any).(athlete as any).abilityLevel}</p>
+            <h3 className="font-semibold text-gray-900 text-lg">{(athlete as any).name}</h3>
+            <p className="text-sm text-gray-500 capitalize">{(athlete as any).abilityLevel}</p>
           </div>
           <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getHealthStatusColor((athlete as any).recentActivity.healthStatus)}`}>
             {getHealthStatusIcon((athlete as any).recentActivity.healthStatus)} {(athlete as any).recentActivity.healthStatus.replace('_', ' ')}
