@@ -358,9 +358,7 @@ coach: {
   bio: relationship.coaches[0].bio,                  // Line 357
   specialties: relationship.coaches[0].specialties || [],  // Line 358
   experienceYears: relationship.coaches[0].experience_years  // Line 359
-     
-
- }
+ },
     })
 
   } catch (error) {
