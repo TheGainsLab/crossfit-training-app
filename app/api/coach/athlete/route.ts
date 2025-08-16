@@ -153,7 +153,7 @@ console.log("📊 Relationships data:", JSON.stringify(relationships, null, 2))
       if (!athlete) return null
 
       // Calculate recent sessions for this athlete
-      const athleteSessions = recentSessions?.filter(session => session.user_id === athlete[0].id) || []
+      const athleteSessions = recentSessions?.filter(session => session.user_id === athlete.id) || []
       const recentSessionCount = athleteSessions.length
       
       // Calculate days since last session
@@ -166,7 +166,7 @@ console.log("📊 Relationships data:", JSON.stringify(relationships, null, 2))
         : null
 
       // Get latest program
-      const latestProgram = latestPrograms?.find(prog => prog.user_id === athlete[0].id)
+      const latestProgram = latestPrograms?.find(prog => prog.user_id === athlete.id)
 
       // Calculate health status
       let healthStatus = 'good'
@@ -179,11 +179,11 @@ console.log("📊 Relationships data:", JSON.stringify(relationships, null, 2))
       return {
         relationshipId: rel.id,
         athlete: {
-          id: athlete[0].id,
-          name: athlete[0].name,
-          email: athlete[0].email,
-          abilityLevel: athlete[0].ability_level,
-          joinedAt: athlete[0].created_at
+          id: athlete.id,
+          name: athlete.name,
+          email: athlete.email,
+          abilityLevel: athlete.ability_level,
+          joinedAt: athlete.created_at
         },
         coachingDetails: {
           permissionLevel: rel.permission_level,
@@ -237,3 +237,4 @@ console.log("📊 Relationships data:", JSON.stringify(relationships, null, 2))
     )
   }
 }
+
