@@ -897,23 +897,20 @@ const checkCoachRole = async () => {
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">The Gains Apps</h1>
-              <p className="text-gray-600">{getGreeting()}, ready to train?</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">{formatDate(new Date())}</p>
-              <p className="text-lg font-semibold text-blue-600">
-                Week {currentWeek}, Day {currentDay}
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
+{/* Header */}
+<header className="bg-white shadow-sm border-b">
+  <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="flex justify-between items-center">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">The Gains Apps</h1>
+      </div>
+      <div className="text-right">
+        <p className="text-sm text-gray-500">{formatDate(new Date())}</p>
+      </div>
+    </div>
+  </div>
+</header>
+
 
 
       {/* Coach Toggle */}

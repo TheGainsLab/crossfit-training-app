@@ -17,11 +17,6 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
   programId, 
   onNavigate 
 }) => {
-  // Calculate total progress
-  const totalDays = 65; // 12 weeks * 5 days + 5 test days
-  const currentDayNumber = (currentWeek - 1) * 5 + currentDay;
-  const progressPercentage = Math.round((currentDayNumber / totalDays) * 100);
-
   // Helper functions for navigation
   const getPreviousDay = () => {
     if (currentDay === 1) {
@@ -43,99 +38,13 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
     return week === 13 ? "Test Week" : `Week ${week}`;
   };
 
-  const formatDayNumber = (week: number, day: number) => {
-    return (week - 1) * 5 + day;
-  };
-
   const previousDay = getPreviousDay();
   const nextDay = getNextDay();
   const isProgramComplete = currentWeek === 13 && currentDay === 5;
 
-  return (
-    <div className="bg-white rounded-lg shadow p-6 mb-6">
-      {/* Current Position Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="font-semibold text-gray-900">
-            📍 Current Position: {formatWeekLabel(currentWeek)}, Day {currentDay}
-          </h3>
-          <p className="text-sm text-gray-600">
-            Day {currentDayNumber} of {totalDays} • {progressPercentage}% Complete
-          </p>
-        </div>
-        
-        {/* Progress Bar */}
-        <div className="w-32">
-          <div className="bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Controls */}
-      {!isProgramComplete ? (
-        <div className="flex items-center justify-between">
-          {/* Previous Workout */}
-          <button
-            onClick={() => previousDay && onNavigate(previousDay.week, previousDay.day)}
-            disabled={!previousDay}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-              previousDay 
-                ? 'text-blue-600 hover:bg-blue-50 border border-blue-200' 
-                : 'text-gray-400 cursor-not-allowed border border-gray-200'
-            }`}
-          >
-            <span>⬅️</span>
-            <div className="text-left">
-              <div className="text-sm font-medium">Previous</div>
-              {previousDay && (
-                <div className="text-xs text-gray-500">
-                  {formatWeekLabel(previousDay.week)}, Day {previousDay.day}
-                </div>
-              )}
-            </div>
-          </button>
-
-          {/* Today's Workout */}
-          <div className="text-center">
-            <Link
-              href={`/dashboard/workout/${programId}/week/${currentWeek}/day/${currentDay}`}
-              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-            >
-              <span className="mr-2">🎯</span>
-              Today's Workout
-            </Link>
-            <div className="text-xs text-gray-500 mt-1">
-              {formatWeekLabel(currentWeek)}, Day {currentDay}
-            </div>
-          </div>
-
-          {/* Next Workout */}
-          <button
-            onClick={() => nextDay && onNavigate(nextDay.week, nextDay.day)}
-            disabled={!nextDay}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-              nextDay 
-                ? 'text-blue-600 hover:bg-blue-50 border border-blue-200' 
-                : 'text-gray-400 cursor-not-allowed border border-gray-200'
-            }`}
-          >
-            <div className="text-right">
-              <div className="text-sm font-medium">Next</div>
-              {nextDay && (
-                <div className="text-xs text-gray-500">
-                  {formatWeekLabel(nextDay.week)}, Day {nextDay.day}
-                </div>
-              )}
-            </div>
-            <span>➡️</span>
-          </button>
-        </div>
-      ) : (
-        /* Program Complete State */
+  if (isProgramComplete) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="text-center py-6">
           <div className="text-4xl mb-2">🎉</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Program Complete!</h3>
@@ -157,13 +66,122 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
             </Link>
           </div>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {/* Quick Program Overview Link */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
+  return (
+    <div className="bg-white rounded-lg shadow p-6 mb-6">
+      {/* Navigation Controls - Desktop */}
+      <div className="hidden sm:flex items-center justify-between mb-4">
+        {/* Previous Workout */}
+        <button
+          onClick={() => previousDay && onNavigate(previousDay.week, previousDay.day)}
+          disabled={!previousDay}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+            previousDay 
+              ? 'text-blue-600 hover:bg-blue-50 border border-blue-200' 
+              : 'text-gray-400 cursor-not-allowed border border-gray-200'
+          }`}
+        >
+          <span>⬅️</span>
+          <div className="text-left">
+            <div className="text-sm font-medium">Previous</div>
+            {previousDay && (
+              <div className="text-xs text-gray-500">
+                {formatWeekLabel(previousDay.week)}, Day {previousDay.day}
+              </div>
+            )}
+          </div>
+        </button>
+
+        {/* Today's Workout */}
+        <div className="text-center">
+          <Link
+            href={`/dashboard/workout/${programId}/week/${currentWeek}/day/${currentDay}`}
+            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+          >
+            <span className="mr-2">🎯</span>
+            Today's Workout
+          </Link>
+          <div className="text-xs text-gray-500 mt-1">
+            {formatWeekLabel(currentWeek)}, Day {currentDay}
+          </div>
+        </div>
+
+        {/* Next Workout */}
+        <button
+          onClick={() => nextDay && onNavigate(nextDay.week, nextDay.day)}
+          disabled={!nextDay}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+            nextDay 
+              ? 'text-blue-600 hover:bg-blue-50 border border-blue-200' 
+              : 'text-gray-400 cursor-not-allowed border border-gray-200'
+          }`}
+        >
+          <div className="text-right">
+            <div className="text-sm font-medium">Next</div>
+            {nextDay && (
+              <div className="text-xs text-gray-500">
+                {formatWeekLabel(nextDay.week)}, Day {nextDay.day}
+              </div>
+            )}
+          </div>
+          <span>➡️</span>
+        </button>
+      </div>
+
+      {/* Navigation Controls - Mobile */}
+      <div className="sm:hidden space-y-4">
+        {/* Primary Action Button */}
+        <div className="text-center">
+          <Link
+            href={`/dashboard/workout/${programId}/week/${currentWeek}/day/${currentDay}`}
+            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors text-lg w-full justify-center"
+          >
+            <span className="mr-2">🎯</span>
+            Today's Workout
+          </Link>
+          <div className="text-sm text-gray-500 mt-2">
+            {formatWeekLabel(currentWeek)}, Day {currentDay}
+          </div>
+        </div>
+
+        {/* Previous/Next Navigation */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => previousDay && onNavigate(previousDay.week, previousDay.day)}
+            disabled={!previousDay}
+            className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-colors ${
+              previousDay 
+                ? 'text-blue-600 hover:bg-blue-50 border border-blue-200' 
+                : 'text-gray-400 cursor-not-allowed border border-gray-200'
+            }`}
+          >
+            <span>⬅️</span>
+            <span className="font-medium">Previous</span>
+          </button>
+
+          <button
+            onClick={() => nextDay && onNavigate(nextDay.week, nextDay.day)}
+            disabled={!nextDay}
+            className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-colors ${
+              nextDay 
+                ? 'text-blue-600 hover:bg-blue-50 border border-blue-200' 
+                : 'text-gray-400 cursor-not-allowed border border-gray-200'
+            }`}
+          >
+            <span className="font-medium">Next</span>
+            <span>➡️</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Browse Full Program Link - Compact */}
+      <div className="mt-4 text-center">
         <Link
           href="/dashboard/program"
-          className="text-sm text-blue-600 hover:text-blue-700 flex items-center justify-center space-x-1"
+          className="text-sm text-blue-600 hover:text-blue-700 inline-flex items-center space-x-1 transition-colors"
         >
           <span>📋</span>
           <span>Browse Full Program</span>
