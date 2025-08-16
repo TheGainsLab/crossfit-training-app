@@ -381,26 +381,52 @@ const calculateProgress = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      
+{/* Header - Optimized for Mobile */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-blue-600 hover:text-blue-700">
-                ← Dashboard
+          {/* Desktop Layout */}
+          <div className="hidden sm:flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <Link 
+                href="/dashboard" 
+                className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                <span>←</span>
+                <span>Dashboard</span>
               </Link>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">
-                  {workout.dayName} - {workout.mainLift}
-                </h1>
-                <p className="text-sm text-gray-600">
                   Week {workout.week}, Day {workout.day}
-                  {workout.isDeload && <span className="ml-2 text-yellow-600">• Deload Week</span>}
-                </p>
+                </h1>
+                {workout.isDeload && (
+                  <p className="text-sm text-yellow-600">Deload Week</p>
+                )}
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-600">Progress</div>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-600">Progress</span>
+              <div className="w-24 bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+              <span className="text-sm font-medium text-gray-900">{Math.round(progress)}%</span>
+            </div>
+          </div>
+
+          {/* Mobile Layout */}
+          <div className="sm:hidden">
+            {/* Top Row: Dashboard link and Progress */}
+            <div className="flex items-center justify-between mb-2">
+              <Link 
+                href="/dashboard" 
+                className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors -ml-3"
+              >
+                <span>←</span>
+                <span className="font-medium">Dashboard</span>
+              </Link>
               <div className="flex items-center space-x-2">
                 <div className="w-16 bg-gray-200 rounded-full h-2">
                   <div 
@@ -408,12 +434,23 @@ const calculateProgress = () => {
                     style={{ width: `${progress}%` }}
                   ></div>
                 </div>
-                <span className="text-sm font-medium">{Math.round(progress)}%</span>
+                <span className="text-sm font-medium text-gray-900">{Math.round(progress)}%</span>
               </div>
+            </div>
+            
+            {/* Bottom Row: Week/Day info */}
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">
+                Week {workout.week}, Day {workout.day}
+                {workout.isDeload && (
+                  <span className="ml-2 text-sm text-yellow-600">• Deload</span>
+                )}
+              </h1>
             </div>
           </div>
         </div>
       </header>
+
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-6">
@@ -1211,3 +1248,4 @@ function MetConCard({
     </div>
   )
 }
+
