@@ -902,7 +902,6 @@ function MetConCard({
   }
   onComplete: (workoutScore: string, taskCompletions: {exerciseName: string, rpe: number, quality: string}[]) => void
 }) {
-  // ✅ ADD THESE STATE VARIABLES FOR UI FEEDBACK
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCompleted, setIsCompleted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -922,7 +921,6 @@ function MetConCard({
     setTaskQualities(prev => ({...prev, [exerciseName]: quality}))
   }
 
-  // ✅ ENHANCED SUBMIT HANDLER WITH UI FEEDBACK
   const handleSubmit = async () => {
     if (!workoutScore.trim()) return;
     
@@ -937,20 +935,48 @@ function MetConCard({
       
       await onComplete(workoutScore, taskCompletions)
       
-      // ✅ SUCCESS FEEDBACK
       setIsCompleted(true)
       setIsExpanded(false)
       setShowSuccess(true)
       
-      // Clear success message after 3 seconds
       setTimeout(() => setShowSuccess(false), 3000)
       
     } catch (error) {
       console.error('Error submitting MetCon:', error)
-      // ✅ TODO: Add error feedback here if needed
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Quality Button Component (matching ExerciseCard)
+  const QualityButton = ({ grade, isSelected, onClick }: { grade: string, isSelected: boolean, onClick: () => void }) => {
+    const getButtonStyle = () => {
+      const baseStyle = "flex-1 py-2 rounded-lg font-semibold text-xs transition-all duration-200 border-2 min-w-0"
+      
+      if (isSelected) {
+        switch (grade) {
+          case 'A': return `${baseStyle} bg-green-500 text-white border-green-500 shadow-md`
+          case 'B': return `${baseStyle} bg-blue-500 text-white border-blue-500 shadow-md`
+          case 'C': return `${baseStyle} bg-yellow-500 text-white border-yellow-500 shadow-md`
+          case 'D': return `${baseStyle} bg-red-500 text-white border-red-500 shadow-md`
+          default: return `${baseStyle} bg-gray-500 text-white border-gray-500`
+        }
+      } else {
+        return `${baseStyle} bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50`
+      }
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={getButtonStyle()}
+      >
+        <div className="text-center">
+          <div className="text-sm font-bold">{grade}</div>
+        </div>
+      </button>
+    )
   }
 
   if (!metconData) return null
@@ -964,37 +990,48 @@ function MetConCard({
         ? 'bg-green-50 border-green-200' 
         : 'bg-orange-50 border-orange-200'
     }`}>
-      {/* ✅ SUCCESS MESSAGE */}
+      {/* Success Message */}
       {showSuccess && (
         <div className="bg-green-500 text-white p-3 rounded-t-lg text-center font-medium">
           ✅ MetCon completion logged successfully!
         </div>
       )}
       
+      {/* STICKY CONTEXT BAR - Shows when form is expanded and not completed */}
+      {isExpanded && !isCompleted && (
+        <div className="sticky top-0 z-10 bg-orange-600 text-white px-4 py-2 rounded-t-lg">
+          <div className="text-sm font-medium">
+            🔥 {metconData.workoutId}
+          </div>
+        </div>
+      )}
+      
       <div className="p-6">
         {/* Workout Header */}
         <div className="text-center mb-6">
-          <div className="flex items-center justify-center space-x-3 mb-2">
+          <div className="flex items-center justify-center space-x-3 mb-3">
             <h3 className="text-xl font-bold text-gray-900">
               🔥 {metconData.workoutId}
             </h3>
-            {/* ✅ COMPLETION CHECKMARK */}
             {isCompleted && <span className="text-green-600 text-xl">✅</span>}
           </div>
           
-          <p className="text-gray-700 mb-2 font-medium">{metconData.workoutNotes}</p>
-          <p className="text-sm text-gray-600 mb-1">{metconData.workoutFormat}</p>
-          <p className="text-sm text-gray-600 mb-4">Time Range: {metconData.timeRange}</p>
+          {/* Workout Notes */}
+          {metconData.workoutNotes && (
+            <div className="bg-orange-100 border-l-4 border-orange-400 p-4 rounded-r-lg mb-4">
+              <p className="text-orange-800 text-sm leading-relaxed font-medium">{metconData.workoutNotes}</p>
+            </div>
+          )}
           
           {/* Gender Selection - Only show if not completed */}
           {!isCompleted && (
             <div className="flex justify-center mb-4">
-              <div className="flex bg-white rounded-lg p-1 border">
+              <div className="grid grid-cols-2 bg-white rounded-lg p-1 border gap-1">
                 <button
                   onClick={() => setGender('male')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     gender === 'male' 
-                      ? 'bg-blue-500 text-white' 
+                      ? 'bg-blue-500 text-white shadow-sm' 
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
@@ -1004,7 +1041,7 @@ function MetConCard({
                   onClick={() => setGender('female')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     gender === 'female' 
-                      ? 'bg-pink-500 text-white' 
+                      ? 'bg-blue-500 text-white shadow-sm' 
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
@@ -1014,24 +1051,24 @@ function MetConCard({
             </div>
           )}
           
-          {/* Enhanced Benchmarks */}
+          {/* Consistent Benchmarks - All Gray */}
           <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mb-6">
-            <div className="bg-white rounded-lg p-3">
-              <div className="text-sm text-gray-600">Excellent</div>
-              <div className="font-bold text-green-600">{currentBenchmarks.excellentScore}</div>
+            <div className="bg-white rounded-lg p-3 border border-gray-200">
+              <div className="text-xs text-gray-600 font-medium">Excellent</div>
+              <div className="font-bold text-gray-900">{currentBenchmarks.excellentScore}</div>
             </div>
-            <div className="bg-white rounded-lg p-3">
-              <div className="text-sm text-gray-600">Median</div>
-              <div className="font-bold text-blue-600">{currentBenchmarks.medianScore}</div>
+            <div className="bg-white rounded-lg p-3 border border-gray-200">
+              <div className="text-xs text-gray-600 font-medium">Median</div>
+              <div className="font-bold text-gray-900">{currentBenchmarks.medianScore}</div>
             </div>
-            <div className="bg-white rounded-lg p-3">
-              <div className="text-sm text-gray-600">Rx Weight</div>
-              <div className="font-bold text-orange-600">{currentRxWeight}</div>
+            <div className="bg-white rounded-lg p-3 border border-gray-200">
+              <div className="text-xs text-gray-600 font-medium">Rx Weight</div>
+              <div className="font-bold text-gray-900">{currentRxWeight}</div>
             </div>
           </div>
         </div>
 
-        {/* ✅ TOGGLE BUTTON (like ExerciseCard) */}
+        {/* Toggle Button */}
         <div className="flex space-x-2 mb-4">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
@@ -1045,83 +1082,97 @@ function MetConCard({
           </button>
         </div>
 
-        {/* ✅ CONDITIONAL FORM DISPLAY */}
+        {/* Form Content */}
         {isExpanded && !isCompleted && (
           <>
-            {/* Tasks from Database */}
-            <div className="space-y-4 mb-6">
-              {metconData.tasks.map((task, index) => (
-                <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
-                  <div className="flex justify-between items-center mb-3">
-                    <div>
+            {/* Tasks Section - Improved */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Exercise Performance</h4>
+              <div className="space-y-4">
+                {metconData.tasks.map((task, index) => (
+                  <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
+                    {/* Exercise Header */}
+                    <div className="mb-3">
                       <h4 className="font-semibold text-gray-900">{task.exercise}</h4>
                       <p className="text-sm text-gray-600">
                         {task.reps} reps {task.weight_male && `@ ${gender === 'male' ? task.weight_male : task.weight_female} lbs`}
                       </p>
                     </div>
-                  </div>
-                  
-                  {/* RPE and Quality inputs */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">RPE (1-10)</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="10"
-                        value={taskRPEs[task.exercise] || ''}
-                        onChange={(e) => handleTaskRPE(task.exercise, parseInt(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        disabled={isSubmitting}
-                      />
+                    
+                    {/* RPE and Quality - Side by Side */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* RPE Slider Section */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-xs font-medium text-gray-700">RPE</label>
+                          <span className="text-sm font-bold text-blue-600">
+                            {taskRPEs[task.exercise] || 5}/10
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={taskRPEs[task.exercise] || 5}
+                          onChange={(e) => handleTaskRPE(task.exercise, parseInt(e.target.value))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                      
+                      {/* Quality Buttons Section */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2">Quality</label>
+                        <div className="grid grid-cols-4 gap-1">
+                          {['A', 'B', 'C', 'D'].map((grade) => (
+                            <QualityButton
+                              key={grade}
+                              grade={grade}
+                              isSelected={taskQualities[task.exercise] === grade}
+                              onClick={() => handleTaskQuality(task.exercise, 
+                                taskQualities[task.exercise] === grade ? 'C' : grade
+                              )}
+                            />
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Quality</label>
-                      <select
-                        value={taskQualities[task.exercise] || 'C'}
-                        onChange={(e) => handleTaskQuality(task.exercise, e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        disabled={isSubmitting}
-                      >
-                        <option value="A">A - Excellent</option>
-                        <option value="B">B - Good</option>
-                        <option value="C">C - Average</option>
-                        <option value="D">D - Poor</option>
-                      </select>
-                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            {/* Overall Score */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Your Score</label>
+            {/* Overall Score Section */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Your Score</h4>
               <input
                 type="text"
                 placeholder="e.g., 674 total reps, 12:34, 8 rounds + 15"
                 value={workoutScore}
                 onChange={(e) => setWorkoutScore(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
-                disabled={isSubmitting}
-              />
-              
-              <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-              <textarea
-                placeholder="How did it feel? Any observations..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                rows={3}
+                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-3"
                 disabled={isSubmitting}
               />
             </div>
 
-            {/* ✅ ENHANCED SUBMIT BUTTON WITH LOADING STATE */}
+            {/* Notes Section */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Notes</h4>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                rows={3}
+                disabled={isSubmitting}
+                placeholder=""
+              />
+            </div>
+
+            {/* Submit Button */}
             <button
               onClick={handleSubmit}
               disabled={!workoutScore.trim() || isSubmitting}
-              className="w-full bg-orange-600 text-white py-3 px-4 rounded-lg hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+              className="w-full bg-orange-600 text-white py-4 px-4 rounded-lg hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center font-semibold text-base"
             >
               {isSubmitting ? (
                 <>
@@ -1132,13 +1183,13 @@ function MetConCard({
                   Logging MetCon...
                 </>
               ) : (
-                'Log MetCon Completion'
+                'Mark MetCon Complete'
               )}
             </button>
           </>
         )}
 
-        {/* ✅ COMPLETED STATE DISPLAY */}
+        {/* Completed State */}
         {isCompleted && (
           <div className="text-center py-4">
             <div className="text-green-600 text-4xl mb-2">🎉</div>
@@ -1147,8 +1198,29 @@ function MetConCard({
           </div>
         )}
       </div>
+
+      {/* Custom CSS for sliders */}
+      <style jsx>{`
+        input[type="range"]::-webkit-slider-thumb {
+          appearance: none;
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          border: none;
+        }
+      `}</style>
     </div>
   )
 }
-
-
