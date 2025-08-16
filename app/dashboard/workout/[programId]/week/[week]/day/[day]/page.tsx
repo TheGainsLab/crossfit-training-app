@@ -1009,12 +1009,13 @@ function MetConCard({
       <div className="p-6">
         {/* Workout Header */}
         <div className="text-center mb-6">
-          <div className="flex items-center justify-center space-x-3 mb-3">
-            <h3 className="text-xl font-bold text-gray-900">
-              🔥 {metconData.workoutId}
-            </h3>
-            {isCompleted && <span className="text-green-600 text-xl">✅</span>}
-          </div>
+          {/* Show completion checkmark when completed */}
+          {isCompleted && (
+            <div className="flex items-center justify-center space-x-3 mb-3">
+              <span className="text-green-600 text-xl">✅</span>
+              <span className="text-gray-600 font-medium">MetCon Completed</span>
+            </div>
+          )}
           
           {/* Workout Notes */}
           {metconData.workoutNotes && (
