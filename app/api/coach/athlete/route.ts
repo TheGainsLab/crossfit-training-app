@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
 console.log("📊 Relationships data:", JSON.stringify(relationships, null, 2))
     const athletesWithMetrics = relationships.map(rel => {
       
-const athlete = rel.users as any
+const athlete = Array.isArray(rel.users) ? rel.users[0] : rel.users
       if (!athlete) return null
 
       // Calculate recent sessions for this athlete
