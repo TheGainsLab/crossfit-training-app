@@ -578,7 +578,6 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
 
 
 
-}
 export default function DashboardPage() {
   const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -595,7 +594,8 @@ export default function DashboardPage() {
   const [isCoach, setIsCoach] = useState(false)
   const [coachData, setCoachData] = useState(null)
   const [viewMode, setViewMode] = useState('athlete') // 'athlete' or 'coach'
-
+  const [pendingInvitations, setPendingInvitations] = useState([])
+  const [invitationsLoading, setInvitationsLoading] = useState(false)
 
   useEffect(() => {
     loadUserAndProgram()
@@ -960,3 +960,4 @@ const checkCoachRole = async () => {
       </div>
     </div>
   );   
+}

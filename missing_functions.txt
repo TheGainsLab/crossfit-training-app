@@ -1,0 +1,45 @@
+  const handleInvitationResponse = async (relationshipId: number, action: "accept" | "decline") => {
+    try {
+      const response = await fetch(`/api/coach/accept-coach/${relationshipId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setPendingInvitations(prev => prev.filter((inv: any) => inv.id !== relationshipId))
+        
+        if (action === "accept") {
+          alert("Coach invitation accepted! Your new coach can now track your progress.")
+        } else {
+          alert("Coach invitation declined.")
+        }
+      } else {
+        alert(`Failed to ${action} invitation: ${data.error}`)
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing invitation:`, error)
+      alert(`Error ${action}ing invitation. Please try again.`)
+    }
+  }
+
+  const fetchPendingInvitations = async () => {
+    try {
+      setInvitationsLoading(true)
+      const response = await fetch("/api/invitations")
+      const data = await response.json()
+      
+      if (data.success) {
+        setPendingInvitations(data.invitations || [])
+      } else {
+        console.error("Failed to fetch invitations:", data.error)
+      }
+    } catch (error) {
+      console.error("Error fetching invitations:", error)
+    } finally {
+      setInvitationsLoading(false)
+    }
+  }
+
