@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
       .order('generated_at', { ascending: false })
 
     // Process athlete data with activity metrics
-    const athletesWithMetrics = relationships.map(rel => {
+    console.log("📊 Relationships data:", JSON.stringify(relationships, null, 2))    const athletesWithMetrics = relationships.map(rel => {
       const athlete = rel.users
       if (!athlete) return null
 
