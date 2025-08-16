@@ -239,7 +239,7 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
     const fetchAthletes = async () => {
       setAthletesLoading(true)
       try {
-        const response = await fetch('/api/coach/athletes')
+        const response = await fetch('/api/coach/athlete')
         const data = await response.json()
         
         if (data.success) {
