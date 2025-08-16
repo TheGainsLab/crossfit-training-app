@@ -438,10 +438,10 @@ const calculateProgress = () => {
               </div>
             </div>
             
-            {/* Bottom Row: Week/Day info */}
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">
-                Week {workout.week}, Day {workout.day}
+{/* Bottom Row: Week/Day info */}
+<div className="text-center">
+  <h1 className="text-lg font-bold text-gray-900">            
+    Week {workout.week}, Day {workout.day}
                 {workout.isDeload && (
                   <span className="ml-2 text-sm text-yellow-600">• Deload</span>
                 )}
