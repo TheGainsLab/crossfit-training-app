@@ -574,7 +574,7 @@ function ExerciseCard({
 
   const QualityButton = ({ grade, isSelected, onClick }: { grade: string, isSelected: boolean, onClick: () => void }) => {
     const getButtonStyle = () => {
-      const baseStyle = "flex-1 py-3 rounded-lg font-semibold text-sm transition-all duration-200 border-2"
+      const baseStyle = "flex-1 py-3 rounded-lg font-semibold text-sm transition-all duration-200 border-2 min-w-0"
       
       if (isSelected) {
         switch (grade) {
@@ -620,6 +620,15 @@ function ExerciseCard({
         ? 'border-green-200 bg-green-50' 
         : 'border-gray-200 hover:border-gray-300'
     }`}>
+      
+      {/* STICKY CONTEXT BAR - Shows when form is expanded and not completed */}
+      {isExpanded && !isCompleted && (
+        <div className="sticky top-0 z-10 bg-blue-600 text-white px-4 py-2 rounded-t-xl">
+          <div className="text-sm font-medium">
+            {exercise.name}: {exercise.sets}×{exercise.reps} @ {exercise.weightTime || 'BW'}
+          </div>
+        </div>
+      )}
       
       {/* SECTION 1: Exercise Header */}
       <button
@@ -674,7 +683,7 @@ function ExerciseCard({
 
       {/* SECTION 2: Exercise Notes (when expanded) */}
       {isExpanded && exercise.notes && (
-        <div className="mx-6 mb-6">
+        <div className="mx-6 mb-4">
           <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
             <div className="flex items-start space-x-3">
               <span className="text-blue-600 text-lg">💡</span>
@@ -686,11 +695,11 @@ function ExerciseCard({
 
       {/* SECTION 3: Completion Form (when expanded and not completed) */}
       {isExpanded && !isCompleted && (
-        <div className="px-6 pb-6 space-y-6">
+        <div className="px-6 pb-6 space-y-4">
           
-          {/* Performance Inputs Section */}
-          <div className="bg-gray-50 rounded-lg p-5">
-            <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Performance Data</h4>
+          {/* Performance Inputs Section - IMPROVED */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Performance</h4>
             
             {/* As Rx Checkbox */}
             <div className="mb-4">
@@ -717,28 +726,29 @@ function ExerciseCard({
               </label>
             </div>
 
-            <div className={`grid grid-cols-1 gap-4 ${exercise.weightTime === 'BW' ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+            {/* HORIZONTAL LAYOUT - Even on Mobile */}
+            <div className={`grid gap-3 ${exercise.weightTime === 'BW' ? 'grid-cols-2' : 'grid-cols-3'}`}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Sets Completed</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Sets</label>
                 <input
                   type="number"
                   value={formData.setsCompleted}
                   onChange={(e) => setFormData(prev => ({ ...prev, setsCompleted: e.target.value, asRx: false }))}
                   disabled={formData.asRx}
-                  className={`w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  className={`w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                     formData.asRx ? 'bg-gray-100 text-gray-500' : ''
                   }`}
                   placeholder="0"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Reps Completed</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Reps</label>
                 <input
                   type="text"
                   value={formData.repsCompleted}
                   onChange={(e) => setFormData(prev => ({ ...prev, repsCompleted: e.target.value, asRx: false }))}
                   disabled={formData.asRx}
-                  className={`w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  className={`w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                     formData.asRx ? 'bg-gray-100 text-gray-500' : ''
                   }`}
                   placeholder="0"
@@ -746,14 +756,14 @@ function ExerciseCard({
               </div>
               {exercise.weightTime !== 'BW' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Weight Used</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Weight</label>
                   <input
                     type="number"
                     step="0.1"
                     value={formData.weightUsed}
                     onChange={(e) => setFormData(prev => ({ ...prev, weightUsed: e.target.value, asRx: false }))}
                     disabled={formData.asRx}
-                    className={`w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    className={`w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                       formData.asRx ? 'bg-gray-100 text-gray-500' : ''
                     }`}
                     placeholder="lbs"
@@ -763,34 +773,31 @@ function ExerciseCard({
             </div>
           </div>
 
-          {/* RPE Section */}
-          <div className="bg-gray-50 rounded-lg p-5">
-            <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Effort Level</h4>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">Rate of Perceived Exertion (RPE)</label>
-                <span className="text-lg font-bold text-blue-600">{formData.rpe}/10</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={formData.rpe}
-                onChange={(e) => setFormData(prev => ({ ...prev, rpe: parseInt(e.target.value) }))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>1 - Very Easy</span>
-                <span>5 - Moderate</span>
-                <span>10 - Max Effort</span>
-              </div>
+          {/* RPE Section - IMPROVED HEADER */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Effort Level - RPE</h4>
+              <span className="text-lg font-bold text-blue-600">{formData.rpe}/10</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={formData.rpe}
+              onChange={(e) => setFormData(prev => ({ ...prev, rpe: parseInt(e.target.value) }))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mb-2"
+            />
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>1 - Very Easy</span>
+              <span>5 - Moderate</span>
+              <span>10 - Max Effort</span>
             </div>
           </div>
 
-          {/* Quality Section */}
-          <div className="bg-gray-50 rounded-lg p-5">
-            <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Movement Quality</h4>
-            <div className="flex gap-3">
+          {/* Quality Section - CONSISTENT BUTTON SIZING */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Quality</h4>
+            <div className="grid grid-cols-4 gap-2">
               {['A', 'B', 'C', 'D'].map((grade) => (
                 <QualityButton
                   key={grade}
@@ -805,15 +812,15 @@ function ExerciseCard({
             </div>
           </div>
           
-          {/* Notes Section */}
-          <div className="bg-gray-50 rounded-lg p-5">
-            <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Additional Notes</h4>
+          {/* Notes Section - REMOVED PLACEHOLDER TEXT */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Notes</h4>
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               rows={3}
-              placeholder="How did it feel? Any observations, modifications, or thoughts..."
+              placeholder=""
             />
           </div>
 
@@ -869,7 +876,6 @@ function ExerciseCard({
     </div>
   )
 }
-
 
 
 function MetConCard({ 
@@ -1144,7 +1150,5 @@ function MetConCard({
     </div>
   )
 }
-
-
 
 
