@@ -183,25 +183,6 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
         </div>
       </div>
 
-      {/* Condensed Block Cards */}
-      <div className="space-y-3 mb-6">
-        {sortedBlockSummaries.map((block: any) => (
-          <div key={block.blockName} className="flex justify-between items-center py-3 px-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <span className="font-medium text-gray-900">{block.blockName}:</span>
-              <span className="text-gray-600">
-                {block.exercisesCompleted} session{block.exercisesCompleted !== 1 ? 's' : ''}
-              </span>
-            </div>
-            <div className="text-right">
-              <span className="font-medium text-gray-900">
-                {formatPerformanceMetric(block)}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* View Detailed Analytics Link */}
       <Link
         href="/dashboard/progress"
