@@ -521,7 +521,7 @@ const saveUserData = async (userId: number) => {
 }
 
 
-  const nextSection = () => setCurrentSection(prev => Math.min(prev + 1, 4))
+  const nextSection = () => setCurrentSection(prev => Math.min(prev + 1, 5))
   const prevSection = () => setCurrentSection(prev => Math.max(prev - 1, 1))
 
   const isValidSection = (section: number) => {
@@ -535,13 +535,17 @@ const saveUserData = async (userId: number) => {
           return formData.conditioningBenchmarks.airBikeType !== ''
         }
         return true
-      case 4:
-        if (isNewPaidUser) {
-          // For new users, validate password requirements
-          const passwordValidation = validatePassword(formData.password)
-          return passwordValidation.isValid && formData.password === formData.confirmPassword
-        }
-        return true // 1RMs are optional for existing users
+
+     case 4:
+  return true // 1RMs are optional - just data collection
+case 5:
+  if (isNewPaidUser) {
+    // For new users, validate password requirements
+    const passwordValidation = validatePassword(formData.password)
+    return passwordValidation.isValid && formData.password === formData.confirmPassword
+  }
+  return true // Existing users just need confirmation
+
       default:
         return true
     }
@@ -607,16 +611,18 @@ const saveUserData = async (userId: number) => {
             
             {/* Progress bar */}
             <div className="mt-6">
-              <div className="flex justify-between text-sm text-gray-500 mb-2">
-                <span>Section {currentSection} of 4</span>
-                <span>{Math.round((currentSection / 4) * 100)}% Complete</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(currentSection / 4) * 100}%` }}
-                />
-              </div>
+
+            <div className="flex justify-between text-sm text-gray-500 mb-2">
+  <span>Section {currentSection} of 5</span>
+  <span>{Math.round((currentSection / 5) * 100)}% Complete</span>
+</div>
+<div className="w-full bg-gray-200 rounded-full h-2">
+  <div 
+    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+    style={{ width: `${(currentSection / 5) * 100}%` }}
+  />
+</div>
+
             </div>
           </div>
 
@@ -954,9 +960,11 @@ const saveUserData = async (userId: number) => {
             {/* Section 4: 1RM Lifts + Password Creation for New Users */}
             {currentSection === 4 && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-                  Section 4: 1RM Lifts {isNewPaidUser && '& Account Setup'}
-                </h2>
+
+             <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+            Section 4: 1RM Lifts
+             </h2>
+
                 
                 <p className="text-gray-600 mb-6">
                   Enter your recent 1-Rep Max for each lift in {formData.units === 'Metric (kg)' ? 'kilograms' : 'pounds'} 
@@ -981,89 +989,7 @@ const saveUserData = async (userId: number) => {
                     </div>
                   ))}
                 </div>
-
-                {/* Password Creation for New Users */}
-                {isNewPaidUser && (
-                  <div className="mt-12 p-6 bg-blue-50 rounded-lg border border-blue-200">
-                    <h3 className="text-lg font-semibold text-blue-900 mb-4">
-                      Create Your Account Password
-                    </h3>
-                    <p className="text-sm text-blue-700 mb-6">
-                      Set a password to access your training program and return to update your data anytime.
-                    </p>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-blue-800 mb-2">
-                          Password *
-                        </label>
-                        <input
-                          type="password"
-                          value={formData.password}
-                          onChange={(e) => updateFormData('password', e.target.value)}
-                          className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-blue-800 mb-2">
-                          Confirm Password *
-                        </label>
-                        <input
-                          type="password"
-                          value={formData.confirmPassword}
-                          onChange={(e) => updateFormData('confirmPassword', e.target.value)}
-                          className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          required
-                        />
-                      </div>
-
-                      {/* Password Requirements */}
-                      <div className="text-sm">
-                        <p className="font-medium text-blue-800 mb-2">Password Requirements:</p>
-                        {(() => {
-                          const validation = validatePassword(formData.password)
-                          return (
-                            <ul className="space-y-1">
-                              <li className={`flex items-center ${validation.isLongEnough ? 'text-green-600' : 'text-gray-500'}`}>
-                                <span className="mr-2">{validation.isLongEnough ? '✓' : '○'}</span>
-                                At least 8 characters
-                              </li>
-                              <li className={`flex items-center ${validation.hasUppercase ? 'text-green-600' : 'text-gray-500'}`}>
-                                <span className="mr-2">{validation.hasUppercase ? '✓' : '○'}</span>
-                                At least 1 uppercase letter
-                              </li>
-                              <li className={`flex items-center ${validation.hasSpecialChar ? 'text-green-600' : 'text-gray-500'}`}>
-                                <span className="mr-2">{validation.hasSpecialChar ? '✓' : '○'}</span>
-                                At least 1 special character
-                              </li>
-                            </ul>
-                          )
-                        })()}
-                      </div>
-
-                      {/* Password Match Check */}
-                      {formData.confirmPassword && (
-                        <div className="text-sm">
-                          {formData.password === formData.confirmPassword ? (
-                            <p className="text-green-600 flex items-center">
-                              <span className="mr-2">✓</span>
-                              Passwords match
-                            </p>
-                          ) : (
-                            <p className="text-red-600 flex items-center">
-                              <span className="mr-2">✗</span>
-                              Passwords do not match
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+          
 
             {/* Navigation buttons */}
             <div className="flex justify-between mt-8">
@@ -1076,63 +1002,220 @@ const saveUserData = async (userId: number) => {
                 Previous
               </button>
 
-              {currentSection < 4 ? (
-                <button
-                  type="button"
-                  onClick={nextSection}
-                  disabled={!isValidSection(currentSection)}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <label className="flex items-start space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={confirmSubmission}
-                        onChange={(e) => setConfirmSubmission(e.target.checked)}
-                        className="mt-1 rounded border-yellow-300"
-                      />
-                      <div>
-                        <p className="font-medium text-yellow-800">
-                          Confirm Assessment Completion
-                        </p>
-                        <p className="text-sm text-yellow-700">
-                          I have reviewed my information and am ready to submit my assessment. 
-                          {isNewPaidUser 
-                            ? ' This will create my account and generate my personalized training program.'
-                            : ' This will update my personalized training program.'
-                          }
-                        </p>
-                      </div>
-                    </label>
-                  </div>
+<button
+  type="button"
+  onClick={nextSection}
+  disabled={!isValidSection(currentSection)}
+  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  Prepare to Generate Program
+</button>            
 
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !isValidSection(currentSection) || !confirmSubmission}
-                    className="w-full px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-                  >
-                    {isSubmitting 
-                      ? (isNewPaidUser ? 'Creating Account & Generating Program...' : 'Updating Your Program...') 
-                      : (isNewPaidUser ? 'Create Account & Generate Program' : 'Update Assessment & Regenerate Program')
-                    }
-                  </button>
-                  
-                  <p className="text-sm text-gray-500 text-center">
-                    ⚠️ Make sure all your information is correct before submitting
-                  </p>
+            </div>
+            </div>
+		)}
+		
+{/* Section 5: Program Generation & Account Setup */}
+{currentSection === 5 && (
+  <div className="space-y-8">
+    {/* Hero Header */}
+    <div className="text-center">
+      <h2 className="text-3xl font-bold text-gray-900 mb-4">
+        Ready to Generate Your Program?
+      </h2>
+      <p className="text-lg text-gray-600">
+        You've provided all the data we need. Let's create your personalized CrossFit training program.
+      </p>
+    </div>
+
+    {/* Program Summary Preview */}
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 rounded-xl p-6">
+      <h3 className="text-xl font-semibold text-blue-900 mb-4 text-center">
+        🎯 Your Program Will Include:
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-blue-800">
+        <div className="flex items-center space-x-2">
+          <span className="text-green-600">✓</span>
+          <span>Workouts optimized for your {formData.equipment.length} pieces of equipment</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-green-600">✓</span>
+          <span>Skill progressions based on your current abilities</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-green-600">✓</span>
+          <span>Strength programming using your 1RM data</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-green-600">✓</span>
+          <span>Conditioning tailored to your benchmarks</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-green-600">✓</span>
+          <span>12-week periodized training plan</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-green-600">✓</span>
+          <span>Advanced analytics and progress tracking</span>
+        </div>
+      </div>
+    </div>
+
+    {/* Password Creation for New Users */}
+    {isNewPaidUser && (
+      <div className="bg-white border-2 border-blue-200 rounded-xl p-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">
+          🔐 Create Your Account Password
+        </h3>
+        <p className="text-gray-600 mb-6">
+          Set a secure password to access your training program and return to update your data anytime.
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Password *
+            </label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(e) => updateFormData('password', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Confirm Password *
+            </label>
+            <input
+              type="password"
+              value={formData.confirmPassword}
+              onChange={(e) => updateFormData('confirmPassword', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+
+          {/* Password Requirements */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <p className="font-medium text-gray-800 mb-2">Password Requirements:</p>
+            {(() => {
+              const validation = validatePassword(formData.password)
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                  <div className={`flex items-center ${validation.isLongEnough ? 'text-green-600' : 'text-gray-500'}`}>
+                    <span className="mr-2">{validation.isLongEnough ? '✓' : '○'}</span>
+                    8+ characters
+                  </div>
+                  <div className={`flex items-center ${validation.hasUppercase ? 'text-green-600' : 'text-gray-500'}`}>
+                    <span className="mr-2">{validation.hasUppercase ? '✓' : '○'}</span>
+                    1+ uppercase
+                  </div>
+                  <div className={`flex items-center ${validation.hasSpecialChar ? 'text-green-600' : 'text-gray-500'}`}>
+                    <span className="mr-2">{validation.hasSpecialChar ? '✓' : '○'}</span>
+                    1+ special char
+                  </div>
                 </div>
+              )
+            })()}
+          </div>
+
+          {/* Password Match Check */}
+          {formData.confirmPassword && (
+            <div className="text-sm">
+              {formData.password === formData.confirmPassword ? (
+                <p className="text-green-600 flex items-center">
+                  <span className="mr-2">✓</span>
+                  Passwords match
+                </p>
+              ) : (
+                <p className="text-red-600 flex items-center">
+                  <span className="mr-2">✗</span>
+                  Passwords do not match
+                </p>
               )}
             </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Final Confirmation & Launch */}
+    <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-8">
+      <div className="text-center space-y-6">
+        <h3 className="text-2xl font-bold text-gray-900">
+          🚀 Launch Your Training Program
+        </h3>
+        
+        <div className="space-y-4">
+          <div className="bg-white/70 rounded-lg p-4 border border-green-200">
+            <label className="flex items-start space-x-3">
+              <input
+                type="checkbox"
+                checked={confirmSubmission}
+                onChange={(e) => setConfirmSubmission(e.target.checked)}
+                className="mt-1 rounded border-green-300"
+              />
+              <div className="text-left">
+                <p className="font-medium text-gray-800">
+                  ✨ Ready to Generate My Program
+                </p>
+                <p className="text-sm text-gray-600">
+                  I have reviewed my information and am ready to create my personalized training program.
+                  {isNewPaidUser 
+                    ? ' This will create my account and generate my 12-week CrossFit program.'
+                    : ' This will update and regenerate my personalized program.'
+                  }
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting || !isValidSection(currentSection) || !confirmSubmission}
+            className="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white text-xl font-bold py-4 px-8 rounded-xl hover:from-green-700 hover:to-blue-700 transform hover:scale-105 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            {isSubmitting 
+              ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {isNewPaidUser ? 'Creating Account & Generating Program...' : 'Generating Your Updated Program...'}
+                </span>
+              ) 
+              : (
+                <span>
+                  🎯 {isNewPaidUser ? 'Create Account & Generate My Program' : 'Generate My Updated Program'}
+                </span>
+              )
+            }
+          </button>
+          
+          <p className="text-sm text-gray-500">
+            Your program will be ready in just a few moments
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
           </form>
         </div>
       </div>
     </div>
   )
 }
+
+
+
+
+
 
 // Main component with Suspense wrapper
 export default function IntakeForm() {
@@ -1149,3 +1232,4 @@ export default function IntakeForm() {
     </Suspense>
   )
 }
+
