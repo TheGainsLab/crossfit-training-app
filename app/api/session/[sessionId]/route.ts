@@ -7,8 +7,8 @@ export async function GET(
 ) {
 
   try {
-    const supabase = createClient();
     
+const supabase = await createClient();    
 const params = await context.params;
 const sessionId = params.sessionId;
 
