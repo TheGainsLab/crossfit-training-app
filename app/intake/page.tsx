@@ -139,7 +139,8 @@ const airBikeTypes = [
 
 // Component that uses useSearchParams
 function IntakeFormContent() {
-  const [currentSection, setCurrentSection] = useState(1)
+  
+const [currentSection, setCurrentSection] = useState<number>(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [confirmSubmission, setConfirmSubmission] = useState(false)
   const [submitMessage, setSubmitMessage] = useState('')
