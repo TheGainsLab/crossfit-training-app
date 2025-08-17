@@ -3,11 +3,14 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  context: { params: Promise<{ sessionId: string }> }
 ) {
+
   try {
     const supabase = createClient();
-    const sessionId = params.sessionId;
+    
+const params = await context.params;
+const sessionId = params.sessionId;
 
     // Parse sessionId: "46-37-2-1" → user=46, program=37, week=2, day=1
     const [userId, programId, week, day] = sessionId.split('-').map(Number);

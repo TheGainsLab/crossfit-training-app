@@ -134,10 +134,15 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
       
       <div className="space-y-4">
         {recentActivity.slice(0, 5).map((session, index) => (
-          <div 
-            key={session.sessionId || index} 
-            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-          >
+          
+
+<Link 
+  key={session.sessionId || index}
+  href={`/dashboard/session-review/${userId}-${session.programId}-${session.week}-${session.day}`}
+  className="block border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300 cursor-pointer"
+>
+
+
             {/* Date and Session Info */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-3">
@@ -171,18 +176,8 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
               ))}
             </div>
 
-            {/* Optional: Add a subtle link to view full session */}
-            {session.programId && (
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <Link 
-                  href={`/dashboard/workout/${session.programId}/week/${session.week}/day/${session.day}`}
-                  className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  View full session →
-                </Link>
-              </div>
-            )}
-          </div>
+         
+          </Link>
         ))}
       </div>
 
