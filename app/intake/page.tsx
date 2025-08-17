@@ -1,4 +1,3 @@
-'use client'
 
 import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -639,6 +638,7 @@ case 5:
           )}
 
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
+
             {/* Section 1: Personal Information */}
             {currentSection === 1 && (
               <div className="space-y-6">
@@ -760,6 +760,28 @@ case 5:
                     ))}
                   </div>
                 </div>
+
+{/* ADD NAVIGATION BUTTONS HERE */}
+                <div className="flex justify-between mt-8">
+                  <button
+                    type="button"
+                    onClick={prevSection}
+                    disabled={currentSection <= 1}
+                    className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={nextSection}
+                    disabled={!isValidSection(currentSection)}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+
               </div>
             )}
 
@@ -803,6 +825,30 @@ case 5:
                     ))}
                   </div>
                 ))}
+
+{/* ADD NAVIGATION BUTTONS HERE */}
+<div className="flex justify-between mt-8">
+  <button
+    type="button"
+    onClick={prevSection}
+    disabled={currentSection <= 1}
+    className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    Previous
+  </button>
+
+  <button
+    type="button"
+    onClick={nextSection}
+    disabled={!isValidSection(currentSection)}
+    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    Next
+  </button>
+</div>
+
+</div>
+)}
               </div>
             )}
 
@@ -955,6 +1001,28 @@ case 5:
                     </div>
                   </div>
                 )}
+
+       {/* ADD NAVIGATION BUTTONS HERE */}
+                <div className="flex justify-between mt-8">
+                  <button
+                    type="button"
+                    onClick={prevSection}
+                    disabled={currentSection <= 1}
+                    className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={nextSection}
+                    disabled={!isValidSection(currentSection)}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+
               </div>
             )}
 
@@ -1212,10 +1280,6 @@ disabled={currentSection <= 1}
     </div>
   )
 }
-
-
-
-
 
 
 // Main component with Suspense wrapper
