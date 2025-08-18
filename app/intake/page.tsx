@@ -846,8 +846,6 @@ case 5:
     Next
   </button>
 </div>
-
-</div>
 )}
               </div>
             )}
