@@ -137,6 +137,58 @@ const airBikeTypes = [
   'Concept2 BikeErg', 'Other', 'Did not use Air Bike'
 ]
 
+// Equipment Category Card Component
+interface EquipmentCategoryCardProps {
+  title: string
+  description: string
+  icon: string
+  equipment: string[]
+  formData: IntakeFormData
+  toggleEquipment: (equipment: string) => void
+  colorClass: string
+}
+
+function EquipmentCategoryCard({ title, description, icon, equipment, formData, toggleEquipment, colorClass }: EquipmentCategoryCardProps) {
+  const selectedCount = equipment.filter(item => formData.equipment.includes(item)).length
+  
+  return (
+    <div className="border-2 border-gray-200 rounded-xl overflow-hidden hover:border-blue-300 transition-colors">
+      <div className={`${colorClass} text-white p-4`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">{icon}</span>
+            <div>
+              <h3 className="text-lg font-semibold">{title}</h3>
+              <p className="text-white/90 text-sm">{description}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
+              {selectedCount}/{equipment.length}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {equipment.map((item) => (
+            <label key={item} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+              <input
+                type="checkbox"
+                checked={formData.equipment.includes(item)}
+                onChange={() => toggleEquipment(item)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">{item}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Component that uses useSearchParams
 function IntakeFormContent() {
   
@@ -824,11 +876,13 @@ case 5:
 
   {/* Equipment Summary */}
   <div className="mt-6 p-4 bg-gray-100 rounded-lg text-center">
-    <div className="t
+    <div className="text-sm text-gray-600">
+      <strong>{formData.equipment.length}</strong> items selected out of {equipmentOptions.length} total
+    </div>
+  </div>
+</div>
 
-
-
-{/* ADD NAVIGATION BUTTONS HERE */}
+                {/* ADD NAVIGATION BUTTONS HERE */}
                 <div className="flex justify-between mt-8">
                   <button
                     type="button"
@@ -1335,6 +1389,18 @@ disabled={currentSection <= 1}
         </div>
       </div>
     </div>
+
+    {/* Navigation buttons for final section */}
+    <div className="flex justify-between mt-8">
+      <button
+        type="button"
+        onClick={prevSection}
+        disabled={currentSection <= 1}
+        className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Previous
+      </button>
+    </div>
   </div>
 )}
 
@@ -1361,5 +1427,3 @@ export default function IntakeForm() {
     </Suspense>
   )
 }
-
-
