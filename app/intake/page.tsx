@@ -743,24 +743,90 @@ case 5:
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-4">
-                    Select all equipment available for your training
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {equipmentOptions.map((equipment) => (
-                      <label key={equipment} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={formData.equipment.includes(equipment)}
-                          onChange={() => toggleEquipment(equipment)}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm">{equipment}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+               <div>
+  <label className="block text-sm font-medium text-gray-700 mb-6">
+    Select all equipment available for your training
+  </label>
+  
+  {/* Equipment Category Cards */}
+  <div className="space-y-6">
+    <EquipmentCategoryCard
+      title="The Basics"
+      description="Essential equipment for most CrossFit workouts"
+      icon="💪"
+      equipment={[
+        'Barbell',
+        'Dumbbells', 
+        'Kettlebells',
+        'Pullup Bar or Rig',
+        'High Rings',
+        'Low or Adjustable Rings',
+        'Bench',
+        'Squat Rack',
+        'Open Space',
+        'Wall Space',
+        'Jump Rope'
+      ]}
+      formData={formData}
+      toggleEquipment={toggleEquipment}
+      colorClass="bg-gradient-to-r from-green-600 to-green-700"
+    />
+
+    <EquipmentCategoryCard
+      title="The Machines"
+      description="Cardio and specialty training machines"
+      icon="🏋️"
+      equipment={[
+        'Rowing Machine',
+        'Air Bike',
+        'Ski Erg',
+        'Bike Erg'
+      ]}
+      formData={formData}
+      toggleEquipment={toggleEquipment}
+      colorClass="bg-gradient-to-r from-blue-600 to-blue-700"
+    />
+
+    <EquipmentCategoryCard
+      title="Less Common Equipment"
+      description="Specialized gear for advanced training"
+      icon="🎯"
+      equipment={[
+        'GHD',
+        'Axle Bar',
+        'Climbing Rope',
+        'Pegboard',
+        'Parallettes',
+        'Dball',
+        'Dip Bar',
+        'Plyo Box',
+        'HS Walk Obstacle',
+        'Sandbag',
+        'Wall Ball'
+      ]}
+      formData={formData}
+      toggleEquipment={toggleEquipment}
+      colorClass="bg-gradient-to-r from-purple-600 to-purple-700"
+    />
+
+    <EquipmentCategoryCard
+      title="Minimal Setup"
+      description="Training with just your body"
+      icon="🤸"
+      equipment={[
+        'Bodyweight Only'
+      ]}
+      formData={formData}
+      toggleEquipment={toggleEquipment}
+      colorClass="bg-gradient-to-r from-orange-600 to-orange-700"
+    />
+  </div>
+
+  {/* Equipment Summary */}
+  <div className="mt-6 p-4 bg-gray-100 rounded-lg text-center">
+    <div className="t
+
+
 
 {/* ADD NAVIGATION BUTTONS HERE */}
                 <div className="flex justify-between mt-8">
@@ -1295,4 +1361,5 @@ export default function IntakeForm() {
     </Suspense>
   )
 }
+
 
