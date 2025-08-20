@@ -20,43 +20,31 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     }
   }, [athlete]);
 
-  const fetchAthleteAnalytics = async () => {
-    setLoading(true);
-    try {
-      // Fetch all analytics using your existing APIs
-      const [dashboardRes, skillsRes, strengthRes, metconsRes, recentRes] = await Promise.allSettled([
-        fetch(`/api/analytics/${athlete.id}/dashboard`),
-        fetch(`/api/analytics/${athlete.id}/skills-analytics`),
-        fetch(`/api/analytics/${athlete.id}/strength-tracker`),
-        fetch(`/api/analytics/${athlete.id}/exercise-heatmap`),
-        fetch(`/api/analytics/${athlete.id}/recent-activity`)
-      ]);
-
-      const data: any = {};
-
-      if (dashboardRes.status === 'fulfilled' && dashboardRes.value.ok) {
-        data.dashboard = await dashboardRes.value.json();
+const fetchAthleteAnalytics = async () => {
+  setLoading(true);
+  try {
+    // Use the new coach analytics wrapper API
+    const response = await fetch(`/api/coach/athlete/${athlete.athlete.id}/analytics`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        // Set the analytics data from the wrapper
+        setAnalyticsData(data.data.analytics);
+        console.log('✅ Coach analytics loaded successfully');
+      } else {
+        console.error('❌ Coach analytics API error:', data.error);
       }
-      if (skillsRes.status === 'fulfilled' && skillsRes.value.ok) {
-        data.skills = await skillsRes.value.json();
-      }
-      if (strengthRes.status === 'fulfilled' && strengthRes.value.ok) {
-        data.strength = await strengthRes.value.json();
-      }
-      if (metconsRes.status === 'fulfilled' && metconsRes.value.ok) {
-        data.metcons = await metconsRes.value.json();
-      }
-      if (recentRes.status === 'fulfilled' && recentRes.value.ok) {
-        data.recent = await recentRes.value.json();
-      }
-
-      setAnalyticsData(data);
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-    } finally {
-      setLoading(false);
+    } else {
+      console.error('❌ Coach analytics API failed:', response.status);
     }
-  };
+  } catch (error) {
+    console.error('❌ Error fetching coach analytics:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const fetchCoachNotes = async () => {
     try {
