@@ -9,6 +9,7 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
+
   useEffect(() => {
     const checkUser = async () => {
       const supabase = createClient()
