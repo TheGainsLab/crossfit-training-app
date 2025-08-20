@@ -26,8 +26,8 @@ const fetchAthleteAnalytics = async () => {
   try {
     // Use the new coach analytics wrapper API
 console.log('🔍 Calling URL:', `/api/coach/athlete/${athlete.athlete.id}/analytics`);  
-  const response = await fetch(`/api/coach/athlete/${athlete.athlete.id}/analytics`);
-    
+const response = await fetch(`/api/coach/athlete/${athlete.athlete_id}/analytics`);
+     
     console.log('🔍 Response Status:', response.status); // Debug line
     console.log('🔍 Response OK:', response.ok); // Debug line
     
@@ -57,7 +57,10 @@ console.log('🔍 Calling URL:', `/api/coach/athlete/${athlete.athlete.id}/analy
 
   const fetchCoachNotes = async () => {
     try {
-const response = await fetch(`/api/coach/notes?athleteId=${athlete.athlete.id}`);      
+
+const response = await fetch(`/api/coach/notes?athleteId=${athlete.athlete_id}`);
+
+
       if (response.ok) {
         const data = await response.json();
         setCoachNotes(data.notes || []);
