@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { generateOverallDashboard } from '@/lib/analytics/dashboard-generator'
 import { formatDashboardCharts } from '@/lib/analytics/chart-formatters'
+import { canAccessAthleteData, getUserIdFromAuth } from '@/lib/permissions'
 
 export async function GET(
   request: NextRequest,
@@ -14,7 +15,7 @@ export async function GET(
     const { searchParams } = new URL(request.url)
     
     const timeRange = parseInt(searchParams.get('timeRange') || '30')
-const includeMetCons = false  // Temporarily disable MetCons
+    const includeMetCons = false  // Temporarily disable MetCons
     const dashboardType = searchParams.get('type') || 'overview' // overview, detailed, summary
 
     const userIdNum = parseInt(userId)
@@ -53,31 +54,30 @@ const includeMetCons = false  // Temporarily disable MetCons
       }
     )
 
-    // Verify user authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // Get requesting user ID from authentication
+    const { userId: requestingUserId, error: authError } = await getUserIdFromAuth(supabase)
+    if (authError || !requestingUserId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: authError || 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    // Verify user ownership
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('auth_id', user.id)
-      .eq('id', userIdNum)
-      .single()
+    // Check if user has permission to access this athlete's data
+    const { hasAccess, permissionLevel, isCoach } = await canAccessAthleteData(
+      supabase, 
+      requestingUserId, 
+      userIdNum
+    )
 
-    if (userError || !userData) {
+    if (!hasAccess) {
       return NextResponse.json(
         { error: 'Unauthorized access to user data' },
         { status: 403 }
       )
     }
 
-    console.log(`📊 Generating analytics dashboard for User ${userIdNum}`)
+    console.log(`📊 Generating analytics dashboard for User ${userIdNum} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
 
     // Calculate date range
     const startDate = new Date()
@@ -106,16 +106,15 @@ const includeMetCons = false  // Temporarily disable MetCons
       
       // MetCon data (if requested)
       includeMetCons ? supabase
-  .from('program_metcons')
-  .select(`
-    *,
-    metcons!inner(
-      workout_id,
-      time_range,
-      tasks
-    )
-  `)
-
+        .from('program_metcons')
+        .select(`
+          *,
+          metcons!inner(
+            workout_id,
+            time_range,
+            tasks
+          )
+        `)
         .eq('user_id', userIdNum)
         .gte('completed_at', startDate.toISOString())
         .order('completed_at', { ascending: true }) : Promise.resolve({ data: [], error: null })
@@ -163,7 +162,7 @@ const includeMetCons = false  // Temporarily disable MetCons
     }
 
     // Generate insights
-const insights = dashboardData.keyInsights || []
+    const insights = dashboardData.keyInsights || []
     // Format chart data
     const charts = formatDashboardCharts(dashboardData)
 
@@ -187,7 +186,9 @@ const insights = dashboardData.keyInsights || []
         totalWeeklySummaries: weeklySummaries.data?.length || 0,
         totalMetCons: includeMetCons ? (metconData.data?.length || 0) : 0,
         dashboardType,
-        includeMetCons
+        includeMetCons,
+        accessType: isCoach ? 'coach' : 'self',
+        permissionLevel
       }
     }
 
@@ -360,5 +361,3 @@ function generateDashboardRecommendations(dashboardData: any) {
     return priorityOrder[b.priority as keyof typeof priorityOrder] - priorityOrder[a.priority as keyof typeof priorityOrder]
   })
 }
-
-
