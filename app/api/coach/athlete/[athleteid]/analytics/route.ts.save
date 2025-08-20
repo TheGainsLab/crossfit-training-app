@@ -17,14 +17,12 @@ export async function GET(
     if (params instanceof Promise) {
       const resolvedParams = await params;
       console.log('🔍 Resolved params (awaited):', resolvedParams);
-
-athleteId = resolvedParams.athleteid;  // Use lowercase 'athleteid'
-
+      
+athleteId = resolvedParams.athleteId;
 
     } else {
       console.log('🔍 Direct params (not awaited):', params);
-      
-athleteId = (params as any).athleteid;
+      athleteId = (params as any).athleteId;
     }
     
     console.log('🔍 Final athleteId:', athleteId);
