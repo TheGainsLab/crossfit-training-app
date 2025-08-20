@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ athleteId: string }> }
+{ params }: { params: Promise<{ athleteid: string }> }
 ) {
   try {
     // ADD THESE DEBUG LOGS HERE
