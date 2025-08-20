@@ -25,22 +25,27 @@ const fetchAthleteAnalytics = async () => {
   setLoading(true);
   try {
     // Use the new coach analytics wrapper API
-    const response = await fetch(`/api/coach/athlete/${athlete.athlete.id}/analytics`);
+console.log('🔍 Calling URL:', `/api/coach/athlete/${athlete.athlete.id}/analytics`);  
+  const response = await fetch(`/api/coach/athlete/${athlete.athlete.id}/analytics`);
+    
+    console.log('🔍 Response Status:', response.status); // Debug line
+    console.log('🔍 Response OK:', response.ok); // Debug line
     
     if (response.ok) {
       const data = await response.json();
-      console.log('🔍 Full API Response:', data); // Debug line
+      console.log('🔍 Full API Response:', data);
       
       if (data.success) {
-        // Set the analytics data from the wrapper
         setAnalyticsData(data.data.analytics);
-        console.log('🔍 Analytics Data Set:', data.data.analytics); // Debug line
+        console.log('🔍 Analytics Data Set:', data.data.analytics);
         console.log('✅ Coach analytics loaded successfully');
       } else {
         console.error('❌ Coach analytics API error:', data.error);
       }
     } else {
-      console.error('❌ Coach analytics API failed:', response.status);
+      // Parse the error response for 400 errors
+      const errorData = await response.json();
+      console.error('❌ Coach analytics API failed:', response.status, errorData);
     }
   } catch (error) {
     console.error('❌ Error fetching coach analytics:', error);
@@ -48,7 +53,6 @@ const fetchAthleteAnalytics = async () => {
     setLoading(false);
   }
 };
-
 
 
   const fetchCoachNotes = async () => {
