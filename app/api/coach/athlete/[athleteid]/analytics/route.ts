@@ -7,9 +7,26 @@ export async function GET(
   { params }: { params: Promise<{ athleteId: string }> }
 ) {
   try {
-    const { athleteId } = await params
+    // ADD THESE DEBUG LOGS HERE
+    console.log('🔍 Raw request URL:', request.url);
+    console.log('🔍 Raw params object:', params);
+    console.log('🔍 Params is Promise?', params instanceof Promise);
+    
+    // Try both approaches
+    let athleteId;
+    if (params instanceof Promise) {
+      const resolvedParams = await params;
+      console.log('🔍 Resolved params (awaited):', resolvedParams);
+      athleteId = resolvedParams.athleteId;
+    } else {
+      console.log('🔍 Direct params (not awaited):', params);
+      athleteId = (params as any).athleteId;
+    }
+    
+    console.log('🔍 Final athleteId:', athleteId);
+    console.log('🔍 Type of athleteId:', typeof athleteId);
 
- console.log('🔍 API: Raw athleteId received:', athleteId)
+    console.log('🔍 API: Raw athleteId received:', athleteId)
     console.log('🔍 API: Type of athleteId:', typeof athleteId)
     console.log('🔍 API: parseInt result:', parseInt(athleteId))
     console.log('🔍 API: isNaN check:', isNaN(parseInt(athleteId)))
