@@ -118,16 +118,27 @@ athleteId = (params as any).athleteid;
 
     console.log(`🎯 Coach ${coachData.coach_name} accessing analytics for athlete ${athleteIdNum}`)
 
-    // Fetch analytics data by calling internal APIs
-    const baseUrl = request.nextUrl.origin
-    
-    const [dashboardRes, skillsRes, strengthRes, metconsRes, recentRes] = await Promise.allSettled([
-      fetch(`${baseUrl}/api/analytics/${athleteIdNum}/dashboard`),
-      fetch(`${baseUrl}/api/analytics/${athleteIdNum}/skills-analytics`),
-      fetch(`${baseUrl}/api/analytics/${athleteIdNum}/strength-tracker`),
-      fetch(`${baseUrl}/api/analytics/${athleteIdNum}/exercise-heatmap`),
-      fetch(`${baseUrl}/api/analytics/${athleteIdNum}/recent-activity`)
-    ])
+// Fetch analytics data by calling internal APIs
+const baseUrl = request.nextUrl.origin
+const authHeader = request.headers.get('cookie');
+
+const [dashboardRes, skillsRes, strengthRes, metconsRes, recentRes] = await Promise.allSettled([
+  fetch(`${baseUrl}/api/analytics/${athleteIdNum}/dashboard`, {
+    headers: { 'cookie': authHeader || '' }
+  }),
+  fetch(`${baseUrl}/api/analytics/${athleteIdNum}/skills-analytics`, {
+    headers: { 'cookie': authHeader || '' }
+  }),
+  fetch(`${baseUrl}/api/analytics/${athleteIdNum}/strength-tracker`, {
+    headers: { 'cookie': authHeader || '' }
+  }),
+  fetch(`${baseUrl}/api/analytics/${athleteIdNum}/exercise-heatmap`, {
+    headers: { 'cookie': authHeader || '' }
+  }),
+  fetch(`${baseUrl}/api/analytics/${athleteIdNum}/recent-activity`, {
+    headers: { 'cookie': authHeader || '' }
+  })
+])
 
     // Process results
     const analyticsData: any = {}
