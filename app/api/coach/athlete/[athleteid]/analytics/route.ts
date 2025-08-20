@@ -8,6 +8,12 @@ export async function GET(
 ) {
   try {
     const { athleteId } = await params
+
+ console.log('🔍 API: Raw athleteId received:', athleteId)
+    console.log('🔍 API: Type of athleteId:', typeof athleteId)
+    console.log('🔍 API: parseInt result:', parseInt(athleteId))
+    console.log('🔍 API: isNaN check:', isNaN(parseInt(athleteId)))
+
     const athleteIdNum = parseInt(athleteId)
 
     if (isNaN(athleteIdNum)) {
