@@ -5,7 +5,8 @@ import { cookies } from 'next/headers'
 import { processSkillsData } from '@/lib/analytics/skills-analyzer'
 import { formatSkillsCharts } from '@/lib/analytics/chart-formatters'
 import { generateSkillsInsights } from '@/lib/analytics/insights-generator'
-import { Recommendation } from '@/lib/analytics/types' 
+import { Recommendation } from '@/lib/analytics/types'
+import { canAccessAthleteData, getUserIdFromAuth } from '@/lib/permissions'
 
 export async function GET(
   request: NextRequest,
@@ -55,40 +56,39 @@ export async function GET(
       }
     )
 
-    // Verify user authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // Get requesting user ID from authentication
+    const { userId: requestingUserId, error: authError } = await getUserIdFromAuth(supabase)
+    if (authError || !requestingUserId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: authError || 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    // Verify user ownership
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('auth_id', user.id)
-      .eq('id', userIdNum)
-      .single()
+    // Check if user has permission to access this athlete's data
+    const { hasAccess, permissionLevel, isCoach } = await canAccessAthleteData(
+      supabase, 
+      requestingUserId, 
+      userIdNum
+    )
 
-    if (userError || !userData) {
+    if (!hasAccess) {
       return NextResponse.json(
         { error: 'Unauthorized access to user data' },
         { status: 403 }
       )
     }
 
-    console.log(`🎯 Generating skills analysis for User ${userIdNum}, Type: ${skillType}`)
+    console.log(`🎯 Generating skills analysis for User ${userIdNum}, Type: ${skillType} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
 
     // Calculate date range
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - timeRange)
 
     // Query performance data for skills 
-const skillBlocks = skillType === 'all' 
-  ? ['SKILLS']  // Only pull from SKILLS block
-  : [skillType.toUpperCase()]
+    const skillBlocks = skillType === 'all' 
+      ? ['SKILLS']  // Only pull from SKILLS block
+      : [skillType.toUpperCase()]
 
     const { data: performanceData, error: perfError } = await supabase
       .from('performance_logs')
@@ -157,7 +157,9 @@ const skillBlocks = skillType === 'all'
         dataRange: `${timeRange} days`,
         totalSessions: performanceData.length,
         skillTypeFilter: skillType,
-        analysisType
+        analysisType,
+        accessType: isCoach ? 'coach' : 'self',
+        permissionLevel
       }
     }
 
@@ -253,15 +255,13 @@ function calculateSkillsSummary(skillsAnalysis: any) {
 /**
  * Generate skills-specific recommendations
  */
-
-function generateSkillsRecommendations(skillsAnalysis: any): Recommendation[] {  // ← Add return type
-  const recommendations: Recommendation[] = []  // ← Add array type
+function generateSkillsRecommendations(skillsAnalysis: any): Recommendation[] {
+  const recommendations: Recommendation[] = []
   const rpeTarget = { min: 3.5, max: 6.5 } // Skills RPE targets
 
   if (!skillsAnalysis.skills) {
     return recommendations
   }
-
 
   const skills = Object.values(skillsAnalysis.skills) as any[]
 

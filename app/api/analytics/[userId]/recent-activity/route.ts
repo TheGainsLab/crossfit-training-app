@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { canAccessAthleteData, getUserIdFromAuth } from '@/lib/permissions'
 
 export async function GET(
   request: NextRequest,
@@ -46,31 +47,30 @@ export async function GET(
       }
     )
 
-    // Verify user authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // Get requesting user ID from authentication
+    const { userId: requestingUserId, error: authError } = await getUserIdFromAuth(supabase)
+    if (authError || !requestingUserId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: authError || 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    // Verify user ownership
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('auth_id', user.id)
-      .eq('id', userIdNum)
-      .single()
+    // Check if user has permission to access this athlete's data
+    const { hasAccess, permissionLevel, isCoach } = await canAccessAthleteData(
+      supabase, 
+      requestingUserId, 
+      userIdNum
+    )
 
-    if (userError || !userData) {
+    if (!hasAccess) {
       return NextResponse.json(
         { error: 'Unauthorized access to user data' },
         { status: 403 }
       )
     }
 
-    console.log(`📈 Fetching recent activity for User ${userIdNum}`)
+    console.log(`📈 Fetching recent activity for User ${userIdNum} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
 
     // Get recent performance data - last 30 days to ensure we find 5 active days
     const startDate = new Date()
@@ -99,7 +99,9 @@ export async function GET(
         },
         metadata: {
           generatedAt: new Date().toISOString(),
-          message: 'No recent training activity found'
+          message: 'No recent training activity found',
+          accessType: isCoach ? 'coach' : 'self',
+          permissionLevel
         }
       })
     }
@@ -115,7 +117,9 @@ export async function GET(
       metadata: {
         generatedAt: new Date().toISOString(),
         totalExercises: performanceData.length,
-        activeDays: recentSessions.length
+        activeDays: recentSessions.length,
+        accessType: isCoach ? 'coach' : 'self',
+        permissionLevel
       }
     }
 

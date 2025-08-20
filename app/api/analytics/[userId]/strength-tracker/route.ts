@@ -5,8 +5,8 @@ import { cookies } from 'next/headers'
 import { processStrengthData } from '@/lib/analytics/strength-tracker'
 import { formatStrengthCharts } from '@/lib/analytics/chart-formatters'
 import { generateStrengthInsights } from '@/lib/analytics/insights-generator'
-import { Recommendation } from '@/lib/analytics/types'  // ← ADD THIS
-
+import { Recommendation } from '@/lib/analytics/types'
+import { canAccessAthleteData, getUserIdFromAuth } from '@/lib/permissions'
 
 export async function GET(
   request: NextRequest,
@@ -56,31 +56,30 @@ export async function GET(
       }
     )
 
-    // Verify user authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // Get requesting user ID from authentication
+    const { userId: requestingUserId, error: authError } = await getUserIdFromAuth(supabase)
+    if (authError || !requestingUserId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: authError || 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    // Verify user ownership
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('auth_id', user.id)
-      .eq('id', userIdNum)
-      .single()
+    // Check if user has permission to access this athlete's data
+    const { hasAccess, permissionLevel, isCoach } = await canAccessAthleteData(
+      supabase, 
+      requestingUserId, 
+      userIdNum
+    )
 
-    if (userError || !userData) {
+    if (!hasAccess) {
       return NextResponse.json(
         { error: 'Unauthorized access to user data' },
         { status: 403 }
       )
     }
 
-    console.log(`💪 Generating strength analysis for User ${userIdNum}, Movement: ${movement}`)
+    console.log(`💪 Generating strength analysis for User ${userIdNum}, Movement: ${movement} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
 
     // Calculate date range
     const startDate = new Date()
@@ -154,7 +153,9 @@ export async function GET(
         dataRange: `${timeRange} days`,
         totalSessions: performanceData.length,
         movementFilter: movement,
-        analysisType
+        analysisType,
+        accessType: isCoach ? 'coach' : 'self',
+        permissionLevel
       }
     }
 
@@ -249,10 +250,8 @@ function calculateStrengthSummary(strengthAnalysis: any) {
 /**
  * Generate strength-specific recommendations
  */
-
-
 function generateStrengthRecommendations(strengthAnalysis: any): Recommendation[] {
-  const recommendations: Recommendation[] = []  // ← Add explicit typing
+  const recommendations: Recommendation[] = []
 
   const rpeTarget = { min: 5.5, max: 8.0 } // Strength RPE targets
 
