@@ -20,6 +20,7 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     }
   }, [athlete]);
 
+
 const fetchAthleteAnalytics = async () => {
   setLoading(true);
   try {
@@ -28,9 +29,12 @@ const fetchAthleteAnalytics = async () => {
     
     if (response.ok) {
       const data = await response.json();
+      console.log('🔍 Full API Response:', data); // Debug line
+      
       if (data.success) {
         // Set the analytics data from the wrapper
         setAnalyticsData(data.data.analytics);
+        console.log('🔍 Analytics Data Set:', data.data.analytics); // Debug line
         console.log('✅ Coach analytics loaded successfully');
       } else {
         console.error('❌ Coach analytics API error:', data.error);
@@ -44,6 +48,7 @@ const fetchAthleteAnalytics = async () => {
     setLoading(false);
   }
 };
+
 
 
   const fetchCoachNotes = async () => {
