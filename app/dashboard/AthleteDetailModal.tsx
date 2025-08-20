@@ -60,7 +60,7 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
 
   const fetchCoachNotes = async () => {
     try {
-      const response = await fetch(`/api/coach/notes?athleteId=${athlete.id}`);
+const response = await fetch(`/api/coach/notes?athleteId=${athlete.athlete.id}`);      
       if (response.ok) {
         const data = await response.json();
         setCoachNotes(data.notes || []);
@@ -80,7 +80,8 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          athleteId: athlete.id,
+         
+athleteId: athlete.athlete.id,
           content: newNote.trim(),
           noteType: 'general'
         })
