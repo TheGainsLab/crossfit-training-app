@@ -6,6 +6,8 @@ interface AthleteDetailModalProps {
 }
 
 const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClose }) => {
+  console.log('🔍 FULL athlete object:', JSON.stringify(athlete, null, 2));
+
   const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 'metcons' | 'notes'>('overview');
   const [loading, setLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<any>({});
