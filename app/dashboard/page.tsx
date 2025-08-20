@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import AthleteDetailModal from './AthleteDetailModal'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
@@ -527,32 +528,17 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
         {/* Invite Modal */}
         <InviteAthleteModal />
 
-        {/* Athlete Detail Modal - TODO: Implement this */}
-        {selectedAthlete && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {(selectedAthlete as any).name} - Detailed View
-                </h3>
-                <button
-                  onClick={() => setSelectedAthlete(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                <p className="text-gray-600">Detailed athlete analytics would go here...</p>
-                <p className="text-sm text-gray-500">
-                  This would show the full analytics dashboard for this athlete,
-                  using the /api/coach/athlete/{(selectedAthlete as any).id} endpoint.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+
+
+
+{/* Complete Athlete Detail Modal */}
+{selectedAthlete && (
+  <AthleteDetailModal 
+    athlete={selectedAthlete} 
+    onClose={() => setSelectedAthlete(null)} 
+  />
+)}
+
       </div>
     )
   }
