@@ -331,6 +331,8 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
     }
   }
 
+
+
   const getBlockColor = (blockName: string) => {
     switch (blockName) {
       case 'SKILLS': return 'bg-purple-50 border-purple-200'
@@ -341,6 +343,62 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
       default: return 'bg-gray-50 border-gray-200'
     }
   }
+
+// ADD THESE NEW FUNCTIONS HERE:
+const getBlockStatusIcon = (blockName: string, exercises: Exercise[], completions: Record<string, Completion>) => {
+  // Count completed exercises in this block
+  const completedCount = exercises.filter(exercise => {
+    // Handle exercises with set numbers (e.g., "Exercise - Set 2")
+    const setMatch = exercise.notes?.match(/Set (\d+)/);
+    const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+    const exerciseKey = setNumber > 1 
+      ? `${exercise.name} - Set ${setNumber}`
+      : exercise.name;
+    
+    return completions[exerciseKey] !== undefined;
+  }).length;
+  
+  const totalCount = exercises.length;
+  
+  // Determine status
+  if (completedCount === 0) {
+    // Not started - use original block icon
+    return getBlockIcon(blockName);
+  } else if (completedCount === totalCount) {
+    // All complete - green checkmark
+    return '✅';
+  } else {
+    // Partial complete - progress indicator
+    return '⏳';
+  }
+};
+
+const getBlockHeaderStyle = (blockName: string, exercises: Exercise[], completions: Record<string, Completion>) => {
+  const completedCount = exercises.filter(exercise => {
+    const setMatch = exercise.notes?.match(/Set (\d+)/);
+    const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+    const exerciseKey = setNumber > 1 
+      ? `${exercise.name} - Set ${setNumber}`
+      : exercise.name;
+    return completions[exerciseKey] !== undefined;
+  }).length;
+  
+  const totalCount = exercises.length;
+  const baseStyle = getBlockColor(blockName);
+  
+  if (completedCount === totalCount && totalCount > 0) {
+    // All complete - add green accent
+    return `${baseStyle} ring-2 ring-green-500 ring-opacity-50`;
+  } else if (completedCount > 0) {
+    // Partial complete - add yellow accent  
+    return `${baseStyle} ring-2 ring-yellow-500 ring-opacity-50`;
+  }
+  
+  // Not started - original styling
+  return baseStyle;
+};
+
+
 
 const calculateProgress = () => {
   if (!workout) return 0
@@ -461,7 +519,8 @@ const calculateProgress = () => {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-6">
         {workout.blocks.map((block, blockIndex) => (
-          <div key={blockIndex} className={`mb-6 rounded-lg border-2 ${getBlockColor(block.blockName)}`}>
+          
+<div key={blockIndex} className={`mb-6 rounded-lg border-2 ${getBlockHeaderStyle(block.blockName, block.exercises, completions)}`}>
             {/* Block Header */}
             <button
               onClick={() => toggleBlock(block.blockName)}
@@ -469,7 +528,8 @@ const calculateProgress = () => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <span className="text-2xl">{getBlockIcon(block.blockName)}</span>
+<span className="text-2xl">{getBlockStatusIcon(block.blockName, block.exercises, completions)}</span>                  
+
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">{block.blockName}</h2>
                     <p className="text-sm text-gray-600">
