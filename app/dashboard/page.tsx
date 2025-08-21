@@ -525,6 +525,8 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
           )}
         </div>
 
+
+
         {/* Invite Modal */}
         <InviteAthleteModal />
 
@@ -542,6 +544,186 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
       </div>
     )
   }
+
+
+// Dashboard Summary Cards Component - ADD THIS AFTER CoachDashboard
+const DashboardSummaryCards: React.FC<{ userId: number | null; currentProgram: number | null }> = ({ userId, currentProgram }) => {
+  const [summaryData, setSummaryData] = useState({
+    fitnessScore: null,
+    metconsCompleted: 0,
+    weeklyProgress: {
+      currentWeek: 1,
+      completedDays: [],
+      totalDays: 5,
+      lastWorkout: null,
+      exercisesLogged: 0,
+      totalExercises: 0
+    }
+  })
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (userId && currentProgram) {
+      fetchSummaryData()
+    }
+  }, [userId, currentProgram])
+
+  const fetchSummaryData = async () => {
+    if (!userId || !currentProgram) return
+    
+    setLoading(true)
+    try {
+      // Fetch all data in parallel
+      const [fitnessRes, metconsRes, weeklyRes] = await Promise.allSettled([
+        fetch(`/api/analytics/${userId}/exercise-heatmap`),
+        fetch(`/api/dashboard/metcons-count?userId=${userId}`),
+        fetch(`/api/dashboard/weekly-progress?userId=${userId}&programId=${currentProgram}`)
+      ])
+
+      // Process Fitness Score
+      if (fitnessRes.status === 'fulfilled' && fitnessRes.value.ok) {
+        const data = await fitnessRes.value.json()
+        if (data.success && data.data?.globalFitnessScore) {
+          setSummaryData(prev => ({
+            ...prev,
+            fitnessScore: data.data.globalFitnessScore
+          }))
+        }
+      }
+
+      // Process MetCons Count
+      if (metconsRes.status === 'fulfilled' && metconsRes.value.ok) {
+        const data = await metconsRes.value.json()
+        if (data.success) {
+          setSummaryData(prev => ({
+            ...prev,
+            metconsCompleted: data.count || 0
+          }))
+        }
+      }
+
+      // Process Weekly Progress
+      if (weeklyRes.status === 'fulfilled' && weeklyRes.value.ok) {
+        const data = await weeklyRes.value.json()
+        if (data.success) {
+          setSummaryData(prev => ({
+            ...prev,
+            weeklyProgress: data.weeklyProgress
+          }))
+        }
+      }
+
+    } catch (error) {
+      console.error('Error fetching summary data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatLastWorkout = (lastWorkout: string | null) => {
+    if (!lastWorkout) return 'No recent activity'
+    
+    const date = new Date(lastWorkout)
+    const now = new Date()
+    const diffTime = Math.abs(now.getTime() - date.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays === 2) return '2 days ago'
+    if (diffDays <= 7) return `${diffDays} days ago`
+    return date.toLocaleDateString()
+  }
+
+  const generateWeekPattern = () => {
+    const { completedDays, totalDays } = summaryData.weeklyProgress
+    const pattern = []
+    
+    for (let i = 1; i <= totalDays; i++) {
+      if (completedDays.includes(i)) {
+        pattern.push('●') // Completed
+      } else {
+        pattern.push('○') // Not completed
+      }
+    }
+    
+    return pattern.join('')
+  }
+
+  if (loading) {
+    return (
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-white rounded-lg shadow p-6">
+            <div className="animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+              <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid md:grid-cols-3 gap-6 mb-8">
+      {/* Fitness Score Card */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-600">Fitness Score</p>
+            <p className="text-3xl font-bold text-blue-600">
+              {summaryData.fitnessScore ? `${summaryData.fitnessScore}%` : '—'}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {summaryData.fitnessScore ? 'Conditioning Level' : 'Complete MetCons to see score'}
+            </p>
+          </div>
+          <div className="text-blue-600 text-2xl">🎯</div>
+        </div>
+      </div>
+
+      {/* MetCons Completed Card */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-600">MetCons Done</p>
+            <p className="text-3xl font-bold text-orange-600">
+              {summaryData.metconsCompleted}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {summaryData.metconsCompleted === 1 ? 'workout' : 'workouts'} completed
+            </p>
+          </div>
+          <div className="text-orange-600 text-2xl">🔥</div>
+        </div>
+      </div>
+
+      {/* This Week Card */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-sm text-gray-600">This Week</p>
+            <p className="text-lg font-bold text-green-600">
+              {generateWeekPattern()} ({summaryData.weeklyProgress.completedDays.length}/{summaryData.weeklyProgress.totalDays})
+            </p>
+          </div>
+          <div className="text-green-600 text-xl">📅</div>
+        </div>
+        
+        <div className="text-xs text-gray-500 space-y-1">
+          <div>
+            Last: {formatLastWorkout(summaryData.weeklyProgress.lastWorkout)}
+          </div>
+          {summaryData.weeklyProgress.exercisesLogged > 0 && (
+            <div>
+              {summaryData.weeklyProgress.exercisesLogged}/{summaryData.weeklyProgress.totalExercises} exercises
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 
 
@@ -959,7 +1141,8 @@ const checkCoachRole = async () => {
         {viewMode === "coach" ? (
           <CoachDashboard coachData={coachData} />
         ) : (
-          <div className="space-y-6">        {/* Program Navigation */}
+          <div className="space-y-6">       
+             {/* Program Navigation */}
         {currentProgram && (
           <ProgramNavigationWidget 
             currentWeek={currentWeek}
@@ -971,6 +1154,16 @@ const checkCoachRole = async () => {
             }}
           />
         )}
+
+
+{/* Summary Cards */}
+{currentProgram && (
+  <DashboardSummaryCards userId={userId} currentProgram={currentProgram} />
+)}
+
+
+
+
 
         {/* Training Blocks Visualization */}
         <div className="mb-8">
