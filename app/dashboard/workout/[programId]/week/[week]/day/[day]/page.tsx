@@ -902,20 +902,14 @@ return (
         </div>
       )}
 
-      {/* SECTION 4: Completed State (when expanded and completed) */}
-      {isExpanded && isCompleted && (
-        <div className="px-6 pb-6">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-5 text-center">
-            <div className="text-green-600 text-3xl mb-2">✅</div>
-            <p className="text-green-800 font-medium mb-2">Exercise Completed</p>
-            <div className="text-sm text-green-700 space-y-1">
-              {completion.rpe && <p>RPE: {completion.rpe}/10</p>}
-              {completion.quality && <p>Quality: {completion.quality}</p>}
-              {completion.notes && <p className="italic">"{completion.notes}"</p>}
-            </div>
-          </div>
-        </div>
-      )}
+{/* SECTION 4: Completed State (when expanded and completed) - SIMPLIFIED */}
+{isExpanded && isCompleted && (
+  <div className="px-6 pb-6">
+    <div className="text-center py-4">
+      <p className="text-gray-600 text-sm">Exercise completed - click to collapse</p>
+    </div>
+  </div>
+)}
 
       {/* Custom CSS for the slider */}
       <style jsx>{`
