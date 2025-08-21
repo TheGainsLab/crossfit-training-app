@@ -908,10 +908,45 @@ const checkCoachRole = async () => {
         return
       }
 
-      setCurrentProgram(programData.id)
-      setCurrentWeek(1)
-      setCurrentDay(1)
-    } catch (err) {
+// Auto-detect current position based on last completed workout
+const { data: completedLogs } = await supabase
+  .from('performance_logs')
+  .select('week, day')
+  .eq('program_id', programData.id)
+  .eq('user_id', userData.id)
+  .order('week', { ascending: false })
+  .order('day', { ascending: false })
+  .limit(1)
+
+let detectedWeek = 1
+let detectedDay = 1
+
+if (completedLogs && completedLogs.length > 0) {
+  const lastCompleted = completedLogs[0]
+  
+  // Calculate next workout after last completed
+  if (lastCompleted.day === 5) {
+    // Completed week, move to next week
+    detectedWeek = lastCompleted.week + 1
+    detectedDay = 1
+  } else {
+    // Same week, next day
+    detectedWeek = lastCompleted.week
+    detectedDay = lastCompleted.day + 1
+  }
+  
+  // Don't go beyond program end
+  if (detectedWeek > 13) {
+    detectedWeek = 13
+    detectedDay = 5
+  }
+}
+
+setCurrentProgram(programData.id)
+setCurrentWeek(detectedWeek)
+setCurrentDay(detectedDay)  
+
+  } catch (err) {
       console.error('Error loading user program:', err)
       setError('Failed to load program data')
       setLoading(false)
