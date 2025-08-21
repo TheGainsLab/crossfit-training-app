@@ -1,16 +1,25 @@
-import { createClient } from '@/lib/supabase/server'
+
+
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { canAccessAthleteData, getUserIdFromAuth } from '@/lib/permissions'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+        },
+      }
+    )
     
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
-    }
-
     // Get parameters
     const searchParams = request.nextUrl.searchParams
     const userIdParam = searchParams.get('userId')
@@ -23,15 +32,25 @@ export async function GET(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const userId = parseInt(userIdParam)
+    const targetAthleteId = parseInt(userIdParam)
     const programId = parseInt(programIdParam)
 
-    // Verify user ownership
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('auth_id', user.id)
-      .single()
+    // Get requesting user ID from auth
+    const { userId: requestingUserId, error: authError } = await getUserIdFromAuth(supabase)
+    if (authError || !requestingUserId) {
+      return NextResponse.json({ success: false, error: authError || 'Not authenticated' }, { status: 401 })
+    }
+
+    // Check permissions (self-access or coach access)
+    const { hasAccess, permissionLevel, isCoach } = await canAccessAthleteData(
+      supabase, 
+      requestingUserId, 
+      targetAthleteId
+    )
+
+    if (!hasAccess) {
+      return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 })
+    }
 
     if (userError || !userData || userData.id !== userId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 })
