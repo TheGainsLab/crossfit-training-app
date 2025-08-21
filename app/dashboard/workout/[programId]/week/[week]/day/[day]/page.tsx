@@ -596,18 +596,44 @@ function ExerciseCard({
 
   const isCompleted = completion !== undefined
 
-  const handleDetailedSubmit = () => {
-    onComplete({
-      setsCompleted: formData.setsCompleted ? parseInt(formData.setsCompleted.toString()) : undefined,
-      repsCompleted: formData.repsCompleted.toString(),
-      weightUsed: formData.weightUsed ? parseFloat(formData.weightUsed.toString()) : undefined,
-      rpe: formData.rpe,
-      quality: formData.quality || undefined,
-      notes: formData.notes.toString(),
-      wasRx: formData.asRx
-    })
-    setIsExpanded(false)
-  }
+const handleDetailedSubmit = () => {
+  // Store reference to current card and next element before state changes
+  const currentCardElement = document.activeElement?.closest('.exercise-card') || 
+                            document.querySelector(`[data-exercise="${exercise.name}"]`)
+  const nextCardElement = currentCardElement?.nextElementSibling
+  
+  // Complete the exercise
+  onComplete({
+    setsCompleted: formData.setsCompleted ? parseInt(formData.setsCompleted.toString()) : undefined,
+    repsCompleted: formData.repsCompleted.toString(),
+    weightUsed: formData.weightUsed ? parseFloat(formData.weightUsed.toString()) : undefined,
+    rpe: formData.rpe,
+    quality: formData.quality || undefined,
+    notes: formData.notes.toString(),
+    wasRx: formData.asRx
+  })
+  
+  // Collapse the exercise
+  setIsExpanded(false)
+  
+  // Smooth scroll to maintain user context after collapse
+  setTimeout(() => {
+    if (nextCardElement) {
+      nextCardElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start',  // Align to top of viewport
+        inline: 'nearest'
+      })
+    } else {
+      // If no next element, scroll to show the completed exercise nicely
+      currentCardElement?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      })
+    }
+  }, 150) // Small delay to allow collapse animation to start
+}
+
 
   const QualityButton = ({ grade, isSelected, onClick }: { grade: string, isSelected: boolean, onClick: () => void }) => {
     const getButtonStyle = () => {
@@ -651,13 +677,16 @@ function ExerciseCard({
     )
   }
 
-  return (
-    <div className={`bg-white rounded-xl shadow-sm border-2 transition-all ${
-      isCompleted 
-        ? 'border-green-200 bg-green-50' 
+return (
+  <div 
+    className={`bg-white rounded-xl shadow-sm border-2 transition-all ${
+      isCompleted
+        ? 'border-green-200 bg-green-50'
         : 'border-gray-200 hover:border-gray-300'
-    }`}>
-      
+    }`}
+    data-exercise={exercise.name}
+  >
+    
       {/* STICKY CONTEXT BAR - Shows when form is expanded and not completed */}
       {isExpanded && !isCompleted && (
         <div className="sticky top-0 z-10 bg-blue-600 text-white px-4 py-2 rounded-t-xl">
