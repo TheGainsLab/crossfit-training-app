@@ -155,33 +155,39 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
     }
   }
 
-  const fetchCompletions = async () => {
-    try {
-      const userId = await getCurrentUserId()
-      const response = await fetch(`/api/workouts/complete?userId=${userId}&programId=${programId}&week=${week}&day=${day}`)
-      
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          const completionMap: Record<string, Completion> = {}
-          data.completions.forEach((comp: any) => {
-            completionMap[comp.exercise_name] = {
-              exerciseName: comp.exercise_name,
-              setsCompleted: comp.sets_completed,
-              repsCompleted: comp.reps_completed,
-              weightUsed: comp.weight_used,
-              rpe: comp.rpe,
-              notes: comp.notes,
-              wasRx: comp.was_rx
-            }
-          })
-          setCompletions(completionMap)
-        }
+const fetchCompletions = async () => {
+  try {
+    const userId = await getCurrentUserId()
+    const response = await fetch(`/api/workouts/complete?userId=${userId}&programId=${programId}&week=${week}&day=${day}`)
+    
+    if (response.ok) {
+      const data = await response.json()
+      if (data.success) {
+        const completionMap: Record<string, Completion> = {}
+        data.completions.forEach((comp: any) => {
+          // Create unique key that includes set number
+          const setNumber = comp.set_number || 1
+          const completionKey = setNumber > 1 
+            ? `${comp.exercise_name} - Set ${setNumber}`
+            : comp.exercise_name
+            
+          completionMap[completionKey] = {
+            exerciseName: comp.exercise_name,
+            setsCompleted: comp.sets_completed,
+            repsCompleted: comp.reps_completed,
+            weightUsed: comp.weight_used,
+            rpe: comp.rpe,
+            notes: comp.notes,
+            wasRx: comp.was_rx
+          }
+        })
+        setCompletions(completionMap)
       }
-    } catch (err) {
-      console.log('No previous completions found')
     }
+  } catch (err) {
+    console.log('No previous completions found')
   }
+}  
 
 
 const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
@@ -504,18 +510,22 @@ block.blockName === 'METCONS' ? (
 ) : (
   block.exercises.map((exercise, exerciseIndex) => {
     console.log('Exercise object:', exercise);
+    
+    // Create consistent naming that matches the completion key
+    const setMatch = exercise.notes?.match(/Set (\d+)/);
+    const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+    const exerciseKey = setNumber > 1 
+      ? `${exercise.name} - Set ${setNumber}`
+      : exercise.name;
+    
     return (
       <ExerciseCard
         key={exerciseIndex}
         exercise={exercise}
         block={block.blockName}
-        completion={completions[exercise.name]}
+        completion={completions[exerciseKey]}
         onComplete={(completion) => {
-          // Extract set info from exercise notes
-          const setMatch = exercise.notes.match(/Set (\d+)/);
-          const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
-          const exerciseWithSet = `${exercise.name} - Set ${setNumber}`;
-          logCompletion(exerciseWithSet, block.blockName, completion);
+          logCompletion(exerciseKey, block.blockName, completion);
         }}
       />
     )
