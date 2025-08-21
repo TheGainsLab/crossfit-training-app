@@ -22,6 +22,8 @@ interface DayOverview {
   main_lift: string
   total_exercises: number
   completed: boolean
+  exercisesLogged: number
+  lastLoggedAt?: string
 }
 
 export default function ProgramOverviewPage() {
@@ -81,15 +83,17 @@ export default function ProgramOverviewPage() {
 
       setProgram(programData)
 
-      // Get all program workouts to build overview
-      const { data: workouts, error: workoutsError } = await supabase
-        .from('program_workouts')
-        .select('week, day, exercise_name, completed_at')
+      // Get completed exercises from performance_logs (THIS IS THE KEY FIX)
+      const { data: completedLogs, error: logsError } = await supabase
+        .from('performance_logs')
+        .select('week, day, logged_at')
         .eq('program_id', programData.id)
-        .order('week', { ascending: true })
-        .order('day', { ascending: true })
+        .eq('user_id', userData.id)
 
-      if (workoutsError) throw workoutsError
+      if (logsError) {
+        console.error('Error fetching performance logs:', logsError)
+        // Continue without completion data rather than failing completely
+      }
 
       // Process workouts into day overviews
       const dayMap = new Map<string, DayOverview>()
@@ -109,18 +113,43 @@ export default function ProgramOverviewPage() {
             day_name: day.dayName,
             main_lift: day.mainLift,
             total_exercises: totalExercises,
-            completed: false
+            completed: false,
+            exercisesLogged: 0
           })
         })
       })
 
-      // Mark completed days
-      if (workouts) {
-        workouts.forEach(workout => {
-          const key = `${workout.week}-${workout.day}`
-          const dayData = dayMap.get(key)
-          if (dayData && workout.completed_at) {
-            dayData.completed = true
+      // Mark completed days based on performance logs
+      if (completedLogs && completedLogs.length > 0) {
+        // Group logs by week/day to count exercises per day
+        const logsByDay = new Map<string, {count: number, lastLogged: string}>()
+        
+        completedLogs.forEach(log => {
+          const key = `${log.week}-${log.day}`
+          const existing = logsByDay.get(key)
+          
+          if (existing) {
+            existing.count += 1
+            // Keep the most recent logged_at time
+            if (new Date(log.logged_at) > new Date(existing.lastLogged)) {
+              existing.lastLogged = log.logged_at
+            }
+          } else {
+            logsByDay.set(key, {
+              count: 1,
+              lastLogged: log.logged_at
+            })
+          }
+        })
+        
+        // Update day overviews with completion data
+        logsByDay.forEach((logData, dayKey) => {
+          const dayData = dayMap.get(dayKey)
+          if (dayData) {
+            dayData.exercisesLogged = logData.count
+            dayData.lastLoggedAt = logData.lastLogged
+            // Consider a day "completed" if at least one exercise is logged
+            dayData.completed = logData.count > 0
           }
         })
       }
@@ -130,7 +159,22 @@ export default function ProgramOverviewPage() {
 
       // Calculate stats
       const completedCount = overviews.filter(d => d.completed).length
-      const currentWeek = Math.max(...overviews.filter(d => d.completed).map(d => d.week), 1)
+      
+      // Find current week based on latest activity or default to week 1
+      let currentWeek = 1
+      if (completedLogs && completedLogs.length > 0) {
+        // Get the most recent week with activity
+        const recentWeeks = completedLogs.map(log => log.week)
+        currentWeek = Math.max(...recentWeeks)
+        
+        // If current week is fully completed, advance to next week
+        const currentWeekDays = overviews.filter(d => d.week === currentWeek)
+        const currentWeekCompleted = currentWeekDays.filter(d => d.completed).length
+        
+        if (currentWeekCompleted === currentWeekDays.length && currentWeek < Math.max(...overviews.map(d => d.week))) {
+          currentWeek += 1
+        }
+      }
       
       setCompletionStats({
         totalDays: overviews.length,
@@ -154,6 +198,19 @@ export default function ProgramOverviewPage() {
   const getWeekColor = (weekNumber: number) => {
     if ([4, 8, 12].includes(weekNumber)) return 'bg-yellow-100 border-yellow-300'
     return 'bg-white border-gray-200'
+  }
+
+  const formatLastLogged = (lastLoggedAt?: string) => {
+    if (!lastLoggedAt) return null
+    
+    const date = new Date(lastLoggedAt)
+    const now = new Date()
+    const diffTime = Math.abs(now.getTime() - date.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays <= 7) return `${diffDays} days ago`
+    return date.toLocaleDateString()
   }
 
   if (loading) {
@@ -223,18 +280,27 @@ export default function ProgramOverviewPage() {
                 style={{ width: `${(completionStats.completedDays / completionStats.totalDays) * 100}%` }}
               />
             </div>
+            <div className="text-sm text-gray-500 mt-1">
+              {Math.round((completionStats.completedDays / completionStats.totalDays) * 100)}% complete
+            </div>
           </div>
           <div className="bg-white rounded-lg shadow p-6 text-center">
             <div className="text-3xl font-bold text-green-600">
               Week {completionStats.currentWeek}
             </div>
             <div className="text-gray-600">Current Week</div>
+            <div className="text-sm text-gray-500 mt-1">
+              {getWeekType(completionStats.currentWeek)} Week
+            </div>
           </div>
           <div className="bg-white rounded-lg shadow p-6 text-center">
             <div className="text-3xl font-bold text-purple-600">
               #{program?.program_number || 0}
             </div>
             <div className="text-gray-600">Program Number</div>
+            <div className="text-sm text-gray-500 mt-1">
+              Generated {program?.generated_at ? new Date(program.generated_at).toLocaleDateString() : ''}
+            </div>
           </div>
         </div>
 
@@ -277,7 +343,7 @@ export default function ProgramOverviewPage() {
                     <Link
                       key={`${day.week}-${day.day}`}
                       href={`/dashboard/workout/${program?.id}/week/${day.week}/day/${day.day}`}
-                      className={`p-3 rounded-lg border transition-all ${
+                      className={`p-3 rounded-lg border transition-all hover:shadow-md ${
                         day.completed 
                           ? 'bg-green-50 border-green-300 hover:bg-green-100' 
                           : 'bg-white border-gray-200 hover:border-gray-300'
@@ -285,12 +351,20 @@ export default function ProgramOverviewPage() {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <div className="font-medium text-sm">{day.day_name}</div>
-                        {day.completed && <span className="text-green-600">✓</span>}
+                        {day.completed && <span className="text-green-600 text-lg">✓</span>}
                       </div>
-                      <div className="text-xs text-gray-600">{day.main_lift}</div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {day.total_exercises} exercises
+                      <div className="text-xs text-gray-600 mb-1">{day.main_lift}</div>
+                      <div className="text-xs text-gray-500">
+                        {day.exercisesLogged > 0 
+                          ? `${day.exercisesLogged}/${day.total_exercises} exercises logged`
+                          : `${day.total_exercises} exercises`
+                        }
                       </div>
+                      {day.lastLoggedAt && (
+                        <div className="text-xs text-green-600 mt-1">
+                          {formatLastLogged(day.lastLoggedAt)}
+                        </div>
+                      )}
                     </Link>
                   ))}
                 </div>
@@ -302,16 +376,22 @@ export default function ProgramOverviewPage() {
         {/* Quick Actions */}
         <div className="mt-8 flex flex-wrap gap-4">
           <Link
-            href="/program"
+            href="/dashboard"
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
           >
-            View Detailed Program
+            ← Back to Dashboard
           </Link>
           <Link
-            href="/profile"
+            href="/dashboard/progress"
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+          >
+            View Analytics
+          </Link>
+          <Link
+            href="/dashboard/settings"
             className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700"
           >
-            View Profile Analysis
+            Settings
           </Link>
         </div>
       </div>
