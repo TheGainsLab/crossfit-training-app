@@ -45,18 +45,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 })
     }
 
-
-
-
-    if (userError || !userData) {
-      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
-    }
-
-    // Verify the requesting user matches the userId (basic permission check)
-    if (userData.id !== userId) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 })
-    }
-
     // Count completed MetCons by joining through programs table
     // Since program_metcons doesn't have user_id, we join through programs
     const { data: metconsData, error: metconsError } = await supabase
@@ -66,7 +54,7 @@ export async function GET(request: NextRequest) {
         programs!inner(user_id)
       `, { count: 'exact' })
       .not('completed_at', 'is', null)
-      .eq('programs.user_id', userId)
+      .eq('programs.user_id', targetAthleteId)
 
     if (metconsError) {
       console.error('Error fetching metcons count:', metconsError)
@@ -82,7 +70,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       count: metconsCount,
-      timestamp: new Date().toISOString()
+      metadata: {
+        accessType: isCoach ? 'coach' : 'self',
+        permissionLevel,
+        timestamp: new Date().toISOString()
+      }
     })
 
   } catch (error) {

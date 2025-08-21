@@ -1,5 +1,3 @@
-
-
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
@@ -52,16 +50,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 })
     }
 
-    if (userError || !userData || userData.id !== userId) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 })
-    }
-
     // Get completed exercises from performance_logs to determine current week and progress
     const { data: completedLogs, error: logsError } = await supabase
       .from('performance_logs')
       .select('week, day, logged_at')
       .eq('program_id', programId)
-      .eq('user_id', userId)
+      .eq('user_id', targetAthleteId)
       .order('logged_at', { ascending: false })
 
     if (logsError) {
@@ -121,7 +115,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       weeklyProgress,
-      timestamp: new Date().toISOString()
+      metadata: {
+        accessType: isCoach ? 'coach' : 'self',
+        permissionLevel,
+        timestamp: new Date().toISOString()
+      }
     })
 
   } catch (error) {
