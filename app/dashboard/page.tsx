@@ -548,18 +548,20 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
 
 // Dashboard Summary Cards Component - ADD THIS AFTER CoachDashboard
 const DashboardSummaryCards: React.FC<{ userId: number | null; currentProgram: number | null }> = ({ userId, currentProgram }) => {
-  const [summaryData, setSummaryData] = useState({
-    fitnessScore: null,
-    metconsCompleted: 0,
-    weeklyProgress: {
-      currentWeek: 1,
-      completedDays: [],
-      totalDays: 5,
-      lastWorkout: null,
-      exercisesLogged: 0,
-      totalExercises: 0
-    }
-  })
+  
+const [summaryData, setSummaryData] = useState({
+  fitnessScore: null, 
+  metconsCompleted: 0,
+  weeklyProgress: {
+    currentWeek: 1,   
+    completedDays: [] as number[],
+    totalDays: 5,
+    lastWorkout: null,  
+    exercisesLogged: 0,
+    totalExercises: 0
+  }
+})
+
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
