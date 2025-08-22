@@ -1098,3 +1098,6 @@ return (
     </div>
   </div>
 );
+};
+
+export default AthleteDetailModal;
