@@ -734,4 +734,4 @@ const renderSkillsTab = () => {
   );
 };
 
-
+export default AthleteDetailModal;
