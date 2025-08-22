@@ -353,7 +353,7 @@ const renderSkillsTab = () => {
                             style={{ width: `${Math.min(100, (Number(count) / Math.max(...Object.values(skillsCharts.gradeDistribution).map(v => Number(v) || 0))) * 100)}%` }}
                           />
                         </div>
-                        <span className="text-sm font-bold text-gray-700 w-8">{count}</span>
+                        <span className="text-sm font-bold text-gray-700 w-8">{Number(count) || 0}</span>
                       </div>
                     </div>
                   ))}
@@ -500,7 +500,6 @@ const renderSkillsTab = () => {
     </div>
   );
 };
-
 
   const renderStrengthTab = () => {
     const strengthData = analyticsData.strength?.data?.strengthAnalysis;
