@@ -9,6 +9,7 @@ import {
   Legend
 } from 'chart.js';
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 // Register Chart.js components  
 ChartJS.register(
@@ -24,7 +25,6 @@ interface AthleteDetailModalProps {
   athlete: any;
   onClose: () => void;
 }
-
 
 const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClose }) => {
   console.log('🔍 FULL athlete object:', JSON.stringify(athlete, null, 2));
@@ -174,6 +174,34 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     return statusConfig[status as keyof typeof statusConfig] || statusConfig.good;
   };
 
+  // Helper functions for Recent Activity (copied from athlete page)
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const diffTime = Math.abs(today.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays === 2) return '2 days ago';
+    if (diffDays <= 7) return `${diffDays} days ago`;
+    
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const getBlockIcon = (blockName: string) => {
+    const icons: { [key: string]: string } = {
+      'SKILLS': '🤸',
+      'TECHNICAL WORK': '⚙️',
+      'STRENGTH AND POWER': '💪',
+      'ACCESSORIES': '🎯',
+      'METCONS': '🔥'
+    };
+    return icons[blockName] || '📊';
+  };
+
   const healthDisplay = getHealthStatusDisplay(athlete.recentActivity.healthStatus);
 
   const renderOverviewTab = () => {
@@ -224,21 +252,50 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Recent Activity - NOW WITH COMPLETE FUNCTIONAL PARITY */}
         <div className="bg-white rounded-lg border p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Recent Training Activity</h4>
           {recent.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {recent.slice(0, 5).map((session: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <div className="font-medium">Week {session.week}, Day {session.day}</div>
-                    <div className="text-sm text-gray-600">{session.totalExercises} exercises</div>
+                <Link 
+                  key={session.sessionId || index}
+                  href={`/dashboard/session-review/${athlete.athlete.id}-${session.programId}-${session.week}-${session.day}`}
+                  className="block border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300 cursor-pointer"
+                >
+                  {/* Date and Session Info */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="text-lg font-semibold text-gray-900">
+                        {formatDate(session.date)}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        Week {session.week}, Day {session.day}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-blue-600">
+                        {session.totalExercises} exercises
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {new Date(session.date).toLocaleDateString()}
+
+                  {/* Training Blocks */}
+                  <div className="flex flex-wrap gap-2">
+                    {session.blocks && session.blocks.map((block: any) => (
+                      <span 
+                        key={block.blockName}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                      >
+                        <span className="mr-1">{getBlockIcon(block.blockName)}</span>
+                        {block.blockName}
+                        {block.exerciseCount > 0 && (
+                          <span className="ml-1 text-blue-600">({block.exerciseCount})</span>
+                        )}
+                      </span>
+                    ))}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
