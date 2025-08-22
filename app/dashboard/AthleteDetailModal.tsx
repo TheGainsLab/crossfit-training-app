@@ -1,9 +1,30 @@
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
 import React, { useState, useEffect } from 'react';
+
+// Register Chart.js components  
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 interface AthleteDetailModalProps {
   athlete: any;
   onClose: () => void;
 }
+
 
 const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClose }) => {
   console.log('🔍 FULL athlete object:', JSON.stringify(athlete, null, 2));
@@ -278,7 +299,6 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     );
   };
 
-
 const renderSkillsTab = () => {
   const skillsData = analyticsData.skills?.data?.skillsAnalysis;
   const skillsSummary = analyticsData.skills?.data?.summary;
@@ -326,68 +346,65 @@ const renderSkillsTab = () => {
       )}
 
       {/* Skills Progress Charts */}
-      {skillsCharts && (
+      {skillsData && (
         <div className="bg-white rounded-lg border p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-6">Skills Progress Charts</h4>
           
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Grade Distribution Chart */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div>
-              <h5 className="text-md font-medium text-gray-800 mb-4">Grade Distribution</h5>
-              <div className="text-sm text-gray-600 mb-3">Quality grades across all skills</div>
-              
-              {skillsCharts.gradeDistribution && Object.keys(skillsCharts.gradeDistribution).length > 0 ? (
-                <div className="space-y-2">
-                  {Object.entries(skillsCharts.gradeDistribution).map(([grade, count]: [string, any]) => (
-                    <div key={grade} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm font-medium text-gray-700">Grade {grade}</span>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full ${
-                              grade === 'A' ? 'bg-green-600' :
-                              grade === 'B' ? 'bg-blue-600' :
-                              grade === 'C' ? 'bg-yellow-600' :
-                              'bg-red-600'
-                            }`}
-                            style={{ width: `${Math.min(100, (Number(count) / Math.max(...Object.values(skillsCharts.gradeDistribution).map(v => Number(v) || 0))) * 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-bold text-gray-700 w-8">{Number(count) || 0}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-sm">No grade distribution data available</p>
-              )}
+              <h4 className="font-medium text-gray-900 mb-3">Total Reps Completed</h4>
+              <div className="h-64">
+                <Bar data={{
+                  labels: skills.map((skill: any) => skill.name),
+                  datasets: [
+                    {
+                      label: 'Total Reps',
+                      data: skills.map((skill: any) => skill.totalReps || 0),
+                      backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                      borderColor: 'rgba(54, 162, 235, 1)',
+                      borderWidth: 1
+                    }
+                  ]
+                }} options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Reps per Movement' }
+                  },
+                  scales: {
+                    y: { beginAtZero: true }
+                  }
+                }} />
+              </div>
             </div>
-
-            {/* Progression Chart */}
+            
             <div>
-              <h5 className="text-md font-medium text-gray-800 mb-4">Skills Progression</h5>
-              <div className="text-sm text-gray-600 mb-3">Progress over time</div>
-              
-              {skillsCharts.progressionChart && skillsCharts.progressionChart.length > 0 ? (
-                <div className="space-y-2">
-                  {skillsCharts.progressionChart.slice(0, 8).map((item: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm font-medium text-gray-700 truncate pr-2">{item.label || item.name || `Week ${index + 1}`}</span>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-purple-600 h-2 rounded-full" 
-                            style={{ width: `${Math.min(100, Math.max(10, (item.value || item.count || 0) / 10 * 100))}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-bold text-purple-600 w-8">{item.value || item.count || 0}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-sm">No progression data available</p>
-              )}
+              <h4 className="font-medium text-gray-900 mb-3">Average RPE</h4>
+              <div className="h-64">
+                <Bar data={{
+                  labels: skills.map((skill: any) => skill.name),
+                  datasets: [
+                    {
+                      label: 'Average RPE',
+                      data: skills.map((skill: any) => skill.avgRPE || 0),
+                      backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                      borderColor: 'rgba(255, 99, 132, 1)',
+                      borderWidth: 1
+                    }
+                  ]
+                }} options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Effort Level by Movement' }
+                  },
+                  scales: {
+                    y: { beginAtZero: true, max: 10 }
+                  }
+                }} />
+              </div>
             </div>
           </div>
         </div>
@@ -500,6 +517,10 @@ const renderSkillsTab = () => {
     </div>
   );
 };
+
+
+
+
 
   const renderStrengthTab = () => {
     const strengthData = analyticsData.strength?.data?.strengthAnalysis;
