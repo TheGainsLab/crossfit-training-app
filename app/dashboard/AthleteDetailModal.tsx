@@ -25,32 +25,79 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
   const fetchAthleteAnalytics = async () => {
     setLoading(true);
     try {
-      // Use the new coach analytics wrapper API
-      console.log('🔍 Calling URL:', `/api/coach/athlete/${athlete.athlete.id}/analytics`);  
+      console.log('🔍 Fetching analytics for athlete ID:', athlete.athlete.id);
 
-      const response = await fetch(`/api/coach/athlete/${athlete.athlete.id}/analytics`);
-        
-      console.log('🔍 Response Status:', response.status); // Debug line
-      console.log('🔍 Response OK:', response.ok); // Debug line
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🔍 Full API Response:', data);
-        
+      // Call all 5 permission-enabled analytics endpoints in parallel
+      const [dashboardRes, recentRes, skillsRes, strengthRes, heatmapRes] = await Promise.allSettled([
+        fetch(`/api/analytics/${athlete.athlete.id}/dashboard`),
+        fetch(`/api/analytics/${athlete.athlete.id}/recent-activity`),
+        fetch(`/api/analytics/${athlete.athlete.id}/skills-analytics`),
+        fetch(`/api/analytics/${athlete.athlete.id}/strength-tracker`),
+        fetch(`/api/analytics/${athlete.athlete.id}/exercise-heatmap`)
+      ]);
+
+      const newAnalyticsData: any = {};
+
+      // Process Dashboard Data
+      if (dashboardRes.status === 'fulfilled' && dashboardRes.value.ok) {
+        const data = await dashboardRes.value.json();
+        console.log('✅ Dashboard data loaded:', data.success);
         if (data.success) {
-          setAnalyticsData(data.data.analytics);
-          console.log('🔍 Analytics Data Set:', data.data.analytics);
-          console.log('✅ Coach analytics loaded successfully');
-        } else {
-          console.error('❌ Coach analytics API error:', data.error);
+          newAnalyticsData.dashboard = data;
         }
       } else {
-        // Parse the error response for 400 errors
-        const errorData = await response.json();
-        console.error('❌ Coach analytics API failed:', response.status, errorData);
+        console.error('❌ Dashboard API failed');
       }
+
+      // Process Recent Activity Data
+      if (recentRes.status === 'fulfilled' && recentRes.value.ok) {
+        const data = await recentRes.value.json();
+        console.log('✅ Recent activity data loaded:', data.success);
+        if (data.success) {
+          newAnalyticsData.recent = data;
+        }
+      } else {
+        console.error('❌ Recent activity API failed');
+      }
+
+      // Process Skills Data
+      if (skillsRes.status === 'fulfilled' && skillsRes.value.ok) {
+        const data = await skillsRes.value.json();
+        console.log('✅ Skills data loaded:', data.success);
+        if (data.success) {
+          newAnalyticsData.skills = data;
+        }
+      } else {
+        console.error('❌ Skills API failed');
+      }
+
+      // Process Strength Data
+      if (strengthRes.status === 'fulfilled' && strengthRes.value.ok) {
+        const data = await strengthRes.value.json();
+        console.log('✅ Strength data loaded:', data.success);
+        if (data.success) {
+          newAnalyticsData.strength = data;
+        }
+      } else {
+        console.error('❌ Strength API failed');
+      }
+
+      // Process Heatmap/MetCons Data
+      if (heatmapRes.status === 'fulfilled' && heatmapRes.value.ok) {
+        const data = await heatmapRes.value.json();
+        console.log('✅ Heatmap/MetCons data loaded:', data.success);
+        if (data.success) {
+          newAnalyticsData.metcons = data;
+        }
+      } else {
+        console.error('❌ Heatmap API failed');
+      }
+
+      setAnalyticsData(newAnalyticsData);
+      console.log('🔍 Final analytics data structure:', newAnalyticsData);
+
     } catch (error) {
-      console.error('❌ Error fetching coach analytics:', error);
+      console.error('❌ Error fetching analytics:', error);
     } finally {
       setLoading(false);
     }
@@ -174,7 +221,11 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">No recent activity found</p>
+            <div className="text-center py-8">
+              <div className="text-gray-400 text-4xl mb-2">📊</div>
+              <p className="text-gray-500">No recent activity found</p>
+              <p className="text-sm text-gray-400 mt-1">This athlete hasn't logged any workouts recently</p>
+            </div>
           )}
         </div>
       </div>
@@ -233,7 +284,11 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     if (!skillsData?.skills) {
       return (
         <div className="bg-white rounded-lg border p-6">
-          <p className="text-gray-500">No skills data available for this athlete</p>
+          <div className="text-center py-8">
+            <div className="text-gray-400 text-4xl mb-2">🤸</div>
+            <p className="text-gray-500">No skills data available for this athlete</p>
+            <p className="text-sm text-gray-400 mt-1">Skills analytics will appear once the athlete logs skill exercises</p>
+          </div>
         </div>
       );
     }
@@ -355,7 +410,11 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     if (!strengthData?.movements) {
       return (
         <div className="bg-white rounded-lg border p-6">
-          <p className="text-gray-500">No strength data available for this athlete</p>
+          <div className="text-center py-8">
+            <div className="text-gray-400 text-4xl mb-2">💪</div>
+            <p className="text-gray-500">No strength data available for this athlete</p>
+            <p className="text-sm text-gray-400 mt-1">Strength analytics will appear once the athlete logs strength exercises</p>
+          </div>
         </div>
       );
     }
@@ -433,7 +492,11 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     if (!metconData?.exercises?.length) {
       return (
         <div className="bg-white rounded-lg border p-6">
-          <p className="text-gray-500">No MetCon data available for this athlete</p>
+          <div className="text-center py-8">
+            <div className="text-gray-400 text-4xl mb-2">🔥</div>
+            <p className="text-gray-500">No MetCon data available for this athlete</p>
+            <p className="text-sm text-gray-400 mt-1">Conditioning analytics will appear once the athlete logs MetCon exercises</p>
+          </div>
         </div>
       );
     }
