@@ -278,7 +278,8 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     );
   };
 
-  const renderSkillsTab = () => {
+
+const renderSkillsTab = () => {
   const skillsData = analyticsData.skills?.data?.skillsAnalysis;
   const skillsSummary = analyticsData.skills?.data?.summary;
   const skillsCharts = analyticsData.skills?.data?.charts;
@@ -349,7 +350,7 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
                               grade === 'C' ? 'bg-yellow-600' :
                               'bg-red-600'
                             }`}
-                            style={{ width: `${Math.min(100, (count / Math.max(...Object.values(skillsCharts.gradeDistribution))) * 100)}%` }}
+                            style={{ width: `${Math.min(100, (Number(count) / Math.max(...Object.values(skillsCharts.gradeDistribution).map(v => Number(v) || 0))) * 100)}%` }}
                           />
                         </div>
                         <span className="text-sm font-bold text-gray-700 w-8">{count}</span>
@@ -499,7 +500,6 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     </div>
   );
 };
-
 
 
   const renderStrengthTab = () => {
