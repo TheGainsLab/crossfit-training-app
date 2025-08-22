@@ -278,8 +278,7 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     );
   };
 
-  
-const renderSkillsTab = () => {
+  const renderSkillsTab = () => {
   const skillsData = analyticsData.skills?.data?.skillsAnalysis;
   const skillsSummary = analyticsData.skills?.data?.summary;
   const skillsCharts = analyticsData.skills?.data?.charts;
@@ -331,57 +330,62 @@ const renderSkillsTab = () => {
           <h4 className="text-lg font-semibold text-gray-900 mb-6">Skills Progress Charts</h4>
           
           <div className="grid md:grid-cols-2 gap-8">
-            {/* Total Reps Chart */}
+            {/* Grade Distribution Chart */}
             <div>
-              <h5 className="text-md font-medium text-gray-800 mb-4">Total Reps Completed</h5>
-              <div className="text-sm text-gray-600 mb-3">Reps per Movement</div>
+              <h5 className="text-md font-medium text-gray-800 mb-4">Grade Distribution</h5>
+              <div className="text-sm text-gray-600 mb-3">Quality grades across all skills</div>
               
-              {skillsCharts.totalRepsChart && skillsCharts.totalRepsChart.length > 0 ? (
+              {skillsCharts.gradeDistribution && Object.keys(skillsCharts.gradeDistribution).length > 0 ? (
                 <div className="space-y-2">
-                  {skillsCharts.totalRepsChart.map((item: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm font-medium text-gray-700 truncate pr-2">{item.name}</span>
+                  {Object.entries(skillsCharts.gradeDistribution).map(([grade, count]: [string, any]) => (
+                    <div key={grade} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm font-medium text-gray-700">Grade {grade}</span>
                       <div className="flex items-center space-x-2">
                         <div className="w-20 bg-gray-200 rounded-full h-2">
                           <div 
-                            className="bg-blue-600 h-2 rounded-full" 
-                            style={{ width: `${Math.min(100, (item.value / Math.max(...skillsCharts.totalRepsChart.map((c: any) => c.value))) * 100)}%` }}
+                            className={`h-2 rounded-full ${
+                              grade === 'A' ? 'bg-green-600' :
+                              grade === 'B' ? 'bg-blue-600' :
+                              grade === 'C' ? 'bg-yellow-600' :
+                              'bg-red-600'
+                            }`}
+                            style={{ width: `${Math.min(100, (count / Math.max(...Object.values(skillsCharts.gradeDistribution))) * 100)}%` }}
                           />
                         </div>
-                        <span className="text-sm font-bold text-blue-600 w-8">{item.value}</span>
+                        <span className="text-sm font-bold text-gray-700 w-8">{count}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm">No rep data available</p>
+                <p className="text-gray-500 text-sm">No grade distribution data available</p>
               )}
             </div>
 
-            {/* Average RPE Chart */}
+            {/* Progression Chart */}
             <div>
-              <h5 className="text-md font-medium text-gray-800 mb-4">Average RPE</h5>
-              <div className="text-sm text-gray-600 mb-3">Effort Level by Movement</div>
+              <h5 className="text-md font-medium text-gray-800 mb-4">Skills Progression</h5>
+              <div className="text-sm text-gray-600 mb-3">Progress over time</div>
               
-              {skillsCharts.averageRPEChart && skillsCharts.averageRPEChart.length > 0 ? (
+              {skillsCharts.progressionChart && skillsCharts.progressionChart.length > 0 ? (
                 <div className="space-y-2">
-                  {skillsCharts.averageRPEChart.map((item: any, index: number) => (
+                  {skillsCharts.progressionChart.slice(0, 8).map((item: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm font-medium text-gray-700 truncate pr-2">{item.name}</span>
+                      <span className="text-sm font-medium text-gray-700 truncate pr-2">{item.label || item.name || `Week ${index + 1}`}</span>
                       <div className="flex items-center space-x-2">
                         <div className="w-20 bg-gray-200 rounded-full h-2">
                           <div 
-                            className="bg-pink-500 h-2 rounded-full" 
-                            style={{ width: `${(item.value / 10) * 100}%` }}
+                            className="bg-purple-600 h-2 rounded-full" 
+                            style={{ width: `${Math.min(100, Math.max(10, (item.value || item.count || 0) / 10 * 100))}%` }}
                           />
                         </div>
-                        <span className="text-sm font-bold text-pink-600 w-8">{item.value?.toFixed(1) || '0.0'}</span>
+                        <span className="text-sm font-bold text-purple-600 w-8">{item.value || item.count || 0}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm">No RPE data available</p>
+                <p className="text-gray-500 text-sm">No progression data available</p>
               )}
             </div>
           </div>
@@ -495,6 +499,7 @@ const renderSkillsTab = () => {
     </div>
   );
 };
+
 
 
   const renderStrengthTab = () => {
