@@ -278,131 +278,224 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     );
   };
 
-  const renderSkillsTab = () => {
-    const skillsData = analyticsData.skills?.data?.skillsAnalysis;
-    
-    if (!skillsData?.skills) {
-      return (
-        <div className="bg-white rounded-lg border p-6">
-          <div className="text-center py-8">
-            <div className="text-gray-400 text-4xl mb-2">🤸</div>
-            <p className="text-gray-500">No skills data available for this athlete</p>
-            <p className="text-sm text-gray-400 mt-1">Skills analytics will appear once the athlete logs skill exercises</p>
-          </div>
-        </div>
-      );
-    }
-
-    const skills = Object.values(skillsData.skills) as any[];
-
+  
+const renderSkillsTab = () => {
+  const skillsData = analyticsData.skills?.data?.skillsAnalysis;
+  const skillsSummary = analyticsData.skills?.data?.summary;
+  const skillsCharts = analyticsData.skills?.data?.charts;
+  
+  if (!skillsData?.skills) {
     return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-lg border p-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-6">Skills Development Progress</h4>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {skills.map((skill: any) => (
-              <div key={skill.name} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <h5 className="font-medium text-gray-900">{skill.name}</h5>
-                  <div className="flex flex-wrap gap-1">
-                    {/* Rep Badge */}
-                    {skill.totalReps >= 1000 && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        🏆 Master
-                      </span>
-                    )}
-                    {skill.totalReps >= 500 && skill.totalReps < 1000 && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        💎 Diamond
-                      </span>
-                    )}
-                    {skill.totalReps >= 250 && skill.totalReps < 500 && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        🥇 Gold
-                      </span>
-                    )}
-                    {skill.totalReps >= 100 && skill.totalReps < 250 && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        🥈 Silver
-                      </span>
-                    )}
-                    {skill.totalReps >= 50 && skill.totalReps < 100 && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                        🥉 Bronze
-                      </span>
-                    )}
-                    
-                    {/* Practice Status */}
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      skill.daysSinceLast <= 3 ? 'bg-green-100 text-green-800' :
-                      skill.daysSinceLast <= 7 ? 'bg-yellow-100 text-yellow-800' :
-                      skill.daysSinceLast <= 14 ? 'bg-orange-100 text-orange-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {skill.daysSinceLast}d ago
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Sessions:</span>
-                    <span className="font-medium">{skill.sessions?.length || 0}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Reps:</span>
-                    <span className="font-medium">{skill.totalReps || 0}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Quality Grade:</span>
-                    <span className={`font-medium px-2 py-1 rounded text-xs ${
-                      skill.qualityGrade === 'A' ? 'bg-green-100 text-green-800' :
-                      skill.qualityGrade === 'B' ? 'bg-blue-100 text-blue-800' :
-                      skill.qualityGrade === 'C' ? 'bg-yellow-100 text-yellow-800' :
-                      skill.qualityGrade === 'D' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {skill.qualityGrade || 'N/A'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Avg RPE:</span>
-                    <span className="font-medium">{skill.avgRPE?.toFixed(1) || 'N/A'}</span>
-                  </div>
-                </div>
-
-                {/* Progress toward next milestone */}
-                {(() => {
-                  const milestones = [50, 100, 250, 500, 1000];
-                  const nextMilestone = milestones.find(m => m > skill.totalReps);
-                  const badgeNames = { 50: 'Bronze', 100: 'Silver', 250: 'Gold', 500: 'Diamond', 1000: 'Master' };
-                  
-                  if (nextMilestone) {
-                    const remaining = nextMilestone - skill.totalReps;
-                    const progress = (skill.totalReps / nextMilestone) * 100;
-                    return (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
-                        <div className="text-xs text-gray-600 mb-1">
-                          {remaining} more reps for {badgeNames[nextMilestone as keyof typeof badgeNames]}
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${Math.max(10, progress)}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            ))}
-          </div>
+      <div className="bg-white rounded-lg border p-6">
+        <div className="text-center py-8">
+          <div className="text-gray-400 text-4xl mb-2">🤸</div>
+          <p className="text-gray-500">No skills data available for this athlete</p>
+          <p className="text-sm text-gray-400 mt-1">Skills analytics will appear once the athlete logs skill exercises</p>
         </div>
       </div>
     );
-  };
+  }
+
+  const skills = Object.values(skillsData.skills) as any[];
+
+  return (
+    <div className="space-y-6">
+      {/* Skills Development Overview */}
+      {skillsSummary && (
+        <div className="bg-white rounded-lg border p-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-6">Skills Development Overview</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-3xl font-bold text-blue-600">{skillsSummary.totalSkills || 0}</div>
+              <div className="text-sm text-blue-700 font-medium">Skills Practiced</div>
+            </div>
+            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="text-3xl font-bold text-green-600">{skillsSummary.masteredSkills || 0}</div>
+              <div className="text-sm text-green-700 font-medium">Grade A Skills</div>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="text-3xl font-bold text-purple-600">{skillsSummary.totalReps || 0}</div>
+              <div className="text-sm text-purple-700 font-medium">Total Reps</div>
+            </div>
+            <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+              <div className="text-3xl font-bold text-orange-600">{skillsSummary.averageRPE?.toFixed(1) || '0.0'}</div>
+              <div className="text-sm text-orange-700 font-medium">Average RPE</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Skills Progress Charts */}
+      {skillsCharts && (
+        <div className="bg-white rounded-lg border p-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-6">Skills Progress Charts</h4>
+          
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Total Reps Chart */}
+            <div>
+              <h5 className="text-md font-medium text-gray-800 mb-4">Total Reps Completed</h5>
+              <div className="text-sm text-gray-600 mb-3">Reps per Movement</div>
+              
+              {skillsCharts.totalRepsChart && skillsCharts.totalRepsChart.length > 0 ? (
+                <div className="space-y-2">
+                  {skillsCharts.totalRepsChart.map((item: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm font-medium text-gray-700 truncate pr-2">{item.name}</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full" 
+                            style={{ width: `${Math.min(100, (item.value / Math.max(...skillsCharts.totalRepsChart.map((c: any) => c.value))) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-bold text-blue-600 w-8">{item.value}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No rep data available</p>
+              )}
+            </div>
+
+            {/* Average RPE Chart */}
+            <div>
+              <h5 className="text-md font-medium text-gray-800 mb-4">Average RPE</h5>
+              <div className="text-sm text-gray-600 mb-3">Effort Level by Movement</div>
+              
+              {skillsCharts.averageRPEChart && skillsCharts.averageRPEChart.length > 0 ? (
+                <div className="space-y-2">
+                  {skillsCharts.averageRPEChart.map((item: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm font-medium text-gray-700 truncate pr-2">{item.name}</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-pink-500 h-2 rounded-full" 
+                            style={{ width: `${(item.value / 10) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-bold text-pink-600 w-8">{item.value?.toFixed(1) || '0.0'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No RPE data available</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Individual Skills Progress */}
+      <div className="bg-white rounded-lg border p-6">
+        <h4 className="text-lg font-semibold text-gray-900 mb-6">Individual Skills Progress</h4>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {skills.map((skill: any) => (
+            <div key={skill.name} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <h5 className="font-medium text-gray-900">{skill.name}</h5>
+                <div className="flex flex-wrap gap-1">
+                  {/* Rep Badge */}
+                  {skill.totalReps >= 1000 && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      🏆 Master
+                    </span>
+                  )}
+                  {skill.totalReps >= 500 && skill.totalReps < 1000 && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      💎 Diamond
+                    </span>
+                  )}
+                  {skill.totalReps >= 250 && skill.totalReps < 500 && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      🥇 Gold
+                    </span>
+                  )}
+                  {skill.totalReps >= 100 && skill.totalReps < 250 && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      🥈 Silver
+                    </span>
+                  )}
+                  {skill.totalReps >= 50 && skill.totalReps < 100 && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      🥉 Bronze
+                    </span>
+                  )}
+                  
+                  {/* Practice Status */}
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    skill.daysSinceLast <= 3 ? 'bg-green-100 text-green-800' :
+                    skill.daysSinceLast <= 7 ? 'bg-yellow-100 text-yellow-800' :
+                    skill.daysSinceLast <= 14 ? 'bg-orange-100 text-orange-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {skill.daysSinceLast}d ago
+                  </span>
+                </div>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Sessions:</span>
+                  <span className="font-medium">{skill.sessions?.length || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Reps:</span>
+                  <span className="font-medium">{skill.totalReps || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Quality Grade:</span>
+                  <span className={`font-medium px-2 py-1 rounded text-xs ${
+                    skill.qualityGrade === 'A' ? 'bg-green-100 text-green-800' :
+                    skill.qualityGrade === 'B' ? 'bg-blue-100 text-blue-800' :
+                    skill.qualityGrade === 'C' ? 'bg-yellow-100 text-yellow-800' :
+                    skill.qualityGrade === 'D' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {skill.qualityGrade || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Avg RPE:</span>
+                  <span className="font-medium">{skill.avgRPE?.toFixed(1) || 'N/A'}</span>
+                </div>
+              </div>
+
+              {/* Progress toward next milestone */}
+              {(() => {
+                const milestones = [50, 100, 250, 500, 1000];
+                const nextMilestone = milestones.find(m => m > skill.totalReps);
+                const badgeNames = { 50: 'Bronze', 100: 'Silver', 250: 'Gold', 500: 'Diamond', 1000: 'Master' };
+                
+                if (nextMilestone) {
+                  const remaining = nextMilestone - skill.totalReps;
+                  const progress = (skill.totalReps / nextMilestone) * 100;
+                  return (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="text-xs text-gray-600 mb-1">
+                        {remaining} more reps for {badgeNames[nextMilestone as keyof typeof badgeNames]}
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${Math.max(10, progress)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
   const renderStrengthTab = () => {
     const strengthData = analyticsData.strength?.data?.strengthAnalysis;
@@ -641,4 +734,4 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
   );
 };
 
-export default AthleteDetailModal;
+
