@@ -651,160 +651,450 @@ const renderStrengthTab = () => {
 };
 
 
-
-  const renderMetConsTab = () => {
-    const metconData = analyticsData.metcons?.data;
+// Add this MetConExerciseHeatMap component before the renderMetConsTab function
+const MetConExerciseHeatMap: React.FC<{ data: any }> = ({ data }) => {
+  // Function to get color based on percentile
+  const getHeatMapColor = (percentile: number | null) => {
+    if (percentile === null) return 'bg-gray-100 text-gray-400';
     
-    if (!metconData?.exercises?.length) {
-      return (
-        <div className="bg-white rounded-lg border p-6">
-          <div className="text-center py-8">
-            <div className="text-gray-400 text-4xl mb-2">🔥</div>
-            <p className="text-gray-500">No MetCon data available for this athlete</p>
-            <p className="text-sm text-gray-400 mt-1">Conditioning analytics will appear once the athlete logs MetCon exercises</p>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-6">
-        {/* Global Performance Summary */}
-        <div className="bg-white rounded-lg border p-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-6">Conditioning Performance Overview</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="text-3xl font-bold text-blue-600">{metconData.globalFitnessScore || 0}%</div>
-              <div className="text-sm text-blue-700 font-medium">Global Fitness Score</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="text-3xl font-bold text-green-600">{metconData.exercises.length}</div>
-              <div className="text-sm text-green-700 font-medium">Exercises Tracked</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
-              <div className="text-3xl font-bold text-purple-600">{metconData.timeDomains?.length || 0}</div>
-              <div className="text-sm text-purple-700 font-medium">Time Domains</div>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
-              <div className="text-3xl font-bold text-orange-600">{metconData.totalCompletedWorkouts || 0}</div>
-              <div className="text-sm text-orange-700 font-medium">Total Workouts</div>
-            </div>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h5 className="font-medium text-gray-900 mb-2">Coach Insight</h5>
-            <p className="text-sm text-gray-700">
-              This athlete's global fitness score of <strong>{metconData.globalFitnessScore}%</strong> is calculated 
-              from {metconData.totalCompletedWorkouts} completed workouts across {metconData.exercises.length} different 
-              exercises. The full exercise-specific heat map provides detailed conditioning insights.
-            </p>
-          </div>
-        </div>
-
-        {/* Quick Exercise Performance Grid */}
-        <div className="bg-white rounded-lg border p-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Exercise Performance Snapshot</h4>
-          <div className="text-sm text-gray-600 mb-4">
-            Top exercises by training frequency and average performance
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {metconData.exerciseAverages?.slice(0, 12).map((exercise: any) => (
-              <div key={exercise.exercise_name} className="border rounded-lg p-3 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h6 className="font-medium text-gray-900 truncate">{exercise.exercise_name}</h6>
-                    <div className="text-xs text-gray-500">{exercise.total_sessions} sessions</div>
-                  </div>
-                  <div className="ml-2 text-right">
-                    <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                      exercise.overall_avg_percentile >= 80 ? 'bg-green-100 text-green-800' :
-                      exercise.overall_avg_percentile >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                      exercise.overall_avg_percentile >= 40 ? 'bg-orange-100 text-orange-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {exercise.overall_avg_percentile}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 text-center">
-            <p className="text-sm text-gray-500">
-              View the complete exercise heat map in the athlete's personal analytics for detailed conditioning insights across all time domains.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    if (percentile >= 80) return 'bg-green-600 text-white';
+    if (percentile >= 70) return 'bg-green-500 text-white';
+    if (percentile >= 60) return 'bg-green-400 text-white';
+    if (percentile >= 50) return 'bg-yellow-400 text-black';
+    if (percentile >= 40) return 'bg-orange-400 text-white';
+    if (percentile >= 30) return 'bg-orange-500 text-white';
+    return 'bg-red-500 text-white';
   };
 
-  if (loading && Object.keys(analyticsData).length === 0) {
+  // Function to get percentile for exercise in time domain
+  const getPercentile = (exercise: string, timeDomain: string): number | null => {
+    if (!data?.heatmapCells) return null;
+    
+    const cell = data.heatmapCells.find((cell: any) => 
+      cell.exercise_name === exercise && cell.time_range === timeDomain
+    );
+    
+    return cell ? cell.avg_percentile : null;
+  };
+
+  const getSessionCount = (exercise: string, timeDomain: string): number => {
+    if (!data?.heatmapCells) return 0;
+    
+    const cell = data.heatmapCells.find((cell: any) => 
+      cell.exercise_name === exercise && cell.time_range === timeDomain
+    );
+    
+    return cell ? cell.session_count : 0;
+  };
+
+  // Calculate exercise averages
+  const calculateExerciseAverage = (exercise: string): number | null => {
+    if (!data?.exerciseAverages) return null;
+    
+    const exerciseAvg = data.exerciseAverages.find((avg: any) => 
+      avg.exercise_name === exercise
+    );
+    
+    return exerciseAvg ? exerciseAvg.overall_avg_percentile : null;
+  };
+
+  // Calculate time domain averages
+  const calculateTimeDomainAverage = (timeDomain: string): number | null => {
+    if (!data?.heatmapCells) return null;
+    
+    const domainCells = data.heatmapCells.filter((cell: any) => 
+      cell.time_range === timeDomain
+    );
+    
+    if (domainCells.length === 0) return null;
+    
+    let totalWeightedScore = 0;
+    let totalSessions = 0;
+    
+    domainCells.forEach((cell: any) => {
+      totalWeightedScore += cell.avg_percentile * cell.session_count;
+      totalSessions += cell.session_count;
+    });
+    
+    return totalSessions > 0 ? Math.round(totalWeightedScore / totalSessions) : null;
+  };
+
+  // No data state
+  if (!data || !data.exercises || data.exercises.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
-            <p className="text-gray-600">Loading athlete analytics...</p>
-          </div>
+      <div className="bg-white rounded-lg border p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">🔥 Exercise Performance Heat Map</h3>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+          <div className="text-4xl mb-3">💪</div>
+          <p className="text-blue-800 font-medium mb-2">No MetCon Data Yet</p>
+          <p className="text-blue-600">Complete more MetCon workouts to see exercise-specific performance data!</p>
         </div>
       </div>
     );
   }
 
+  const { exercises, timeDomains, globalFitnessScore } = data;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-6xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Athlete Analytics: {athlete.athlete.name}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-          >
-            ×
-          </button>
-        </div>
+    <div className="bg-white rounded-lg border p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        🔥 Exercise Performance Heat Map
+      </h3>
+      <p className="text-sm text-gray-600 mb-6">
+        Performance percentiles for each exercise across different time domains
+      </p>
+      
+      {/* Heat Map Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr>
+              <th className="text-left p-3 font-medium text-gray-900">Exercise</th>
+              {timeDomains.map((domain: string) => (
+                <th key={domain} className="text-center p-3 font-medium text-gray-900 min-w-[100px]">
+                  {domain}
+                </th>
+              ))}
+              <th className="text-center p-3 font-bold text-gray-900 min-w-[100px] bg-blue-50 border-l-2 border-blue-200">
+                Exercise Avg
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Individual Exercise Rows */}
+            {exercises.map((exercise: string) => (
+              <tr key={exercise} className="border-t">
+                <td className="p-3 font-medium text-gray-900 bg-gray-50">
+                  {exercise}
+                </td>
+                {timeDomains.map((domain: string) => {
+                  const percentile = getPercentile(exercise, domain);
+                  const sessions = getSessionCount(exercise, domain);
+                  const colorClass = getHeatMapColor(percentile);
+                  
+                  return (
+                    <td key={domain} className="p-1">
+                      <div className={`
+                        ${colorClass} 
+                        rounded p-3 text-center font-semibold transition-all hover:scale-105 cursor-pointer
+                        ${percentile ? 'shadow-sm' : ''}
+                      `}>
+                        {percentile ? (
+                          <div>
+                            <div className="text-lg">{percentile}%</div>
+                            {sessions > 0 && (
+                              <div className="text-xs opacity-75">{sessions} sessions</div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-lg">—</div>
+                        )}
+                      </div>
+                    </td>
+                  );
+                })}
+                {/* Exercise Average Cell */}
+                <td className="p-1 border-l-2 border-blue-200 bg-blue-50">
+                  {(() => {
+                    const avgPercentile = calculateExerciseAverage(exercise);
+                    const colorClass = getHeatMapColor(avgPercentile);
+                    const exerciseData = data.exerciseAverages.find((avg: any) => avg.exercise_name === exercise);
+                    const totalSessions = exerciseData?.total_sessions || 0;
+                    
+                    return (
+                      <div className={`
+                        ${colorClass}
+                        rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer
+                        shadow-md border-2 border-white
+                        ${avgPercentile ? 'ring-1 ring-blue-300' : ''}
+                      `} style={{ minHeight: '60px' }}>
+                        {avgPercentile ? (
+                          <div>
+                            <div className="text-lg font-bold">Avg: {avgPercentile}%</div>
+                            <div className="text-xs opacity-75 font-medium">{totalSessions} total</div>
+                          </div>
+                        ) : (
+                          <div className="text-lg font-bold">—</div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </td>
+              </tr>
+            ))}
+            
+            {/* Time Domain Averages Row */}
+            <tr className="border-t-2 border-blue-200 bg-blue-50">
+              <td className="p-3 font-bold text-gray-900 bg-blue-100 border-r-2 border-blue-200">
+                Time Domain Avg
+              </td>
+              {timeDomains.map((domain: string) => {
+                const avgPercentile = calculateTimeDomainAverage(domain);
+                const colorClass = getHeatMapColor(avgPercentile);
+                
+                return (
+                  <td key={domain} className="p-1">
+                    <div className={`
+                      ${colorClass}
+                      rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer
+                      shadow-md border-2 border-white
+                      ${avgPercentile ? 'ring-1 ring-blue-300' : ''}
+                    `} style={{ minHeight: '60px' }}>
+                      {avgPercentile ? (
+                        <div>
+                          <div className="text-lg font-bold">Avg: {avgPercentile}%</div>
+                          <div className="text-xs opacity-75 font-medium">Domain</div>
+                        </div>
+                      ) : (
+                        <div className="text-lg font-bold">—</div>
+                      )}
+                    </div>
+                  </td>
+                );
+              })}
+              
+              {/* Global Fitness Score Cell */}
+              <td className="p-1 border-l-2 border-blue-200 bg-blue-100">
+                {(() => {
+                  const colorClass = getHeatMapColor(globalFitnessScore);
+                  return (
+                    <div className={`
+                      ${colorClass}
+                      rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer
+                      shadow-lg border-4 border-white
+                      ${globalFitnessScore ? 'ring-2 ring-blue-400' : ''}
+                    `} style={{ minHeight: '60px' }}>
+                      {globalFitnessScore ? (
+                        <div>
+                          <div className="text-xl font-bold">{globalFitnessScore}%</div>
+                          <div className="text-xs opacity-75 font-bold">FITNESS</div>
+                        </div>
+                      ) : (
+                        <div className="text-xl font-bold">—</div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b bg-gray-50 px-6">
-          {[
-            { id: 'overview', name: 'Overview', icon: '📊' },
-            { id: 'skills', name: 'Skills', icon: '🤸' },
-            { id: 'strength', name: 'Strength', icon: '💪' },
-            { id: 'metcons', name: 'MetCons', icon: '🔥' },
-            { id: 'notes', name: 'Coach Notes', icon: '📝' }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center space-x-2 px-6 py-4 font-medium transition-colors ${
-                activeTab === tab.id
-                  ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <span>{tab.icon}</span>
-              <span>{tab.name}</span>
-            </button>
-          ))}
+      {/* Enhanced Legend */}
+      <div className="mt-6 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <span className="text-sm font-medium text-gray-700">Performance:</span>
+          <div className="flex items-center space-x-2">
+            <div className="bg-red-500 w-4 h-4 rounded"></div>
+            <span className="text-xs text-gray-600">Poor</span>
+            <div className="bg-orange-400 w-4 h-4 rounded"></div>
+            <span className="text-xs text-gray-600">Below Avg</span>
+            <div className="bg-yellow-400 w-4 h-4 rounded"></div>
+            <span className="text-xs text-gray-600">Average</span>
+            <div className="bg-green-400 w-4 h-4 rounded"></div>
+            <span className="text-xs text-gray-600">Good</span>
+            <div className="bg-green-600 w-4 h-4 rounded"></div>
+            <span className="text-xs text-gray-600">Excellent</span>
+          </div>
         </div>
+        <div className="text-sm text-gray-500">
+          <span className="font-medium">Bold cells</span> show weighted averages
+        </div>
+      </div>
 
-        {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'overview' && renderOverviewTab()}
-          {activeTab === 'notes' && renderNotesTab()}         
-          {activeTab === 'skills' && renderSkillsTab()}
-          {activeTab === 'strength' && renderStrengthTab()}
-          {activeTab === 'metcons' && renderMetConsTab()}
+      {/* Summary Insights */}
+      {globalFitnessScore && (
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <h4 className="font-medium text-gray-900 mb-2">Fitness Summary</h4>
+          <p className="text-sm text-gray-700">
+            This athlete's overall fitness score is <strong>{globalFitnessScore}%</strong> based on {exercises.length} exercises 
+            across {timeDomains.length} time domains from {data.totalCompletedWorkouts} completed workouts. 
+            Scores are weighted by training frequency to reflect their actual fitness level.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Updated MetCons Tab Function
+const renderMetConsTab = () => {
+  const metconData = analyticsData.metcons?.data;
+  
+  if (!metconData?.exercises?.length) {
+    return (
+      <div className="bg-white rounded-lg border p-6">
+        <div className="text-center py-8">
+          <div className="text-gray-400 text-4xl mb-2">🔥</div>
+          <p className="text-gray-500">No MetCon data available for this athlete</p>
+          <p className="text-sm text-gray-400 mt-1">Conditioning analytics will appear once the athlete logs MetCon exercises</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Create time domain chart from heatmap data - COPY FROM ATHLETE PAGE
+  const timeDomainChartData = {
+    labels: metconData?.timeDomains || [],
+    datasets: [
+      {
+        label: 'Average Percentile',
+        data: (metconData?.timeDomains || []).map((domain: string) => {
+          // Calculate average for this time domain from heatmap cells
+          const domainCells = metconData?.heatmapCells?.filter((cell: any) => cell.time_range === domain) || [];
+          if (domainCells.length === 0) return 0;
+          
+          let totalWeighted = 0;
+          let totalSessions = 0;
+          domainCells.forEach((cell: any) => {
+            totalWeighted += cell.avg_percentile * cell.session_count;
+            totalSessions += cell.session_count;
+          });
+          
+          return totalSessions > 0 ? Math.round(totalWeighted / totalSessions) : 0;
+        }),
+        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 1
+      }
+    ]
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Heat Map - EXACT COPY FROM ATHLETE PAGE */}
+      <MetConExerciseHeatMap data={metconData} />
+       
+      {/* Chart Section - EXACT COPY FROM ATHLETE PAGE */}
+      <div className="bg-white rounded-lg border p-6">
+        <h4 className="text-lg font-semibold text-gray-900 mb-4">Conditioning Performance</h4>
+        <div className="h-64 mb-6">
+          <Bar data={timeDomainChartData} options={{
+            responsive: true,
+            plugins: {
+              legend: {
+                display: false
+              },
+              title: {
+                display: true,
+                text: 'Performance by Time Domain'
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100
+              }
+            }
+          }} />
+        </div>
+        
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-medium text-gray-900 mb-3">Time Domain Performance</h4>
+            <div className="space-y-2">
+              {(metconData?.timeDomains || []).map((timeRange: string) => {
+                // Calculate average for this time domain
+                const domainCells = metconData?.heatmapCells?.filter((cell: any) => cell.time_range === timeRange) || [];
+                let avgPercentile = 0;
+                
+                if (domainCells.length > 0) {
+                  let totalWeighted = 0;
+                  let totalSessions = 0;
+                  domainCells.forEach((cell: any) => {
+                    totalWeighted += cell.avg_percentile * cell.session_count;
+                    totalSessions += cell.session_count;
+                  });
+                  avgPercentile = totalSessions > 0 ? Math.round(totalWeighted / totalSessions) : 0;
+                }
+
+                return (
+                  <div key={timeRange} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <span className="text-sm font-medium">{timeRange}</span>
+                    <span className="text-sm text-gray-600">{avgPercentile}% avg</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="font-medium text-gray-900 mb-3">Summary</h4>
+            <div className="space-y-2 text-sm">
+              <p><strong>Total Workouts:</strong> {metconData.totalCompletedWorkouts || 0}</p>
+              <p><strong>Time Domains:</strong> {metconData.timeDomains?.length || 0}</p>
+              <p><strong>Average Percentile:</strong> {metconData.globalFitnessScore || 0}%</p>
+              <p><strong>Exercises Tracked:</strong> {metconData.exercises?.length || 0}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default AthleteDetailModal;
+if (loading && Object.keys(analyticsData).length === 0) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+          <p className="text-gray-600">Loading athlete analytics...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+return (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg w-full max-w-6xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between p-6 border-b">
+        <h2 className="text-2xl font-bold text-gray-900">
+          Athlete Analytics: {athlete.athlete.name}
+        </h2>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex border-b bg-gray-50 px-6">
+        {[
+          { id: 'overview', name: 'Overview', icon: '📊' },
+          { id: 'skills', name: 'Skills', icon: '🤸' },
+          { id: 'strength', name: 'Strength', icon: '💪' },
+          { id: 'metcons', name: 'MetCons', icon: '🔥' },
+          { id: 'notes', name: 'Coach Notes', icon: '📝' }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`flex items-center space-x-2 px-6 py-4 font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <span>{tab.icon}</span>
+            <span>{tab.name}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex-1 overflow-y-auto p-6">
+        {activeTab === 'overview' && renderOverviewTab()}
+        {activeTab === 'notes' && renderNotesTab()}         
+        {activeTab === 'skills' && renderSkillsTab()}
+        {activeTab === 'strength' && renderStrengthTab()}
+        {activeTab === 'metcons' && renderMetConsTab()}
+      </div>
+    </div>
+  </div>
+);
