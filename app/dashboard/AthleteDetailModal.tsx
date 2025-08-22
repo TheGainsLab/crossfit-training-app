@@ -518,91 +518,139 @@ const renderSkillsTab = () => {
   );
 };
 
-
-
-
-
-  const renderStrengthTab = () => {
-    const strengthData = analyticsData.strength?.data?.strengthAnalysis;
-    
-    if (!strengthData?.movements) {
-      return (
-        <div className="bg-white rounded-lg border p-6">
-          <div className="text-center py-8">
-            <div className="text-gray-400 text-4xl mb-2">💪</div>
-            <p className="text-gray-500">No strength data available for this athlete</p>
-            <p className="text-sm text-gray-400 mt-1">Strength analytics will appear once the athlete logs strength exercises</p>
-          </div>
-        </div>
-      );
-    }
-
-    const movements = Object.entries(strengthData.movements);
-
+const renderStrengthTab = () => {
+  const strengthData = analyticsData.strength?.data?.strengthAnalysis;
+  
+  if (!strengthData?.movements) {
     return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-lg border p-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-6">Strength Progress Analysis</h4>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {movements.map(([name, movement]: [string, any]) => (
-              <div key={name} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                <h5 className="font-medium text-gray-900 mb-3">{name}</h5>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Sessions:</span>
-                    <span className="font-medium">{movement.sessions?.length || 0}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Max Weight:</span>
-                    <span className="font-medium text-lg text-blue-600">{movement.maxWeight || 0} lbs</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Current Weight:</span>
-                    <span className="font-medium">{movement.currentWeight || 0} lbs</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Avg RPE:</span>
-                    <span className={`font-medium ${
-                      movement.avgRPE > 8 ? 'text-red-600' :
-                      movement.avgRPE > 6 ? 'text-yellow-600' :
-                      'text-green-600'
-                    }`}>
-                      {movement.avgRPE?.toFixed(1) || 'N/A'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Volume:</span>
-                    <span className="font-medium">{movement.totalVolume?.toLocaleString() || 0}</span>
-                  </div>
-                  
-                  {/* Trend indicator */}
-                  <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                    <span className="text-gray-600">Trend:</span>
-                    <span className={`font-medium text-sm px-2 py-1 rounded ${
-                      movement.progressionTrend === 'improving' ? 'bg-green-100 text-green-800' :
-                      movement.progressionTrend === 'declining' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {movement.progressionTrend === 'improving' ? '↗️ Improving' :
-                       movement.progressionTrend === 'declining' ? '↘️ Declining' :
-                       '➡️ Stable'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Last session info */}
-                {movement.sessions && movement.sessions.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
-                    Last: Week {movement.sessions[movement.sessions.length - 1].week} - {movement.sessions[movement.sessions.length - 1].weight} lbs
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+      <div className="bg-white rounded-lg border p-6">
+        <div className="text-center py-8">
+          <div className="text-gray-400 text-4xl mb-2">💪</div>
+          <p className="text-gray-500">No strength data available for this athlete</p>
+          <p className="text-sm text-gray-400 mt-1">Strength analytics will appear once the athlete logs strength exercises</p>
         </div>
       </div>
     );
+  }
+
+  // Create chart data from strength movements - EXACT COPY FROM ATHLETE PAGE
+  const movementNames = Object.keys(strengthData.movements);
+  const movementData = movementNames.map(name => {
+    const movement = strengthData.movements[name];
+    return {
+      name,
+      sessionCount: movement.sessions?.length || 0,
+      maxWeight: movement.maxWeight || 0,
+      currentWeight: movement.currentWeight || 0,
+      totalVolume: movement.totalVolume || 0,
+      avgRPE: movement.avgRPE || 0,
+      lastSession: movement.sessions && movement.sessions.length > 0 ? movement.sessions[movement.sessions.length - 1] : null
+    };
+  });
+
+  const weightProgressData = {
+    labels: movementData.map(m => m.name),
+    datasets: [
+      {
+        label: 'Max Weight (lbs)',
+        data: movementData.map(m => m.maxWeight),
+        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1
+      }
+    ]
   };
+
+  const volumeData = {
+    labels: movementData.map(m => m.name),
+    datasets: [
+      {
+        label: 'Total Volume',
+        data: movementData.map(m => m.totalVolume),
+        backgroundColor: 'rgba(153, 102, 255, 0.6)',
+        borderColor: 'rgba(153, 102, 255, 1)',
+        borderWidth: 1
+      }
+    ]
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg border p-6">
+        <h4 className="text-lg font-semibold text-gray-900 mb-6">Strength Progress Analysis</h4>
+        
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <h4 className="font-medium text-gray-900 mb-3">Max Weight Progression</h4>
+            <div className="h-64">
+              <Bar data={weightProgressData} options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  title: { display: true, text: 'Peak Loads by Movement' }
+                },
+                scales: {
+                  y: { beginAtZero: true }
+                }
+              }} />
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="font-medium text-gray-900 mb-3">Training Volume</h4>
+            <div className="h-64">
+              <Bar data={volumeData} options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  title: { display: true, text: 'Total Volume by Movement' }
+                },
+                scales: {
+                  y: { beginAtZero: true }
+                }
+              }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {movementData.map((movement, index) => (
+            <div key={movement.name} className="p-4 border rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">{movement.name}</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Sessions:</span>
+                  <span className="font-medium">{movement.sessionCount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Max Weight:</span>
+                  <span className="font-medium">{movement.maxWeight} lbs</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Avg RPE:</span>
+                  <span className="font-medium">{movement.avgRPE}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Volume:</span>
+                  <span className="font-medium">{movement.totalVolume.toLocaleString()}</span>
+                </div>
+                {movement.lastSession && (
+                  <div className="text-xs text-gray-500 mt-2">
+                    Last: Week {movement.lastSession.week} - {movement.lastSession.weight} lbs
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 
   const renderMetConsTab = () => {
     const metconData = analyticsData.metcons?.data;
