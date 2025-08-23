@@ -266,7 +266,7 @@ if (!permissionCheck.hasAccess || !permissionCheck.permissionLevel || (!['edit',
       .from('programs')
       .select('*')
       .eq('user_id', athleteId)
-      .order('created_at', { ascending: false })
+       .order('generated_at', { ascending: false })
       .limit(1)
       .single();
 
