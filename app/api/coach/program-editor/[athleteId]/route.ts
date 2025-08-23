@@ -53,14 +53,6 @@ interface ProgramEditorResponse {
   error?: string;
 }
 
-// Mapping for skill levels (from intake form order)
-const SKILL_LEVELS = {
-  "Don't have it": 0,
-  "Beginner": 1, 
-  "Intermediate": 2,
-  "Advanced": 3
-};
-
 // Exercise to equipment mapping
 const EXERCISE_EQUIPMENT_MAP: { [key: string]: string[] } = {
   'Wall Walks': ['Wall Space'],
@@ -162,32 +154,9 @@ function getExercise1RM(exerciseName: string, oneRMs: number[]): number | null {
   return null;
 }
 
-function getRequiredSkillLevel(exerciseName: string): string {
-  const lowerName = exerciseName.toLowerCase();
-  
-  // Advanced skills
-  if (lowerName.includes('muscle up') || 
-      lowerName.includes('handstand walk') ||
-      lowerName.includes('rope climb') ||
-      lowerName.includes('strict handstand push')) {
-    return 'Advanced';
-  }
-  
-  // Intermediate skills  
-  if (lowerName.includes('handstand push') ||
-      lowerName.includes('double under') ||
-      lowerName.includes('pistol') ||
-      lowerName.includes('wall walk')) {
-    return 'Intermediate';
-  }
-  
-  return 'Beginner';
-}
-
 function checkConstraintWarnings(
   exercise: any,
   athleteEquipment: string[],
-  athleteSkills: string[],
   athleteOneRMs: number[],
   athleteBodyWeight: number
 ): string[] {
@@ -198,19 +167,6 @@ function checkConstraintWarnings(
   for (const equipment of requiredEquipment) {
     if (!athleteEquipment.includes(equipment)) {
       warnings.push(`Requires ${equipment} - athlete doesn't have this equipment`);
-    }
-  }
-  
-  // Skill level warnings (simplified - would need more complex mapping in real implementation)
-  const requiredSkillLevel = getRequiredSkillLevel(exercise.name);
-  const requiredSkillIndex = SKILL_LEVELS[requiredSkillLevel];
-  
-  // For now, we'll do a basic check - in reality you'd need to map specific skills
-  // This is a placeholder that checks if athlete has any advanced skills for advanced exercises
-  if (requiredSkillLevel === 'Advanced') {
-    const hasAdvancedSkills = athleteSkills.some(skill => skill === 'Advanced');
-    if (!hasAdvancedSkills) {
-      warnings.push(`Exercise requires advanced skill level`);
     }
   }
   
@@ -249,9 +205,9 @@ export async function GET(
 ) {
   try {
     const supabase = createClient();
-    const params = await context.params;  // ← Add this line
+    const params = await context.params;
     const athleteId = parseInt(params.athleteId);
-
+    
     if (isNaN(athleteId)) {
       return NextResponse.json({
         success: false,
@@ -339,7 +295,6 @@ export async function GET(
     // Extract athlete constraints from user_snapshot
     const userSnapshot = programData.user_snapshot;
     const athleteEquipment = userSnapshot.equipment || [];
-    const athleteSkills = userSnapshot.skills || [];
     const athleteOneRMs = userSnapshot.oneRMs || [];
     const athleteBodyWeight = userSnapshot.bodyWeight || 200;
 
@@ -374,11 +329,10 @@ export async function GET(
             // Use modified data if available, otherwise original
             const finalExercise = modification ? modification.modified_data : exercise;
             
-            // Generate constraint warnings
+            // Generate constraint warnings (equipment + weight only)
             const constraintWarnings = checkConstraintWarnings(
               finalExercise,
               athleteEquipment,
-              athleteSkills,
               athleteOneRMs,
               athleteBodyWeight
             );
@@ -429,7 +383,7 @@ export async function GET(
           email: athleteData.email,
           ability: userSnapshot.ability || 'Beginner',
           equipment: athleteEquipment,
-          skills: athleteSkills,
+          skills: userSnapshot.skills || [],
           oneRMs: athleteOneRMs,
           bodyWeight: athleteBodyWeight
         },
@@ -453,4 +407,3 @@ export async function GET(
     }, { status: 500 });
   }
 }
-
