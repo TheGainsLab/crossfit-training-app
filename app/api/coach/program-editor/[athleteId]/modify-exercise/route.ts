@@ -75,7 +75,7 @@ export async function PUT(
     const requestingUserId = userData.id;
     
     // Check permissions - only coaches can modify
-    const permissionCheck = await canAccessAthleteData(supabase, requestingUserId, athleteId);
+    const permissionCheck = await canAccessAthleteData(supabase, requestingUserId, parseInt(athleteId));
     if (!permissionCheck.hasAccess || !permissionCheck.isCoach) {
       return NextResponse.json({ success: false, error: 'Only coaches can modify exercises' }, { status: 403 });
     }

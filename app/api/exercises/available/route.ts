@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     const requestingUserId = userData.id;
 
     // Check permissions - coach must have access to this athlete
-    const permissionCheck = await canAccessAthleteData(supabase, requestingUserId, athleteId);
+    const permissionCheck = await canAccessAthleteData(supabase, requestingUserId, parseInt(athleteId));
     if (!permissionCheck.hasAccess || !permissionCheck.isCoach) {
       return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
     }
