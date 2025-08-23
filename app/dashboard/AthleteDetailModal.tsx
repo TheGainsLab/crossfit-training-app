@@ -142,7 +142,7 @@ const InlineExerciseRow: React.FC<InlineExerciseRowProps> = ({
       errors.name = 'Exercise name is required';
     }
 
-    if (!editingData.sets || editingData.sets <= 0) {
+    if (!editingData.sets || Number(editingData.sets) <= 0) {
       errors.sets = 'Sets must be greater than 0';
     } else if (Number(editingData.sets) > 20) {
       errors.sets = 'Sets over 20 seems unusual';
