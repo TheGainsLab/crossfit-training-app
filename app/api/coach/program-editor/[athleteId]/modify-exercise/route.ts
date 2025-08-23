@@ -72,18 +72,31 @@ export async function PUT(
       return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     }
 
-    const requestingUserId = userData.id;
-    
+const requestingUserId = userData.id;
+
 // ADD THESE DEBUG LOGS HERE:
 console.log('🔍 DEBUG - Requesting user ID (coach):', requestingUserId, typeof requestingUserId);
 console.log('🔍 DEBUG - Athlete ID from URL:', athleteId, typeof athleteId);
 console.log('🔍 DEBUG - Athlete ID as int:', parseInt(athleteId));
 
+// Get coach ID from coaches table
+const { data: coachData, error: coachError } = await supabase
+  .from('coaches')
+  .select('id')
+  .eq('user_id', requestingUserId)
+  .single();
 
+if (coachError || !coachData) {
+  return NextResponse.json({ success: false, error: 'Coach not found' }, { status: 404 });
+}
 
-    // Check permissions - only coaches can modify
-    const permissionCheck = await canAccessAthleteData(supabase, requestingUserId, parseInt(athleteId));
-    if (!permissionCheck.hasAccess || !permissionCheck.isCoach) {
+const coachId = coachData.id;
+console.log('🔍 DEBUG - Coach ID from coaches table:', coachId);
+
+// Check permissions - only coaches can modify
+const permissionCheck = await canAccessAthleteData(supabase, requestingUserId, parseInt(athleteId));
+   
+ if (!permissionCheck.hasAccess || !permissionCheck.isCoach) {
       return NextResponse.json({ success: false, error: 'Only coaches can modify exercises' }, { status: 403 });
     }
 
@@ -127,13 +140,13 @@ console.log('🔍 DEBUG - Athlete ID as int:', parseInt(athleteId));
       }, { status: 400 });
     }
 
-console.log('🔍 DEBUG - Searching for: coach_id =', requestingUserId, 'athlete_id =', parseInt(athleteId), 'status = active');
-    
+console.log('🔍 DEBUG - Searching for: coach_id =', coachId, 'athlete_id =', parseInt(athleteId), 'status = active'); 
+
 // Get the coach-athlete relationship ID
 const { data: relationship, error: relationshipError } = await supabase
   .from('coach_athlete_relationships')
   .select('id')
-  .eq('coach_id', requestingUserId)        // ← ADD THIS LINE
+  .eq('coach_id', coachId)                 // ← Change to coachId
   .eq('athlete_id', parseInt(athleteId))
   .eq('status', 'active')
   .single();
