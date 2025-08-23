@@ -65,6 +65,336 @@ interface ProgramData {
   modifications: any[];
 }
 
+// Types for editing
+interface EditingExercise {
+  id: string;
+  name: string;
+  sets: number | string;
+  reps: number | string;
+  weightTime: string;
+  notes: string;
+}
+
+interface ValidationErrors {
+  name?: string;
+  sets?: string;
+  reps?: string;
+  weightTime?: string;
+}
+
+// Inline Exercise Row Component
+interface InlineExerciseRowProps {
+  exercise: any;
+  isEditing: boolean;
+  onEdit: () => void;
+  onSave: (editedExercise: EditingExercise) => Promise<void>;
+  onCancel: () => void;
+  availableExercises: string[];
+  weekName: string;
+  dayName: string;
+  isDeloadWeek: boolean;
+}
+
+const InlineExerciseRow: React.FC<InlineExerciseRowProps> = ({
+  exercise,
+  isEditing,
+  onEdit,
+  onSave,
+  onCancel,
+  availableExercises,
+  weekName,
+  dayName,
+  isDeloadWeek
+}) => {
+  const [editingData, setEditingData] = useState<EditingExercise>({
+    id: exercise.id,
+    name: exercise.name,
+    sets: exercise.sets,
+    reps: exercise.reps,
+    weightTime: exercise.weightTime,
+    notes: exercise.notes
+  });
+
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Reset editing data when exercise changes
+  useEffect(() => {
+    if (isEditing) {
+      setEditingData({
+        id: exercise.id,
+        name: exercise.name,
+        sets: exercise.sets,
+        reps: exercise.reps,
+        weightTime: exercise.weightTime,
+        notes: exercise.notes
+      });
+      setValidationErrors({});
+    }
+  }, [isEditing, exercise]);
+
+  const validateFields = (): boolean => {
+    const errors: ValidationErrors = {};
+
+    if (!editingData.name.trim()) {
+      errors.name = 'Exercise name is required';
+    }
+
+    if (!editingData.sets || editingData.sets <= 0) {
+      errors.sets = 'Sets must be greater than 0';
+    } else if (Number(editingData.sets) > 20) {
+      errors.sets = 'Sets over 20 seems unusual';
+    }
+
+    if (!editingData.reps || String(editingData.reps).trim() === '') {
+      errors.reps = 'Reps is required';
+    } else if (String(editingData.reps).length > 5) {
+      errors.reps = 'Reps must be 5 characters or less';
+    }
+
+    if (editingData.weightTime && String(editingData.weightTime).length > 5) {
+      errors.weightTime = 'Weight/Time must be 5 characters or less';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateFields()) return;
+
+    setIsSaving(true);
+    try {
+      await onSave(editingData);
+    } catch (error) {
+      console.error('Failed to save exercise:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditingData({
+      id: exercise.id,
+      name: exercise.name,
+      sets: exercise.sets,
+      reps: exercise.reps,
+      weightTime: exercise.weightTime,
+      notes: exercise.notes
+    });
+    setValidationErrors({});
+    setShowDropdown(false);
+    setSearchTerm('');
+    onCancel();
+  };
+
+  const filteredExercises = availableExercises.filter(ex =>
+    ex.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (!isEditing) {
+    // Display mode
+    return (
+      <tr className={`border-b hover:bg-gray-50 ${exercise.isCompleted ? 'bg-gray-100 opacity-75' : ''}`}>
+        <td className="p-3">
+          <span className={`font-medium ${isDeloadWeek ? 'text-orange-600' : 'text-gray-900'}`}>
+            {weekName}
+            {isDeloadWeek && <span className="ml-1 text-xs">(Deload)</span>}
+          </span>
+        </td>
+        <td className="p-3 text-sm text-gray-600">{dayName}</td>
+        <td className="p-3">
+          <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+            {exercise.block}
+          </span>
+        </td>
+        <td className="p-3">
+          <div className="font-medium text-gray-900">{exercise.name}</div>
+          {exercise.notes && (
+            <div className="text-xs text-gray-500 mt-1 italic">{exercise.notes}</div>
+          )}
+          {exercise.constraintWarnings.length > 0 && (
+            <div className="mt-1">
+              {exercise.constraintWarnings.map((warning: string, i: number) => (
+                <div key={i} className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded mb-1">
+                  ⚠️ {warning}
+                </div>
+              ))}
+            </div>
+          )}
+        </td>
+        <td className="p-3 text-center">{exercise.sets}</td>
+        <td className="p-3 text-center">{exercise.reps}</td>
+        <td className="p-3 text-center">{exercise.weightTime || '—'}</td>
+        <td className="p-3 text-center">
+          {exercise.isCompleted ? (
+            <span className="inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded">
+              Completed
+            </span>
+          ) : exercise.isModified ? (
+            <span className="inline-block px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+              Modified
+            </span>
+          ) : (
+            <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+              Original
+            </span>
+          )}
+        </td>
+        <td className="p-3 text-center">
+          {!exercise.isCompleted ? (
+            <button
+              onClick={onEdit}
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+            >
+              Edit
+            </button>
+          ) : (
+            <span className="text-gray-400 text-sm">Locked</span>
+          )}
+        </td>
+      </tr>
+    );
+  }
+
+  // Edit mode
+  return (
+    <tr className="border-b bg-blue-50">
+      <td className="p-3">
+        <span className={`font-medium ${isDeloadWeek ? 'text-orange-600' : 'text-gray-900'}`}>
+          {weekName}
+          {isDeloadWeek && <span className="ml-1 text-xs">(Deload)</span>}
+        </span>
+      </td>
+      <td className="p-3 text-sm text-gray-600">{dayName}</td>
+      <td className="p-3">
+        <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+          {exercise.block}
+        </span>
+      </td>
+      <td className="p-3">
+        {/* Exercise Name Dropdown */}
+        <div className="relative">
+          <input
+            type="text"
+            value={editingData.name}
+            onChange={(e) => {
+              setEditingData(prev => ({ ...prev, name: e.target.value }));
+              setSearchTerm(e.target.value);
+              setShowDropdown(true);
+            }}
+            onFocus={() => {
+              setSearchTerm(editingData.name);
+              setShowDropdown(true);
+            }}
+            className={`w-full px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
+              validationErrors.name ? 'border-red-500' : 'border-gray-300'
+            }`}
+            placeholder="Type to search exercises..."
+          />
+          
+          {showDropdown && filteredExercises.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+              {filteredExercises.slice(0, 10).map((ex, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => {
+                    setEditingData(prev => ({ ...prev, name: ex }));
+                    setShowDropdown(false);
+                    setSearchTerm('');
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-sm"
+                >
+                  {ex}
+                </button>
+              ))}
+            </div>
+          )}
+          
+          {validationErrors.name && (
+            <div className="text-xs text-red-600 mt-1">{validationErrors.name}</div>
+          )}
+        </div>
+      </td>
+      <td className="p-3">
+        {/* Sets Input */}
+        <input
+          type="number"
+          value={editingData.sets}
+          onChange={(e) => setEditingData(prev => ({ ...prev, sets: parseInt(e.target.value) || 0 }))}
+          min="1"
+          max="20"
+          className={`w-16 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center ${
+            validationErrors.sets ? 'border-red-500' : 'border-gray-300'
+          }`}
+        />
+        {validationErrors.sets && (
+          <div className="text-xs text-red-600 mt-1">{validationErrors.sets}</div>
+        )}
+      </td>
+      <td className="p-3">
+        {/* Reps Input */}
+        <input
+          type="text"
+          value={editingData.reps}
+          onChange={(e) => setEditingData(prev => ({ ...prev, reps: e.target.value }))}
+          maxLength={5}
+          className={`w-16 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center ${
+            validationErrors.reps ? 'border-red-500' : 'border-gray-300'
+          }`}
+          placeholder="8, max"
+        />
+        {validationErrors.reps && (
+          <div className="text-xs text-red-600 mt-1">{validationErrors.reps}</div>
+        )}
+      </td>
+      <td className="p-3">
+        {/* Weight/Time Input */}
+        <input
+          type="text"
+          value={editingData.weightTime}
+          onChange={(e) => setEditingData(prev => ({ ...prev, weightTime: e.target.value }))}
+          maxLength={5}
+          className={`w-20 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center ${
+            validationErrors.weightTime ? 'border-red-500' : 'border-gray-300'
+          }`}
+          placeholder="135, BW"
+        />
+        {validationErrors.weightTime && (
+          <div className="text-xs text-red-600 mt-1">{validationErrors.weightTime}</div>
+        )}
+      </td>
+      <td className="p-3 text-center">
+        <span className="inline-block px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
+          Editing
+        </span>
+      </td>
+      <td className="p-3 text-center">
+        {/* Save/Cancel Buttons */}
+        <div className="flex space-x-1">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+          >
+            {isSaving ? 'Saving...' : 'Save'}
+          </button>
+          <button
+            onClick={handleCancel}
+            disabled={isSaving}
+            className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+};
+
 interface AthleteDetailModalProps {
   athlete: any;
   onClose: () => void;
@@ -81,10 +411,14 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
   const [newNote, setNewNote] = useState('');
   const [addingNote, setAddingNote] = useState(false);
 
-  // New state for program editing
+  // Program editing state
   const [programData, setProgramData] = useState<ProgramData | null>(null);
   const [programLoading, setProgramLoading] = useState(false);
   const [editingExercise, setEditingExercise] = useState<string | null>(null);
+  
+  // New state for inline editing
+  const [availableExercises, setAvailableExercises] = useState<{ [key: string]: string[] }>({});
+  const [loadingExercises, setLoadingExercises] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     if (athlete) {
@@ -115,6 +449,103 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
       console.error('Error fetching program data:', error);
     } finally {
       setProgramLoading(false);
+    }
+  };
+
+  // Fetch available exercises for a specific block
+  const fetchAvailableExercises = async (block: string) => {
+    if (availableExercises[block] || loadingExercises[block]) return;
+    
+    setLoadingExercises(prev => ({ ...prev, [block]: true }));
+    
+    try {
+      const response = await fetch(`/api/exercises/available?athleteId=${athlete.athlete.id}&block=${encodeURIComponent(block)}`);
+      const result = await response.json();
+      
+      if (result.success) {
+        setAvailableExercises(prev => ({ ...prev, [block]: result.data.exercises }));
+      } else {
+        console.error('Failed to fetch available exercises:', result.error);
+      }
+    } catch (error) {
+      console.error('Error fetching available exercises:', error);
+    } finally {
+      setLoadingExercises(prev => ({ ...prev, [block]: false }));
+    }
+  };
+
+  // Handle exercise modifications
+  const handleSaveExerciseModification = async (exerciseData: any, editedExercise: EditingExercise) => {
+    try {
+      const response = await fetch(`/api/coach/program-editor/${athlete.athlete.id}/modify-exercise`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          exerciseId: exerciseData.id,
+          exerciseIndex: exerciseData.exerciseIndex,
+          week: exerciseData.week,
+          day: exerciseData.day,
+          programId: programData?.program.id,
+          modifications: {
+            name: editedExercise.name,
+            sets: editedExercise.sets,
+            reps: editedExercise.reps,
+            weightTime: editedExercise.weightTime,
+            notes: editedExercise.notes
+          }
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save modification');
+      }
+
+      // Update the exercise in place without refetching all data
+      setProgramData(prevData => {
+        if (!prevData) return prevData;
+        
+        const updatedData = { ...prevData };
+        updatedData.weeks = updatedData.weeks.map(week => {
+          if (week.week !== exerciseData.week) return week;
+          
+          return {
+            ...week,
+            days: week.days.map(day => {
+              if (day.day !== exerciseData.day) return day;
+              
+              return {
+                ...day,
+                exercises: day.exercises.map((ex, index) => {
+                  if (index !== exerciseData.exerciseIndex) return ex;
+                  
+                  return {
+                    ...ex,
+                    name: editedExercise.name,
+                    sets: editedExercise.sets,
+                    reps: editedExercise.reps,
+                    weightTime: editedExercise.weightTime,
+                    notes: editedExercise.notes,
+                    isModified: true
+                  };
+                })
+              };
+            })
+          };
+        });
+        
+        return updatedData;
+      });
+
+      // Clear editing state
+      setEditingExercise(null);
+
+    } catch (error) {
+      console.error('Failed to save exercise modification:', error);
+      throw error;
     }
   };
 
@@ -431,7 +862,7 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     );
   };
 
-  // NEW: Edit Program Tab Render Function
+  // UPDATED: Edit Program Tab with Inline Editing
   const renderEditProgramTab = () => {
     if (programLoading) {
       return (
@@ -457,11 +888,14 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     // Flatten all exercises into one list for table view
     const allExercises = programData.weeks.flatMap(week => 
       week.days.flatMap(day => 
-        day.exercises.map(exercise => ({
+        day.exercises.map((exercise, exerciseIndex) => ({
           ...exercise,
           weekName: `Week ${week.week}`,
           dayName: day.dayName,
-          isDeloadWeek: day.isDeload
+          isDeloadWeek: day.isDeload,
+          exerciseIndex, // Add this for the API
+          // Create a unique identifier for this specific exercise instance
+          uniqueId: `${week.week}-${day.day}-${exerciseIndex}`
         }))
       )
     );
@@ -493,11 +927,11 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
           </div>
         </div>
 
-        {/* Exercise Table */}
+        {/* Exercise Table with Inline Editing */}
         <div className="bg-white rounded-lg border overflow-hidden">
           <div className="px-6 py-4 border-b bg-gray-50">
             <h3 className="text-lg font-semibold text-gray-900">Program Exercises</h3>
-            <p className="text-sm text-gray-600">Click any exercise to edit. Completed sessions are locked.</p>
+            <p className="text-sm text-gray-600">Click Edit to modify exercises. Completed sessions are locked.</p>
           </div>
           
           <div className="overflow-x-auto">
@@ -516,70 +950,37 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
                 </tr>
               </thead>
               <tbody>
-                {allExercises.map((exercise, index) => (
-                  <tr key={exercise.id} className={`border-b hover:bg-gray-50 ${exercise.isCompleted ? 'bg-gray-100 opacity-75' : ''}`}>
-                    <td className="p-3">
-                      <span className={`font-medium ${exercise.isDeloadWeek ? 'text-orange-600' : 'text-gray-900'}`}>
-                        {exercise.weekName}
-                        {exercise.isDeloadWeek && <span className="ml-1 text-xs">(Deload)</span>}
-                      </span>
-                    </td>
-                    <td className="p-3 text-sm text-gray-600">{exercise.dayName}</td>
-                    <td className="p-3">
-                      <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                        {exercise.block}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <div className="font-medium text-gray-900">{exercise.name}</div>
-                      {exercise.notes && (
-                        <div className="text-xs text-gray-500 mt-1 italic">{exercise.notes}</div>
-                      )}
-                      {exercise.constraintWarnings.length > 0 && (
-                        <div className="mt-1">
-                          {exercise.constraintWarnings.map((warning, i) => (
-                            <div key={i} className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded mb-1">
-                              ⚠️ {warning}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                    <td className="p-3 text-center">{exercise.sets}</td>
-                    <td className="p-3 text-center">{exercise.reps}</td>
-                    <td className="p-3 text-center">{exercise.weightTime || '—'}</td>
-                    <td className="p-3 text-center">
-                      {exercise.isCompleted ? (
-                        <span className="inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded">
-                          Completed
-                        </span>
-                      ) : exercise.isModified ? (
-                        <span className="inline-block px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
-                          Modified
-                        </span>
-                      ) : (
-                        <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                          Original
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3 text-center">
-                      {!exercise.isCompleted ? (
-                        <button
-                          onClick={() => setEditingExercise(exercise.id)}
-                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                        >
-                          Edit
-                        </button>
-                      ) : (
-                        <span className="text-gray-400 text-sm">Locked</span>
-                      )}
-                    </td>
-                  </tr>
+                {allExercises.map((exercise) => (
+                  <InlineExerciseRow
+                    key={exercise.uniqueId}
+                    exercise={exercise}
+                    isEditing={editingExercise === exercise.uniqueId}
+                    onEdit={() => {
+                      // Fetch available exercises for this block when starting to edit
+                      fetchAvailableExercises(exercise.block);
+                      setEditingExercise(exercise.uniqueId);
+                    }}
+                    onSave={(editedExercise) => handleSaveExerciseModification(exercise, editedExercise)}
+                    onCancel={() => setEditingExercise(null)}
+                    availableExercises={availableExercises[exercise.block] || []}
+                    weekName={exercise.weekName}
+                    dayName={exercise.dayName}
+                    isDeloadWeek={exercise.isDeloadWeek}
+                  />
                 ))}
               </tbody>
             </table>
           </div>
+
+          {/* Loading states for exercise dropdowns */}
+          {Object.keys(loadingExercises).some(key => loadingExercises[key]) && (
+            <div className="p-4 border-t bg-blue-50">
+              <div className="flex items-center text-sm text-blue-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                Loading available exercises...
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
