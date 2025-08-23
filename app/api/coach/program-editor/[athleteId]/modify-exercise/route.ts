@@ -1,7 +1,7 @@
 // app/api/coach/program-editor/[athleteId]/modify-exercise/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { canAccessAthleteData } from '../../../../../../lib/permissions';
 
@@ -25,19 +25,57 @@ export async function PUT(
   { params }: { params: { athleteId: string } }
 ) {
   try {
-    const cookieStore = cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore });
+    const athleteId = params.athleteId;
 
-    // Get authenticated user
+    // Initialize Supabase client
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              cookieStore.set(name, value, options);
+            } catch (error) {
+              // Handle cookie setting errors
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.set(name, '', { ...options, maxAge: 0 });
+            } catch (error) {
+              // Handle cookie removal errors
+            }
+          },
+        },
+      }
+    );
+
+    // Verify user authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const athleteId = params.athleteId;
+    // Get requesting user from users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_id', user.id)
+      .single();
+
+    if (userError || !userData) {
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+    }
+
+    const requestingUserId = userData.id;
     
     // Check permissions - only coaches can modify
-    const permissionCheck = await canAccessAthleteData(supabase, user.id, athleteId);
+    const permissionCheck = await canAccessAthleteData(supabase, requestingUserId, athleteId);
     if (!permissionCheck.hasAccess || !permissionCheck.isCoach) {
       return NextResponse.json({ success: false, error: 'Only coaches can modify exercises' }, { status: 403 });
     }
@@ -86,7 +124,7 @@ export async function PUT(
     const { data: relationship, error: relationshipError } = await supabase
       .from('coach_athlete_relationships')
       .select('id')
-      .eq('coach_id', user.id)
+      .eq('coach_id', requestingUserId)
       .eq('athlete_id', athleteId)
       .eq('status', 'active')
       .single();

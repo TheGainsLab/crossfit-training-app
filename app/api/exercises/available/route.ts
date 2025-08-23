@@ -1,21 +1,12 @@
 // app/api/exercises/available/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { canAccessAthleteData } from '../../../../lib/permissions';
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore });
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const athleteId = searchParams.get('athleteId');
     const block = searchParams.get('block');
@@ -27,8 +18,55 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Initialize Supabase client
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              cookieStore.set(name, value, options);
+            } catch (error) {
+              // Handle cookie setting errors
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.set(name, '', { ...options, maxAge: 0 });
+            } catch (error) {
+              // Handle cookie removal errors
+            }
+          },
+        },
+      }
+    );
+
+    // Verify user authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get requesting user from users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_id', user.id)
+      .single();
+
+    if (userError || !userData) {
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+    }
+
+    const requestingUserId = userData.id;
+
     // Check permissions - coach must have access to this athlete
-    const permissionCheck = await canAccessAthleteData(supabase, user.id, athleteId);
+    const permissionCheck = await canAccessAthleteData(supabase, requestingUserId, athleteId);
     if (!permissionCheck.hasAccess || !permissionCheck.isCoach) {
       return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
     }
