@@ -240,7 +240,7 @@ export async function GET(
 
     // Check permissions
     const permissionCheck = await canAccessAthleteData(supabase, coachData.id, athleteId);
-    if (!permissionCheck.hasAccess || (!['edit', 'full'].includes(permissionCheck.permissionLevel))) {
+if (!permissionCheck.hasAccess || !permissionCheck.permissionLevel || (!['edit', 'full'].includes(permissionCheck.permissionLevel))) {    
       return NextResponse.json({
         success: false,
         error: 'Insufficient permissions to edit this athlete\'s program'
