@@ -22,10 +22,10 @@ interface ExerciseModificationRequest {
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { athleteId: string } }
+  { params }: { params: Promise<{ athleteId: string }> }
 ) {
   try {
-    const athleteId = params.athleteId;
+    const { athleteId } = await params;
 
     // Initialize Supabase client
     const cookieStore = await cookies();
