@@ -74,6 +74,13 @@ export async function PUT(
 
     const requestingUserId = userData.id;
     
+// ADD THESE DEBUG LOGS HERE:
+console.log('🔍 DEBUG - Requesting user ID (coach):', requestingUserId, typeof requestingUserId);
+console.log('🔍 DEBUG - Athlete ID from URL:', athleteId, typeof athleteId);
+console.log('🔍 DEBUG - Athlete ID as int:', parseInt(athleteId));
+
+
+
     // Check permissions - only coaches can modify
     const permissionCheck = await canAccessAthleteData(supabase, requestingUserId, parseInt(athleteId));
     if (!permissionCheck.hasAccess || !permissionCheck.isCoach) {
@@ -120,21 +127,23 @@ export async function PUT(
       }, { status: 400 });
     }
 
-    // Get the coach-athlete relationship ID
-    const { data: relationship, error: relationshipError } = await supabase
-      .from('coach_athlete_relationships')
-      .select('id')
-      .eq('coach_id', requestingUserId)
-      .eq('athlete_id', athleteId)
-      .eq('status', 'active')
-      .single();
-
-    if (relationshipError || !relationship) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Coach-athlete relationship not found' 
-      }, { status: 404 });
-    }
+console.log('🔍 DEBUG - Searching for: coach_id =', requestingUserId, 'athlete_id =', parseInt(athleteId), 'status = active');
+    
+// Get the coach-athlete relationship ID
+const { data: relationship, error: relationshipError } = await supabase
+  .from('coach_athlete_relationships')
+  .select('id')
+  .eq('coach_id', requestingUserId)        // ← ADD THIS LINE
+  .eq('athlete_id', parseInt(athleteId))
+  .eq('status', 'active')
+  .single();
+      
+if (relationshipError || !relationship) {
+  return NextResponse.json({
+    success: false,
+    error: 'Coach-athlete relationship not found'
+  }, { status: 404 });
+}
 
     // Check if modification already exists
     const { data: existingMod, error: checkError } = await supabase
