@@ -204,7 +204,7 @@ export async function GET(
   context: { params: Promise<{ athleteId: string }> }
 ) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();  // ✅ Added await
     const params = await context.params;
     const athleteId = parseInt(params.athleteId);
     
