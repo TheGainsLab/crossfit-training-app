@@ -21,6 +21,50 @@ ChartJS.register(
   Legend
 );
 
+// Program Data Interface
+interface ProgramData {
+  athlete: {
+    id: number;
+    name: string;
+    email: string;
+    ability: string;
+    equipment: string[];
+    skills: string[];
+    oneRMs: number[];
+    bodyWeight: number;
+  };
+  program: {
+    id: number;
+    programNumber: number;
+    weeksGenerated: number[];
+  };
+  weeks: Array<{
+    week: number;
+    days: Array<{
+      day: number;
+      dayName: string;
+      isDeload: boolean;
+      mainLift: string;
+      exercises: Array<{
+        id: string;
+        week: number;
+        day: number;
+        block: string;
+        exerciseIndex: number;
+        name: string;
+        sets: number | string;
+        reps: number | string;
+        weightTime: string;
+        notes: string;
+        isModified: boolean;
+        isCompleted: boolean;
+        constraintWarnings: string[];
+      }>;
+    }>;
+  }>;
+  modifications: any[];
+}
+
 interface AthleteDetailModalProps {
   athlete: any;
   onClose: () => void;
@@ -29,12 +73,18 @@ interface AthleteDetailModalProps {
 const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClose }) => {
   console.log('🔍 FULL athlete object:', JSON.stringify(athlete, null, 2));
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 'metcons' | 'notes'>('overview');
+  // Updated activeTab type to include 'editProgram'
+  const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 'metcons' | 'notes' | 'editProgram'>('overview');
   const [loading, setLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<any>({});
   const [coachNotes, setCoachNotes] = useState<any[]>([]);
   const [newNote, setNewNote] = useState('');
   const [addingNote, setAddingNote] = useState(false);
+
+  // New state for program editing
+  const [programData, setProgramData] = useState<ProgramData | null>(null);
+  const [programLoading, setProgramLoading] = useState(false);
+  const [editingExercise, setEditingExercise] = useState<string | null>(null);
 
   useEffect(() => {
     if (athlete) {
@@ -42,6 +92,31 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
       fetchCoachNotes();
     }
   }, [athlete]);
+
+  // Load program data when Edit Program tab is selected
+  useEffect(() => {
+    if (athlete && activeTab === 'editProgram' && !programData) {
+      fetchProgramData();
+    }
+  }, [athlete, activeTab]);
+
+  const fetchProgramData = async () => {
+    setProgramLoading(true);
+    try {
+      const response = await fetch(`/api/coach/program-editor/${athlete.athlete.id}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setProgramData(data.data);
+      } else {
+        console.error('Failed to fetch program data:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching program data:', error);
+    } finally {
+      setProgramLoading(false);
+    }
+  };
 
   const fetchAthleteAnalytics = async () => {
     setLoading(true);
@@ -351,6 +426,160 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
           ) : (
             <p className="text-gray-500">No notes yet. Add your first coaching note above.</p>
           )}
+        </div>
+      </div>
+    );
+  };
+
+  // NEW: Edit Program Tab Render Function
+  const renderEditProgramTab = () => {
+    if (programLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+          <p className="text-gray-600">Loading program data...</p>
+        </div>
+      );
+    }
+
+    if (!programData) {
+      return (
+        <div className="bg-white rounded-lg border p-6">
+          <div className="text-center py-8">
+            <div className="text-gray-400 text-4xl mb-2">📋</div>
+            <p className="text-gray-500">No program data available</p>
+            <p className="text-sm text-gray-400 mt-1">This athlete may not have a program assigned</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Flatten all exercises into one list for table view
+    const allExercises = programData.weeks.flatMap(week => 
+      week.days.flatMap(day => 
+        day.exercises.map(exercise => ({
+          ...exercise,
+          weekName: `Week ${week.week}`,
+          dayName: day.dayName,
+          isDeloadWeek: day.isDeload
+        }))
+      )
+    );
+
+    return (
+      <div className="space-y-6">
+        {/* Program Overview */}
+        <div className="bg-white rounded-lg border p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Program #{programData.program.programNumber} - {programData.athlete.ability} Level
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <span className="text-gray-600">Weeks Generated:</span>
+              <span className="ml-2 font-medium">{programData.program.weeksGenerated.join(', ')}</span>
+            </div>
+            <div>
+              <span className="text-gray-600">Equipment:</span>
+              <span className="ml-2 font-medium">{programData.athlete.equipment.length} items</span>
+            </div>
+            <div>
+              <span className="text-gray-600">Body Weight:</span>
+              <span className="ml-2 font-medium">{programData.athlete.bodyWeight} lbs</span>
+            </div>
+            <div>
+              <span className="text-gray-600">Modifications:</span>
+              <span className="ml-2 font-medium">{programData.modifications.length} changes</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Exercise Table */}
+        <div className="bg-white rounded-lg border overflow-hidden">
+          <div className="px-6 py-4 border-b bg-gray-50">
+            <h3 className="text-lg font-semibold text-gray-900">Program Exercises</h3>
+            <p className="text-sm text-gray-600">Click any exercise to edit. Completed sessions are locked.</p>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="text-left p-3 font-medium text-gray-700">Week</th>
+                  <th className="text-left p-3 font-medium text-gray-700">Day</th>
+                  <th className="text-left p-3 font-medium text-gray-700">Block</th>
+                  <th className="text-left p-3 font-medium text-gray-700">Exercise</th>
+                  <th className="text-center p-3 font-medium text-gray-700">Sets</th>
+                  <th className="text-center p-3 font-medium text-gray-700">Reps</th>
+                  <th className="text-center p-3 font-medium text-gray-700">Weight/Time</th>
+                  <th className="text-center p-3 font-medium text-gray-700">Status</th>
+                  <th className="text-center p-3 font-medium text-gray-700">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allExercises.map((exercise, index) => (
+                  <tr key={exercise.id} className={`border-b hover:bg-gray-50 ${exercise.isCompleted ? 'bg-gray-100 opacity-75' : ''}`}>
+                    <td className="p-3">
+                      <span className={`font-medium ${exercise.isDeloadWeek ? 'text-orange-600' : 'text-gray-900'}`}>
+                        {exercise.weekName}
+                        {exercise.isDeloadWeek && <span className="ml-1 text-xs">(Deload)</span>}
+                      </span>
+                    </td>
+                    <td className="p-3 text-sm text-gray-600">{exercise.dayName}</td>
+                    <td className="p-3">
+                      <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                        {exercise.block}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <div className="font-medium text-gray-900">{exercise.name}</div>
+                      {exercise.notes && (
+                        <div className="text-xs text-gray-500 mt-1 italic">{exercise.notes}</div>
+                      )}
+                      {exercise.constraintWarnings.length > 0 && (
+                        <div className="mt-1">
+                          {exercise.constraintWarnings.map((warning, i) => (
+                            <div key={i} className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded mb-1">
+                              ⚠️ {warning}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-3 text-center">{exercise.sets}</td>
+                    <td className="p-3 text-center">{exercise.reps}</td>
+                    <td className="p-3 text-center">{exercise.weightTime || '—'}</td>
+                    <td className="p-3 text-center">
+                      {exercise.isCompleted ? (
+                        <span className="inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded">
+                          Completed
+                        </span>
+                      ) : exercise.isModified ? (
+                        <span className="inline-block px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                          Modified
+                        </span>
+                      ) : (
+                        <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                          Original
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3 text-center">
+                      {!exercise.isCompleted ? (
+                        <button
+                          onClick={() => setEditingExercise(exercise.id)}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
+                          Edit
+                        </button>
+                      ) : (
+                        <span className="text-gray-400 text-sm">Locked</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );
@@ -1120,14 +1349,15 @@ return (
         </button>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation - UPDATED with Edit Program tab */}
       <div className="flex border-b bg-gray-50 px-6">
         {[
           { id: 'overview', name: 'Overview', icon: '📊' },
           { id: 'skills', name: 'Skills', icon: '🤸' },
           { id: 'strength', name: 'Strength', icon: '💪' },
           { id: 'metcons', name: 'MetCons', icon: '🔥' },
-          { id: 'notes', name: 'Coach Notes', icon: '📝' }
+          { id: 'notes', name: 'Coach Notes', icon: '📝' },
+          { id: 'editProgram', name: 'Edit Program', icon: '✏️' } // NEW TAB
         ].map((tab) => (
           <button
             key={tab.id}
@@ -1144,13 +1374,14 @@ return (
         ))}
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Content - UPDATED to include Edit Program tab */}
       <div className="flex-1 overflow-y-auto p-6">
         {activeTab === 'overview' && renderOverviewTab()}
         {activeTab === 'notes' && renderNotesTab()}         
         {activeTab === 'skills' && renderSkillsTab()}
         {activeTab === 'strength' && renderStrengthTab()}
         {activeTab === 'metcons' && renderMetConsTab()}
+        {activeTab === 'editProgram' && renderEditProgramTab()} {/* NEW */}
       </div>
     </div>
   </div>
