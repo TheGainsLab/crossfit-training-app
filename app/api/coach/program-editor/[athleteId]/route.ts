@@ -245,12 +245,13 @@ async function getCompletedSessions(supabase: any, athleteId: number): Promise<S
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { athleteId: string } }
+  context: { params: Promise<{ athleteId: string }> }
 ) {
   try {
     const supabase = createClient();
+    const params = await context.params;  // ← Add this line
     const athleteId = parseInt(params.athleteId);
-    
+
     if (isNaN(athleteId)) {
       return NextResponse.json({
         success: false,
