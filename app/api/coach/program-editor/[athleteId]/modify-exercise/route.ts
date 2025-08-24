@@ -158,16 +158,17 @@ if (relationshipError || !relationship) {
   }, { status: 404 });
 }
 
-    // Check if modification already exists
-    const { data: existingMod, error: checkError } = await supabase
-      .from('coach_program_modifications')
-      .select('id')
-      .eq('athlete_id', athleteId)
-      .eq('program_id', programId)
-      .eq('week_number', week)
-      .eq('day_number', day)
-      .eq('exercise_index', exerciseIndex)
-      .single();
+// Check if modification already exists
+const { data: existingMod, error: checkError } = await supabase
+  .from('coach_program_modifications')
+  .select('id')
+  .eq('athlete_id', parseInt(athleteId))
+  .eq('program_id', programId)
+  .eq('week', week)             // ← Changed from week_number to week
+  .eq('day', day)               // ← Changed from day_number to day
+  .eq('exercise_index', exerciseIndex)
+  .single();
+
 
     if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
       console.error('Error checking existing modifications:', checkError);
@@ -177,14 +178,16 @@ if (relationshipError || !relationship) {
     let result;
     
     if (existingMod) {
-      // Update existing modification
-      const { data: updateData, error: updateError } = await supabase
-        .from('coach_program_modifications')
-        .update({
-          modifications: modifications,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingMod.id)
+
+// Update existing modification
+const { data: updateData, error: updateError } = await supabase
+  .from('coach_program_modifications')
+  .update({
+    modified_data: modifications,
+    updated_at: new Date().toISOString()
+  })
+
+  .eq('id', existingMod.id)
         .select()
         .single();
 
@@ -194,20 +197,22 @@ if (relationshipError || !relationship) {
       }
       result = updateData;
     } else {
-      // Create new modification
-      const { data: insertData, error: insertError } = await supabase
-        .from('coach_program_modifications')
-        .insert([{
-          coach_athlete_relationship_id: relationship.id,
-          athlete_id: athleteId,
-          program_id: programId,
-          week_number: week,
-          day_number: day,
-          exercise_index: exerciseIndex,
-          modifications: modifications,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
+      
+// Create new modification
+const { data: insertData, error: insertError } = await supabase
+  .from('coach_program_modifications')
+  .insert([{
+    coach_id: coachId,
+    athlete_id: parseInt(athleteId),
+    program_id: programId,
+    week: week,
+    day: day,
+    exercise_index: exerciseIndex,
+    modified_data: modifications,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }])
+
         .select()
         .single();
 
