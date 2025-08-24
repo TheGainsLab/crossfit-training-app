@@ -11,6 +11,7 @@ interface ExerciseModificationRequest {
   week: number;
   day: number;
   programId: string;
+block: string;  // ← ADD THIS LINE
   modifications: {
     name?: string;
     sets?: number;
