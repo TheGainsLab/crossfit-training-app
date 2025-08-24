@@ -482,12 +482,15 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
+       
+
+ body: JSON.stringify({
           exerciseId: exerciseData.id,
           exerciseIndex: exerciseData.exerciseIndex,
           week: exerciseData.week,
           day: exerciseData.day,
           programId: programData?.program.id,
+          block: exerciseData.block,  // ← ADD ONLY THIS LINE
           modifications: {
             name: editedExercise.name,
             sets: editedExercise.sets,

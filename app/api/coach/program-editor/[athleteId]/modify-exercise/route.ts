@@ -101,7 +101,7 @@ const permissionCheck = await canAccessAthleteData(supabase, requestingUserId, p
     }
 
     const body: ExerciseModificationRequest = await request.json();
-    const { exerciseId, exerciseIndex, week, day, programId, modifications } = body;
+const { exerciseId, exerciseIndex, week, day, programId, block, modifications } = body;    
 
     // Validate required fields
     if (!exerciseId || !programId || week === undefined || day === undefined || exerciseIndex === undefined) {
@@ -199,6 +199,7 @@ const { data: updateData, error: updateError } = await supabase
     } else {
       
 // Create new modification
+
 const { data: insertData, error: insertError } = await supabase
   .from('coach_program_modifications')
   .insert([{
@@ -207,6 +208,7 @@ const { data: insertData, error: insertError } = await supabase
     program_id: programId,
     week: week,
     day: day,
+ block_name: block,  // ← ADD THIS LINE
     exercise_index: exerciseIndex,
     modified_data: modifications,
     created_at: new Date().toISOString(),
