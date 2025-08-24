@@ -211,12 +211,11 @@ const { data: insertData, error: insertError } = await supabase
     day: day,
  block_name: block,  // ← ADD THIS LINE
     exercise_index: exerciseIndex,
-    modification_type: 'exercise_edit',  // ← ADD THIS LINE
+modification_type: 'edit',    
     modified_data: modifications,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }])
-
         .select()
         .single();
 
