@@ -158,6 +158,31 @@ export async function GET(
 
     console.log(`✅ Found workout: ${targetDay.dayName} - ${targetDay.mainLift}`)
 
+// ADD THESE LINES HERE:
+// Fetch coach modifications for this specific workout
+const { data: modifications, error: modError } = await supabase
+  .from('coach_program_modifications')
+  .select('*')
+  .eq('athlete_id', program.user_id)
+  .eq('program_id', programIdNum)
+  .eq('week', weekNum)
+  .eq('day', dayNum);
+
+if (modError) {
+  console.error('Error fetching modifications:', modError);
+}
+
+console.log(`🔍 Found ${modifications?.length || 0} coach modifications for this workout`);
+
+// Create modification map for easy lookup
+const modificationMap = new Map();
+if (modifications) {
+  modifications.forEach(mod => {
+    const key = `${mod.block_name}-${mod.exercise_index}`;
+    modificationMap.set(key, mod.modified_data);
+  });
+}
+
 // ADD THIS SECTION HERE (before the workout object)
 // Fetch user gender for proper MetCon benchmarks
 let userGender = 'male' // Default fallback
@@ -187,16 +212,38 @@ try {
       mainLift: targetDay.mainLift,
       isDeload: targetDay.isDeload,
  userGender: userGender,  // ← ADD THIS LINE      
+
 blocks: targetDay.blocks.map((block: any) => ({
-        blockName: block.block,
-        exercises: block.exercises.map((exercise: any) => ({
-          name: exercise.name,
-          sets: exercise.sets,
-          reps: exercise.reps,
-          weightTime: exercise.weightTime,
-          notes: exercise.notes
-        }))
-      })),
+  blockName: block.block,
+  exercises: block.exercises.map((exercise: any, exerciseIndex: number) => {
+    // Check for coach modifications
+    const modKey = `${block.block}-${exerciseIndex}`;
+    const modification = modificationMap.get(modKey);
+    
+    // Start with original exercise data
+    let finalExercise = {
+      name: exercise.name,
+      sets: exercise.sets,
+      reps: exercise.reps,
+      weightTime: exercise.weightTime,
+      notes: exercise.notes
+    };
+    
+    // Apply modifications if they exist
+    if (modification) {
+      console.log(`🔄 Applying modification to ${exercise.name}`);
+      if (modification.name) finalExercise.name = modification.name;
+      if (modification.sets) finalExercise.sets = modification.sets;
+      if (modification.reps) finalExercise.reps = modification.reps;
+      if (modification.weightTime) finalExercise.weightTime = modification.weightTime;
+      if (modification.notes) finalExercise.notes = modification.notes;
+    }
+    
+    return finalExercise;
+  })
+})),
+
+
       // Include MetCon metadata if available
 metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData) : null,
       // Summary information
