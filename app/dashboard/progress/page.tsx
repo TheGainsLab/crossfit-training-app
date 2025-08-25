@@ -1021,8 +1021,7 @@ const SkillsAnalyticsView = () => {
   );
 };
 
-
-// Strength Analytics Component - CORRECTED (this one was mostly right)
+// Strength Analytics Component - Updated with side-by-side bars
 const StrengthAnalyticsView = () => {
   if (!strengthData?.data) {
     return <div className="bg-white rounded-lg shadow p-6">Loading strength analytics...</div>;
@@ -1048,20 +1047,29 @@ const StrengthAnalyticsView = () => {
       sessionCount: movement.sessions?.length || 0,
       maxWeight: movement.maxWeight || 0,
       currentWeight: movement.currentWeight || 0,
+      averageWeight: movement.averageWeight || movement.currentWeight || 0, // Use averageWeight if available, fallback to currentWeight
       totalVolume: movement.totalVolume || 0,
       avgRPE: movement.avgRPE || 0,
       lastSession: movement.sessions && movement.sessions.length > 0 ? movement.sessions[movement.sessions.length - 1] : null
     };
   });
 
+  // UPDATED: Side-by-side bar chart with max and average weights
   const weightProgressData = {
     labels: movementData.map(m => m.name),
     datasets: [
       {
-        label: 'Max Weight (lbs)',
+        label: 'Max Weight',
         data: movementData.map(m => m.maxWeight),
-        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        backgroundColor: 'rgba(75, 192, 192, 0.8)',
         borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1
+      },
+      {
+        label: 'Average Weight',
+        data: movementData.map(m => m.averageWeight),
+        backgroundColor: 'rgba(255, 159, 64, 0.8)',
+        borderColor: 'rgba(255, 159, 64, 1)',
         borderWidth: 1
       }
     ]
@@ -1086,35 +1094,68 @@ const StrengthAnalyticsView = () => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Strength Progress Analysis</h3>
         
         <div className="grid md:grid-cols-2 gap-6 mb-6">
+          {/* UPDATED: Removed redundant header, added side-by-side bars */}
           <div>
-            <h4 className="font-medium text-gray-900 mb-3">Max Weight Progression</h4>
+            <h4 className="font-medium text-gray-900 mb-3">Peak Loads by Movement</h4>
             <div className="h-64">
               <Bar data={weightProgressData} options={{
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                  legend: { display: false },
-                  title: { display: true, text: 'Peak Loads by Movement' }
+                  legend: { 
+                    display: true,
+                    position: 'top',
+                    labels: {
+                      usePointStyle: true,
+                      padding: 20
+                    }
+                  },
+                  title: { display: false }
                 },
                 scales: {
-                  y: { beginAtZero: true }
+                  y: { 
+                    beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: 'Weight (lbs)'
+                    }
+                  },
+                  x: {
+                    title: {
+                      display: true,
+                      text: 'Movements'
+                    }
+                  }
                 }
               }} />
             </div>
           </div>
           
+          {/* UPDATED: Removed redundant header */}
           <div>
-            <h4 className="font-medium text-gray-900 mb-3">Training Volume</h4>
+            <h4 className="font-medium text-gray-900 mb-3">Total Volume by Movement</h4>
             <div className="h-64">
               <Bar data={volumeData} options={{
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                   legend: { display: false },
-                  title: { display: true, text: 'Total Volume by Movement' }
+                  title: { display: false }
                 },
                 scales: {
-                  y: { beginAtZero: true }
+                  y: { 
+                    beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: 'Volume (lbs)'
+                    }
+                  },
+                  x: {
+                    title: {
+                      display: true,
+                      text: 'Movements'
+                    }
+                  }
                 }
               }} />
             </div>
@@ -1132,7 +1173,11 @@ const StrengthAnalyticsView = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Max Weight:</span>
-                  <span className="font-medium">{movement.maxWeight} lbs</span>
+                  <span className="font-medium text-teal-600">{movement.maxWeight} lbs</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Avg Weight:</span>
+                  <span className="font-medium text-orange-600">{movement.averageWeight} lbs</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Avg RPE:</span>
