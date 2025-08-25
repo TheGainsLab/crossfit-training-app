@@ -30,13 +30,14 @@ export interface ExerciseMetrics {
     maxRepsInSession: number
   }
   
-  timing: {
-    firstPerformed: string
-    lastPerformed: string
-    daysSinceFirst: number
-    daysSinceLast: number
-  }
-  
+timing: {
+  firstPerformed: string
+  lastPerformed: string
+  daysSinceFirst: number
+  daysSinceLast: number
+  recentSessions: number
+}
+ 
   metcon?: {
     appearances: number
     avgPercentile: number
