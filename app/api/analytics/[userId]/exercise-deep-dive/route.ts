@@ -191,15 +191,18 @@ if (block === 'METCONS') {
           category: exerciseInfo?.accessory_category || 'Unknown',
           timesPerformed: metrics.timesPerformed
         },
-        summary: {
-          avgRPE: Math.round(metrics.rpe.average * 10) / 10,
-          avgQuality: metrics.quality.average,
-          avgQualityGrade: metrics.quality.averageGrade,
-          totalVolume: `${metrics.volume.totalSets} sets • ${metrics.volume.totalReps} reps`,
-          lastPerformed: `Week ${performanceData[performanceData.length - 1].week}`,
-          daysSinceLast: metrics.timing.daysSinceLast
-        },
-        trends: {
+
+summary: {
+  avgRPE: Math.round(metrics.rpe.average * 10) / 10,
+  avgQuality: metrics.quality.average,
+  avgQualityGrade: metrics.quality.averageGrade,
+  totalVolume: `${metrics.volume.totalSets} sets • ${metrics.volume.totalReps} reps`,
+  lastPerformed: `Week ${performanceData[performanceData.length - 1].week}`,
+  daysSinceLast: metrics.timing.daysSinceLast,
+  recentSessions: metrics.timing.recentSessions
+},
+        
+trends: {
           rpe: {
             direction: metrics.rpe.trend,
             current: metrics.rpe.current,
