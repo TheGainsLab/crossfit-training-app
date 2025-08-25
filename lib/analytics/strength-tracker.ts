@@ -138,14 +138,23 @@ export function processStrengthData(
         movement.weeksActive = new Set(sessions.map(s => s.week)).size
         
         // ADD THIS: Calculate average weight
-        const weights = sessions
-          .map(s => s.weight)
-          .filter(weight => weight > 0) // Remove any zero weights
         
-        movement.averageWeight = weights.length > 0 
-          ? Math.round(weights.reduce((sum, w) => sum + w, 0) / weights.length)
-          : 0
-        
+// Volume-weighted average calculation
+let totalWeightedWork = 0
+let totalReps = 0
+
+sessions.forEach(session => {
+  if (session.weight > 0 && session.reps > 0) {
+    const workDone = session.weight * session.reps
+    totalWeightedWork += workDone
+    totalReps += session.reps
+  }
+})
+
+movement.averageWeight = totalReps > 0 
+  ? Math.round(totalWeightedWork / totalReps)
+  : 0
+   
         // Calculate progression trend
         const weights_for_trend = sessions.map(s => s.weight).filter(w => w > 0)
         movement.progressionTrend = calculateTrend(weights_for_trend)
