@@ -12,6 +12,7 @@ export interface MovementData {
   name: string
   sessions: StrengthSession[]
   maxWeight: number
+  averageWeight: number  // ADD THIS LINE
   currentWeight: number
   avgRPE: number
   avgQuality: number
@@ -87,6 +88,7 @@ export function processStrengthData(
           name: movementName,
           sessions: [],
           maxWeight: 0,
+          averageWeight: 0,  // ADD THIS LINE
           currentWeight: 0,
           avgRPE: 0,
           avgQuality: 0,
@@ -135,9 +137,18 @@ export function processStrengthData(
         movement.currentWeight = sessions[sessions.length - 1].weight
         movement.weeksActive = new Set(sessions.map(s => s.week)).size
         
+        // ADD THIS: Calculate average weight
+        const weights = sessions
+          .map(s => s.weight)
+          .filter(weight => weight > 0) // Remove any zero weights
+        
+        movement.averageWeight = weights.length > 0 
+          ? Math.round(weights.reduce((sum, w) => sum + w, 0) / weights.length)
+          : 0
+        
         // Calculate progression trend
-        const weights = sessions.map(s => s.weight).filter(w => w > 0)
-        movement.progressionTrend = calculateTrend(weights)
+        const weights_for_trend = sessions.map(s => s.weight).filter(w => w > 0)
+        movement.progressionTrend = calculateTrend(weights_for_trend)
       }
     })
 
@@ -159,12 +170,11 @@ export function processStrengthData(
       periodization
     }
 
-} catch (error) {
-  const errorMessage = error instanceof Error ? error.message : String(error)
-  console.error(`❌ Error processing strength data: ${errorMessage}`)
-  return null
-}
-
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error(`❌ Error processing strength data: ${errorMessage}`)
+    return null
+  }
 }
 
 /**
