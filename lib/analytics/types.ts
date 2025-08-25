@@ -81,14 +81,16 @@ export interface ExerciseDeepDiveResponse {
       category: string
       timesPerformed: number
     }
-    summary: {
-      avgRPE: number
-      avgQuality: number
-      avgQualityGrade: string
-      totalVolume: string
-      lastPerformed: string
-      daysSinceLast: number
-    }
+summary: {
+  avgRPE: number
+  avgQuality: number
+  avgQualityGrade: string
+  totalVolume: string
+  lastPerformed: string
+  daysSinceLast: number
+  recentSessions: number
+}    
+
     trends: {
       rpe: {
         direction: string
