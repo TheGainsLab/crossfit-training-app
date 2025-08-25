@@ -643,7 +643,7 @@ const OverviewSummary = () => {
 
   // Enhanced Tab Navigation with Prominent Styling
 
-  const TabNavigation = () => (
+const TabNavigation = () => (
   <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-8 p-4">
     <nav className="flex flex-wrap gap-3" role="tablist" aria-label="Analytics Navigation">
       {[
@@ -669,10 +669,10 @@ const OverviewSummary = () => {
         </button>
       ))}
       
-      {/* Exercise Deep Dive Button */}
+      {/* Exercise Deep Dive Button - NOW MATCHES OTHER INACTIVE TABS */}
       <Link
         href="/dashboard/exercise-deep-dive"
-        className="flex items-center space-x-3 px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-900 hover:shadow-md border border-green-200"
+        className="flex items-center space-x-3 px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200"
       >
         <span className="text-xl">🔍</span>
         <span className="font-medium">Exercise Deep Dive</span>
