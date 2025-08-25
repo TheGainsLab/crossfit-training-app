@@ -319,12 +319,15 @@ export default function ExerciseDeepDivePage() {
         }
       };
 
-      const ComparisonCard = ({ title, data, isComparison = false }: { title: string, data: any, isComparison?: boolean }) => (
-        <div className={`bg-white rounded-lg shadow p-6 ${isComparison ? 'border-l-4 border-green-500' : 'border-l-4 border-blue-500'}`}>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            {isComparison ? '🔄' : '📊'} {title}
-          </h3>
-          
+const ComparisonCard = ({ title, data, isComparison = false }: { title: string, data: any, isComparison?: boolean }) => {
+  console.log('ComparisonCard data:', title, data); // Add this line
+  
+  return (
+    <div className={`bg-white rounded-lg shadow p-6 ${isComparison ? 'border-l-4 border-green-500' : 'border-l-4 border-blue-500'}`}>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        {isComparison ? '🔄' : '📊'} {title}
+      </h3>
+           
           {data ? (
             <div className="space-y-4">
               {/* Key Metrics Grid */}
