@@ -84,16 +84,6 @@ export default function SessionReviewPage() {
     });
   };
 
-  const getBlockIcon = (blockName: string) => {
-    const icons: { [key: string]: string } = {
-      'SKILLS': '🎯',
-      'TECHNICAL WORK': '🔧',
-      'STRENGTH AND POWER': '💪',
-      'ACCESSORIES': '🔨',
-      'METCONS': '🔥'
-    };
-    return icons[blockName] || '📋';
-  };
 
   const getBlockColor = (blockName: string) => {
     const colors: { [key: string]: string } = {
@@ -146,13 +136,12 @@ export default function SessionReviewPage() {
     );
   };
 
-  const renderStandardBlock = (blockName: string, exercises: Exercise[]) => {
+const renderStandardBlock = (blockName: string, exercises: Exercise[]) => {
     return (
       <div key={blockName} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Block Header */}
+        {/* Block Header - ICONS REMOVED */}
         <div className={`bg-gradient-to-r ${getBlockColor(blockName)} px-6 py-4`}>
           <div className="flex items-center space-x-3">
-            <span className="text-2xl">{getBlockIcon(blockName)}</span>
             <div>
               <h3 className="text-xl font-bold text-white">{blockName}</h3>
               <p className="text-white/80 text-sm">{exercises.length} exercise{exercises.length !== 1 ? 's' : ''}</p>
@@ -194,10 +183,9 @@ export default function SessionReviewPage() {
 
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* MetCon Header */}
+        {/* MetCon Header - ICON REMOVED */}
         <div className={`bg-gradient-to-r ${getBlockColor('METCONS')} px-6 py-4`}>
           <div className="flex items-center space-x-3">
-            <span className="text-2xl">{getBlockIcon('METCONS')}</span>
             <div>
               <h3 className="text-xl font-bold text-white">METCONS</h3>
               <p className="text-white/80 text-sm">Conditioning Workout</p>
@@ -255,6 +243,7 @@ export default function SessionReviewPage() {
       </div>
     );
   };
+
 
   if (loading) {
     return (
