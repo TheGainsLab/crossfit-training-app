@@ -85,6 +85,13 @@ export function processExerciseData(
   // Get unique weeks
   const weeks = [...new Set(sortedData.map(d => d.week))].sort((a, b) => a - b)
 
+// ADD THESE LINES:
+const fourWeeksAgo = new Date()
+fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28)
+const recentSessions = sortedData.filter(session => 
+  new Date(session.logged_at) >= fourWeeksAgo
+).length
+
   // Build progression data
   const progressionData = {
     weeks: sortedData.map(d => d.week),
@@ -145,12 +152,13 @@ export function processExerciseData(
       maxRepsInSession: repsData.length > 0 ? Math.max(...repsData) : 0
     },
 
-    timing: {
-      firstPerformed: firstSession.logged_at,
-      lastPerformed: lastSession.logged_at,
-      daysSinceFirst: calculateDaysBetween(firstSession.logged_at, new Date()),
-      daysSinceLast: calculateDaysBetween(lastSession.logged_at, new Date())
-    },
+timing: {
+  firstPerformed: firstSession.logged_at,
+  lastPerformed: lastSession.logged_at,
+  daysSinceFirst: calculateDaysBetween(firstSession.logged_at, new Date()),
+  daysSinceLast: calculateDaysBetween(lastSession.logged_at, new Date()),
+  recentSessions: recentSessions
+},
 
     metcon: metconMetrics,
     progressionData
