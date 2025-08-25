@@ -380,7 +380,7 @@ export default function ExerciseDeepDivePage() {
                 <div className="text-xs text-gray-500 mb-2">Recent Activity</div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Last 4 weeks:</span>
-                  <span className="text-sm font-medium">{data.summary?.recentSessions || 0} sessions</span>
+                   <span className="text-sm font-medium">{data.timing?.recentSessions || 0} sessions</span>                  
                 </div>
               </div>
             </div>
