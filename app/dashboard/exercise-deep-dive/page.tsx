@@ -1,692 +1,174 @@
-'use client'
+// Fixed version of the ComparisonCard and ExerciseComparison components
 
-import React, { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { User } from '@supabase/supabase-js';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js';
-import { Line, Bar } from 'react-chartjs-2';
+const ExerciseComparison = () => {
+  const [comparisonExercise, setComparisonExercise] = useState<string>('');
+  const [comparisonData, setComparisonData] = useState<any>(null);
+  const [loadingComparison, setLoadingComparison] = useState(false);
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+  // Filter available exercises (remove the currently selected one)
+  const availableForComparison = availableExercises.filter(exercise => exercise !== selectedExercise);
 
-export default function ExerciseDeepDivePage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [userId, setUserId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Selection states
-  const [selectedBlock, setSelectedBlock] = useState<string>('');
-  const [selectedExercise, setSelectedExercise] = useState<string>('');
-  const [availableExercises, setAvailableExercises] = useState<string[]>([]);
-
-  // Data states
-  const [exerciseData, setExerciseData] = useState<any>(null);
-  const [skillsData, setSkillsData] = useState<any>(null);
-  const [strengthData, setStrengthData] = useState<any>(null);
-  const [dashboardData, setDashboardData] = useState<any>(null); // Add dashboard data
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
-
-  const blocks = [
-    { id: 'SKILLS', name: 'Skills', icon: '🤸' },
-    { id: 'TECHNICAL WORK', name: 'Technical Work', icon: '🔧' },
-    { id: 'STRENGTH AND POWER', name: 'Strength & Power', icon: '💪' },
-    { id: 'ACCESSORIES', name: 'Accessories', icon: '🔨' },
-    { id: 'METCONS', name: 'MetCons', icon: '🔥' }
-  ];
-
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  useEffect(() => {
-    if (userId) {
-      fetchAnalyticsData();
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    if (selectedBlock) {
-      updateAvailableExercises();
-    }
-  }, [selectedBlock, skillsData, strengthData, userId]);
-
-  useEffect(() => {
-    if (selectedExercise && selectedBlock && userId) {
-      fetchExerciseDeepDive();
-    }
-  }, [selectedExercise, selectedBlock, userId]);
-
-  const loadUser = async () => {
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        setError('Not authenticated');
-        return;
-      }
-      setUser(user);
-
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_id', user.id)
-        .single();
-
-      if (userError || !userData) {
-        setError('User not found');
-        return;
-      }
-      
-      setUserId(userData.id);
-    } catch (err) {
-      console.error('Error loading user:', err);
-      setError('Failed to load user data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchAnalyticsData = async () => {
-    if (!userId) return;
+  const fetchComparisonData = async (exercise: string) => {
+    if (!userId || !exercise || !selectedBlock) return;
     
-    try {
-      // Fetch dashboard data for overview bar AND skills/strength data
-      const [dashboardRes, skillsRes, strengthRes] = await Promise.allSettled([
-        fetch(`/api/analytics/${userId}/dashboard`),
-        fetch(`/api/analytics/${userId}/skills-analytics`),
-        fetch(`/api/analytics/${userId}/strength-tracker`)
-      ]);
-
-      // Process Dashboard Data
-      if (dashboardRes.status === 'fulfilled' && dashboardRes.value.ok) {
-        const data = await dashboardRes.value.json();
-        setDashboardData(data);
-      }
-
-      if (skillsRes.status === 'fulfilled' && skillsRes.value.ok) {
-        const data = await skillsRes.value.json();
-        setSkillsData(data);
-      }
-
-      if (strengthRes.status === 'fulfilled' && strengthRes.value.ok) {
-        const data = await strengthRes.value.json();
-        setStrengthData(data);
-      }
-    } catch (error) {
-      console.error('Error fetching analytics data:', error);
-    }
-  };
-
-  // Overview Summary Component
-  const OverviewSummary = () => {
-    if (!dashboardData?.data?.dashboard) {
-      return (
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          {[1,2,3].map(i => (
-            <div key={i} className="bg-white rounded-lg shadow p-6 animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-              <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    const { overallMetrics } = dashboardData.data.dashboard;
-
-    return (
-      <div className="grid md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Completed Tasks</p>
-              <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalExercises}</p>
-            </div>
-            <div className="text-blue-600">📊</div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Average RPE</p>
-              <p className="text-3xl font-bold text-gray-900">{overallMetrics.averageRPE}</p>
-            </div>
-            <div className="text-green-600">💪</div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Training Days</p>
-              <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalTrainingDays}</p>
-            </div>
-            <div className="text-orange-600">⭐</div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const updateAvailableExercises = async () => {
-    if (!userId || !selectedBlock) return;
-    
-    let exercises: string[] = [];
-
-    if (selectedBlock === 'SKILLS') {
-      if (skillsData?.data?.skillsAnalysis?.skills) {
-        exercises = Object.keys(skillsData.data.skillsAnalysis.skills)
-          .filter(exerciseName => {
-            const exercise = skillsData.data.skillsAnalysis.skills[exerciseName];
-            return exercise.block === selectedBlock;
-          });
-      }
-    } else if (selectedBlock === 'STRENGTH AND POWER') {
-      if (strengthData?.data?.strengthAnalysis?.movements) {
-        exercises = Object.keys(strengthData.data.strengthAnalysis.movements);
-      }
-    } else {
-      // For all other blocks (METCONS, ACCESSORIES, TECHNICAL WORK), 
-      // fetch actual exercises from performance_logs
-      try {
-        const supabase = createClient();
-        const { data: performanceData, error } = await supabase
-          .from('performance_logs')
-          .select('exercise_name')
-          .eq('user_id', userId)
-          .eq('block', selectedBlock);
-
-        if (!error && performanceData) {
-          // Get unique exercise names for this block
-          const uniqueExercises = [...new Set(performanceData.map(row => row.exercise_name))];
-          exercises = uniqueExercises.filter(name => name); // Remove any null/undefined names
-        }
-      } catch (error) {
-        console.error('Error fetching exercises for block:', selectedBlock, error);
-        exercises = [];
-      }
-    }
-
-    setAvailableExercises(exercises);
-    setSelectedExercise(''); // Reset exercise selection
-  };
-
-  const fetchExerciseDeepDive = async () => {
-    if (!userId || !selectedExercise || !selectedBlock) return;
-    
-    setAnalyticsLoading(true);
+    setLoadingComparison(true);
     try {
       const response = await fetch(
-        `/api/analytics/${userId}/exercise-deep-dive?exercise=${encodeURIComponent(selectedExercise)}&block=${encodeURIComponent(selectedBlock)}`
+        `/api/analytics/${userId}/exercise-deep-dive?exercise=${encodeURIComponent(exercise)}&block=${encodeURIComponent(selectedBlock)}`
       );
       
       if (response.ok) {
         const data = await response.json();
-        setExerciseData(data);
+        setComparisonData(data);
       } else {
-        setExerciseData(null);
-        console.error('Failed to fetch exercise data');
+        setComparisonData(null);
       }
     } catch (error) {
-      console.error('Error fetching exercise deep dive:', error);
-      setExerciseData(null);
+      console.error('Error fetching comparison data:', error);
+      setComparisonData(null);
     } finally {
-      setAnalyticsLoading(false);
+      setLoadingComparison(false);
     }
   };
 
-  const ExerciseAnalytics = () => {
-    if (!exerciseData?.data) {
-      return (
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-gray-500">Select a block and exercise to see detailed analytics</p>
-        </div>
-      );
+  const handleComparisonSelect = (exercise: string) => {
+    setComparisonExercise(exercise);
+    if (exercise) {
+      fetchComparisonData(exercise);
+    } else {
+      setComparisonData(null);
     }
-
-    const { exerciseInfo, summary, trends, charts } = exerciseData.data;
-
-    // Prepare trend chart data
-    const trendChartData = charts?.trendsChart || {
-      labels: [],
-      datasets: []
-    };
-
-    const volumeChartData = charts?.volumeChart || {
-      labels: [],
-      datasets: []
-    };
-
-    // Exercise Comparison Component
-    const ExerciseComparison = () => {
-      const [comparisonExercise, setComparisonExercise] = useState<string>('');
-      const [comparisonData, setComparisonData] = useState<any>(null);
-      const [loadingComparison, setLoadingComparison] = useState(false);
-
-      // Filter available exercises (remove the currently selected one)
-      const availableForComparison = availableExercises.filter(exercise => exercise !== selectedExercise);
-
-      const fetchComparisonData = async (exercise: string) => {
-        if (!userId || !exercise || !selectedBlock) return;
-        
-        setLoadingComparison(true);
-        try {
-          const response = await fetch(
-            `/api/analytics/${userId}/exercise-deep-dive?exercise=${encodeURIComponent(exercise)}&block=${encodeURIComponent(selectedBlock)}`
-          );
-          
-          if (response.ok) {
-            const data = await response.json();
-            setComparisonData(data);
-          } else {
-            setComparisonData(null);
-          }
-        } catch (error) {
-          console.error('Error fetching comparison data:', error);
-          setComparisonData(null);
-        } finally {
-          setLoadingComparison(false);
-        }
-      };
-
-      const handleComparisonSelect = (exercise: string) => {
-        setComparisonExercise(exercise);
-        if (exercise) {
-          fetchComparisonData(exercise);
-        } else {
-          setComparisonData(null);
-        }
-      };
-
-const ComparisonCard = ({ title, data, isComparison = false }: { title: string, data: any, isComparison?: boolean }) => {
-  console.log('ComparisonCard data:', title, data); // Add this line
-  
-  return (
-    <div className={`bg-white rounded-lg shadow p-6 ${isComparison ? 'border-l-4 border-green-500' : 'border-l-4 border-blue-500'}`}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-        {isComparison ? '🔄' : '📊'} {title}
-      </h3>
-           
-          {data ? (
-            <div className="space-y-4">
-              {/* Key Metrics Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-gray-50 rounded">
-                  <div className="text-xl font-bold text-gray-900">{data.exerciseInfo?.timesPerformed || 0}</div>
-                  <div className="text-xs text-gray-600">Sessions</div>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded">
-                  <div className="text-xl font-bold text-gray-900">{data.volume?.totalReps || 0}</div>
-                  <div className="text-xs text-gray-600">Total Reps</div>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded">
-                  <div className="text-xl font-bold text-gray-900">{data.summary?.avgRPE || 0}</div>
-                  <div className="text-xs text-gray-600">Avg RPE</div>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded">
-                  <div className="text-xl font-bold text-gray-900">{data.summary?.avgQualityGrade || 'N/A'}</div>
-                  <div className="text-xs text-gray-600">Quality</div>
-                </div>
-              </div>
-
-              {/* Trend Indicators */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">RPE Trend:</span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    data.trends?.rpe?.direction === 'improving' ? 'bg-green-100 text-green-800' :
-                    data.trends?.rpe?.direction === 'declining' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {data.trends?.rpe?.direction || 'stable'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Quality Trend:</span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    data.trends?.quality?.direction === 'improving' ? 'bg-green-100 text-green-800' :
-                    data.trends?.quality?.direction === 'declining' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {data.trends?.quality?.direction || 'stable'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Days Since Last:</span>
-                  <span className="text-sm font-medium text-gray-900">{data.summary?.daysSinceLast || 'N/A'}</span>
-                </div>
-              </div>
-
-              {/* Recent Activity */}
-              <div className="pt-3 border-t border-gray-200">
-                <div className="text-xs text-gray-500 mb-2">Recent Activity</div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Last 4 weeks:</span>
-                   <span className="text-sm font-medium">{data.timing?.recentSessions || 0} sessions</span>                  
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              {isComparison ? 'Select an exercise to compare' : 'No data available'}
-            </div>
-          )}
-        </div>
-      );
-
-      return (
-        <div className="bg-gray-50 rounded-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">⚖️ Exercise Comparison</h3>
-            <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-600">Compare with:</span>
-              <select
-                value={comparisonExercise}
-                onChange={(e) => handleComparisonSelect(e.target.value)}
-                disabled={availableForComparison.length === 0}
-                className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              >
-                <option value="">Choose exercise...</option>
-                {availableForComparison.map(exercise => (
-                  <option key={exercise} value={exercise}>
-                    {exercise}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {availableForComparison.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <p>No other exercises available in this block for comparison.</p>
-              <p className="text-sm mt-1">Try a different training block with multiple exercises.</p>
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Current Exercise */}
-              <ComparisonCard 
-                title={selectedExercise} 
-                data={exerciseData?.data} 
-              />
-
-              {/* Comparison Exercise */}
-              {loadingComparison ? (
-                <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mr-2"></div>
-                  <span className="text-gray-600">Loading comparison...</span>
-                </div>
-              ) : (
-                <ComparisonCard 
-                  title={comparisonExercise || 'Select Exercise'} 
-                  data={comparisonData?.data} 
-                  isComparison={true}
-                />
-              )}
-            </div>
-          )}
-        </div>
-      );
-    };
-
-    return (
-      <div className="space-y-6">
-        {/* Exercise Summary */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">{exerciseInfo.name}</h2>
-            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-              {exerciseInfo.block}
-            </span>
-          </div>
-          
-          <div className="grid md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">{exerciseInfo.timesPerformed}</div>
-              <div className="text-sm text-gray-600">Sessions</div>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">{summary.avgRPE}</div>
-              <div className="text-sm text-gray-600">Avg RPE</div>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">{summary.avgQualityGrade}</div>
-              <div className="text-sm text-gray-600">Quality Grade</div>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">{summary.daysSinceLast}</div>
-              <div className="text-sm text-gray-600">Days Since Last</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Charts */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">RPE & Quality Trends</h3>
-            <div className="h-64">
-              <Line data={trendChartData} options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { position: 'top' },
-                  title: { display: true, text: 'Progress Over Time' }
-                },
-                scales: {
-                  y: { beginAtZero: true, max: 10 },
-                  y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    max: 4,
-                    grid: { drawOnChartArea: false }
-                  }
-                }
-              }} />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Volume Progression</h3>
-            <div className="h-64">
-              <Bar data={volumeChartData} options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { display: false },
-                  title: { display: true, text: 'Training Volume' }
-                },
-                scales: {
-                  y: { beginAtZero: true }
-                }
-              }} />
-            </div>
-          </div>
-        </div>
-
-        {/* Trends Analysis */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Progression Analysis</h3>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-medium text-gray-900 mb-3">RPE Trend</h4>
-              <div className="flex items-center space-x-3">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  trends.rpe.direction === 'improving' ? 'bg-green-100 text-green-800' :
-                  trends.rpe.direction === 'declining' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {trends.rpe.direction}
-                </span>
-                <span className="text-gray-600">
-                  Current: {trends.rpe.current} | Best: {trends.rpe.best}
-                </span>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="font-medium text-gray-900 mb-3">Quality Trend</h4>
-              <div className="flex items-center space-x-3">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  trends.quality.direction === 'improving' ? 'bg-green-100 text-green-800' :
-                  trends.quality.direction === 'declining' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {trends.quality.direction}
-                </span>
-                <span className="text-gray-600">
-                  Current: {trends.quality.current} | Best: {trends.quality.best}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Exercise Comparison */}
-        <ExerciseComparison />
-      </div>
-    );
   };
 
-  if (loading) {
+  // Move ComparisonCard component definition outside or make it a separate component
+  const ComparisonCard = ({ title, data, isComparison = false }: { title: string, data: any, isComparison?: boolean }) => {
+    console.log('ComparisonCard data:', title, data);
+    
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading exercise analytics...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-600 text-5xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Analytics</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Exercise Deep Dive</h1>
-              <p className="text-gray-600">Detailed analytics for individual exercises</p>
-            </div>
-            <a
-              href="/dashboard/progress"
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              ← Back to Analytics
-            </a>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* OVERVIEW SUMMARY BAR - ADDED HERE */}
-        <OverviewSummary />
-
-        {/* Selection Controls */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Exercise to Analyze</h2>
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Block Selector */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Training Block
-              </label>
-              <select
-                value={selectedBlock}
-                onChange={(e) => setSelectedBlock(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Choose a training block...</option>
-                {blocks.map(block => (
-                  <option key={block.id} value={block.id}>
-                    {block.icon} {block.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Exercise Selector */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Exercise
-              </label>
-              <select
-                value={selectedExercise}
-                onChange={(e) => setSelectedExercise(e.target.value)}
-                disabled={!selectedBlock || availableExercises.length === 0}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">
-                  {!selectedBlock ? 'Select a block first...' : 
-                   availableExercises.length === 0 ? 'No exercises available...' :
-                   'Choose an exercise...'}
-                </option>
-                {availableExercises.map(exercise => (
-                  <option key={exercise} value={exercise}>
-                    {exercise}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {selectedBlock && selectedExercise && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <span className="text-blue-600">📊</span>
-                <span className="text-blue-800 font-medium">
-                  Analyzing: {selectedExercise} in {blocks.find(b => b.id === selectedBlock)?.name}
-                </span>
+      <div className={`bg-white rounded-lg shadow p-6 ${isComparison ? 'border-l-4 border-green-500' : 'border-l-4 border-blue-500'}`}>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          {isComparison ? '🔄' : '📊'} {title}
+        </h3>
+             
+        {data ? (
+          <div className="space-y-4">
+            {/* Key Metrics Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-3 bg-gray-50 rounded">
+                <div className="text-xl font-bold text-gray-900">{data.exerciseInfo?.timesPerformed || 0}</div>
+                <div className="text-xs text-gray-600">Sessions</div>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded">
+                <div className="text-xl font-bold text-gray-900">{data.volume?.totalReps || 0}</div>
+                <div className="text-xs text-gray-600">Total Reps</div>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded">
+                <div className="text-xl font-bold text-gray-900">{data.summary?.avgRPE || 0}</div>
+                <div className="text-xs text-gray-600">Avg RPE</div>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded">
+                <div className="text-xl font-bold text-gray-900">{data.summary?.avgQualityGrade || 'N/A'}</div>
+                <div className="text-xs text-gray-600">Quality</div>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Analytics Content */}
-        {analyticsLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
-            <p className="text-gray-600">Loading exercise analytics...</p>
+            {/* Trend Indicators */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">RPE Trend:</span>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  data.trends?.rpe?.direction === 'improving' ? 'bg-green-100 text-green-800' :
+                  data.trends?.rpe?.direction === 'declining' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {data.trends?.rpe?.direction || 'stable'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Quality Trend:</span>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  data.trends?.quality?.direction === 'improving' ? 'bg-green-100 text-green-800' :
+                  data.trends?.quality?.direction === 'declining' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {data.trends?.quality?.direction || 'stable'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Days Since Last:</span>
+                <span className="text-sm font-medium text-gray-900">{data.summary?.daysSinceLast || 'N/A'}</span>
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="pt-3 border-t border-gray-200">
+              <div className="text-xs text-gray-500 mb-2">Recent Activity</div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Last 4 weeks:</span>
+                <span className="text-sm font-medium">{data.timing?.recentSessions || 0} sessions</span>                  
+              </div>
+            </div>
           </div>
         ) : (
-          <ExerciseAnalytics />
+          <div className="text-center py-8 text-gray-500">
+            {isComparison ? 'Select an exercise to compare' : 'No data available'}
+          </div>
         )}
-      </main>
+      </div>
+    );
+  }; // Fixed: Added proper closing brace
+
+  // This return belongs to ExerciseComparison component
+  return (
+    <div className="bg-gray-50 rounded-lg p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-gray-900">⚖️ Exercise Comparison</h3>
+        <div className="flex items-center space-x-3">
+          <span className="text-sm text-gray-600">Compare with:</span>
+          <select
+            value={comparisonExercise}
+            onChange={(e) => handleComparisonSelect(e.target.value)}
+            disabled={availableForComparison.length === 0}
+            className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+          >
+            <option value="">Choose exercise...</option>
+            {availableForComparison.map(exercise => (
+              <option key={exercise} value={exercise}>
+                {exercise}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {availableForComparison.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          <p>No other exercises available in this block for comparison.</p>
+          <p className="text-sm mt-1">Try a different training block with multiple exercises.</p>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Current Exercise */}
+          <ComparisonCard 
+            title={selectedExercise} 
+            data={exerciseData?.data} 
+          />
+
+          {/* Comparison Exercise */}
+          {loadingComparison ? (
+            <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mr-2"></div>
+              <span className="text-gray-600">Loading comparison...</span>
+            </div>
+          ) : (
+            <ComparisonCard 
+              title={comparisonExercise || 'Select Exercise'} 
+              data={comparisonData?.data} 
+              isComparison={true}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
-}
+};
