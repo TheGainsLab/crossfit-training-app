@@ -882,7 +882,7 @@ const EnhancedSkillCard: React.FC<{ skill: any }> = ({ skill }) => {
   );
 };
 
-// Skills Analytics Component - ENHANCED WITH NEW CARDS
+// Skills Analytics Component - Updated with chart totals
 const SkillsAnalyticsView = () => {
   if (!skillsData?.data) {
     return <div className="bg-white rounded-lg shadow p-6">Loading skills analytics...</div>;
@@ -912,6 +912,10 @@ const SkillsAnalyticsView = () => {
     qualityGrade: skill.qualityGrade || 'D'
   }));
 
+  // Calculate totals for chart titles
+  const totalReps = skillsArray.reduce((sum: number, skill: any) => sum + (skill.totalReps || 0), 0);
+  const avgRPE = skillsArray.reduce((sum: number, skill: any) => sum + (skill.avgRPE || 0), 0) / skillsArray.length;
+
   const skillsChartData = {
     labels: movementData.map(m => m.name),
     datasets: [
@@ -938,18 +942,16 @@ const SkillsAnalyticsView = () => {
     ]
   };
 
-  // Calculate summary stats
+  // Calculate summary stats (only the non-redundant ones)
   const totalSkills = skillsArray.length;
   const masteredSkills = skillsArray.filter((skill: any) => skill.qualityGrade === 'A').length;
-  const totalReps = skillsArray.reduce((sum: number, skill: any) => sum + (skill.totalReps || 0), 0);
-  const avgRPE = skillsArray.reduce((sum: number, skill: any) => sum + (skill.avgRPE || 0), 0) / totalSkills;
 
   return (
     <div id="skills-panel" role="tabpanel" aria-labelledby="skills-tab" className="space-y-8">
-      {/* Summary Stats */}
+      {/* Summary Stats - UPDATED: Only unique metrics */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Development Overview</h3>
-        <div className="grid md:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 gap-6">
           <div className="text-center">
             <div className="text-3xl font-bold text-blue-600">{totalSkills}</div>
             <div className="text-sm text-gray-600">Skills Practiced</div>
@@ -958,24 +960,18 @@ const SkillsAnalyticsView = () => {
             <div className="text-3xl font-bold text-green-600">{masteredSkills}</div>
             <div className="text-sm text-gray-600">Grade A Skills</div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600">{totalReps.toLocaleString()}</div>
-            <div className="text-sm text-gray-600">Total Reps</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-orange-600">{avgRPE.toFixed(1)}</div>
-            <div className="text-sm text-gray-600">Average RPE</div>
-          </div>
         </div>
       </div>
 
-      {/* Charts */}
+      {/* Charts - UPDATED: With totals in titles */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Progress Charts</h3>
         
         <div className="grid md:grid-cols-2 gap-6 mb-6">
           <div>
-            <h4 className="font-medium text-gray-900 mb-3">Total Reps Completed</h4>
+            <h4 className="font-medium text-gray-900 mb-3">
+              Total Reps Completed <span className="text-2xl font-bold text-purple-600 ml-2">{totalReps.toLocaleString()}</span>
+            </h4>
             <div className="h-64">
               <Bar data={skillsChartData} options={{
                 responsive: true,
@@ -992,7 +988,9 @@ const SkillsAnalyticsView = () => {
           </div>
           
           <div>
-            <h4 className="font-medium text-gray-900 mb-3">Average RPE</h4>
+            <h4 className="font-medium text-gray-900 mb-3">
+              Average RPE <span className="text-2xl font-bold text-orange-600 ml-2">{avgRPE.toFixed(1)}</span>
+            </h4>
             <div className="h-64">
               <Bar data={rpeChartData} options={{
                 responsive: true,
@@ -1022,6 +1020,7 @@ const SkillsAnalyticsView = () => {
     </div>
   );
 };
+
 
 // Strength Analytics Component - CORRECTED (this one was mostly right)
 const StrengthAnalyticsView = () => {
