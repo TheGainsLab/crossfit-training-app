@@ -157,14 +157,19 @@ if (block === 'METCONS') {
       }
     }
 
-    // Process the data
-    const metrics = processExerciseData(performanceData, metconData)
-    if (!metrics) {
-      return NextResponse.json(
-        { error: 'Failed to process exercise data' },
-        { status: 500 }
-      )
-    }
+
+// Process the data
+const metrics = processExerciseData(performanceData, metconData)
+if (!metrics) {
+  return NextResponse.json(
+    { error: 'Failed to process exercise data' },
+    { status: 500 }
+  )
+}
+
+// ADD THIS DEBUG LOG:
+console.log('🔍 Debug - metrics.timing:', metrics.timing)
+
 
     // Generate insights and recommendations
     const insights = generateDataReflectiveInsights(metrics)
