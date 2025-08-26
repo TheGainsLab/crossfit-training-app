@@ -124,10 +124,7 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
   const [completions, setCompletions] = useState<Record<string, Completion>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({
-    'SKILLS': true,
-    'STRENGTH AND POWER': true
-  })
+  const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({})
   
  
   useEffect(() => {
@@ -320,19 +317,6 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
     }))
   }
 
-  const getBlockIcon = (blockName: string) => {
-    switch (blockName) {
-      case 'SKILLS': return '🎯'
-      case 'TECHNICAL WORK': return '🔧'
-      case 'STRENGTH AND POWER': return '💪'
-      case 'ACCESSORIES': return '🔨'
-      case 'METCONS': return '🔥'
-      default: return '📋'
-    }
-  }
-
-
-
   const getBlockColor = (blockName: string) => {
     switch (blockName) {
       case 'SKILLS': return 'bg-purple-50 border-purple-200'
@@ -344,7 +328,6 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
     }
   }
 
-// ADD THESE NEW FUNCTIONS HERE:
 const getBlockStatusIcon = (blockName: string, exercises: Exercise[], completions: Record<string, Completion>) => {
   // Count completed exercises in this block
   const completedCount = exercises.filter(exercise => {
@@ -360,10 +343,10 @@ const getBlockStatusIcon = (blockName: string, exercises: Exercise[], completion
   
   const totalCount = exercises.length;
   
-  // Determine status
+  // Determine status - only show status icons, no base icons
   if (completedCount === 0) {
-    // Not started - use original block icon
-    return getBlockIcon(blockName);
+    // Not started - show nothing (empty string)
+    return '';
   } else if (completedCount === totalCount) {
     // All complete - green checkmark
     return '✅';
@@ -397,8 +380,6 @@ const getBlockHeaderStyle = (blockName: string, exercises: Exercise[], completio
   // Not started - original styling
   return baseStyle;
 };
-
-
 
 const calculateProgress = () => {
   if (!workout) return 0
@@ -528,8 +509,9 @@ const calculateProgress = () => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-<span className="text-2xl">{getBlockStatusIcon(block.blockName, block.exercises, completions)}</span>                  
-
+                  {getBlockStatusIcon(block.blockName, block.exercises, completions) && (
+                    <span className="text-2xl">{getBlockStatusIcon(block.blockName, block.exercises, completions)}</span>
+                  )}
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">{block.blockName}</h2>
                     <p className="text-sm text-gray-600">
@@ -1138,7 +1120,7 @@ function MetConCard({
       {isExpanded && !isCompleted && (
         <div className="sticky top-0 z-10 bg-orange-600 text-white px-4 py-2 rounded-t-lg">
           <div className="text-sm font-medium">
-            🔥 {metconData.workoutId}
+            {metconData.workoutId}
           </div>
         </div>
       )}
@@ -1348,4 +1330,3 @@ function MetConCard({
     </div>
   )
 }
-
