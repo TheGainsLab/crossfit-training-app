@@ -1,502 +1,1332 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
+import { use } from 'react'
 
-// Keep your existing interface
-interface WorkoutSummary {
+interface Exercise {
+  name: string
+  sets: number | string
+  reps: number | string
+  weightTime: string
+  notes: string
+}
+
+interface Block {
+  blockName: string
+  exercises: Exercise[]
+}
+
+interface WorkoutData {
   programId: number
   week: number
   day: number
   dayName: string
   mainLift: string
   isDeload: boolean
-  totalExercises: number
-  totalBlocks: number
+ userGender: string  // ← ADD THIS LINE
+  blocks: Block[]
+metconData?: {
+  id: number
+  workoutId: string
+  workoutFormat: string
+  workoutNotes: string
+  timeRange: string
+  tasks: Array<{
+    reps: string
+    time: string
+    calories: string
+    distance: string
+    exercise: string
+    weight_male: string
+    weight_female: string
+  }>
+  percentileGuidance: {
+    male: {
+      excellentScore: string
+      medianScore: string
+      stdDev: string
+    }
+    female: {
+      excellentScore: string
+      medianScore: string
+      stdDev: string
+    }
+  }
+  rxWeights: {
+    male: string
+    female: string
+  }
+} 
+ totalExercises: number 
 }
 
-// ADD these new interfaces
-interface DayCompletion {
-  week: number
-  day: number
-  totalExercises: number
-  completedExercises: number
-  isFullyComplete: boolean
-  completionPercentage: number
+
+interface Completion {
+  exerciseName: string
+  setsCompleted?: number
+  repsCompleted?: string
+  weightUsed?: number
+  rpe?: number
+  quality?: string
+  notes?: string
+  wasRx?: boolean
 }
 
-interface CompletionMap {
-  [key: string]: DayCompletion // key format: "week-day"
+
+const getCurrentUserId = async () => {
+  console.log('🔍 getCurrentUserId called')
+  
+  const { createClient } = await import('@/lib/supabase/client')
+  const supabase = createClient()
+  
+  console.log('📱 Getting auth user...')
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError) {
+    console.error('❌ Auth error:', authError)
+    throw new Error('Auth error: ' + authError.message)
+  }
+  
+  if (!user) {
+    console.error('❌ No user found in auth')
+    throw new Error('Not authenticated')
+  }
+  
+  console.log('✅ Auth user found:', user.id)
+  
+  console.log('🔍 Looking up database user...')
+  const { data: userData, error: dbError } = await supabase
+    .from('users')
+    .select('id, auth_id, email')
+    .eq('auth_id', user.id)
+    .single()
+  
+  if (dbError) {
+    console.error('❌ Database error:', dbError)
+    throw new Error('Database error: ' + dbError.message)
+  }
+  
+  console.log('📊 Database query result:', userData)
+  
+  if (!userData) {
+    console.error('❌ No database user found')
+    throw new Error('User not found in database')
+  }
+  
+  console.log('✅ Returning user ID:', userData.id)
+  return userData.id
 }
 
-export default function DashboardPage() {
-  const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
+// Client component that handles all the hooks
+function WorkoutPageClient({ programId, week, day }: { programId: string; week: string; day: string }) {
+  const [workout, setWorkout] = useState<WorkoutData | null>(null)
+  const [completions, setCompletions] = useState<Record<string, Completion>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [currentProgram, setCurrentProgram] = useState<number | null>(null)
-  const [currentWeek, setCurrentWeek] = useState(1)
-  const [currentDay, setCurrentDay] = useState(1)
-  const [user, setUser] = useState<User | null>(null)
-  const [userId, setUserId] = useState<number | null>(null)
-  const [completionStatus, setCompletionStatus] = useState<CompletionMap>({})
-  const [completionLoading, setCompletionLoading] = useState(false)
-
+  const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({})
+  
+ 
   useEffect(() => {
-    loadUserAndProgram()
-  }, [])
+    fetchWorkout()
+    fetchCompletions()
+  }, [programId, week, day])
 
-  useEffect(() => {
-    if (currentProgram && currentWeek && currentDay) {
-      fetchTodaysWorkout()
-    }
-  }, [currentProgram, currentWeek, currentDay])
-
-  // ADD this new useEffect
-  useEffect(() => {
-    if (currentProgram && userId) {
-      fetchCompletionData()
-    }
-  }, [currentProgram, userId])
-
-  // Completion tracking functions
-  const fetchCompletionStatus = async (programId: number, userId: number): Promise<CompletionMap> => {
+  const fetchWorkout = async () => {
     try {
-      const supabase = createClient()
-      
-      // Get completed exercises from performance_logs
-      const { data: completedLogs, error: logsError } = await supabase
-        .from('performance_logs')
-        .select('week, day, block, exercise_name, set_number')
-        .eq('program_id', programId)
-        .eq('user_id', userId)
-
-      if (logsError) {
-        console.error('Error fetching performance logs:', logsError)
-        return {}
-      }
-
-      // Get program structure to count total exercises
-      const { data: programData, error: programError } = await supabase
-        .from('programs')
-        .select('program_data')
-        .eq('id', programId)
-        .single()
-
-      if (programError || !programData) {
-        console.error('Error fetching program data:', programError)
-        return {}
-      }
-
-      // Count completed exercises per day
-      const completedByDay: { [key: string]: Set<string> } = {}
-      
-      completedLogs?.forEach(log => {
-        const dayKey = `${log.week}-${log.day}`
-        if (!completedByDay[dayKey]) {
-          completedByDay[dayKey] = new Set()
-        }
-        // Create unique exercise identifier
-        const exerciseKey = `${log.block}-${log.exercise_name}-${log.set_number}`
-        completedByDay[dayKey].add(exerciseKey)
-      })
-
-      // Count total exercises per day from program structure
-      const completionMap: CompletionMap = {}
-      
-      programData.program_data.weeks.forEach((week: any) => {
-        week.days.forEach((day: any) => {
-          const dayKey = `${week.week}-${day.day}`
-          
-          // Count total exercises across all blocks
-          let totalExercises = 0
-          day.blocks.forEach((block: any) => {
-            totalExercises += block.exercises.length
-          })
-
-          // Get completed count
-          const completedCount = completedByDay[dayKey]?.size || 0
-          
-          completionMap[dayKey] = {
-            week: week.week,
-            day: day.day,
-            totalExercises,
-            completedExercises: completedCount,
-            isFullyComplete: completedCount === totalExercises && totalExercises > 0,
-            completionPercentage: totalExercises > 0 ? Math.round((completedCount / totalExercises) * 100) : 0
-          }
-        })
-      })
-
-      return completionMap
-    } catch (error) {
-      console.error('Error in fetchCompletionStatus:', error)
-      return {}
-    }
-  }
-
-  const fetchCompletionData = async () => {
-    if (!currentProgram || !userId) return
-    
-    setCompletionLoading(true)
-    try {
-      const completion = await fetchCompletionStatus(currentProgram, userId)
-      setCompletionStatus(completion)
-    } catch (error) {
-      console.error('Error fetching completion status:', error)
-    } finally {
-      setCompletionLoading(false)
-    }
-  }
-
-  const loadUserAndProgram = async () => {
-    try {
-      // Get current user
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        setError('Not authenticated')
-        setLoading(false)
-        return
-      }
-      setUser(user)
-
-      // Get user ID from users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_id', user.id)
-        .single()
-
-      if (userError || !userData) {
-        setError('User not found')
-        setLoading(false)
-        return
-      }
-      setUserId(userData.id)
-
-      // Get latest program for this user
-      const { data: programData, error: programError } = await supabase
-        .from('programs')
-        .select('id, generated_at')
-        .eq('user_id', userData.id)
-        .order('generated_at', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (programError || !programData) {
-        setError('No program found. Please complete the intake assessment.')
-        setLoading(false)
-        return
-      }
-
-      setCurrentProgram(programData.id)
-
-      // Default to Week 1, Day 1
-      setCurrentWeek(1)
-      setCurrentDay(1)
-    } catch (err) {
-      console.error('Error loading user program:', err)
-      setError('Failed to load program data')
-      setLoading(false)
-    }
-  }
-
-  // Add the DayCompletionBadge component
-  const DayCompletionBadge: React.FC<{ completion: DayCompletion }> = ({ completion }) => {
-    if (completion.isFullyComplete) {
-      return (
-        <div className="flex items-center justify-center w-6 h-6 bg-green-500 text-white rounded-full text-xs font-bold">
-          ✓
-        </div>
-      )
-    }
-    
-    if (completion.completedExercises > 0) {
-      return (
-        <div className="flex items-center justify-center px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-          {completion.completedExercises}/{completion.totalExercises}
-        </div>
-      )
-    }
-    
-    return null // No badge for untouched days
-  }
-
-  const fetchTodaysWorkout = async () => {
-    try {
-      const response = await fetch(`/api/workouts/${currentProgram}/week/${currentWeek}/day/${currentDay}`)
+      setLoading(true)
+      const response = await fetch(`/api/workouts/${programId}/week/${week}/day/${day}`)
       
       if (!response.ok) {
-        throw new Error('Failed to fetch today\'s workout')
+        throw new Error('Failed to fetch workout')
       }
 
       const data = await response.json()
-
       if (data.success) {
-        setTodaysWorkout({
-          programId: data.workout.programId,
-          week: data.workout.week,
-          day: data.workout.day,
-          dayName: data.workout.dayName,
-          mainLift: data.workout.mainLift,
-          isDeload: data.workout.isDeload,
-          totalExercises: data.workout.totalExercises,
-          totalBlocks: data.workout.totalBlocks
-        })
+        setWorkout(data.workout)
       }
-      setLoading(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
       setLoading(false)
     }
   }
 
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return "Good morning"
-    if (hour < 17) return "Good afternoon"
-    return "Good evening"
+const fetchCompletions = async () => {
+  try {
+    const userId = await getCurrentUserId()
+    const response = await fetch(`/api/workouts/complete?userId=${userId}&programId=${programId}&week=${week}&day=${day}`)
+    
+    if (response.ok) {
+      const data = await response.json()
+      if (data.success) {
+        const completionMap: Record<string, Completion> = {}
+        data.completions.forEach((comp: any) => {
+          // Create unique key that includes set number
+          const setNumber = comp.set_number || 1
+          const completionKey = setNumber > 1 
+            ? `${comp.exercise_name} - Set ${setNumber}`
+            : comp.exercise_name
+            
+          completionMap[completionKey] = {
+            exerciseName: comp.exercise_name,
+            setsCompleted: comp.sets_completed,
+            repsCompleted: comp.reps_completed,
+            weightUsed: comp.weight_used,
+            rpe: comp.rpe,
+            notes: comp.notes,
+            wasRx: comp.was_rx
+          }
+        })
+        setCompletions(completionMap)
+      }
+    }
+  } catch (err) {
+    console.log('No previous completions found')
+  }
+}  
+
+
+const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
+  console.log('🚀 logCompletion called for:', exerciseName)
+  
+  // Extract set number from exercise name if it exists
+  const setMatch = exerciseName.match(/Set (\d+)$/);
+  const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+  
+  // Clean exercise name (remove "- Set X" part)
+  const cleanExerciseName = exerciseName.replace(/ - Set \d+$/, '');
+  
+  try {
+    const userId = await getCurrentUserId()
+    console.log('🔢 About to make POST with userId:', userId, 'setNumber:', setNumber)
+    
+    // OPTIMISTIC UPDATE: Update UI immediately
+    setCompletions(prev => ({
+      ...prev,
+      [exerciseName]: { exerciseName, ...completion }
+    }))
+    console.log('✅ Optimistic UI update applied')
+    
+    const response = await fetch('/api/workouts/complete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        programId: parseInt(programId),
+        userId,
+        week: parseInt(week),
+        day: parseInt(day),
+        block,
+        exerciseName: cleanExerciseName,
+        setNumber,
+        ...completion
+      })
+    })
+    
+    console.log('📡 POST response:', response.status)
+    
+    if (response.ok) {
+      const data = await response.json()
+      if (data.success) {
+        console.log('💾 Database update confirmed')
+        // Optionally update with server response data if it differs
+        setCompletions(prev => ({
+          ...prev,
+          [exerciseName]: { exerciseName, ...completion }
+        }))
+      } else {
+        throw new Error('Server returned unsuccessful response')
+      }
+    } else {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+  } catch (err) {
+    console.error('❌ Failed to log completion:', err)
+    
+    // ROLLBACK: Remove optimistic update on failure
+    setCompletions(prev => {
+      const updated = { ...prev }
+      delete updated[exerciseName]
+      return updated
+    })
+    
+    // TODO: Show user-friendly error message
+    alert('Failed to save completion. Please try again.')
+  }
+}
+
+
+const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerciseName: string, rpe: number, quality: string}[]) => {
+  try {
+    const userId = await getCurrentUserId()
+    
+    // 1. Log each task to performance_logs
+    const taskPromises = taskCompletions.map(task => 
+      fetch('/api/workouts/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          programId: parseInt(programId),
+          userId,
+          week: parseInt(week),
+          day: parseInt(day),
+          block: 'METCONS',
+          exerciseName: task.exerciseName,
+          repsCompleted: '', // Tasks don't have individual reps
+          rpe: task.rpe,
+          quality: task.quality,
+          notes: `Part of ${workout?.metconData?.workoutId}`
+        })
+      })
+    )
+    
+    // 2. Log overall workout to program_metcons
+    const metconPromise = fetch('/api/metcons/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        programId: parseInt(programId),
+        userId,
+        week: parseInt(week),
+        day: parseInt(day),
+        workoutScore,
+        metconId: workout?.metconData?.id // We'll need this
+      })
+    })
+    
+    // Execute all API calls
+    await Promise.all([...taskPromises, metconPromise])
+    
+    console.log('✅ MetCon completion logged successfully!')
+    
+    // Update UI to show completion
+    // TODO: Update completion state
+    
+  } catch (error) {
+    console.error('❌ Failed to log MetCon completion:', error)
+  }
+}
+
+
+  const toggleBlock = (blockName: string) => {
+    setExpandedBlocks(prev => ({
+      ...prev,
+      [blockName]: !prev[blockName]
+    }))
   }
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    })
+  const getBlockColor = (blockName: string) => {
+    switch (blockName) {
+      case 'SKILLS': return 'bg-purple-50 border-purple-200'
+      case 'TECHNICAL WORK': return 'bg-blue-50 border-blue-200'
+      case 'STRENGTH AND POWER': return 'bg-red-50 border-red-200'
+      case 'ACCESSORIES': return 'bg-green-50 border-green-200'
+      case 'METCONS': return 'bg-orange-50 border-orange-200'
+      default: return 'bg-gray-50 border-gray-200'
+    }
   }
+
+const getBlockStatusIcon = (blockName: string, exercises: Exercise[], completions: Record<string, Completion>) => {
+  // Count completed exercises in this block
+  const completedCount = exercises.filter(exercise => {
+    // Handle exercises with set numbers (e.g., "Exercise - Set 2")
+    const setMatch = exercise.notes?.match(/Set (\d+)/);
+    const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+    const exerciseKey = setNumber > 1 
+      ? `${exercise.name} - Set ${setNumber}`
+      : exercise.name;
+    
+    return completions[exerciseKey] !== undefined;
+  }).length;
+  
+  const totalCount = exercises.length;
+  
+  // Determine status - only show status icons, no base icons
+  if (completedCount === 0) {
+    // Not started - show nothing (empty string)
+    return '';
+  } else if (completedCount === totalCount) {
+    // All complete - green checkmark
+    return '✅';
+  } else {
+    // Partial complete - progress indicator
+    return '⏳';
+  }
+};
+
+const getBlockHeaderStyle = (blockName: string, exercises: Exercise[], completions: Record<string, Completion>) => {
+  const completedCount = exercises.filter(exercise => {
+    const setMatch = exercise.notes?.match(/Set (\d+)/);
+    const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+    const exerciseKey = setNumber > 1 
+      ? `${exercise.name} - Set ${setNumber}`
+      : exercise.name;
+    return completions[exerciseKey] !== undefined;
+  }).length;
+  
+  const totalCount = exercises.length;
+  const baseStyle = getBlockColor(blockName);
+  
+  if (completedCount === totalCount && totalCount > 0) {
+    // All complete - add green accent
+    return `${baseStyle} ring-2 ring-green-500 ring-opacity-50`;
+  } else if (completedCount > 0) {
+    // Partial complete - add yellow accent  
+    return `${baseStyle} ring-2 ring-yellow-500 ring-opacity-50`;
+  }
+  
+  // Not started - original styling
+  return baseStyle;
+};
+
+const calculateProgress = () => {
+  if (!workout) return 0
+  const totalExercises = workout.blocks.reduce((sum, block) => sum + block.exercises.length, 0)
+  const completedExercises = Object.keys(completions).length
+  
+  // DEBUG: Log the data
+  console.log('🔢 PROGRESS DEBUG:')
+  console.log('Total exercises:', totalExercises)
+  console.log('Completed exercises:', completedExercises)  
+  console.log('Completions object:', completions)
+  console.log('Workout blocks:', workout.blocks.map(b => ({name: b.blockName, count: b.exercises.length})))
+  
+  return totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0
+}
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your workout...</p>
+          <p className="text-gray-600">Loading workout...</p>
         </div>
       </div>
     )
   }
 
-  if (error) {
+  if (error || !workout) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-600 text-5xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Dashboard</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Workout Not Found</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          {error.includes('No program found') && (
-            <Link
-              href="/intake"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            >
-              Complete Assessment
-            </Link>
-          )}
+          <Link href="/dashboard" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+            Back to Dashboard
+          </Link>
         </div>
       </div>
     )
   }
 
+  const progress = calculateProgress()
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">The Gains Apps</h1>
-              <p className="text-gray-600">{getGreeting()}, ready to train?</p>
+      
+      {/* Header - Optimized for Mobile */}
+      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          {/* Desktop Layout */}
+          <div className="hidden sm:flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <Link 
+                href="/dashboard" 
+                className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                <span>←</span>
+                <span>Dashboard</span>
+              </Link>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">
+                  Week {workout.week}, Day {workout.day}
+                </h1>
+                {workout.isDeload && (
+                  <p className="text-sm text-yellow-600">Deload Week</p>
+                )}
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">{formatDate(new Date())}</p>
-              <p className="text-lg font-semibold text-blue-600">
-                Week {currentWeek}, Day {currentDay}
-              </p>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-600">Progress</span>
+              <div className="w-24 bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+              <span className="text-sm font-medium text-gray-900">{Math.round(progress)}%</span>
+            </div>
+          </div>
+
+          {/* Mobile Layout */}
+          <div className="sm:hidden">
+            {/* Top Row: Dashboard link and Progress */}
+            <div className="flex items-center justify-between mb-2">
+              <Link 
+                href="/dashboard" 
+                className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors -ml-3"
+              >
+                <span>←</span>
+                <span className="font-medium">Dashboard</span>
+              </Link>
+              <div className="flex items-center space-x-2">
+                <div className="w-16 bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
+                <span className="text-sm font-medium text-gray-900">{Math.round(progress)}%</span>
+              </div>
+            </div>
+            
+{/* Bottom Row: Week/Day info */}
+<div className="text-center">
+  <h1 className="text-lg font-bold text-gray-900">            
+    Week {workout.week}, Day {workout.day}
+                {workout.isDeload && (
+                  <span className="ml-2 text-sm text-yellow-600">• Deload</span>
+                )}
+              </h1>
             </div>
           </div>
         </div>
       </header>
 
+
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        {todaysWorkout && (
-          <>
-            {/* Today's Workout Card */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8 text-white">
-                <div className="flex items-center justify-between">
+      <main className="max-w-4xl mx-auto px-4 py-6">
+        {workout.blocks.map((block, blockIndex) => (
+          
+<div key={blockIndex} className={`mb-6 rounded-lg border-2 ${getBlockHeaderStyle(block.blockName, block.exercises, completions)}`}>
+            {/* Block Header */}
+            <button
+              onClick={() => toggleBlock(block.blockName)}
+              className="w-full p-4 text-left hover:bg-white/50 transition-colors rounded-lg"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  {getBlockStatusIcon(block.blockName, block.exercises, completions) && (
+                    <span className="text-2xl">{getBlockStatusIcon(block.blockName, block.exercises, completions)}</span>
+                  )}
                   <div>
-                    <h2 className="text-3xl font-bold mb-2">Today's Training</h2>
-                    <p className="text-blue-100 text-lg">{todaysWorkout.dayName} - {todaysWorkout.mainLift} Focus</p>
-                    {todaysWorkout.isDeload && (
-                      <span className="inline-block bg-yellow-500 text-yellow-900 px-3 py-1 rounded-full text-sm font-medium mt-2">
-                        ⚡ Deload Week
-                      </span>
-                    )}
+                    <h2 className="text-xl font-bold text-gray-900">{block.blockName}</h2>
+                    <p className="text-sm text-gray-600">
+                      {block.exercises.length} exercise{block.exercises.length !== 1 ? 's' : ''}
+                    </p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-4xl font-bold">🏋️</div>
-                    <p className="text-blue-200 mt-2">{todaysWorkout.totalExercises} exercises</p>
-                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">
+                    
+{block.exercises.filter(ex => {
+  const setMatch = ex.notes?.match(/Set (\d+)/);
+  const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+  const exerciseKey = setNumber > 1 ? `${ex.name} - Set ${setNumber}` : ex.name;
+  return completions[exerciseKey] !== undefined;
+}).length}/{block.exercises.length} complete
+
+                  </span>
+                  <span className="text-gray-400">
+                    {expandedBlocks[block.blockName] ? '▼' : '▶'}
+                  </span>
                 </div>
               </div>
-              
-              <div className="p-6">
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl mb-1">🎯</div>
-                    <p className="text-sm text-gray-600">Skills</p>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl mb-1">🔧</div>
-                    <p className="text-sm text-gray-600">Technical</p>
-                  </div>
-                  <div className="text-center p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
-                    <div className="text-2xl mb-1">💪</div>
-                    <p className="text-sm text-blue-600 font-medium">Strength</p>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl mb-1">🔨</div>
-                    <p className="text-sm text-gray-600">Accessories</p>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl mb-1">🔥</div>
-                    <p className="text-sm text-gray-600">MetCon</p>
-                  </div>
-                </div>
+            </button>
 
-                <Link
-                  href={`/dashboard/workout/${currentProgram}/week/${currentWeek}/day/${currentDay}`}
-                  className="block w-full bg-blue-600 text-white text-center py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors"
-                >
-                  Start Today's Workout →
-                </Link>
+        {/* Block Content */}
+{expandedBlocks[block.blockName] && (
+  <div className="px-4 pb-4 space-y-4">
+    {block.exercises.length === 0 ? (
+      <div className="text-center py-8 text-gray-500">
+        <div className="text-4xl mb-2">✨</div>
+        <p>No exercises in this block today</p>
+      </div>
+    ) : (
+      
+block.blockName === 'METCONS' ? (
+
+<MetConCard
+  metconData={workout.metconData}
+  onComplete={(workoutScore, taskCompletions) => {
+    logMetConCompletion(workoutScore, taskCompletions)
+  }}
+/>
+
+) : (
+  block.exercises.map((exercise, exerciseIndex) => {
+    console.log('Exercise object:', exercise);
+    
+    // Create consistent naming that matches the completion key
+    const setMatch = exercise.notes?.match(/Set (\d+)/);
+    const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+    const exerciseKey = setNumber > 1 
+      ? `${exercise.name} - Set ${setNumber}`
+      : exercise.name;
+    
+    return (
+      <ExerciseCard
+        key={exerciseIndex}
+        exercise={exercise}
+        block={block.blockName}
+        completion={completions[exerciseKey]}
+        onComplete={(completion) => {
+          logCompletion(exerciseKey, block.blockName, completion);
+        }}
+      />
+    )
+  })
+)
+
+    )}
+  </div>
+)}
+          </div>
+        ))}
+
+        {/* MetCon Special Section */}
+        {/* Navigation */}
+        <div className="flex justify-between mt-8 pt-6 border-t">
+          <Link 
+            href={`/dashboard/workout/${programId}/week/${week}/day/${Math.max(1, parseInt(day) - 1)}`}
+            className={`px-4 py-2 rounded-lg ${parseInt(day) > 1 
+              ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+          >
+            ← Previous Day
+          </Link>
+          
+          <Link 
+            href="/dashboard"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Back to Dashboard
+          </Link>
+          
+          <Link 
+            href={`/dashboard/workout/${programId}/week/${week}/day/${Math.min(5, parseInt(day) + 1)}`}
+            className={`px-4 py-2 rounded-lg ${parseInt(day) < 5 
+              ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+          >
+            Next Day →
+          </Link>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// Main page component that handles the async params
+export default function WorkoutPage({ 
+  params 
+}: { 
+  params: Promise<{ programId: string; week: string; day: string }> 
+}) {
+  const resolvedParams = use(params)
+  
+  return <WorkoutPageClient {...resolvedParams} />
+}
+
+function ExerciseCard({ 
+  exercise, 
+  block, 
+  completion, 
+  onComplete 
+}: { 
+  exercise: Exercise
+  block: string
+  completion?: Completion
+  onComplete: (completion: Partial<Completion>) => void
+}) {
+  const [isExpanded, setIsExpanded] = useState(!completion)
+  const [formData, setFormData] = useState({
+    setsCompleted: completion?.setsCompleted || '',
+    repsCompleted: completion?.repsCompleted || '',
+    weightUsed: completion?.weightUsed || '',
+    rpe: completion?.rpe || 7,
+    quality: completion?.quality || '',
+    notes: completion?.notes || '',
+    asRx: completion?.wasRx || false
+  })
+
+  const isCompleted = completion !== undefined
+
+const handleDetailedSubmit = () => {
+  // Store reference to current card and next element before state changes
+  const currentCardElement = document.activeElement?.closest('.exercise-card') || 
+                            document.querySelector(`[data-exercise="${exercise.name}"]`)
+  const nextCardElement = currentCardElement?.nextElementSibling
+  
+  // Complete the exercise
+  onComplete({
+    setsCompleted: formData.setsCompleted ? parseInt(formData.setsCompleted.toString()) : undefined,
+    repsCompleted: formData.repsCompleted.toString(),
+    weightUsed: formData.weightUsed ? parseFloat(formData.weightUsed.toString()) : undefined,
+    rpe: formData.rpe,
+    quality: formData.quality || undefined,
+    notes: formData.notes.toString(),
+    wasRx: formData.asRx
+  })
+  
+  // Collapse the exercise
+  setIsExpanded(false)
+  
+  // Smooth scroll to maintain user context after collapse
+  setTimeout(() => {
+    if (nextCardElement) {
+      nextCardElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start',  // Align to top of viewport
+        inline: 'nearest'
+      })
+    } else {
+      // If no next element, scroll to show the completed exercise nicely
+      currentCardElement?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      })
+    }
+  }, 150) // Small delay to allow collapse animation to start
+}
+
+
+  const QualityButton = ({ grade, isSelected, onClick }: { grade: string, isSelected: boolean, onClick: () => void }) => {
+    const getButtonStyle = () => {
+      const baseStyle = "flex-1 py-3 rounded-lg font-semibold text-sm transition-all duration-200 border-2 min-w-0"
+      
+      if (isSelected) {
+        switch (grade) {
+          case 'A': return `${baseStyle} bg-green-500 text-white border-green-500 shadow-md`
+          case 'B': return `${baseStyle} bg-blue-500 text-white border-blue-500 shadow-md`
+          case 'C': return `${baseStyle} bg-yellow-500 text-white border-yellow-500 shadow-md`
+          case 'D': return `${baseStyle} bg-red-500 text-white border-red-500 shadow-md`
+          default: return `${baseStyle} bg-gray-500 text-white border-gray-500`
+        }
+      } else {
+        return `${baseStyle} bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50`
+      }
+    }
+
+    const getGradeLabel = () => {
+      switch (grade) {
+        case 'A': return 'Excellent'
+        case 'B': return 'Good'
+        case 'C': return 'Average'
+        case 'D': return 'Poor'
+        default: return grade
+      }
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={getButtonStyle()}
+        title={`${grade} - ${getGradeLabel()}`}
+      >
+        <div className="text-center">
+          <div className="text-lg font-bold">{grade}</div>
+          <div className="text-xs opacity-75">{getGradeLabel()}</div>
+        </div>
+      </button>
+    )
+  }
+
+return (
+  <div 
+    className={`bg-white rounded-xl shadow-sm border-2 transition-all ${
+      isCompleted
+        ? 'border-green-200 bg-green-50'
+        : 'border-gray-200 hover:border-gray-300'
+    }`}
+    data-exercise={exercise.name}
+  >
+    
+      {/* STICKY CONTEXT BAR - Shows when form is expanded and not completed */}
+      {isExpanded && !isCompleted && (
+        <div className="sticky top-0 z-10 bg-blue-600 text-white px-4 py-2 rounded-t-xl">
+          <div className="text-sm font-medium">
+            {exercise.name}: {exercise.sets}×{exercise.reps} @ {exercise.weightTime || 'BW'}
+          </div>
+        </div>
+      )}
+      
+      {/* SECTION 1: Exercise Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full p-6 text-left hover:bg-gray-50 transition-colors rounded-xl"
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            {/* Exercise Title */}
+            <div className="flex items-center space-x-3 mb-4">
+              <h3 className="text-xl font-bold text-gray-900">{exercise.name}</h3>
+              {isCompleted && <span className="text-green-600 text-xl">✅</span>}
+            </div>
+            
+            {/* Exercise Specs - Clean Grid */}
+            <div className="grid grid-cols-3 gap-6 text-sm">
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-500 font-medium">Sets:</span>
+                <span className="text-gray-900 font-semibold text-base">{exercise.sets || '-'}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-500 font-medium">Reps:</span>
+                <span className="text-gray-900 font-semibold text-base">{exercise.reps || '-'}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-500 font-medium">Weight:</span>
+                <span className="text-gray-900 font-semibold text-base">{exercise.weightTime || 'BW'}</span>
               </div>
             </div>
 
-            {/* Quick Navigation */}
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              {/* Week Navigation - UPDATED WITH COMPLETION BADGES */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">This Week's Training</h3>
-                <div className="space-y-2">
-                  {[1, 2, 3, 4, 5].map(day => {
-                    const dayKey = `${currentWeek}-${day}`
-                    const dayCompletion = completionStatus[dayKey]
-                    
-                    return (
-                      <Link
-                        key={day}
-                        href={`/dashboard/workout/${currentProgram}/week/${currentWeek}/day/${day}`}
-                        className={`block p-3 rounded-lg border transition-colors ${
-                          day === currentDay 
-                            ? 'bg-blue-50 border-blue-200 text-blue-700' 
-                            : 'hover:bg-gray-50 border-gray-200'
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center space-x-3">
-                            <span className="font-medium">Day {day}</span>
-                            {day === currentDay && <span className="text-sm text-blue-600">← Today</span>}
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {dayCompletion && <DayCompletionBadge completion={dayCompletion} />}
-                            {completionLoading && (
-                              <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-                            )}
-                          </div>
-                        </div>
-                      </Link>
-                    )
-                  })}
+            {/* Completion Summary (when collapsed and completed) */}
+            {completion && !isExpanded && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center space-x-4 text-sm">
+                  <span className="text-gray-600">RPE: <span className="font-semibold text-green-600">{completion.rpe}/10</span></span>
+                  {completion.quality && (
+                    <span className="text-gray-600">Quality: <span className="font-semibold">{completion.quality}</span></span>
+                  )}
                 </div>
               </div>
+            )}
+          </div>
+          
+          {/* Chevron */}
+          <div className="ml-4 flex-shrink-0">
+            <span className="text-gray-400 text-xl">
+              {isExpanded ? '▼' : '▶'}
+            </span>
+          </div>
+        </div>
+      </button>
 
-              {/* Quick Stats - UPDATED WITH COMPLETION STATS */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Quick Stats</h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Current Program</span>
-                    <span className="font-semibold">#{currentProgram}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Week Progress</span>
-                    <span className="font-semibold">{currentWeek} of 12</span>
-                  </div>
-                  
-                  {/* Add completion progress */}
-                  {Object.keys(completionStatus).length > 0 && (
-                    <>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">This Week</span>
-                        <span className="font-semibold">
-                          {[1,2,3,4,5].filter(day => {
-                            const dayKey = `${currentWeek}-${day}`
-                            return completionStatus[dayKey]?.isFullyComplete
-                          }).length}/5 days complete
-                        </span>
+      {/* SECTION 2: Exercise Notes (when expanded) */}
+      {isExpanded && exercise.notes && (
+        <div className="mx-6 mb-4">
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+            <div className="flex items-start space-x-3">
+              <span className="text-blue-600 text-lg">💡</span>
+              <p className="text-blue-800 text-sm leading-relaxed">{exercise.notes}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 3: Completion Form (when expanded and not completed) */}
+      {isExpanded && !isCompleted && (
+        <div className="px-6 pb-6 space-y-4">
+          
+          {/* Performance Inputs Section - IMPROVED */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Performance</h4>
+            
+            {/* As Rx Checkbox */}
+            <div className="mb-4">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.asRx}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked
+                    setFormData(prev => ({
+                      ...prev,
+                      asRx: isChecked,
+                      // Auto-fill with prescribed values when checked
+                      setsCompleted: isChecked ? exercise.sets : prev.setsCompleted,
+                      repsCompleted: isChecked ? exercise.reps.toString() : prev.repsCompleted,
+                      weightUsed: isChecked && exercise.weightTime !== 'BW' ? exercise.weightTime : prev.weightUsed
+                    }))
+                  }}
+                  className="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-base font-medium text-gray-700">
+                  Completed as prescribed (As Rx)
+                </span>
+              </label>
+            </div>
+
+            {/* HORIZONTAL LAYOUT - Even on Mobile */}
+            <div className={`grid gap-3 ${exercise.weightTime === 'BW' ? 'grid-cols-2' : 'grid-cols-3'}`}>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Sets</label>
+                <input
+                  type="number"
+                  value={formData.setsCompleted}
+                  onChange={(e) => setFormData(prev => ({ ...prev, setsCompleted: e.target.value, asRx: false }))}
+                  disabled={formData.asRx}
+                  className={`w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    formData.asRx ? 'bg-gray-100 text-gray-500' : ''
+                  }`}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Reps</label>
+                <input
+                  type="text"
+                  value={formData.repsCompleted}
+                  onChange={(e) => setFormData(prev => ({ ...prev, repsCompleted: e.target.value, asRx: false }))}
+                  disabled={formData.asRx}
+                  className={`w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    formData.asRx ? 'bg-gray-100 text-gray-500' : ''
+                  }`}
+                  placeholder="0"
+                />
+              </div>
+              {exercise.weightTime !== 'BW' && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Weight</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formData.weightUsed}
+                    onChange={(e) => setFormData(prev => ({ ...prev, weightUsed: e.target.value, asRx: false }))}
+                    disabled={formData.asRx}
+                    className={`w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      formData.asRx ? 'bg-gray-100 text-gray-500' : ''
+                    }`}
+                    placeholder="lbs"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* RPE Section - IMPROVED HEADER */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Effort Level - RPE</h4>
+              <span className="text-lg font-bold text-blue-600">{formData.rpe}/10</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={formData.rpe}
+              onChange={(e) => setFormData(prev => ({ ...prev, rpe: parseInt(e.target.value) }))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mb-2"
+            />
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>1 - Very Easy</span>
+              <span>5 - Moderate</span>
+              <span>10 - Max Effort</span>
+            </div>
+          </div>
+
+          {/* Quality Section - CONSISTENT BUTTON SIZING */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Quality</h4>
+            <div className="grid grid-cols-4 gap-2">
+              {['A', 'B', 'C', 'D'].map((grade) => (
+                <QualityButton
+                  key={grade}
+                  grade={grade}
+                  isSelected={formData.quality === grade}
+                  onClick={() => setFormData(prev => ({ 
+                    ...prev, 
+                    quality: prev.quality === grade ? '' : grade 
+                  }))}
+                />
+              ))}
+            </div>
+          </div>
+          
+          {/* Notes Section - REMOVED PLACEHOLDER TEXT */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Notes</h4>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              rows={3}
+              placeholder=""
+            />
+          </div>
+
+          {/* Submit Section */}
+          <div className="pt-2">
+            <button
+              onClick={handleDetailedSubmit}
+              className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-base shadow-sm"
+            >
+              Mark Exercise Complete
+            </button>
+          </div>
+        </div>
+      )}
+
+{/* SECTION 4: Completed State (when expanded and completed) - SIMPLIFIED */}
+{isExpanded && isCompleted && (
+  <div className="px-6 pb-6">
+    <div className="text-center py-4">
+      <p className="text-gray-600 text-sm">Exercise completed - click to collapse</p>
+    </div>
+  </div>
+)}
+
+      {/* Custom CSS for the slider */}
+      <style jsx>{`
+        input[type="range"]::-webkit-slider-thumb {
+          appearance: none;
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          border: none;
+        }
+      `}</style>
+    </div>
+  )
+}
+
+
+function MetConCard({ 
+  metconData, 
+  onComplete 
+}: { 
+  metconData?: {
+    id: number
+    workoutId: string
+    workoutFormat: string
+    workoutNotes: string
+    timeRange: string
+    tasks: Array<{
+      reps: string
+      exercise: string
+      weight_male: string
+      weight_female: string
+    }>
+    percentileGuidance: {
+      male: { excellentScore: string, medianScore: string }
+      female: { excellentScore: string, medianScore: string }
+    }
+    rxWeights: { male: string, female: string }
+  }
+  onComplete: (workoutScore: string, taskCompletions: {exerciseName: string, rpe: number, quality: string}[]) => void
+}) {
+  const [isExpanded, setIsExpanded] = useState(true)
+  const [isCompleted, setIsCompleted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  
+  const [workoutScore, setWorkoutScore] = useState('')
+  const [taskRPEs, setTaskRPEs] = useState<{[key: string]: number}>({})
+  const [taskQualities, setTaskQualities] = useState<{[key: string]: string}>({})
+  const [notes, setNotes] = useState('')
+  const [gender, setGender] = useState<'male' | 'female'>('male')
+
+  const handleTaskRPE = (exerciseName: string, rpe: number) => {
+    setTaskRPEs(prev => ({...prev, [exerciseName]: rpe}))
+  }
+
+  const handleTaskQuality = (exerciseName: string, quality: string) => {
+    setTaskQualities(prev => ({...prev, [exerciseName]: quality}))
+  }
+
+  const handleSubmit = async () => {
+    if (!workoutScore.trim()) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      const taskCompletions = metconData?.tasks.map(task => ({
+        exerciseName: task.exercise,
+        rpe: taskRPEs[task.exercise] || 5,
+        quality: taskQualities[task.exercise] || 'C'
+      })) || []
+      
+      await onComplete(workoutScore, taskCompletions)
+      
+      setIsCompleted(true)
+      setIsExpanded(false)
+      setShowSuccess(true)
+      
+      setTimeout(() => setShowSuccess(false), 3000)
+      
+    } catch (error) {
+      console.error('Error submitting MetCon:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Quality Button Component (matching ExerciseCard)
+  const QualityButton = ({ grade, isSelected, onClick }: { grade: string, isSelected: boolean, onClick: () => void }) => {
+    const getButtonStyle = () => {
+      const baseStyle = "flex-1 py-2 rounded-lg font-semibold text-xs transition-all duration-200 border-2 min-w-0"
+      
+      if (isSelected) {
+        switch (grade) {
+          case 'A': return `${baseStyle} bg-green-500 text-white border-green-500 shadow-md`
+          case 'B': return `${baseStyle} bg-blue-500 text-white border-blue-500 shadow-md`
+          case 'C': return `${baseStyle} bg-yellow-500 text-white border-yellow-500 shadow-md`
+          case 'D': return `${baseStyle} bg-red-500 text-white border-red-500 shadow-md`
+          default: return `${baseStyle} bg-gray-500 text-white border-gray-500`
+        }
+      } else {
+        return `${baseStyle} bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50`
+      }
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={getButtonStyle()}
+      >
+        <div className="text-center">
+          <div className="text-sm font-bold">{grade}</div>
+        </div>
+      </button>
+    )
+  }
+
+  if (!metconData) return null
+
+  const currentBenchmarks = metconData.percentileGuidance[gender]
+  const currentRxWeight = metconData.rxWeights[gender]
+
+  return (
+    <div className={`rounded-lg border-2 transition-all ${
+      isCompleted 
+        ? 'bg-green-50 border-green-200' 
+        : 'bg-orange-50 border-orange-200'
+    }`}>
+      {/* Success Message */}
+      {showSuccess && (
+        <div className="bg-green-500 text-white p-3 rounded-t-lg text-center font-medium">
+          ✅ MetCon completion logged successfully!
+        </div>
+      )}
+      
+      {/* STICKY CONTEXT BAR - Shows when form is expanded and not completed */}
+      {isExpanded && !isCompleted && (
+        <div className="sticky top-0 z-10 bg-orange-600 text-white px-4 py-2 rounded-t-lg">
+          <div className="text-sm font-medium">
+            {metconData.workoutId}
+          </div>
+        </div>
+      )}
+      
+      <div className="p-6">
+        {/* Workout Header */}
+        <div className="text-center mb-6">
+          {/* Show completion checkmark when completed */}
+          {isCompleted && (
+            <div className="flex items-center justify-center space-x-3 mb-3">
+              <span className="text-green-600 text-xl">✅</span>
+              <span className="text-gray-600 font-medium">MetCon Completed</span>
+            </div>
+          )}
+          
+          {/* Workout Notes */}
+          {metconData.workoutNotes && (
+            <div className="bg-orange-100 border-l-4 border-orange-400 p-4 rounded-r-lg mb-4">
+              <p className="text-orange-800 text-sm leading-relaxed font-medium">{metconData.workoutNotes}</p>
+            </div>
+          )}
+          
+          {/* Gender Selection - Only show if not completed */}
+          {!isCompleted && (
+            <div className="flex justify-center mb-4">
+              <div className="grid grid-cols-2 bg-white rounded-lg p-1 border gap-1">
+                <button
+                  onClick={() => setGender('male')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    gender === 'male' 
+                      ? 'bg-blue-500 text-white shadow-sm' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Male
+                </button>
+                <button
+                  onClick={() => setGender('female')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    gender === 'female' 
+                      ? 'bg-blue-500 text-white shadow-sm' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Female
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Consistent Benchmarks - All Gray */}
+          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mb-6">
+            <div className="bg-white rounded-lg p-3 border border-gray-200">
+              <div className="text-xs text-gray-600 font-medium">Excellent</div>
+              <div className="font-bold text-gray-900">{currentBenchmarks.excellentScore}</div>
+            </div>
+            <div className="bg-white rounded-lg p-3 border border-gray-200">
+              <div className="text-xs text-gray-600 font-medium">Median</div>
+              <div className="font-bold text-gray-900">{currentBenchmarks.medianScore}</div>
+            </div>
+            <div className="bg-white rounded-lg p-3 border border-gray-200">
+              <div className="text-xs text-gray-600 font-medium">Rx Weight</div>
+              <div className="font-bold text-gray-900">{currentRxWeight}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Form Content */}
+        {isExpanded && !isCompleted && (
+          <>
+            {/* Tasks Section - Improved */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Exercise Performance</h4>
+              <div className="space-y-4">
+                {metconData.tasks.map((task, index) => (
+                  <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
+                    {/* Exercise Header */}
+                    <div className="mb-3">
+                      <h4 className="font-semibold text-gray-900">{task.exercise}</h4>
+                      <p className="text-sm text-gray-600">
+                        {task.reps} reps {task.weight_male && `@ ${gender === 'male' ? task.weight_male : task.weight_female} lbs`}
+                      </p>
+                    </div>
+                    
+                    {/* RPE and Quality - Side by Side */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* RPE Slider Section */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-xs font-medium text-gray-700">RPE</label>
+                          <span className="text-sm font-bold text-blue-600">
+                            {taskRPEs[task.exercise] || 5}/10
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={taskRPEs[task.exercise] || 5}
+                          onChange={(e) => handleTaskRPE(task.exercise, parseInt(e.target.value))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          disabled={isSubmitting}
+                        />
                       </div>
                       
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Overall Progress</span>
-                        <span className="font-semibold">
-                          {Object.values(completionStatus).filter(c => c.isFullyComplete).length}/
-                          {Object.keys(completionStatus).length} days
-                        </span>
+                      {/* Quality Buttons Section */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2">Quality</label>
+                        <div className="grid grid-cols-4 gap-1">
+                          {['A', 'B', 'C', 'D'].map((grade) => (
+                            <QualityButton
+                              key={grade}
+                              grade={grade}
+                              isSelected={taskQualities[task.exercise] === grade}
+                              onClick={() => handleTaskQuality(task.exercise, 
+                                taskQualities[task.exercise] === grade ? 'C' : grade
+                              )}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    </>
-                  )}
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Main Focus</span>
-                    <span className="font-semibold">{todaysWorkout.mainLift}</span>
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full" 
-                      style={{ width: `${(currentWeek / 12) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* Action Cards */}
-            <div className="grid md:grid-cols-3 gap-4">
-              <Link
-                href="/dashboard/progress"
-                className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-              >
-                <div className="text-3xl mb-2">📊</div>
-                <h3 className="font-semibold text-gray-900 mb-1">View Progress</h3>
-                <p className="text-gray-600 text-sm">See your strength gains and improvements</p>
-              </Link>
-
-              <Link
-                href="/dashboard/program"
-                className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-              >
-                <div className="text-3xl mb-2">📅</div>
-                <h3 className="font-semibold text-gray-900 mb-1">Full Program</h3>
-                <p className="text-gray-600 text-sm">Browse your complete 12-week plan</p>
-              </Link>
-
-              <Link
-                href="/dashboard/settings"
-                className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-              >
-                <div className="text-3xl mb-2">⚙️</div>
-                <h3 className="font-semibold text-gray-900 mb-1">Settings</h3>
-                <p className="text-gray-600 text-sm">Update 1RMs and preferences</p>
-              </Link>
+            {/* Overall Score Section */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Your Score</h4>
+              <input
+                type="text"
+                placeholder="e.g., 674 total reps, 12:34, 8 rounds + 15"
+                value={workoutScore}
+                onChange={(e) => setWorkoutScore(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-3"
+                disabled={isSubmitting}
+              />
             </div>
+
+            {/* Notes Section */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Notes</h4>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                rows={3}
+                disabled={isSubmitting}
+                placeholder=""
+              />
+            </div>
+
+            {/* Submit Button */}
+            <button
+              onClick={handleSubmit}
+              disabled={!workoutScore.trim() || isSubmitting}
+              className="w-full bg-orange-600 text-white py-4 px-4 rounded-lg hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center font-semibold text-base"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Logging MetCon...
+                </>
+              ) : (
+                'Mark MetCon Complete'
+              )}
+            </button>
           </>
         )}
-      </main>
+
+        {/* Completed State */}
+        {isCompleted && (
+          <div className="text-center py-4">
+            <div className="text-green-600 text-4xl mb-2">🎉</div>
+            <p className="text-gray-700 font-medium">MetCon completed!</p>
+            <p className="text-sm text-gray-600">Your score: {workoutScore}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Custom CSS for sliders */}
+      <style jsx>{`
+        input[type="range"]::-webkit-slider-thumb {
+          appearance: none;
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          border: none;
+        }
+      `}</style>
     </div>
   )
 }
