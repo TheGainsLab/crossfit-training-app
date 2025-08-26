@@ -318,8 +318,8 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
   }
 
   const getBlockColor = (blockName: string) => {
-    // All blocks use ice blue background with slate blue border
-    return 'bg-ice-blue border-slate-blue'
+    // All blocks use light slate blue background with slate blue border
+    return 'bg-slate-blue border-slate-blue'
   }
 
 const getBlockStatusIcon = (blockName: string, exercises: Exercise[], completions: Record<string, Completion>) => {
