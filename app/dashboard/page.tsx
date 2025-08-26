@@ -318,14 +318,8 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
   }
 
   const getBlockColor = (blockName: string) => {
-    switch (blockName) {
-      case 'SKILLS': return 'bg-purple-50 border-purple-200'
-      case 'TECHNICAL WORK': return 'bg-blue-50 border-blue-200'
-      case 'STRENGTH AND POWER': return 'bg-red-50 border-red-200'
-      case 'ACCESSORIES': return 'bg-green-50 border-green-200'
-      case 'METCONS': return 'bg-orange-50 border-orange-200'
-      default: return 'bg-gray-50 border-gray-200'
-    }
+    // All blocks use ice blue background with slate blue border
+    return 'bg-[#F8FBFE] border-[#DAE2EA]'
   }
 
 const getBlockStatusIcon = (blockName: string, exercises: Exercise[], completions: Record<string, Completion>) => {
@@ -428,7 +422,7 @@ const calculateProgress = () => {
     <div className="min-h-screen bg-gray-50">
       
       {/* Header - Optimized for Mobile */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+      <header className="bg-[#F8FBFE] shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           {/* Desktop Layout */}
           <div className="hidden sm:flex items-center justify-between">
@@ -438,10 +432,10 @@ const calculateProgress = () => {
                 className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
               >
                 <span>←</span>
-                <span>Dashboard</span>
+                <span className="text-[#282B34]">Dashboard</span>
               </Link>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">
+                <h1 className="text-xl font-bold text-[#282B34]">
                   Week {workout.week}, Day {workout.day}
                 </h1>
                 {workout.isDeload && (
@@ -450,14 +444,14 @@ const calculateProgress = () => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-600">Progress</span>
+              <span className="text-sm text-[#282B34]">Progress</span>
               <div className="w-24 bg-gray-200 rounded-full h-2">
                 <div 
-                  className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                  className="bg-[#FE5858] h-2 rounded-full transition-all duration-300" 
                   style={{ width: `${progress}%` }}
                 ></div>
               </div>
-              <span className="text-sm font-medium text-gray-900">{Math.round(progress)}%</span>
+              <span className="text-sm font-medium text-[#282B34]">{Math.round(progress)}%</span>
             </div>
           </div>
 
@@ -470,22 +464,22 @@ const calculateProgress = () => {
                 className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors -ml-3"
               >
                 <span>←</span>
-                <span className="font-medium">Dashboard</span>
+                <span className="font-medium text-[#282B34]">Dashboard</span>
               </Link>
               <div className="flex items-center space-x-2">
                 <div className="w-16 bg-gray-200 rounded-full h-2">
                   <div 
-                    className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                    className="bg-[#FE5858] h-2 rounded-full transition-all duration-300" 
                     style={{ width: `${progress}%` }}
                   ></div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{Math.round(progress)}%</span>
+                <span className="text-sm font-medium text-[#282B34]">{Math.round(progress)}%</span>
               </div>
             </div>
             
 {/* Bottom Row: Week/Day info */}
 <div className="text-center">
-  <h1 className="text-lg font-bold text-gray-900">            
+  <h1 className="text-lg font-bold text-[#282B34]">            
     Week {workout.week}, Day {workout.day}
                 {workout.isDeload && (
                   <span className="ml-2 text-sm text-yellow-600">• Deload</span>
@@ -513,8 +507,8 @@ const calculateProgress = () => {
                     <span className="text-2xl">{getBlockStatusIcon(block.blockName, block.exercises, completions)}</span>
                   )}
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">{block.blockName}</h2>
-                    <p className="text-sm text-gray-600">
+                    <h2 className="text-xl font-bold text-[#282B34]">{block.blockName}</h2>
+                    <p className="text-sm text-[#282B34] opacity-70">
                       {block.exercises.length} exercise{block.exercises.length !== 1 ? 's' : ''}
                     </p>
                   </div>
