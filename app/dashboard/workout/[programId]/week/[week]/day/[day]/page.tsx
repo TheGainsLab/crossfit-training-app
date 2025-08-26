@@ -637,6 +637,7 @@ function ExerciseCard({
   onComplete: (completion: Partial<Completion>) => void
 }) {
   const [isExpanded, setIsExpanded] = useState(!completion)
+  const [showCues, setShowCues] = useState(false)
   const [formData, setFormData] = useState({
     setsCompleted: completion?.setsCompleted || '',
     repsCompleted: completion?.repsCompleted || '',
@@ -758,10 +759,27 @@ return (
           <div className="flex-1">
             {/* Exercise Title */}
             <div className="flex items-center space-x-3 mb-4">
-              <h3 className="text-xl font-bold text-gray-900">{exercise.name}</h3>
-              {isCompleted && <span className="text-green-600 text-xl">✅</span>}
+              <h3 className="text-xl font-bold text-charcoal">{exercise.name}</h3>
+              {exercise.notes && (
+                <button 
+                  onClick={() => setShowCues(!showCues)}
+                  className="w-6 h-6 bg-blue-500 text-white rounded-full text-xs flex items-center justify-center"
+                >
+                  i
+                </button>
+              )}
+              {isCompleted && <span className="text-coral text-xl">✅</span>}
             </div>
-            
+
+            {/* Expandable Performance Cues */}
+            {showCues && exercise.notes && (
+              <div className="mb-4">
+                <div className="bg-blue-50 rounded-lg p-3">
+                  <p className="text-blue-800 text-sm">{exercise.notes}</p>
+                </div>
+              </div>
+            )}
+
             {/* Exercise Specs - Clean Grid */}
             <div className="grid grid-cols-3 gap-6 text-sm">
               <div className="flex items-center space-x-2">
@@ -799,18 +817,6 @@ return (
           </div>
         </div>
       </button>
-
-      {/* SECTION 2: Exercise Notes (when expanded) */}
-      {isExpanded && exercise.notes && (
-        <div className="mx-6 mb-4">
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
-            <div className="flex items-start space-x-3">
-              <span className="text-blue-600 text-lg">💡</span>
-              <p className="text-blue-800 text-sm leading-relaxed">{exercise.notes}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* SECTION 3: Completion Form (when expanded and not completed) */}
       {isExpanded && !isCompleted && (
