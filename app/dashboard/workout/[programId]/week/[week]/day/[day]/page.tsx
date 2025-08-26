@@ -508,9 +508,6 @@ const calculateProgress = () => {
                   )}
                   <div>
                     <h2 className="text-xl font-bold text-charcoal">{block.blockName}</h2>
-                    <p className="text-sm text-charcoal opacity-70">
-                      {block.exercises.length} exercise{block.exercises.length !== 1 ? 's' : ''}
-                    </p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
