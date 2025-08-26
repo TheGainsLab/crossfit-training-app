@@ -989,16 +989,14 @@ return (
           )}
 
           {/* Submit Section */}
-          {completionType && (
-            <div className="pt-2">
-              <button
-                onClick={handleDetailedSubmit}
-                className="w-full bg-coral text-white py-4 px-6 rounded-lg hover:bg-coral/90 transition-colors font-semibold text-base shadow-sm"
-              >
-                Mark Exercise Complete
-              </button>
-            </div>
-          )}
+          <div className="pt-2">
+            <button
+              onClick={handleDetailedSubmit}
+              className="w-full bg-coral text-white py-4 px-6 rounded-lg hover:bg-coral/90 transition-colors font-semibold text-base shadow-sm"
+            >
+              Mark Exercise Complete
+            </button>
+          </div>
         </div>
       )}
 
