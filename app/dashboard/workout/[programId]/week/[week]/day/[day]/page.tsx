@@ -757,15 +757,6 @@ return (
     data-exercise={exercise.name}
   >
     
-      {/* STICKY CONTEXT BAR - Shows when form is expanded and not completed */}
-      {isExpanded && !isCompleted && (
-        <div className="sticky top-0 z-10 bg-blue-600 text-white px-4 py-2 rounded-t-xl">
-          <div className="text-sm font-medium">
-            {exercise.name}: {exercise.sets}×{exercise.reps} @ {exercise.weightTime || 'BW'}
-          </div>
-        </div>
-      )}
-      
       {/* SECTION 1: Exercise Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -834,7 +825,7 @@ return (
         </div>
       </button>
 
-      {/* SECTION 3: Completion Form (when expanded and not completed) */}
+      {/* SECTION 2: Completion Form (when expanded and not completed) */}
       {isExpanded && !isCompleted && (
         <div className="px-6 pb-6 space-y-3">
           
@@ -1000,7 +991,7 @@ return (
         </div>
       )}
 
-{/* SECTION 4: Completed State (when expanded and completed) - SIMPLIFIED */}
+{/* SECTION 3: Completed State (when expanded and completed) - SIMPLIFIED */}
 {isExpanded && isCompleted && (
   <div className="px-6 pb-6">
     <div className="text-center py-4">
@@ -1152,15 +1143,6 @@ function MetConCard({
       {showSuccess && (
         <div className="bg-green-500 text-white p-3 rounded-t-lg text-center font-medium">
           ✅ MetCon completion logged successfully!
-        </div>
-      )}
-      
-      {/* STICKY CONTEXT BAR - Shows when form is expanded and not completed */}
-      {isExpanded && !isCompleted && (
-        <div className="sticky top-0 z-10 bg-orange-600 text-white px-4 py-2 rounded-t-lg">
-          <div className="text-sm font-medium">
-            {metconData.workoutId}
-          </div>
         </div>
       )}
       
