@@ -638,6 +638,7 @@ function ExerciseCard({
 }) {
   const [isExpanded, setIsExpanded] = useState(!completion)
   const [showCues, setShowCues] = useState(false)
+  const [showNotes, setShowNotes] = useState(false)
   const [completionType, setCompletionType] = useState('')
   const [formData, setFormData] = useState({
     setsCompleted: completion?.setsCompleted || '',
@@ -956,29 +957,49 @@ return (
             </div>
           </div>
           
-          {/* Notes Section - REMOVED PLACEHOLDER TEXT */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Notes</h4>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              rows={3}
-              placeholder=""
-            />
-          </div>
-
-          {/* Submit Section */}
-          {completionType && (
-            <div className="pt-2">
+          {/* Notes Section - Collapsible */}
+          {!showNotes ? (
+            <div className="bg-gray-50 rounded-lg p-4">
               <button
-                onClick={handleDetailedSubmit}
-                className="w-full bg-coral text-white py-4 px-6 rounded-lg hover:bg-coral/90 transition-colors font-semibold text-base shadow-sm"
+                onClick={() => setShowNotes(true)}
+                className="text-sm font-semibold text-gray-700 uppercase tracking-wide hover:text-gray-900 transition-colors"
               >
-                Mark Exercise Complete
+                + Add Notes
               </button>
             </div>
+          ) : (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Notes</h4>
+                <button
+                  onClick={() => {
+                    setShowNotes(false)
+                    setFormData(prev => ({ ...prev, notes: '' }))
+                  }}
+                  className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Remove
+                </button>
+              </div>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                rows={3}
+                placeholder=""
+              />
+            </div>
           )}
+
+          {/* Submit Section */}
+          <div className="pt-2">
+            <button
+              onClick={handleDetailedSubmit}
+              className="w-full bg-coral text-white py-4 px-6 rounded-lg hover:bg-coral/90 transition-colors font-semibold text-base shadow-sm"
+            >
+              Mark Exercise Complete
+            </button>
+          </div>
         </div>
       )}
 
