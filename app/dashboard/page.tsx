@@ -4,30 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-} from 'chart.js'
-import { Bar, Doughnut } from 'react-chartjs-2'
 
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-)
-
-// Keep your existing interfaces
+// Keep your existing interface
 interface WorkoutSummary {
   programId: number
   week: number
@@ -39,233 +17,18 @@ interface WorkoutSummary {
   totalBlocks: number
 }
 
-interface DashboardAnalytics {
-  success: boolean;
-  data: {
-    dashboard: {
-      overallMetrics: any;
-      blockPerformance: any;
-      progressionTrends: any;
-      keyInsights: string[];
-    };
-  };
-  metadata: any;
+// ADD these new interfaces
+interface DayCompletion {
+  week: number
+  day: number
+  totalExercises: number
+  completedExercises: number
+  isFullyComplete: boolean
+  completionPercentage: number
 }
 
-// Training Blocks Visualization Component
-const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ analytics, blockData }) => {
-  if (!blockData?.data?.blockAnalysis?.blockSummaries) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-          <div className="space-y-2">
-            <div className="h-3 bg-gray-200 rounded"></div>
-            <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-            <div className="h-3 bg-gray-200 rounded w-4/6"></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const blockSummaries = blockData.data.blockAnalysis.blockSummaries
-  
-  if (blockSummaries.length === 0) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">🎯 Training Blocks</h3>
-        <p className="text-gray-600">Complete more exercises to see training block analytics!</p>
-      </div>
-    )
-  }
-
-  // Calculate totals
-  const totalExercises = blockSummaries.reduce((sum: number, block: any) => sum + block.exercisesCompleted, 0)
-  
-  // Prepare donut chart data
-  const donutChartData = {
-    labels: blockSummaries.map((block: any) => block.blockName),
-    datasets: [{
-      data: blockSummaries.map((block: any) => block.exercisesCompleted),
-      backgroundColor: [
-        '#3B82F6', // Blue - Strength
-        '#EF4444', // Red - Skills
-        '#F59E0B', // Orange - Accessories  
-        '#10B981', // Green - Technical
-        '#8B5CF6'  // Purple - MetCons
-      ],
-      borderColor: [
-        '#1D4ED8',
-        '#DC2626', 
-        '#D97706',
-        '#059669',
-        '#7C3AED'
-      ],
-      borderWidth: 2,
-      hoverBorderWidth: 3
-    }]
-  }
-
-  const donutChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom' as const,
-        labels: {
-          padding: 15,
-          usePointStyle: true,
-          font: {
-            size: 11
-          }
-        }
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context: any) {
-            const label = context.label || '';
-            const value = context.parsed;
-            const block = blockSummaries[context.dataIndex];
-            const percentage = block?.percentageOfTotal || 0;
-            return `${label}: ${value} exercises (${percentage}%)`;
-          }
-        }
-      }
-    }
-  }
-
-  // Prepare RPE bar chart
-  const rpeChartData = {
-    labels: blockSummaries.filter((block: any) => block.avgRPE !== null).map((block: any) => block.blockName),
-    datasets: [{
-      label: 'Average RPE',
-      data: blockSummaries.filter((block: any) => block.avgRPE !== null).map((block: any) => block.avgRPE),
-      backgroundColor: 'rgba(59, 130, 246, 0.6)',
-      borderColor: 'rgba(59, 130, 246, 1)',
-      borderWidth: 1
-    }]
-  }
-
-  const rpeChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        max: 10,
-        title: {
-          display: true,
-          text: 'RPE (1-10)'
-        }
-      }
-    }
-  }
-
-  // Helper functions
-  const getTrendIcon = (trend: string): string => {
-    switch (trend) {
-      case 'improving': return '↗️'
-      case 'declining': return '↘️'
-      default: return '➡️'
-    }
-  }
-
-  const formatLastActive = (weeksActive: number): string => {
-    if (weeksActive === 0) return 'No activity'
-    if (weeksActive === 1) return 'This week'
-    return `${weeksActive} weeks active`
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Donut Chart and RPE Chart */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Exercise Distribution Donut Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">🎯 Training Block Distribution</h3>
-          <div className="h-64">
-            <Doughnut data={donutChartData} options={donutChartOptions} />
-          </div>
-        </div>
-
-        {/* RPE Comparison Bar Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">💪 Average RPE by Block</h3>
-          <div className="h-64">
-            <Bar data={rpeChartData} options={rpeChartOptions} />
-          </div>
-        </div>
-      </div>
-
-      {/* Block Performance Cards */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-gray-900 mb-6">Block Performance Details</h3>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {blockSummaries.map((block: any) => (
-            <div key={block.blockName} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-900">{block.blockName}</h4>
-                <div className="text-2xl font-bold text-blue-600">{block.exercisesCompleted}</div>
-              </div>
-              
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Volume:</span>
-                  <span className="font-medium">{block.percentageOfTotal}% of total</span>
-                </div>
-                
-                {block.avgRPE && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Avg RPE:</span>
-                    <span className="font-medium">{block.avgRPE}/10 {getTrendIcon(block.rpeTrend)}</span>
-                  </div>
-                )}
-                
-                {block.avgQuality && !block.qualityGrade.includes('%ile') && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Avg Quality:</span>
-                    <span className="font-medium">{block.qualityGrade} {getTrendIcon(block.qualityTrend)}</span>
-                  </div>
-                )}
-
-                {block.qualityGrade.includes('%ile') && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Performance:</span>
-                    <span className="font-medium">{block.qualityGrade} {getTrendIcon(block.qualityTrend)}</span>
-                  </div>
-                )}
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Activity:</span>
-                  <span className="font-medium">{formatLastActive(block.weeksActive)}</span>
-                </div>
-              </div>
-
-              {/* Quality Grade Badge */}
-              {block.qualityGrade !== 'N/A' && !block.qualityGrade.includes('%ile') && (
-                <div className="mt-3">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    block.qualityGrade.startsWith('A') ? 'bg-green-100 text-green-800' :
-                    block.qualityGrade.startsWith('B') ? 'bg-blue-100 text-blue-800' :
-                    block.qualityGrade.startsWith('C') ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    Quality: {block.qualityGrade}
-                  </span>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
+interface CompletionMap {
+  [key: string]: DayCompletion // key format: "week-day"
 }
 
 export default function DashboardPage() {
@@ -277,9 +40,8 @@ export default function DashboardPage() {
   const [currentDay, setCurrentDay] = useState(1)
   const [user, setUser] = useState<User | null>(null)
   const [userId, setUserId] = useState<number | null>(null)
-  const [dashboardAnalytics, setDashboardAnalytics] = useState<DashboardAnalytics | null>(null)
-  const [blockData, setBlockData] = useState<any>(null)
-  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [completionStatus, setCompletionStatus] = useState<CompletionMap>({})
+  const [completionLoading, setCompletionLoading] = useState(false)
 
   useEffect(() => {
     loadUserAndProgram()
@@ -291,41 +53,100 @@ export default function DashboardPage() {
     }
   }, [currentProgram, currentWeek, currentDay])
 
+  // ADD this new useEffect
   useEffect(() => {
-    if (userId && currentProgram) {
-      fetchAnalytics()
+    if (currentProgram && userId) {
+      fetchCompletionData()
     }
-  }, [userId, currentProgram])
+  }, [currentProgram, userId])
 
-  const fetchAnalytics = async () => {
-    if (!userId) return
-    
-    setAnalyticsLoading(true)
+  // Completion tracking functions
+  const fetchCompletionStatus = async (programId: number, userId: number): Promise<CompletionMap> => {
     try {
-      // Fetch both dashboard and block analytics
-      const [dashboardRes, blockRes] = await Promise.allSettled([
-        fetch(`/api/analytics/${userId}/dashboard`),
-        fetch(`/api/analytics/${userId}/block-analyzer`)
-      ])
+      const supabase = createClient()
+      
+      // Get completed exercises from performance_logs
+      const { data: completedLogs, error: logsError } = await supabase
+        .from('performance_logs')
+        .select('week, day, block, exercise_name, set_number')
+        .eq('program_id', programId)
+        .eq('user_id', userId)
 
-      // Process Dashboard Data
-      if (dashboardRes.status === 'fulfilled' && dashboardRes.value.ok) {
-        const data = await dashboardRes.value.json()
-        setDashboardAnalytics(data)
+      if (logsError) {
+        console.error('Error fetching performance logs:', logsError)
+        return {}
       }
 
-      // Process Block Analytics
-      if (blockRes.status === 'fulfilled' && blockRes.value.ok) {
-        const data = await blockRes.value.json()
-        setBlockData(data)
+      // Get program structure to count total exercises
+      const { data: programData, error: programError } = await supabase
+        .from('programs')
+        .select('program_data')
+        .eq('id', programId)
+        .single()
+
+      if (programError || !programData) {
+        console.error('Error fetching program data:', programError)
+        return {}
       }
 
+      // Count completed exercises per day
+      const completedByDay: { [key: string]: Set<string> } = {}
+      
+      completedLogs?.forEach(log => {
+        const dayKey = `${log.week}-${log.day}`
+        if (!completedByDay[dayKey]) {
+          completedByDay[dayKey] = new Set()
+        }
+        // Create unique exercise identifier
+        const exerciseKey = `${log.block}-${log.exercise_name}-${log.set_number}`
+        completedByDay[dayKey].add(exerciseKey)
+      })
+
+      // Count total exercises per day from program structure
+      const completionMap: CompletionMap = {}
+      
+      programData.program_data.weeks.forEach((week: any) => {
+        week.days.forEach((day: any) => {
+          const dayKey = `${week.week}-${day.day}`
+          
+          // Count total exercises across all blocks
+          let totalExercises = 0
+          day.blocks.forEach((block: any) => {
+            totalExercises += block.exercises.length
+          })
+
+          // Get completed count
+          const completedCount = completedByDay[dayKey]?.size || 0
+          
+          completionMap[dayKey] = {
+            week: week.week,
+            day: day.day,
+            totalExercises,
+            completedExercises: completedCount,
+            isFullyComplete: completedCount === totalExercises && totalExercises > 0,
+            completionPercentage: totalExercises > 0 ? Math.round((completedCount / totalExercises) * 100) : 0
+          }
+        })
+      })
+
+      return completionMap
     } catch (error) {
-      console.error('Error fetching dashboard analytics:', error)
-      setDashboardAnalytics(null)
-      setBlockData(null)
+      console.error('Error in fetchCompletionStatus:', error)
+      return {}
+    }
+  }
+
+  const fetchCompletionData = async () => {
+    if (!currentProgram || !userId) return
+    
+    setCompletionLoading(true)
+    try {
+      const completion = await fetchCompletionStatus(currentProgram, userId)
+      setCompletionStatus(completion)
+    } catch (error) {
+      console.error('Error fetching completion status:', error)
     } finally {
-      setAnalyticsLoading(false)
+      setCompletionLoading(false)
     }
   }
 
@@ -371,6 +192,8 @@ export default function DashboardPage() {
       }
 
       setCurrentProgram(programData.id)
+
+      // Default to Week 1, Day 1
       setCurrentWeek(1)
       setCurrentDay(1)
     } catch (err) {
@@ -378,6 +201,27 @@ export default function DashboardPage() {
       setError('Failed to load program data')
       setLoading(false)
     }
+  }
+
+  // Add the DayCompletionBadge component
+  const DayCompletionBadge: React.FC<{ completion: DayCompletion }> = ({ completion }) => {
+    if (completion.isFullyComplete) {
+      return (
+        <div className="flex items-center justify-center w-6 h-6 bg-green-500 text-white rounded-full text-xs font-bold">
+          ✓
+        </div>
+      )
+    }
+    
+    if (completion.completedExercises > 0) {
+      return (
+        <div className="flex items-center justify-center px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+          {completion.completedExercises}/{completion.totalExercises}
+        </div>
+      )
+    }
+    
+    return null // No badge for untouched days
   }
 
   const fetchTodaysWorkout = async () => {
@@ -478,39 +322,7 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Training Blocks Visualization Section */}
-        <div className="mb-8">
-          {analyticsLoading ? (
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                <div className="space-y-2">
-                  <div className="h-3 bg-gray-200 rounded"></div>
-                  <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-                  <div className="h-3 bg-gray-200 rounded w-4/6"></div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <TrainingBlocksWidget analytics={dashboardAnalytics} blockData={blockData} />
-          )}
-
-          {/* View Progress Link */}
-          <div className="text-center mt-6">
-            <Link
-              href="/dashboard/progress"
-              className="inline-flex items-center px-6 py-3 bg-white rounded-lg shadow hover:shadow-lg transition-shadow border border-gray-200"
-            >
-              <span className="text-2xl mr-3">📊</span>
-              <div className="text-left">
-                <div className="font-semibold text-gray-900">View Detailed Analytics</div>
-                <div className="text-sm text-gray-600">Skills progress, strength analysis & conditioning insights</div>
-              </div>
-            </Link>
-          </div>
-        </div>
-        
-        {todaysWorkout && (     
+        {todaysWorkout && (
           <>
             {/* Today's Workout Card */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
@@ -533,6 +345,29 @@ export default function DashboardPage() {
               </div>
               
               <div className="p-6">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl mb-1">🎯</div>
+                    <p className="text-sm text-gray-600">Skills</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl mb-1">🔧</div>
+                    <p className="text-sm text-gray-600">Technical</p>
+                  </div>
+                  <div className="text-center p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
+                    <div className="text-2xl mb-1">💪</div>
+                    <p className="text-sm text-blue-600 font-medium">Strength</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl mb-1">🔨</div>
+                    <p className="text-sm text-gray-600">Accessories</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl mb-1">🔥</div>
+                    <p className="text-sm text-gray-600">MetCon</p>
+                  </div>
+                </div>
+
                 <Link
                   href={`/dashboard/workout/${currentProgram}/week/${currentWeek}/day/${currentDay}`}
                   className="block w-full bg-blue-600 text-white text-center py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors"
@@ -542,8 +377,105 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Bottom Navigation */}
-            <div className="grid md:grid-cols-2 gap-6">
+            {/* Quick Navigation */}
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              {/* Week Navigation - UPDATED WITH COMPLETION BADGES */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="font-semibold text-gray-900 mb-4">This Week's Training</h3>
+                <div className="space-y-2">
+                  {[1, 2, 3, 4, 5].map(day => {
+                    const dayKey = `${currentWeek}-${day}`
+                    const dayCompletion = completionStatus[dayKey]
+                    
+                    return (
+                      <Link
+                        key={day}
+                        href={`/dashboard/workout/${currentProgram}/week/${currentWeek}/day/${day}`}
+                        className={`block p-3 rounded-lg border transition-colors ${
+                          day === currentDay 
+                            ? 'bg-blue-50 border-blue-200 text-blue-700' 
+                            : 'hover:bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center space-x-3">
+                            <span className="font-medium">Day {day}</span>
+                            {day === currentDay && <span className="text-sm text-blue-600">← Today</span>}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {dayCompletion && <DayCompletionBadge completion={dayCompletion} />}
+                            {completionLoading && (
+                              <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Quick Stats - UPDATED WITH COMPLETION STATS */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="font-semibold text-gray-900 mb-4">Quick Stats</h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Current Program</span>
+                    <span className="font-semibold">#{currentProgram}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Week Progress</span>
+                    <span className="font-semibold">{currentWeek} of 12</span>
+                  </div>
+                  
+                  {/* Add completion progress */}
+                  {Object.keys(completionStatus).length > 0 && (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">This Week</span>
+                        <span className="font-semibold">
+                          {[1,2,3,4,5].filter(day => {
+                            const dayKey = `${currentWeek}-${day}`
+                            return completionStatus[dayKey]?.isFullyComplete
+                          }).length}/5 days complete
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Overall Progress</span>
+                        <span className="font-semibold">
+                          {Object.values(completionStatus).filter(c => c.isFullyComplete).length}/
+                          {Object.keys(completionStatus).length} days
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Main Focus</span>
+                    <span className="font-semibold">{todaysWorkout.mainLift}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full" 
+                      style={{ width: `${(currentWeek / 12) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Cards */}
+            <div className="grid md:grid-cols-3 gap-4">
+              <Link
+                href="/dashboard/progress"
+                className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+              >
+                <div className="text-3xl mb-2">📊</div>
+                <h3 className="font-semibold text-gray-900 mb-1">View Progress</h3>
+                <p className="text-gray-600 text-sm">See your strength gains and improvements</p>
+              </Link>
+
               <Link
                 href="/dashboard/program"
                 className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
