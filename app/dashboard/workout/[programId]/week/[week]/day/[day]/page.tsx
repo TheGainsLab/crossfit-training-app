@@ -638,14 +638,14 @@ function ExerciseCard({
 }) {
   const [isExpanded, setIsExpanded] = useState(!completion)
   const [showCues, setShowCues] = useState(false)
+  const [completionType, setCompletionType] = useState('')
   const [formData, setFormData] = useState({
     setsCompleted: completion?.setsCompleted || '',
     repsCompleted: completion?.repsCompleted || '',
     weightUsed: completion?.weightUsed || '',
     rpe: completion?.rpe || 7,
     quality: completion?.quality || '',
-    notes: completion?.notes || '',
-    asRx: completion?.wasRx || false
+    notes: completion?.notes || ''
   })
 
   const isCompleted = completion !== undefined
@@ -656,16 +656,34 @@ const handleDetailedSubmit = () => {
                             document.querySelector(`[data-exercise="${exercise.name}"]`)
   const nextCardElement = currentCardElement?.nextElementSibling
   
+  let completionData
+  
+  if (completionType === 'asRx') {
+    // Use prescribed values for As Rx completion
+    completionData = {
+      setsCompleted: parseInt(exercise.sets.toString()),
+      repsCompleted: exercise.reps.toString(),
+      weightUsed: exercise.weightTime !== 'BW' ? parseFloat(exercise.weightTime) : undefined,
+      rpe: formData.rpe,
+      quality: formData.quality || undefined,
+      notes: formData.notes.toString(),
+      wasRx: true
+    }
+  } else {
+    // Use custom values for Modified completion
+    completionData = {
+      setsCompleted: formData.setsCompleted ? parseInt(formData.setsCompleted.toString()) : undefined,
+      repsCompleted: formData.repsCompleted.toString(),
+      weightUsed: formData.weightUsed ? parseFloat(formData.weightUsed.toString()) : undefined,
+      rpe: formData.rpe,
+      quality: formData.quality || undefined,
+      notes: formData.notes.toString(),
+      wasRx: false
+    }
+  }
+  
   // Complete the exercise
-  onComplete({
-    setsCompleted: formData.setsCompleted ? parseInt(formData.setsCompleted.toString()) : undefined,
-    repsCompleted: formData.repsCompleted.toString(),
-    weightUsed: formData.weightUsed ? parseFloat(formData.weightUsed.toString()) : undefined,
-    rpe: formData.rpe,
-    quality: formData.quality || undefined,
-    notes: formData.notes.toString(),
-    wasRx: formData.asRx
-  })
+  onComplete(completionData)
   
   // Collapse the exercise
   setIsExpanded(false)
@@ -822,81 +840,82 @@ return (
       {isExpanded && !isCompleted && (
         <div className="px-6 pb-6 space-y-4">
           
-          {/* Performance Inputs Section - IMPROVED */}
+          {/* Completion Type Selection */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Performance</h4>
-            
-            {/* As Rx Checkbox */}
-            <div className="mb-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Completion Type</h4>
+            <div className="space-y-3">
               <label className="flex items-center space-x-3 cursor-pointer">
                 <input
-                  type="checkbox"
-                  checked={formData.asRx}
-                  onChange={(e) => {
-                    const isChecked = e.target.checked
-                    setFormData(prev => ({
-                      ...prev,
-                      asRx: isChecked,
-                      // Auto-fill with prescribed values when checked
-                      setsCompleted: isChecked ? exercise.sets : prev.setsCompleted,
-                      repsCompleted: isChecked ? exercise.reps.toString() : prev.repsCompleted,
-                      weightUsed: isChecked && exercise.weightTime !== 'BW' ? exercise.weightTime : prev.weightUsed
-                    }))
-                  }}
-                  className="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  type="radio"
+                  name="completionType"
+                  value="asRx"
+                  checked={completionType === 'asRx'}
+                  onChange={(e) => setCompletionType(e.target.value)}
+                  className="w-4 h-4 text-blue-600 border-2 border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
                 <span className="text-base font-medium text-gray-700">
-                  Completed as prescribed (As Rx)
+                  Completed As Prescribed (As Rx)
+                </span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="completionType"
+                  value="modified"
+                  checked={completionType === 'modified'}
+                  onChange={(e) => setCompletionType(e.target.value)}
+                  className="w-4 h-4 text-blue-600 border-2 border-gray-300 focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-base font-medium text-gray-700">
+                  Modified Workout
                 </span>
               </label>
             </div>
+          </div>
 
-            {/* HORIZONTAL LAYOUT - Even on Mobile */}
-            <div className={`grid gap-3 ${exercise.weightTime === 'BW' ? 'grid-cols-2' : 'grid-cols-3'}`}>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Sets</label>
-                <input
-                  type="number"
-                  value={formData.setsCompleted}
-                  onChange={(e) => setFormData(prev => ({ ...prev, setsCompleted: e.target.value, asRx: false }))}
-                  disabled={formData.asRx}
-                  className={`w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    formData.asRx ? 'bg-gray-100 text-gray-500' : ''
-                  }`}
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Reps</label>
-                <input
-                  type="text"
-                  value={formData.repsCompleted}
-                  onChange={(e) => setFormData(prev => ({ ...prev, repsCompleted: e.target.value, asRx: false }))}
-                  disabled={formData.asRx}
-                  className={`w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    formData.asRx ? 'bg-gray-100 text-gray-500' : ''
-                  }`}
-                  placeholder="0"
-                />
-              </div>
-              {exercise.weightTime !== 'BW' && (
+          {/* Performance Inputs Section - Only show for Modified */}
+          {completionType === 'modified' && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Performance</h4>
+              
+              {/* HORIZONTAL LAYOUT - Even on Mobile */}
+              <div className={`grid gap-3 ${exercise.weightTime === 'BW' ? 'grid-cols-2' : 'grid-cols-3'}`}>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Weight</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Sets</label>
                   <input
                     type="number"
-                    step="0.1"
-                    value={formData.weightUsed}
-                    onChange={(e) => setFormData(prev => ({ ...prev, weightUsed: e.target.value, asRx: false }))}
-                    disabled={formData.asRx}
-                    className={`w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      formData.asRx ? 'bg-gray-100 text-gray-500' : ''
-                    }`}
-                    placeholder="lbs"
+                    value={formData.setsCompleted}
+                    onChange={(e) => setFormData(prev => ({ ...prev, setsCompleted: e.target.value }))}
+                    className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="0"
                   />
                 </div>
-              )}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Reps</label>
+                  <input
+                    type="text"
+                    value={formData.repsCompleted}
+                    onChange={(e) => setFormData(prev => ({ ...prev, repsCompleted: e.target.value }))}
+                    className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="0"
+                  />
+                </div>
+                {exercise.weightTime !== 'BW' && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Weight</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={formData.weightUsed}
+                      onChange={(e) => setFormData(prev => ({ ...prev, weightUsed: e.target.value }))}
+                      className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="lbs"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* RPE Section - IMPROVED HEADER */}
           <div className="bg-gray-50 rounded-lg p-4">
@@ -950,14 +969,16 @@ return (
           </div>
 
           {/* Submit Section */}
-          <div className="pt-2">
-            <button
-              onClick={handleDetailedSubmit}
-              className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-base shadow-sm"
-            >
-              Mark Exercise Complete
-            </button>
-          </div>
+          {completionType && (
+            <div className="pt-2">
+              <button
+                onClick={handleDetailedSubmit}
+                className="w-full bg-coral text-white py-4 px-6 rounded-lg hover:bg-coral/90 transition-colors font-semibold text-base shadow-sm"
+              >
+                Mark Exercise Complete
+              </button>
+            </div>
+          )}
         </div>
       )}
 
