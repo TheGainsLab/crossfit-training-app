@@ -836,7 +836,7 @@ return (
 
       {/* SECTION 3: Completion Form (when expanded and not completed) */}
       {isExpanded && !isCompleted && (
-        <div className="px-6 pb-6 space-y-4">
+        <div className="px-6 pb-6 space-y-3">
           
           {/* Completion Type Selection */}
           <div className="bg-gray-50 rounded-lg p-4">
@@ -989,14 +989,16 @@ return (
           )}
 
           {/* Submit Section */}
-          <div className="pt-2">
-            <button
-              onClick={handleDetailedSubmit}
-              className="w-full bg-coral text-white py-4 px-6 rounded-lg hover:bg-coral/90 transition-colors font-semibold text-base shadow-sm"
-            >
-              Mark Exercise Complete
-            </button>
-          </div>
+          {completionType && (
+            <div className="pt-2">
+              <button
+                onClick={handleDetailedSubmit}
+                className="w-full bg-coral text-white py-4 px-6 rounded-lg hover:bg-coral/90 transition-colors font-semibold text-base shadow-sm"
+              >
+                Mark Exercise Complete
+              </button>
+            </div>
+          )}
         </div>
       )}
 
