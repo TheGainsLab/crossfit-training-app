@@ -1,1326 +1,1009 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import AthleteDetailModal from './AthleteDetailModal'
 import Link from 'next/link'
-import { use } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { User } from '@supabase/supabase-js'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+} from 'chart.js'
+import { Bar, Doughnut } from 'react-chartjs-2'
+import ProgramNavigationWidget from './ProgramNavigationWidget'  // ADD THIS LINE HERE
 
-interface Exercise {
-  name: string
-  sets: number | string
-  reps: number | string
-  weightTime: string
-  notes: string
-}
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
-interface Block {
-  blockName: string
-  exercises: Exercise[]
-}
-
-interface WorkoutData {
+// Keep your existing interfaces
+interface WorkoutSummary {
   programId: number
   week: number
   day: number
   dayName: string
   mainLift: string
   isDeload: boolean
- userGender: string  // ← ADD THIS LINE
-  blocks: Block[]
-metconData?: {
-  id: number
-  workoutId: string
-  workoutFormat: string
-  workoutNotes: string
-  timeRange: string
-  tasks: Array<{
-    reps: string
-    time: string
-    calories: string
-    distance: string
-    exercise: string
-    weight_male: string
-    weight_female: string
-  }>
-  percentileGuidance: {
-    male: {
-      excellentScore: string
-      medianScore: string
-      stdDev: string
+  totalExercises: number
+  totalBlocks: number
+}
+
+interface DashboardAnalytics {
+  success: boolean;
+  data: {
+    dashboard: {
+      overallMetrics: any;
+      blockPerformance: any;
+      progressionTrends: any;
+      keyInsights: string[];
+    };
+  };
+  metadata: any;
+}
+
+// Training Blocks Visualization Component
+// Training Blocks Visualization Component - Streamlined Version
+const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ analytics, blockData }) => {
+  if (!blockData?.data?.blockAnalysis?.blockSummaries) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+          <div className="space-y-2">
+            <div className="h-3 bg-gray-200 rounded"></div>
+            <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+            <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const blockSummaries = blockData.data.blockAnalysis.blockSummaries
+  
+  if (blockSummaries.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">🎯 Training Block Overview</h3>
+        <p className="text-gray-600">Complete more exercises to see training block analytics!</p>
+      </div>
+    )
+  }
+
+  // Define the desired order for blocks
+  const blockOrder = ['Skills', 'Technical', 'Strength', 'Accessories', 'MetCons']
+  
+  // Sort block summaries according to the desired order
+  const sortedBlockSummaries = [...blockSummaries].sort((a, b) => {
+    const aIndex = blockOrder.indexOf(a.blockName)
+    const bIndex = blockOrder.indexOf(b.blockName)
+    return aIndex - bIndex
+  })
+
+  // Prepare donut chart data with ordered blocks
+  const donutChartData = {
+    labels: sortedBlockSummaries.map((block: any) => block.blockName),
+    datasets: [{
+      data: sortedBlockSummaries.map((block: any) => block.exercisesCompleted),
+      backgroundColor: [
+        '#3B82F6', // Blue - Skills
+        '#10B981', // Green - Technical
+        '#EF4444', // Red - Strength
+        '#8B5CF6', // Purple - Accessories
+        '#F59E0B'  // Orange - MetCons
+      ],
+      borderColor: [
+        '#1D4ED8',
+        '#059669',
+        '#DC2626', 
+        '#7C3AED',
+        '#D97706'
+      ],
+      borderWidth: 2,
+      hoverBorderWidth: 3
+    }]
+  }
+
+  const donutChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom' as const,
+        labels: {
+          padding: 15,
+          usePointStyle: true,
+          font: {
+            size: 11
+          },
+          generateLabels: function(chart: any) {
+            const data = chart.data;
+            return data.labels.map((label: string, index: number) => {
+              const block = sortedBlockSummaries[index];
+              return {
+                text: `${label} ${block.percentageOfTotal}%`,
+                fillStyle: data.datasets[0].backgroundColor[index],
+                strokeStyle: data.datasets[0].borderColor[index],
+                lineWidth: 2,
+                hidden: false,
+                index: index
+              };
+            });
+          }
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const label = context.label || '';
+            const value = context.parsed;
+            const block = sortedBlockSummaries[context.dataIndex];
+            const percentage = block?.percentageOfTotal || 0;
+            return `${label}: ${value} exercises (${percentage}%)`;
+          }
+        }
+      }
     }
-    female: {
-      excellentScore: string
-      medianScore: string
-      stdDev: string
+  }
+
+  // Helper function to format performance metric
+  const formatPerformanceMetric = (block: any): string => {
+    // For MetCons, show percentile
+    if (block.blockName === 'MetCons' && block.qualityGrade.includes('%ile')) {
+      return block.qualityGrade;
     }
+    // For other blocks, show quality grade if available
+    if (block.qualityGrade && block.qualityGrade !== 'N/A' && !block.qualityGrade.includes('%ile')) {
+      return block.qualityGrade;
+    }
+    // Fallback
+    return 'Active';
   }
-  rxWeights: {
-    male: string
-    female: string
-  }
-} 
- totalExercises: number 
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="font-semibold text-gray-900 mb-6">🎯 Training Block Overview</h3>
+      
+      {/* Donut Chart */}
+      <div className="mb-8">
+        <div className="h-64">
+          <Doughnut data={donutChartData} options={donutChartOptions} />
+        </div>
+      </div>
+
+      {/* View Detailed Analytics Link */}
+      <Link
+        href="/dashboard/progress"
+        className="block w-full text-center py-4 px-6 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors group"
+      >
+        <div className="flex items-center justify-center space-x-3">
+          <span className="text-2xl">📊</span>
+          <div className="text-left">
+            <div className="font-semibold text-gray-900 group-hover:text-blue-700">
+              View Detailed Analytics
+            </div>
+            <div className="text-sm text-gray-600">
+              Skills progress, strength analysis & conditioning insights
+            </div>
+          </div>
+        </div>
+      </Link>
+    </div>
+  )
 }
 
+const CoachDashboard = ({ coachData }: { coachData: any }) => {
+    const [athletes, setAthletes] = useState([])
+    const [athletesLoading, setAthletesLoading] = useState(true)
+    const [summary, setSummary] = useState(null)
+    const [selectedAthlete, setSelectedAthlete] = useState(null)
+    const [showInviteModal, setShowInviteModal] = useState(false)
 
-interface Completion {
-  exerciseName: string
-  setsCompleted?: number
-  repsCompleted?: string
-  weightUsed?: number
-  rpe?: number
-  quality?: string
-  notes?: string
-  wasRx?: boolean
-}
+    useEffect(() => {
+      if (coachData) {
+        fetchAthletes()
+      }
+    }, [coachData])
+
+    const fetchAthletes = async () => {
+      setAthletesLoading(true)
+      try {
+        const response = await fetch('/api/coach/athlete')
+        const data = await response.json()
+        
+        if (data.success) {
+          setAthletes(data.athletes || [])
+          setSummary(data.summary)
+        } else {
+          console.error('Failed to fetch athletes:', data.error)
+          setAthletes([])
+        }
+      } catch (error) {
+        console.error('Error fetching athletes:', error)
+        setAthletes([])
+      } finally {
+        setAthletesLoading(false)
+      }
+    }
+
+    const getHealthStatusColor = (status: string) => {
+      switch (status) {
+        case 'good': return 'bg-green-100 text-green-800 border-green-200'
+        case 'warning': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        case 'needs_attention': return 'bg-red-100 text-red-800 border-red-200'
+        default: return 'bg-gray-100 text-gray-800 border-gray-200'
+      }
+    }
+
+    const getHealthStatusIcon = (status: string) => {
+      switch (status) {
+        case 'good': return '✅'
+        case 'warning': return '⚠️'
+        case 'needs_attention': return '🚨'
+        default: return '❓'
+      }
+    }
+
+    const AthleteCard = ({ athlete }: { athlete: any }) => (
+      <div className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow p-4">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h3 className="font-semibold text-gray-900 text-lg">{(athlete as any).name}</h3>
+            <p className="text-sm text-gray-500 capitalize">{(athlete as any).abilityLevel}</p>
+          </div>
+          <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getHealthStatusColor((athlete as any).recentActivity.healthStatus)}`}>
+            {getHealthStatusIcon((athlete as any).recentActivity.healthStatus)} {(athlete as any).recentActivity.healthStatus.replace('_', ' ')}
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-xl font-bold text-gray-900">{(athlete as any).recentActivity.sessionsLast14Days}</div>
+            <div className="text-xs text-gray-600">Sessions (14d)</div>
+          </div>
+          <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-xl font-bold text-gray-900">
+              {(athlete as any).recentActivity.daysSinceLastSession === null ? '—' : `${(athlete as any).recentActivity.daysSinceLastSession}d`}
+            </div>
+            <div className="text-xs text-gray-600">Since Last</div>
+          </div>
+        </div>
+
+        {/* Permission Level */}
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs text-gray-500">Access Level:</span>
+          <span className={`px-2 py-1 rounded text-xs font-medium ${
+            (athlete as any).coachingDetails.permissionLevel === 'full' ? 'bg-purple-100 text-purple-800' :
+            (athlete as any).coachingDetails.permissionLevel === 'edit' ? 'bg-blue-100 text-blue-800' :
+            'bg-gray-100 text-gray-800'
+          }`}>
+            {(athlete as any).coachingDetails.permissionLevel}
+          </span>
+        </div>
+
+        {/* Current Program */}
+        {(athlete as any).currentProgram && (
+          <div className="text-xs text-gray-500 mb-3">
+            Program #{(athlete as any).currentProgram.id} • Generated {new Date((athlete as any).currentProgram.generatedAt).toLocaleDateString()}
+          </div>
+        )}
+
+        {/* Action Button */}
+        <button
+          onClick={() => setSelectedAthlete(athlete)}
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+        >
+          View Details →
+        </button>
+      </div>
+    )
+
+    const InviteAthleteModal = () => {
+      const [email, setEmail] = useState('')
+      const [message, setMessage] = useState('')
+      const [permission, setPermission] = useState('view')
+      const [inviting, setInviting] = useState(false)
+
+      const handleInvite = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!email.trim()) return
+
+        setInviting(true)
+        try {
+          const response = await fetch('/api/coach/assign-athlete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              athleteEmail: email,
+              permissionLevel: permission,
+              message: message
+            })
+          })
+
+          const data = await response.json()
+          if (data.success) {
+            alert('Invitation sent successfully!')
+            setShowInviteModal(false)
+            setEmail('')
+            setMessage('')
+            fetchAthletes() // Refresh the list
+          } else {
+            alert(`Failed to send invitation: ${data.error}`)
+          }
+        } catch (error) {
+          console.error('Error sending invitation:', error)
+          alert('Error sending invitation')
+        } finally {
+          setInviting(false)
+        }
+      }
+
+      if (!showInviteModal) return null
+
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Invite Athlete</h3>
+            
+            <form onSubmit={handleInvite} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Athlete Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="athlete@example.com"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Permission Level
+                </label>
+                <select
+                  value={permission}
+                  onChange={(e) => setPermission(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="view">View Only</option>
+                  <option value="edit">Edit Access</option>
+                  <option value="full">Full Access</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Personal Message (Optional)
+                </label>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Hi! I'd like to be your coach..."
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(false)}
+                  className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded font-medium hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={inviting}
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {inviting ? 'Sending...' : 'Send Invite'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Coach Header */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Coach Dashboard</h2>
+              <p className="text-gray-600">Manage your athletes and track their progress</p>
+            </div>
+            <div className="text-right">
+              <div className="text-3xl font-bold text-blue-600">{athletes.length}</div>
+              <div className="text-sm text-gray-600">Total Athletes</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Summary Stats */}
+        {summary && (
+          <div className="grid md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow-sm border p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Active Athletes</p>
+                  <p className="text-2xl font-bold text-green-600">{(summary as any).recentlyActiveathletes}</p>
+                </div>
+                <div className="text-green-600">✅</div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm border p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Need Attention</p>
+                  <p className="text-2xl font-bold text-red-600">{(summary as any).athletesNeedingAttention}</p>
+                </div>
+                <div className="text-red-600">🚨</div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm border p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Warnings</p>
+                  <p className="text-2xl font-bold text-yellow-600">{(summary as any).athletesWithWarnings}</p>
+                </div>
+                <div className="text-yellow-600">⚠️</div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm border p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Avg Sessions</p>
+                  <p className="text-2xl font-bold text-blue-600">{(summary as any).averageSessionsPerAthlete}</p>
+                </div>
+                <div className="text-blue-600">📊</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Athletes Section */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Your Athletes</h3>
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
+              + Invite Athlete
+            </button>
+          </div>
+
+          {athletesLoading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1,2,3].map(i => (
+                <div key={i} className="animate-pulse bg-gray-100 rounded-lg h-48"></div>
+              ))}
+            </div>
+          ) : athletes.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-4xl mb-4">👥</div>
+              <h4 className="text-lg font-medium text-gray-900 mb-2">No Athletes Yet</h4>
+              <p className="text-gray-600 mb-4">Start building your coaching roster by inviting athletes!</p>
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                Send Your First Invitation
+              </button>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {athletes.map((athlete) => (
+                <AthleteCard key={(athlete as any).relationshipId} athlete={athlete} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Invite Modal */}
+        <InviteAthleteModal />
 
 
-const getCurrentUserId = async () => {
-  console.log('🔍 getCurrentUserId called')
-  
-  const { createClient } = await import('@/lib/supabase/client')
-  const supabase = createClient()
-  
-  console.log('📱 Getting auth user...')
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  
-  if (authError) {
-    console.error('❌ Auth error:', authError)
-    throw new Error('Auth error: ' + authError.message)
-  }
-  
-  if (!user) {
-    console.error('❌ No user found in auth')
-    throw new Error('Not authenticated')
-  }
-  
-  console.log('✅ Auth user found:', user.id)
-  
-  console.log('🔍 Looking up database user...')
-  const { data: userData, error: dbError } = await supabase
-    .from('users')
-    .select('id, auth_id, email')
-    .eq('auth_id', user.id)
-    .single()
-  
-  if (dbError) {
-    console.error('❌ Database error:', dbError)
-    throw new Error('Database error: ' + dbError.message)
-  }
-  
-  console.log('📊 Database query result:', userData)
-  
-  if (!userData) {
-    console.error('❌ No database user found')
-    throw new Error('User not found in database')
-  }
-  
-  console.log('✅ Returning user ID:', userData.id)
-  return userData.id
-}
 
-// Client component that handles all the hooks
-function WorkoutPageClient({ programId, week, day }: { programId: string; week: string; day: string }) {
-  const [workout, setWorkout] = useState<WorkoutData | null>(null)
-  const [completions, setCompletions] = useState<Record<string, Completion>>({})
+
+{/* Complete Athlete Detail Modal */}
+{selectedAthlete && (
+  <AthleteDetailModal 
+    athlete={selectedAthlete} 
+    onClose={() => setSelectedAthlete(null)} 
+  />
+)}
+
+      </div>
+    )
+  }
+
+
+
+export default function DashboardPage() {
+  const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({})
-  
- 
+  const [currentProgram, setCurrentProgram] = useState<number | null>(null)
+  const [currentWeek, setCurrentWeek] = useState(1)
+  const [currentDay, setCurrentDay] = useState(1)
+  const [user, setUser] = useState<User | null>(null)
+  const [userId, setUserId] = useState<number | null>(null)
+  const [dashboardAnalytics, setDashboardAnalytics] = useState<DashboardAnalytics | null>(null)
+  const [blockData, setBlockData] = useState<any>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  // ADD THESE THREE NEW LINES HERE:
+  const [isCoach, setIsCoach] = useState(false)
+  const [coachData, setCoachData] = useState(null)
+  const [viewMode, setViewMode] = useState('athlete') // 'athlete' or 'coach'
+  const [pendingInvitations, setPendingInvitations] = useState([])
+  const [invitationsLoading, setInvitationsLoading] = useState(false)
+
   useEffect(() => {
-    fetchWorkout()
-    fetchCompletions()
-  }, [programId, week, day])
+    loadUserAndProgram()
+    fetchPendingInvitations()
+  }, [])
 
-  const fetchWorkout = async () => {
+  useEffect(() => {
+    if (currentProgram && currentWeek && currentDay) {
+      fetchTodaysWorkout()
+    }
+  }, [currentProgram, currentWeek, currentDay])
+
+  useEffect(() => {
+    if (userId && currentProgram) {
+      fetchAnalytics()
+    }
+  }, [userId, currentProgram])
+
+// ADD THIS NEW useEffect AND FUNCTION HERE:
+useEffect(() => {
+  checkCoachRole()
+}, [])
+
+  const handleInvitationResponse = async (relationshipId: number, action: "accept" | "decline") => {
     try {
-      setLoading(true)
-      const response = await fetch(`/api/workouts/${programId}/week/${week}/day/${day}`)
+      const response = await fetch(`/api/coach/accept-coach/${relationshipId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action })
+      })
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch workout')
+      const data = await response.json()
+      
+      if (data.success) {
+        setPendingInvitations(prev => prev.filter((inv: any) => inv.id !== relationshipId))
+        
+        if (action === "accept") {
+          alert("Coach invitation accepted! Your new coach can now track your progress.")
+        } else {
+          alert("Coach invitation declined.")
+        }
+      } else {
+        alert(`Failed to ${action} invitation: ${data.error}`)
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing invitation:`, error)
+      alert(`Error ${action}ing invitation. Please try again.`)
+    }
+  }
+
+  const fetchPendingInvitations = async () => {
+    try {
+      setInvitationsLoading(true)
+      const response = await fetch("/api/invitations")
+      const data = await response.json()
+      
+      if (data.success) {
+        setPendingInvitations(data.invitations || [])
+      } else {
+        console.error("Failed to fetch invitations:", data.error)
+      }
+    } catch (error) {
+      console.error("Error fetching invitations:", error)
+    } finally {
+      setInvitationsLoading(false)
+    }
+  }
+
+const checkCoachRole = async () => {
+  try {
+    const response = await fetch('/api/coach/check-role')
+    const data = await response.json()
+    
+    if (data.success && data.isCoach) {
+      setIsCoach(true); console.log("Setting isCoach to true")
+      setCoachData(data.coach)
+      console.log('User is a coach:', data.coach)
+    } else {
+      setIsCoach(false)
+      setCoachData(null)
+    }
+  } catch (error) {
+    console.error('Error checking coach role:', error)
+    setIsCoach(false)
+  }
+}
+
+
+  const fetchAnalytics = async () => {
+    if (!userId) return
+    
+    setAnalyticsLoading(true)
+    try {
+      // Fetch both dashboard and block analytics
+      const [dashboardRes, blockRes] = await Promise.allSettled([
+        fetch(`/api/analytics/${userId}/dashboard`),
+        fetch(`/api/analytics/${userId}/block-analyzer`)
+      ])
+
+      // Process Dashboard Data
+      if (dashboardRes.status === 'fulfilled' && dashboardRes.value.ok) {
+        const data = await dashboardRes.value.json()
+        setDashboardAnalytics(data)
       }
 
-      const data = await response.json()
-      if (data.success) {
-        setWorkout(data.workout)
+      // Process Block Analytics
+      if (blockRes.status === 'fulfilled' && blockRes.value.ok) {
+        const data = await blockRes.value.json()
+        setBlockData(data)
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
+
+    } catch (error) {
+      console.error('Error fetching dashboard analytics:', error)
+      setDashboardAnalytics(null)
+      setBlockData(null)
     } finally {
+      setAnalyticsLoading(false)
+    }
+  }
+
+  const loadUserAndProgram = async () => {
+    try {
+      // Get current user
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setError('Not authenticated')
+        setLoading(false)
+        return
+      }
+      setUser(user)
+
+      // Get user ID from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (userError || !userData) {
+        setError('User not found')
+        setLoading(false)
+        return
+      }
+      setUserId(userData.id)
+
+      // Get latest program for this user
+      const { data: programData, error: programError } = await supabase
+        .from('programs')
+        .select('id, generated_at')
+        .eq('user_id', userData.id)
+        .order('generated_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (programError || !programData) {
+        setError('No program found. Please complete the intake assessment.')
+        setLoading(false)
+        return
+      }
+
+      setCurrentProgram(programData.id)
+      setCurrentWeek(1)
+      setCurrentDay(1)
+    } catch (err) {
+      console.error('Error loading user program:', err)
+      setError('Failed to load program data')
       setLoading(false)
     }
   }
 
-const fetchCompletions = async () => {
-  try {
-    const userId = await getCurrentUserId()
-    const response = await fetch(`/api/workouts/complete?userId=${userId}&programId=${programId}&week=${week}&day=${day}`)
-    
-    if (response.ok) {
-      const data = await response.json()
-      if (data.success) {
-        const completionMap: Record<string, Completion> = {}
-        data.completions.forEach((comp: any) => {
-          // Create unique key that includes set number
-          const setNumber = comp.set_number || 1
-          const completionKey = setNumber > 1 
-            ? `${comp.exercise_name} - Set ${setNumber}`
-            : comp.exercise_name
-            
-          completionMap[completionKey] = {
-            exerciseName: comp.exercise_name,
-            setsCompleted: comp.sets_completed,
-            repsCompleted: comp.reps_completed,
-            weightUsed: comp.weight_used,
-            rpe: comp.rpe,
-            notes: comp.notes,
-            wasRx: comp.was_rx
-          }
-        })
-        setCompletions(completionMap)
+  const fetchTodaysWorkout = async () => {
+    try {
+      const response = await fetch(`/api/workouts/${currentProgram}/week/${currentWeek}/day/${currentDay}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch today\'s workout')
       }
-    }
-  } catch (err) {
-    console.log('No previous completions found')
-  }
-}  
 
-
-const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
-  console.log('🚀 logCompletion called for:', exerciseName)
-  
-  // Extract set number from exercise name if it exists
-  const setMatch = exerciseName.match(/Set (\d+)$/);
-  const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
-  
-  // Clean exercise name (remove "- Set X" part)
-  const cleanExerciseName = exerciseName.replace(/ - Set \d+$/, '');
-  
-  try {
-    const userId = await getCurrentUserId()
-    console.log('🔢 About to make POST with userId:', userId, 'setNumber:', setNumber)
-    
-    // OPTIMISTIC UPDATE: Update UI immediately
-    setCompletions(prev => ({
-      ...prev,
-      [exerciseName]: { exerciseName, ...completion }
-    }))
-    console.log('✅ Optimistic UI update applied')
-    
-    const response = await fetch('/api/workouts/complete', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        programId: parseInt(programId),
-        userId,
-        week: parseInt(week),
-        day: parseInt(day),
-        block,
-        exerciseName: cleanExerciseName,
-        setNumber,
-        ...completion
-      })
-    })
-    
-    console.log('📡 POST response:', response.status)
-    
-    if (response.ok) {
       const data = await response.json()
+
       if (data.success) {
-        console.log('💾 Database update confirmed')
-        // Optionally update with server response data if it differs
-        setCompletions(prev => ({
-          ...prev,
-          [exerciseName]: { exerciseName, ...completion }
-        }))
-      } else {
-        throw new Error('Server returned unsuccessful response')
-      }
-    } else {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-  } catch (err) {
-    console.error('❌ Failed to log completion:', err)
-    
-    // ROLLBACK: Remove optimistic update on failure
-    setCompletions(prev => {
-      const updated = { ...prev }
-      delete updated[exerciseName]
-      return updated
-    })
-    
-    // TODO: Show user-friendly error message
-    alert('Failed to save completion. Please try again.')
-  }
-}
-
-
-const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerciseName: string, rpe: number, quality: string}[]) => {
-  try {
-    const userId = await getCurrentUserId()
-    
-    // 1. Log each task to performance_logs
-    const taskPromises = taskCompletions.map(task => 
-      fetch('/api/workouts/complete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          programId: parseInt(programId),
-          userId,
-          week: parseInt(week),
-          day: parseInt(day),
-          block: 'METCONS',
-          exerciseName: task.exerciseName,
-          repsCompleted: '', // Tasks don't have individual reps
-          rpe: task.rpe,
-          quality: task.quality,
-          notes: `Part of ${workout?.metconData?.workoutId}`
+        setTodaysWorkout({
+          programId: data.workout.programId,
+          week: data.workout.week,
+          day: data.workout.day,
+          dayName: data.workout.dayName,
+          mainLift: data.workout.mainLift,
+          isDeload: data.workout.isDeload,
+          totalExercises: data.workout.totalExercises,
+          totalBlocks: data.workout.totalBlocks
         })
-      })
-    )
-    
-    // 2. Log overall workout to program_metcons
-    const metconPromise = fetch('/api/metcons/complete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        programId: parseInt(programId),
-        userId,
-        week: parseInt(week),
-        day: parseInt(day),
-        workoutScore,
-        metconId: workout?.metconData?.id // We'll need this
-      })
+      }
+      setLoading(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+      setLoading(false)
+    }
+  }
+
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return "Good morning"
+    if (hour < 17) return "Good afternoon"
+    return "Good evening"
+  }
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
     })
-    
-    // Execute all API calls
-    await Promise.all([...taskPromises, metconPromise])
-    
-    console.log('✅ MetCon completion logged successfully!')
-    
-    // Update UI to show completion
-    // TODO: Update completion state
-    
-  } catch (error) {
-    console.error('❌ Failed to log MetCon completion:', error)
   }
-}
-
-
-  const toggleBlock = (blockName: string) => {
-    setExpandedBlocks(prev => ({
-      ...prev,
-      [blockName]: !prev[blockName]
-    }))
-  }
-
-  const getBlockColor = (blockName: string) => {
-    // All blocks use ice blue background with slate blue border
-    return 'bg-[#F8FBFE] border-[#DAE2EA]'
-  }
-
-const getBlockStatusIcon = (blockName: string, exercises: Exercise[], completions: Record<string, Completion>) => {
-  // Count completed exercises in this block
-  const completedCount = exercises.filter(exercise => {
-    // Handle exercises with set numbers (e.g., "Exercise - Set 2")
-    const setMatch = exercise.notes?.match(/Set (\d+)/);
-    const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
-    const exerciseKey = setNumber > 1 
-      ? `${exercise.name} - Set ${setNumber}`
-      : exercise.name;
-    
-    return completions[exerciseKey] !== undefined;
-  }).length;
-  
-  const totalCount = exercises.length;
-  
-  // Determine status - only show status icons, no base icons
-  if (completedCount === 0) {
-    // Not started - show nothing (empty string)
-    return '';
-  } else if (completedCount === totalCount) {
-    // All complete - green checkmark
-    return '✅';
-  } else {
-    // Partial complete - progress indicator
-    return '⏳';
-  }
-};
-
-const getBlockHeaderStyle = (blockName: string, exercises: Exercise[], completions: Record<string, Completion>) => {
-  const completedCount = exercises.filter(exercise => {
-    const setMatch = exercise.notes?.match(/Set (\d+)/);
-    const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
-    const exerciseKey = setNumber > 1 
-      ? `${exercise.name} - Set ${setNumber}`
-      : exercise.name;
-    return completions[exerciseKey] !== undefined;
-  }).length;
-  
-  const totalCount = exercises.length;
-  const baseStyle = getBlockColor(blockName);
-  
-  if (completedCount === totalCount && totalCount > 0) {
-    // All complete - add green accent
-    return `${baseStyle} ring-2 ring-green-500 ring-opacity-50`;
-  } else if (completedCount > 0) {
-    // Partial complete - add yellow accent  
-    return `${baseStyle} ring-2 ring-yellow-500 ring-opacity-50`;
-  }
-  
-  // Not started - original styling
-  return baseStyle;
-};
-
-const calculateProgress = () => {
-  if (!workout) return 0
-  const totalExercises = workout.blocks.reduce((sum, block) => sum + block.exercises.length, 0)
-  const completedExercises = Object.keys(completions).length
-  
-  // DEBUG: Log the data
-  console.log('🔢 PROGRESS DEBUG:')
-  console.log('Total exercises:', totalExercises)
-  console.log('Completed exercises:', completedExercises)  
-  console.log('Completions object:', completions)
-  console.log('Workout blocks:', workout.blocks.map(b => ({name: b.blockName, count: b.exercises.length})))
-  
-  return totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0
-}
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading workout...</p>
+          <p className="text-gray-600">Loading your workout...</p>
         </div>
       </div>
     )
   }
 
-  if (error || !workout) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-600 text-5xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Workout Not Found</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Dashboard</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <Link href="/dashboard" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-            Back to Dashboard
-          </Link>
+          {error.includes('No program found') && (
+            <Link
+              href="/intake"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Complete Assessment
+            </Link>
+          )}
         </div>
       </div>
     )
   }
 
-  const progress = calculateProgress()
+// ADD THESE COMPONENTS RIGHT HERE (between error check and return):
+  
+  const CoachToggle = () => {
+    if (!isCoach) return null
+
+    return (
+      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Welcome, Coach {(coachData as any)?.name}! 
+            </h3>
+            <p className="text-sm text-gray-600">
+              Switch between your athlete training and coaching dashboard
+            </p>
+          </div>
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('athlete')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'athlete'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              🏋️ My Training
+            </button>
+            <button
+              onClick={() => setViewMode('coach')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'coach'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              👥 Coach Portal
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+
+
+
+
+
+
+
 
   return (
     <div className="min-h-screen bg-gray-50">
-      
-      {/* Header - Optimized for Mobile */}
-      <header className="bg-[#F8FBFE] shadow-sm border-b sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          {/* Desktop Layout */}
-          <div className="hidden sm:flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <Link 
-                href="/dashboard" 
-                className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                <span>←</span>
-                <span className="text-[#282B34]">Dashboard</span>
-              </Link>
-              <div>
-                <h1 className="text-xl font-bold text-[#282B34]">
-                  Week {workout.week}, Day {workout.day}
-                </h1>
-                {workout.isDeload && (
-                  <p className="text-sm text-yellow-600">Deload Week</p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="text-sm text-[#282B34]">Progress</span>
-              <div className="w-24 bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-[#FE5858] h-2 rounded-full transition-all duration-300" 
-                  style={{ width: `${progress}%` }}
-                ></div>
-              </div>
-              <span className="text-sm font-medium text-[#282B34]">{Math.round(progress)}%</span>
-            </div>
-          </div>
 
-          {/* Mobile Layout */}
-          <div className="sm:hidden">
-            {/* Top Row: Dashboard link and Progress */}
-            <div className="flex items-center justify-between mb-2">
-              <Link 
-                href="/dashboard" 
-                className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors -ml-3"
-              >
-                <span>←</span>
-                <span className="font-medium text-[#282B34]">Dashboard</span>
-              </Link>
-              <div className="flex items-center space-x-2">
-                <div className="w-16 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-[#FE5858] h-2 rounded-full transition-all duration-300" 
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-                <span className="text-sm font-medium text-[#282B34]">{Math.round(progress)}%</span>
-              </div>
-            </div>
-            
-{/* Bottom Row: Week/Day info */}
-<div className="text-center">
-  <h1 className="text-lg font-bold text-[#282B34]">            
-    Week {workout.week}, Day {workout.day}
-                {workout.isDeload && (
-                  <span className="ml-2 text-sm text-yellow-600">• Deload</span>
-                )}
-              </h1>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Coach Toggle */}
 
-
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-6">
-        {workout.blocks.map((block, blockIndex) => (
-          
-<div key={blockIndex} className={`mb-6 rounded-lg border-2 ${getBlockHeaderStyle(block.blockName, block.exercises, completions)}`}>
-            {/* Block Header */}
-            <button
-              onClick={() => toggleBlock(block.blockName)}
-              className="w-full p-4 text-left hover:bg-white/50 transition-colors rounded-lg"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  {getBlockStatusIcon(block.blockName, block.exercises, completions) && (
-                    <span className="text-2xl">{getBlockStatusIcon(block.blockName, block.exercises, completions)}</span>
-                  )}
-                  <div>
-                    <h2 className="text-xl font-bold text-[#282B34]">{block.blockName}</h2>
-                    <p className="text-sm text-[#282B34] opacity-70">
-                      {block.exercises.length} exercise{block.exercises.length !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">
-                    
-{block.exercises.filter(ex => {
-  const setMatch = ex.notes?.match(/Set (\d+)/);
-  const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
-  const exerciseKey = setNumber > 1 ? `${ex.name} - Set ${setNumber}` : ex.name;
-  return completions[exerciseKey] !== undefined;
-}).length}/{block.exercises.length} complete
-
-                  </span>
-                  <span className="text-gray-400">
-                    {expandedBlocks[block.blockName] ? '▼' : '▶'}
-                  </span>
-                </div>
-              </div>
-            </button>
-
-        {/* Block Content */}
-{expandedBlocks[block.blockName] && (
-  <div className="px-4 pb-4 space-y-4">
-    {block.exercises.length === 0 ? (
-      <div className="text-center py-8 text-gray-500">
-        <div className="text-4xl mb-2">✨</div>
-        <p>No exercises in this block today</p>
-      </div>
-    ) : (
-      
-block.blockName === 'METCONS' ? (
-
-<MetConCard
-  metconData={workout.metconData}
-  onComplete={(workoutScore, taskCompletions) => {
-    logMetConCompletion(workoutScore, taskCompletions)
-  }}
-/>
-
-) : (
-  block.exercises.map((exercise, exerciseIndex) => {
-    console.log('Exercise object:', exercise);
-    
-    // Create consistent naming that matches the completion key
-    const setMatch = exercise.notes?.match(/Set (\d+)/);
-    const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
-    const exerciseKey = setNumber > 1 
-      ? `${exercise.name} - Set ${setNumber}`
-      : exercise.name;
-    
-    return (
-      <ExerciseCard
-        key={exerciseIndex}
-        exercise={exercise}
-        block={block.blockName}
-        completion={completions[exerciseKey]}
-        onComplete={(completion) => {
-          logCompletion(exerciseKey, block.blockName, completion);
-        }}
-      />
-    )
-  })
-)
-
-    )}
-  </div>
-)}
-          </div>
-        ))}
-
-        {/* MetCon Special Section */}
-        {/* Navigation */}
-        <div className="flex justify-between mt-8 pt-6 border-t">
-          <Link 
-            href={`/dashboard/workout/${programId}/week/${week}/day/${Math.max(1, parseInt(day) - 1)}`}
-            className={`px-4 py-2 rounded-lg ${parseInt(day) > 1 
-              ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-          >
-            ← Previous Day
-          </Link>
-          
-          <Link 
-            href="/dashboard"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Back to Dashboard
-          </Link>
-          
-          <Link 
-            href={`/dashboard/workout/${programId}/week/${week}/day/${Math.min(5, parseInt(day) + 1)}`}
-            className={`px-4 py-2 rounded-lg ${parseInt(day) < 5 
-              ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-          >
-            Next Day →
-          </Link>
-        </div>
-      </main>
-    </div>
-  )
-}
-
-// Main page component that handles the async params
-export default function WorkoutPage({ 
-  params 
-}: { 
-  params: Promise<{ programId: string; week: string; day: string }> 
-}) {
-  const resolvedParams = use(params)
-  
-  return <WorkoutPageClient {...resolvedParams} />
-}
-
-function ExerciseCard({ 
-  exercise, 
-  block, 
-  completion, 
-  onComplete 
-}: { 
-  exercise: Exercise
-  block: string
-  completion?: Completion
-  onComplete: (completion: Partial<Completion>) => void
-}) {
-  const [isExpanded, setIsExpanded] = useState(!completion)
-  const [formData, setFormData] = useState({
-    setsCompleted: completion?.setsCompleted || '',
-    repsCompleted: completion?.repsCompleted || '',
-    weightUsed: completion?.weightUsed || '',
-    rpe: completion?.rpe || 7,
-    quality: completion?.quality || '',
-    notes: completion?.notes || '',
-    asRx: completion?.wasRx || false
-  })
-
-  const isCompleted = completion !== undefined
-
-const handleDetailedSubmit = () => {
-  // Store reference to current card and next element before state changes
-  const currentCardElement = document.activeElement?.closest('.exercise-card') || 
-                            document.querySelector(`[data-exercise="${exercise.name}"]`)
-  const nextCardElement = currentCardElement?.nextElementSibling
-  
-  // Complete the exercise
-  onComplete({
-    setsCompleted: formData.setsCompleted ? parseInt(formData.setsCompleted.toString()) : undefined,
-    repsCompleted: formData.repsCompleted.toString(),
-    weightUsed: formData.weightUsed ? parseFloat(formData.weightUsed.toString()) : undefined,
-    rpe: formData.rpe,
-    quality: formData.quality || undefined,
-    notes: formData.notes.toString(),
-    wasRx: formData.asRx
-  })
-  
-  // Collapse the exercise
-  setIsExpanded(false)
-  
-  // Smooth scroll to maintain user context after collapse
-  setTimeout(() => {
-    if (nextCardElement) {
-      nextCardElement.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start',  // Align to top of viewport
-        inline: 'nearest'
-      })
-    } else {
-      // If no next element, scroll to show the completed exercise nicely
-      currentCardElement?.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'center' 
-      })
-    }
-  }, 150) // Small delay to allow collapse animation to start
-}
-
-
-  const QualityButton = ({ grade, isSelected, onClick }: { grade: string, isSelected: boolean, onClick: () => void }) => {
-    const getButtonStyle = () => {
-      const baseStyle = "flex-1 py-3 rounded-lg font-semibold text-sm transition-all duration-200 border-2 min-w-0"
-      
-      if (isSelected) {
-        switch (grade) {
-          case 'A': return `${baseStyle} bg-green-500 text-white border-green-500 shadow-md`
-          case 'B': return `${baseStyle} bg-blue-500 text-white border-blue-500 shadow-md`
-          case 'C': return `${baseStyle} bg-yellow-500 text-white border-yellow-500 shadow-md`
-          case 'D': return `${baseStyle} bg-red-500 text-white border-red-500 shadow-md`
-          default: return `${baseStyle} bg-gray-500 text-white border-gray-500`
-        }
-      } else {
-        return `${baseStyle} bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50`
-      }
-    }
-
-    const getGradeLabel = () => {
-      switch (grade) {
-        case 'A': return 'Excellent'
-        case 'B': return 'Good'
-        case 'C': return 'Average'
-        case 'D': return 'Poor'
-        default: return grade
-      }
-    }
-
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        className={getButtonStyle()}
-        title={`${grade} - ${getGradeLabel()}`}
-      >
-        <div className="text-center">
-          <div className="text-lg font-bold">{grade}</div>
-          <div className="text-xs opacity-75">{getGradeLabel()}</div>
-        </div>
-      </button>
-    )
-  }
-
-return (
-  <div 
-    className={`bg-white rounded-xl shadow-sm border-2 transition-all ${
-      isCompleted
-        ? 'border-green-200 bg-green-50'
-        : 'border-gray-200 hover:border-gray-300'
-    }`}
-    data-exercise={exercise.name}
-  >
-    
-      {/* STICKY CONTEXT BAR - Shows when form is expanded and not completed */}
-      {isExpanded && !isCompleted && (
-        <div className="sticky top-0 z-10 bg-blue-600 text-white px-4 py-2 rounded-t-xl">
-          <div className="text-sm font-medium">
-            {exercise.name}: {exercise.sets}×{exercise.reps} @ {exercise.weightTime || 'BW'}
-          </div>
-        </div>
-      )}
-      
-      {/* SECTION 1: Exercise Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-6 text-left hover:bg-gray-50 transition-colors rounded-xl"
-      >
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            {/* Exercise Title */}
-            <div className="flex items-center space-x-3 mb-4">
-              <h3 className="text-xl font-bold text-gray-900">{exercise.name}</h3>
-              {isCompleted && <span className="text-green-600 text-xl">✅</span>}
-            </div>
-            
-            {/* Exercise Specs - Clean Grid */}
-            <div className="grid grid-cols-3 gap-6 text-sm">
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-500 font-medium">Sets:</span>
-                <span className="text-gray-900 font-semibold text-base">{exercise.sets || '-'}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-500 font-medium">Reps:</span>
-                <span className="text-gray-900 font-semibold text-base">{exercise.reps || '-'}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-500 font-medium">Weight:</span>
-                <span className="text-gray-900 font-semibold text-base">{exercise.weightTime || 'BW'}</span>
-              </div>
-            </div>
-
-            {/* Completion Summary (when collapsed and completed) */}
-            {completion && !isExpanded && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex items-center space-x-4 text-sm">
-                  <span className="text-gray-600">RPE: <span className="font-semibold text-green-600">{completion.rpe}/10</span></span>
-                  {completion.quality && (
-                    <span className="text-gray-600">Quality: <span className="font-semibold">{completion.quality}</span></span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {/* Chevron */}
-          <div className="ml-4 flex-shrink-0">
-            <span className="text-gray-400 text-xl">
-              {isExpanded ? '▼' : '▶'}
-            </span>
-          </div>
-        </div>
-      </button>
-
-      {/* SECTION 2: Exercise Notes (when expanded) */}
-      {isExpanded && exercise.notes && (
-        <div className="mx-6 mb-4">
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
-            <div className="flex items-start space-x-3">
-              <span className="text-blue-600 text-lg">💡</span>
-              <p className="text-blue-800 text-sm leading-relaxed">{exercise.notes}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SECTION 3: Completion Form (when expanded and not completed) */}
-      {isExpanded && !isCompleted && (
-        <div className="px-6 pb-6 space-y-4">
-          
-          {/* Performance Inputs Section - IMPROVED */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Performance</h4>
-            
-            {/* As Rx Checkbox */}
-            <div className="mb-4">
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.asRx}
-                  onChange={(e) => {
-                    const isChecked = e.target.checked
-                    setFormData(prev => ({
-                      ...prev,
-                      asRx: isChecked,
-                      // Auto-fill with prescribed values when checked
-                      setsCompleted: isChecked ? exercise.sets : prev.setsCompleted,
-                      repsCompleted: isChecked ? exercise.reps.toString() : prev.repsCompleted,
-                      weightUsed: isChecked && exercise.weightTime !== 'BW' ? exercise.weightTime : prev.weightUsed
-                    }))
-                  }}
-                  className="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                />
-                <span className="text-base font-medium text-gray-700">
-                  Completed as prescribed (As Rx)
-                </span>
-              </label>
-            </div>
-
-            {/* HORIZONTAL LAYOUT - Even on Mobile */}
-            <div className={`grid gap-3 ${exercise.weightTime === 'BW' ? 'grid-cols-2' : 'grid-cols-3'}`}>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Sets</label>
-                <input
-                  type="number"
-                  value={formData.setsCompleted}
-                  onChange={(e) => setFormData(prev => ({ ...prev, setsCompleted: e.target.value, asRx: false }))}
-                  disabled={formData.asRx}
-                  className={`w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    formData.asRx ? 'bg-gray-100 text-gray-500' : ''
-                  }`}
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Reps</label>
-                <input
-                  type="text"
-                  value={formData.repsCompleted}
-                  onChange={(e) => setFormData(prev => ({ ...prev, repsCompleted: e.target.value, asRx: false }))}
-                  disabled={formData.asRx}
-                  className={`w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    formData.asRx ? 'bg-gray-100 text-gray-500' : ''
-                  }`}
-                  placeholder="0"
-                />
-              </div>
-              {exercise.weightTime !== 'BW' && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Weight</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={formData.weightUsed}
-                    onChange={(e) => setFormData(prev => ({ ...prev, weightUsed: e.target.value, asRx: false }))}
-                    disabled={formData.asRx}
-                    className={`w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      formData.asRx ? 'bg-gray-100 text-gray-500' : ''
-                    }`}
-                    placeholder="lbs"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* RPE Section - IMPROVED HEADER */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Effort Level - RPE</h4>
-              <span className="text-lg font-bold text-blue-600">{formData.rpe}/10</span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="10"
-              value={formData.rpe}
-              onChange={(e) => setFormData(prev => ({ ...prev, rpe: parseInt(e.target.value) }))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mb-2"
-            />
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>1 - Very Easy</span>
-              <span>5 - Moderate</span>
-              <span>10 - Max Effort</span>
-            </div>
-          </div>
-
-          {/* Quality Section - CONSISTENT BUTTON SIZING */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Quality</h4>
-            <div className="grid grid-cols-4 gap-2">
-              {['A', 'B', 'C', 'D'].map((grade) => (
-                <QualityButton
-                  key={grade}
-                  grade={grade}
-                  isSelected={formData.quality === grade}
-                  onClick={() => setFormData(prev => ({ 
-                    ...prev, 
-                    quality: prev.quality === grade ? '' : grade 
-                  }))}
-                />
-              ))}
-            </div>
-          </div>
-          
-          {/* Notes Section - REMOVED PLACEHOLDER TEXT */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Notes</h4>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              rows={3}
-              placeholder=""
-            />
-          </div>
-
-          {/* Submit Section */}
-          <div className="pt-2">
-            <button
-              onClick={handleDetailedSubmit}
-              className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-base shadow-sm"
-            >
-              Mark Exercise Complete
-            </button>
-          </div>
-        </div>
-      )}
-
-{/* SECTION 4: Completed State (when expanded and completed) - SIMPLIFIED */}
-{isExpanded && isCompleted && (
-  <div className="px-6 pb-6">
-    <div className="text-center py-4">
-      <p className="text-gray-600 text-sm">Exercise completed - click to collapse</p>
-    </div>
-  </div>
-)}
-
-      {/* Custom CSS for the slider */}
-      <style jsx>{`
-        input[type="range"]::-webkit-slider-thumb {
-          appearance: none;
-          height: 20px;
-          width: 20px;
-          border-radius: 50%;
-          background: #3b82f6;
-          cursor: pointer;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        input[type="range"]::-moz-range-thumb {
-          height: 20px;
-          width: 20px;
-          border-radius: 50%;
-          background: #3b82f6;
-          cursor: pointer;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-          border: none;
-        }
-      `}</style>
-    </div>
-  )
-}
-
-
-function MetConCard({ 
-  metconData, 
-  onComplete 
-}: { 
-  metconData?: {
-    id: number
-    workoutId: string
-    workoutFormat: string
-    workoutNotes: string
-    timeRange: string
-    tasks: Array<{
-      reps: string
-      exercise: string
-      weight_male: string
-      weight_female: string
-    }>
-    percentileGuidance: {
-      male: { excellentScore: string, medianScore: string }
-      female: { excellentScore: string, medianScore: string }
-    }
-    rxWeights: { male: string, female: string }
-  }
-  onComplete: (workoutScore: string, taskCompletions: {exerciseName: string, rpe: number, quality: string}[]) => void
-}) {
-  const [isExpanded, setIsExpanded] = useState(true)
-  const [isCompleted, setIsCompleted] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
-  
-  const [workoutScore, setWorkoutScore] = useState('')
-  const [taskRPEs, setTaskRPEs] = useState<{[key: string]: number}>({})
-  const [taskQualities, setTaskQualities] = useState<{[key: string]: string}>({})
-  const [notes, setNotes] = useState('')
-  const [gender, setGender] = useState<'male' | 'female'>('male')
-
-  const handleTaskRPE = (exerciseName: string, rpe: number) => {
-    setTaskRPEs(prev => ({...prev, [exerciseName]: rpe}))
-  }
-
-  const handleTaskQuality = (exerciseName: string, quality: string) => {
-    setTaskQualities(prev => ({...prev, [exerciseName]: quality}))
-  }
-
-  const handleSubmit = async () => {
-    if (!workoutScore.trim()) return;
-    
-    setIsSubmitting(true);
-    
-    try {
-      const taskCompletions = metconData?.tasks.map(task => ({
-        exerciseName: task.exercise,
-        rpe: taskRPEs[task.exercise] || 5,
-        quality: taskQualities[task.exercise] || 'C'
-      })) || []
-      
-      await onComplete(workoutScore, taskCompletions)
-      
-      setIsCompleted(true)
-      setIsExpanded(false)
-      setShowSuccess(true)
-      
-      setTimeout(() => setShowSuccess(false), 3000)
-      
-    } catch (error) {
-      console.error('Error submitting MetCon:', error)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  // Quality Button Component (matching ExerciseCard)
-  const QualityButton = ({ grade, isSelected, onClick }: { grade: string, isSelected: boolean, onClick: () => void }) => {
-    const getButtonStyle = () => {
-      const baseStyle = "flex-1 py-2 rounded-lg font-semibold text-xs transition-all duration-200 border-2 min-w-0"
-      
-      if (isSelected) {
-        switch (grade) {
-          case 'A': return `${baseStyle} bg-green-500 text-white border-green-500 shadow-md`
-          case 'B': return `${baseStyle} bg-blue-500 text-white border-blue-500 shadow-md`
-          case 'C': return `${baseStyle} bg-yellow-500 text-white border-yellow-500 shadow-md`
-          case 'D': return `${baseStyle} bg-red-500 text-white border-red-500 shadow-md`
-          default: return `${baseStyle} bg-gray-500 text-white border-gray-500`
-        }
-      } else {
-        return `${baseStyle} bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50`
-      }
-    }
-
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        className={getButtonStyle()}
-      >
-        <div className="text-center">
-          <div className="text-sm font-bold">{grade}</div>
-        </div>
-      </button>
-    )
-  }
-
-  if (!metconData) return null
-
-  const currentBenchmarks = metconData.percentileGuidance[gender]
-  const currentRxWeight = metconData.rxWeights[gender]
-
-  return (
-    <div className={`rounded-lg border-2 transition-all ${
-      isCompleted 
-        ? 'bg-green-50 border-green-200' 
-        : 'bg-orange-50 border-orange-200'
-    }`}>
-      {/* Success Message */}
-      {showSuccess && (
-        <div className="bg-green-500 text-white p-3 rounded-t-lg text-center font-medium">
-          ✅ MetCon completion logged successfully!
-        </div>
-      )}
-      
-      {/* STICKY CONTEXT BAR - Shows when form is expanded and not completed */}
-      {isExpanded && !isCompleted && (
-        <div className="sticky top-0 z-10 bg-orange-600 text-white px-4 py-2 rounded-t-lg">
-          <div className="text-sm font-medium">
-            {metconData.workoutId}
-          </div>
-        </div>
-      )}
-      
-      <div className="p-6">
-        {/* Workout Header */}
-        <div className="text-center mb-6">
-          {/* Show completion checkmark when completed */}
-          {isCompleted && (
-            <div className="flex items-center justify-center space-x-3 mb-3">
-              <span className="text-green-600 text-xl">✅</span>
-              <span className="text-gray-600 font-medium">MetCon Completed</span>
-            </div>
-          )}
-          
-          {/* Workout Notes */}
-          {metconData.workoutNotes && (
-            <div className="bg-orange-100 border-l-4 border-orange-400 p-4 rounded-r-lg mb-4">
-              <p className="text-orange-800 text-sm leading-relaxed font-medium">{metconData.workoutNotes}</p>
-            </div>
-          )}
-          
-          {/* Gender Selection - Only show if not completed */}
-          {!isCompleted && (
-            <div className="flex justify-center mb-4">
-              <div className="grid grid-cols-2 bg-white rounded-lg p-1 border gap-1">
-                <button
-                  onClick={() => setGender('male')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    gender === 'male' 
-                      ? 'bg-blue-500 text-white shadow-sm' 
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Male
-                </button>
-                <button
-                  onClick={() => setGender('female')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    gender === 'female' 
-                      ? 'bg-blue-500 text-white shadow-sm' 
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Female
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {/* Consistent Benchmarks - All Gray */}
-          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mb-6">
-            <div className="bg-white rounded-lg p-3 border border-gray-200">
-              <div className="text-xs text-gray-600 font-medium">Excellent</div>
-              <div className="font-bold text-gray-900">{currentBenchmarks.excellentScore}</div>
-            </div>
-            <div className="bg-white rounded-lg p-3 border border-gray-200">
-              <div className="text-xs text-gray-600 font-medium">Median</div>
-              <div className="font-bold text-gray-900">{currentBenchmarks.medianScore}</div>
-            </div>
-            <div className="bg-white rounded-lg p-3 border border-gray-200">
-              <div className="text-xs text-gray-600 font-medium">Rx Weight</div>
-              <div className="font-bold text-gray-900">{currentRxWeight}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Form Content */}
-        {isExpanded && !isCompleted && (
-          <>
-            {/* Tasks Section - Improved */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Exercise Performance</h4>
-              <div className="space-y-4">
-                {metconData.tasks.map((task, index) => (
-                  <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
-                    {/* Exercise Header */}
-                    <div className="mb-3">
-                      <h4 className="font-semibold text-gray-900">{task.exercise}</h4>
-                      <p className="text-sm text-gray-600">
-                        {task.reps} reps {task.weight_male && `@ ${gender === 'male' ? task.weight_male : task.weight_female} lbs`}
-                      </p>
-                    </div>
-                    
-                    {/* RPE and Quality - Side by Side */}
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* RPE Slider Section */}
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-xs font-medium text-gray-700">RPE</label>
-                          <span className="text-sm font-bold text-blue-600">
-                            {taskRPEs[task.exercise] || 5}/10
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min="1"
-                          max="10"
-                          value={taskRPEs[task.exercise] || 5}
-                          onChange={(e) => handleTaskRPE(task.exercise, parseInt(e.target.value))}
-                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                          disabled={isSubmitting}
-                        />
+      {/* Pending Coach Invitations */}
+      {!isCoach && pendingInvitations.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-4xl mx-auto">
+          <div className="flex items-start space-x-3">
+            <div className="text-blue-600 text-xl">👋</div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                You have {pendingInvitations.length} pending coach invitation{pendingInvitations.length > 1 ? "s" : ""}!
+              </h3>
+              <div className="space-y-3">
+                {pendingInvitations.map((invitation: any) => (
+                  <div key={invitation.id} className="bg-white rounded-lg p-4 border border-blue-100">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">
+                          Coach {invitation.coaches[0]?.coach_name} wants to be your coach
+                        </h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Permission Level: {invitation.permission_level}
+                        </p>
+                        {invitation.invitation_message && (
+                          <p className="text-sm text-gray-700 mt-2 italic">
+                            "{invitation.invitation_message}"
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-2">
+                          Invited {new Date(invitation.created_at).toLocaleDateString()}
+                        </p>
                       </div>
-                      
-                      {/* Quality Buttons Section */}
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-2">Quality</label>
-                        <div className="grid grid-cols-4 gap-1">
-                          {['A', 'B', 'C', 'D'].map((grade) => (
-                            <QualityButton
-                              key={grade}
-                              grade={grade}
-                              isSelected={taskQualities[task.exercise] === grade}
-                              onClick={() => handleTaskQuality(task.exercise, 
-                                taskQualities[task.exercise] === grade ? 'C' : grade
-                              )}
-                            />
-                          ))}
-                        </div>
+                      <div className="flex space-x-2 ml-4">
+                        <button
+                          onClick={() => handleInvitationResponse(invitation.id, "accept")}
+                          className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => handleInvitationResponse(invitation.id, "decline")}
+                          className="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-400"
+                        >
+                          Decline
+                        </button>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Overall Score Section */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Your Score</h4>
-              <input
-                type="text"
-                placeholder="e.g., 674 total reps, 12:34, 8 rounds + 15"
-                value={workoutScore}
-                onChange={(e) => setWorkoutScore(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-3"
-                disabled={isSubmitting}
-              />
+          </div>
+        </div>
+      )}
+      {isCoach && (
+        <div className="bg-white rounded-lg shadow-sm border p-4 mb-6 max-w-4xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Welcome, Coach {(coachData as any)?.name}!
+              </h3>
+              <p className="text-sm text-gray-600">
+                Switch between your athlete training and coaching dashboard
+              </p>
             </div>
-
-            {/* Notes Section */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Notes</h4>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                rows={3}
-                disabled={isSubmitting}
-                placeholder=""
-              />
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode("athlete")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === "athlete"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                🏋️ My Training
+              </button>
+              <button
+                onClick={() => setViewMode("coach")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === "coach"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                👥 Coach Portal
+              </button>
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* Submit Button */}
-            <button
-              onClick={handleSubmit}
-              disabled={!workoutScore.trim() || isSubmitting}
-              className="w-full bg-orange-600 text-white py-4 px-4 rounded-lg hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center font-semibold text-base"
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Logging MetCon...
-                </>
-              ) : (
-                'Mark MetCon Complete'
-              )}
-            </button>
-          </>
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {viewMode === "coach" ? (
+          <CoachDashboard coachData={coachData} />
+        ) : (
+          <div className="space-y-6">        {/* Program Navigation */}
+        {currentProgram && (
+          <ProgramNavigationWidget 
+            currentWeek={currentWeek}
+            currentDay={currentDay}
+            programId={currentProgram}
+            onNavigate={(week, day) => {
+              setCurrentWeek(week)
+              setCurrentDay(day)
+            }}
+          />
         )}
 
-        {/* Completed State */}
-        {isCompleted && (
-          <div className="text-center py-4">
-            <div className="text-green-600 text-4xl mb-2">🎉</div>
-            <p className="text-gray-700 font-medium">MetCon completed!</p>
-            <p className="text-sm text-gray-600">Your score: {workoutScore}</p>
+        {/* Training Blocks Visualization */}
+        <div className="mb-8">
+          {analyticsLoading ? (
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded"></div>
+                  <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                  <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <TrainingBlocksWidget analytics={dashboardAnalytics} blockData={blockData} />
+          )}
+        </div>
+
+        {/* Settings Link */}
+        <div className="flex justify-center">
+          <Link
+            href="/dashboard/settings"
+            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="text-3xl mb-2">⚙️</div>
+            <h3 className="font-semibold text-gray-900 mb-1">Settings</h3>
+            <p className="text-gray-600 text-sm">Update 1RMs and preferences</p>
+          </Link>
+        </div>
           </div>
         )}
       </div>
-
-      {/* Custom CSS for sliders */}
-      <style jsx>{`
-        input[type="range"]::-webkit-slider-thumb {
-          appearance: none;
-          height: 16px;
-          width: 16px;
-          border-radius: 50%;
-          background: #3b82f6;
-          cursor: pointer;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        input[type="range"]::-moz-range-thumb {
-          height: 16px;
-          width: 16px;
-          border-radius: 50%;
-          background: #3b82f6;
-          cursor: pointer;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-          border: none;
-        }
-      `}</style>
     </div>
-  )
+  );   
 }
