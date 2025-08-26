@@ -992,7 +992,7 @@ return (
           <div className="pt-2">
             <button
               onClick={handleDetailedSubmit}
-              className="w-full bg-coral text-white py-4 px-6 rounded-lg hover:bg-coral/90 transition-colors font-semibold text-base shadow-sm"
+              className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-base shadow-sm"
             >
               Mark Exercise Complete
             </button>
