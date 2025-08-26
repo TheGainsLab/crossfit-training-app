@@ -427,8 +427,8 @@ const calculateProgress = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       
-{/* Header - Optimized for Mobile */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+      {/* Header - Optimized for Mobile */}
+      <header className="bg-ice-blue shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           {/* Desktop Layout */}
           <div className="hidden sm:flex items-center justify-between">
