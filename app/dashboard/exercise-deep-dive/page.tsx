@@ -446,25 +446,20 @@ export default function ExerciseDeepDivePage() {
             </span>
           </div>
           
-          <div className="grid md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">{exerciseInfo.timesPerformed}</div>
-              <div className="text-sm text-gray-600">Sessions</div>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">{summary.avgRPE}</div>
-              <div className="text-sm text-gray-600">Avg RPE</div>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">{summary.avgQualityGrade}</div>
-              <div className="text-sm text-gray-600">Quality Grade</div>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">{summary.daysSinceLast}</div>
-              <div className="text-sm text-gray-600">Days Since Last</div>
-            </div>
-          </div>
-        </div>
+<div className="grid md:grid-cols-3 gap-4">
+  <div className="text-center p-4 bg-gray-50 rounded-lg">
+    <div className="text-2xl font-bold text-gray-900">{exerciseInfo.timesPerformed}</div>
+    <div className="text-sm text-gray-600">Sessions</div>
+  </div>
+  <div className="text-center p-4 bg-gray-50 rounded-lg">
+    <div className="text-2xl font-bold text-gray-900">{summary.avgRPE}</div>
+    <div className="text-sm text-gray-600">Avg RPE</div>
+  </div>
+  <div className="text-center p-4 bg-gray-50 rounded-lg">
+    <div className="text-2xl font-bold text-gray-900">{summary.avgQualityGrade}</div>
+    <div className="text-sm text-gray-600">Quality Grade</div>
+  </div>
+</div>
 
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-white rounded-lg shadow p-6">
@@ -509,42 +504,17 @@ export default function ExerciseDeepDivePage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Progression Analysis</h3>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-medium text-gray-900 mb-3">RPE Trend</h4>
-              <div className="flex items-center space-x-3">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  trends.rpe.direction === 'improving' ? 'bg-green-100 text-green-800' :
-                  trends.rpe.direction === 'declining' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {trends.rpe.direction}
-                </span>
-                <span className="text-gray-600">
-                  Current: {trends.rpe.current} | Best: {trends.rpe.best}
-                </span>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="font-medium text-gray-900 mb-3">Quality Trend</h4>
-              <div className="flex items-center space-x-3">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  trends.quality.direction === 'improving' ? 'bg-green-100 text-green-800' :
-                  trends.quality.direction === 'declining' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {trends.quality.direction}
-                </span>
-                <span className="text-gray-600">
-                  Current: {trends.quality.current} | Best: {trends.quality.best}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+<div className="bg-white rounded-lg shadow p-6">
+  <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance vs Personal Best</h3>
+  <div className="text-gray-700">
+    <span className="font-medium">RPE:</span> {trends.rpe.current} (best {trends.rpe.best}) | 
+    <span className="font-medium ml-4">Quality:</span> {
+      ['', 'D', 'C', 'B', 'A'][trends.quality.current] || 'N/A'
+    } (best {
+      ['', 'D', 'C', 'B', 'A'][trends.quality.best] || 'N/A'
+    })
+  </div>
+</div>
 
         <ExerciseComparison />
       </div>
