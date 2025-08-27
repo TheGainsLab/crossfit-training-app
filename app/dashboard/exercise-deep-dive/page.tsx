@@ -340,32 +340,7 @@ export default function ExerciseDeepDivePage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">RPE Trend:</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      data.trends?.rpe?.direction === 'improving' ? 'bg-green-100 text-green-800' :
-                      data.trends?.rpe?.direction === 'declining' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {data.trends?.rpe?.direction || 'stable'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Quality Trend:</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      data.trends?.quality?.direction === 'improving' ? 'bg-green-100 text-green-800' :
-                      data.trends?.quality?.direction === 'declining' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {data.trends?.quality?.direction || 'stable'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Days Since Last:</span>
-                    <span className="text-sm font-medium text-gray-900">{data.summary?.daysSinceLast || 'N/A'}</span>
-                  </div>
-                </div>
+
 
                 <div className="pt-3 border-t border-gray-200">
                   <div className="text-xs text-gray-500 mb-2">Recent Activity</div>
