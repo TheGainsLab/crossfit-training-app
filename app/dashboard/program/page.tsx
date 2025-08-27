@@ -350,7 +350,6 @@ export default function ProgramOverviewPage() {
                         <div className="font-medium text-sm">{day.day_name}</div>
                         {day.completed && <span className="text-green-600 text-lg">✓</span>}
                       </div>
-                      <div className="text-xs text-gray-600 mb-1">{day.main_lift}</div>
                       <div className="text-xs text-gray-500">
                         {day.exercisesLogged > 0 
                           ? `${day.exercisesLogged}/${day.total_exercises} exercises logged`
