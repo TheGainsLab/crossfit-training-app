@@ -387,24 +387,131 @@ export default function ExerciseDeepDivePage() {
               <p className="text-sm mt-1">Try a different training block with multiple exercises.</p>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-6">
-              <ComparisonCard 
-                title={selectedExercise} 
-                data={exerciseData?.data} 
-              />
-
-              {loadingComparison ? (
-                <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mr-2"></div>
-                  <span className="text-gray-600">Loading comparison...</span>
+{loadingComparison ? (
+              <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mr-2"></div>
+                <span className="text-gray-600">Loading comparison...</span>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow p-6">
+                {/* Exercise Names Header */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-2">
+                      <span className="text-blue-600 mr-2">📊</span>
+                      <h3 className="text-lg font-semibold text-gray-900 truncate">{selectedExercise}</h3>
+                    </div>
+                    <div className="w-full h-1 bg-blue-500 rounded"></div>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-2">
+                      <span className="text-green-600 mr-2">🔄</span>
+                      <h3 className="text-lg font-semibold text-gray-900 truncate">
+                        {comparisonExercise || 'Select Exercise'}
+                      </h3>
+                    </div>
+                    <div className="w-full h-1 bg-green-500 rounded"></div>
+                  </div>
                 </div>
-              ) : (
-                <ComparisonCard 
-                  title={comparisonExercise || 'Select Exercise'} 
-                  data={comparisonData?.data} 
-                  isComparison={true}
-                />
-              )}
+
+                {exerciseData?.data && (comparisonData?.data || !comparisonExercise) ? (
+                  <div className="space-y-4">
+                    {/* Sessions Comparison */}
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <div className="text-sm text-gray-600 text-center mb-3 font-medium">Sessions</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 bg-blue-50 rounded">
+                          <div className="text-2xl font-bold text-gray-900">
+                            {exerciseData.data.exerciseInfo?.timesPerformed || 0}
+                          </div>
+                        </div>
+                        <div className="text-center p-3 bg-green-50 rounded">
+                          <div className="text-2xl font-bold text-gray-900">
+                            {comparisonData?.data?.exerciseInfo?.timesPerformed || (comparisonExercise ? '...' : '-')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Total Reps Comparison */}
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <div className="text-sm text-gray-600 text-center mb-3 font-medium">Total Reps</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 bg-blue-50 rounded">
+                          <div className="text-2xl font-bold text-gray-900">
+                            {exerciseData.data.volume?.totalReps || 0}
+                          </div>
+                        </div>
+                        <div className="text-center p-3 bg-green-50 rounded">
+                          <div className="text-2xl font-bold text-gray-900">
+                            {comparisonData?.data?.volume?.totalReps || (comparisonExercise ? '...' : '-')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Avg RPE Comparison */}
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <div className="text-sm text-gray-600 text-center mb-3 font-medium">Average RPE</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 bg-blue-50 rounded">
+                          <div className="text-2xl font-bold text-gray-900">
+                            {exerciseData.data.summary?.avgRPE || 0}
+                          </div>
+                        </div>
+                        <div className="text-center p-3 bg-green-50 rounded">
+                          <div className="text-2xl font-bold text-gray-900">
+                            {comparisonData?.data?.summary?.avgRPE || (comparisonExercise ? '...' : '-')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quality Comparison */}
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <div className="text-sm text-gray-600 text-center mb-3 font-medium">Quality Grade</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 bg-blue-50 rounded">
+                          <div className="text-2xl font-bold text-gray-900">
+                            {exerciseData.data.summary?.avgQualityGrade || 'N/A'}
+                          </div>
+                        </div>
+                        <div className="text-center p-3 bg-green-50 rounded">
+                          <div className="text-2xl font-bold text-gray-900">
+                            {comparisonData?.data?.summary?.avgQualityGrade || (comparisonExercise ? '...' : '-')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Recent Activity Comparison */}
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <div className="text-sm text-gray-600 text-center mb-3 font-medium">Last 4 Weeks</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 bg-blue-50 rounded">
+                          <div className="text-xl font-bold text-gray-900">
+                            {exerciseData.data.timing?.recentSessions || 0}
+                          </div>
+                          <div className="text-xs text-gray-600 mt-1">sessions</div>
+                        </div>
+                        <div className="text-center p-3 bg-green-50 rounded">
+                          <div className="text-xl font-bold text-gray-900">
+                            {comparisonData?.data?.timing?.recentSessions || (comparisonExercise ? '...' : '-')}
+                          </div>
+                          <div className="text-xs text-gray-600 mt-1">
+                            {comparisonData?.data ? 'sessions' : ''}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    Select an exercise to compare with {selectedExercise}
+                  </div>
+                )}
+              </div>
+            )}
             </div>
           )}
         </div>
