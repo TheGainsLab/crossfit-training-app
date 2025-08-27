@@ -101,7 +101,6 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
             href={`/dashboard/workout/${programId}/week/${currentWeek}/day/${currentDay}`}
             className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
           >
-            <span className="mr-2">🎯</span>
             Today's Workout
           </Link>
           <div className="text-xs text-gray-500 mt-1">
@@ -139,7 +138,6 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
             href={`/dashboard/workout/${programId}/week/${currentWeek}/day/${currentDay}`}
             className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors text-lg w-full justify-center"
           >
-            <span className="mr-2">🎯</span>
             Today's Workout
           </Link>
           <div className="text-sm text-gray-500 mt-2">

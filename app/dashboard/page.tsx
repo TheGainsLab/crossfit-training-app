@@ -175,8 +175,7 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="font-semibold text-gray-900 mb-6">🎯 Training Block Overview</h3>
-      
+<h3 className="font-semibold text-gray-900 mb-6">Training Block Overview</h3>      
       {/* Donut Chart */}
       <div className="mb-8">
         <div className="h-64">
