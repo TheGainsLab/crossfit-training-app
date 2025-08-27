@@ -1444,4 +1444,3 @@ function MetConCard({
     </div>
   )
 }
-
