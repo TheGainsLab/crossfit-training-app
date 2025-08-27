@@ -1,4 +1,4 @@
-'use client'
+k'use client'
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -446,20 +446,21 @@ export default function ExerciseDeepDivePage() {
             </span>
           </div>
           
-<div className="grid md:grid-cols-3 gap-4">
-  <div className="text-center p-4 bg-gray-50 rounded-lg">
-    <div className="text-2xl font-bold text-gray-900">{exerciseInfo.timesPerformed}</div>
-    <div className="text-sm text-gray-600">Sessions</div>
-  </div>
-  <div className="text-center p-4 bg-gray-50 rounded-lg">
-    <div className="text-2xl font-bold text-gray-900">{summary.avgRPE}</div>
-    <div className="text-sm text-gray-600">Avg RPE</div>
-  </div>
-  <div className="text-center p-4 bg-gray-50 rounded-lg">
-    <div className="text-2xl font-bold text-gray-900">{summary.avgQualityGrade}</div>
-    <div className="text-sm text-gray-600">Quality Grade</div>
-  </div>
-</div>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-2xl font-bold text-gray-900">{exerciseInfo.timesPerformed}</div>
+              <div className="text-sm text-gray-600">Sessions</div>
+            </div>
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-2xl font-bold text-gray-900">{summary.avgRPE}</div>
+              <div className="text-sm text-gray-600">Avg RPE</div>
+            </div>
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-2xl font-bold text-gray-900">{summary.avgQualityGrade}</div>
+              <div className="text-sm text-gray-600">Quality Grade</div>
+            </div>
+          </div>
+        </div>
 
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-white rounded-lg shadow p-6">
@@ -504,17 +505,17 @@ export default function ExerciseDeepDivePage() {
           </div>
         </div>
 
-<div className="bg-white rounded-lg shadow p-6">
-  <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance vs Personal Best</h3>
-  <div className="text-gray-700">
-    <span className="font-medium">RPE:</span> {trends.rpe.current} (best {trends.rpe.best}) | 
-    <span className="font-medium ml-4">Quality:</span> {
-      ['', 'D', 'C', 'B', 'A'][trends.quality.current] || 'N/A'
-    } (best {
-      ['', 'D', 'C', 'B', 'A'][trends.quality.best] || 'N/A'
-    })
-  </div>
-</div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance vs Personal Best</h3>
+          <div className="text-gray-700">
+            <span className="font-medium">RPE:</span> {trends.rpe.current} (best {trends.rpe.best}) | 
+            <span className="font-medium ml-4">Quality:</span> {
+              ['', 'D', 'C', 'B', 'A'][trends.quality.current] || 'N/A'
+            } (best {
+              ['', 'D', 'C', 'B', 'A'][trends.quality.best] || 'N/A'
+            })
+          </div>
+        </div>
 
         <ExerciseComparison />
       </div>
