@@ -1052,7 +1052,7 @@ function MetConCard({
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCompleted, setIsCompleted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [showNotes, setShowNotes] = useState(false)
   
   const [workoutScore, setWorkoutScore] = useState('')
   const [taskRPEs, setTaskRPEs] = useState<{[key: string]: number}>({})
@@ -1084,9 +1084,6 @@ function MetConCard({
       
       setIsCompleted(true)
       setIsExpanded(false)
-      setShowSuccess(true)
-      
-      setTimeout(() => setShowSuccess(false), 3000)
       
     } catch (error) {
       console.error('Error submitting MetCon:', error)
@@ -1098,7 +1095,7 @@ function MetConCard({
   // Quality Button Component (matching ExerciseCard)
   const QualityButton = ({ grade, isSelected, onClick }: { grade: string, isSelected: boolean, onClick: () => void }) => {
     const getButtonStyle = () => {
-      const baseStyle = "flex-1 py-2 rounded-lg font-semibold text-xs transition-all duration-200 border-2 min-w-0"
+      const baseStyle = "flex-1 py-3 rounded-lg font-semibold text-sm transition-all duration-200 border-2 min-w-0"
       
       if (isSelected) {
         switch (grade) {
@@ -1113,14 +1110,26 @@ function MetConCard({
       }
     }
 
+    const getGradeLabel = () => {
+      switch (grade) {
+        case 'A': return 'Excellent'
+        case 'B': return 'Good'
+        case 'C': return 'Average'
+        case 'D': return 'Poor'
+        default: return grade
+      }
+    }
+
     return (
       <button
         type="button"
         onClick={onClick}
         className={getButtonStyle()}
+        title={`${grade} - ${getGradeLabel()}`}
       >
         <div className="text-center">
-          <div className="text-sm font-bold">{grade}</div>
+          <div className="text-lg font-bold">{grade}</div>
+          <div className="text-xs opacity-75">{getGradeLabel()}</div>
         </div>
       </button>
     )
@@ -1132,39 +1141,71 @@ function MetConCard({
   const currentRxWeight = metconData.rxWeights[gender]
 
   return (
-    <div className={`rounded-lg border-2 transition-all ${
-      isCompleted 
-        ? 'bg-green-50 border-green-200' 
-        : 'bg-orange-50 border-orange-200'
-    }`}>
-      {/* Success Message */}
-      {showSuccess && (
-        <div className="bg-green-500 text-white p-3 rounded-t-lg text-center font-medium">
-          ✅ MetCon completion logged successfully!
+    <div 
+      className={`bg-white rounded-xl shadow-sm border-2 transition-all ${
+        isCompleted
+          ? 'border-green-200 bg-green-50'
+          : 'border-gray-200 hover:border-gray-300'
+      }`}
+    >
+      {/* SECTION 1: MetCon Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full p-6 text-left hover:bg-gray-50 transition-colors rounded-xl"
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            {/* MetCon Title */}
+            <div className="flex items-center space-x-3 mb-4">
+              <h3 className="text-xl font-bold text-charcoal">{metconData.workoutId || 'MetCon'}</h3>
+              {isCompleted && <span className="text-coral text-xl">✅</span>}
+            </div>
+
+            {/* Workout Description */}
+            {metconData.workoutNotes && (
+              <div className="mb-4 text-sm text-gray-600">
+                {metconData.workoutNotes}
+              </div>
+            )}
+
+            {/* Task Summary - Clean Grid */}
+            <div className="grid grid-cols-1 gap-2 text-sm">
+              {metconData.tasks.map((task, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <span className="text-gray-500 font-medium">{task.exercise}:</span>
+                  <span className="text-gray-900 font-semibold text-base">
+                    {task.reps} reps {task.weight_male && `@ ${gender === 'male' ? task.weight_male : task.weight_female} lbs`}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Completion Summary (when collapsed and completed) */}
+            {isCompleted && !isExpanded && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center space-x-4 text-sm">
+                  <span className="text-gray-600">Score: <span className="font-semibold text-green-600">{workoutScore}</span></span>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Chevron */}
+          <div className="ml-4 flex-shrink-0">
+            <span className="text-gray-400 text-xl">
+              {isExpanded ? '▼' : '▶'}
+            </span>
+          </div>
         </div>
-      )}
-      
-      <div className="p-6">
-        {/* Workout Header */}
-        <div className="text-center mb-6">
-          {/* Show completion checkmark when completed */}
-          {isCompleted && (
-            <div className="flex items-center justify-center space-x-3 mb-3">
-              <span className="text-green-600 text-xl">✅</span>
-              <span className="text-gray-600 font-medium">MetCon Completed</span>
-            </div>
-          )}
+      </button>
+
+      {/* SECTION 2: Completion Form (when expanded and not completed) */}
+      {isExpanded && !isCompleted && (
+        <div className="px-6 pb-6 space-y-3">
           
-          {/* Workout Notes */}
-          {metconData.workoutNotes && (
-            <div className="bg-orange-100 border-l-4 border-orange-400 p-4 rounded-r-lg mb-4">
-              <p className="text-orange-800 text-sm leading-relaxed font-medium">{metconData.workoutNotes}</p>
-            </div>
-          )}
-          
-          {/* Gender Selection - Only show if not completed */}
-          {!isCompleted && (
-            <div className="flex justify-center mb-4">
+          {/* Gender Selection */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex justify-center">
               <div className="grid grid-cols-2 bg-white rounded-lg p-1 border gap-1">
                 <button
                   onClick={() => setGender('male')}
@@ -1188,116 +1229,137 @@ function MetConCard({
                 </button>
               </div>
             </div>
-          )}
-          
-          {/* Consistent Benchmarks - All Gray */}
-          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mb-6">
-            <div className="bg-white rounded-lg p-3 border border-gray-200">
-              <div className="text-xs text-gray-600 font-medium">Excellent</div>
-              <div className="font-bold text-gray-900">{currentBenchmarks.excellentScore}</div>
-            </div>
-            <div className="bg-white rounded-lg p-3 border border-gray-200">
-              <div className="text-xs text-gray-600 font-medium">Median</div>
-              <div className="font-bold text-gray-900">{currentBenchmarks.medianScore}</div>
-            </div>
-            <div className="bg-white rounded-lg p-3 border border-gray-200">
-              <div className="text-xs text-gray-600 font-medium">Rx Weight</div>
-              <div className="font-bold text-gray-900">{currentRxWeight}</div>
-            </div>
           </div>
-        </div>
 
-        {/* Form Content */}
-        {isExpanded && !isCompleted && (
-          <>
-            {/* Tasks Section - Improved */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Exercise Performance</h4>
-              <div className="space-y-4">
-                {metconData.tasks.map((task, index) => (
-                  <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
-                    {/* Exercise Header */}
-                    <div className="mb-3">
-                      <h4 className="font-semibold text-gray-900">{task.exercise}</h4>
-                      <p className="text-sm text-gray-600">
-                        {task.reps} reps {task.weight_male && `@ ${gender === 'male' ? task.weight_male : task.weight_female} lbs`}
-                      </p>
-                    </div>
-                    
-                    {/* RPE and Quality - Side by Side */}
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* RPE Slider Section */}
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-xs font-medium text-gray-700">RPE</label>
-                          <span className="text-sm font-bold text-blue-600">
-                            {taskRPEs[task.exercise] || 5}/10
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min="1"
-                          max="10"
-                          value={taskRPEs[task.exercise] || 5}
-                          onChange={(e) => handleTaskRPE(task.exercise, parseInt(e.target.value))}
-                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                      
-                      {/* Quality Buttons Section */}
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-2">Quality</label>
-                        <div className="grid grid-cols-4 gap-1">
-                          {['A', 'B', 'C', 'D'].map((grade) => (
-                            <QualityButton
-                              key={grade}
-                              grade={grade}
-                              isSelected={taskQualities[task.exercise] === grade}
-                              onClick={() => handleTaskQuality(task.exercise, 
-                                taskQualities[task.exercise] === grade ? 'C' : grade
-                              )}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+          {/* Benchmarks */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-white rounded-lg p-3 border border-gray-200 text-center">
+                <div className="text-xs text-gray-600 font-medium">Excellent</div>
+                <div className="font-bold text-gray-900">{currentBenchmarks.excellentScore}</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 border border-gray-200 text-center">
+                <div className="text-xs text-gray-600 font-medium">Median</div>
+                <div className="font-bold text-gray-900">{currentBenchmarks.medianScore}</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 border border-gray-200 text-center">
+                <div className="text-xs text-gray-600 font-medium">Rx Weight</div>
+                <div className="font-bold text-gray-900">{currentRxWeight}</div>
               </div>
             </div>
+          </div>
 
-            {/* Overall Score Section */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Your Score</h4>
-              <input
-                type="text"
-                placeholder="e.g., 674 total reps, 12:34, 8 rounds + 15"
-                value={workoutScore}
-                onChange={(e) => setWorkoutScore(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-3"
-                disabled={isSubmitting}
-              />
+          {/* Task Performance Section */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Task Performance</h4>
+            <div className="space-y-4">
+              {metconData.tasks.map((task, index) => (
+                <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
+                  {/* Task Header */}
+                  <div className="mb-3">
+                    <h4 className="font-semibold text-gray-900">{task.exercise}</h4>
+                    <p className="text-sm text-gray-600">
+                      {task.reps} reps {task.weight_male && `@ ${gender === 'male' ? task.weight_male : task.weight_female} lbs`}
+                    </p>
+                  </div>
+                  
+                  {/* RPE Section */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">RPE</label>
+                      <span className="text-sm font-bold text-blue-600">
+                        {taskRPEs[task.exercise] || 5}/10
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={taskRPEs[task.exercise] || 5}
+                      onChange={(e) => handleTaskRPE(task.exercise, parseInt(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mb-2"
+                      disabled={isSubmitting}
+                    />
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>1 - Very Easy</span>
+                      <span>10 - Max Effort</span>
+                    </div>
+                  </div>
+                  
+                  {/* Quality Section */}
+                  <div>
+                    <h4 className="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">Quality</h4>
+                    <div className="grid grid-cols-4 gap-2">
+                      {['A', 'B', 'C', 'D'].map((grade) => (
+                        <QualityButton
+                          key={grade}
+                          grade={grade}
+                          isSelected={taskQualities[task.exercise] === grade}
+                          onClick={() => handleTaskQuality(task.exercise, 
+                            taskQualities[task.exercise] === grade ? 'C' : grade
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
+          </div>
 
-            {/* Notes Section */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Notes</h4>
+          {/* Overall Score Section */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Your Score</h4>
+            <input
+              type="text"
+              placeholder="e.g., 12:34, 8 rounds + 15 reps, 674 total reps"
+              value={workoutScore}
+              onChange={(e) => setWorkoutScore(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              disabled={isSubmitting}
+            />
+          </div>
+
+          {/* Notes Section - Collapsible */}
+          {!showNotes ? (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <button
+                onClick={() => setShowNotes(true)}
+                className="text-sm font-semibold text-gray-700 uppercase tracking-wide hover:text-gray-900 transition-colors"
+              >
+                + Add Notes
+              </button>
+            </div>
+          ) : (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Notes</h4>
+                <button
+                  onClick={() => {
+                    setShowNotes(false)
+                    setNotes('')
+                  }}
+                  className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Remove
+                </button>
+              </div>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 rows={3}
-                disabled={isSubmitting}
                 placeholder=""
               />
             </div>
+          )}
 
-            {/* Submit Button */}
+          {/* Submit Section */}
+          <div className="pt-2">
             <button
               onClick={handleSubmit}
               disabled={!workoutScore.trim() || isSubmitting}
-              className="w-full bg-orange-600 text-white py-4 px-4 rounded-lg hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center font-semibold text-base"
+              className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-semibold text-base shadow-sm"
             >
               {isSubmitting ? (
                 <>
@@ -1308,28 +1370,28 @@ function MetConCard({
                   Logging MetCon...
                 </>
               ) : (
-                'Mark MetCon Complete'
+                'Mark Exercise Complete'
               )}
             </button>
-          </>
-        )}
-
-        {/* Completed State */}
-        {isCompleted && (
-          <div className="text-center py-4">
-            <div className="text-green-600 text-4xl mb-2">🎉</div>
-            <p className="text-gray-700 font-medium">MetCon completed!</p>
-            <p className="text-sm text-gray-600">Your score: {workoutScore}</p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Custom CSS for sliders */}
+      {/* SECTION 3: Completed State (when expanded and completed) */}
+      {isExpanded && isCompleted && (
+        <div className="px-6 pb-6">
+          <div className="text-center py-4">
+            <p className="text-gray-600 text-sm">Exercise completed - click to collapse</p>
+          </div>
+        </div>
+      )}
+
+      {/* Custom CSS for the slider */}
       <style jsx>{`
         input[type="range"]::-webkit-slider-thumb {
           appearance: none;
-          height: 16px;
-          width: 16px;
+          height: 20px;
+          width: 20px;
           border-radius: 50%;
           background: #3b82f6;
           cursor: pointer;
@@ -1337,8 +1399,8 @@ function MetConCard({
         }
 
         input[type="range"]::-moz-range-thumb {
-          height: 16px;
-          width: 16px;
+          height: 20px;
+          width: 20px;
           border-radius: 50%;
           background: #3b82f6;
           cursor: pointer;
