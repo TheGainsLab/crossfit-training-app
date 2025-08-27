@@ -247,25 +247,22 @@ export default function ProgramOverviewPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Program Overview
-              </h1>
-              <p className="text-gray-600">
-                Your {program?.weeks_generated.length || 0}-week training program
-              </p>
-            </div>
-            <Link
-              href="/dashboard"
-              className="text-blue-600 hover:text-blue-700"
-            >
-              ← Back to Dashboard
-            </Link>
-          </div>
-        </div>
+        
+
+{/* Header */}
+<div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+  <div className="text-center">
+    <h1 className="text-3xl font-bold text-gray-900 mb-3">
+      Program Overview
+    </h1>
+    <Link
+      href="/dashboard"
+      className="text-sm text-blue-600 hover:text-blue-700 underline"
+    >
+      ← Back to Dashboard
+    </Link>
+  </div>
+</div>
 
         {/* Progress Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
