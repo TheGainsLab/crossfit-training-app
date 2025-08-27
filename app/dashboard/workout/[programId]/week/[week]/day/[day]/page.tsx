@@ -829,9 +829,8 @@ return (
       {isExpanded && !isCompleted && (
         <div className="px-6 pb-6 space-y-3">
           
-          {/* Completion Type Selection */}
+          {/* Completion Type Selection - REMOVED HEADER */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Completion Type</h4>
             <div className="space-y-3">
               <label className="flex items-center space-x-3 cursor-pointer">
                 <input
@@ -843,7 +842,7 @@ return (
                   className="w-4 h-4 text-blue-600 border-2 border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
                 <span className="text-base font-medium text-gray-700">
-                  Completed As Prescribed (As Rx)
+                  As Prescribed (As Rx)
                 </span>
               </label>
               <label className="flex items-center space-x-3 cursor-pointer">
@@ -906,10 +905,10 @@ return (
             </div>
           )}
 
-          {/* RPE Section - IMPROVED HEADER */}
+          {/* RPE Section - SIMPLIFIED HEADER */}
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Effort Level - RPE</h4>
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">RPE</h4>
               <span className="text-lg font-bold text-blue-600">{formData.rpe}/10</span>
             </div>
             <input
@@ -922,7 +921,6 @@ return (
             />
             <div className="flex justify-between text-xs text-gray-500">
               <span>1 - Very Easy</span>
-              <span>5 - Moderate</span>
               <span>10 - Max Effort</span>
             </div>
           </div>
