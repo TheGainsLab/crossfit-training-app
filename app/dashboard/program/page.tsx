@@ -248,7 +248,7 @@ export default function ProgramOverviewPage() {
     <div className="min-h-screen bg-ice-blue py-8">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
-<div className="bg-slate-blue rounded-lg shadow-lg p-6 mb-6">        
+        <div className="bg-white border-2 border-slate-blue rounded-lg shadow-lg p-6 mb-6">        
           <div className="text-center">
             <h1 className="text-3xl font-bold text-charcoal mb-3">
               Program Overview
@@ -264,12 +264,12 @@ export default function ProgramOverviewPage() {
 
         {/* Progress Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-<div className="bg-slate-blue rounded-lg shadow p-6 text-center">
+          <div className="bg-white border-2 border-slate-blue rounded-lg shadow p-6 text-center">
             <div className="text-3xl font-bold text-coral">
               {completionStats.completedDays}/{completionStats.totalDays}
             </div>
             <div className="text-charcoal">Days Completed</div>
-            <div className="mt-2 bg-slate-blue rounded-full h-2">
+            <div className="mt-2 bg-gray-300 rounded-full h-2">
               <div
                 className="bg-coral h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(completionStats.completedDays / completionStats.totalDays) * 100}%` }}
@@ -280,7 +280,7 @@ export default function ProgramOverviewPage() {
             </div>
           </div>
 
-<div className="bg-slate-blue rounded-lg shadow p-6 text-center">
+          <div className="bg-white border-2 border-slate-blue rounded-lg shadow p-6 text-center">
             <div className="text-3xl font-bold text-coral">
               Week {completionStats.currentWeek}
             </div>
@@ -290,7 +290,7 @@ export default function ProgramOverviewPage() {
             </div>
           </div>
           
-<div className="bg-slate-blue rounded-lg shadow p-6 text-center">
+          <div className="bg-white border-2 border-slate-blue rounded-lg shadow p-6 text-center">
             <div className="text-3xl font-bold text-charcoal">
               #{program?.program_number || 0}
             </div>
@@ -311,8 +311,7 @@ export default function ProgramOverviewPage() {
             return (
               <div 
                 key={week} 
-                
-className={`rounded-lg border-2 p-6 bg-slate-blue ${
+                className={`rounded-lg border-2 p-6 bg-white ${
                   [4, 8, 12].includes(week) ? 'border-yellow-300' : 'border-slate-blue'
                 } ${isCurrentWeek ? 'ring-2 ring-coral' : ''}`}
               >
@@ -343,7 +342,7 @@ className={`rounded-lg border-2 p-6 bg-slate-blue ${
                       href={`/dashboard/workout/${program?.id}/week/${day.week}/day/${day.day}`}
                       className={`p-3 rounded-lg border transition-all hover:shadow-md ${
                         day.completed 
-                          ? 'bg-coral/5 border-coral/30 hover:bg-coral/10' 
+                          ? 'bg-white border-coral/30 hover:bg-coral/10' 
                           : 'bg-white border-slate-blue hover:border-coral'
                       }`}
                     >
