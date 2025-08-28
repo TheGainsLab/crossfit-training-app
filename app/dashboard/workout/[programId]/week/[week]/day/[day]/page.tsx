@@ -803,18 +803,6 @@ className="w-6 h-6 bg-coral text-white rounded-full text-xs flex items-center ju
                 <span className="text-charcoal font-semibold text-base">{exercise.weightTime || 'BW'}</span>
               </div>
             </div>
-
-            {/* Completion Summary (when collapsed and completed) */}
-            {completion && !isExpanded && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex items-center space-x-4 text-sm">
-                  <span className="text-gray-600">RPE: <span className="font-semibold text-coral">{completion.rpe}/10</span></span>
-                  {completion.quality && (
-                    <span className="text-gray-600">Quality: <span className="font-semibold">{completion.quality}</span></span>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
           
           {/* Chevron */}
