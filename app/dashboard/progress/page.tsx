@@ -144,9 +144,10 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-sm font-medium text-blue-600">
-                  {session.totalExercises} exercises
-                </div>
+               
+<div className="text-sm font-medium text-coral">
+  {session.totalExercises} exercises
+</div>
               </div>
             </div>
 
@@ -159,9 +160,10 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
   className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
 >
   {block.blockName}
-  {block.exerciseCount > 0 && (
-    <span className="ml-1 text-blue-600">({block.exerciseCount})</span>
-  )}
+  
+{block.exerciseCount > 0 && (
+  <span className="ml-1 text-coral">({block.exerciseCount})</span>
+)}
 </span>
 
               ))}
@@ -651,9 +653,9 @@ const TabNavigation = () => (
           aria-selected={activeTab === tab.id}
           aria-controls={`${tab.id}-panel`}
 
-className={`px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+className={`px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2 ${
   activeTab === tab.id
-    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg scale-105 ring-2 ring-blue-500 ring-offset-2'
+    ? 'bg-coral text-white shadow-lg scale-105 ring-2 ring-coral ring-offset-2'
     : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200'
 }`}
 >
