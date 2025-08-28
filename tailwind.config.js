@@ -1,20 +1,12 @@
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
-  safelist: ['bg-coral', 'text-coral'],
+export default {
   theme: {
     extend: {
       colors: {
-        'charcoal': '#282B34',
-        'ice-blue': '#F8FBFE', 
-        'slate-blue': '#DAE2EA',
-        'coral': '#FE5858'
+        coral: '#FE5858',
+        charcoal: '#282B34',
+        'ice-blue': '#F8FBFE',
+        'slate-blue': '#DAE2EA'
       }
-    },
-  },
-  plugins: [],
+    }
+  }
 }

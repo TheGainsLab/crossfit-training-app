@@ -1,5 +1,26 @@
 @import "tailwindcss";
 
+@layer utilities {
+  .bg-coral {
+    background-color: #FE5858;
+  }
+  .text-coral {
+    color: #FE5858;
+  }
+  .bg-charcoal {
+    background-color: #282B34;
+  }
+  .text-charcoal {
+    color: #282B34;
+  }
+  .bg-ice-blue {
+    background-color: #F8FBFE;
+  }
+  .bg-slate-blue {
+    background-color: #DAE2EA;
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

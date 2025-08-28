@@ -163,14 +163,14 @@ const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicP
     <div className="mb-4">
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center space-x-3">
-          <span className="font-medium text-gray-900">{lift}:</span>
-          <span className="text-lg font-semibold text-gray-800">{weight}</span>
+          <span className="font-medium text-charcoal">{lift}:</span>
+          <span className="text-lg font-semibold text-charcoal">{weight}</span>
           <span className="text-sm text-gray-600">({Math.round(current * 100)}{unit} of squat)</span>
         </div>
         <div className={`text-sm font-medium px-3 py-1 rounded-full ${
-          isBalanced ? 'bg-green-100 text-green-700' : 
-          isClose ? 'bg-amber-100 text-amber-700' : 
-          'bg-blue-100 text-blue-700'
+          isBalanced ? 'bg-coral/10 text-coral' : 
+          isClose ? 'bg-orange-100 text-orange-700' : 
+          'bg-slate-blue/20 text-charcoal'
         }`}>
           {isBalanced ? 'Balanced' : isClose ? 'Nearly Balanced' : 'Developing'}
         </div>
@@ -178,12 +178,12 @@ const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicP
       
       <div className="relative">
         {/* Progress Bar Background */}
-        <div className="w-full bg-gray-200 rounded-full h-3">
+        <div className="w-full bg-slate-blue rounded-full h-3">
           <div 
             className={`h-3 rounded-full transition-all duration-300 ${
-              isBalanced ? 'bg-gradient-to-r from-green-400 to-green-500' :
-              isClose ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
-              'bg-gradient-to-r from-blue-400 to-blue-500'
+              isBalanced ? 'bg-gradient-to-r from-coral to-coral' :
+              isClose ? 'bg-gradient-to-r from-orange-400 to-orange-500' :
+              'bg-gradient-to-r from-slate-blue to-charcoal'
             }`}
             style={{ width: `${percentage}%` }}
           />
@@ -191,8 +191,8 @@ const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicP
         
         {/* Target Line */}
         <div className="absolute top-0 right-0 transform translate-x-2">
-          <div className="w-0.5 h-3 bg-gray-600"></div>
-          <div className="text-xs text-gray-600 mt-1 -translate-x-1/2">
+          <div className="w-0.5 h-3 bg-charcoal"></div>
+          <div className="text-xs text-charcoal mt-1 -translate-x-1/2">
             Target: {Math.round(target * 100)}{unit}
           </div>
         </div>
@@ -208,9 +208,9 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
   
   const levels = [
     { name: 'Beginner', value: 1.0, color: 'bg-gray-300' },
-    { name: 'Intermediate', value: 1.5, color: 'bg-blue-400' },
-    { name: 'Advanced', value: 2.0, color: 'bg-green-400' },
-    { name: 'Elite', value: 2.5, color: 'bg-purple-400' }
+    { name: 'Intermediate', value: 1.5, color: 'bg-slate-blue' },
+    { name: 'Advanced', value: 2.0, color: 'bg-coral' },
+    { name: 'Elite', value: 2.5, color: 'bg-charcoal' }
   ]
   
   // Calculate current level
@@ -227,14 +227,14 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
     <div className="mb-6">
       <div className="flex justify-between items-center mb-3">
         <div className="flex items-center space-x-3">
-          <span className="font-medium text-gray-900">{lift}:</span>
-          <span className="text-lg font-semibold text-gray-800">{weight}</span>
+          <span className="font-medium text-charcoal">{lift}:</span>
+          <span className="text-lg font-semibold text-charcoal">{weight}</span>
           <span className="text-sm text-gray-600">({numericRatio}x bodyweight)</span>
         </div>
         <div className={`text-sm font-medium px-3 py-1 rounded-full ${
-          currentLevel === 'Elite' ? 'bg-purple-100 text-purple-700' :
-          currentLevel === 'Advanced' ? 'bg-green-100 text-green-700' :
-          currentLevel === 'Intermediate' ? 'bg-blue-100 text-blue-700' :
+          currentLevel === 'Elite' ? 'bg-charcoal/10 text-charcoal' :
+          currentLevel === 'Advanced' ? 'bg-coral/10 text-coral' :
+          currentLevel === 'Intermediate' ? 'bg-slate-blue/20 text-charcoal' :
           'bg-gray-100 text-gray-700'
         }`}>
           {currentLevel}
@@ -244,21 +244,21 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
       {/* Progress Bar with Level Markers */}
       <div className="relative">
         {/* Background Bar */}
-        <div className="w-full bg-gray-200 rounded-full h-4 relative overflow-hidden">
+        <div className="w-full bg-slate-blue rounded-full h-4 relative overflow-hidden">
           {/* Level Sections */}
           <div className="absolute inset-0 flex">
             <div className="flex-1 bg-gray-300 border-r border-white"></div>
-            <div className="flex-1 bg-blue-200 border-r border-white"></div>
-            <div className="flex-1 bg-green-200 border-r border-white"></div>
-            <div className="flex-1 bg-purple-200"></div>
+            <div className="flex-1 bg-slate-blue/50 border-r border-white"></div>
+            <div className="flex-1 bg-coral/20 border-r border-white"></div>
+            <div className="flex-1 bg-charcoal/20"></div>
           </div>
           
           {/* Progress Fill */}
           <div 
             className={`absolute top-0 left-0 h-4 rounded-full transition-all duration-500 ${
-              currentLevel === 'Elite' ? 'bg-gradient-to-r from-purple-400 to-purple-500' :
-              currentLevel === 'Advanced' ? 'bg-gradient-to-r from-green-400 to-green-500' :
-              currentLevel === 'Intermediate' ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
+              currentLevel === 'Elite' ? 'bg-gradient-to-r from-charcoal to-charcoal' :
+              currentLevel === 'Advanced' ? 'bg-gradient-to-r from-coral to-coral' :
+              currentLevel === 'Intermediate' ? 'bg-gradient-to-r from-slate-blue to-slate-blue' :
               'bg-gradient-to-r from-gray-400 to-gray-500'
             }`}
             style={{ width: `${position}%` }}
@@ -266,13 +266,13 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
           
           {/* Current Position Marker */}
           <div 
-            className="absolute top-0 w-0.5 h-4 bg-gray-800"
+            className="absolute top-0 w-0.5 h-4 bg-charcoal"
             style={{ left: `${position}%` }}
           />
         </div>
         
         {/* Level Labels */}
-        <div className="flex justify-between mt-2 text-xs text-gray-600">
+        <div className="flex justify-between mt-2 text-xs text-charcoal">
           <div className="flex flex-col items-start">
             <span>1.0</span>
             <span className="font-medium">Beginner</span>
@@ -296,10 +296,10 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
           className="absolute -top-8 transform -translate-x-1/2"
           style={{ left: `${position}%` }}
         >
-          <div className="bg-gray-800 text-white px-2 py-1 rounded text-xs font-medium">
+          <div className="bg-charcoal text-white px-2 py-1 rounded text-xs font-medium">
             {numericRatio}
           </div>
-          <div className="w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-gray-800 mx-auto"></div>
+          <div className="w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-charcoal mx-auto"></div>
         </div>
       </div>
     </div>
@@ -415,9 +415,9 @@ export default function ProfilePage() {
 
   const getSkillColor = (level: string) => {
     switch(level) {
-      case 'Advanced': return 'text-green-600'
-      case 'Intermediate': return 'text-blue-600'
-      case 'Beginner': return 'text-yellow-600'
+      case 'Advanced': return 'text-coral'
+      case 'Intermediate': return 'text-slate-blue'
+      case 'Beginner': return 'text-orange-600'
       default: return 'text-gray-400'
     }
   }
@@ -497,10 +497,10 @@ const loadProfile = async () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ice-blue flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your profile...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-coral mx-auto"></div>
+          <p className="mt-4 text-charcoal">Loading your profile...</p>
         </div>
       </div>
     )
@@ -509,14 +509,14 @@ const loadProfile = async () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-ice-blue py-8">
         <div className="max-w-4xl mx-auto px-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-red-800 mb-2">Error</h2>
             <p className="text-red-700">{error}</p>
             <a 
               href="/intake" 
-              className="inline-block mt-4 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+              className="inline-block mt-4 bg-coral text-white px-6 py-2 rounded-md hover:bg-coral"
             >
               Go to Assessment
             </a>
@@ -529,7 +529,7 @@ const loadProfile = async () => {
   // No profile state
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-ice-blue py-8">
         <div className="max-w-4xl mx-auto px-4">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-yellow-800 mb-2">No Profile Data</h2>
@@ -542,14 +542,14 @@ const loadProfile = async () => {
 
 // Main render
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-ice-blue py-8">
       <div className="max-w-6xl mx-auto px-4 space-y-6">
         {/* Consolidated Header */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-charcoal mb-2">
             Athlete Profile & Analysis
           </h1>
-          <div className="text-lg text-gray-800 font-semibold">
+          <div className="text-lg text-charcoal font-semibold">
             {profile.user_summary.name} • {formatWeight(profile.user_summary.body_weight)}
           </div>
           <div className="text-sm text-gray-600 mt-1">
@@ -560,10 +560,10 @@ const loadProfile = async () => {
         {/* New Strength Section */}
         <div className="space-y-6">
           {/* Olympic Lift Performance Card */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">OLYMPIC LIFT PERFORMANCE</h2>
-              <div className="w-full h-0.5 bg-gradient-to-r from-blue-500 to-green-500"></div>
+              <h2 className="text-xl font-bold text-charcoal mb-2">OLYMPIC LIFT PERFORMANCE</h2>
+              <div className="w-full h-0.5 bg-gradient-to-r from-coral to-orange-500"></div>
               <p className="text-sm text-gray-600 mt-2">Balance assessment vs back squat strength</p>
             </div>
             
@@ -583,10 +583,10 @@ const loadProfile = async () => {
           </div>
           
           {/* Foundation Strength Card */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">FOUNDATION STRENGTH</h2>
-              <div className="w-full h-0.5 bg-gradient-to-r from-gray-400 via-blue-400 via-green-400 to-purple-400"></div>
+              <h2 className="text-xl font-bold text-charcoal mb-2">FOUNDATION STRENGTH</h2>
+              <div className="w-full h-0.5 bg-gradient-to-r from-gray-400 via-slate-blue via-coral to-charcoal"></div>
               <p className="text-sm text-gray-600 mt-2">Progression levels relative to bodyweight ({formatWeight(profile.user_summary.body_weight)})</p>
             </div>
             
@@ -610,39 +610,39 @@ const loadProfile = async () => {
 
             {/* Expandable Details */}
             {showAllLifts && (
-              <div className="border-t border-gray-200 pt-6 mt-6">
-                <h3 className="font-semibold text-gray-800 mb-6">Complete Lift & Ratio Details</h3>
+              <div className="border-t border-slate-blue pt-6 mt-6">
+                <h3 className="font-semibold text-charcoal mb-6">Complete Lift & Ratio Details</h3>
                 
                 {/* ALL MAX LIFTS Section */}
                 <div className="mb-8">
-                  <h4 className="font-medium text-gray-700 mb-4 text-lg">ALL MAX LIFTS</h4>
+                  <h4 className="font-medium text-charcoal mb-4 text-lg">ALL MAX LIFTS</h4>
                   
                   {/* Olympic Variations */}
                   <div className="mb-6">
-                    <h5 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide border-b border-gray-200 pb-1">Olympic Variations</h5>
+                    <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Olympic Variations</h5>
                     <div className="space-y-2">
                       {profile.one_rms.jerk_only && (
                         <div className="flex justify-between py-1">
                           <span className="text-gray-700">Jerk Only</span>
-                          <span className="font-medium text-gray-900">{formatWeight(profile.one_rms.jerk_only)}</span>
+                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.jerk_only)}</span>
                         </div>
                       )}
                       {profile.one_rms.clean_only && (
                         <div className="flex justify-between py-1">
                           <span className="text-gray-700">Clean Only</span>
-                          <span className="font-medium text-gray-900">{formatWeight(profile.one_rms.clean_only)}</span>
+                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.clean_only)}</span>
                         </div>
                       )}
                       {profile.one_rms.power_clean && (
                         <div className="flex justify-between py-1">
                           <span className="text-gray-700">Power Clean</span>
-                          <span className="font-medium text-gray-900">{formatWeight(profile.one_rms.power_clean)}</span>
+                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.power_clean)}</span>
                         </div>
                       )}
                       {profile.one_rms.power_snatch && (
                         <div className="flex justify-between py-1">
                           <span className="text-gray-700">Power Snatch</span>
-                          <span className="font-medium text-gray-900">{formatWeight(profile.one_rms.power_snatch)}</span>
+                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.power_snatch)}</span>
                         </div>
                       )}
                     </div>
@@ -650,18 +650,18 @@ const loadProfile = async () => {
 
                   {/* Squatting */}
                   <div className="mb-6">
-                    <h5 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide border-b border-gray-200 pb-1">Squatting</h5>
+                    <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Squatting</h5>
                     <div className="space-y-2">
                       {profile.one_rms.front_squat && (
                         <div className="flex justify-between py-1">
                           <span className="text-gray-700">Front Squat</span>
-                          <span className="font-medium text-gray-900">{formatWeight(profile.one_rms.front_squat)}</span>
+                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.front_squat)}</span>
                         </div>
                       )}
                       {profile.one_rms.overhead_squat && (
                         <div className="flex justify-between py-1">
                           <span className="text-gray-700">Overhead Squat</span>
-                          <span className="font-medium text-gray-900">{formatWeight(profile.one_rms.overhead_squat)}</span>
+                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.overhead_squat)}</span>
                         </div>
                       )}
                     </div>
@@ -669,18 +669,18 @@ const loadProfile = async () => {
 
                   {/* Pressing */}
                   <div className="mb-6">
-                    <h5 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide border-b border-gray-200 pb-1">Pressing</h5>
+                    <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Pressing</h5>
                     <div className="space-y-2">
                       {profile.one_rms.push_press && (
                         <div className="flex justify-between py-1">
                           <span className="text-gray-700">Push Press</span>
-                          <span className="font-medium text-gray-900">{formatWeight(profile.one_rms.push_press)}</span>
+                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.push_press)}</span>
                         </div>
                       )}
                       {profile.one_rms.strict_press && (
                         <div className="flex justify-between py-1">
                           <span className="text-gray-700">Strict Press</span>
-                          <span className="font-medium text-gray-900">{formatWeight(profile.one_rms.strict_press)}</span>
+                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.strict_press)}</span>
                         </div>
                       )}
                     </div>
@@ -688,12 +688,12 @@ const loadProfile = async () => {
 
                   {/* Pulling */}
                   <div className="mb-6">
-                    <h5 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide border-b border-gray-200 pb-1">Pulling</h5>
+                    <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Pulling</h5>
                     <div className="space-y-2">
                       {profile.one_rms.weighted_pullup && (
                         <div className="flex justify-between py-1">
                           <span className="text-gray-700">Weighted Pullup</span>
-                          <span className="font-medium text-gray-900">{formatWeight(profile.one_rms.weighted_pullup)}</span>
+                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.weighted_pullup)}</span>
                         </div>
                       )}
                     </div>
@@ -702,66 +702,66 @@ const loadProfile = async () => {
 
                 {/* ALL RATIOS Section */}
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-4 text-lg">ALL RATIOS</h4>
+                  <h4 className="font-medium text-charcoal mb-4 text-lg">ALL RATIOS</h4>
                   
                   {/* Olympic Lift Efficiency */}
-                  <div className="mb-6 bg-gray-50 rounded-lg p-4">
-                    <h5 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide">Olympic Lift Efficiency</h5>
+                  <div className="mb-6 bg-ice-blue rounded-lg p-4">
+                    <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Olympic Lift Efficiency</h5>
                     <div className="space-y-2">
                       <div className="flex justify-between items-center py-1">
                         <span className="text-gray-700">Power Snatch / Snatch</span>
                         <div className="flex items-center space-x-2">
-                          <span className="w-3 h-3 rounded-full bg-green-400"></span>
-                          <span className="font-medium text-gray-900">{safeRatio(profile.one_rms.power_snatch, profile.one_rms.snatch)}</span>
+                          <span className="w-3 h-3 rounded-full bg-coral"></span>
+                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.power_snatch, profile.one_rms.snatch)}</span>
                         </div>
                       </div>
                       <div className="flex justify-between items-center py-1">
                         <span className="text-gray-700">Power Clean / Clean</span>
                         <div className="flex items-center space-x-2">
-                          <span className="w-3 h-3 rounded-full bg-green-400"></span>
-                          <span className="font-medium text-gray-900">{safeRatio(profile.one_rms.power_clean, profile.one_rms.clean_only)}</span>
+                          <span className="w-3 h-3 rounded-full bg-coral"></span>
+                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.power_clean, profile.one_rms.clean_only)}</span>
                         </div>
                       </div>
                       <div className="flex justify-between items-center py-1">
                         <span className="text-gray-700">Jerk / Clean</span>
                         <div className="flex items-center space-x-2">
-                          <span className="w-3 h-3 rounded-full bg-green-400"></span>
-                          <span className="font-medium text-gray-900">{safeRatio(profile.one_rms.jerk_only, profile.one_rms.clean_only)}</span>
+                          <span className="w-3 h-3 rounded-full bg-coral"></span>
+                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.jerk_only, profile.one_rms.clean_only)}</span>
                         </div>
                       </div>
                       <div className="flex justify-between items-center py-1">
                         <span className="text-gray-700">Snatch / C&J</span>
                         <div className="flex items-center space-x-2">
-                          <span className="w-3 h-3 rounded-full bg-yellow-400"></span>
-                          <span className="font-medium text-gray-900">{safeRatio(profile.one_rms.snatch, profile.one_rms.clean_and_jerk)}</span>
+                          <span className="w-3 h-3 rounded-full bg-orange-400"></span>
+                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.snatch, profile.one_rms.clean_and_jerk)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Strength Balance */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h5 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide">Strength Balance</h5>
+                  <div className="bg-ice-blue rounded-lg p-4">
+                    <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Strength Balance</h5>
                     <div className="space-y-2">
                       <div className="flex justify-between items-center py-1">
                         <span className="text-gray-700">Front Squat / Back Squat</span>
                         <div className="flex items-center space-x-2">
-                          <span className="w-3 h-3 rounded-full bg-yellow-400"></span>
-                          <span className="font-medium text-gray-900">{safeRatio(profile.one_rms.front_squat, profile.one_rms.back_squat)}</span>
+                          <span className="w-3 h-3 rounded-full bg-orange-400"></span>
+                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.front_squat, profile.one_rms.back_squat)}</span>
                         </div>
                       </div>
                       <div className="flex justify-between items-center py-1">
                         <span className="text-gray-700">Overhead Squat / Snatch</span>
                         <div className="flex items-center space-x-2">
                           <span className="w-3 h-3 rounded-full bg-red-400"></span>
-                          <span className="font-medium text-gray-900">{safeRatio(profile.one_rms.overhead_squat, profile.one_rms.snatch)}</span>
+                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.overhead_squat, profile.one_rms.snatch)}</span>
                         </div>
                       </div>
                       <div className="flex justify-between items-center py-1">
                         <span className="text-gray-700">Push Press / Strict Press</span>
                         <div className="flex items-center space-x-2">
                           <span className="w-3 h-3 rounded-full bg-red-400"></span>
-                          <span className="font-medium text-gray-900">{safeRatio(profile.one_rms.push_press, profile.one_rms.strict_press)}</span>
+                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.push_press, profile.one_rms.strict_press)}</span>
                         </div>
                       </div>
                     </div>
@@ -773,7 +773,7 @@ const loadProfile = async () => {
             {/* Toggle Button */}
             <button
               onClick={() => setShowAllLifts(!showAllLifts)}
-              className="mt-6 text-blue-600 hover:text-blue-800 font-medium"
+              className="mt-6 text-coral hover:text-coral font-medium"
             >
               [{showAllLifts ? '- Hide Complete Details' : '+ View Complete Lift & Ratio Details'}]
             </button>
@@ -781,31 +781,31 @@ const loadProfile = async () => {
         </div>
 
         {/* Enhanced Conditioning Benchmarks */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">CONDITIONING BENCHMARKS</h2>
-          <div className="border-t-2 border-gray-900 mb-6"></div>
+        <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
+          <h2 className="text-xl font-bold text-charcoal mb-4">CONDITIONING BENCHMARKS</h2>
+          <div className="border-t-2 border-charcoal mb-6"></div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Running Column */}
             <div>
-              <h3 className="font-semibold text-gray-800 mb-3">RUNNING</h3>
+              <h3 className="font-semibold text-charcoal mb-3">RUNNING</h3>
               <div className="space-y-2">
                 {profile.benchmarks.mile_run && (
                   <div className="flex justify-between">
                     <span className="text-gray-700">Mile</span>
-                    <span className="font-semibold">{profile.benchmarks.mile_run}</span>
+                    <span className="font-semibold text-charcoal">{profile.benchmarks.mile_run}</span>
                   </div>
                 )}
                 {profile.benchmarks.five_k_run && (
                   <div className="flex justify-between">
                     <span className="text-gray-700">5K</span>
-                    <span className="font-semibold">{profile.benchmarks.five_k_run}</span>
+                    <span className="font-semibold text-charcoal">{profile.benchmarks.five_k_run}</span>
                   </div>
                 )}
                 {profile.benchmarks.ten_k_run && (
                   <div className="flex justify-between">
                     <span className="text-gray-700">10K</span>
-                    <span className="font-semibold">{profile.benchmarks.ten_k_run}</span>
+                    <span className="font-semibold text-charcoal">{profile.benchmarks.ten_k_run}</span>
                   </div>
                 )}
               </div>
@@ -813,24 +813,24 @@ const loadProfile = async () => {
 
             {/* Rowing Column */}
             <div>
-              <h3 className="font-semibold text-gray-800 mb-3">ROWING</h3>
+              <h3 className="font-semibold text-charcoal mb-3">ROWING</h3>
               <div className="space-y-2">
                 {profile.benchmarks.one_k_row && (
                   <div className="flex justify-between">
                     <span className="text-gray-700">1K</span>
-                    <span className="font-semibold">{profile.benchmarks.one_k_row}</span>
+                    <span className="font-semibold text-charcoal">{profile.benchmarks.one_k_row}</span>
                   </div>
                 )}
                 {profile.benchmarks.two_k_row && (
                   <div className="flex justify-between">
                     <span className="text-gray-700">2K</span>
-                    <span className="font-semibold">{profile.benchmarks.two_k_row}</span>
+                    <span className="font-semibold text-charcoal">{profile.benchmarks.two_k_row}</span>
                   </div>
                 )}
                 {profile.benchmarks.five_k_row && (
                   <div className="flex justify-between">
                     <span className="text-gray-700">5K</span>
-                    <span className="font-semibold">{profile.benchmarks.five_k_row}</span>
+                    <span className="font-semibold text-charcoal">{profile.benchmarks.five_k_row}</span>
                   </div>
                 )}
               </div>
@@ -838,12 +838,12 @@ const loadProfile = async () => {
 
             {/* Bike Column */}
             <div>
-              <h3 className="font-semibold text-gray-800 mb-3">BIKE</h3>
+              <h3 className="font-semibold text-charcoal mb-3">BIKE</h3>
               <div className="space-y-2">
                 {profile.benchmarks.air_bike_10_min && (
                   <div className="flex justify-between">
                     <span className="text-gray-700">10min</span>
-                    <span className="font-semibold">{profile.benchmarks.air_bike_10_min}</span>
+                    <span className="font-semibold text-charcoal">{profile.benchmarks.air_bike_10_min}</span>
                   </div>
                 )}
               </div>
@@ -852,12 +852,12 @@ const loadProfile = async () => {
         </div>
 
         {/* Programming Focus Areas */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Programming Focus Areas</h2>
+        <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
+          <h2 className="text-xl font-bold text-charcoal mb-6">Programming Focus Areas</h2>
           
           {/* Accessory Needs Section */}
           <div className="mb-8">
-            <h3 className="font-semibold text-gray-800 mb-4">Accessory Needs</h3>
+            <h3 className="font-semibold text-charcoal mb-4">Accessory Needs</h3>
             
             {(() => {
               // Calculate actual accessory needs using real logic
@@ -885,40 +885,40 @@ const loadProfile = async () => {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center justify-between py-2">
                       <div className="flex items-center space-x-3">
-                        <span className={`w-3 h-3 rounded-full ${needsUpperBodyPulling ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                        <span className={`w-3 h-3 rounded-full ${needsUpperBodyPulling ? 'bg-red-500' : 'bg-coral'}`}></span>
                         <span className="text-gray-700">Upper Body Pulling</span>
                       </div>
-                      <span className={`text-sm font-medium ${needsUpperBodyPulling ? 'text-red-600' : 'text-green-600'}`}>
+                      <span className={`text-sm font-medium ${needsUpperBodyPulling ? 'text-red-600' : 'text-coral'}`}>
                         {needsUpperBodyPulling ? 'Target' : 'Maintain'}
                       </span>
                     </div>
                     
                     <div className="flex items-center justify-between py-2">
                       <div className="flex items-center space-x-3">
-                        <span className={`w-3 h-3 rounded-full ${needsUpperBodyPressing ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                        <span className={`w-3 h-3 rounded-full ${needsUpperBodyPressing ? 'bg-red-500' : 'bg-coral'}`}></span>
                         <span className="text-gray-700">Upper Body Pressing</span>
                       </div>
-                      <span className={`text-sm font-medium ${needsUpperBodyPressing ? 'text-red-600' : 'text-green-600'}`}>
+                      <span className={`text-sm font-medium ${needsUpperBodyPressing ? 'text-red-600' : 'text-coral'}`}>
                         {needsUpperBodyPressing ? 'Target' : 'Maintain'}
                       </span>
                     </div>
                     
                     <div className="flex items-center justify-between py-2">
                       <div className="flex items-center space-x-3">
-                        <span className={`w-3 h-3 rounded-full ${needsUpperBack ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                        <span className={`w-3 h-3 rounded-full ${needsUpperBack ? 'bg-red-500' : 'bg-coral'}`}></span>
                         <span className="text-gray-700">Upper Back</span>
                       </div>
-                      <span className={`text-sm font-medium ${needsUpperBack ? 'text-red-600' : 'text-green-600'}`}>
+                      <span className={`text-sm font-medium ${needsUpperBack ? 'text-red-600' : 'text-coral'}`}>
                         {needsUpperBack ? 'Target' : 'Maintain'}
                       </span>
                     </div>
                     
                     <div className="flex items-center justify-between py-2">
                       <div className="flex items-center space-x-3">
-                        <span className={`w-3 h-3 rounded-full ${needsPosteriorChain ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                        <span className={`w-3 h-3 rounded-full ${needsPosteriorChain ? 'bg-red-500' : 'bg-coral'}`}></span>
                         <span className="text-gray-700">Posterior Chain</span>
                       </div>
-                      <span className={`text-sm font-medium ${needsPosteriorChain ? 'text-red-600' : 'text-green-600'}`}>
+                      <span className={`text-sm font-medium ${needsPosteriorChain ? 'text-red-600' : 'text-coral'}`}>
                         {needsPosteriorChain ? 'Target' : 'Maintain'}
                       </span>
                     </div>
@@ -931,7 +931,7 @@ const loadProfile = async () => {
                         ? prev.filter(name => name !== 'accessory-details')
                         : [...prev, 'accessory-details']
                     )}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-coral hover:text-coral text-sm font-medium"
                   >
                     [{expandedCategories.includes('accessory-details') ? '- Hide Details' : '+ View Details'}]
                   </button>
@@ -940,11 +940,11 @@ const loadProfile = async () => {
                   {expandedCategories.includes('accessory-details') && (
                     <div className="mt-4 space-y-3">
                       {/* Upper Body Pulling */}
-                      <div className={`p-3 rounded-lg ${needsUpperBodyPulling ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                      <div className={`p-3 rounded-lg ${needsUpperBodyPulling ? 'bg-red-50 border border-red-200' : 'bg-coral/5 border border-coral/20'}`}>
                         <div className="flex items-start">
-                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsUpperBodyPulling ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsUpperBodyPulling ? 'bg-red-500' : 'bg-coral'}`}></span>
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900 mb-1">Upper Body Pulling - {needsUpperBodyPulling ? 'Target' : 'Maintain'}</div>
+                            <div className="font-medium text-charcoal mb-1">Upper Body Pulling - {needsUpperBodyPulling ? 'Target' : 'Maintain'}</div>
                             {needsUpperBodyPulling ? (
                               <div className="text-sm text-gray-600">
                                 <div className="mb-1">
@@ -963,11 +963,11 @@ const loadProfile = async () => {
                       </div>
 
                       {/* Upper Body Pressing */}
-                      <div className={`p-3 rounded-lg ${needsUpperBodyPressing ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                      <div className={`p-3 rounded-lg ${needsUpperBodyPressing ? 'bg-red-50 border border-red-200' : 'bg-coral/5 border border-coral/20'}`}>
                         <div className="flex items-start">
-                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsUpperBodyPressing ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsUpperBodyPressing ? 'bg-red-500' : 'bg-coral'}`}></span>
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900 mb-1">Upper Body Pressing - {needsUpperBodyPressing ? 'Target' : 'Maintain'}</div>
+                            <div className="font-medium text-charcoal mb-1">Upper Body Pressing - {needsUpperBodyPressing ? 'Target' : 'Maintain'}</div>
                             {needsUpperBodyPressing ? (
                               <div className="text-sm text-gray-600">
                                 <div className="mb-1">
@@ -991,11 +991,11 @@ const loadProfile = async () => {
                       </div>
 
                       {/* Upper Back */}
-                      <div className={`p-3 rounded-lg ${needsUpperBack ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                      <div className={`p-3 rounded-lg ${needsUpperBack ? 'bg-red-50 border border-red-200' : 'bg-coral/5 border border-coral/20'}`}>
                         <div className="flex items-start">
-                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsUpperBack ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsUpperBack ? 'bg-red-500' : 'bg-coral'}`}></span>
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900 mb-1">Upper Back - {needsUpperBack ? 'Target' : 'Maintain'}</div>
+                            <div className="font-medium text-charcoal mb-1">Upper Back - {needsUpperBack ? 'Target' : 'Maintain'}</div>
                             {needsUpperBack ? (
                               <div className="text-sm text-gray-600">
                                 <span className="font-medium">Why:</span> Front squat ({formatWeight(profile.one_rms.front_squat)}) is {Math.round((profile.one_rms.front_squat! / profile.one_rms.back_squat!) * 100)}% of back squat. Target: 85%+.
@@ -1010,11 +1010,11 @@ const loadProfile = async () => {
                       </div>
 
                       {/* Posterior Chain */}
-                      <div className={`p-3 rounded-lg ${needsPosteriorChain ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                      <div className={`p-3 rounded-lg ${needsPosteriorChain ? 'bg-red-50 border border-red-200' : 'bg-coral/5 border border-coral/20'}`}>
                         <div className="flex items-start">
-                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsPosteriorChain ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsPosteriorChain ? 'bg-red-500' : 'bg-coral'}`}></span>
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900 mb-1">Posterior Chain - {needsPosteriorChain ? 'Target' : 'Maintain'}</div>
+                            <div className="font-medium text-charcoal mb-1">Posterior Chain - {needsPosteriorChain ? 'Target' : 'Maintain'}</div>
                             {needsPosteriorChain ? (
                               <div className="text-sm text-gray-600">
                                 <span className="font-medium">Why:</span> Deadlift ({formatWeight(profile.one_rms.deadlift)}) is {(profile.one_rms.deadlift! / profile.user_summary.body_weight!).toFixed(1)}x bodyweight. Target: 2.0x bodyweight.
@@ -1036,7 +1036,7 @@ const loadProfile = async () => {
 
           {/* Technical Focus Section */}
           <div>
-            <h3 className="font-semibold text-gray-800 mb-4">Technical Focus</h3>
+            <h3 className="font-semibold text-charcoal mb-4">Technical Focus</h3>
             
             {(() => {
               // Calculate snatch deficits using actual logic
@@ -1071,9 +1071,8 @@ const loadProfile = async () => {
                   <div className="space-y-3 mb-4">
                     <div className="flex items-center justify-between py-2">
                       <div className="flex items-center space-x-3">
-                        <span className="text-blue-600 text-lg">🎯</span>
                         <div>
-                          <div className="font-medium text-gray-900">Snatch Technical Work: {profile.technical_focus.snatch_technical_count} exercises/day</div>
+                          <div className="font-medium text-charcoal">Snatch Technical Work: {profile.technical_focus.snatch_technical_count} exercises/day</div>
                           <div className="text-sm text-gray-600">
                             {snatchDeficits} area{snatchDeficits !== 1 ? 's' : ''} need work, {snatchStrong} area{snatchStrong !== 1 ? 's' : ''} strong
                           </div>
@@ -1083,9 +1082,8 @@ const loadProfile = async () => {
                     
                     <div className="flex items-center justify-between py-2">
                       <div className="flex items-center space-x-3">
-                        <span className="text-blue-600 text-lg">🎯</span>
                         <div>
-                          <div className="font-medium text-gray-900">Clean & Jerk Technical Work: {profile.technical_focus.clean_jerk_technical_count} exercises/day</div>
+                          <div className="font-medium text-charcoal">Clean & Jerk Technical Work: {profile.technical_focus.clean_jerk_technical_count} exercises/day</div>
                           <div className="text-sm text-gray-600">
                             {cjDeficits} area{cjDeficits !== 1 ? 's' : ''} need work, {cjStrong} area{cjStrong !== 1 ? 's' : ''} strong
                           </div>
@@ -1101,7 +1099,7 @@ const loadProfile = async () => {
                         ? prev.filter(name => name !== 'technical-details')
                         : [...prev, 'technical-details']
                     )}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-coral hover:text-coral text-sm font-medium"
                   >
                     [{expandedCategories.includes('technical-details') ? '- Hide Details' : '+ View Details'}]
                   </button>
@@ -1110,26 +1108,26 @@ const loadProfile = async () => {
                   {expandedCategories.includes('technical-details') && (
                     <div className="mt-4 space-y-4">
                       {/* Snatch Technical Work */}
-                      <div className="border rounded-lg p-4">
-                        <div className="font-medium text-gray-900 mb-3">
+                      <div className="border border-slate-blue rounded-lg p-4">
+                        <div className="font-medium text-charcoal mb-3">
                           🎯 Snatch Technical Work: {profile.technical_focus.snatch_technical_count} exercises/day
                         </div>
                         <div className="space-y-2">
-                          <div className={`flex items-center text-sm ${snatchStrengthDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                          <div className={`flex items-center text-sm ${snatchStrengthDeficit ? 'text-red-600' : 'text-coral'}`}>
                             <span className="mr-2">{snatchStrengthDeficit ? '❌' : '✅'}</span>
                             <span>
                               Strength Deficit: Snatch ({formatWeight(profile.one_rms.snatch)}) is {safeRatio(profile.one_rms.snatch, profile.one_rms.back_squat)} of back squat (target: 62%+)
                             </span>
                           </div>
                           
-                          <div className={`flex items-center text-sm ${snatchReceivingDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                          <div className={`flex items-center text-sm ${snatchReceivingDeficit ? 'text-red-600' : 'text-coral'}`}>
                             <span className="mr-2">{snatchReceivingDeficit ? '❌' : '✅'}</span>
                             <span>
                               Receiving Position: Power snatch is {safeRatio(profile.one_rms.power_snatch, profile.one_rms.snatch)} of snatch (target: &lt;88%)
                             </span>
                           </div>
                           
-                          <div className={`flex items-center text-sm ${snatchOverheadDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                          <div className={`flex items-center text-sm ${snatchOverheadDeficit ? 'text-red-600' : 'text-coral'}`}>
                             <span className="mr-2">{snatchOverheadDeficit ? '❌' : '✅'}</span>
                             <span>
                               Overhead Stability: Overhead squat is {safeRatio(profile.one_rms.overhead_squat, profile.one_rms.back_squat)} of back squat (target: 65%+)
@@ -1139,26 +1137,26 @@ const loadProfile = async () => {
                       </div>
 
                       {/* Clean & Jerk Technical Work */}
-                      <div className="border rounded-lg p-4">
-                        <div className="font-medium text-gray-900 mb-3">
+                      <div className="border border-slate-blue rounded-lg p-4">
+                        <div className="font-medium text-charcoal mb-3">
                           🎯 Clean & Jerk Technical Work: {profile.technical_focus.clean_jerk_technical_count} exercises/day
                         </div>
                         <div className="space-y-2">
-                          <div className={`flex items-center text-sm ${cjStrengthDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                          <div className={`flex items-center text-sm ${cjStrengthDeficit ? 'text-red-600' : 'text-coral'}`}>
                             <span className="mr-2">{cjStrengthDeficit ? '❌' : '✅'}</span>
                             <span>
                               Overall Strength: C&J ({formatWeight(profile.one_rms.clean_and_jerk)}) is {safeRatio(profile.one_rms.clean_and_jerk, profile.one_rms.back_squat)} of back squat (target: 74%+)
                             </span>
                           </div>
                           
-                          <div className={`flex items-center text-sm ${cjReceivingDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                          <div className={`flex items-center text-sm ${cjReceivingDeficit ? 'text-red-600' : 'text-coral'}`}>
                             <span className="mr-2">{cjReceivingDeficit ? '❌' : '✅'}</span>
                             <span>
                               Receiving Position: Power clean is {safeRatio(profile.one_rms.power_clean, profile.one_rms.clean_only)} of clean (target: &lt;88%)
                             </span>
                           </div>
                           
-                          <div className={`flex items-center text-sm ${cjJerkDeficit ? 'text-red-600' : 'text-green-600'}`}>
+                          <div className={`flex items-center text-sm ${cjJerkDeficit ? 'text-red-600' : 'text-coral'}`}>
                             <span className="mr-2">{cjJerkDeficit ? '❌' : '✅'}</span>
                             <span>
                               Jerk Performance: Jerk is {safeRatio(profile.one_rms.jerk_only, profile.one_rms.clean_only)} of clean (target: 90%+)
@@ -1175,13 +1173,13 @@ const loadProfile = async () => {
         </div>
 
         {/* Movement Skills Repository */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">MOVEMENT SKILLS</h2>
-          <div className="border-t-2 border-gray-900 mb-4"></div>
+        <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
+          <h2 className="text-xl font-bold text-charcoal mb-4">MOVEMENT SKILLS</h2>
+          <div className="border-t-2 border-charcoal mb-4"></div>
           
           {/* Skills Progress Bar */}
           <div className="mb-6">
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
+            <div className="flex justify-between text-sm text-charcoal mb-2">
               <span>
                 Skills Mastered: {
                   Object.values(userSkills).filter(level => level === 'Advanced').length
@@ -1192,9 +1190,9 @@ const loadProfile = async () => {
                   (Object.keys(userSkills).length || 26)) * 100)}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-slate-blue rounded-full h-2">
               <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                className="bg-coral h-2 rounded-full transition-all duration-300"
                 style={{ 
                   width: `${(Object.values(userSkills).filter(level => level === 'Advanced').length / 
                     (Object.keys(userSkills).length || 26)) * 100}%` 
@@ -1232,16 +1230,16 @@ const loadProfile = async () => {
                 const displayName = levelName === "Don't Have" ? "Skills to Develop" : levelName
                 
                 return (
-                  <div key={levelName} className="border rounded-lg overflow-hidden">
+                  <div key={levelName} className="border border-slate-blue rounded-lg overflow-hidden">
                     <button
                       onClick={() => toggleCategory(levelName)}
-                      className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+                      className="w-full px-4 py-3 bg-ice-blue hover:bg-slate-blue/10 transition-colors flex items-center justify-between"
                     >
                       <div className="flex items-center">
-                        <span className="mr-2 text-gray-600">{isExpanded ? '▼' : '▶'}</span>
-                        <h3 className="font-semibold text-gray-800">{displayName.toUpperCase()}</h3>
+                        <span className="mr-2 text-charcoal">{isExpanded ? '▼' : '▶'}</span>
+                        <h3 className="font-semibold text-charcoal">{displayName.toUpperCase()}</h3>
                       </div>
-                      <span className="text-sm text-gray-600">({skills.length})</span>
+                      <span className="text-sm text-charcoal">({skills.length})</span>
                     </button>
                     
                     {isExpanded && (

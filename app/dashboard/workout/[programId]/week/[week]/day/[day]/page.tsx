@@ -318,8 +318,8 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
   }
 
   const getBlockColor = (blockName: string) => {
-    // All blocks use slate-200 background with slate-300 border
-    return 'bg-slate-200 border-slate-300'
+    // All blocks use slate-blue background with slate-blue border
+    return 'bg-slate-blue border-slate-blue'
   }
 
 const getBlockStatusIcon = (blockName: string, exercises: Exercise[], completions: Record<string, Completion>) => {
@@ -342,8 +342,8 @@ const getBlockStatusIcon = (blockName: string, exercises: Exercise[], completion
     // Not started - show nothing (empty string)
     return '';
   } else if (completedCount === totalCount) {
-    // All complete - green checkmark
-    return '✅';
+    // All complete - coral checkmark
+    return '✓';
   } else {
     // Partial complete - progress indicator
     return '⏳';
@@ -364,11 +364,11 @@ const getBlockHeaderStyle = (blockName: string, exercises: Exercise[], completio
   const baseStyle = getBlockColor(blockName);
   
   if (completedCount === totalCount && totalCount > 0) {
-    // All complete - add green accent
-    return `${baseStyle} ring-2 ring-green-500 ring-opacity-50`;
+    // All complete - add coral accent
+    return `${baseStyle} ring-2 ring-coral ring-opacity-50`;
   } else if (completedCount > 0) {
-    // Partial complete - add yellow accent  
-    return `${baseStyle} ring-2 ring-yellow-500 ring-opacity-50`;
+    // Partial complete - add orange accent  
+    return `${baseStyle} ring-2 ring-orange-500 ring-opacity-50`;
   }
   
   // Not started - original styling
@@ -392,10 +392,10 @@ const calculateProgress = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ice-blue flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading workout...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-coral mx-auto mb-4"></div>
+          <p className="text-charcoal">Loading workout...</p>
         </div>
       </div>
     )
@@ -403,12 +403,12 @@ const calculateProgress = () => {
 
   if (error || !workout) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ice-blue flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-600 text-5xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Workout Not Found</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <Link href="/dashboard" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+          <h2 className="text-xl font-semibold text-charcoal mb-2">Workout Not Found</h2>
+          <p className="text-charcoal mb-4">{error}</p>
+          <Link href="/dashboard" className="bg-coral text-white px-4 py-2 rounded-lg hover:bg-coral">
             Back to Dashboard
           </Link>
         </div>
@@ -419,17 +419,17 @@ const calculateProgress = () => {
   const progress = calculateProgress()
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ice-blue">
       
       {/* Header - Optimized for Mobile */}
-      <header className="bg-ice-blue shadow-sm border-b sticky top-0 z-10">
+      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           {/* Desktop Layout */}
           <div className="hidden sm:flex items-center justify-between">
             <div className="flex items-center space-x-6">
               <Link 
                 href="/dashboard" 
-                className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
+                className="flex items-center space-x-2 text-coral hover:text-coral transition-colors"
               >
                 <span>←</span>
                 <span className="text-charcoal">Dashboard</span>
@@ -445,7 +445,7 @@ const calculateProgress = () => {
             </div>
             <div className="flex items-center space-x-3">
               <span className="text-sm text-charcoal">Progress</span>
-              <div className="w-24 bg-gray-200 rounded-full h-2">
+              <div className="w-24 bg-slate-blue rounded-full h-2">
                
 <div
   className="h-2 rounded-full transition-all duration-300"
@@ -463,13 +463,13 @@ const calculateProgress = () => {
             <div className="flex items-center justify-between mb-2">
               <Link 
                 href="/dashboard" 
-                className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors -ml-3"
+                className="flex items-center space-x-2 px-3 py-2 text-coral hover:text-coral hover:bg-coral/10 rounded-lg transition-colors -ml-3"
               >
                 <span>←</span>
                 <span className="font-medium text-charcoal">Dashboard</span>
               </Link>
               <div className="flex items-center space-x-2">
-                <div className="w-16 bg-gray-200 rounded-full h-2">
+                <div className="w-16 bg-slate-blue rounded-full h-2">
                   <div 
                     className="bg-coral h-2 rounded-full transition-all duration-300" 
                     style={{ width: `${progress}%` }}
@@ -506,7 +506,7 @@ const calculateProgress = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   {getBlockStatusIcon(block.blockName, block.exercises, completions) && (
-                    <span className="text-2xl">{getBlockStatusIcon(block.blockName, block.exercises, completions)}</span>
+                    <span className="text-2xl text-coral">{getBlockStatusIcon(block.blockName, block.exercises, completions)}</span>
                   )}
                   <div>
                     <h2 className="text-xl font-bold text-charcoal">{block.blockName}</h2>
@@ -582,11 +582,11 @@ block.blockName === 'METCONS' ? (
 
         {/* MetCon Special Section */}
         {/* Navigation */}
-        <div className="flex justify-between mt-8 pt-6 border-t">
+        <div className="flex justify-between mt-8 pt-6 border-t border-slate-blue">
           <Link 
             href={`/dashboard/workout/${programId}/week/${week}/day/${Math.max(1, parseInt(day) - 1)}`}
             className={`px-4 py-2 rounded-lg ${parseInt(day) > 1 
-              ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+              ? 'bg-slate-blue text-charcoal hover:bg-slate-blue' 
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
           >
             ← Previous Day
@@ -594,7 +594,7 @@ block.blockName === 'METCONS' ? (
           
           <Link 
             href="/dashboard"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-4 py-2 bg-coral text-white rounded-lg hover:bg-coral"
           >
             Back to Dashboard
           </Link>
@@ -602,7 +602,7 @@ block.blockName === 'METCONS' ? (
           <Link 
             href={`/dashboard/workout/${programId}/week/${week}/day/${Math.min(5, parseInt(day) + 1)}`}
             className={`px-4 py-2 rounded-lg ${parseInt(day) < 5 
-              ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+              ? 'bg-slate-blue text-charcoal hover:bg-slate-blue' 
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
           >
             Next Day →
@@ -753,8 +753,8 @@ return (
   <div 
     className={`bg-white rounded-xl shadow-sm border-2 transition-all ${
       isCompleted
-        ? 'border-green-200 bg-green-50'
-        : 'border-gray-200 hover:border-gray-300'
+        ? 'border-coral bg-coral/5'
+        : 'border-slate-blue hover:border-coral'
     }`}
     data-exercise={exercise.name}
   >
@@ -770,21 +770,25 @@ return (
             <div className="flex items-center space-x-3 mb-4">
               <h3 className="text-xl font-bold text-charcoal">{exercise.name}</h3>
               {exercise.notes && (
-                <button 
-                  onClick={() => setShowCues(!showCues)}
-                  className="w-6 h-6 bg-blue-500 text-white rounded-full text-xs flex items-center justify-center"
-                >
-                  i
-                </button>
+
+<div
+  onClick={(e) => {
+    e.stopPropagation();
+    setShowCues(!showCues);
+  }}
+className="w-6 h-6 bg-coral text-white rounded-full text-xs flex items-center justify-center cursor-pointer"
+>
+  i
+</div>               
               )}
-              {isCompleted && <span className="text-coral text-xl">✅</span>}
+              {isCompleted && <span className="text-coral text-xl">✓</span>}
             </div>
 
             {/* Expandable Performance Cues */}
             {showCues && exercise.notes && (
               <div className="mb-4">
-                <div className="bg-blue-50 rounded-lg p-3">
-                  <p className="text-blue-800 text-sm">{exercise.notes}</p>
+                <div className="bg-coral/10 rounded-lg p-3">
+                  <p className="text-charcoal text-sm">{exercise.notes}</p>
                 </div>
               </div>
             )}
@@ -793,15 +797,15 @@ return (
             <div className="grid grid-cols-3 gap-6 text-sm">
               <div className="flex items-center space-x-2">
                 <span className="text-gray-500 font-medium">Sets:</span>
-                <span className="text-gray-900 font-semibold text-base">{exercise.sets || '-'}</span>
+                <span className="text-charcoal font-semibold text-base">{exercise.sets || '-'}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="text-gray-500 font-medium">Reps:</span>
-                <span className="text-gray-900 font-semibold text-base">{exercise.reps || '-'}</span>
+                <span className="text-charcoal font-semibold text-base">{exercise.reps || '-'}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="text-gray-500 font-medium">Weight:</span>
-                <span className="text-gray-900 font-semibold text-base">{exercise.weightTime || 'BW'}</span>
+                <span className="text-charcoal font-semibold text-base">{exercise.weightTime || 'BW'}</span>
               </div>
             </div>
 
@@ -809,7 +813,7 @@ return (
             {completion && !isExpanded && (
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="flex items-center space-x-4 text-sm">
-                  <span className="text-gray-600">RPE: <span className="font-semibold text-green-600">{completion.rpe}/10</span></span>
+                  <span className="text-gray-600">RPE: <span className="font-semibold text-coral">{completion.rpe}/10</span></span>
                   {completion.quality && (
                     <span className="text-gray-600">Quality: <span className="font-semibold">{completion.quality}</span></span>
                   )}
@@ -832,7 +836,7 @@ return (
         <div className="px-6 pb-6 space-y-3">
           
           {/* Completion Type Selection - REMOVED HEADER */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-ice-blue rounded-lg p-4">
             <div className="space-y-3">
               <label className="flex items-center space-x-3 cursor-pointer">
                 <input
@@ -841,9 +845,9 @@ return (
                   value="asRx"
                   checked={completionType === 'asRx'}
                   onChange={(e) => setCompletionType(e.target.value)}
-                  className="w-4 h-4 text-blue-600 border-2 border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  className="w-4 h-4 text-coral border-2 border-gray-300 focus:ring-2 focus:ring-coral"
                 />
-                <span className="text-base font-medium text-gray-700">
+                <span className="text-base font-medium text-charcoal">
                   As Prescribed (As Rx)
                 </span>
               </label>
@@ -854,9 +858,9 @@ return (
                   value="modified"
                   checked={completionType === 'modified'}
                   onChange={(e) => setCompletionType(e.target.value)}
-                  className="w-4 h-4 text-blue-600 border-2 border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  className="w-4 h-4 text-coral border-2 border-gray-300 focus:ring-2 focus:ring-coral"
                 />
-                <span className="text-base font-medium text-gray-700">
+                <span className="text-base font-medium text-charcoal">
                   Modified Workout
                 </span>
               </label>
@@ -865,40 +869,40 @@ return (
 
           {/* Performance Inputs Section - Only show for Modified */}
           {completionType === 'modified' && (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Performance</h4>
+            <div className="bg-ice-blue rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Performance</h4>
               
               {/* HORIZONTAL LAYOUT - Even on Mobile */}
               <div className={`grid gap-3 ${exercise.weightTime === 'BW' ? 'grid-cols-2' : 'grid-cols-3'}`}>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Sets</label>
+                  <label className="block text-xs font-medium text-charcoal mb-1">Sets</label>
                   <input
                     type="number"
                     value={formData.setsCompleted}
                     onChange={(e) => setFormData(prev => ({ ...prev, setsCompleted: e.target.value }))}
-                    className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full p-2 border border-slate-blue rounded-lg text-sm focus:ring-2 focus:ring-coral focus:border-coral"
                     placeholder="0"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Reps</label>
+                  <label className="block text-xs font-medium text-charcoal mb-1">Reps</label>
                   <input
                     type="text"
                     value={formData.repsCompleted}
                     onChange={(e) => setFormData(prev => ({ ...prev, repsCompleted: e.target.value }))}
-                    className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full p-2 border border-slate-blue rounded-lg text-sm focus:ring-2 focus:ring-coral focus:border-coral"
                     placeholder="0"
                   />
                 </div>
                 {exercise.weightTime !== 'BW' && (
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Weight</label>
+                    <label className="block text-xs font-medium text-charcoal mb-1">Weight</label>
                     <input
                       type="number"
                       step="0.1"
                       value={formData.weightUsed}
                       onChange={(e) => setFormData(prev => ({ ...prev, weightUsed: e.target.value }))}
-                      className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full p-2 border border-slate-blue rounded-lg text-sm focus:ring-2 focus:ring-coral focus:border-coral"
                       placeholder="lbs"
                     />
                   </div>
@@ -908,10 +912,10 @@ return (
           )}
 
           {/* RPE Section - SIMPLIFIED HEADER */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-ice-blue rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">RPE</h4>
-              <span className="text-lg font-bold text-blue-600">{formData.rpe}/10</span>
+              <h4 className="text-sm font-semibold text-charcoal uppercase tracking-wide">RPE</h4>
+              <span className="text-lg font-bold text-coral">{formData.rpe}/10</span>
             </div>
             <input
               type="range"
@@ -919,7 +923,7 @@ return (
               max="10"
               value={formData.rpe}
               onChange={(e) => setFormData(prev => ({ ...prev, rpe: parseInt(e.target.value) }))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mb-2"
+              className="w-full h-2 bg-slate-blue rounded-lg appearance-none cursor-pointer mb-2"
             />
             <div className="flex justify-between text-xs text-gray-500">
               <span>1 - Very Easy</span>
@@ -928,8 +932,8 @@ return (
           </div>
 
           {/* Quality Section - CONSISTENT BUTTON SIZING */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Quality</h4>
+          <div className="bg-ice-blue rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Quality</h4>
             <div className="grid grid-cols-4 gap-2">
               {['A', 'B', 'C', 'D'].map((grade) => (
                 <QualityButton
@@ -947,24 +951,24 @@ return (
           
           {/* Notes Section - Collapsible */}
           {!showNotes ? (
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-ice-blue rounded-lg p-4">
               <button
                 onClick={() => setShowNotes(true)}
-                className="text-sm font-semibold text-gray-700 uppercase tracking-wide hover:text-gray-900 transition-colors"
+                className="text-sm font-semibold text-charcoal uppercase tracking-wide hover:text-coral transition-colors"
               >
                 + Add Notes
               </button>
             </div>
           ) : (
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-ice-blue rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Notes</h4>
+                <h4 className="text-sm font-semibold text-charcoal uppercase tracking-wide">Notes</h4>
                 <button
                   onClick={() => {
                     setShowNotes(false)
                     setFormData(prev => ({ ...prev, notes: '' }))
                   }}
-                  className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                  className="text-xs text-gray-500 hover:text-charcoal transition-colors"
                 >
                   Remove
                 </button>
@@ -972,7 +976,7 @@ return (
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full p-3 border border-slate-blue rounded-lg text-base focus:ring-2 focus:ring-coral focus:border-coral"
                 rows={3}
                 placeholder=""
               />
@@ -983,7 +987,7 @@ return (
           <div className="pt-2">
             <button
               onClick={handleDetailedSubmit}
-              className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-base shadow-sm"
+              className="w-full bg-coral text-white py-4 px-6 rounded-lg hover:bg-coral transition-colors font-semibold text-base shadow-sm"
             >
               Mark Exercise Complete
             </button>
@@ -995,7 +999,7 @@ return (
 {isExpanded && isCompleted && (
   <div className="px-6 pb-6">
     <div className="text-center py-4">
-      <p className="text-gray-600 text-sm">Exercise completed - click to collapse</p>
+      <p className="text-charcoal text-sm">Exercise completed - click to collapse</p>
     </div>
   </div>
 )}
@@ -1007,7 +1011,7 @@ return (
           height: 20px;
           width: 20px;
           border-radius: 50%;
-          background: #3b82f6;
+          background: #FE5858;
           cursor: pointer;
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
@@ -1016,7 +1020,7 @@ return (
           height: 20px;
           width: 20px;
           border-radius: 50%;
-          background: #3b82f6;
+          background: #FE5858;
           cursor: pointer;
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
           border: none;
@@ -1146,8 +1150,8 @@ function MetConCard({
     <div 
       className={`bg-white rounded-xl shadow-sm border-2 transition-all ${
         isCompleted
-          ? 'border-green-200 bg-green-50'
-          : 'border-gray-200 hover:border-gray-300'
+          ? 'border-coral bg-coral/5'
+          : 'border-slate-blue hover:border-coral'
       }`}
     >
       {/* SECTION 1: MetCon Header */}
@@ -1165,7 +1169,7 @@ function MetConCard({
 
             {/* Workout Description */}
             {metconData.workoutNotes && (
-              <div className="mb-4 text-sm text-gray-600">
+              <div className="mb-4 text-sm text-charcoal">
                 {metconData.workoutNotes}
               </div>
             )}
@@ -1174,7 +1178,7 @@ function MetConCard({
             {isCompleted && !isExpanded && (
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="flex items-center space-x-4 text-sm">
-                  <span className="text-gray-600">Score: <span className="font-semibold text-green-600">{workoutScore}</span></span>
+                  <span className="text-charcoal">Score: <span className="font-semibold text-coral">{workoutScore}</span></span>
                 </div>
               </div>
             )}
@@ -1194,15 +1198,15 @@ function MetConCard({
         <div className="px-6 pb-6 space-y-3">
           
           {/* Gender Selection */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-ice-blue rounded-lg p-4">
             <div className="flex justify-center">
               <div className="grid grid-cols-2 bg-white rounded-lg p-1 border gap-1">
                 <button
                   onClick={() => setGender('male')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     gender === 'male' 
-                      ? 'bg-blue-500 text-white shadow-sm' 
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-coral text-white shadow-sm' 
+                      : 'text-charcoal hover:bg-gray-100'
                   }`}
                 >
                   Male
@@ -1211,8 +1215,8 @@ function MetConCard({
                   onClick={() => setGender('female')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     gender === 'female' 
-                      ? 'bg-blue-500 text-white shadow-sm' 
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-coral text-white shadow-sm' 
+                      : 'text-charcoal hover:bg-gray-100'
                   }`}
                 >
                   Female
@@ -1222,56 +1226,56 @@ function MetConCard({
           </div>
 
           {/* Benchmarks */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-ice-blue rounded-lg p-4">
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white rounded-lg p-3 border border-gray-200 text-center">
-                <div className="text-xs text-gray-600 font-medium">Excellent</div>
-                <div className="font-bold text-gray-900">{currentBenchmarks.excellentScore}</div>
+              <div className="bg-white rounded-lg p-3 border border-slate-blue text-center">
+                <div className="text-xs text-charcoal font-medium">Excellent</div>
+                <div className="font-bold text-charcoal">{currentBenchmarks.excellentScore}</div>
               </div>
-              <div className="bg-white rounded-lg p-3 border border-gray-200 text-center">
-                <div className="text-xs text-gray-600 font-medium">Median</div>
-                <div className="font-bold text-gray-900">{currentBenchmarks.medianScore}</div>
+              <div className="bg-white rounded-lg p-3 border border-slate-blue text-center">
+                <div className="text-xs text-charcoal font-medium">Median</div>
+                <div className="font-bold text-charcoal">{currentBenchmarks.medianScore}</div>
               </div>
-              <div className="bg-white rounded-lg p-3 border border-gray-200 text-center">
-                <div className="text-xs text-gray-600 font-medium">Rx Weight</div>
-                <div className="font-bold text-gray-900">{currentRxWeight}</div>
+              <div className="bg-white rounded-lg p-3 border border-slate-blue text-center">
+                <div className="text-xs text-charcoal font-medium">Rx Weight</div>
+                <div className="font-bold text-charcoal">{currentRxWeight}</div>
               </div>
             </div>
           </div>
 
           {/* Your Score Section */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Your Score</h4>
+          <div className="bg-ice-blue rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Your Score</h4>
             <input
               type="text"
               placeholder="e.g., 12:34, 8 rounds + 15 reps, 674 total reps"
               value={workoutScore}
               onChange={(e) => setWorkoutScore(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-slate-blue rounded-lg text-base focus:ring-2 focus:ring-coral focus:border-coral"
               disabled={isSubmitting}
             />
           </div>
 
           {/* Notes Section - Collapsible */}
           {!showNotes ? (
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-ice-blue rounded-lg p-4">
               <button
                 onClick={() => setShowNotes(true)}
-                className="text-sm font-semibold text-gray-700 uppercase tracking-wide hover:text-gray-900 transition-colors"
+                className="text-sm font-semibold text-charcoal uppercase tracking-wide hover:text-coral transition-colors"
               >
                 + Add Notes
               </button>
             </div>
           ) : (
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-ice-blue rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Notes</h4>
+                <h4 className="text-sm font-semibold text-charcoal uppercase tracking-wide">Notes</h4>
                 <button
                   onClick={() => {
                     setShowNotes(false)
                     setNotes('')
                   }}
-                  className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                  className="text-xs text-gray-500 hover:text-charcoal transition-colors"
                 >
                   Remove
                 </button>
@@ -1279,7 +1283,7 @@ function MetConCard({
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full p-3 border border-slate-blue rounded-lg text-base focus:ring-2 focus:ring-coral focus:border-coral"
                 rows={3}
                 placeholder=""
               />
@@ -1287,15 +1291,15 @@ function MetConCard({
           )}
 
           {/* Task Performance */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Task Performance</h4>
+          <div className="bg-ice-blue rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Task Performance</h4>
             <div className="space-y-4">
               {metconData.tasks.map((task, index) => (
-                <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
+                <div key={index} className="bg-white rounded-lg p-4 border border-slate-blue">
                   {/* Task Header */}
                   <div className="mb-3">
-                    <h4 className="font-semibold text-gray-900">{task.exercise}</h4>
-                    <p className="text-sm text-gray-600">
+                    <h4 className="font-semibold text-charcoal">{task.exercise}</h4>
+                    <p className="text-sm text-charcoal">
                       {task.reps} reps {task.weight_male && `@ ${gender === 'male' ? task.weight_male : task.weight_female} lbs`}
                     </p>
                   </div>
@@ -1303,8 +1307,8 @@ function MetConCard({
                   {/* RPE Section */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">RPE</label>
-                      <span className="text-sm font-bold text-blue-600">
+                      <label className="text-xs font-medium text-charcoal uppercase tracking-wide">RPE</label>
+                      <span className="text-sm font-bold text-coral">
                         {taskRPEs[task.exercise] || 5}/10
                       </span>
                     </div>
@@ -1314,7 +1318,7 @@ function MetConCard({
                       max="10"
                       value={taskRPEs[task.exercise] || 5}
                       onChange={(e) => handleTaskRPE(task.exercise, parseInt(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mb-2"
+                      className="w-full h-2 bg-slate-blue rounded-lg appearance-none cursor-pointer mb-2"
                       disabled={isSubmitting}
                     />
                     <div className="flex justify-between text-xs text-gray-500">
@@ -1325,7 +1329,7 @@ function MetConCard({
                   
                   {/* Quality Section */}
                   <div>
-                    <h4 className="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">Quality</h4>
+                    <h4 className="text-xs font-medium text-charcoal mb-2 uppercase tracking-wide">Quality</h4>
                     <div className="grid grid-cols-4 gap-2">
                       {['A', 'B', 'C', 'D'].map((grade) => (
                         <QualityButton
@@ -1349,7 +1353,7 @@ function MetConCard({
             <button
               onClick={handleSubmit}
               disabled={!workoutScore.trim() || isSubmitting}
-              className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-semibold text-base shadow-sm"
+              className="w-full bg-coral text-white py-4 px-6 rounded-lg hover:bg-coral disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-semibold text-base shadow-sm"
             >
               {isSubmitting ? (
                 <>
@@ -1371,7 +1375,7 @@ function MetConCard({
       {isExpanded && isCompleted && (
         <div className="px-6 pb-6">
           <div className="text-center py-4">
-            <p className="text-gray-600 text-sm">Exercise completed - click to collapse</p>
+            <p className="text-charcoal text-sm">Exercise completed - click to collapse</p>
           </div>
         </div>
       )}
@@ -1383,7 +1387,7 @@ function MetConCard({
           height: 20px;
           width: 20px;
           border-radius: 50%;
-          background: #3b82f6;
+          background: #FE5858;
           cursor: pointer;
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
@@ -1392,7 +1396,7 @@ function MetConCard({
           height: 20px;
           width: 20px;
           border-radius: 50%;
-          background: #3b82f6;
+          background: #FE5858;
           cursor: pointer;
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
           border: none;
