@@ -311,13 +311,15 @@ export default function ProgramOverviewPage() {
             return (
               <div 
                 key={week} 
-                className={`rounded-lg border-2 p-6 bg-white ${
+                
+className={`rounded-lg border-2 p-6 bg-slate-blue ${
                   [4, 8, 12].includes(week) ? 'border-yellow-300' : 'border-slate-blue'
                 } ${isCurrentWeek ? 'ring-2 ring-coral' : ''}`}
               >
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-xl font-bold text-charcoal">
+                   
+<h2 className="text-xl font-bold text-white">
                       Week {week}
                       {isCurrentWeek && (
                         <span className="ml-2 text-sm bg-coral text-white px-2 py-1 rounded">
@@ -325,13 +327,16 @@ export default function ProgramOverviewPage() {
                         </span>
                       )}
                     </h2>
-                    <p className="text-sm text-gray-600">{getWeekType(week)} Week</p>
+                    
+<p className="text-sm text-gray-300">{getWeekType(week)} Week</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-semibold text-charcoal">
+                    
+<div className="text-lg font-semibold text-white">
                       {weekCompleted}/{days.length} days
                     </div>
-                    <div className="text-sm text-gray-600">completed</div>
+                    
+<div className="text-sm text-gray-300">completed</div>
                   </div>
                 </div>
 
