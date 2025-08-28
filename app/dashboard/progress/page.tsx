@@ -92,21 +92,11 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
     });
   };
 
-  const getBlockIcon = (blockName: string) => {
-    const icons: { [key: string]: string } = {
-      'SKILLS': '🤸',
-      'TECHNICAL WORK': '⚙️',
-      'STRENGTH AND POWER': '💪',
-      'ACCESSORIES': '🎯',
-      'METCONS': '🔥'
-    };
-    return icons[blockName] || '📊';
-  };
 
   if (activityLoading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 Recent Training Activity</h3>
+<h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Training Activity</h3>        
         <div className="space-y-4">
           {[1,2,3,4,5].map(i => (
             <div key={i} className="animate-pulse">
@@ -122,16 +112,16 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
   if (recentActivity.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 Recent Training Activity</h3>
-        <p className="text-gray-600">No recent training sessions found. Complete some exercises to see your activity here!</p>
+<h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Training Activity</h3>       
+ <p className="text-gray-600">No recent training sessions found. Complete some exercises to see your activity here!</p>
       </div>
     );
   }
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">📈 Recent Training Activity</h3>
       
+<h3 className="text-lg font-semibold text-gray-900 mb-6">Recent Training Activity</h3>      
       <div className="space-y-4">
         {recentActivity.slice(0, 5).map((session, index) => (
           
@@ -163,16 +153,17 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
             {/* Training Blocks */}
             <div className="flex flex-wrap gap-2">
               {session.blocks && session.blocks.map((block: any) => (
-                <span 
-                  key={block.blockName}
-                  className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
-                >
-                  <span className="mr-1">{getBlockIcon(block.blockName)}</span>
-                  {block.blockName}
-                  {block.exerciseCount > 0 && (
-                    <span className="ml-1 text-blue-600">({block.exerciseCount})</span>
-                  )}
-                </span>
+               
+<span 
+  key={block.blockName}
+  className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+>
+  {block.blockName}
+  {block.exerciseCount > 0 && (
+    <span className="ml-1 text-blue-600">({block.exerciseCount})</span>
+  )}
+</span>
+
               ))}
             </div>
 
