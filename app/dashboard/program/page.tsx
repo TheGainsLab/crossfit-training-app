@@ -248,7 +248,7 @@ export default function ProgramOverviewPage() {
     <div className="min-h-screen bg-ice-blue py-8">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+<div className="bg-slate-blue rounded-lg shadow-lg p-6 mb-6">        
           <div className="text-center">
             <h1 className="text-3xl font-bold text-charcoal mb-3">
               Program Overview
@@ -264,7 +264,7 @@ export default function ProgramOverviewPage() {
 
         {/* Progress Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6 text-center">
+<div className="bg-slate-blue rounded-lg shadow p-6 text-center">
             <div className="text-3xl font-bold text-coral">
               {completionStats.completedDays}/{completionStats.totalDays}
             </div>
@@ -279,7 +279,8 @@ export default function ProgramOverviewPage() {
               {Math.round((completionStats.completedDays / completionStats.totalDays) * 100)}% complete
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6 text-center">
+
+<div className="bg-slate-blue rounded-lg shadow p-6 text-center">
             <div className="text-3xl font-bold text-coral">
               Week {completionStats.currentWeek}
             </div>
@@ -288,7 +289,8 @@ export default function ProgramOverviewPage() {
               {getWeekType(completionStats.currentWeek)} Week
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6 text-center">
+          
+<div className="bg-slate-blue rounded-lg shadow p-6 text-center">
             <div className="text-3xl font-bold text-charcoal">
               #{program?.program_number || 0}
             </div>
@@ -309,7 +311,8 @@ export default function ProgramOverviewPage() {
             return (
               <div 
                 key={week} 
-                className={`rounded-lg border-2 p-6 bg-white ${
+                
+className={`rounded-lg border-2 p-6 bg-slate-blue ${
                   [4, 8, 12].includes(week) ? 'border-yellow-300' : 'border-slate-blue'
                 } ${isCurrentWeek ? 'ring-2 ring-coral' : ''}`}
               >
