@@ -280,7 +280,7 @@ export default function ProgramOverviewPage() {
             </div>
           </div>
           <div className="bg-white rounded-lg shadow p-6 text-center">
-            <div className="text-3xl font-bold text-green-600">
+            <div className="text-3xl font-bold text-coral">
               Week {completionStats.currentWeek}
             </div>
             <div className="text-charcoal">Current Week</div>
@@ -289,7 +289,7 @@ export default function ProgramOverviewPage() {
             </div>
           </div>
           <div className="bg-white rounded-lg shadow p-6 text-center">
-            <div className="text-3xl font-bold text-purple-600">
+            <div className="text-3xl font-bold text-charcoal">
               #{program?.program_number || 0}
             </div>
             <div className="text-charcoal">Program Number</div>
@@ -340,13 +340,13 @@ export default function ProgramOverviewPage() {
                       href={`/dashboard/workout/${program?.id}/week/${day.week}/day/${day.day}`}
                       className={`p-3 rounded-lg border transition-all hover:shadow-md ${
                         day.completed 
-                          ? 'bg-green-50 border-green-300 hover:bg-green-100' 
+                          ? 'bg-coral/5 border-coral/30 hover:bg-coral/10' 
                           : 'bg-white border-slate-blue hover:border-coral'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <div className="font-medium text-sm text-charcoal">{day.day_name}</div>
-                        {day.completed && <span className="text-green-600 text-lg">✓</span>}
+                        {day.completed && <span className="text-coral text-lg">✓</span>}
                       </div>
                       <div className="text-xs text-gray-500">
                         {day.exercisesLogged > 0 
@@ -355,7 +355,7 @@ export default function ProgramOverviewPage() {
                         }
                       </div>
                       {day.lastLoggedAt && (
-                        <div className="text-xs text-green-600 mt-1">
+                        <div className="text-xs text-coral mt-1">
                           {formatLastLogged(day.lastLoggedAt)}
                         </div>
                       )}
