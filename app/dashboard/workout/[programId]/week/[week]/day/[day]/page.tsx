@@ -322,6 +322,7 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
     return 'bg-slate-blue border-slate-blue'
   }
 
+
 const getBlockStatusIcon = (blockName: string, exercises: Exercise[], completions: Record<string, Completion>) => {
   // Count completed exercises in this block
   const completedCount = exercises.filter(exercise => {
@@ -337,16 +338,13 @@ const getBlockStatusIcon = (blockName: string, exercises: Exercise[], completion
   
   const totalCount = exercises.length;
   
-  // Determine status - only show status icons, no base icons
-  if (completedCount === 0) {
-    // Not started - show nothing (empty string)
-    return '';
-  } else if (completedCount === totalCount) {
+  // Determine status - only show checkmark when complete, nothing otherwise
+  if (completedCount === totalCount && totalCount > 0) {
     // All complete - coral checkmark
     return '✓';
   } else {
-    // Partial complete - progress indicator
-    return '⏳';
+    // Not started or partial - show nothing (empty string)
+    return '';
   }
 };
 
@@ -366,12 +364,9 @@ const getBlockHeaderStyle = (blockName: string, exercises: Exercise[], completio
   if (completedCount === totalCount && totalCount > 0) {
     // All complete - add coral accent
     return `${baseStyle} ring-2 ring-coral ring-opacity-50`;
-  } else if (completedCount > 0) {
-    // Partial complete - add orange accent  
-    return `${baseStyle} ring-2 ring-orange-500 ring-opacity-50`;
   }
   
-  // Not started - original styling
+  // Not started or partial - original styling (no special treatment)
   return baseStyle;
 };
 
