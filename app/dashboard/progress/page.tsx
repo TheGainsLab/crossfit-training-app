@@ -601,33 +601,31 @@ const OverviewSummary = () => {
   return (
     <div className="grid md:grid-cols-3 gap-6 mb-8">
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Completed Tasks</p>
-            <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalExercises}</p>
-          </div>
-          <div className="text-blue-600">📊</div>
+
+<div>
+  <p className="text-sm text-gray-600">Completed Tasks</p>
+  <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalExercises}</p>
+</div>
+     
+ </div>
+      
+      <div className="bg-white rounded-lg shadow p-6">
+       
+<div>
+  <p className="text-sm text-gray-600">Average RPE</p>
+  <p className="text-3xl font-bold text-gray-900">{overallMetrics.averageRPE}</p>
+</div>
         </div>
       </div>
       
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Average RPE</p>
-            <p className="text-3xl font-bold text-gray-900">{overallMetrics.averageRPE}</p>
-          </div>
-          <div className="text-green-600">💪</div>
-        </div>
-      </div>
-      
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Training Days</p>
-            <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalTrainingDays}</p>
-          </div>
-          <div className="text-orange-600">⭐</div>
-        </div>
+       
+
+<div>
+  <p className="text-sm text-gray-600">Training Days</p>
+  <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalTrainingDays}</p>
+</div>
+
       </div>
     </div>
   );
