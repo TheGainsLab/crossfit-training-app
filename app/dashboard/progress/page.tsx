@@ -760,10 +760,9 @@ const EnhancedSkillCard: React.FC<{ skill: any }> = ({ skill }) => {
               {badge.emoji} {badge.text}
             </span>
           ))}
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${practiceBadge.color}`}>
-            {practiceBadge.emoji} {skill.daysSinceLast}d ago
-          </span>
-        </div>
+
+{/* Removed practice badge - less stressful for athletes */}       
+ </div>
       </div>
 
       {/* Stats Grid */}
@@ -871,10 +870,11 @@ const EnhancedSkillCard: React.FC<{ skill: any }> = ({ skill }) => {
                 ))}
               </div>
             </div>
-            <div>
-             <span className="text-xs text-gray-500 block">Last Practiced</span>
-              <span className="text-sm font-medium">{formatDate(skill.lastPerformed)}</span>
-            </div>
+           
+<div>
+ <span className="text-xs text-gray-500 block">Total Sessions</span>
+  <span className="text-sm font-medium">{skill.sessions.length}</span>
+</div>
           </div>
         </div>
       )}
