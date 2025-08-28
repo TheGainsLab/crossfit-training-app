@@ -646,36 +646,37 @@ const OverviewSummary = () => {
 const TabNavigation = () => (
   <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-8 p-4">
     <nav className="flex flex-wrap gap-3" role="tablist" aria-label="Analytics Navigation">
-      {[
-        { id: 'overview', name: 'Overview', icon: '📊' },
-        { id: 'skills', name: 'Skills', icon: '🤸' },
-        { id: 'strength', name: 'Strength', icon: '💪' },
-        { id: 'metcons', name: 'MetCons', icon: '🔥' }
-      ].map((tab) => (
+      
+{[
+  { id: 'overview', name: 'Overview' },
+  { id: 'skills', name: 'Skills' },
+  { id: 'strength', name: 'Strength' },
+  { id: 'metcons', name: 'MetCons' }
+].map((tab) => (
         <button
           key={tab.id}
           onClick={() => setActiveTab(tab.id as any)}
           role="tab"
           aria-selected={activeTab === tab.id}
           aria-controls={`${tab.id}-panel`}
-          className={`flex items-center space-x-3 px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-            activeTab === tab.id
-              ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg scale-105 ring-2 ring-blue-500 ring-offset-2'
-              : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200'
-          }`}
-        >
-          <span className="text-xl">{tab.icon}</span>
-          <span className="font-medium">{tab.name}</span>
-        </button>
+
+className={`px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+  activeTab === tab.id
+    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg scale-105 ring-2 ring-blue-500 ring-offset-2'
+    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200'
+}`}
+>
+  <span className="font-medium">{tab.name}</span>       
+ </button>
       ))}
       
       {/* Exercise Deep Dive Button - NOW MATCHES OTHER INACTIVE TABS */}
-      <Link
-        href="/dashboard/exercise-deep-dive"
-        className="flex items-center space-x-3 px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200"
-      >
-        <span className="text-xl">🔍</span>
-        <span className="font-medium">Exercise Deep Dive</span>
+     
+<Link
+  href="/dashboard/exercise-deep-dive"
+  className="px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200"
+>
+  <span className="font-medium">Exercise Deep Dive</span>
       </Link>
     </nav>
   </div>
