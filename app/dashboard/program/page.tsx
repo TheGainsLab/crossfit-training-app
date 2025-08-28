@@ -319,7 +319,7 @@ className={`rounded-lg border-2 p-6 bg-slate-blue ${
                 <div className="flex items-center justify-between mb-4">
                   <div>
                    
-<h2 className="text-xl font-bold text-white">
+<h2 className="text-xl font-bold text-charcoal">
                       Week {week}
                       {isCurrentWeek && (
                         <span className="ml-2 text-sm bg-coral text-white px-2 py-1 rounded">
@@ -332,7 +332,7 @@ className={`rounded-lg border-2 p-6 bg-slate-blue ${
                   </div>
                   <div className="text-right">
                     
-<div className="text-lg font-semibold text-white">
+<div className="text-lg font-semibold text-charcoal">
                       {weekCompleted}/{days.length} days
                     </div>
                     
