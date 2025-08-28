@@ -121,7 +121,7 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
   return (
     <div className="bg-white rounded-lg shadow p-6">
       
-<h3 className="text-lg font-semibold text-gray-900 mb-6">Recent Training Activity</h3>      
+<h3 className="text-lg font-semibold text-charcoal mb-6">Recent Training Activity</h3>
       <div className="space-y-4">
         {recentActivity.slice(0, 5).map((session, index) => (
           
@@ -136,9 +136,9 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
             {/* Date and Session Info */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-3">
-                <div className="text-lg font-semibold text-gray-900">
-                  {formatDate(session.date)}
-                </div>
+<div className="text-lg font-semibold text-charcoal">
+  {formatDate(session.date)}
+</div>
                 <div className="text-sm text-gray-500">
                   Week {session.week}, Day {session.day}
                 </div>
@@ -604,22 +604,22 @@ const OverviewSummary = () => {
       <div className="bg-white rounded-lg shadow p-6">
         <div>
           <p className="text-sm text-gray-600">Completed Tasks</p>
-          <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalExercises}</p>
-        </div>
+<p className="text-3xl font-bold text-charcoal">{overallMetrics.totalExercises}</p>
+  </div>
       </div>
       
       <div className="bg-white rounded-lg shadow p-6">
         <div>
           <p className="text-sm text-gray-600">Average RPE</p>
-          <p className="text-3xl font-bold text-gray-900">{overallMetrics.averageRPE}</p>
-        </div>
+<p className="text-3xl font-bold text-charcoal">{overallMetrics.averageRPE}</p>       
+ </div>
       </div>
       
       <div className="bg-white rounded-lg shadow p-6">
         <div>
           <p className="text-sm text-gray-600">Training Days</p>
-          <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalTrainingDays}</p>
-        </div>
+<p className="text-3xl font-bold text-charcoal">{overallMetrics.totalTrainingDays}</p>       
+ </div>
       </div>
     </div>  // ← Now this properly closes the grid container
   );
@@ -1419,8 +1419,8 @@ const MetConAnalyticsView = () => {
   <div className="max-w-7xl mx-auto px-4 py-6">
     <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Performance Analytics</h1>
-        <p className="text-gray-600">Comprehensive training insights and progress tracking</p>
+<h1 className="text-2xl font-bold text-charcoal">Performance Analytics</h1>       
+ <p className="text-gray-600">Comprehensive training insights and progress tracking</p>
       </div>
       <div className="flex items-center space-x-4">
         <Link
