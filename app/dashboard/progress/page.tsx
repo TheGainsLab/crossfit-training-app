@@ -591,6 +591,7 @@ const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 
   };
 
 // Overview Summary Component - Updated
+
 const OverviewSummary = () => {
   if (!dashboardData?.data?.dashboard) {
     return <div>Loading overview data...</div>;
@@ -601,33 +602,26 @@ const OverviewSummary = () => {
   return (
     <div className="grid md:grid-cols-3 gap-6 mb-8">
       <div className="bg-white rounded-lg shadow p-6">
-
-<div>
-  <p className="text-sm text-gray-600">Completed Tasks</p>
-  <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalExercises}</p>
-</div>
-     
- </div>
-      
-      <div className="bg-white rounded-lg shadow p-6">
-       
-<div>
-  <p className="text-sm text-gray-600">Average RPE</p>
-  <p className="text-3xl font-bold text-gray-900">{overallMetrics.averageRPE}</p>
-</div>
+        <div>
+          <p className="text-sm text-gray-600">Completed Tasks</p>
+          <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalExercises}</p>
         </div>
       </div>
       
       <div className="bg-white rounded-lg shadow p-6">
-       
-
-<div>
-  <p className="text-sm text-gray-600">Training Days</p>
-  <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalTrainingDays}</p>
-</div>
-
+        <div>
+          <p className="text-sm text-gray-600">Average RPE</p>
+          <p className="text-3xl font-bold text-gray-900">{overallMetrics.averageRPE}</p>
+        </div>
       </div>
-    </div>
+      
+      <div className="bg-white rounded-lg shadow p-6">
+        <div>
+          <p className="text-sm text-gray-600">Training Days</p>
+          <p className="text-3xl font-bold text-gray-900">{overallMetrics.totalTrainingDays}</p>
+        </div>
+      </div>
+    </div>  // ← Now this properly closes the grid container
   );
 };
 
