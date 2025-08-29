@@ -173,13 +173,24 @@ const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicP
       
       <div className="relative">
         {/* Progress Bar Background */}
-        <div className="w-full bg-slate-blue rounded-full h-3">
-          
+
+<div className="w-full bg-slate-blue rounded-full h-3">
+  <div
+    className="h-3 rounded-full transition-all duration-300 bg-coral"
+    style={{ width: `${percentage}%` }}
+  />
+</div>
+
+{/* Current Value Marker - matching Raw Strength style */}
 <div 
-  className="h-3 rounded-full transition-all duration-300 bg-coral"
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
+  className="absolute -top-8 transform -translate-x-1/2"
+  style={{ left: `${percentage}%` }}
+>
+  <div className="bg-charcoal text-white px-2 py-1 rounded text-xs font-medium">
+    {Math.round(current * 100)}%
+  </div>
+  <div className="w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-charcoal mx-auto"></div>
+</div>
         
         {/* Target Line */}
         <div className="absolute top-0 right-0 transform translate-x-2">
