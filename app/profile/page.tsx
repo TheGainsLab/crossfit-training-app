@@ -167,24 +167,16 @@ const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicP
           <span className="text-lg font-semibold text-charcoal">{weight}</span>
           <span className="text-sm text-gray-600">({Math.round(current * 100)}{unit} of squat)</span>
         </div>
-        <div className={`text-sm font-medium px-3 py-1 rounded-full ${
-          isBalanced ? 'bg-coral/10 text-coral' : 
-          isClose ? 'bg-orange-100 text-orange-700' : 
-          'bg-slate-blue/20 text-charcoal'
-        }`}>
-          {isBalanced ? 'Balanced' : isClose ? 'Nearly Balanced' : 'Developing'}
-        </div>
-      </div>
+  
+{/* Status badge removed - let progress bar tell the story */}     
+ </div>
       
       <div className="relative">
         {/* Progress Bar Background */}
         <div className="w-full bg-slate-blue rounded-full h-3">
-          <div 
-            className={`h-3 rounded-full transition-all duration-300 ${
-              isBalanced ? 'bg-gradient-to-r from-coral to-coral' :
-              isClose ? 'bg-gradient-to-r from-orange-400 to-orange-500' :
-              'bg-gradient-to-r from-slate-blue to-charcoal'
-            }`}
+          
+<div 
+  className="h-3 rounded-full transition-all duration-300 bg-coral"
             style={{ width: `${percentage}%` }}
           />
         </div>
@@ -549,9 +541,9 @@ const loadProfile = async () => {
           <h1 className="text-3xl font-bold text-charcoal mb-2">
             Athlete Profile & Analysis
           </h1>
-          <div className="text-lg text-charcoal font-semibold">
-            {profile.user_summary.name} • {formatWeight(profile.user_summary.body_weight)}
-          </div>
+<div className="text-lg text-charcoal font-semibold">
+  {profile.user_summary.name}
+</div>         
           <div className="text-sm text-gray-600 mt-1">
             Generated: {new Date(profile.generated_at).toLocaleDateString()}
           </div>
@@ -562,8 +554,10 @@ const loadProfile = async () => {
           {/* Olympic Lift Performance Card */}
           <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-charcoal mb-2">OLYMPIC LIFT PERFORMANCE</h2>
-              <div className="w-full h-0.5 bg-gradient-to-r from-coral to-orange-500"></div>
+             
+<h2 className="text-xl font-bold text-charcoal mb-2">OLYMPIC LIFTS</h2>
+              
+<div className="w-full h-0.5 bg-coral"></div>
               <p className="text-sm text-gray-600 mt-2">Balance assessment vs back squat strength</p>
             </div>
             
