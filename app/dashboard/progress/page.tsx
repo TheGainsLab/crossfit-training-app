@@ -600,28 +600,23 @@ const OverviewSummary = () => {
   const { overallMetrics } = dashboardData.data.dashboard;
 
   return (
-    <div className="grid md:grid-cols-3 gap-6 mb-8">
-      <div className="bg-white rounded-lg shadow p-6">
-        <div>
-          <p className="text-sm text-gray-600">Completed Tasks</p>
-<p className="text-3xl font-bold text-charcoal">{overallMetrics.totalExercises}</p>
+   
+<div className="grid md:grid-cols-2 gap-6 mb-8">
+  <div className="bg-white rounded-lg shadow p-6">
+    <div>
+      <p className="text-sm text-gray-600">Completed Tasks</p>
+      <p className="text-3xl font-bold text-charcoal">{overallMetrics.totalExercises}</p>
+    </div>
   </div>
-      </div>
-      
-      <div className="bg-white rounded-lg shadow p-6">
-        <div>
-          <p className="text-sm text-gray-600">Average RPE</p>
-<p className="text-3xl font-bold text-charcoal">{overallMetrics.averageRPE}</p>       
- </div>
-      </div>
-      
-      <div className="bg-white rounded-lg shadow p-6">
-        <div>
-          <p className="text-sm text-gray-600">Training Days</p>
-<p className="text-3xl font-bold text-charcoal">{overallMetrics.totalTrainingDays}</p>       
- </div>
-      </div>
-    </div>  // ← Now this properly closes the grid container
+  
+  <div className="bg-white rounded-lg shadow p-6">
+    <div>
+      <p className="text-sm text-gray-600">Training Days</p>
+      <p className="text-3xl font-bold text-charcoal">{overallMetrics.totalTrainingDays}</p>
+    </div>
+  </div>
+</div>
+
   );
 };
 
