@@ -164,8 +164,8 @@ const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicP
       <div className="flex justify-between items-center mb-2">
        
 <div className="flex items-center space-x-3">
-  <span className="font-medium text-charcoal">{lift}:</span>
-  <span className="text-lg font-semibold text-charcoal">{weight}</span>
+<span className="font-semibold text-charcoal">{lift}:</span>
+<span className="text-lg font-semibold text-charcoal">{weight}</span>
 </div>
   
 {/* Status badge removed - let progress bar tell the story */}     
@@ -218,10 +218,10 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
   return (
     <div className="mb-6">
       <div className="flex justify-between items-center mb-3">
-        <div className="flex items-center space-x-3">
-          <span className="font-medium text-charcoal">{lift}:</span>
-          <span className="text-lg font-semibold text-charcoal">{weight}</span>
-          
+        <div className="flex items-center space-x-3">          
+<span className="font-semibold text-charcoal">{lift}:</span>
+<span className="text-lg font-semibold text-charcoal">{weight}</span>          
+
 {/* Bodyweight ratio removed - shown visually in progress bar */}
         </div>
 {/* Level badge removed - let progress bar tell the story */}     
