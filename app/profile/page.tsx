@@ -223,15 +223,8 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
           <span className="text-lg font-semibold text-charcoal">{weight}</span>
           <span className="text-sm text-gray-600">({numericRatio}x bodyweight)</span>
         </div>
-        <div className={`text-sm font-medium px-3 py-1 rounded-full ${
-          currentLevel === 'Elite' ? 'bg-charcoal/10 text-charcoal' :
-          currentLevel === 'Advanced' ? 'bg-coral/10 text-coral' :
-          currentLevel === 'Intermediate' ? 'bg-slate-blue/20 text-charcoal' :
-          'bg-gray-100 text-gray-700'
-        }`}>
-          {currentLevel}
-        </div>
-      </div>
+{/* Level badge removed - let progress bar tell the story */}     
+ </div>
       
       {/* Progress Bar with Level Markers */}
       <div className="relative">
@@ -578,8 +571,8 @@ const loadProfile = async () => {
           
           {/* Foundation Strength Card */}
           <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-charcoal mb-2">FOUNDATION STRENGTH</h2>
+            <div className="mb-6">              
+<h2 className="text-xl font-bold text-charcoal mb-2">RAW STRENGTH</h2>
               <div className="w-full h-0.5 bg-gradient-to-r from-gray-400 via-slate-blue via-coral to-charcoal"></div>
               <p className="text-sm text-gray-600 mt-2">Progression levels relative to bodyweight ({formatWeight(profile.user_summary.body_weight)})</p>
             </div>
