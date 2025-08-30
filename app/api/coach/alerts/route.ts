@@ -1,5 +1,3 @@
-// app/api/coach/alerts/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
@@ -15,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     // Get current user from auth
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const authToken = cookieStore.get('sb-access-token')?.value;
     
     if (!authToken) {
