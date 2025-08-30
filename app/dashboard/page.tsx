@@ -485,6 +485,275 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
           </div>
         )}
 
+
+// Enhanced Coach Dashboard Component with A9 Integration
+// Add this to your existing CoachDashboard component
+
+const CoachAlerts = ({ coachData }: { coachData: any }) => {
+  const [alerts, setAlerts] = useState([]);
+  const [alertsLoading, setAlertsLoading] = useState(false);
+  const [rosterInsights, setRosterInsights] = useState(null);
+
+  useEffect(() => {
+    if (coachData) {
+      fetchCoachAlerts();
+    }
+  }, [coachData]);
+
+  const fetchCoachAlerts = async () => {
+    setAlertsLoading(true);
+    try {
+      const response = await fetch('/api/coach/alerts');
+      const data = await response.json();
+      
+      if (data.success) {
+        setAlerts(data.alerts || []);
+        setRosterInsights(data.rosterInsights);
+      } else {
+        console.error('Failed to fetch coach alerts:', data.error);
+        setAlerts([]);
+      }
+    } catch (error) {
+      console.error('Error fetching coach alerts:', error);
+      setAlerts([]);
+    } finally {
+      setAlertsLoading(false);
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'border-red-500 bg-red-50';
+      case 'medium': return 'border-yellow-500 bg-yellow-50';
+      case 'low': return 'border-blue-500 bg-blue-50';
+      default: return 'border-gray-500 bg-gray-50';
+    }
+  };
+
+  const getUrgencyIcon = (urgency: string) => {
+    switch (urgency) {
+      case 'immediate': return '🚨';
+      case 'this_week': return '⚠️';
+      case 'next_week': return '📅';
+      default: return '💡';
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'safety': return '⛑️';
+      case 'behavioral': return '🧠';
+      case 'communication': return '💬';
+      case 'data_anomaly': return '📊';
+      case 'engagement': return '🎯';
+      default: return '❓';
+    }
+  };
+
+  if (alertsLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Coach Alerts</h3>
+        <div className="animate-pulse space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-24 bg-gray-100 rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Roster Health Overview */}
+      {rosterInsights && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Roster Health</h3>
+            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+              rosterInsights.rosterHealth === 'good' ? 'bg-green-100 text-green-800' :
+              rosterInsights.rosterHealth === 'needs_attention' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
+            }`}>
+              {rosterInsights.rosterHealth.replace('_', ' ')}
+            </div>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{rosterInsights.totalAthletes}</div>
+              <div className="text-sm text-gray-600">Total Athletes</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">{rosterInsights.athletesNeedingAttention}</div>
+              <div className="text-sm text-gray-600">Need Attention</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {rosterInsights.totalAthletes - rosterInsights.athletesNeedingAttention}
+              </div>
+              <div className="text-sm text-gray-600">On Track</div>
+            </div>
+          </div>
+
+          {rosterInsights.commonIssues.length > 0 && (
+            <div>
+              <h4 className="font-medium text-gray-900 mb-2">Roster-Wide Patterns</h4>
+              <div className="space-y-2">
+                {rosterInsights.commonIssues.map((issue: any, index: number) => (
+                  <div key={index} className="border-l-4 border-purple-400 bg-purple-50 p-3 rounded-r">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-medium text-purple-800">
+                          {issue.issue.replace('_', ' ')} - {issue.athleteCount} athletes
+                        </div>
+                        <div className="text-sm text-purple-600">{issue.recommendation}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Priority Alerts */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Athlete Alerts</h3>
+          <button
+            onClick={fetchCoachAlerts}
+            className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+          >
+            Refresh
+          </button>
+        </div>
+
+        {alerts.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-4xl mb-4">✅</div>
+            <h4 className="text-lg font-medium text-gray-900 mb-2">All Clear!</h4>
+            <p className="text-gray-600">No athletes currently need human coaching intervention beyond automated program adjustments.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {alerts.map((alert: any) => (
+              <div key={alert.athleteId} className={`border-l-4 p-4 rounded-r-lg ${getPriorityColor(alert.priority)}`}>
+                {/* Alert Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xl">{getUrgencyIcon(alert.urgencyLevel)}</span>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{alert.athleteName}</h4>
+                      <div className="text-sm text-gray-600">
+                        {alert.priority} priority • {alert.urgencyLevel.replace('_', ' ')}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex space-x-1">
+                    {alert.interventionTriggers.map((trigger: any, i: number) => (
+                      <span key={i} className="text-lg" title={trigger.category}>
+                        {getCategoryIcon(trigger.category)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* AI Context */}
+                {alert.aiContext && (
+                  <div className="mb-4">
+                    <div className="text-gray-700 mb-2">{alert.aiContext.situationSummary}</div>
+                    <div className="text-sm text-gray-600 italic mb-2">
+                      Why coaching needed: {alert.aiContext.aiLimitations}
+                    </div>
+                  </div>
+                )}
+
+                {/* Data Snapshot */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Sessions:</span>
+                    <span className="ml-2 font-medium">{alert.dataSnapshot.totalSessions}/14 days</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Avg RPE:</span>
+                    <span className="ml-2 font-medium">{alert.dataSnapshot.avgRPE}/10</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Consistency:</span>
+                    <span className="ml-2 font-medium">{Math.round(alert.dataSnapshot.sessionConsistency * 100)}%</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Last Contact:</span>
+                    <span className="ml-2 font-medium">
+                      {alert.dataSnapshot.daysSinceContact > 30 ? '30+' : alert.dataSnapshot.daysSinceContact} days
+                    </span>
+                  </div>
+                </div>
+
+                {/* Conversation Starters */}
+                {alert.aiContext?.conversationStarters && (
+                  <div className="mb-4">
+                    <h5 className="font-medium text-gray-800 mb-2">Conversation Starters:</h5>
+                    <ul className="space-y-1">
+                      {alert.aiContext.conversationStarters.map((starter: string, i: number) => (
+                        <li key={i} className="text-sm text-gray-700 flex items-start">
+                          <span className="text-blue-500 mr-2">•</span>
+                          <span className="italic">"{starter}"</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Suggested Actions */}
+                <div className="flex flex-wrap gap-2">
+                  {alert.suggestedActions.map((action: string, i: number) => (
+                    <span key={i} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {action}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Intervention Triggers Details (Expandable) */}
+                <details className="mt-4">
+                  <summary className="text-sm text-gray-600 cursor-pointer hover:text-gray-800">
+                    View technical details ({alert.interventionTriggers.length} triggers)
+                  </summary>
+                  <div className="mt-2 space-y-2">
+                    {alert.interventionTriggers.map((trigger: any, i: number) => (
+                      <div key={i} className="text-xs bg-gray-100 p-2 rounded">
+                        <div className="font-medium">{trigger.type.replace('_', ' ')}</div>
+                        <div className="text-gray-600">{trigger.reason}</div>
+                        {trigger.metrics && (
+                          <div className="text-gray-500 mt-1">
+                            {Object.entries(trigger.metrics).map(([key, value]: [string, any]) => (
+                              <span key={key} className="mr-3">
+                                {key}: {typeof value === 'number' ? value.toFixed(1) : value.toString()}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Integration into existing CoachDashboard component
+// Add this section right after the Summary Stats section:
+
+{/* Coach Alerts Section - ADD THIS TO YOUR EXISTING CoachDashboard */}
+<CoachAlerts coachData={coachData} />
+
         {/* Athletes Section */}
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-between mb-6">
