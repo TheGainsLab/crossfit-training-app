@@ -555,8 +555,8 @@ export default function AnalyticsProgressPage() {
 const [predictiveData, setPredictiveData] = useState<any>(null);
 
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
-const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 'metcons'>('overview');
 
+const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 'metcons' | 'insights'>('overview');
   useEffect(() => {
     loadUser();
   }, []);
