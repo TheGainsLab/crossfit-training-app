@@ -207,12 +207,12 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
 
 
 // Enhanced Coach Dashboard Component with A9 Integration
-// Add this to your existing CoachDashboard component
 
 const CoachAlerts = ({ coachData }: { coachData: any }) => {
-  const [alerts, setAlerts] = useState([]);
+  
+const [alerts, setAlerts] = useState<any[]>([]);
   const [alertsLoading, setAlertsLoading] = useState(false);
-  const [rosterInsights, setRosterInsights] = useState(null);
+const [rosterInsights, setRosterInsights] = useState<any>(null);  
 
   useEffect(() => {
     if (coachData) {
