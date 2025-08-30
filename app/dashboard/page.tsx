@@ -554,6 +554,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [userId, setUserId] = useState<number | null>(null)
   const [dashboardAnalytics, setDashboardAnalytics] = useState<DashboardAnalytics | null>(null)
+const [blockData, setBlockData] = useState<any>(null)
 const [heatMapData, setHeatMapData] = useState<any>(null)  
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
   // ADD THESE THREE NEW LINES HERE:
