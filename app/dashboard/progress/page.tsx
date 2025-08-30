@@ -474,7 +474,7 @@ ChartJS.register(
 );
 
 
-const PredictiveInsightsView = () => {
+const PredictiveInsightsView = ({ predictiveData }: { predictiveData: any }) => {
   if (!predictiveData?.data) {
     return <div className="bg-white rounded-lg shadow p-6">Loading predictive insights...</div>;
   }
@@ -1500,7 +1500,7 @@ const MetConAnalyticsView = () => {
             <>
 {activeTab === 'overview' && <RecentActivityOverview userId={userId} />}              
 {activeTab === 'skills' && <SkillsAnalyticsView />}
-{activeTab === 'insights' && <PredictiveInsightsView />}
+{activeTab === 'insights' && <PredictiveInsightsView predictiveData={predictiveData} />}
               {activeTab === 'strength' && <StrengthAnalyticsView />}
               {activeTab === 'metcons' && <MetConAnalyticsView />}
             </>
