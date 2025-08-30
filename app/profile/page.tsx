@@ -581,7 +581,7 @@ const loadProfile = async () => {
           <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
             <div className="mb-6">              
 <h2 className="text-xl font-bold text-charcoal mb-2">RAW STRENGTH</h2>
-              <div className="w-full h-0.5 bg-gradient-to-r from-gray-400 via-slate-blue via-coral to-charcoal"></div>
+<div className="w-full h-0.5 bg-coral"></div>
               <p className="text-sm text-gray-600 mt-2">Progression levels relative to bodyweight ({formatWeight(profile.user_summary.body_weight)})</p>
             </div>
             
