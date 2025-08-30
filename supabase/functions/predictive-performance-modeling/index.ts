@@ -139,82 +139,197 @@ function buildPredictiveAnalysisPrompt(analysisData: any, analysisType: string) 
   const volumePattern = calculateVolumePattern(performanceLogs);
   const strengthTrend = analyzeStrengthProgression(strengthData);
 
+  // Calculate additional context for narratives
+  const recentSessions = performanceLogs.slice(-14); // Last 2 weeks
+  const totalSessions = performanceLogs.length;
+  const uniqueExercises = [...new Set(performanceLogs.map(log => log.exercise_name))];
+  const trainingFrequency = calculateTrainingFrequency(performanceLogs);
+  const personalBests = findRecentAchievements(performanceLogs);
+  const consistencyScore = calculateConsistencyScore(performanceLogs);
+
   return `
-You are an expert sports scientist analyzing a CrossFit athlete's performance data to generate predictive insights.
+You are an expert CrossFit coach providing personalized training insights to an athlete. Your analysis should be encouraging, actionable, and conversational - like a knowledgeable coach who understands their individual journey.
 
 ATHLETE PROFILE:
-- Ability: ${userProfile.ability_level || 'Unknown'}
+- Name: ${userProfile.name || 'Athlete'}
+- Experience Level: ${userProfile.ability_level || 'Developing'}
 - Gender: ${userProfile.gender || 'Unknown'}
 - Body Weight: ${userProfile.body_weight || 'Unknown'} ${userProfile.units || 'lbs'}
 
-PERFORMANCE PATTERNS (6 weeks):
-- Total Sessions: ${performanceLogs.length}
-- RPE Trend: ${rpePattern.direction} (avg: ${rpePattern.average})
-- Quality Trend: ${qualityPattern.direction} (avg: ${qualityPattern.average})
-- Volume Pattern: ${volumePattern.trend}
+TRAINING DATA SUMMARY (Last 6 weeks):
+- Total Training Sessions: ${totalSessions}
+- Recent Activity: ${recentSessions.length} sessions in last 2 weeks
+- Training Frequency: ${trainingFrequency.sessionsPerWeek} sessions/week average
+- Unique Exercises Practiced: ${uniqueExercises.length}
+- Training Consistency: ${consistencyScore}%
+
+PERFORMANCE PATTERNS:
+- RPE Trend: ${rpePattern.direction} (current average: ${rpePattern.average}/10)
+- Movement Quality: ${qualityPattern.direction} (current average: ${qualityPattern.average}/4)
+- Training Volume: ${volumePattern.trend}
 - Strength Progression: ${strengthTrend}
 
-WEAKNESS ANALYSIS:
-${Object.keys(ratios).filter(k => k.startsWith('needs_') && ratios[k]).join(', ') || 'No significant weaknesses identified'}
+RECENT ACHIEVEMENTS:
+${personalBests.length > 0 ? personalBests.map(pb => `- ${pb.exercise}: ${pb.achievement} (${pb.date})`).join('\n') : '- Continue building towards your first recorded achievements!'}
 
-RECENT PERFORMANCE HIGHLIGHTS:
-${performanceLogs.slice(-10).map(log => 
-  `${log.exercise_name}: RPE ${log.rpe}, Quality ${log.completion_quality}`
+IDENTIFIED DEVELOPMENT AREAS:
+${Object.keys(ratios).filter(k => k.startsWith('needs_') && ratios[k]).map(area => `- ${area.replace('needs_', '').replace('_', ' ')}`).join('\n') || '- Well-rounded development across all areas'}
+
+DETAILED RECENT PERFORMANCE:
+${recentSessions.slice(-8).map(log => 
+  `${new Date(log.logged_at).toLocaleDateString()}: ${log.exercise_name} - ${log.result || 'completed'} (RPE: ${log.rpe || 'unrated'}, Quality: ${log.completion_quality || 'unrated'}/4)${log.analysis?.notes ? ` | Notes: ${log.analysis.notes}` : ''}`
 ).join('\n')}
 
-METCON PERFORMANCE:
-- Recent sessions: ${metconData.length}
-- Performance variation analysis available
+METCON PERFORMANCE CONTEXT:
+- Recent MetCon Sessions: ${metconData.length}
+- Conditioning Trend: ${metconData.length > 0 ? 'Active conditioning work' : 'Focus on building conditioning base'}
 
-Generate predictive insights in JSON format:
+Generate comprehensive insights in JSON format with BOTH structured predictions AND narrative content:
 
 {
+  "weeklyNarrative": {
+    "summary": "A 2-3 sentence engaging summary of their recent training, highlighting patterns and achievements",
+    "keyInsight": "The most important thing they should know about their current training",
+    "progressHighlight": "Specific positive progress or achievement to celebrate",
+    "focusArea": "What they should pay attention to in upcoming sessions"
+  },
   "plateauPredictions": [
     {
       "category": "strength|skills|conditioning",
       "exercise": "Exercise Name",
       "timeframe": "2-3 weeks",
       "confidence": "high|medium|low",
-      "reasoning": "Current trajectory analysis"
+      "reasoning": "Data-based explanation of why plateau may occur",
+      "narrative": "Conversational explanation with specific advice for prevention",
+      "actionableSteps": ["Specific step 1", "Specific step 2"]
     }
   ],
   "fatigueWarnings": [
     {
       "riskLevel": "high|medium|low",
-      "indicators": ["high RPE pattern", "declining quality"],
-      "recommendation": "Reduce volume by 20% next week",
-      "timeframe": "immediate"
+      "indicators": ["specific RPE patterns", "quality decline", "frequency changes"],
+      "recommendation": "Specific recovery or volume adjustment advice",
+      "timeframe": "immediate|this week|next week",
+      "narrative": "Encouraging explanation of why this matters and how to address it",
+      "recoveryTips": ["Specific tip 1", "Specific tip 2"]
     }
   ],
   "progressionOpportunities": [
     {
-      "area": "Back Squat",
-      "currentStatus": "ready for advancement",
-      "nextStep": "Increase load by 5-10%",
-      "timeline": "next training cycle"
+      "area": "Specific movement or fitness area",
+      "currentStatus": "Where they are now",
+      "nextStep": "Specific next progression",
+      "timeline": "When to attempt it",
+      "narrative": "Motivating explanation of their readiness and approach",
+      "preparationSteps": ["How to prepare step 1", "Step 2"]
     }
   ],
-  "personalizedRecommendations": [
+  "personalizedGuidance": [
     {
-      "category": "programming",
-      "recommendation": "Emphasis on posterior chain work",
-      "reasoning": "Ratio analysis shows weakness",
-      "priority": "high"
+      "category": "programming|technique|mindset|recovery",
+      "title": "Specific guidance title",
+      "advice": "Detailed, actionable advice",
+      "reasoning": "Why this matters for their specific situation",
+      "implementation": "How to put this into practice",
+      "priority": "high|medium|low"
     }
   ],
-  "performanceForecasts": [
+  "achievements": [
     {
-      "metric": "overall fitness",
-      "trend": "improving|declining|stable",
-      "projectedChange": "5-10% improvement over 4 weeks",
-      "keyFactors": ["consistent training", "good recovery patterns"]
+      "type": "volume|consistency|strength|skill|conditioning",
+      "description": "What they accomplished",
+      "significance": "Why this matters for their development",
+      "buildOn": "How to leverage this success going forward"
     }
-  ]
+  ],
+  "forwardLooking": {
+    "nextWeekFocus": "What to prioritize in the coming week",
+    "monthlyGoal": "Realistic goal for the next 4 weeks based on current trends",
+    "adaptationStrategy": "How their body is adapting and what this means for training",
+    "motivationalClose": "Encouraging message about their training journey"
+  }
 }
 
-DO NOT OUTPUT ANYTHING OTHER THAN VALID JSON.
+IMPORTANT GUIDELINES:
+- Use the athlete's name when available
+- Be encouraging but honest about areas needing work
+- Provide specific, actionable advice rather than generic recommendations
+- Connect data points into coherent stories about their training journey
+- Celebrate progress and improvements, however small
+- Use conversational, coaching language rather than clinical analysis
+- Focus on what they CAN do and how to improve, not what they're doing wrong
+- Reference specific exercises, dates, and performance metrics when relevant
+- Make recommendations feel achievable and motivating
+
+DO NOT OUTPUT ANYTHING OTHER than the requested JSON structure. Ensure all narrative fields are engaging, specific, and actionable.
 `;
 }
+
+// Helper functions for enhanced analysis
+function calculateTrainingFrequency(logs: any[]): { sessionsPerWeek: number } {
+  if (logs.length === 0) return { sessionsPerWeek: 0 };
+  
+  const weeks = groupLogsByWeek(logs);
+  const avgSessions = weeks.reduce((sum, week) => sum + week.sessionCount, 0) / weeks.length;
+  
+  return { sessionsPerWeek: Math.round(avgSessions * 10) / 10 };
+}
+
+function findRecentAchievements(logs: any[]): any[] {
+  const achievements: any[] = [];
+  const exerciseGroups = groupBy(logs, 'exercise_name');
+  
+  Object.keys(exerciseGroups).forEach(exercise => {
+    const sessions = exerciseGroups[exercise].sort((a, b) => new Date(a.logged_at).getTime() - new Date(b.logged_at).getTime());
+    
+    // Look for recent PRs, quality improvements, or volume milestones
+    const recent = sessions.slice(-5);
+    const hasQualityImprovement = recent.some((session, i) => 
+      i > 0 && session.completion_quality > recent[i-1].completion_quality
+    );
+    
+    if (hasQualityImprovement) {
+      achievements.push({
+        exercise,
+        achievement: "Quality improvement trend",
+        date: new Date(recent[recent.length - 1].logged_at).toLocaleDateString()
+      });
+    }
+    
+    // Check for weight/time PRs if available
+    const weights = sessions.map(s => s.weight_time).filter(w => w && !isNaN(parseFloat(w)));
+    if (weights.length >= 2) {
+      const maxWeight = Math.max(...weights.map(w => parseFloat(w)));
+      const recentMax = Math.max(...recent.map(s => s.weight_time ? parseFloat(s.weight_time) : 0));
+      
+      if (recentMax === maxWeight && recentMax > 0) {
+        achievements.push({
+          exercise,
+          achievement: `Personal best: ${maxWeight}`,
+          date: new Date(sessions.find(s => parseFloat(s.weight_time) === maxWeight)?.logged_at).toLocaleDateString()
+        });
+      }
+    }
+  });
+  
+  return achievements.slice(0, 5); // Return top 5 recent achievements
+}
+
+function calculateConsistencyScore(logs: any[]): number {
+  if (logs.length === 0) return 0;
+  
+  const weeks = groupLogsByWeek(logs);
+  const targetSessionsPerWeek = 4; // Assume 4 sessions/week as ideal
+  
+  const consistencyScores = weeks.map(week => {
+    const ratio = Math.min(week.sessionCount / targetSessionsPerWeek, 1);
+    return ratio * 100;
+  });
+  
+  const avgConsistency = consistencyScores.reduce((sum, score) => sum + score, 0) / consistencyScores.length;
+  return Math.round(avgConsistency);
+}
+
 
 function calculateRPETrend(logs: any[]): { direction: string, average: number } {
   if (logs.length < 5) return { direction: 'insufficient data', average: 0 };
@@ -322,18 +437,37 @@ function getWeekNumber(date: Date): number {
   return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
 }
 
+
 function parsePredictiveResponse(aiResponse: string) {
   try {
     const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const parsed = JSON.parse(cleanResponse);
     
     return {
+      // Existing structured data
       plateauPredictions: parsed.plateauPredictions || [],
       fatigueWarnings: parsed.fatigueWarnings || [],
       progressionOpportunities: parsed.progressionOpportunities || [],
       personalizedRecommendations: parsed.personalizedRecommendations || [],
       performanceForecasts: parsed.performanceForecasts || [],
-      analysisQuality: 'ai-generated'
+      
+      // New narrative content
+      weeklyNarrative: parsed.weeklyNarrative || {
+        summary: "Continue building your training foundation with consistent sessions.",
+        keyInsight: "Focus on movement quality and consistency.",
+        progressHighlight: "You're on the right track with regular training.",
+        focusArea: "Maintain current training approach."
+      },
+      personalizedGuidance: parsed.personalizedGuidance || [],
+      achievements: parsed.achievements || [],
+      forwardLooking: parsed.forwardLooking || {
+        nextWeekFocus: "Continue current training approach",
+        monthlyGoal: "Build training consistency",
+        adaptationStrategy: "Allow your body to adapt gradually",
+        motivationalClose: "Keep up the great work!"
+      },
+      
+      analysisQuality: 'ai-enhanced'
     };
     
   } catch (error) {
@@ -349,7 +483,22 @@ function parsePredictiveResponse(aiResponse: string) {
         priority: 'low'
       }],
       performanceForecasts: [],
+      weeklyNarrative: {
+        summary: "Keep training consistently to build your fitness foundation.",
+        keyInsight: "Consistency is key to long-term progress.",
+        progressHighlight: "Every session contributes to your development.",
+        focusArea: "Focus on showing up and doing the work."
+      },
+      personalizedGuidance: [],
+      achievements: [],
+      forwardLooking: {
+        nextWeekFocus: "Maintain training consistency",
+        monthlyGoal: "Continue building your base",
+        adaptationStrategy: "Let your body adapt at its own pace",
+        motivationalClose: "Trust the process and keep moving forward!"
+      },
       analysisQuality: 'fallback'
     };
   }
 }
+

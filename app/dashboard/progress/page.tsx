@@ -474,6 +474,7 @@ ChartJS.register(
 );
 
 
+
 const PredictiveInsightsView = ({ predictiveData }: { predictiveData: any }) => {
   if (!predictiveData?.data) {
     return <div className="bg-white rounded-lg shadow p-6">Loading predictive insights...</div>;
@@ -483,61 +484,301 @@ const PredictiveInsightsView = ({ predictiveData }: { predictiveData: any }) => 
 
   return (
     <div id="insights-panel" role="tabpanel" aria-labelledby="insights-tab" className="space-y-8">
-      {/* Plateau Predictions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Plateau Predictions</h3>
-{predictions.plateauPredictions?.map((prediction: any, index: number) => (        
-          <div key={index} className="border-l-4 border-yellow-400 bg-yellow-50 p-4 mb-4">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm text-yellow-700">
-                  <strong>{prediction.exercise}</strong> - {prediction.timeframe}
-                </p>
-                <p className="text-xs text-yellow-600 mt-1">{prediction.reasoning}</p>
-              </div>
-            </div>
+      
+      {/* Weekly Training Narrative - NEW SECTION */}
+      {predictions.weeklyNarrative && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow p-6 border border-blue-200">
+          <div className="flex items-center mb-4">
+            <div className="text-2xl mr-3">📊</div>
+            <h3 className="text-xl font-bold text-gray-900">Your Training Story This Week</h3>
           </div>
-        ))}
-      </div>
+          
+          <div className="space-y-4">
+            <div className="text-lg text-gray-800 leading-relaxed">
+              {predictions.weeklyNarrative.summary}
+            </div>
+            
+            {predictions.weeklyNarrative.progressHighlight && (
+              <div className="bg-green-50 border-l-4 border-green-400 p-4">
+                <div className="flex">
+                  <div className="text-green-600 text-xl mr-3">🎉</div>
+                  <div>
+                    <h4 className="font-semibold text-green-800">Progress Highlight</h4>
+                    <p className="text-green-700">{predictions.weeklyNarrative.progressHighlight}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {predictions.weeklyNarrative.keyInsight && (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                <div className="flex">
+                  <div className="text-yellow-600 text-xl mr-3">💡</div>
+                  <div>
+                    <h4 className="font-semibold text-yellow-800">Key Insight</h4>
+                    <p className="text-yellow-700">{predictions.weeklyNarrative.keyInsight}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {predictions.weeklyNarrative.focusArea && (
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
+                <div className="flex">
+                  <div className="text-blue-600 text-xl mr-3">🎯</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-800">This Week's Focus</h4>
+                    <p className="text-blue-700">{predictions.weeklyNarrative.focusArea}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-      {/* Fatigue Warnings */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Fatigue Warnings</h3>
-{predictions.fatigueWarnings?.map((warning: any, index: number) => (
-       
-          <div key={index} className="border-l-4 border-red-400 bg-red-50 p-4 mb-4">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm text-red-700">
-                  <strong>{warning.riskLevel.toUpperCase()} RISK</strong>
-                </p>
-                <p className="text-xs text-red-600 mt-1">{warning.recommendation}</p>
-              </div>
-            </div>
+      {/* Achievements Section - NEW */}
+      {predictions.achievements && predictions.achievements.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center mb-4">
+            <div className="text-2xl mr-3">🏆</div>
+            <h3 className="text-lg font-semibold text-gray-900">Recent Achievements</h3>
           </div>
-        ))}
-      </div>
+          <div className="space-y-4">
+            {predictions.achievements.map((achievement: any, index: number) => (
+              <div key={index} className="border-l-4 border-green-400 bg-green-50 p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-semibold text-green-800">{achievement.description}</h4>
+                  <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">
+                    {achievement.type}
+                  </span>
+                </div>
+                <p className="text-green-700 text-sm mb-2">{achievement.significance}</p>
+                {achievement.buildOn && (
+                  <div className="text-green-600 text-sm font-medium">
+                    Next: {achievement.buildOn}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-      {/* Progression Opportunities */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Progression Opportunities</h3>
-{predictions.progressionOpportunities?.map((opportunity: any, index: number) => (        
-          <div key={index} className="border-l-4 border-green-400 bg-green-50 p-4 mb-4">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm text-green-700">
-                  <strong>{opportunity.area}</strong> - {opportunity.nextStep}
-                </p>
-                <p className="text-xs text-green-600 mt-1">{opportunity.timeline}</p>
+      {/* Enhanced Plateau Predictions */}
+      {predictions.plateauPredictions && predictions.plateauPredictions.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Plateau Predictions</h3>
+          <div className="space-y-4">
+            {predictions.plateauPredictions.map((prediction: any, index: number) => (
+              <div key={index} className="border-l-4 border-yellow-400 bg-yellow-50 p-4 rounded-r-lg">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-semibold text-yellow-800">
+                    {prediction.exercise} - {prediction.timeframe}
+                  </h4>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    prediction.confidence === 'high' ? 'bg-red-100 text-red-800' :
+                    prediction.confidence === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {prediction.confidence} confidence
+                  </span>
+                </div>
+                
+                {prediction.narrative && (
+                  <div className="text-yellow-700 mb-3 leading-relaxed">
+                    {prediction.narrative}
+                  </div>
+                )}
+                
+                <p className="text-yellow-600 text-sm mb-3">{prediction.reasoning}</p>
+                
+                {prediction.actionableSteps && prediction.actionableSteps.length > 0 && (
+                  <div>
+                    <h5 className="font-medium text-yellow-800 mb-1">Action Steps:</h5>
+                    <ul className="text-yellow-700 text-sm space-y-1">
+                      {prediction.actionableSteps.map((step: string, i: number) => (
+                        <li key={i} className="flex items-start">
+                          <span className="text-yellow-500 mr-2">•</span>
+                          {step}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* Enhanced Fatigue Warnings */}
+      {predictions.fatigueWarnings && predictions.fatigueWarnings.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Fatigue Warnings</h3>
+          <div className="space-y-4">
+            {predictions.fatigueWarnings.map((warning: any, index: number) => (
+              <div key={index} className="border-l-4 border-red-400 bg-red-50 p-4 rounded-r-lg">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-semibold text-red-800">
+                    {warning.riskLevel.toUpperCase()} RISK
+                  </h4>
+                  <span className="text-xs bg-red-200 text-red-800 px-2 py-1 rounded-full">
+                    {warning.timeframe}
+                  </span>
+                </div>
+                
+                {warning.narrative && (
+                  <div className="text-red-700 mb-3 leading-relaxed">
+                    {warning.narrative}
+                  </div>
+                )}
+                
+                <p className="text-red-600 text-sm mb-3">{warning.recommendation}</p>
+                
+                {warning.recoveryTips && warning.recoveryTips.length > 0 && (
+                  <div>
+                    <h5 className="font-medium text-red-800 mb-1">Recovery Tips:</h5>
+                    <ul className="text-red-700 text-sm space-y-1">
+                      {warning.recoveryTips.map((tip: string, i: number) => (
+                        <li key={i} className="flex items-start">
+                          <span className="text-red-500 mr-2">•</span>
+                          {tip}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced Progression Opportunities */}
+      {predictions.progressionOpportunities && predictions.progressionOpportunities.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Progression Opportunities</h3>
+          <div className="space-y-4">
+            {predictions.progressionOpportunities.map((opportunity: any, index: number) => (
+              <div key={index} className="border-l-4 border-green-400 bg-green-50 p-4 rounded-r-lg">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-semibold text-green-800">
+                    {opportunity.area} - {opportunity.nextStep}
+                  </h4>
+                  <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">
+                    {opportunity.timeline}
+                  </span>
+                </div>
+                
+                {opportunity.narrative && (
+                  <div className="text-green-700 mb-3 leading-relaxed">
+                    {opportunity.narrative}
+                  </div>
+                )}
+                
+                <p className="text-green-600 text-sm mb-3">Current Status: {opportunity.currentStatus}</p>
+                
+                {opportunity.preparationSteps && opportunity.preparationSteps.length > 0 && (
+                  <div>
+                    <h5 className="font-medium text-green-800 mb-1">Preparation Steps:</h5>
+                    <ul className="text-green-700 text-sm space-y-1">
+                      {opportunity.preparationSteps.map((step: string, i: number) => (
+                        <li key={i} className="flex items-start">
+                          <span className="text-green-500 mr-2">•</span>
+                          {step}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Personalized Guidance - NEW SECTION */}
+      {predictions.personalizedGuidance && predictions.personalizedGuidance.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center mb-4">
+            <div className="text-2xl mr-3">🎯</div>
+            <h3 className="text-lg font-semibold text-gray-900">Personalized Guidance</h3>
+          </div>
+          <div className="space-y-4">
+            {predictions.personalizedGuidance.map((guidance: any, index: number) => (
+              <div key={index} className={`border-l-4 p-4 rounded-r-lg ${
+                guidance.priority === 'high' ? 'border-purple-400 bg-purple-50' :
+                guidance.priority === 'medium' ? 'border-blue-400 bg-blue-50' :
+                'border-gray-400 bg-gray-50'
+              }`}>
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-semibold text-gray-800">{guidance.title}</h4>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    guidance.priority === 'high' ? 'bg-purple-200 text-purple-800' :
+                    guidance.priority === 'medium' ? 'bg-blue-200 text-blue-800' :
+                    'bg-gray-200 text-gray-800'
+                  }`}>
+                    {guidance.priority} priority
+                  </span>
+                </div>
+                <div className="text-gray-700 mb-2 leading-relaxed">{guidance.advice}</div>
+                <div className="text-gray-600 text-sm mb-2">Why: {guidance.reasoning}</div>
+                {guidance.implementation && (
+                  <div className="text-gray-600 text-sm font-medium">
+                    How: {guidance.implementation}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Forward Looking Section - NEW */}
+      {predictions.forwardLooking && (
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg shadow p-6 border border-purple-200">
+          <div className="flex items-center mb-4">
+            <div className="text-2xl mr-3">🔮</div>
+            <h3 className="text-xl font-bold text-gray-900">Looking Ahead</h3>
+          </div>
+          
+          <div className="space-y-4">
+            {predictions.forwardLooking.nextWeekFocus && (
+              <div>
+                <h4 className="font-semibold text-purple-800 mb-1">Next Week Focus</h4>
+                <p className="text-purple-700">{predictions.forwardLooking.nextWeekFocus}</p>
+              </div>
+            )}
+            
+            {predictions.forwardLooking.monthlyGoal && (
+              <div>
+                <h4 className="font-semibold text-purple-800 mb-1">Monthly Goal</h4>
+                <p className="text-purple-700">{predictions.forwardLooking.monthlyGoal}</p>
+              </div>
+            )}
+            
+            {predictions.forwardLooking.adaptationStrategy && (
+              <div>
+                <h4 className="font-semibold text-purple-800 mb-1">Your Body's Adaptation</h4>
+                <p className="text-purple-700">{predictions.forwardLooking.adaptationStrategy}</p>
+              </div>
+            )}
+            
+            {predictions.forwardLooking.motivationalClose && (
+              <div className="mt-6 p-4 bg-white rounded-lg border-2 border-purple-200">
+                <p className="text-center text-lg font-medium text-purple-800 italic">
+                  {predictions.forwardLooking.motivationalClose}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
-
 
 
 export default function AnalyticsProgressPage() {
