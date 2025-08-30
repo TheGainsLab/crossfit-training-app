@@ -175,10 +175,10 @@ const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicP
         {/* Progress Bar Background */}
 
 <div className="w-full bg-slate-blue rounded-full h-3">
-  <div
-    className="h-3 rounded-full transition-all duration-300 bg-coral"
-    style={{ width: `${percentage}%` }}
-  />
+<div
+  className="h-3 rounded-full transition-all duration-300 bg-slate-blue"
+  style={{ width: `${percentage}%` }}
+/>
 </div>
 
 {/* Current Value Marker - matching Raw Strength style */}
@@ -186,10 +186,11 @@ const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicP
   className="absolute -top-8 transform -translate-x-1/2"
   style={{ left: `${percentage}%` }}
 >
-  <div className="bg-charcoal text-white px-2 py-1 rounded text-xs font-medium">
-    {Math.round(current * 100)}%
-  </div>
-  <div className="w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-charcoal mx-auto"></div>
+<div className="bg-coral text-white px-2 py-1 rounded text-xs font-medium">
+  {Math.round(current * 100)}%
+</div>
+<div className="w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-coral mx-auto"></div>
+
 </div>
         
         {/* Target Line */}
@@ -249,16 +250,11 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
             <div className="flex-1 bg-charcoal/20"></div>
           </div>
           
-          {/* Progress Fill */}
-          <div 
-            className={`absolute top-0 left-0 h-4 rounded-full transition-all duration-500 ${
-              currentLevel === 'Elite' ? 'bg-gradient-to-r from-charcoal to-charcoal' :
-              currentLevel === 'Advanced' ? 'bg-gradient-to-r from-coral to-coral' :
-              currentLevel === 'Intermediate' ? 'bg-gradient-to-r from-slate-blue to-slate-blue' :
-              'bg-gradient-to-r from-gray-400 to-gray-500'
-            }`}
-            style={{ width: `${position}%` }}
-          />
+{/* Progress Fill */}
+<div 
+  className="absolute top-0 left-0 h-4 rounded-full transition-all duration-500 bg-slate-blue"
+  style={{ width: `${position}%` }}
+/>
           
           {/* Current Position Marker */}
           <div 
@@ -292,11 +288,12 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
           className="absolute -top-8 transform -translate-x-1/2"
           style={{ left: `${position}%` }}
         >
-          <div className="bg-charcoal text-white px-2 py-1 rounded text-xs font-medium">
-            {numericRatio}
-          </div>
-          <div className="w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-charcoal mx-auto"></div>
-        </div>
+<div className="bg-coral text-white px-2 py-1 rounded text-xs font-medium">
+  {numericRatio}
+</div>
+<div className="w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-coral mx-auto"></div>
+       
+ </div>
       </div>
     </div>
   )
