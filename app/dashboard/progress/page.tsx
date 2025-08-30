@@ -590,35 +590,6 @@ const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 
     }
   };
 
-// Overview Summary Component - Updated
-
-const OverviewSummary = () => {
-  if (!dashboardData?.data?.dashboard) {
-    return <div>Loading overview data...</div>;
-  }
-
-  const { overallMetrics } = dashboardData.data.dashboard;
-
-  return (
-   
-<div className="grid md:grid-cols-2 gap-6 mb-8">
-<div className="bg-white rounded-lg shadow p-6 border-2 border-slate-blue">
-  <div>
-    <p className="text-sm text-gray-600">Completed Tasks</p>
-    <p className="text-3xl font-bold text-charcoal">{overallMetrics.totalExercises}</p>
-  </div>
-</div>
-  
-<div className="bg-white rounded-lg shadow p-6 border-2 border-slate-blue">
-  <div>
-    <p className="text-sm text-gray-600">Training Days</p>
-    <p className="text-3xl font-bold text-charcoal">{overallMetrics.totalTrainingDays}</p>
-  </div>
-</div>
-</div>
-  );
-};
-
 
   // Enhanced Tab Navigation with Prominent Styling
 
@@ -1433,9 +1404,8 @@ const MetConAnalyticsView = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Overview Summary - Single Instance */}
-        <OverviewSummary />
 
+{/* Overview cards moved to dashboard */}
         {/* Enhanced Tab Navigation */}
         <TabNavigation />
 

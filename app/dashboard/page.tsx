@@ -554,7 +554,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [userId, setUserId] = useState<number | null>(null)
   const [dashboardAnalytics, setDashboardAnalytics] = useState<DashboardAnalytics | null>(null)
-  const [blockData, setBlockData] = useState<any>(null)
+const [heatMapData, setHeatMapData] = useState<any>(null)  
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
   // ADD THESE THREE NEW LINES HERE:
   const [isCoach, setIsCoach] = useState(false)
@@ -655,31 +655,39 @@ const checkCoachRole = async () => {
     
     setAnalyticsLoading(true)
     try {
-      // Fetch both dashboard and block analytics
-      const [dashboardRes, blockRes] = await Promise.allSettled([
-        fetch(`/api/analytics/${userId}/dashboard`),
-        fetch(`/api/analytics/${userId}/block-analyzer`)
-      ])
+      
+// Fetch dashboard, block analytics, and heat map data
+const [dashboardRes, blockRes, heatMapRes] = await Promise.allSettled([
+  fetch(`/api/analytics/${userId}/dashboard`),
+  fetch(`/api/analytics/${userId}/block-analyzer`),
+  fetch(`/api/analytics/${userId}/exercise-heatmap`)
+])
 
       // Process Dashboard Data
       if (dashboardRes.status === 'fulfilled' && dashboardRes.value.ok) {
         const data = await dashboardRes.value.json()
         setDashboardAnalytics(data)
       }
+// Process Block Analytics
+if (blockRes.status === 'fulfilled' && blockRes.value.ok) {
+  const data = await blockRes.value.json()
+  setBlockData(data)
+}
 
-      // Process Block Analytics
-      if (blockRes.status === 'fulfilled' && blockRes.value.ok) {
-        const data = await blockRes.value.json()
-        setBlockData(data)
-      }
+// Process Heat Map Data
+if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
+  const data = await heatMapRes.value.json()
+  setHeatMapData(data.data)
+}
 
-    } catch (error) {
-      console.error('Error fetching dashboard analytics:', error)
-      setDashboardAnalytics(null)
-      setBlockData(null)
-    } finally {
-      setAnalyticsLoading(false)
-    }
+} catch (error) {
+  console.error('Error fetching dashboard analytics:', error)
+  setDashboardAnalytics(null)
+  setBlockData(null)
+  setHeatMapData(null)
+} finally {
+  setAnalyticsLoading(false)
+}
   }
 
   const loadUserAndProgram = async () => {
@@ -970,6 +978,43 @@ const checkCoachRole = async () => {
             }}
           />
         )}
+
+{/* Overview Cards */}
+{dashboardAnalytics?.data?.dashboard && (
+  <div className="grid md:grid-cols-2 gap-6 mb-6">
+    {/* Training Activity Card */}
+    <div className="bg-white rounded-lg shadow p-6 border-2 border-slate-blue">
+      <div className="space-y-3">
+        <div>
+          <p className="text-sm text-gray-600">Training Days</p>
+          <p className="text-2xl font-bold text-charcoal">{dashboardAnalytics.data.dashboard.overallMetrics.totalTrainingDays}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-600">Completed Tasks</p>
+          <p className="text-2xl font-bold text-charcoal">{dashboardAnalytics.data.dashboard.overallMetrics.totalExercises}</p>
+        </div>
+      </div>
+    </div>
+
+    {/* MetCons & Fitness Card */}
+    <div className="bg-white rounded-lg shadow p-6 border-2 border-slate-blue">
+      <div className="space-y-3">
+        <div>
+          <p className="text-sm text-gray-600">MetCons Completed</p>
+          <p className="text-2xl font-bold text-charcoal">{heatMapData?.totalCompletedWorkouts || 0}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-600">Fitness Score</p>
+          <p className="text-2xl font-bold text-charcoal">{heatMapData?.globalFitnessScore || 0}%</p>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Training Blocks Visualization */}
+
+
 
         {/* Training Blocks Visualization */}
         <div className="mb-8">
