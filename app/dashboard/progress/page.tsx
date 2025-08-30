@@ -652,6 +652,14 @@ const [dashboardRes, blockRes, skillsRes, strengthRes, metconRes, predictiveRes]
         console.log('✅ MetCon analytics loaded');
       }
 
+// Process Predictive Insights
+if (predictiveRes.status === 'fulfilled' && predictiveRes.value.ok) {
+  const data = await predictiveRes.value.json();
+  setPredictiveData(data);
+  console.log('✅ Predictive insights loaded');
+}
+
+
     } catch (error) {
       console.error('Error fetching analytics:', error);
       setError('Failed to load analytics data');
