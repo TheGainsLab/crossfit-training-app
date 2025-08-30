@@ -473,6 +473,72 @@ ChartJS.register(
   Legend
 );
 
+
+const PredictiveInsightsView = () => {
+  if (!predictiveData?.data) {
+    return <div className="bg-white rounded-lg shadow p-6">Loading predictive insights...</div>;
+  }
+
+  const { predictions } = predictiveData.data;
+
+  return (
+    <div id="insights-panel" role="tabpanel" aria-labelledby="insights-tab" className="space-y-8">
+      {/* Plateau Predictions */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Plateau Predictions</h3>
+        {predictions.plateauPredictions?.map((prediction, index) => (
+          <div key={index} className="border-l-4 border-yellow-400 bg-yellow-50 p-4 mb-4">
+            <div className="flex">
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  <strong>{prediction.exercise}</strong> - {prediction.timeframe}
+                </p>
+                <p className="text-xs text-yellow-600 mt-1">{prediction.reasoning}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Fatigue Warnings */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Fatigue Warnings</h3>
+        {predictions.fatigueWarnings?.map((warning, index) => (
+          <div key={index} className="border-l-4 border-red-400 bg-red-50 p-4 mb-4">
+            <div className="flex">
+              <div className="ml-3">
+                <p className="text-sm text-red-700">
+                  <strong>{warning.riskLevel.toUpperCase()} RISK</strong>
+                </p>
+                <p className="text-xs text-red-600 mt-1">{warning.recommendation}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Progression Opportunities */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Progression Opportunities</h3>
+        {predictions.progressionOpportunities?.map((opportunity, index) => (
+          <div key={index} className="border-l-4 border-green-400 bg-green-50 p-4 mb-4">
+            <div className="flex">
+              <div className="ml-3">
+                <p className="text-sm text-green-700">
+                  <strong>{opportunity.area}</strong> - {opportunity.nextStep}
+                </p>
+                <p className="text-xs text-green-600 mt-1">{opportunity.timeline}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+
+
 export default function AnalyticsProgressPage() {
   const [user, setUser] = useState<User | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
@@ -485,6 +551,7 @@ export default function AnalyticsProgressPage() {
   const [skillsData, setSkillsData] = useState<any>(null);
   const [strengthData, setStrengthData] = useState<any>(null);
   const [metconData, setMetconData] = useState<any>(null);
+const [predictiveData, setPredictiveData] = useState<any>(null);
 
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 'metcons'>('overview');
@@ -539,13 +606,16 @@ const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 
       console.log('📊 Fetching all analytics for user:', userId);
       
       // Fetch all analytics in parallel
-      const [dashboardRes, blockRes, skillsRes, strengthRes, metconRes] = await Promise.allSettled([
-        fetch(`/api/analytics/${userId}/dashboard`),
-        fetch(`/api/analytics/${userId}/block-analyzer`),
-        fetch(`/api/analytics/${userId}/skills-analytics`),
-        fetch(`/api/analytics/${userId}/strength-tracker`),
-        fetch(`/api/analytics/${userId}/metcon-analyzer`)
-      ]);
+const [dashboardRes, blockRes, skillsRes, strengthRes, metconRes, predictiveRes] = await Promise.allSettled([
+  fetch(`/api/analytics/${userId}/dashboard`),
+  fetch(`/api/analytics/${userId}/block-analyzer`),
+  fetch(`/api/analytics/${userId}/skills-analytics`),
+  fetch(`/api/analytics/${userId}/strength-tracker`),
+  fetch(`/api/analytics/${userId}/metcon-analyzer`),
+  fetch(`/api/analytics/${userId}/predictive-insights`)
+]);
+
+
 
       // Process Dashboard Data
       if (dashboardRes.status === 'fulfilled' && dashboardRes.value.ok) {
@@ -601,9 +671,11 @@ const TabNavigation = () => (
   { id: 'overview', name: 'Overview' },
   { id: 'skills', name: 'Skills' },
   { id: 'strength', name: 'Strength' },
-  { id: 'metcons', name: 'MetCons' }
+  { id: 'metcons', name: 'MetCons' },
+  { id: 'insights', name: 'Insights' }
 ].map((tab) => (
-        <button
+        
+<button
           key={tab.id}
           onClick={() => setActiveTab(tab.id as any)}
           role="tab"
@@ -1420,6 +1492,7 @@ const MetConAnalyticsView = () => {
             <>
 {activeTab === 'overview' && <RecentActivityOverview userId={userId} />}              
 {activeTab === 'skills' && <SkillsAnalyticsView />}
+{activeTab === 'insights' && <PredictiveInsightsView />}
               {activeTab === 'strength' && <StrengthAnalyticsView />}
               {activeTab === 'metcons' && <MetConAnalyticsView />}
             </>
@@ -1429,6 +1502,4 @@ const MetConAnalyticsView = () => {
     </div>
   );
 }
-
-
 

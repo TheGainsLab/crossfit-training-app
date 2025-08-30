@@ -561,115 +561,205 @@ const userSkillLevel = user.skills[skillIndex].includes('Advanced') ? 3 :
     }
   }
 
-  // Get ability-based weights for probabilistic selection (exact logic from Google Script)
-  const abilityIndex = user.ability === 'Advanced' ? 'advanced_weight' :
-    user.ability === 'Intermediate' ? 'intermediate_weight' : 'beginner_weight'
+// Try AI contextual selection first, fallback to probabilistic
+let exercises: any[] = [];
 
-  const weights = filtered.map(exercise => parseFloat(exercise[abilityIndex]) || parseFloat(exercise.default_weight) || 5)
-  const totalWeight = weights.reduce((sum, w) => sum + w, 0)
-  const probabilities = weights.map(w => w / totalWeight)
+try {
+  const contextualResponse = await fetch(`${supabaseUrl}/functions/v1/contextual-exercise-selection`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${supabaseKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      filteredExercises: filtered,
+      userContext: user,
+      block,
+      mainLift,
+      numExercises,
+      weeklyFrequencies: weeklySkills || weeklyAccessories || {},
+      dailyContext: { week, day, isDeload }
+    })
+  });
 
-  // Probabilistic selection (exact logic from Google Script)
-  const selectedIndices: number[] = []
-  const exercises: any[] = []
-
-  for (let i = 0; i < numExercises; i++) {
-    if (!filtered.length) break
-
-    const rand = Math.random()
-    let cumulative = 0
-
-    for (let j = 0; j < probabilities.length; j++) {
-  cumulative += probabilities[j]
-  if (rand <= cumulative && !selectedIndices.includes(j)) {
-    const exercise = filtered[j]
-    const skillIndex = exercise.skill_index || 99
-    
-    let effectiveLevel
-    
-    if (block === 'SKILLS' && skillIndex >= 0 && skillIndex <= 25) {
-      // For skills, use the user's declared level directly
-      const userSkillLevelString = user.skills[skillIndex]
-      
-      if (userSkillLevelString === "Don't have it") {
-        effectiveLevel = 'Novice'
-      } else if (userSkillLevelString === 'Beginner') {
-        effectiveLevel = 'Beginner'
-      } else if (userSkillLevelString === 'Intermediate') {
-        effectiveLevel = 'Intermediate'
-      } else if (userSkillLevelString === 'Advanced') {
-        // Check for Elite eligibility only for Advanced users
-        const advancedSkillCount = user.skills.filter(s => s === 'Advanced').length
-        const isEliteEligible = advancedSkillCount >= 10
-        effectiveLevel = isEliteEligible ? 'Elite' : 'Advanced'
-      } else {
-        // Default fallback
-        effectiveLevel = 'Beginner'
-      }
-
-
-} else if (block === 'TECHNICAL WORK') {
-  // FIXED: Create the variable properly for technical work
-  const liftLevel = mainLift === 'Snatch' ? user.snatch_level || 'Beginner' :
-                   mainLift === 'Clean and Jerk' ? user.clean_jerk_level || 'Beginner' :
-                   ['Back Squat', 'Front Squat'].includes(mainLift) ? user.back_squat_level || 'Beginner' :
-                   user.press_level || 'Beginner';
-  
-  effectiveLevel = liftLevel;
-  console.log(`🔧 Technical work level for ${mainLift}: ${effectiveLevel}`);
-   
-
-    } else if (block === 'ACCESSORIES') {
-      // Add logic for accessories based on one_rm_reference
-      // For now, default to Intermediate
-      effectiveLevel = 'Intermediate'
-    } else {
-      // Default for other blocks
-      effectiveLevel = 'Intermediate'
-    }
-
-
-        let programNotes = parseProgramNotes(exercise.program_notes, effectiveLevel, isDeload, false, week)
-        if (!programNotes.sets || !programNotes.reps) {
-          console.log(`Skipping ${exercise.name}: No valid sets/reps for level ${effectiveLevel}`)
-          continue
+  if (contextualResponse.ok) {
+    const contextualData = await contextualResponse.json();
+    if (contextualData.success && contextualData.selectedExercises.length > 0) {
+      // Process AI-selected exercises with your existing logic
+      exercises = contextualData.selectedExercises.map((exercise: any) => {
+        const skillIndex = exercise.skill_index || 99;
+        let effectiveLevel;
+        
+        if (block === 'SKILLS' && skillIndex >= 0 && skillIndex <= 25) {
+          const userSkillLevelString = user.skills[skillIndex];
+          if (userSkillLevelString === "Don't have it") {
+            effectiveLevel = 'Novice';
+          } else if (userSkillLevelString === 'Beginner') {
+            effectiveLevel = 'Beginner';
+          } else if (userSkillLevelString === 'Intermediate') {
+            effectiveLevel = 'Intermediate';
+          } else if (userSkillLevelString === 'Advanced') {
+            const advancedSkillCount = user.skills.filter((s: any) => s === 'Advanced').length;
+            const isEliteEligible = advancedSkillCount >= 10;
+            effectiveLevel = isEliteEligible ? 'Elite' : 'Advanced';
+          } else {
+            effectiveLevel = 'Beginner';
+          }
+        } else if (block === 'TECHNICAL WORK') {
+          const liftLevel = mainLift === 'Snatch' ? user.snatch_level || 'Beginner' :
+                           mainLift === 'Clean and Jerk' ? user.clean_jerk_level || 'Beginner' :
+                           ['Back Squat', 'Front Squat'].includes(mainLift) ? user.back_squat_level || 'Beginner' :
+                           user.press_level || 'Beginner';
+          effectiveLevel = liftLevel;
+        } else if (block === 'ACCESSORIES') {
+          effectiveLevel = 'Intermediate';
+        } else {
+          effectiveLevel = 'Intermediate';
         }
 
-        let weightTime = ''
-        let sets = programNotes.sets || ''
-        let reps = programNotes.reps || ''
+        let programNotes = parseProgramNotes(exercise.program_notes, effectiveLevel, isDeload, false, week);
+        if (!programNotes.sets || !programNotes.reps) {
+          return null; // Skip exercises with no valid program notes
+        }
 
-        // Handle all non-Strength blocks (exact logic from Google Script)
+        let weightTime = '';
+        let sets = programNotes.sets || '';
+        let reps = programNotes.reps || '';
+
         if (exercise.one_rm_reference && exercise.one_rm_reference !== 'None') {
-          const oneRM = user.oneRMs[find1RMIndex(exercise.one_rm_reference)]
+          const oneRM = user.oneRMs[find1RMIndex(exercise.one_rm_reference)];
           if (oneRM) {
-            const percent = programNotes.percent1RM || (isDeload ? 0.5 : 0.65)
-            let calculatedWeight = Math.round(oneRM * percent)
-
-            // Apply weight floors for barbell exercises
-            const requiredEquipment = exercise.required_equipment || []
-            const isBarbell = requiredEquipment.includes('Barbell')
+            const percent = programNotes.percent1RM || (isDeload ? 0.5 : 0.65);
+            let calculatedWeight = Math.round(oneRM * percent);
+            
+            const requiredEquipment = exercise.required_equipment || [];
+            const isBarbell = requiredEquipment.includes('Barbell');
             if (isBarbell) {
               const weightFloor = user.gender === 'Female' ?
                 (user.units === 'Metric (kg)' ? 15 : 35) :
-                (user.units === 'Metric (kg)' ? 20 : 45)
-
-              calculatedWeight = Math.max(calculatedWeight, weightFloor)
-              console.log(`Applied weight floor: ${calculatedWeight} for ${exercise.name}`)
+                (user.units === 'Metric (kg)' ? 20 : 45);
+              calculatedWeight = Math.max(calculatedWeight, weightFloor);
             }
-
-            const roundedWeight = roundWeight(calculatedWeight, user.units)
-            weightTime = roundedWeight.toString()
+            
+            const roundedWeight = roundWeight(calculatedWeight, user.units);
+            weightTime = roundedWeight.toString();
           }
         } else {
-          weightTime = programNotes.weightTime || ''
+          weightTime = programNotes.weightTime || '';
         }
 
         const enhancedNote = generateEnhancedNotes({
           exerciseName: exercise.name,
           effectiveLevel: effectiveLevel,
           isDeload: isDeload
-        }, user, week, block, exercise)
+        }, user, week, block, exercise);
+
+        return {
+          name: exercise.name,
+          sets: sets,
+          reps: reps,
+          weightTime: weightTime,
+          notes: truncateNotes(enhancedNote) || programNotes.notes || effectiveLevel
+        };
+      }).filter(Boolean);
+
+      console.log(`Using AI contextual selection: ${exercises.length} exercises selected`);
+    } else {
+      throw new Error('AI selection returned no valid exercises');
+    }
+  } else {
+    throw new Error('AI selection service unavailable');
+  }
+} catch (error) {
+  console.warn('Falling back to probabilistic selection:', error.message);
+  
+  // Fallback to your existing probabilistic selection
+  const abilityIndex = user.ability === 'Advanced' ? 'advanced_weight' :
+    user.ability === 'Intermediate' ? 'intermediate_weight' : 'beginner_weight';
+
+  const weights = filtered.map(exercise => parseFloat(exercise[abilityIndex]) || parseFloat(exercise.default_weight) || 5);
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+  const probabilities = weights.map(w => w / totalWeight);
+
+  const selectedIndices: number[] = [];
+
+  for (let i = 0; i < numExercises; i++) {
+    if (!filtered.length) break;
+
+    const rand = Math.random();
+    let cumulative = 0;
+
+    for (let j = 0; j < probabilities.length; j++) {
+      cumulative += probabilities[j];
+      if (rand <= cumulative && !selectedIndices.includes(j)) {
+        const exercise = filtered[j];
+        const skillIndex = exercise.skill_index || 99;
+        
+        let effectiveLevel;
+        
+        if (block === 'SKILLS' && skillIndex >= 0 && skillIndex <= 25) {
+          const userSkillLevelString = user.skills[skillIndex];
+          if (userSkillLevelString === "Don't have it") {
+            effectiveLevel = 'Novice';
+          } else if (userSkillLevelString === 'Beginner') {
+            effectiveLevel = 'Beginner';
+          } else if (userSkillLevelString === 'Intermediate') {
+            effectiveLevel = 'Intermediate';
+          } else if (userSkillLevelString === 'Advanced') {
+            const advancedSkillCount = user.skills.filter((s: any) => s === 'Advanced').length;
+            const isEliteEligible = advancedSkillCount >= 10;
+            effectiveLevel = isEliteEligible ? 'Elite' : 'Advanced';
+          } else {
+            effectiveLevel = 'Beginner';
+          }
+        } else if (block === 'TECHNICAL WORK') {
+          const liftLevel = mainLift === 'Snatch' ? user.snatch_level || 'Beginner' :
+                           mainLift === 'Clean and Jerk' ? user.clean_jerk_level || 'Beginner' :
+                           ['Back Squat', 'Front Squat'].includes(mainLift) ? user.back_squat_level || 'Beginner' :
+                           user.press_level || 'Beginner';
+          effectiveLevel = liftLevel;
+        } else if (block === 'ACCESSORIES') {
+          effectiveLevel = 'Intermediate';
+        } else {
+          effectiveLevel = 'Intermediate';
+        }
+
+        let programNotes = parseProgramNotes(exercise.program_notes, effectiveLevel, isDeload, false, week);
+        if (!programNotes.sets || !programNotes.reps) {
+          continue;
+        }
+
+        let weightTime = '';
+        let sets = programNotes.sets || '';
+        let reps = programNotes.reps || '';
+
+        if (exercise.one_rm_reference && exercise.one_rm_reference !== 'None') {
+          const oneRM = user.oneRMs[find1RMIndex(exercise.one_rm_reference)];
+          if (oneRM) {
+            const percent = programNotes.percent1RM || (isDeload ? 0.5 : 0.65);
+            let calculatedWeight = Math.round(oneRM * percent);
+
+            const requiredEquipment = exercise.required_equipment || [];
+            const isBarbell = requiredEquipment.includes('Barbell');
+            if (isBarbell) {
+              const weightFloor = user.gender === 'Female' ?
+                (user.units === 'Metric (kg)' ? 15 : 35) :
+                (user.units === 'Metric (kg)' ? 20 : 45);
+              calculatedWeight = Math.max(calculatedWeight, weightFloor);
+            }
+
+            const roundedWeight = roundWeight(calculatedWeight, user.units);
+            weightTime = roundedWeight.toString();
+          }
+        } else {
+          weightTime = programNotes.weightTime || '';
+        }
+
+        const enhancedNote = generateEnhancedNotes({
+          exerciseName: exercise.name,
+          effectiveLevel: effectiveLevel,
+          isDeload: isDeload
+        }, user, week, block, exercise);
 
         exercises.push({
           name: exercise.name,
@@ -677,18 +767,16 @@ const userSkillLevel = user.skills[skillIndex].includes('Advanced') ? 3 :
           reps: reps,
           weightTime: weightTime,
           notes: truncateNotes(enhancedNote) || programNotes.notes || effectiveLevel
-        })
+        });
 
-        selectedIndices.push(j)
-        probabilities.splice(j, 1)
-        break
+        selectedIndices.push(j);
+        probabilities.splice(j, 1);
+        break;
       }
     }
   }
-
-  console.log(`✅ Assigned ${exercises.length} exercises for ${block}`)
-  return exercises.length > 0 ? exercises : defaultBodyweightExercises.slice(0, numExercises)
 }
+
 
 // === HELPER FUNCTIONS (Exact Google Script Logic) ===
 
