@@ -55,26 +55,39 @@ return new Response(
 )
     }
 
-    // Select suitable MetCon (exact Google Script logic)
-    const selectedWorkout = selectMetCon(metconData, user)
+// Try intelligent AI selection first, fallback to original logic
+let selectedWorkout;
+try {
+  // Try intelligent AI selection first
+  const intelligentResponse = await fetch(`${supabaseUrl}/functions/v1/intelligent-metcon-selection`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${supabaseKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      user_id: user.id || user.userProfile?.id,
+      week,
+      day,
+      availableMetcons: metconData
+    })
+  });
 
-    if (!selectedWorkout) {
-      console.log('No suitable MetCon found, creating fallback')
-      const fallbackResult = createFallbackMetCon(user)
-     
-return new Response(
-  JSON.stringify({
-    success: true,
-    exercises: fallbackResult.exercises,
-    workoutId: fallbackResult.workoutId,
-    workoutFormat: fallbackResult.format,
-    timeRange: fallbackResult.timeRange,
-    percentileGuidance: fallbackResult.percentileGuidance,
-    workoutNotes: ''  // Add this line
-  }),
-  { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-)
+  if (intelligentResponse.ok) {
+    const intelligentData = await intelligentResponse.json();
+    if (intelligentData.success) {
+      selectedWorkout = intelligentData.selectedMetcon;
+      console.log('AI MetCon selection reason:', intelligentData.selectionReason);
+    } else {
+      throw new Error('Intelligent selection failed');
     }
+  } else {
+    throw new Error('Intelligent selection service unavailable');
+  }
+} catch (error) {
+  console.warn('Falling back to original MetCon selection:', error.message);
+  selectedWorkout = selectMetCon(metconData, user); // Your existing function
+}
 
 
     // Convert MetCon to exercises (exact Google Script logic)

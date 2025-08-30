@@ -132,25 +132,67 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
     fetchCompletions()
   }, [programId, week, day])
 
-  const fetchWorkout = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/workouts/${programId}/week/${week}/day/${day}`)
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch workout')
-      }
+const fetchWorkout = async () => {
+  try {
+    setLoading(true)
+    
+    // Step 1: Get the original stored program
+    const response = await fetch(`/api/workouts/${programId}/week/${week}/day/${day}`)
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch workout')
+    }
 
-      const data = await response.json()
-      if (data.success) {
+    const data = await response.json()
+    
+    if (data.success) {
+      // Step 2: Apply AI modifications to the original program
+      try {
+        const userId = await getCurrentUserId()
+        
+        const aiResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/modify-program-session`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            week: parseInt(week),
+            day: parseInt(day),
+            originalProgram: data.workout
+          })
+        })
+
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json()
+          if (aiData.success) {
+            // Use AI-enhanced program
+            setWorkout(aiData.program)
+            console.log('✅ AI modifications applied:', aiData.modificationsApplied || 'No modifications needed')
+          } else {
+            // Fallback to original program
+            setWorkout(data.workout)
+            console.log('⚡ Using original program (AI returned unsuccessful)')
+          }
+        } else {
+          // AI service failed, use original
+          setWorkout(data.workout)
+          console.warn('⚠️ AI modification service failed, using original program')
+        }
+        
+      } catch (aiError) {
+        // AI failed, use original program (graceful degradation)
+        console.warn('⚠️ AI modifications failed:', aiError)
         setWorkout(data.workout)
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
-    } finally {
-      setLoading(false)
     }
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Unknown error')
+  } finally {
+    setLoading(false)
   }
+}
 
 const fetchCompletions = async () => {
   try {
