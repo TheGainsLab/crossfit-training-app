@@ -503,8 +503,8 @@ const PredictiveInsightsView = ({ predictiveData }: { predictiveData: any }) => 
       {/* Fatigue Warnings */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Fatigue Warnings</h3>
+{predictions.fatigueWarnings?.map((warning: any, index: number) => (
        
-{predictions.progressionOpportunities?.map((opportunity: any, index: number) => (
           <div key={index} className="border-l-4 border-red-400 bg-red-50 p-4 mb-4">
             <div className="flex">
               <div className="ml-3">
