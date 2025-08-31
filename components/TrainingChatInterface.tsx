@@ -37,23 +37,25 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
     scrollToBottom()
   }, [messages])
 
-  const fetchConversations = async () => {
-    try {
-      const response = await fetch('/api/chat/conversations')
-      const data = await response.json()
-      
-      if (data.success) {
-        setConversations(data.conversations || [])
-        
-        // Load most recent conversation if available
-        if (data.conversations?.length > 0) {
-          loadConversation(data.conversations[0])
-        }
+const fetchConversations = async () => {
+  try {   
+    const response = await fetch(`/api/chat/${userId}/conversations`) // Changed this line
+    const data = await response.json()
+console.log('API Response:', data) // Add only this line
+
+
+    if (data.success) { 
+      setConversations(data.conversations || [])
+
+      // Load most recent conversation if available
+      if (data.conversations?.length > 0) {
+        loadConversation(data.conversations[0])
       }
-    } catch (error) {
-      console.error('Error fetching conversations:', error)
     }
+  } catch (error) {
+    console.error('Error fetching conversations:', error)
   }
+}
 
   const loadConversation = (conversation: Conversation) => {
     setActiveConversationId(conversation.id)
@@ -94,7 +96,7 @@ setMessages(conversation.chat_messages?.map(msg => ({
     setMessages(prev => [...prev, tempUserMessage])
 
     try {
-      const response = await fetch('/api/chat', {
+const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -102,7 +104,7 @@ setMessages(conversation.chat_messages?.map(msg => ({
           conversation_id: activeConversationId
         })
       })
-
+console.log('Response status:', response.status) // Add this line here
       const data = await response.json()
 
       if (data.success) {

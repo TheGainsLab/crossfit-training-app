@@ -16,6 +16,7 @@ serve(async (req) => {
 
     console.log(`Processing training chat for user ${user_id}`);
 
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -158,8 +159,9 @@ async function gatherTrainingContext(supabase: any, user_id: number) {
 }
 
 async function generateTrainingAssistantResponse(userContext: any, userMessage: string, conversationHistory: any[], safetyAnalysis: any) {
-  const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');
-  if (!claudeApiKey) throw new Error('Claude API key not found');
+const claudeApiKey = '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';
+  
+if (!claudeApiKey) throw new Error('Claude API key not found');
 
   const prompt = buildTrainingAssistantPrompt(userContext, userMessage, conversationHistory, safetyAnalysis);
 
@@ -171,22 +173,25 @@ async function generateTrainingAssistantResponse(userContext: any, userMessage: 
       "anthropic-version": "2023-06-01"
     },
     body: JSON.stringify({
-      model: "claude-3-sonnet-20240229",
+model: "claude-3-5-haiku-20241022", // Haiku model
       max_tokens: 2000,
-      messages: [
-        ...conversationHistory.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        })),
-        {
-          role: "user",
-          content: prompt
-        }
-      ]
+messages: [
+  {
+    role: "user",
+    content: prompt
+  }
+]      
     })
   });
 
-  if (!response.ok) throw new Error(`Claude API error: ${response.status}`);
+console.log('Claude API Response Status:', response.status);
+if (!response.ok) {
+  const errorText = await response.text();
+  console.log('Claude API Error Details:', errorText);
+  throw new Error(`Claude API error: ${response.status} - ${errorText}`);
+}
+
+
 
   const data = await response.json();
   const aiResponse = data.content[0].text;
