@@ -14,17 +14,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    // Get authenticated user
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const cookieStore = await cookies();
-    const authToken = cookieStore.get('sb-access-token')?.value;
-    
-    if (!authToken) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+// Get authenticated user using client-side approach
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const cookieStore = await cookies();
 
-    const { data: { user } } = await supabase.auth.getUser(authToken);
-    if (!user) {
+// Try multiple possible cookie names for auth
+const authToken = cookieStore.get('sb-access-token')?.value || 
+                  cookieStore.get('sb_access_token')?.value ||
+                  cookieStore.get('supabase-auth-token')?.value;
+
+if (!authToken) {
+  // Try to get user from all cookies
+  const allCookies = cookieStore.getAll();
+  console.log('Available cookies:', allCookies.map(c => c.name));
+  return NextResponse.json({ error: 'Not authenticated - no auth token found' }, { status: 401 });
+}
+
+const { data: { user }, error: authError } = await supabase.auth.getUser(authToken);
+if (authError || !user) {
+  console.log('Auth error:', authError);
+  return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 });
+}
+    
+if (!user) {
       return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 });
     }
 
