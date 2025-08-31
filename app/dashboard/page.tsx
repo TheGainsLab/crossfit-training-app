@@ -1,5 +1,7 @@
 'use client'
 
+// Add this import at the top
+import TrainingChatInterface from '@/components/TrainingChatInterface'
 import { useState, useEffect } from 'react'
 import AthleteDetailModal from './AthleteDetailModal'
 import Link from 'next/link'
@@ -796,8 +798,6 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
         <InviteAthleteModal />
 
 
-
-
 {/* Complete Athlete Detail Modal */}
 {selectedAthlete && (
   <AthleteDetailModal 
@@ -809,8 +809,6 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
       </div>
     )
   }
-
-
 
 export default function DashboardPage() {
   const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
@@ -1130,13 +1128,6 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
   }
 
 
-
-
-
-
-
-
-
   return (
     <div className="min-h-screen bg-gray-50">
 
@@ -1282,9 +1273,6 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 )}
 
 {/* Training Blocks Visualization */}
-
-
-
         {/* Training Blocks Visualization */}
         <div className="mb-8">
           {analyticsLoading ? (
@@ -1302,6 +1290,11 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
             <TrainingBlocksWidget analytics={dashboardAnalytics} blockData={blockData} />
           )}
         </div>
+
+{/* Training Assistant Chat - ADD THIS */}
+<div className="mb-8">
+  <TrainingChatInterface userId={userId} />
+</div>
 
         {/* Settings Link */}
         <div className="flex justify-center">
