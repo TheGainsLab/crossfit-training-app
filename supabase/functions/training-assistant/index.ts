@@ -159,7 +159,7 @@ async function gatherTrainingContext(supabase: any, user_id: number) {
 }
 
 async function generateTrainingAssistantResponse(userContext: any, userMessage: string, conversationHistory: any[], safetyAnalysis: any) {
-const claudeApiKey = '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';
+const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');
   
 if (!claudeApiKey) throw new Error('Claude API key not found');
 
