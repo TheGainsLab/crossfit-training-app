@@ -277,7 +277,7 @@ setMessages(conversation.chat_messages?.map(msg => ({
               <div className="whitespace-pre-wrap">{message.content}</div>
               
               <div className="text-xs opacity-75 mt-2">
-                {new Date(message.timestamp).toLocaleTimeString([], { 
+{new Date(message.timestamp || new Date()).toLocaleTimeString([], {
                   hour: '2-digit', 
                   minute: '2-digit' 
                 })}
