@@ -7,7 +7,8 @@ interface Message {
   id?: number
   role: 'user' | 'assistant'
   content: string
-  timestamp: string
+  timestamp?: string
+  created_at?: string
   responseType?: string
 }
 
@@ -56,11 +57,13 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
 
   const loadConversation = (conversation: Conversation) => {
     setActiveConversationId(conversation.id)
-    setMessages(conversation.chat_messages?.map(msg => ({
-      role: msg.role,
-      content: msg.content,
-      timestamp: msg.created_at
-    })) || [])
+    
+
+setMessages(conversation.chat_messages?.map(msg => ({
+  role: msg.role,
+  content: msg.content,
+  timestamp: msg.created_at || msg.timestamp || new Date().toISOString()
+})) || [])
     setShowConversations(false)
   }
 
