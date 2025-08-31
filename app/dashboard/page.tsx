@@ -1293,7 +1293,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 
 {/* Training Assistant Chat - ADD THIS */}
 <div className="mb-8">
-  <TrainingChatInterface userId={userId} />
+{userId && <TrainingChatInterface userId={userId} />}
 </div>
 
         {/* Settings Link */}
