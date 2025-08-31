@@ -329,4 +329,4 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   )
 }
 
-
+export default TrainingChatInterface
