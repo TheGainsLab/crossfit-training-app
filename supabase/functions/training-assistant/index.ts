@@ -159,8 +159,7 @@ async function gatherTrainingContext(supabase: any, user_id: number) {
 }
 
 async function generateTrainingAssistantResponse(userContext: any, userMessage: string, conversationHistory: any[], safetyAnalysis: any) {
-const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');
-  
+const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');  
 if (!claudeApiKey) throw new Error('Claude API key not found');
 
   const prompt = buildTrainingAssistantPrompt(userContext, userMessage, conversationHistory, safetyAnalysis);
@@ -190,8 +189,6 @@ if (!response.ok) {
   console.log('Claude API Error Details:', errorText);
   throw new Error(`Claude API error: ${response.status} - ${errorText}`);
 }
-
-
 
   const data = await response.json();
   const aiResponse = data.content[0].text;
