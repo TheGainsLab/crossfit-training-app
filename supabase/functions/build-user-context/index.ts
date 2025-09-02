@@ -1,3 +1,5 @@
+
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -30,21 +32,24 @@ serve(async (req) => {
     console.log(`Building user context for user ${user_id}`);
 
     // Fetch all user data in parallel
-    const [
-      userData,
-      oneRMsData,
-      skillsData,
-      ratiosData,
-      performanceData,
-      equipmentData
-    ] = await Promise.all([
-      fetchUserProfile(supabase, user_id),
-      fetchOneRMs(supabase, user_id),
-      fetchUserSkills(supabase, user_id),
-      fetchUserRatios(supabase, user_id),
-      fetchRecentPerformance(supabase, user_id),
-      fetchUserEquipment(supabase, user_id)
-    ]);
+const [
+  userData,
+  oneRMsData,
+  skillsData,
+  ratiosData,
+  performanceData,
+  equipmentData,
+  plateauData
+] = await Promise.all([
+  fetchUserProfile(supabase, user_id),
+  fetchOneRMs(supabase, user_id),
+  fetchUserSkills(supabase, user_id),
+  fetchUserRatios(supabase, user_id),
+  fetchRecentPerformance(supabase, user_id),
+  fetchUserEquipment(supabase, user_id),
+  fetchPlateauAnalysis(user_id)
+]);    
+
 
     // Build comprehensive user context
     const userContext = {
@@ -61,15 +66,21 @@ serve(async (req) => {
       weaknesses: ratiosData,
       recentPerformance: performanceData,
       availableEquipment: equipmentData,
-      metadata: {
-        generatedAt: new Date().toISOString(),
-        dataPoints: {
-          oneRMs: oneRMsData.length,
-          skills: skillsData.length,
-          recentSessions: performanceData.length,
-          equipment: equipmentData.length
-        }
-      }
+      
+  // ADD THESE TWO LINES:
+  plateauAnalysis: plateauData?.plateauAnalysis || null,
+  plateauConstraints: plateauData?.activeInterventions || {},
+metadata: {
+  generatedAt: new Date().toISOString(),
+  dataPoints: {
+    oneRMs: oneRMsData.length,
+    skills: skillsData.length,
+    recentSessions: performanceData.length,
+    equipment: equipmentData.length,
+    plateauAnalysis: plateauData ? 'available' : 'unavailable'  // ADD THIS LINE
+  }
+}
+
     };
 
     return new Response(JSON.stringify({
@@ -111,6 +122,42 @@ async function fetchUserProfile(supabase: any, user_id: number) {
   if (error) throw new Error(`Failed to fetch user profile: ${error.message}`);
   return data || {};
 }
+
+
+// Add this function after fetchUserProfile and before fetchOneRMs:
+
+async function fetchPlateauAnalysis(user_id: number) {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    const response = await fetch(`${supabaseUrl}/functions/v1/analyze-plateau-patterns`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ user_id })
+    });
+    
+    if (!response.ok) {
+      console.warn(`Plateau analysis service error: ${response.status}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    if (!data.success) {
+      console.warn(`Plateau analysis failed: ${data.error}`);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.warn('Plateau analysis failed:', error.message);
+    return null; // Graceful degradation
+  }
+}
+
 
 async function fetchOneRMs(supabase: any, user_id: number) {
   const { data, error } = await supabase
@@ -172,3 +219,4 @@ async function fetchUserEquipment(supabase: any, user_id: number) {
   if (error) throw new Error(`Failed to fetch equipment: ${error.message}`);
   return data ? data.map(item => item.equipment_name) : [];
 }
+

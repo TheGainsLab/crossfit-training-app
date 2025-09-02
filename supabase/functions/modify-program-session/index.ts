@@ -17,12 +17,14 @@ serve(async (req) => {
       modifiedProgram = originalProgram;
     }
 
-    return new Response(JSON.stringify({
-      success: true,
-      program: modifiedProgram,
-      modificationsApplied: modifiedProgram.modifications || [],
-      source: modifiedProgram.modifications ? 'ai-enhanced' : 'original'
-    }));
+return new Response(JSON.stringify({
+  success: true,
+  program: modifiedProgram,
+  modificationsApplied: modifiedProgram.modifications || [],
+  plateauInterventions: userContext.plateauConstraints || {},
+  plateauStatus: userContext.plateauAnalysis?.overallStatus || 'unknown',
+  source: modifiedProgram.modifications ? 'ai-enhanced' : 'original'
+}));
 
   } catch (error) {
     // Return original program on any error
@@ -80,44 +82,78 @@ async function applyAIModifications(originalProgram: any, userContext: any) {
   return parseModificationResponse(aiResponse, originalProgram);
 }
 
+
 function buildModificationPrompt(originalProgram: any, userContext: any) {
   const recentPerformance = userContext.recentPerformance.slice(0, 10);
+  const plateauConstraints = userContext.plateauConstraints || {};
+  const plateauAnalysis = userContext.plateauAnalysis;
   
-  return `
-You are an expert CrossFit coach. Analyze this user's recent performance and modify today's program if beneficial.
+  let prompt = `You are an expert CrossFit coach with advanced periodization knowledge. Analyze this user's performance patterns and modify today's program strategically.
 
 USER CONTEXT:
 - Ability: ${userContext.userProfile.ability}
-- Recent Performance: ${JSON.stringify(recentPerformance)}
+- Recent Performance (A4 Data): ${JSON.stringify(recentPerformance)}`;
+
+  // Add plateau analysis if available (A11 Data)
+if (plateauAnalysis && Object.keys(plateauConstraints).length > 0) {
+  prompt += `
+- PLATEAU STATUS (A11 Analysis): Active interventions detected
+- ACTIVE INTERVENTIONS: ${JSON.stringify(plateauConstraints)}`;
+}  
+
+
+  prompt += `
 
 TODAY'S ORIGINAL PROGRAM:
 ${JSON.stringify(originalProgram.blocks)}
 
-MODIFICATION GUIDELINES:
+MODIFICATION HIERARCHY:
+A11 STRATEGIC RULES (Only apply when plateauConstraints has entries):
+${Object.keys(plateauConstraints).length > 0 ? 
+  Object.entries(plateauConstraints).map(([exercise, constraints]: [string, any]) => 
+    `- ${exercise}: ${constraints.protocol} protocol active. Use ${constraints.exerciseModification}, intensity ${(constraints.intensityRange[0] * 100).toFixed(0)}-${(constraints.intensityRange[1] * 100).toFixed(0)}%, volume modifier ${constraints.volumeModifier}x`
+  ).join('\n') : '- No plateau interventions active - use only A4 tactical rules below'
+}
+
+A4 TACTICAL RULES (Always active, work within A11 constraints):
 1. Reduce volume if recent RPE consistently >8
 2. Adjust intensity if completion quality declining
 3. Substitute exercises showing poor response patterns
-4. Keep modifications subtle and training-block appropriate
+4. Fine-tune within plateau intervention ranges when active
+
+PLATEAU INTERVENTION GUIDE:
+- TEMPO_WORK: Add tempo phases (3-4 sec eccentric), reduce intensity by 10-15%
+- INTENSITY_REDUCTION: Lower loads by 15-20%, increase volume slightly
+- VOLUME_PROGRESSION: Reduce volume by 20%, maintain or slightly increase intensity
+
+EXERCISE MODIFICATION EXAMPLES:
+- tempo_variation: "Back Squat" → "Tempo Back Squat (4-sec descent)"
+- standard: Keep original exercise name
 
 Respond with JSON only:
 {
   "needsModification": true/false,
   "modifications": [
     {
-      "type": "volume_reduction",
+      "type": "plateau_intervention" | "volume_reduction" | "intensity_adjustment",
       "exercise": "Exercise Name",
       "originalSets": 4,
       "newSets": 3,
-      "reason": "Recent RPE 8+ pattern"
+      "originalReps": 5,
+      "newReps": 6,
+      "originalIntensity": "75%",
+      "newIntensity": "65%",
+      "exerciseModification": "tempo_variation",
+      "reason": "A11: Breaking 4-week plateau with tempo protocol" | "A4: Recent RPE 8+ pattern"
     }
   ],
   "modifiedProgram": { /* modified program structure */ }
 }
 
-DO NOT OUTPUT ANYTHING OTHER THAN VALID JSON.
-`;
-}
+DO NOT OUTPUT ANYTHING OTHER THAN VALID JSON.`;
 
+  return prompt;
+}
 function parseModificationResponse(aiResponse: string, originalProgram: any) {
   try {
     const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();

@@ -160,6 +160,10 @@ async function gatherTrainingContext(supabase: any, user_id: number) {
 
 async function generateTrainingAssistantResponse(userContext: any, userMessage: string, conversationHistory: any[], safetyAnalysis: any) {
 const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');  
+console.log('API Key exists:', !!claudeApiKey);
+console.log('API Key length:', claudeApiKey?.length || 0);
+console.log('API Key starts with sk-ant:', claudeApiKey?.startsWith('sk-ant-'));
+
 if (!claudeApiKey) throw new Error('Claude API key not found');
 
   const prompt = buildTrainingAssistantPrompt(userContext, userMessage, conversationHistory, safetyAnalysis);
