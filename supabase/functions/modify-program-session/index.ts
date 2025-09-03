@@ -18,18 +18,28 @@ serve(async (req) => {
       .eq('day', day)
       .limit(1);
     
-    // If day is completed, return original program immediately
-    if (completedLogs && completedLogs.length > 0) {
-      return new Response(JSON.stringify({
-        success: true,
-        program: originalProgram,
-        source: 'original-completed',
-        modificationsApplied: [],
-        plateauInterventions: {},
-        plateauStatus: 'completed-day'
-      }));
-    }
-    // END OF NEW CODE 
+// If day is completed, check for stored modified version
+if (completedLogs && completedLogs.length > 0) {
+  // Look for stored modified version
+  const { data: storedModification } = await supabase
+    .from('modified_workouts')
+    .select('modified_program, modifications_applied')
+    .eq('user_id', user_id)
+    .eq('week', week)
+    .eq('day', day)
+    .single();
+
+  return new Response(JSON.stringify({
+    success: true,
+    program: storedModification ? storedModification.modified_program : originalProgram,
+    modificationsApplied: storedModification ? storedModification.modifications_applied : [],
+    source: storedModification ? 'stored-modified' : 'original-completed',
+    plateauInterventions: {},
+    plateauStatus: 'completed-day'
+  }));
+}
+   
+ // END OF NEW CODE 
 
     // Get user context and recent performance
     const userContext = await buildUserContext(user_id);
@@ -42,6 +52,21 @@ serve(async (req) => {
       console.warn('AI modifications failed, using original program');
       modifiedProgram = originalProgram;
     }
+
+// ADD STORAGE LOGIC HERE (before the return statement):
+// Store the modified workout for historical preservation
+if (modifiedProgram.modifications && modifiedProgram.modifications.length > 0) {
+  await supabase
+    .from('modified_workouts')
+    .upsert({
+      user_id: user_id,
+      program_id: originalProgram.programId || null,
+      week: week,
+      day: day,
+      modified_program: modifiedProgram,
+      modifications_applied: modifiedProgram.modifications
+    });
+}
 
 return new Response(JSON.stringify({
   success: true,
