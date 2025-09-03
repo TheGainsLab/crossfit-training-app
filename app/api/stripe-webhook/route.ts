@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
     // Handle the event
     switch (event.type) {
       case 'checkout.session.completed':
-await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)        
-break
+        await handleCheckoutCompleted(event.data.object as Stripe.CheckoutSession)
+        break
       
       case 'customer.subscription.created':
         await handleSubscriptionCreated(event.data.object as Stripe.Subscription)
@@ -77,7 +77,7 @@ break
   }
 }
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+async function handleCheckoutCompleted(session: Stripe.CheckoutSession) {
   console.log('Processing checkout session completed:', session.id)
   
   const customerEmail = session.customer_details?.email
@@ -163,8 +163,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     
     // If this is a subscription checkout, get the subscription details
     if (session.subscription) {
-
-const subscription = await stripe.subscriptions.retrieve(session.subscription as string) as Stripe.Subscription      
+      const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+      
       const { data: existingSubscriptions, error: subCheckError } = await supabase
         .from('subscriptions')
         .select('id')
@@ -184,8 +184,8 @@ const subscription = await stripe.subscriptions.retrieve(session.subscription as
         amount_cents: amountTotal,
         billing_interval: subscription.items.data[0].price.recurring?.interval || 'month',
         subscription_start: new Date(subscription.created * 1000).toISOString(),
-current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),        
+        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
         updated_at: new Date().toISOString()
       }
 
@@ -286,9 +286,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     .from('subscriptions')
     .update({
       status: subscription.status,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-      canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
+      current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+      canceled_at: (subscription as any).canceled_at ? new Date((subscription as any).canceled_at * 1000).toISOString() : null,
       updated_at: new Date().toISOString()
     })
     .eq('stripe_subscription_id', subscription.id)
