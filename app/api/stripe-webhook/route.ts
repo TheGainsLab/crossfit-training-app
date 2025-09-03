@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
+
+// Initialize Stripe client
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 // Stripe webhook handler for Vercel API routes
 export async function POST(request: NextRequest) {
@@ -13,15 +17,23 @@ export async function POST(request: NextRequest) {
     console.log('📦 Request body length:', body.length)
     console.log('🔍 Stripe signature present:', signature ? 'Yes' : 'No')
 
-    // Parse the webhook payload
+    // Verify webhook signature FIRST - this is critical for security
+    if (!signature) {
+      console.error('❌ No stripe signature found')
+      return NextResponse.json({ error: 'No signature' }, { status: 400 })
+    }
+
     let event
     try {
-      event = JSON.parse(body)
-      console.log(`📨 Event type: ${event.type}`)
-      console.log(`🆔 Event ID: ${event.id}`)
+      event = stripe.webhooks.constructEvent(
+        body, 
+        signature, 
+        process.env.STRIPE_WEBHOOK_SECRET!
+      )
+      console.log(`✅ Verified webhook: ${event.type} (${event.id})`)
     } catch (err) {
-      console.error('❌ Invalid JSON:', err)
-      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+      console.error('❌ Webhook signature verification failed:', err)
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
     }
 
     // Handle checkout.session.completed event
@@ -46,13 +58,12 @@ export async function POST(request: NextRequest) {
       const supabaseUrl = process.env.SUPABASE_URL
       const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-
-// ADD THE DEBUG LOGS RIGHT HERE:
-console.log('🔧 Debug - SUPABASE_URL exists:', !!supabaseUrl)
-console.log('🔧 Debug - SUPABASE_URL value:', supabaseUrl)
-console.log('🔧 Debug - SERVICE_KEY exists:', !!supabaseServiceKey)
-console.log('🔧 Debug - SERVICE_KEY length:', supabaseServiceKey?.length)
-console.log('🔧 Debug - SERVICE_KEY starts with:', supabaseServiceKey?.substring(0, 30))
+      // Debug logs
+      console.log('🔧 Debug - SUPABASE_URL exists:', !!supabaseUrl)
+      console.log('🔧 Debug - SUPABASE_URL value:', supabaseUrl)
+      console.log('🔧 Debug - SERVICE_KEY exists:', !!supabaseServiceKey)
+      console.log('🔧 Debug - SERVICE_KEY length:', supabaseServiceKey?.length)
+      console.log('🔧 Debug - SERVICE_KEY starts with:', supabaseServiceKey?.substring(0, 30))
 
       if (!supabaseUrl || !supabaseServiceKey) {
         console.error('❌ Missing Supabase environment variables')
