@@ -163,8 +163,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     
     // If this is a subscription checkout, get the subscription details
     if (session.subscription) {
-      const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
-      
+
+const subscription = await stripe.subscriptions.retrieve(session.subscription as string) as Stripe.Subscription      
       const { data: existingSubscriptions, error: subCheckError } = await supabase
         .from('subscriptions')
         .select('id')
