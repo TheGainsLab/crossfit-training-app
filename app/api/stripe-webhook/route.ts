@@ -1,237 +1,248 @@
+// app/api/webhooks/stripe/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { headers } from 'next/headers'
 import Stripe from 'stripe'
+import { createClient } from '@supabase/supabase-js'
 
-// Initialize Stripe client
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
-// Stripe webhook handler for Vercel API routes
-export async function POST(request: NextRequest) {
-  console.log('🔔 Stripe webhook received')
-  
-  try {
-    // Get request body and headers
-    const body = await request.text()
-    const signature = request.headers.get('stripe-signature')
-    
-    console.log('📦 Request body length:', body.length)
-    console.log('🔍 Stripe signature present:', signature ? 'Yes' : 'No')
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
-    // Verify webhook signature FIRST - this is critical for security
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.text()
+
+
+const headersList = await headers()
+const signature = headersList.get('stripe-signature')
+
     if (!signature) {
-      console.error('❌ No stripe signature found')
       return NextResponse.json({ error: 'No signature' }, { status: 400 })
     }
 
-    let event
+    let event: Stripe.Event
+
     try {
       event = stripe.webhooks.constructEvent(
-        body, 
-        signature, 
+        body,
+        signature,
         process.env.STRIPE_WEBHOOK_SECRET!
       )
-      console.log(`✅ Verified webhook: ${event.type} (${event.id})`)
     } catch (err) {
-      console.error('❌ Webhook signature verification failed:', err)
+      console.error('Webhook signature verification failed:', err)
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
     }
 
-    // Handle checkout.session.completed event
-    if (event.type === 'checkout.session.completed') {
-      console.log('💳 Processing checkout session completed')
+    console.log('Processing Stripe webhook:', event.type)
+
+    // Handle the event
+    switch (event.type) {
+      case 'customer.subscription.created':
+        await handleSubscriptionCreated(event.data.object as Stripe.Subscription)
+        break
       
-      const session = event.data.object
-      const customerEmail = session.customer_details?.email
-      const customerName = session.customer_details?.name
-      const stripeCustomerId = session.customer
-      const amountTotal = session.amount_total
-
-      console.log(`👤 Customer: ${customerEmail} (${customerName})`)
-      console.log(`💰 Amount: ${amountTotal} ${session.currency}`)
-
-      if (!customerEmail) {
-        console.error('❌ No customer email in session')
-        return NextResponse.json({ error: 'No customer email' }, { status: 400 })
-      }
-
-      // Initialize Supabase client with service role key
-      const supabaseUrl = process.env.SUPABASE_URL
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-      // Debug logs
-      console.log('🔧 Debug - SUPABASE_URL exists:', !!supabaseUrl)
-      console.log('🔧 Debug - SUPABASE_URL value:', supabaseUrl)
-      console.log('🔧 Debug - SERVICE_KEY exists:', !!supabaseServiceKey)
-      console.log('🔧 Debug - SERVICE_KEY length:', supabaseServiceKey?.length)
-      console.log('🔧 Debug - SERVICE_KEY starts with:', supabaseServiceKey?.substring(0, 30))
-
-      if (!supabaseUrl || !supabaseServiceKey) {
-        console.error('❌ Missing Supabase environment variables')
-        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
-      }
-
-      console.log('🔧 Initializing Supabase client')
-      const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-      try {
-        console.log('🔍 Checking for existing user')
-        
-        // Check if user exists
-        const { data: existingUsers, error: userCheckError } = await supabase
-          .from('users')
-          .select('id, email')
-          .eq('email', customerEmail)
-
-        if (userCheckError) {
-          console.error('❌ Error checking user:', userCheckError)
-          throw new Error('Failed to check user')
-        }
-
-        let userId
-
-        if (existingUsers && existingUsers.length > 0) {
-          // User exists, update subscription status
-          userId = existingUsers[0].id
-          console.log(`✅ Found existing user: ${userId}`)
-          
-          const { error: updateError } = await supabase
-            .from('users')
-            .update({
-              subscription_status: 'ACTIVE',
-              subscription_tier: 'PREMIUM',
-              stripe_customer_id: stripeCustomerId,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', userId)
-
-          if (updateError) {
-            console.error('❌ Error updating user:', updateError)
-            throw updateError
-          }
-          
-          console.log('✅ Updated existing user subscription')
-        } else {
-          // Create new user
-          console.log('➕ Creating new user')
-          
-          const { data: newUsers, error: createError } = await supabase
-            .from('users')
-            .insert({
-              email: customerEmail,
-              name: customerName || customerEmail.split('@')[0],
-              subscription_status: 'ACTIVE',
-              subscription_tier: 'PREMIUM',
-              stripe_customer_id: stripeCustomerId,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .select('id')
-
-          if (createError) {
-            console.error('❌ Error creating user:', createError)
-            throw createError
-          }
-
-          if (newUsers && newUsers.length > 0) {
-            userId = newUsers[0].id
-            console.log(`✅ Created new user: ${userId}`)
-          } else {
-            throw new Error('Failed to get new user ID')
-          }
-        }
-
-        // Create/update subscription record
-        console.log('💳 Managing subscription record')
-        
-        const { data: existingSubscriptions, error: subCheckError } = await supabase
-          .from('subscriptions')
-          .select('id')
-          .eq('user_id', userId)
-
-        if (subCheckError) {
-          console.error('❌ Error checking subscription:', subCheckError)
-          throw new Error('Failed to check subscription')
-        }
-
-        if (existingSubscriptions && existingSubscriptions.length > 0) {
-          // Update existing subscription
-          const { error: subUpdateError } = await supabase
-            .from('subscriptions')
-            .update({
-              status: 'active',
-              stripe_customer_id: stripeCustomerId,
-              amount_cents: amountTotal,
-              subscription_start: new Date().toISOString(),
-              current_period_start: new Date().toISOString(),
-              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', userId)
-
-          if (subUpdateError) {
-            console.error('❌ Error updating subscription:', subUpdateError)
-          } else {
-            console.log('✅ Updated existing subscription')
-          }
-        } else {
-          // Create new subscription
-          const { error: subCreateError } = await supabase
-            .from('subscriptions')
-            .insert({
-              user_id: userId,
-              stripe_customer_id: stripeCustomerId,
-              status: 'active',
-              plan: 'premium',
-              amount_cents: amountTotal,
-              billing_interval: 'month',
-              subscription_start: new Date().toISOString(),
-              current_period_start: new Date().toISOString(),
-              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-
-          if (subCreateError) {
-            console.error('❌ Error creating subscription:', subCreateError)
-          } else {
-            console.log('✅ Created new subscription')
-          }
-        }
-
-        console.log('🎉 Webhook processing complete!')
-        
-        return NextResponse.json({ 
-          success: true, 
-          userId: userId,
-          message: 'User and subscription processed successfully' 
-        })
-
-      } catch (dbError) {
-        console.error('❌ Database error:', dbError)
-        return NextResponse.json({ 
-          error: 'Database error', 
-          details: dbError instanceof Error ? dbError.message : 'Unknown error'
-        }, { status: 500 })
-      }
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription)
+        break
+      
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
+        break
+      
+      case 'invoice.payment_succeeded':
+        await handlePaymentSucceeded(event.data.object as Stripe.Invoice)
+        break
+      
+      case 'invoice.payment_failed':
+        await handlePaymentFailed(event.data.object as Stripe.Invoice)
+        break
+      
+      case 'customer.created':
+        await handleCustomerCreated(event.data.object as Stripe.Customer)
+        break
+      
+      default:
+        console.log(`Unhandled event type: ${event.type}`)
     }
 
-    // Handle other event types
-    console.log(`ℹ️ Unhandled event type: ${event.type}`)
-    return NextResponse.json({ 
-      message: 'Event received but not processed',
-      eventType: event.type 
-    })
-
+    return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('❌ Webhook error:', error)
-    return NextResponse.json({ 
-      error: 'Webhook processing failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    console.error('Webhook processing error:', error)
+    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
   }
 }
 
-// Only allow POST requests
-export async function GET() {
-  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 })
+async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
+  console.log('Creating subscription:', subscription.id)
+  
+  // Get the user ID from customer metadata
+  const customer = await stripe.customers.retrieve(subscription.customer as string)
+  const userId = (customer as Stripe.Customer).metadata?.user_id
+  
+  if (!userId) {
+    console.error('No user_id found in customer metadata')
+    return
+  }
+
+  // Get tier details based on the Stripe price ID
+  const priceId = subscription.items.data[0].price.id
+  const { data: tier } = await supabase
+    .from('subscription_tiers')
+    .select('id')
+    .or(`stripe_price_id_monthly.eq.${priceId},stripe_price_id_quarterly.eq.${priceId},stripe_price_id_yearly.eq.${priceId}`)
+    .single()
+
+  if (!tier) {
+    console.error('Tier not found for price ID:', priceId)
+    return
+  }
+
+  // Determine subscription table to use
+  const { data: tableExists } = await supabase
+    .from('information_schema.tables')
+    .select('table_name')
+    .eq('table_name', 'user_subscriptions')
+    .single()
+
+  const tableName = tableExists ? 'user_subscriptions' : 'subscriptions'
+
+console.log('Available subscription properties:', Object.keys(subscription));
+console.log('Subscription object:', subscription);
+
+  // Create subscription record
+  const subscriptionData = {
+    user_id: parseInt(userId), // Convert to integer for your schema
+    tier_id: tier.id,
+    stripe_customer_id: subscription.customer as string,
+    stripe_subscription_id: subscription.id,
+    status: subscription.status,
+    current_period_start: new Date((subscription as any).current_period_start * 1000),
+    current_period_end: new Date((subscription as any).current_period_end * 1000),
+    trial_start: (subscription as any).trial_start ? new Date((subscription as any).trial_start * 1000) : null,
+    trial_end: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000) : null,
+  }
+
+  const { error } = await supabase
+    .from(tableName)
+    .insert(subscriptionData)
+
+  if (error) {
+    console.error('Error creating subscription:', error)
+  }
+}
+
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  console.log('Updating subscription:', subscription.id)
+  
+  // Determine which table to use
+  const { data: tableExists } = await supabase
+    .from('information_schema.tables')
+    .select('table_name')
+    .eq('table_name', 'user_subscriptions')
+    .single()
+
+  const tableName = tableExists ? 'user_subscriptions' : 'subscriptions'
+  
+  const { error } = await supabase
+    .from(tableName)
+    .update({
+      status: subscription.status,
+      current_period_start: new Date((subscription as any).current_period_start * 1000),
+      current_period_end: new Date((subscription as any).current_period_end * 1000),
+      canceled_at: (subscription as any).canceled_at ? new Date((subscription as any).canceled_at * 1000) : null,
+      updated_at: new Date()
+    })
+    .eq('stripe_subscription_id', subscription.id)
+
+  if (error) {
+    console.error('Error updating subscription:', error)
+  }
+}
+
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  console.log('Deleting subscription:', subscription.id)
+  
+  // Determine which table to use
+  const { data: tableExists } = await supabase
+    .from('information_schema.tables')
+    .select('table_name')
+    .eq('table_name', 'user_subscriptions')
+    .single()
+
+  const tableName = tableExists ? 'user_subscriptions' : 'subscriptions'
+  
+  const { error } = await supabase
+    .from(tableName)
+    .update({
+      status: 'canceled',
+      canceled_at: new Date(),
+      updated_at: new Date()
+    })
+    .eq('stripe_subscription_id', subscription.id)
+
+  if (error) {
+    console.error('Error deleting subscription:', error)
+  }
+}
+
+async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
+  console.log('Payment succeeded for invoice:', invoice.id)
+  
+  if ((invoice as any).subscription) {
+    // Determine which table to use
+    const { data: tableExists } = await supabase
+      .from('information_schema.tables')
+      .select('table_name')
+      .eq('table_name', 'user_subscriptions')
+      .single()
+
+    const tableName = tableExists ? 'user_subscriptions' : 'subscriptions'
+    
+    const { error } = await supabase
+      .from(tableName)
+      .update({
+        status: 'active',
+        updated_at: new Date()
+      })
+      .eq('stripe_subscription_id', (invoice as any).subscription as string)
+
+    if (error) {
+      console.error('Error updating subscription after payment:', error)
+    }
+  }
+}
+
+async function handlePaymentFailed(invoice: Stripe.Invoice) {
+  console.log('Payment failed for invoice:', invoice.id)
+  
+  if ((invoice as any).subscription) {
+    // Determine which table to use
+    const { data: tableExists } = await supabase
+      .from('information_schema.tables')
+      .select('table_name')
+      .eq('table_name', 'user_subscriptions')
+      .single()
+
+    const tableName = tableExists ? 'user_subscriptions' : 'subscriptions'
+    
+    const { error } = await supabase
+      .from(tableName)
+      .update({
+        status: 'past_due',
+        updated_at: new Date()
+      })
+      .eq('stripe_subscription_id', (invoice as any).subscription as string)
+
+    if (error) {
+      console.error('Error updating subscription after failed payment:', error)
+    }
+  }
+}
+
+async function handleCustomerCreated(customer: Stripe.Customer) {
+  console.log('Customer created:', customer.id)
+  // Store customer info if needed
 }
