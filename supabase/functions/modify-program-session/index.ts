@@ -4,7 +4,33 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 serve(async (req) => {
   try {
     const { user_id, week, day, originalProgram } = await req.json();
+  
+ // ADD THIS COMPLETION CHECK HERE:
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabase = createClient(supabaseUrl, supabaseKey);
     
+    const { data: completedLogs } = await supabase
+      .from('performance_logs')
+      .select('id')
+      .eq('user_id', user_id)
+      .eq('week', week)
+      .eq('day', day)
+      .limit(1);
+    
+    // If day is completed, return original program immediately
+    if (completedLogs && completedLogs.length > 0) {
+      return new Response(JSON.stringify({
+        success: true,
+        program: originalProgram,
+        source: 'original-completed',
+        modificationsApplied: [],
+        plateauInterventions: {},
+        plateauStatus: 'completed-day'
+      }));
+    }
+    // END OF NEW CODE 
+
     // Get user context and recent performance
     const userContext = await buildUserContext(user_id);
     
