@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+kimport { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
@@ -342,14 +342,14 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   console.log('Payment failed for invoice:', invoice.id)
   
-  if (invoice.subscription) {
+  if ((invoice as any).subscription) {
     const { error } = await supabase
       .from('subscriptions')
       .update({
         status: 'past_due',
         updated_at: new Date().toISOString()
       })
-      .eq('stripe_subscription_id', invoice.subscription as string)
+      .eq('stripe_subscription_id', (invoice as any).subscription as string)
 
     if (error) {
       console.error('Error updating subscription after failed payment:', error)
