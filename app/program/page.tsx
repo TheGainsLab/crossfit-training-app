@@ -196,15 +196,17 @@ export default function SettingsPage() {
 
       if (skillsError) throw skillsError
 
-      // Create skills array matching the order of skill categories
-      const allSkills: string[] = []
-      skillCategories.forEach(category => {
-        category.skills.forEach(skillName => {
-          const userSkill = skillsData?.find(s => s.skill_name === skillName)
-          allSkills.push(userSkill?.skill_level || 'Unable to perform')
-        })
-      })
-      setSkills(allSkills)
+// Create skills array matching the order of skill categories
+const allSkills: string[] = []
+skillCategories.forEach((category) => {
+  category.skills.forEach((skillName: string) => {
+    const userSkill = skillsData?.find((s) => s.skill_name === skillName)
+    const skillLevel: string = userSkill?.skill_level || 'Unable to perform'
+    allSkills.push(skillLevel)
+  })   
+})
+setSkills(allSkills)
+
 
       setLoading(false)
     } catch (err) {
@@ -279,7 +281,7 @@ export default function SettingsPage() {
       // Update equipment
       await supabase.from('user_equipment').delete().eq('user_id', userId)
       if (equipment.length > 0) {
-        const equipmentRecords = equipment.map(equipmentName => ({
+        const equipmentRecords: any[] = equipment.map(equipmentName => ({
           user_id: userId,
           equipment_name: equipmentName
         }))
@@ -292,7 +294,7 @@ export default function SettingsPage() {
       // Update skills
       await supabase.from('user_skills').delete().eq('user_id', userId)
       let skillIndex = 0
-      const skillRecords = []
+      const skillRecords: any[] = []
       
       skillCategories.forEach(category => {
         category.skills.forEach(skillName => {
@@ -614,3 +616,4 @@ export default function SettingsPage() {
     </div>
   )
 }
+
