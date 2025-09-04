@@ -279,7 +279,7 @@ export default function SettingsPage() {
       // Update equipment
       await supabase.from('user_equipment').delete().eq('user_id', userId)
       if (equipment.length > 0) {
-        const equipmentRecords = equipment.map(equipmentName => ({
+        const equipmentRecords: any[] = equipment.map(equipmentName => ({
           user_id: userId,
           equipment_name: equipmentName
         }))
@@ -292,7 +292,7 @@ export default function SettingsPage() {
       // Update skills
       await supabase.from('user_skills').delete().eq('user_id', userId)
       let skillIndex = 0
-      const skillRecords = []
+      const skillRecords: any[] = []
       
       skillCategories.forEach(category => {
         category.skills.forEach(skillName => {
