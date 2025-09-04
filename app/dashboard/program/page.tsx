@@ -196,15 +196,17 @@ export default function SettingsPage() {
 
       if (skillsError) throw skillsError
 
-      // Create skills array matching the order of skill categories
-      const allSkills: string[] = []
-      skillCategories.forEach(category => {
-        category.skills.forEach(skillName => {
-          const userSkill = skillsData?.find(s => s.skill_name === skillName)
-          allSkills.push(userSkill?.skill_level || 'Unable to perform')
-        })
-      })
-      setSkills(allSkills)
+// Create skills array matching the order of skill categories
+const allSkills: string[] = []
+skillCategories.forEach((category) => {
+  category.skills.forEach((skillName: string) => {
+    const userSkill = skillsData?.find((s) => s.skill_name === skillName)
+    const skillLevel: string = userSkill?.skill_level || 'Unable to perform'
+    allSkills.push(skillLevel)
+  })   
+})
+setSkills(allSkills)
+
 
       setLoading(false)
     } catch (err) {
