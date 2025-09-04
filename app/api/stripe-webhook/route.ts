@@ -13,20 +13,22 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
 
+
  // ADD THE DEBUG CODE HERE - FIRST THING INSIDE THE POST FUNCTION
   console.log('=== WEBHOOK DEBUG START ===')
   console.log('Content-Type:', request.headers.get('content-type'))
   console.log('User-Agent:', request.headers.get('user-agent'))
+
+  const body = await request.arrayBuffer()
+  const bodyBuffer = Buffer.from(body)
   
-  const body = await request.text()
-  console.log('Body length:', body.length)
-  console.log('Body first 200 chars:', body.substring(0, 200))
+  console.log('Body length:', bodyBuffer.length)
+  console.log('Body first 200 chars:', bodyBuffer.toString().substring(0, 200))
   
   const headersList = await headers()
   const signature = headersList.get('stripe-signature')
   console.log('Stripe signature:', signature)
   console.log('=== WEBHOOK DEBUG END ===')
-
 
   try {
 
@@ -36,12 +38,13 @@ export async function POST(request: NextRequest) {
 
     let event: Stripe.Event
 
-    try {
-      event = stripe.webhooks.constructEvent(
-        body,
-        signature,
-        process.env.STRIPE_WEBHOOK_SECRET!
-      )
+try {
+  event = stripe.webhooks.constructEvent(
+    bodyBuffer,  // ← This change
+    signature,
+    process.env.STRIPE_WEBHOOK_SECRET!
+  )
+
     } catch (err) {
       console.error('Webhook signature verification failed:', err)
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
