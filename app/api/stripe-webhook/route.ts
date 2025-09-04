@@ -323,14 +323,14 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log('Payment succeeded for invoice:', invoice.id)
   
-  if (invoice.subscription) {
+  if ((invoice as any).subscription) {
     const { error } = await supabase
       .from('subscriptions')
       .update({
         status: 'active',
         updated_at: new Date().toISOString()
       })
-      .eq('stripe_subscription_id', invoice.subscription as string)
+      .eq('stripe_subscription_id', (invoice as any).subscription as string)
 
     if (error) {
       console.error('Error updating subscription after payment:', error)
