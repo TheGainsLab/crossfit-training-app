@@ -12,11 +12,23 @@ const supabase = createClient(
 )
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.text()
 
-    const headersList = await headers()
-    const signature = headersList.get('stripe-signature')
+ // ADD THE DEBUG CODE HERE - FIRST THING INSIDE THE POST FUNCTION
+  console.log('=== WEBHOOK DEBUG START ===')
+  console.log('Content-Type:', request.headers.get('content-type'))
+  console.log('User-Agent:', request.headers.get('user-agent'))
+  
+  const body = await request.text()
+  console.log('Body length:', body.length)
+  console.log('Body first 200 chars:', body.substring(0, 200))
+  
+  const headersList = await headers()
+  const signature = headersList.get('stripe-signature')
+  console.log('Stripe signature:', signature)
+  console.log('=== WEBHOOK DEBUG END ===')
+
+
+  try {
 
     if (!signature) {
       return NextResponse.json({ error: 'No signature' }, { status: 400 })
