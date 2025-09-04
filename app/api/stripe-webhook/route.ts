@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleCheckoutCompleted(session: Stripe.CheckoutSession) {
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   console.log('Processing checkout session completed:', session.id)
   
   const customerEmail = session.customer_details?.email
@@ -286,8 +286,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     .from('subscriptions')
     .update({
       status: subscription.status,
-      current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+      current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString().split('T')[0],
+      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString().split('T')[0],
       canceled_at: (subscription as any).canceled_at ? new Date((subscription as any).canceled_at * 1000).toISOString() : null,
       updated_at: new Date().toISOString()
     })
