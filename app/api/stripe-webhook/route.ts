@@ -199,9 +199,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         plan: 'premium',
         amount_cents: amountTotal,
         billing_interval: (subscription as any).items.data[0].price.recurring?.interval || 'month',
-        subscription_start: new Date((subscription as any).created * 1000).toISOString().split('T')[0],
-        current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString().split('T')[0],
-        current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString().split('T')[0],
+subscription_start: subscription.created ? new Date(subscription.created * 1000).toISOString().split('T')[0] : null,
+current_period_start: subscription.current_period_start ? new Date(subscription.current_period_start * 1000).toISOString().split('T')[0] : null,
+current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString().split('T')[0] : null,
         updated_at: new Date().toISOString()
       }
 
