@@ -4,44 +4,131 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
-interface ProgramOverview {
-  id: number
-  program_number: number
-  weeks_generated: number[]
-  generated_at: string
-  user_snapshot: {
-    name: string
-    ability_level: string
-  }
+interface UserSettings {
+  name: string
+  email: string
+  body_weight: number | null
+  units: string
+  gender: string
+  conditioning_benchmarks: any
 }
 
-interface DayOverview {
-  week: number
-  day: number
-  day_name: string
-  main_lift: string
-  total_exercises: number
-  completed: boolean
-  exercisesLogged: number
-  lastLoggedAt?: string
+interface OneRM {
+  exercise_name: string
+  one_rm: number
 }
 
-export default function ProgramOverviewPage() {
+interface UserSkill {
+  skill_name: string
+  skill_level: string
+}
+
+export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
-  const [program, setProgram] = useState<ProgramOverview | null>(null)
-  const [dayOverviews, setDayOverviews] = useState<DayOverview[]>([])
-  const [completionStats, setCompletionStats] = useState({
-    totalDays: 0,
-    completedDays: 0,
-    currentWeek: 1
+  const [saving, setSaving] = useState(false)
+  const [settings, setSettings] = useState<UserSettings>({
+    name: '',
+    email: '',
+    body_weight: null,
+    units: 'Imperial (lbs)',
+    gender: '',
+    conditioning_benchmarks: {}
   })
+  const [oneRMs, setOneRMs] = useState<OneRM[]>([])
+  const [equipment, setEquipment] = useState<string[]>([])
+  const [skills, setSkills] = useState<string[]>([])
+  const [userId, setUserId] = useState<number | null>(null)
+  const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  const oneRMExercises = [
+    'Snatch', 'Power Snatch', 'Clean and Jerk', 'Power Clean',
+    'Clean (clean only)', 'Jerk (from rack or blocks, max Split or Power Jerk)',
+    'Back Squat', 'Front Squat', 'Overhead Squat', 'Deadlift',
+    'Bench Press', 'Push Press', 'Strict Press', 'Weighted Pullup (do not include body weight)'
+  ]
+
+  const availableEquipment = [
+    'Barbell', 'Dumbbells', 'Kettlebells', 'Pull-up Bar', 'Rings',
+    'Rowing Machine', 'Bike', 'Assault Bike', 'Box/Platform',
+    'Medicine Ball', 'Wall Ball', 'Jump Rope', 'Resistance Bands',
+    'TRX/Suspension Trainer', 'Parallette Bars', 'GHD Machine',
+    'Plyo Box', 'Slam Ball', 'Battle Ropes', 'Sled', 'Tire',
+    'Atlas Stone/Heavy Object', 'Sandbag', 'Farmers Walk Handles',
+    'Yoke/Safety Squat Bar', 'Log Bar', 'Axle Bar'
+  ]
+
+  const skillCategories = [
+    {
+      name: 'Basic CrossFit skills',
+      skills: ['Double Unders', 'Wall Balls']
+    },
+    {
+      name: 'Upper Body Pulling',
+      skills: [
+        'Toes to Bar',
+        'Pull-ups (kipping or butterfly)',
+        'Chest to Bar Pull-ups',
+        'Strict Pull-ups'
+      ]
+    },
+    {
+      name: 'Upper Body Pressing',
+      skills: [
+        'Push-ups',
+        'Ring Dips',
+        'Strict Ring Dips',
+        'Strict Handstand Push-ups',
+        'Wall Facing Handstand Push-ups',
+        'Deficit Handstand Push-ups (4")'
+      ]
+    },
+    {
+      name: 'Additional Common Skills',
+      skills: ['Alternating Pistols', 'GHD Sit-ups', 'Wall Walks']
+    },
+    {
+      name: 'Advanced Upper Body Pulling',
+      skills: ['Ring Muscle Ups', 'Bar Muscle Ups', 'Rope Climbs']
+    },
+    {
+      name: 'Holds',
+      skills: ['Wall Facing Handstand Hold', 'Freestanding Handstand Hold']
+    },
+    {
+      name: 'Advanced Gymnastics',
+      skills: [
+        'Legless Rope Climbs',
+        'Pegboard Ascent',
+        'Handstand Walk (10m or 25\')',
+        'Seated Legless Rope Climbs',
+        'Strict Ring Muscle Ups',
+        'Handstand Walk Obstacle Crossings'
+      ]
+    }
+  ]
+
+  const skillLevels = [
+    'Unable to perform',
+    'Beginner (1-5)',
+    'Intermediate (6-10)',
+    'Advanced (11-15)',
+    'Expert (More than 15)'
+  ]
+
+  const conditioningBenchmarks = [
+    { name: 'Fran', description: '21-15-9 Thrusters (95/65) and Pull-ups' },
+    { name: 'Grace', description: '30 Clean and Jerks for time (135/95)' },
+    { name: 'Helen', description: '3 rounds: 400m run, 21 KB swings (53/35), 12 pull-ups' },
+    { name: 'Cindy', description: '20min AMRAP: 5 pull-ups, 10 push-ups, 15 air squats' },
+    { name: 'Annie', description: '50-40-30-20-10 Double-unders and Sit-ups' }
+  ]
+
   useEffect(() => {
-    loadProgramOverview()
+    loadUserSettings()
   }, [])
 
-  const loadProgramOverview = async () => {
+  const loadUserSettings = async () => {
     try {
       const supabase = createClient()
       
@@ -53,172 +140,215 @@ export default function ProgramOverviewPage() {
         return
       }
 
-      // Get user ID from users table
-      const { data: userData } = await supabase
+      // Get user data
+      const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id')
+        .select('id, name, email, body_weight, units, gender, conditioning_benchmarks')
         .eq('auth_id', user.id)
         .single()
 
-      if (!userData) {
+      if (userError || !userData) {
         setError('User not found')
         setLoading(false)
         return
       }
 
-      // Get latest program
-      const { data: programData, error: programError } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('user_id', userData.id)
-        .order('generated_at', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (programError || !programData) {
-        setError('No program found')
-        setLoading(false)
-        return
-      }
-
-      setProgram(programData)
-
-      // Get completed exercises from performance_logs
-      const { data: completedLogs, error: logsError } = await supabase
-        .from('performance_logs')
-        .select('week, day, logged_at')
-        .eq('program_id', programData.id)
-        .eq('user_id', userData.id)
-
-      if (logsError) {
-        console.error('Error fetching performance logs:', logsError)
-        // Continue without completion data rather than failing completely
-      }
-
-      // Process workouts into day overviews
-      const dayMap = new Map<string, DayOverview>()
-      const programWeeks = programData.program_data?.weeks || []
-
-      // Initialize all days from program data
-      programWeeks.forEach((week: any) => {
-        week.days.forEach((day: any) => {
-          const key = `${week.week}-${day.day}`
-          const totalExercises = day.blocks.reduce((sum: number, block: any) => 
-            sum + (block.exercises?.length || 0), 0
-          )
-          
-          dayMap.set(key, {
-            week: week.week,
-            day: day.day,
-            day_name: day.dayName,
-            main_lift: day.mainLift,
-            total_exercises: totalExercises,
-            completed: false,
-            exercisesLogged: 0
-          })
-        })
+      setUserId(userData.id)
+      setSettings({
+        name: userData.name || '',
+        email: userData.email || '',
+        body_weight: userData.body_weight,
+        units: userData.units || 'Imperial (lbs)',
+        gender: userData.gender || '',
+        conditioning_benchmarks: userData.conditioning_benchmarks || {}
       })
 
-      // Mark completed days based on performance logs
-      if (completedLogs && completedLogs.length > 0) {
-        // Group logs by week/day to count exercises per day
-        const logsByDay = new Map<string, {count: number, lastLogged: string}>()
-        
-        completedLogs.forEach(log => {
-          const key = `${log.week}-${log.day}`
-          const existing = logsByDay.get(key)
-          
-          if (existing) {
-            existing.count += 1
-            // Keep the most recent logged_at time
-            if (new Date(log.logged_at) > new Date(existing.lastLogged)) {
-              existing.lastLogged = log.logged_at
-            }
-          } else {
-            logsByDay.set(key, {
-              count: 1,
-              lastLogged: log.logged_at
-            })
-          }
-        })
-        
-        // Update day overviews with completion data
-        logsByDay.forEach((logData, dayKey) => {
-          const dayData = dayMap.get(dayKey)
-          if (dayData) {
-            dayData.exercisesLogged = logData.count
-            dayData.lastLoggedAt = logData.lastLogged
-            // Consider a day "completed" if at least one exercise is logged
-            dayData.completed = logData.count > 0
-          }
-        })
-      }
+      // Load 1RMs
+      const { data: oneRMData, error: oneRMError } = await supabase
+        .from('user_one_rms')
+        .select('exercise_name, one_rm')
+        .eq('user_id', userData.id)
 
-      const overviews = Array.from(dayMap.values())
-      setDayOverviews(overviews)
+      if (oneRMError) throw oneRMError
 
-      // Calculate stats
-      const completedCount = overviews.filter(d => d.completed).length
-      
-      // Find current week based on latest activity or default to week 1
-      let currentWeek = 1
-      if (completedLogs && completedLogs.length > 0) {
-        // Get the most recent week with activity
-        const recentWeeks = completedLogs.map(log => log.week)
-        currentWeek = Math.max(...recentWeeks)
-        
-        // If current week is fully completed, advance to next week
-        const currentWeekDays = overviews.filter(d => d.week === currentWeek)
-        const currentWeekCompleted = currentWeekDays.filter(d => d.completed).length
-        
-        if (currentWeekCompleted === currentWeekDays.length && currentWeek < Math.max(...overviews.map(d => d.week))) {
-          currentWeek += 1
-        }
-      }
-      
-      setCompletionStats({
-        totalDays: overviews.length,
-        completedDays: completedCount,
-        currentWeek: currentWeek
+      const oneRMMap = new Map(oneRMData?.map(rm => [rm.exercise_name, rm.one_rm]) || [])
+      const allOneRMs = oneRMExercises.map(exercise => ({
+        exercise_name: exercise,
+        one_rm: oneRMMap.get(exercise) || 0
+      }))
+      setOneRMs(allOneRMs)
+
+      // Load equipment
+      const { data: equipmentData, error: equipmentError } = await supabase
+        .from('user_equipment')
+        .select('equipment_name')
+        .eq('user_id', userData.id)
+
+      if (equipmentError) throw equipmentError
+      setEquipment(equipmentData?.map(eq => eq.equipment_name) || [])
+
+      // Load skills
+      const { data: skillsData, error: skillsError } = await supabase
+        .from('user_skills')
+        .select('skill_name, skill_level')
+        .eq('user_id', userData.id)
+        .order('skill_index')
+
+      if (skillsError) throw skillsError
+
+      // Create skills array matching the order of skill categories
+      const allSkills: string[] = []
+      skillCategories.forEach(category => {
+        category.skills.forEach(skillName => {
+          const userSkill = skillsData?.find(s => s.skill_name === skillName)
+          allSkills.push(userSkill?.skill_level || 'Unable to perform')
+        })
       })
+      setSkills(allSkills)
 
       setLoading(false)
     } catch (err) {
-      console.error('Error loading program overview:', err)
-      setError('Failed to load program overview')
+      console.error('Error loading settings:', err)
+      setError('Failed to load settings')
       setLoading(false)
     }
   }
 
-  const getWeekType = (weekNumber: number) => {
-    if ([4, 8, 12].includes(weekNumber)) return 'Deload'
-    return 'Training'
+  const handleSettingsChange = (field: keyof UserSettings, value: any) => {
+    setSettings(prev => ({ ...prev, [field]: value }))
   }
 
-  const getWeekColor = (weekNumber: number) => {
-    if ([4, 8, 12].includes(weekNumber)) return 'bg-yellow-100 border-yellow-300'
-    return 'bg-ice-blue border-slate-blue'
+  const handleOneRMChange = (exerciseName: string, value: string) => {
+    setOneRMs(prev => 
+      prev.map(rm => 
+        rm.exercise_name === exerciseName 
+          ? { ...rm, one_rm: parseFloat(value) || 0 }
+          : rm
+      )
+    )
   }
 
-  const formatLastLogged = (lastLoggedAt?: string) => {
-    if (!lastLoggedAt) return null
-    
-    const date = new Date(lastLoggedAt)
-    const now = new Date()
-    const diffTime = Math.abs(now.getTime() - date.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
-    if (diffDays === 1) return 'Yesterday'
-    if (diffDays <= 7) return `${diffDays} days ago`
-    return date.toLocaleDateString()
+  const handleEquipmentChange = (equipmentName: string, checked: boolean) => {
+    if (checked) {
+      setEquipment(prev => [...prev, equipmentName])
+    } else {
+      setEquipment(prev => prev.filter(eq => eq !== equipmentName))
+    }
+  }
+
+  const handleSkillChange = (index: number, value: string) => {
+    setSkills(prev => {
+      const newSkills = [...prev]
+      newSkills[index] = value
+      return newSkills
+    })
+  }
+
+  const handleBenchmarkChange = (benchmarkName: string, value: string) => {
+    setSettings(prev => ({
+      ...prev,
+      conditioning_benchmarks: {
+        ...prev.conditioning_benchmarks,
+        [benchmarkName]: value
+      }
+    }))
+  }
+
+  const saveSettings = async () => {
+    setSaving(true)
+    setMessage('')
+
+    try {
+      const supabase = createClient()
+      
+      // Update user settings
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          name: settings.name,
+          body_weight: settings.body_weight,
+          units: settings.units,
+          gender: settings.gender,
+          conditioning_benchmarks: settings.conditioning_benchmarks,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+
+      if (updateError) throw updateError
+
+      // Update equipment
+      await supabase.from('user_equipment').delete().eq('user_id', userId)
+      if (equipment.length > 0) {
+        const equipmentRecords = equipment.map(equipmentName => ({
+          user_id: userId,
+          equipment_name: equipmentName
+        }))
+        const { error: equipmentError } = await supabase
+          .from('user_equipment')
+          .insert(equipmentRecords)
+        if (equipmentError) throw equipmentError
+      }
+
+      // Update skills
+      await supabase.from('user_skills').delete().eq('user_id', userId)
+      let skillIndex = 0
+      const skillRecords = []
+      
+      skillCategories.forEach(category => {
+        category.skills.forEach(skillName => {
+          const skillLevel = skills[skillIndex]
+          if (skillLevel && skillLevel !== 'Unable to perform') {
+            skillRecords.push({
+              user_id: userId,
+              skill_index: skillIndex,
+              skill_name: skillName,
+              skill_level: skillLevel
+            })
+          }
+          skillIndex++
+        })
+      })
+
+      if (skillRecords.length > 0) {
+        const { error: skillsError } = await supabase
+          .from('user_skills')
+          .insert(skillRecords)
+        if (skillsError) throw skillsError
+      }
+
+      // Update 1RMs
+      const validOneRMs = oneRMs.filter(rm => rm.one_rm > 0)
+      for (const rm of validOneRMs) {
+        const { error: rmError } = await supabase
+          .from('user_one_rms')
+          .upsert({
+            user_id: userId,
+            one_rm_index: oneRMExercises.indexOf(rm.exercise_name),
+            exercise_name: rm.exercise_name,
+            one_rm: rm.one_rm,
+            recorded_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,one_rm_index'
+          })
+        if (rmError) throw rmError
+      }
+
+      setMessage('Settings saved successfully!')
+      setSaving(false)
+      setTimeout(() => setMessage(''), 3000)
+    } catch (err) {
+      console.error('Error saving settings:', err)
+      setMessage('Failed to save settings')
+      setSaving(false)
+    }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-ice-blue flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-coral mx-auto"></div>
-          <p className="mt-4 text-charcoal">Loading program overview...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading settings...</p>
         </div>
       </div>
     )
@@ -226,10 +356,10 @@ export default function ProgramOverviewPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-ice-blue flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600">{error}</p>
-          <Link href="/dashboard" className="mt-4 text-coral hover:text-coral">
+          <Link href="/dashboard" className="mt-4 text-blue-600 hover:text-blue-700">
             Back to Dashboard
           </Link>
         </div>
@@ -237,163 +367,248 @@ export default function ProgramOverviewPage() {
     )
   }
 
-  // Group days by week
-  const weekGroups = dayOverviews.reduce((acc, day) => {
-    if (!acc[day.week]) acc[day.week] = []
-    acc[day.week].push(day)
-    return acc
-  }, {} as Record<number, DayOverview[]>)
-
   return (
-    <div className="min-h-screen bg-ice-blue py-8">
-      <div className="max-w-6xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
-        <div className="bg-white border-2 border-slate-blue rounded-lg shadow-lg p-6 mb-6">        
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-charcoal mb-3">
-              Program Overview
-            </h1>
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Training Settings
+              </h1>
+              <p className="text-gray-600">
+                Update your profile and training data to improve program generation
+              </p>
+            </div>
             <Link
               href="/dashboard"
-              className="text-sm text-coral hover:text-coral underline"
+              className="text-blue-600 hover:text-blue-700"
             >
               ← Back to Dashboard
             </Link>
           </div>
         </div>
 
-        {/* Progress Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white border-2 border-slate-blue rounded-lg shadow p-6 text-center">
-            <div className="text-3xl font-bold text-coral">
-              {completionStats.completedDays}/{completionStats.totalDays}
-            </div>
-            <div className="text-charcoal">Days Completed</div>
-            <div className="mt-2 bg-gray-300 rounded-full h-2">
-              <div
-                className="bg-coral h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(completionStats.completedDays / completionStats.totalDays) * 100}%` }}
+        {/* Success/Error Message */}
+        {message && (
+          <div className={`mb-6 p-4 rounded-lg ${
+            message.includes('success') 
+              ? 'bg-green-50 text-green-800 border border-green-200'
+              : 'bg-red-50 text-red-800 border border-red-200'
+          }`}>
+            {message}
+          </div>
+        )}
+
+        {/* Basic Settings */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Basic Information</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Name
+              </label>
+              <input
+                type="text"
+                value={settings.name}
+                onChange={(e) => handleSettingsChange('name', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="text-sm text-gray-500 mt-1">
-              {Math.round((completionStats.completedDays / completionStats.totalDays) * 100)}% complete
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                value={settings.email}
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+              />
             </div>
-          </div>
 
-          <div className="bg-white border-2 border-slate-blue rounded-lg shadow p-6 text-center">
-            <div className="text-3xl font-bold text-coral">
-              Week {completionStats.currentWeek}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Body Weight
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={settings.body_weight || ''}
+                onChange={(e) => handleSettingsChange('body_weight', parseFloat(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={settings.units === 'Metric (kg)' ? 'e.g., 70.5' : 'e.g., 155.5'}
+              />
             </div>
-            <div className="text-charcoal">Current Week</div>
-            <div className="text-sm text-gray-500 mt-1">
-              {getWeekType(completionStats.currentWeek)} Week
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Units
+              </label>
+              <select
+                value={settings.units}
+                onChange={(e) => handleSettingsChange('units', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="Imperial (lbs)">Imperial (lbs)</option>
+                <option value="Metric (kg)">Metric (kg)</option>
+              </select>
             </div>
-          </div>
-          
-          <div className="bg-white border-2 border-slate-blue rounded-lg shadow p-6 text-center">
-            <div className="text-3xl font-bold text-charcoal">
-              #{program?.program_number || 0}
-            </div>
-            <div className="text-charcoal">Program Number</div>
-            <div className="text-sm text-gray-500 mt-1">
-              Generated {program?.generated_at ? new Date(program.generated_at).toLocaleDateString() : ''}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Gender
+              </label>
+              <select
+                value={settings.gender}
+                onChange={(e) => handleSettingsChange('gender', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+              </select>
             </div>
           </div>
         </div>
 
-        {/* Week-by-Week View */}
-        <div className="space-y-6">
-          {Object.entries(weekGroups).map(([weekNum, days]) => {
-            const week = parseInt(weekNum)
-            const weekCompleted = days.filter(d => d.completed).length
-            const isCurrentWeek = week === completionStats.currentWeek
+        {/* Equipment */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Available Equipment</h2>
+          <p className="text-gray-600 mb-4">Select all equipment you have access to:</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {availableEquipment.map((eq) => (
+              <label key={eq} className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={equipment.includes(eq)}
+                  onChange={(e) => handleEquipmentChange(eq, e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">{eq}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Skills */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Skill Levels</h2>
+          <p className="text-gray-600 mb-6">Rate your current skill level for each movement:</p>
+          
+          {skillCategories.map((category, categoryIndex) => {
+            let currentIndex = 0
+            for (let i = 0; i < categoryIndex; i++) {
+              currentIndex += skillCategories[i].skills.length
+            }
             
             return (
-              <div 
-                key={week} 
-                
-className={`rounded-lg border-2 p-6 bg-slate-blue ${
-                  [4, 8, 12].includes(week) ? 'border-yellow-300' : 'border-slate-blue'
-                } ${isCurrentWeek ? 'ring-2 ring-coral' : ''}`}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                   
-<h2 className="text-xl font-bold text-charcoal">
-                      Week {week}
-                      {isCurrentWeek && (
-                        <span className="ml-2 text-sm bg-coral text-white px-2 py-1 rounded">
-                          Current
-                        </span>
-                      )}
-                    </h2>
-                    
-<p className="text-sm text-gray-300">{getWeekType(week)} Week</p>
-                  </div>
-                  <div className="text-right">
-                    
-<div className="text-lg font-semibold text-charcoal">
-                      {weekCompleted}/{days.length} days
-                    </div>
-                    
-<div className="text-sm text-gray-300">completed</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                  {days.map(day => (
-                    <Link
-                      key={`${day.week}-${day.day}`}
-                      href={`/dashboard/workout/${program?.id}/week/${day.week}/day/${day.day}`}
-                      className={`p-3 rounded-lg border transition-all hover:shadow-md ${
-                        day.completed 
-                          ? 'bg-white border-coral/30 hover:bg-coral/10' 
-                          : 'bg-white border-slate-blue hover:border-coral'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="font-medium text-sm text-charcoal">{day.day_name}</div>
-                        {day.completed && <span className="text-coral text-lg">✓</span>}
+              <div key={category.name} className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">{category.name}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {category.skills.map((skill, skillIndex) => {
+                    const globalIndex = currentIndex + skillIndex
+                    return (
+                      <div key={skill}>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {skill}
+                        </label>
+                        <select
+                          value={skills[globalIndex] || 'Unable to perform'}
+                          onChange={(e) => handleSkillChange(globalIndex, e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {skillLevels.map(level => (
+                            <option key={level} value={level}>{level}</option>
+                          ))}
+                        </select>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {day.exercisesLogged > 0 
-                          ? `${day.exercisesLogged}/${day.total_exercises} exercises logged`
-                          : `${day.total_exercises} exercises`
-                        }
-                      </div>
-                      {day.lastLoggedAt && (
-                        <div className="text-xs text-coral mt-1">
-                          {formatLastLogged(day.lastLoggedAt)}
-                        </div>
-                      )}
-                    </Link>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )
           })}
         </div>
 
-        {/* Quick Actions */}
-        <div className="mt-8 flex flex-wrap gap-4">
+        {/* 1RM Settings */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">
+            1 Rep Max Lifts
+            <span className="text-sm font-normal text-gray-600 ml-2">
+              (in {settings.units === 'Metric (kg)' ? 'kg' : 'lbs'})
+            </span>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {oneRMs.map((rm) => (
+              <div key={rm.exercise_name}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {rm.exercise_name}
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={rm.one_rm || ''}
+                  onChange={(e) => handleOneRMChange(rm.exercise_name, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Conditioning Benchmarks */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Conditioning Benchmarks</h2>
+          <p className="text-gray-600 mb-4">Enter your best times/scores (optional):</p>
+          <div className="space-y-4">
+            {conditioningBenchmarks.map((benchmark) => (
+              <div key={benchmark.name}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {benchmark.name}
+                </label>
+                <p className="text-xs text-gray-500 mb-2">{benchmark.description}</p>
+                <input
+                  type="text"
+                  value={settings.conditioning_benchmarks[benchmark.name] || ''}
+                  onChange={(e) => handleBenchmarkChange(benchmark.name, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 3:15, 42 reps, etc."
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-between items-center mb-6">
           <Link
-            href="/dashboard"
-            className="bg-coral text-white px-6 py-3 rounded-lg hover:bg-coral"
+            href="/profile"
+            className="text-blue-600 hover:text-blue-700"
           >
-            ← Back to Dashboard
+            View Full Profile Analysis →
           </Link>
-          <Link
-            href="/dashboard/progress"
-            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+          
+          <button
+            onClick={saveSettings}
+            disabled={saving}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            View Analytics
-          </Link>
-          <Link
-            href="/dashboard/settings"
-            className="bg-charcoal text-white px-6 py-3 rounded-lg hover:bg-charcoal"
-          >
-            Settings
-          </Link>
+            {saving ? 'Saving...' : 'Save All Changes'}
+          </button>
+        </div>
+
+        {/* Note */}
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Program Updates:</strong> Changes to your equipment, skills, or strength levels 
+            will be automatically used when generating your next monthly/quarterly program. 
+            You don't need to regenerate anything manually.
+          </p>
         </div>
       </div>
     </div>
