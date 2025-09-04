@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Handle the event
     switch (event.type) {
       case 'checkout.session.completed':
-        await handleCheckoutCompleted(event.data.object as Stripe.CheckoutSession)
+        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)
         break
       
       case 'customer.subscription.created':
