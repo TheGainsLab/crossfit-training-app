@@ -3,7 +3,6 @@ import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 const supabase = createClient(
@@ -11,10 +10,160 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// MOVED OUTSIDE - Now accessible to all handler functions
+async function getCurrentUserData(userId: number) {
+  // Get basic user info
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('body_weight, gender, units, conditioning_benchmarks')
+    .eq('id', userId)
+    .single()
+
+  if (userError) throw userError
+
+  // Get equipment
+  const { data: equipmentData, error: equipmentError } = await supabase
+    .from('user_equipment')
+    .select('equipment_name')
+    .eq('user_id', userId)
+
+  if (equipmentError) throw equipmentError
+
+  // Get skills
+  const { data: skillsData, error: skillsError } = await supabase
+    .from('user_skills')
+    .select('skill_name, skill_level, skill_index')
+    .eq('user_id', userId)
+    .order('skill_index')
+
+  if (skillsError) throw skillsError
+
+  // Get 1RMs
+  const { data: oneRMData, error: oneRMError } = await supabase
+    .from('user_one_rms')
+    .select('exercise_name, one_rm, one_rm_index')
+    .eq('user_id', userId)
+    .order('one_rm_index')
+
+  if (oneRMError) throw oneRMError
+
+  return {
+    userData,
+    equipment: equipmentData?.map(eq => eq.equipment_name) || [],
+    skills: skillsData || [],
+    oneRMs: oneRMData || []
+  }
+}
+
+// MOVED OUTSIDE - Now accessible to all handler functions
+async function generateRenewalProgram(stripeSubscriptionId: string) {
+  try {
+    // Get subscription and user info
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('user_id, billing_interval')
+      .eq('stripe_subscription_id', stripeSubscriptionId)
+      .single()
+
+    if (subError || !subscription) {
+      console.error('Subscription not found for renewal program generation')
+      return
+    }
+
+    // Get current program count to determine next program number
+    const { data: programData, error: programError } = await supabase
+      .from('programs')
+      .select('program_number')
+      .eq('user_id', subscription.user_id)
+      .order('program_number', { ascending: false })
+      .limit(1)
+
+    if (programError) {
+      console.error('Error getting program count:', programError)
+      return
+    }
+
+    const nextProgramNumber = (programData?.[0]?.program_number || 0) + 1
+    console.log(`Generating program #${nextProgramNumber} for user ${subscription.user_id}`)
+
+    // Get current user data from settings
+    const currentUserData = await getCurrentUserData(subscription.user_id)
+
+    // Always generate 4-week programs regardless of billing interval
+    const weeksToGenerate = Array.from({length: 4}, (_, i) => i + 1 + (4 * (nextProgramNumber - 1)))
+
+    console.log(`Generating program for ${weeksToGenerate.length} weeks...`)
+
+    // Call program generation edge function
+    const programResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-program`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          user_id: subscription.user_id,
+          weeksToGenerate
+        })
+      }
+    )
+
+    if (!programResponse.ok) {
+      const errorText = await programResponse.text()
+      console.error('Program generation failed for renewal:', errorText)
+      return
+    }
+
+    const programResult = await programResponse.json()
+
+    // Save new program
+    const { error: programSaveError } = await supabase
+      .from('programs')
+      .insert({
+        user_id: subscription.user_id,
+        sport_id: 1,
+        program_number: nextProgramNumber,
+        weeks_generated: weeksToGenerate,
+        program_data: programResult.program,
+        user_snapshot: programResult.program.metadata.userSnapshot,
+        ratio_snapshot: programResult.program.metadata.ratioSnapshot
+      })
+
+    if (programSaveError) {
+      console.error('Failed to save renewal program:', programSaveError)
+      return
+    }
+
+    // Generate updated profile
+    const profileResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-user-profile`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          user_id: subscription.user_id,
+          sport_id: 1,
+          force_regenerate: true
+        })
+      }
+    )
+
+    if (profileResponse.ok) {
+      console.log(`Successfully generated renewal program #${nextProgramNumber}`)
+    }
+
+  } catch (error) {
+    console.error('Error generating renewal program:', error)
+  }
+}
+
 export async function POST(request: NextRequest) {
-
-
- // ADD THE DEBUG CODE HERE - FIRST THING INSIDE THE POST FUNCTION
+  // ADD THE DEBUG CODE HERE - FIRST THING INSIDE THE POST FUNCTION
   console.log('=== WEBHOOK DEBUG START ===')
   console.log('Content-Type:', request.headers.get('content-type'))
   console.log('User-Agent:', request.headers.get('user-agent'))
@@ -31,182 +180,24 @@ export async function POST(request: NextRequest) {
   console.log('=== WEBHOOK DEBUG END ===')
 
   try {
-
     if (!signature) {
       return NextResponse.json({ error: 'No signature' }, { status: 400 })
     }
 
     let event: Stripe.Event
 
-try {
-  event = stripe.webhooks.constructEvent(
-    bodyBuffer,  // ← This change
-    signature,
-    process.env.STRIPE_WEBHOOK_SECRET!
-  )
-
+    try {
+      event = stripe.webhooks.constructEvent(
+        bodyBuffer,  // ← This change
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET!
+      )
     } catch (err) {
       console.error('Webhook signature verification failed:', err)
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
     }
 
     console.log('Processing Stripe webhook:', event.type)
-
-
-
-    // ADD THIS FUNCTION HERE
-    async function getCurrentUserData(userId: number) {
-      // Get basic user info
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('body_weight, gender, units, conditioning_benchmarks')
-        .eq('id', userId)
-        .single()
-
-      if (userError) throw userError
-
-      // Get equipment
-      const { data: equipmentData, error: equipmentError } = await supabase
-        .from('user_equipment')
-        .select('equipment_name')
-        .eq('user_id', userId)
-
-      if (equipmentError) throw equipmentError
-
-      // Get skills
-      const { data: skillsData, error: skillsError } = await supabase
-        .from('user_skills')
-        .select('skill_name, skill_level, skill_index')
-        .eq('user_id', userId)
-        .order('skill_index')
-
-      if (skillsError) throw skillsError
-
-      // Get 1RMs
-      const { data: oneRMData, error: oneRMError } = await supabase
-        .from('user_one_rms')
-        .select('exercise_name, one_rm, one_rm_index')
-        .eq('user_id', userId)
-        .order('one_rm_index')
-
-      if (oneRMError) throw oneRMError
-
-      return {
-        userData,
-        equipment: equipmentData?.map(eq => eq.equipment_name) || [],
-        skills: skillsData || [],
-        oneRMs: oneRMData || []
-      }
-    }
-
- 
-
-    async function generateRenewalProgram(stripeSubscriptionId: string) {
-      try {
-        // Get subscription and user info
-        const { data: subscription, error: subError } = await supabase
-          .from('subscriptions')
-          .select('user_id, billing_interval')
-          .eq('stripe_subscription_id', stripeSubscriptionId)
-          .single()
-
-        if (subError || !subscription) {
-          console.error('Subscription not found for renewal program generation')
-          return
-        }
-
-        // Get current program count to determine next program number
-        const { data: programData, error: programError } = await supabase
-          .from('programs')
-          .select('program_number')
-          .eq('user_id', subscription.user_id)
-          .order('program_number', { ascending: false })
-          .limit(1)
-
-        if (programError) {
-          console.error('Error getting program count:', programError)
-          return
-        }
-
-        const nextProgramNumber = (programData?.[0]?.program_number || 0) + 1
-        console.log(`Generating program #${nextProgramNumber} for user ${subscription.user_id}`)
-
-        // Get current user data from settings
-        const currentUserData = await getCurrentUserData(subscription.user_id)
-
-        // Always generate 4-week programs regardless of billing interval
-     const weeksToGenerate = Array.from({length: 4}, (_, i) => i + 1 + (4 * (nextProgramNumber - 1)))
-
-        console.log(`Generating program for ${weeksToGenerate.length} weeks...`)
-
-        // Call program generation edge function
-        const programResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-program`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-              user_id: subscription.user_id,
-              weeksToGenerate
-            })
-          }
-        )
-
-        if (!programResponse.ok) {
-          const errorText = await programResponse.text()
-          console.error('Program generation failed for renewal:', errorText)
-          return
-        }
-
-        const programResult = await programResponse.json()
-
-        // Save new program
-        const { error: programSaveError } = await supabase
-          .from('programs')
-          .insert({
-            user_id: subscription.user_id,
-            sport_id: 1,
-            program_number: nextProgramNumber,
-            weeks_generated: weeksToGenerate,
-            program_data: programResult.program,
-            user_snapshot: programResult.program.metadata.userSnapshot,
-            ratio_snapshot: programResult.program.metadata.ratioSnapshot
-          })
-
-        if (programSaveError) {
-          console.error('Failed to save renewal program:', programSaveError)
-          return
-        }
-
-        // Generate updated profile
-        const profileResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-user-profile`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-              user_id: subscription.user_id,
-              sport_id: 1,
-              force_regenerate: true
-            })
-          }
-        )
-
-        if (profileResponse.ok) {
-          console.log(`Successfully generated renewal program #${nextProgramNumber}`)
-        }
-
-      } catch (error) {
-        console.error('Error generating renewal program:', error)
-      }
-    }
-
 
     // Handle the event
     switch (event.type) {
@@ -347,19 +338,19 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         throw new Error('Failed to check subscription')
       }
 
-const subscriptionData = {
-  user_id: userId,
-  stripe_customer_id: stripeCustomerId,
-  stripe_subscription_id: subscription.id,
-  status: subscription.status,
-  plan: 'premium',
-  amount_cents: amountTotal,
-  billing_interval: (subscription as any).items.data[0].price.recurring?.interval || 'month',
-  subscription_start: (subscription as any).created ? new Date((subscription as any).created * 1000).toISOString().split('T')[0] : null,
-  current_period_start: (subscription as any).current_period_start ? new Date((subscription as any).current_period_start * 1000).toISOString().split('T')[0] : null,
-  current_period_end: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString().split('T')[0] : null,
-  updated_at: new Date().toISOString()
-}
+      const subscriptionData = {
+        user_id: userId,
+        stripe_customer_id: stripeCustomerId,
+        stripe_subscription_id: subscription.id,
+        status: subscription.status,
+        plan: 'premium',
+        amount_cents: amountTotal,
+        billing_interval: (subscription as any).items.data[0].price.recurring?.interval || 'month',
+        subscription_start: (subscription as any).created ? new Date((subscription as any).created * 1000).toISOString().split('T')[0] : null,
+        current_period_start: (subscription as any).current_period_start ? new Date((subscription as any).current_period_start * 1000).toISOString().split('T')[0] : null,
+        current_period_end: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString().split('T')[0] : null,
+        updated_at: new Date().toISOString()
+      }
 
       if (existingSubscriptions && existingSubscriptions.length > 0) {
         // Update existing subscription
@@ -491,7 +482,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   }
 }
 
-async function handlePaymentSucceeded(invoice: any) {
+async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log('Payment succeeded for invoice:', invoice.id)
   
   if (invoice.subscription) {
@@ -517,7 +508,6 @@ async function handlePaymentSucceeded(invoice: any) {
   }
 }
 
-
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   console.log('Payment failed for invoice:', invoice.id)
   
@@ -542,4 +532,3 @@ async function handleCustomerCreated(customer: Stripe.Customer) {
   console.log('Customer created:', customer.id)
   // Store customer info if needed for future use
 }
-
