@@ -52,6 +52,162 @@ try {
 
     console.log('Processing Stripe webhook:', event.type)
 
+
+
+    // ADD THIS FUNCTION HERE
+    async function getCurrentUserData(userId: number) {
+      // Get basic user info
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('body_weight, gender, units, conditioning_benchmarks')
+        .eq('id', userId)
+        .single()
+
+      if (userError) throw userError
+
+      // Get equipment
+      const { data: equipmentData, error: equipmentError } = await supabase
+        .from('user_equipment')
+        .select('equipment_name')
+        .eq('user_id', userId)
+
+      if (equipmentError) throw equipmentError
+
+      // Get skills
+      const { data: skillsData, error: skillsError } = await supabase
+        .from('user_skills')
+        .select('skill_name, skill_level, skill_index')
+        .eq('user_id', userId)
+        .order('skill_index')
+
+      if (skillsError) throw skillsError
+
+      // Get 1RMs
+      const { data: oneRMData, error: oneRMError } = await supabase
+        .from('user_one_rms')
+        .select('exercise_name, one_rm, one_rm_index')
+        .eq('user_id', userId)
+        .order('one_rm_index')
+
+      if (oneRMError) throw oneRMError
+
+      return {
+        userData,
+        equipment: equipmentData?.map(eq => eq.equipment_name) || [],
+        skills: skillsData || [],
+        oneRMs: oneRMData || []
+      }
+    }
+
+ 
+
+    async function generateRenewalProgram(stripeSubscriptionId: string) {
+      try {
+        // Get subscription and user info
+        const { data: subscription, error: subError } = await supabase
+          .from('subscriptions')
+          .select('user_id, billing_interval')
+          .eq('stripe_subscription_id', stripeSubscriptionId)
+          .single()
+
+        if (subError || !subscription) {
+          console.error('Subscription not found for renewal program generation')
+          return
+        }
+
+        // Get current program count to determine next program number
+        const { data: programData, error: programError } = await supabase
+          .from('programs')
+          .select('program_number')
+          .eq('user_id', subscription.user_id)
+          .order('program_number', { ascending: false })
+          .limit(1)
+
+        if (programError) {
+          console.error('Error getting program count:', programError)
+          return
+        }
+
+        const nextProgramNumber = (programData?.[0]?.program_number || 0) + 1
+        console.log(`Generating program #${nextProgramNumber} for user ${subscription.user_id}`)
+
+        // Get current user data from settings
+        const currentUserData = await getCurrentUserData(subscription.user_id)
+
+        // Always generate 4-week programs regardless of billing interval
+     const weeksToGenerate = Array.from({length: 4}, (_, i) => i + 1 + (4 * (nextProgramNumber - 1)))
+
+        console.log(`Generating program for ${weeksToGenerate.length} weeks...`)
+
+        // Call program generation edge function
+        const programResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-program`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+              user_id: subscription.user_id,
+              weeksToGenerate
+            })
+          }
+        )
+
+        if (!programResponse.ok) {
+          const errorText = await programResponse.text()
+          console.error('Program generation failed for renewal:', errorText)
+          return
+        }
+
+        const programResult = await programResponse.json()
+
+        // Save new program
+        const { error: programSaveError } = await supabase
+          .from('programs')
+          .insert({
+            user_id: subscription.user_id,
+            sport_id: 1,
+            program_number: nextProgramNumber,
+            weeks_generated: weeksToGenerate,
+            program_data: programResult.program,
+            user_snapshot: programResult.program.metadata.userSnapshot,
+            ratio_snapshot: programResult.program.metadata.ratioSnapshot
+          })
+
+        if (programSaveError) {
+          console.error('Failed to save renewal program:', programSaveError)
+          return
+        }
+
+        // Generate updated profile
+        const profileResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-user-profile`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+              user_id: subscription.user_id,
+              sport_id: 1,
+              force_regenerate: true
+            })
+          }
+        )
+
+        if (profileResponse.ok) {
+          console.log(`Successfully generated renewal program #${nextProgramNumber}`)
+        }
+
+      } catch (error) {
+        console.error('Error generating renewal program:', error)
+      }
+    }
+
+
     // Handle the event
     switch (event.type) {
       case 'checkout.session.completed':
@@ -338,22 +494,29 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log('Payment succeeded for invoice:', invoice.id)
   
-  if ((invoice as any).subscription) {
+  if (invoice.subscription) {
     const { error } = await supabase
       .from('subscriptions')
       .update({
         status: 'active',
         updated_at: new Date().toISOString()
       })
-      .eq('stripe_subscription_id', (invoice as any).subscription as string)
+      .eq('stripe_subscription_id', invoice.subscription as string)
 
     if (error) {
       console.error('Error updating subscription after payment:', error)
     } else {
       console.log('Successfully updated subscription after payment')
     }
+
+    // NEW: Check if this is a renewal payment (not initial signup)
+    if (invoice.billing_reason === 'subscription_cycle') {
+      console.log('Renewal payment detected - generating next program')
+      await generateRenewalProgram(invoice.subscription as string)
+    }
   }
 }
+
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   console.log('Payment failed for invoice:', invoice.id)
@@ -379,3 +542,4 @@ async function handleCustomerCreated(customer: Stripe.Customer) {
   console.log('Customer created:', customer.id)
   // Store customer info if needed for future use
 }
+
