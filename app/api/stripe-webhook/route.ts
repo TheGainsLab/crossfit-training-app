@@ -491,7 +491,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   }
 }
 
-async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
+async function handlePaymentSucceeded(invoice: any) {
   console.log('Payment succeeded for invoice:', invoice.id)
   
   if (invoice.subscription) {
