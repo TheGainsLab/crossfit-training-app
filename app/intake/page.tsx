@@ -650,21 +650,8 @@ case 5:
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Training Assessment
+              Athlete Intake
             </h1>
-            <p className="text-gray-600">
-              Help us create your personalized training program
-            </p>
-            
-            {isNewPaidUser ? (
-              <p className="text-sm text-green-600 mt-2">
-                ✅ Payment confirmed - Welcome {formData.name || stripeSession?.email}! Let's get started.
-              </p>
-            ) : (
-              <p className="text-sm text-green-600 mt-2">
-                ✅ Subscription active - Welcome {formData.name || user?.email}!
-              </p>
-            )}
             
             {/* Progress bar */}
             <div className="mt-6">
