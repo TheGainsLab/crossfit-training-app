@@ -27,7 +27,7 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null)
   const [showConversations, setShowConversations] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchConversations()
@@ -76,7 +76,10 @@ setMessages(conversation.chat_messages?.map(msg => ({
   }
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const container = messagesContainerRef.current
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+    }
   }
 
   const sendMessage = async (e: React.FormEvent) => {
@@ -233,7 +236,7 @@ console.log('Response status:', response.status) // Add this line here
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             <div className="text-4xl mb-4">💬</div>
@@ -303,7 +306,7 @@ console.log('Response status:', response.status) // Add this line here
           </div>
         )}
 
-        <div ref={messagesEndRef} />
+        {/* bottom sentinel not needed; we scroll container directly */}
       </div>
 
       {/* Input */}
