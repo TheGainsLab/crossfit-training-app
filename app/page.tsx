@@ -9,7 +9,6 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-
   useEffect(() => {
     const checkUser = async () => {
       const supabase = createClient()
@@ -22,10 +21,8 @@ export default function LandingPage() {
 
   const handleGetStarted = () => {
     if (user) {
-      // User is already signed in, redirect to dashboard
       router.push('/dashboard')
     } else {
-      // User needs to sign up, redirect to signup
       router.push('/auth/signup')
     }
   }
@@ -81,92 +78,104 @@ export default function LandingPage() {
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            Get Your Perfect CrossFit Program
+            Your Personal Coach. Powered by AI.
           </h1>
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
-            Personalized strength and conditioning programs tailored to your equipment, goals, and ability level. Built by coaches, for athletes.
+            Finally, a training program that adapts <strong>with you</strong>. Get a truly personalized fitness journey with an AI coach that learns from every rep, adjusts your plan in real-time, and is available 24/7.
           </p>
           <button
             onClick={handleGetStarted}
             className="bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors"
           >
-            Start Your Program Today
+            Start Your AI-Powered Journey
           </button>
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* What is GainsAI Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">How It Works</h2>
-          <div className="grid md:grid-cols-4 gap-8">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">What is GainsAI™?</h2>
+          <div className="max-w-4xl mx-auto">
+            <p className="text-lg text-gray-700 mb-6 text-center">
+              GainsAI is your dedicated coach in your pocket. It's built on advanced AI that deeply understands fitness, but more importantly, it understands you.
+            </p>
+            <p className="text-lg text-gray-700 mb-8 text-center">
+              Unlike a generic chatbot, GainsAI has access to your performance history, goals, and preferences. This means every answer, every adjustment, and every piece of advice is tailored specifically to your body and your progress.
+            </p>
+            
+            <div className="bg-blue-50 rounded-lg p-8">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">
+                Ask anything. Get answers that fit <strong>your</strong> life:
+              </h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <p className="text-gray-800 italic">"Plan my meals for a high-protein day."</p>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <p className="text-gray-800 italic">"My shoulder is sore, what substitutions can I make?"</p>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <p className="text-gray-800 italic">"Create a grocery list for my budget."</p>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <p className="text-gray-800 italic">"Analyze my strength progress this month."</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How GainsAI Adapts Your Training */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">How GainsAI™ Adapts Your Training</h2>
+            <p className="text-xl text-gray-600">Your program evolves as you do. Predict and prevent plateaus. Eliminate guesswork.</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-xl">1</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Subscribe</h3>
-              <p className="text-gray-600">Choose your monthly subscription and create your account</p>
+              <h3 className="text-xl font-semibold mb-2">Log Your Effort with a Tap</h3>
+              <p className="text-gray-600">Easily record your sets, reps, RPE, and movement quality directly in the app. We handle the complex data tracking so you can focus on your workout.</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-xl">2</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Complete Assessment</h3>
-              <p className="text-gray-600">Tell us about your equipment, goals, and experience level</p>
+              <h3 className="text-xl font-semibold mb-2">AI Analyzes Your Performance</h3>
+              <p className="text-gray-600">GainsAI™ aggregates your data after every session, detecting patterns, plateaus, and opportunities for growth that are impossible to see on your own.</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-xl">3</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Get Your Program</h3>
-              <p className="text-gray-600">Our engine creates a personalized 13-week program</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-xl">4</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Train & Progress</h3>
-              <p className="text-gray-600">Follow your program and track your gains</p>
+              <h3 className="text-xl font-semibold mb-2">Your Plan Automatically Adapts</h3>
+              <p className="text-gray-600">Your next workout is intelligently updated based on your most recent performance. It proactively substitutes exercises, adjusts volume, and breaks through plateaus to ensure you're always making progress.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Placeholder */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Why Choose The Gains Apps?</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-xl font-semibold mb-4">Truly Personalized</h3>
-              <p className="text-gray-600">Every program is created specifically for your equipment, goals, and ability level. No generic templates.</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-xl font-semibold mb-4">Progressive Reveal</h3>
-              <p className="text-gray-600">See 20 days at a time to stay focused. Unlock full 13-week programs after 3 months.</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-xl font-semibold mb-4">Flexible Pacing</h3>
-              <p className="text-gray-600">Life happens. Take breaks, go on vacation - your program adapts to your schedule.</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-xl font-semibold mb-4">Test & Restart</h3>
-              <p className="text-gray-600">Week 13 is testing week. See your progress and start a new personalized cycle.</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-xl font-semibold mb-4">Easy Updates</h3>
-              <p className="text-gray-600">Got new equipment? Changed goals? Update your profile and get a fresh program.</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-xl font-semibold mb-4">Built by Coaches</h3>
-              <p className="text-gray-600">Created by strength and conditioning professionals who understand real training.</p>
-            </div>
-          </div>
+      {/* Better Data, Bigger Gains */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Better Data, Bigger Gains</h2>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            <strong>See exactly where you're improving, where you might plateau, and what to focus on next.</strong>
+          </p>
+          <p className="text-lg text-gray-700 max-w-4xl mx-auto">
+            Dive into your personal analytics dashboard. Review strength trends, conditioning improvements, and skill mastery. GainsAI doesn't just collect data—it translates it into insights you can actually use to get better, faster.
+          </p>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Choose Your Plan</h2>
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -178,10 +187,11 @@ export default function LandingPage() {
               <p className="mb-6">Perfect for getting started</p>
               <ul className="text-left space-y-2 mb-8">
                 <li className="flex items-center"><span className="mr-2">✓</span> Personalized 13-week programs</li>
+                <li className="flex items-center"><span className="mr-2">✓</span> GainsAI™ coach available 24/7</li>
+                <li className="flex items-center"><span className="mr-2">✓</span> Real-time program adaptation</li>
+                <li className="flex items-center"><span className="mr-2">✓</span> Advanced analytics dashboard</li>
                 <li className="flex items-center"><span className="mr-2">✓</span> Progressive reveal (20 days at a time)</li>
-                <li className="flex items-center"><span className="mr-2">✓</span> Unlimited program updates</li>
                 <li className="flex items-center"><span className="mr-2">✓</span> Full program access after 3 months</li>
-                <li className="flex items-center"><span className="mr-2">✓</span> Expert coaching methodology</li>
               </ul>
               
               <div className="space-y-4">
@@ -209,10 +219,11 @@ export default function LandingPage() {
               </div>
               <ul className="text-left space-y-2 mb-8">
                 <li className="flex items-center"><span className="mr-2">✓</span> Everything in Monthly plan</li>
+                <li className="flex items-center"><span className="mr-2 text-yellow-400">★</span> <strong>GainsAI™ coach available 24/7</strong></li>
                 <li className="flex items-center"><span className="mr-2 text-yellow-400">★</span> <strong>Immediate full 13-week program access</strong></li>
                 <li className="flex items-center"><span className="mr-2 text-yellow-400">★</span> <strong>No progressive reveal - see it all</strong></li>
-                <li className="flex items-center"><span className="mr-2">✓</span> Unlimited program updates</li>
-                <li className="flex items-center"><span className="mr-2">✓</span> Expert coaching methodology</li>
+                <li className="flex items-center"><span className="mr-2">✓</span> Real-time program adaptation</li>
+                <li className="flex items-center"><span className="mr-2">✓</span> Advanced analytics dashboard</li>
               </ul>
               
               <div className="space-y-4">
@@ -238,23 +249,38 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Social Proof / Testimonials Placeholder */}
-      <section className="py-16 bg-gray-50">
+      {/* Getting Started Section */}
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">What Athletes Are Saying</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Placeholder testimonials - you can replace with real ones */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <p className="text-gray-600 mb-4">"The personalized approach made all the difference. Finally, a program that works with my equipment and schedule."</p>
-              <div className="font-semibold text-gray-900">- Sarah M., CrossFit Athlete</div>
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">Getting Started: Your Journey to Smarter Gains</h2>
+          <div className="grid md:grid-cols-4 gap-8 mt-12">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white font-bold text-xl">1</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Set Your Foundation</h3>
+              <p className="text-gray-600">Complete a quick assessment of your goals, strength levels, and equipment. GainsAI™ uses this to build your 100% personalized baseline program.</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <p className="text-gray-600 mb-4">"I've tried so many programs, but this one actually adapts to my abilities. The progressive reveal keeps me motivated."</p>
-              <div className="font-semibold text-gray-900">- Mike T., Gym Owner</div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white font-bold text-xl">2</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Train & Log with Ease</h3>
+              <p className="text-gray-600">Execute your workouts and log your results with simple taps. Your sets and reps are tracked automatically. Just add your RPE and quality notes.</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <p className="text-gray-600 mb-4">"As a coach, I love how thorough the assessment is. It creates programs I would design myself."</p>
-              <div className="font-semibold text-gray-900">- Coach Lisa R.</div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white font-bold text-xl">3</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Get AI-Powered Adjustments</h3>
+              <p className="text-gray-600">This is where the magic happens. GainsAI works behind the scenes, evolving your programming in real-time to push you past plateaus and capitalize on breakthroughs.</p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white font-bold text-xl">4</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Ask & Analyze</h3>
+              <p className="text-gray-600">Get instant coaching on any fitness topic, backed by your entire training history. Understand your data and make informed decisions like never before.</p>
             </div>
           </div>
         </div>
@@ -263,13 +289,13 @@ export default function LandingPage() {
       {/* Final CTA */}
       <section className="bg-gray-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Start Your Journey?</h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">Join athletes who are already making gains with personalized training programs.</p>
+          <h2 className="text-3xl font-bold mb-4">Ready to Train Smarter?</h2>
+          <p className="text-xl mb-8 max-w-2xl mx-auto">Stop following generic programs. Start training with GainsAI™—the only platform that combines personalized CrossFit programming with advanced AI coaching.</p>
           <button
             onClick={handleGetStarted}
             className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
           >
-            Get Started Today
+            Start Your GainsAI™ Journey
           </button>
         </div>
       </section>
@@ -280,13 +306,12 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-8">
             <div>
               <h3 className="text-lg font-semibold mb-4">The Gains Apps</h3>
-              <p className="text-gray-400">Personalized CrossFit training programs built by coaches, for athletes.</p>
+              <p className="text-gray-400">Personalized CrossFit training programs powered by GainsAI™. Built by coaches, enhanced by artificial intelligence.</p>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#" className="hover:text-white">Contact Us</a></li>
-                <li><a href="#" className="hover:text-white">FAQ</a></li>
                 <li><a href="#" className="hover:text-white">Help Center</a></li>
               </ul>
             </div>
@@ -295,12 +320,11 @@ export default function LandingPage() {
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#" className="hover:text-white">Privacy Policy</a></li>
                 <li><a href="#" className="hover:text-white">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white">Billing</a></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 The Gains Apps. All rights reserved.</p>
+            <p>&copy; 2025 The Gains Apps. All rights reserved. GainsAI™ is a trademark of The Gains Apps.</p>
           </div>
         </div>
       </footer>
