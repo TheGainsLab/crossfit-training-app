@@ -1241,32 +1241,34 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 
 {/* Overview Cards */}
 {dashboardAnalytics?.data?.dashboard && (
-  <div className="grid md:grid-cols-2 gap-6 mb-6">
+  <div className="grid md:grid-cols-3 gap-6 mb-6">
     {/* Training Activity Card */}
     <div className="bg-white rounded-lg shadow p-6 border-2 border-slate-blue">
-      <div className="space-y-3">
-        <div>
+      <div className="flex items-center justify-between">
+        <div className="text-left">
           <p className="text-sm text-gray-600">Training Days</p>
           <p className="text-2xl font-bold text-charcoal">{dashboardAnalytics.data.dashboard.overallMetrics.totalTrainingDays}</p>
         </div>
-        <div>
+        <div className="text-right">
           <p className="text-sm text-gray-600">Completed Tasks</p>
           <p className="text-2xl font-bold text-charcoal">{dashboardAnalytics.data.dashboard.overallMetrics.totalExercises}</p>
         </div>
       </div>
     </div>
 
-    {/* MetCons & Fitness Card */}
+    {/* MetCons Completed Card */}
     <div className="bg-white rounded-lg shadow p-6 border-2 border-slate-blue">
-      <div className="space-y-3">
-        <div>
-          <p className="text-sm text-gray-600">MetCons Completed</p>
-          <p className="text-2xl font-bold text-charcoal">{heatMapData?.totalCompletedWorkouts || 0}</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">Fitness Score</p>
-          <p className="text-2xl font-bold text-charcoal">{heatMapData?.globalFitnessScore || 0}%</p>
-        </div>
+      <div>
+        <p className="text-sm text-gray-600">MetCons Completed</p>
+        <p className="text-2xl font-bold text-charcoal">{heatMapData?.totalCompletedWorkouts || 0}</p>
+      </div>
+    </div>
+
+    {/* Fitness Score Card */}
+    <div className="bg-white rounded-lg shadow p-6 border-2 border-slate-blue">
+      <div>
+        <p className="text-sm text-gray-600">Fitness Score</p>
+        <p className="text-2xl font-bold text-coral">{heatMapData?.globalFitnessScore || 0}%</p>
       </div>
     </div>
   </div>
