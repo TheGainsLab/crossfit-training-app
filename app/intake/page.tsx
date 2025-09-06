@@ -56,7 +56,7 @@ const equipmentOptions = [
 
 const skillCategories = [
   {
-    name: 'Basic CrossFit skills',
+    name: 'basic skills',
     skills: [
       { name: 'Double Unders', index: 0 },
       { name: 'Wall Balls', index: 1 }
@@ -707,7 +707,7 @@ case 5:
             {/* Section 1: Personal Information */}
             {currentSection === 1 && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
                   Section 1: Personal Information
                 </h2>
 
@@ -921,34 +921,37 @@ case 5:
             {/* Section 2: Skills */}
             {currentSection === 2 && (
               <div className="space-y-8">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
                   Section 2: Skills
                 </h2>
                 <p className="text-gray-600 mb-6">
                   Please select your proficiency for each group of skills. We will use this to ensure your workouts have the correct stimulus.
                 </p>
 
-                {skillCategories.map((category) => (
-                  <div key={category.name} className="border rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      {category.name}
-                    </h3>
+                {skillCategories.map((category, idx) => (
+                  <div key={category.name} className="border rounded-lg overflow-hidden">
+                    <div className={`${idx % 4 === 0 ? 'bg-gradient-to-r from-green-600 to-green-700' : idx % 4 === 1 ? 'bg-gradient-to-r from-blue-600 to-blue-700' : idx % 4 === 2 ? 'bg-gradient-to-r from-purple-600 to-purple-700' : 'bg-gradient-to-r from-orange-600 to-orange-700'} p-4 text-center`}>
+                      <h3 className="text-lg font-semibold text-white">
+                        {category.name}
+                      </h3>
+                    </div>
+                    <div className="p-6">
                     
                     {category.skills.map((skill) => (
-                      <div key={skill.name} className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <div key={skill.name} className="mb-6 text-center">
+                        <label className="block text-base font-medium text-gray-800 mb-2">
                           {skill.name}
                         </label>
                         <div className="space-y-1">
                           {category.levels.map((level) => (
-                            <label key={level} className="flex items-center">
+                            <label key={level} className="inline-flex items-center justify-center mr-4">
                               <input
                                 type="radio"
                                 name={`skill-${skill.index}`}
                                 value={level}
                                 checked={formData.skills[skill.index] === level}
                                 onChange={(e) => updateSkill(skill.index, e.target.value)}
-                                className="mr-2"
+                                className="mr-2 h-5 w-5"
                               />
                               {level}
                             </label>
@@ -956,6 +959,7 @@ case 5:
                         </div>
                       </div>
                     ))}
+                    </div>
                   </div>
                 ))}
 
@@ -985,7 +989,7 @@ case 5:
             {/* Section 3: Conditioning Benchmarks */}
             {currentSection === 3 && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
                   Section 3: Conditioning Benchmarks
                 </h2>
                 <p className="text-gray-600 mb-6">
@@ -1160,7 +1164,7 @@ case 5:
             {currentSection === 4 && (
               <div className="space-y-6">
 
-             <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+             <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
             Section 4: 1RM Lifts
              </h2>
 
@@ -1219,7 +1223,7 @@ disabled={currentSection <= 1}
   <div className="space-y-8">
     {/* Hero Header */}
     <div className="text-center">
-      <h2 className="text-3xl font-bold text-gray-900 mb-4">
+      <h2 className="text-3xl font-bold text-gray-900 mb-4 text-center">
         Ready to Generate Your Program?
       </h2>
       <p className="text-lg text-gray-600">
