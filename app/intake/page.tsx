@@ -171,14 +171,14 @@ function EquipmentCategoryCard({ title, description, icon, equipment, formData, 
       </div>
       
       <div className="p-4">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {equipment.map((item) => (
             <label key={item} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
               <input
                 type="checkbox"
                 checked={formData.equipment.includes(item)}
                 onChange={() => toggleEquipment(item)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-5 w-5"
               />
               <span className="text-sm text-gray-700">{item}</span>
             </label>
@@ -626,7 +626,7 @@ case 5:
   if (!isNewPaidUser && (!user || subscriptionStatus !== 'active')) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4">
+        <div className="max-w-5xl mx-auto px-4">
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
             <h1 className="text-3xl font-bold text-red-600 mb-4">Access Denied</h1>
             <p className="text-gray-600 mb-6">
@@ -646,11 +646,11 @@ case 5:
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-5xl mx-auto px-4">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              CrossFit Training Assessment
+              Training Assessment
             </h1>
             <p className="text-gray-600">
               Help us create your personalized training program
@@ -679,6 +679,31 @@ case 5:
     style={{ width: `${(currentSection / 5) * 100}%` }}
   />
 </div>
+
+            {/* Stepper with section titles - horizontally scrollable on mobile */}
+            <div className="mt-3 -mx-1 overflow-x-auto">
+              <ul className="flex gap-2 px-1 whitespace-nowrap text-xs">
+                {sectionTitles.map((title, index) => {
+                  const stepNumber = index + 1
+                  const isCompleted = stepNumber < currentSection
+                  const isActive = stepNumber === currentSection
+                  return (
+                    <li
+                      key={title}
+                      className={`text-center px-3 py-1 rounded-full border ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-700 border-blue-200 font-medium'
+                          : isCompleted
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : 'text-gray-500 border-gray-200'
+                      }`}
+                    >
+                      {isCompleted ? '✓ ' : `${stepNumber}. `}{title}
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
 
             </div>
           </div>
@@ -750,7 +775,7 @@ case 5:
                           value={option}
                           checked={formData.gender === option}
                           onChange={(e) => updateFormData('gender', e.target.value)}
-                          className="mr-2"
+                          className="mr-2 h-5 w-5"
                           required
                         />
                         {option}
@@ -772,7 +797,7 @@ case 5:
                           value={option}
                           checked={formData.units === option}
                           onChange={(e) => updateFormData('units', e.target.value)}
-                          className="mr-2"
+                          className="mr-2 h-5 w-5"
                           required
                         />
                         {option}
