@@ -90,6 +90,12 @@ interface FoundationProgressProps {
   lift: string
   weight: string
   ratio: number
+  thresholds: {
+    beginner: number
+    intermediate: number
+    advanced: number
+    elite: number
+  }
 }
 
 // Type guard for lift keys
@@ -206,15 +212,15 @@ const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicP
 }
 
 // Foundation Strength Progress Bar Component
-const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) => {
+const FoundationProgress = ({ lift, weight, ratio, thresholds }: FoundationProgressProps) => {
   // Convert ratio to number if it's a string
   const numericRatio = typeof ratio === 'string' ? parseFloat(ratio) : ratio
   
   const levels = [
-    { name: 'Beginner', value: 1.0, color: 'bg-gray-300' },
-    { name: 'Intermediate', value: 1.5, color: 'bg-slate-blue' },
-    { name: 'Advanced', value: 2.0, color: 'bg-coral' },
-    { name: 'Elite', value: 2.5, color: 'bg-charcoal' }
+    { name: 'Beginner', value: thresholds.beginner, color: 'bg-gray-300' },
+    { name: 'Intermediate', value: thresholds.intermediate, color: 'bg-slate-blue' },
+    { name: 'Advanced', value: thresholds.advanced, color: 'bg-coral' },
+    { name: 'Elite', value: thresholds.elite, color: 'bg-charcoal' }
   ]
   
   // Calculate current level
@@ -224,7 +230,7 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
   else if (numericRatio >= 1.5) currentLevel = 'Intermediate'
   
   // Calculate position percentage (0-100% across the full bar)
-  const maxValue = 2.5
+  const maxValue = thresholds.elite
   const position = Math.min((numericRatio / maxValue) * 100, 100)
   
   return (
@@ -263,22 +269,22 @@ const FoundationProgress = ({ lift, weight, ratio }: FoundationProgressProps) =>
           />
         </div>
         
-        {/* Level Labels */}
+        {/* Level Labels (gender-specific thresholds) */}
         <div className="flex justify-between mt-2 text-xs text-charcoal">
           <div className="flex flex-col items-start">
-            <span>1.0</span>
+            <span>{levels[0].value}</span>
             <span className="font-medium">Beginner</span>
           </div>
           <div className="flex flex-col items-center">
-            <span>1.5</span>
+            <span>{levels[1].value}</span>
             <span className="font-medium">Intermediate</span>
           </div>
           <div className="flex flex-col items-center">
-            <span>2.0</span>
+            <span>{levels[2].value}</span>
             <span className="font-medium">Advanced</span>
           </div>
           <div className="flex flex-col items-end">
-            <span>2.5</span>
+            <span>{levels[3].value}</span>
             <span className="font-medium">Elite</span>
           </div>
         </div>
@@ -589,18 +595,51 @@ const loadProfile = async () => {
               lift="Back Squat"
               weight={formatWeight(profile.one_rms.back_squat)}
               ratio={profile.one_rms.back_squat && profile.user_summary.body_weight ? parseFloat((profile.one_rms.back_squat / profile.user_summary.body_weight).toFixed(1)) : 0}
+              thresholds={profile.user_summary.gender === 'Female' ? {
+                beginner: 0.9,
+                intermediate: 1.2,
+                advanced: 1.5,
+                elite: 1.9
+              } : {
+                beginner: 1.0,
+                intermediate: 1.4,
+                advanced: 1.8,
+                elite: 2.4
+              }}
             />
             
             <FoundationProgress 
               lift="Deadlift"
               weight={formatWeight(profile.one_rms.deadlift)}
               ratio={profile.one_rms.deadlift && profile.user_summary.body_weight ? parseFloat((profile.one_rms.deadlift / profile.user_summary.body_weight).toFixed(1)) : 0}
+              thresholds={profile.user_summary.gender === 'Female' ? {
+                beginner: 1.1,
+                intermediate: 1.3,
+                advanced: 1.7,
+                elite: 2.1
+              } : {
+                beginner: 1.3,
+                intermediate: 1.6,
+                advanced: 2.2,
+                elite: 2.7
+              }}
             />
             
             <FoundationProgress 
               lift="Bench Press"
               weight={formatWeight(profile.one_rms.bench_press)}
               ratio={profile.one_rms.bench_press && profile.user_summary.body_weight ? parseFloat((profile.one_rms.bench_press / profile.user_summary.body_weight).toFixed(1)) : 0}
+              thresholds={profile.user_summary.gender === 'Female' ? {
+                beginner: 0.6,
+                intermediate: 0.8,
+                advanced: 1.0,
+                elite: 1.3
+              } : {
+                beginner: 0.8,
+                intermediate: 1.1,
+                advanced: 1.4,
+                elite: 1.7
+              }}
             />
 
             {/* Expandable Details */}
