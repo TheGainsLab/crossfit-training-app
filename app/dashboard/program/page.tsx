@@ -172,12 +172,16 @@ export default function ProgramPage() {
 
                     <div className="space-y-2">
                       {week.days.map((day) => (
-                        <div key={day.day} className="flex items-center justify-between rounded border px-3 py-2">
+                        <Link
+                          key={day.day}
+                          href={`/dashboard/workout/${program.id}/week/${week.week}/day/${day.day}`}
+                          className="flex items-center justify-between rounded border px-3 py-2 hover:bg-gray-50"
+                        >
                           <div className="text-sm text-gray-800">{day.dayName}</div>
                           <div className="text-sm font-medium">
                             {day.completed}/{day.totalExercises} complete
                           </div>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   </div>
