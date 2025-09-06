@@ -1207,8 +1207,8 @@ const loadProfile = async () => {
 
         {/* Movement Skills Repository */}
         <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
-          <h2 className="text-xl font-bold text-charcoal mb-4">MOVEMENT SKILLS</h2>
-          <div className="border-t-2 border-charcoal mb-4"></div>
+          <h2 className="text-xl font-bold text-charcoal mb-2">MOVEMENT SKILLS</h2>
+          <div className="w-full h-0.5 bg-coral mb-4"></div>
           
           {/* Skills Progress Bar */}
           <div className="mb-6">
