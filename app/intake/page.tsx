@@ -56,7 +56,7 @@ const equipmentOptions = [
 
 const skillCategories = [
   {
-    name: 'basic skills',
+    name: 'Basic Skills',
     skills: [
       { name: 'Double Unders', index: 0 },
       { name: 'Wall Balls', index: 1 }
@@ -930,7 +930,7 @@ case 5:
 
                 {skillCategories.map((category, idx) => (
                   <div key={category.name} className="border rounded-lg overflow-hidden">
-                    <div className={`${idx % 4 === 0 ? 'bg-gradient-to-r from-green-600 to-green-700' : idx % 4 === 1 ? 'bg-gradient-to-r from-blue-600 to-blue-700' : idx % 4 === 2 ? 'bg-gradient-to-r from-purple-600 to-purple-700' : 'bg-gradient-to-r from-orange-600 to-orange-700'} p-4 text-center`}>
+                    <div className={`${idx % 4 === 0 ? 'bg-gradient-to-r from-green-600 to-green-700' : idx % 4 === 1 ? 'bg-gradient-to-r from-blue-600 to-blue-700' : idx % 4 === 2 ? 'bg-gradient-to-r from-purple-600 to-purple-700' : 'bg-gradient-to-r from-orange-600 to-orange-700'} p-4 text-left`}>
                       <h3 className="text-lg font-semibold text-white">
                         {category.name}
                       </h3>
@@ -942,9 +942,9 @@ case 5:
                         <label className="block text-base font-medium text-gray-800 mb-2">
                           {skill.name}
                         </label>
-                        <div className="space-y-1">
+                        <div className="space-y-1 text-left flex flex-col items-start sm:flex-row sm:flex-wrap gap-2">
                           {category.levels.map((level) => (
-                            <label key={level} className="inline-flex items-center justify-center mr-4">
+                            <label key={level} className="flex items-center mr-4">
                               <input
                                 type="radio"
                                 name={`skill-${skill.index}`}
