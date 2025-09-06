@@ -60,61 +60,45 @@ export default function SettingsPage() {
 
   const skillCategories = [
     {
-      name: 'Basic CrossFit skills',
-      skills: ['Double Unders', 'Wall Balls']
+      name: 'Basic Skills',
+      skills: ['Double Unders', 'Wall Balls'],
+      levels: ["Don't have it", 'Beginner (1-25)', 'Intermediate (26-50)', 'Advanced (More than 50)']
     },
     {
       name: 'Upper Body Pulling',
-      skills: [
-        'Toes to Bar',
-        'Pull-ups (kipping or butterfly)',
-        'Chest to Bar Pull-ups',
-        'Strict Pull-ups'
-      ]
+      skills: ['Toes to Bar', 'Pull-ups (kipping or butterfly)', 'Chest to Bar Pull-ups', 'Strict Pull-ups'],
+      levels: ["Don't have it", 'Beginner (1-7)', 'Intermediate (8-15)', 'Advanced (More than 15)']
     },
     {
       name: 'Upper Body Pressing',
-      skills: [
-        'Push-ups',
-        'Ring Dips',
-        'Strict Ring Dips',
-        'Strict Handstand Push-ups',
-        'Wall Facing Handstand Push-ups',
-        'Deficit Handstand Push-ups (4")'
-      ]
+      skills: ['Push-ups', 'Ring Dips', 'Strict Ring Dips', 'Strict Handstand Push-ups', 'Wall Facing Handstand Push-ups', 'Deficit Handstand Push-ups (4")'],
+      levels: ["Don't have it", 'Beginner (1-10)', 'Intermediate (11-20)', 'Advanced (More than 20)']
     },
     {
       name: 'Additional Common Skills',
-      skills: ['Alternating Pistols', 'GHD Sit-ups', 'Wall Walks']
+      skills: ['Alternating Pistols', 'GHD Sit-ups', 'Wall Walks'],
+      levels: ["Don't have it", 'Beginner (1-10)', 'Intermediate (11-20)', 'Advanced (More than 20)']
     },
     {
       name: 'Advanced Upper Body Pulling',
-      skills: ['Ring Muscle Ups', 'Bar Muscle Ups', 'Rope Climbs']
+      skills: ['Ring Muscle Ups', 'Bar Muscle Ups', 'Rope Climbs'],
+      levels: ["Don't have it", 'Beginner (1-5)', 'Intermediate (6-10)', 'Advanced (More than 10)']
     },
     {
       name: 'Holds',
-      skills: ['Wall Facing Handstand Hold', 'Freestanding Handstand Hold']
+      skills: ['Wall Facing Handstand Hold', 'Freestanding Handstand Hold'],
+      levels: ["Don't have it", 'Beginner (1-30s)', 'Intermediate (30s-60s)', 'Advanced (More than 60s)']
     },
     {
       name: 'Advanced Gymnastics',
-      skills: [
-        'Legless Rope Climbs',
-        'Pegboard Ascent',
-        'Handstand Walk (10m or 25\')',
-        'Seated Legless Rope Climbs',
-        'Strict Ring Muscle Ups',
-        'Handstand Walk Obstacle Crossings'
-      ]
+      skills: ['Legless Rope Climbs', 'Pegboard Ascent', 'Handstand Walk (10m or 25\')', 'Seated Legless Rope Climbs', 'Strict Ring Muscle Ups', 'Handstand Walk Obstacle Crossings'],
+      levels: ["Don't have it", 'Beginner (1-2)', 'Intermediate (3-5)', 'Advanced (More than 5)']
     }
   ]
 
-  const skillLevels = [
-    'Unable to perform',
-    'Beginner (1-5)',
-    'Intermediate (6-10)',
-    'Advanced (11-15)',
-    'Expert (More than 15)'
-  ]
+  const airBikeTypes = ['Assault Bike', 'Rogue Echo Bike', 'Schwinn Airdyne', 'Concept2 BikeErg', 'Other', 'Did not use Air Bike']
+
+  const skillLevelsFallback = ["Don't have it", 'Beginner', 'Intermediate', 'Advanced']
 
   const conditioningBenchmarks = [
     { name: 'Fran', description: '21-15-9 Thrusters (95/65) and Pull-ups' },
@@ -369,25 +353,11 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-5xl mx-auto px-4">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Training Settings
-              </h1>
-              <p className="text-gray-600">
-                Update your profile and training data to improve program generation
-              </p>
-            </div>
-            <Link
-              href="/dashboard"
-              className="text-blue-600 hover:text-blue-700"
-            >
-              ← Back to Dashboard
-            </Link>
-          </div>
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6 text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Athlete Settings</h1>
+          <p className="text-gray-600">This updates the same data used in your Athlete Intake</p>
         </div>
 
         {/* Success/Error Message */}
@@ -475,56 +445,158 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Equipment */}
+        {/* Equipment (intake-like categories) */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Available Equipment</h2>
-          <p className="text-gray-600 mb-4">Select all equipment you have access to:</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {availableEquipment.map((eq) => (
-              <label key={eq} className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={equipment.includes(eq)}
-                  onChange={(e) => handleEquipmentChange(eq, e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">{eq}</span>
-              </label>
-            ))}
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Section 1: Personal Information</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Body Weight</label>
+              <input
+                type="number"
+                step="0.1"
+                value={settings.body_weight || ''}
+                onChange={(e) => handleSettingsChange('body_weight', parseFloat(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={settings.units === 'Metric (kg)' ? 'e.g., 70.5' : 'e.g., 155.5'}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Units</label>
+              <select
+                value={settings.units}
+                onChange={(e) => handleSettingsChange('units', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="Imperial (lbs)">Imperial (lbs)</option>
+                <option value="Metric (kg)">Metric (kg)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
+              <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-4">
+                <h3 className="text-lg font-semibold">The Basics</h3>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {['Barbell','Dumbbells','Kettlebells','Pull-up Bar','Rings','Bench','Squat Rack','Open Space','Wall Space','Jump Rope','Wall Ball'].map(eq => (
+                    <label key={eq} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={equipment.includes(eq)}
+                        onChange={(e) => handleEquipmentChange(eq, e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-5 w-5"
+                      />
+                      <span className="text-sm text-gray-700">{eq}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
+                <h3 className="text-lg font-semibold">The Machines</h3>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {['Rowing Machine','Assault Bike','Bike','Ski Erg','Bike Erg'].map(eq => (
+                    <label key={eq} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={equipment.includes(eq)}
+                        onChange={(e) => handleEquipmentChange(eq, e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-5 w-5"
+                      />
+                      <span className="text-sm text-gray-700">{eq}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
+                <h3 className="text-lg font-semibold">Less Common Equipment</h3>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {['GHD','Axle Bar','Climbing Rope','Pegboard','Parallette Bars','Dball','Dip Bar','Plyo Box','HS Walk Obstacle','Sandbag'].map(eq => (
+                    <label key={eq} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={equipment.includes(eq)}
+                        onChange={(e) => handleEquipmentChange(eq, e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-5 w-5"
+                      />
+                      <span className="text-sm text-gray-700">{eq}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
+              <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white p-4">
+                <h3 className="text-lg font-semibold">Minimal Setup</h3>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {['Bodyweight Only'].map(eq => (
+                    <label key={eq} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={equipment.includes(eq)}
+                        onChange={(e) => handleEquipmentChange(eq, e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-5 w-5"
+                      />
+                      <span className="text-sm text-gray-700">{eq}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Skills */}
+        {/* Skills (intake-like) */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Skill Levels</h2>
-          <p className="text-gray-600 mb-6">Rate your current skill level for each movement:</p>
-          
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Section 2: Skills</h2>
           {skillCategories.map((category, categoryIndex) => {
             let currentIndex = 0
             for (let i = 0; i < categoryIndex; i++) {
               currentIndex += skillCategories[i].skills.length
             }
-            
+            const colors = ['from-green-600 to-green-700','from-blue-600 to-blue-700','from-purple-600 to-purple-700','from-orange-600 to-orange-700']
+            const gradient = colors[categoryIndex % colors.length]
             return (
-              <div key={category.name} className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">{category.name}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div key={category.name} className="border rounded-lg overflow-hidden mb-6">
+                <div className={`bg-gradient-to-r ${gradient} p-4 text-left`}>
+                  <h3 className="text-lg font-semibold text-white">{category.name}</h3>
+                </div>
+                <div className="p-6">
                   {category.skills.map((skill, skillIndex) => {
                     const globalIndex = currentIndex + skillIndex
+                    const levels = category.levels || skillLevelsFallback
                     return (
-                      <div key={skill}>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {skill}
-                        </label>
-                        <select
-                          value={skills[globalIndex] || 'Unable to perform'}
-                          onChange={(e) => handleSkillChange(globalIndex, e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          {skillLevels.map(level => (
-                            <option key={level} value={level}>{level}</option>
+                      <div key={skill} className="mb-6 text-center">
+                        <label className="block text-base font-bold text-gray-800 mb-2">{skill}</label>
+                        <div className="space-y-1 text-left flex flex-col items-start sm:flex-row sm:flex-wrap gap-2">
+                          {levels.map(level => (
+                            <label key={level} className="flex items-center mr-4">
+                              <input
+                                type="radio"
+                                name={`skill-${globalIndex}`}
+                                value={level}
+                                checked={(skills[globalIndex] || '') === level}
+                                onChange={(e) => handleSkillChange(globalIndex, e.target.value)}
+                                className="mr-2 h-5 w-5"
+                              />
+                              {level}
+                            </label>
                           ))}
-                        </select>
+                        </div>
                       </div>
                     )
                   })}
@@ -561,27 +633,58 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Conditioning Benchmarks */}
+        {/* Conditioning (intake-like) */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Conditioning Benchmarks</h2>
-          <p className="text-gray-600 mb-4">Enter your best times/scores (optional):</p>
-          <div className="space-y-4">
-            {conditioningBenchmarks.map((benchmark) => (
-              <div key={benchmark.name}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {benchmark.name}
-                </label>
-                <p className="text-xs text-gray-500 mb-2">{benchmark.description}</p>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Section 3: Conditioning Benchmarks</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              {key:'mileRun', label:'1 Mile Run time (MM:SS)', placeholder:'7:30'},
+              {key:'fiveKRun', label:'5K Run time (MM:SS)', placeholder:'25:30'},
+              {key:'tenKRun', label:'10K Run time (MM:SS)', placeholder:'52:15'},
+              {key:'oneKRow', label:'1K Row time (MM:SS)', placeholder:'3:45'},
+              {key:'twoKRow', label:'2K Row time (MM:SS)', placeholder:'7:20'},
+              {key:'fiveKRow', label:'5K Row time (MM:SS)', placeholder:'19:15'},
+            ].map(field => (
+              <div key={field.key}>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{field.label}</label>
                 <input
                   type="text"
-                  value={settings.conditioning_benchmarks[benchmark.name] || ''}
-                  onChange={(e) => handleBenchmarkChange(benchmark.name, e.target.value)}
+                  placeholder={field.placeholder}
+                  value={settings.conditioning_benchmarks[field.key] || ''}
+                  onChange={(e) => handleBenchmarkChange(field.key, e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., 3:15, 42 reps, etc."
+                  inputMode="numeric"
+                  pattern="[0-9:]*"
                 />
               </div>
             ))}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">10-Minute Air Bike Time Trial (calories)</label>
+              <input
+                type="number"
+                placeholder="185"
+                value={settings.conditioning_benchmarks.airBike10MinCalories || ''}
+                onChange={(e) => handleBenchmarkChange('airBike10MinCalories', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
+
+          {settings.conditioning_benchmarks.airBike10MinCalories?.toString().trim() && (
+            <div className="mt-4">
+              <select
+                value={settings.conditioning_benchmarks.airBikeType || ''}
+                onChange={(e) => handleBenchmarkChange('airBikeType', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                required
+              >
+                <option value="">Select an Air Bike Type</option>
+                {airBikeTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}
