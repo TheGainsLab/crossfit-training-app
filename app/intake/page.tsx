@@ -584,7 +584,10 @@ const saveUserData = async (userId: number) => {
       case 2:
         return true // Skills are optional with defaults
       case 3:
-        if (formData.conditioningBenchmarks.enteredTimeTrial === 'Y') {
+        if (
+          formData.conditioningBenchmarks.airBike10MinCalories &&
+          formData.conditioningBenchmarks.airBike10MinCalories.trim() !== ''
+        ) {
           return formData.conditioningBenchmarks.airBikeType !== ''
         }
         return true
@@ -939,7 +942,7 @@ case 5:
                     
                     {category.skills.map((skill) => (
                       <div key={skill.name} className="mb-6 text-center">
-                        <label className="block text-base font-medium text-gray-800 mb-2">
+                        <label className="block text-base font-bold text-gray-800 mb-2">
                           {skill.name}
                         </label>
                         <div className="space-y-1 text-left flex flex-col items-start sm:flex-row sm:flex-wrap gap-2">
@@ -1089,50 +1092,23 @@ case 5:
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Did you enter a Time Trial Result?
-                    </label>
-                    <div className="space-y-2">
-                      {['Y', 'N'].map((option) => (
-                        <label key={option} className="flex items-center">
-                          <input
-                            type="radio"
-                            name="enteredTimeTrial"
-                            value={option}
-                            checked={formData.conditioningBenchmarks.enteredTimeTrial === option}
-                            onChange={(e) => updateConditioning('enteredTimeTrial', e.target.value)}
-                            className="mr-2"
-                          />
-                          {option}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
+                  {/* Removed explicit time trial Y/N selection */}
                 </div>
 
-                {/* Conditional Air Bike Type Section */}
-                {formData.conditioningBenchmarks.enteredTimeTrial === 'Y' && (
-                  <div className="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
-                    <h3 className="text-lg font-semibold text-blue-900 mb-4">
-                      Air Bike Information
-                    </h3>
-                    <div>
-                      <label className="block text-sm font-medium text-blue-800 mb-2">
-                        Which type of Air Bike did you use for your Time Trial?
-                      </label>
-                      <select
-                        value={formData.conditioningBenchmarks.airBikeType}
-                        onChange={(e) => updateConditioning('airBikeType', e.target.value)}
-                        className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                        required={formData.conditioningBenchmarks.enteredTimeTrial === 'Y'}
-                      >
-                        <option value="">Select an air bike type</option>
-                        {airBikeTypes.map((type) => (
-                          <option key={type} value={type}>{type}</option>
-                        ))}
-                      </select>
-                    </div>
+                {/* Show bike type only when a calorie score is entered */}
+                {formData.conditioningBenchmarks.airBike10MinCalories?.trim() && (
+                  <div className="mt-4">
+                    <select
+                      value={formData.conditioningBenchmarks.airBikeType}
+                      onChange={(e) => updateConditioning('airBikeType', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      required
+                    >
+                      <option value="">Select an Air Bike Type</option>
+                      {airBikeTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
 
