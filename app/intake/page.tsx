@@ -155,12 +155,8 @@ function EquipmentCategoryCard({ title, description, icon, equipment, formData, 
     <div className="border-2 border-gray-200 rounded-xl overflow-hidden hover:border-blue-300 transition-colors">
       <div className={`${colorClass} text-white p-4`}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <span className="text-2xl">{icon}</span>
-            <div>
-              <h3 className="text-lg font-semibold">{title}</h3>
-              <p className="text-white/90 text-sm">{description}</p>
-            </div>
+          <div className="flex items-center">
+            <h3 className="text-lg font-semibold">{title}</h3>
           </div>
           <div className="text-right">
             <div className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
@@ -820,7 +816,7 @@ case 5:
   <div className="space-y-6">
     <EquipmentCategoryCard
       title="The Basics"
-      description="Essential equipment for most CrossFit workouts"
+      description=""
       icon="💪"
       equipment={[
         'Barbell',
@@ -833,7 +829,8 @@ case 5:
         'Squat Rack',
         'Open Space',
         'Wall Space',
-        'Jump Rope'
+        'Jump Rope',
+        'Wall Ball'
       ]}
       formData={formData}
       toggleEquipment={toggleEquipment}
@@ -857,7 +854,7 @@ case 5:
 
     <EquipmentCategoryCard
       title="Less Common Equipment"
-      description="Specialized gear for advanced training"
+      description=""
       icon="🎯"
       equipment={[
         'GHD',
@@ -869,8 +866,7 @@ case 5:
         'Dip Bar',
         'Plyo Box',
         'HS Walk Obstacle',
-        'Sandbag',
-        'Wall Ball'
+        'Sandbag'
       ]}
       formData={formData}
       toggleEquipment={toggleEquipment}
