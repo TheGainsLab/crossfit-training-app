@@ -178,65 +178,44 @@ export default function LandingPage() {
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Choose Your Plan</h2>
-          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             
             {/* Monthly Plan */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-8 text-center">
-              <h3 className="text-2xl font-bold mb-4">Monthly</h3>
-              <div className="text-5xl font-bold mb-2">$89<span className="text-lg font-normal">/month</span></div>
-              <p className="mb-6">Perfect for getting started</p>
-              <ul className="text-left space-y-2 mb-8">
-                <li className="flex items-center"><span className="mr-2">✓</span> Personalized 13-week programs</li>
-                <li className="flex items-center"><span className="mr-2">✓</span> GainsAI™ coach available 24/7</li>
-                <li className="flex items-center"><span className="mr-2">✓</span> Real-time program adaptation</li>
-                <li className="flex items-center"><span className="mr-2">✓</span> Advanced analytics dashboard</li>
-                <li className="flex items-center"><span className="mr-2">✓</span> Progressive reveal (20 days at a time)</li>
-                <li className="flex items-center"><span className="mr-2">✓</span> Full program access after 3 months</li>
-              </ul>
+            <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-12 text-center">
+              <h3 className="text-3xl font-bold mb-6">Monthly</h3>
+              <div className="text-6xl font-bold mb-8">$89<span className="text-2xl font-normal">/month</span></div>
               
-              <div className="space-y-4">
-                <a
-                  href="https://buy.stripe.com/test_4gM14odqnavRezneey6Zy00"
-                  className="block w-full bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
-                >
-                  Start Monthly Plan
-                </a>
-                <p className="text-sm text-blue-100">
-                  Cancel anytime. No contracts.
-                </p>
-              </div>
+              <a
+                href="https://buy.stripe.com/test_4gM14odqnavRezneey6Zy00"
+                className="block w-full bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors mb-4"
+              >
+                Start Monthly Plan
+              </a>
+              <p className="text-sm text-blue-100">
+                Cancel anytime. No contracts.
+              </p>
             </div>
 
             {/* Quarterly Plan */}
-            <div className="bg-gradient-to-r from-green-600 to-green-800 text-white rounded-lg p-8 text-center relative">
+            <div className="bg-gradient-to-r from-green-600 to-green-800 text-white rounded-lg p-12 text-center relative">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full text-sm font-semibold">
                 BEST VALUE
               </div>
-              <h3 className="text-2xl font-bold mb-4">Quarterly</h3>
-              <div className="text-5xl font-bold mb-2">$225<span className="text-lg font-normal">/quarter</span></div>
-              <div className="text-sm mb-6">
-                <span className="bg-green-700 px-2 py-1 rounded">Save $42 vs Monthly</span>
+              <h3 className="text-3xl font-bold mb-6">Quarterly</h3>
+              <div className="text-6xl font-bold mb-4">$225<span className="text-2xl font-normal">/quarter</span></div>
+              <div className="text-lg mb-8">
+                <span className="bg-green-700 px-3 py-1 rounded-full">Save $42 vs Monthly</span>
               </div>
-              <ul className="text-left space-y-2 mb-8">
-                <li className="flex items-center"><span className="mr-2">✓</span> Everything in Monthly plan</li>
-                <li className="flex items-center"><span className="mr-2 text-yellow-400">★</span> <strong>GainsAI™ coach available 24/7</strong></li>
-                <li className="flex items-center"><span className="mr-2 text-yellow-400">★</span> <strong>Immediate full 13-week program access</strong></li>
-                <li className="flex items-center"><span className="mr-2 text-yellow-400">★</span> <strong>No progressive reveal - see it all</strong></li>
-                <li className="flex items-center"><span className="mr-2">✓</span> Real-time program adaptation</li>
-                <li className="flex items-center"><span className="mr-2">✓</span> Advanced analytics dashboard</li>
-              </ul>
               
-              <div className="space-y-4">
-                <a
-                  href="https://buy.stripe.com/test_7sY5kE8635bx76V7Qa6Zy01"
-                  className="block w-full bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
-                >
-                  Start Quarterly Plan
-                </a>
-                <p className="text-sm text-green-100">
-                  Billed every 3 months. Cancel anytime.
-                </p>
-              </div>
+              <a
+                href="https://buy.stripe.com/test_7sY5kE8635bx76V7Qa6Zy01"
+                className="block w-full bg-white text-green-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors mb-4"
+              >
+                Start Quarterly Plan
+              </a>
+              <p className="text-sm text-green-100">
+                Billed every 3 months. Cancel anytime.
+              </p>
             </div>
           </div>
           
