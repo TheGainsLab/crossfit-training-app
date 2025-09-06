@@ -72,7 +72,7 @@ export default function ProgramPage() {
 
       const monthPromises = (programRows || []).map(async (p: any, idx: number) => {
         const programData = p.program_data || {}
-        const weeksGenerated: number[] = (p.weeks_generated || []).slice().sort((a, b) => a - b)
+        const weeksGenerated: number[] = (p.weeks_generated || []).slice().sort((a: number, b: number) => a - b)
         const weeksInData: any[] = programData.weeks || []
 
         const weeks: WeekSummary[] = await Promise.all(
