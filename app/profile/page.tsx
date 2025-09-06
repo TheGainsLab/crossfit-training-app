@@ -814,8 +814,8 @@ const loadProfile = async () => {
 
         {/* Enhanced Conditioning Benchmarks */}
         <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
-          <h2 className="text-xl font-bold text-charcoal mb-4">CONDITIONING BENCHMARKS</h2>
-          <div className="border-t-2 border-charcoal mb-6"></div>
+          <h2 className="text-xl font-bold text-charcoal mb-2">CONDITIONING BENCHMARKS</h2>
+          <div className="w-full h-0.5 bg-coral mb-6"></div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Running Column */}
@@ -885,7 +885,8 @@ const loadProfile = async () => {
 
         {/* Programming Focus Areas */}
         <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
-          <h2 className="text-xl font-bold text-charcoal mb-6">Programming Focus Areas</h2>
+          <h2 className="text-xl font-bold text-charcoal mb-2">FOCUS AREAS</h2>
+          <div className="w-full h-0.5 bg-coral mb-6"></div>
           
           {/* Accessory Needs Section */}
           <div className="mb-8">
