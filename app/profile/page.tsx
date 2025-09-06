@@ -161,9 +161,8 @@ const skillCategories = [
 
 // Olympic Lift Progress Bar Component
 const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicProgressProps) => {
-  const percentage = Math.min((current / target) * 100, 100)
-  const isClose = current >= target * 0.9
-  const isBalanced = current >= target
+  // Position marker at the actual ratio percentage (0-100), independent of target
+  const position = Math.max(0, Math.min(current * 100, 100))
   
   return (
     <div className="mb-4">
@@ -183,14 +182,14 @@ const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicP
 <div className="w-full bg-slate-blue rounded-full h-3">
 <div
   className="h-3 rounded-full transition-all duration-300 bg-slate-blue"
-  style={{ width: `${percentage}%` }}
+  style={{ width: `${position}%` }}
 />
 </div>
 
 {/* Current Value Marker - matching Raw Strength style */}
 <div 
   className="absolute -top-8 transform -translate-x-1/2"
-  style={{ left: `${percentage}%` }}
+  style={{ left: `${position}%` }}
 >
 <div className="bg-coral text-white px-2 py-1 rounded text-xs font-medium">
   {Math.round(current * 100)}%
@@ -199,13 +198,12 @@ const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicP
 
 </div>
         
-        {/* Target Line */}
-        <div className="absolute top-0 right-0 transform translate-x-2">
-          <div className="w-0.5 h-3 bg-charcoal"></div>
-          <div className="text-xs text-charcoal mt-1 -translate-x-1/2">
-            Target: {Math.round(target * 100)}{unit}
-          </div>
-        </div>
+      </div>
+
+      {/* Show target value at right end of the bar without label text */}
+      <div className="flex justify-between mt-1 text-xs text-charcoal">
+        <span></span>
+        <span>{Math.round(target * 100)}{unit}</span>
       </div>
     </div>
   )
