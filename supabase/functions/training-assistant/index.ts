@@ -45,12 +45,40 @@ serve(async (req) => {
       safetyAnalysis
     );
 
-    // Store the conversation only if a conversation_id was provided
+    // Ensure a conversation exists: auto-create if missing for persistence
+    let activeConversationId = conversation_id;
+    if (!activeConversationId && user_id) {
+      const title = (message || 'Training Conversation').slice(0, 80);
+      const { data: newConv, error: convErr } = await supabase
+        .from('chat_conversations')
+        .insert({ user_id, title, is_active: true })
+        .select('id')
+        .single();
+      if (!convErr) {
+        activeConversationId = newConv.id;
+      } else {
+        console.warn('Auto-create conversation failed:', convErr);
+      }
+    }
+
+    // Optionally store messages if we have a conversation
     let messageId: number | null = null;
-    if (conversation_id) {
+    if (activeConversationId) {
+      // Store user message for continuity
+      if (message) {
+        await supabase
+          .from('chat_messages')
+          .insert({
+            conversation_id: activeConversationId,
+            role: 'user',
+            content: message,
+            created_at: new Date().toISOString()
+          });
+      }
+
       messageId = await storeConversationMessage(
         supabase,
-        conversation_id,
+        activeConversationId,
         'assistant',
         aiResponse.content,
         {
@@ -60,9 +88,8 @@ serve(async (req) => {
         }
       );
 
-      // Generate coach alerts if needed and we have a conversation context
       if (safetyAnalysis.coachAlertNeeded) {
-        await createCoachAlert(supabase, user_id, conversation_id, messageId, safetyAnalysis);
+        await createCoachAlert(supabase, user_id, activeConversationId, messageId, safetyAnalysis);
       }
     }
 
@@ -80,26 +107,6 @@ serve(async (req) => {
   } catch (error) {
     console.error('Training assistant error:', error);
     const errMsg = (error as any)?.message || 'Failed to generate training response';
-
-    // Graceful fallback for calorie estimate requests (no chat thread needed)
-    const lower = (message || '').toLowerCase();
-    if (lower.includes('calorie')) {
-      try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL');
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        const fallbackText = await estimateCaloriesFallback(supabase, user_id);
-        return new Response(JSON.stringify({
-          success: true,
-          response: fallbackText,
-          responseType: 'calorie_estimate_fallback',
-          error: errMsg
-        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      } catch (fallbackErr) {
-        console.error('Calorie fallback failed:', fallbackErr);
-      }
-    }
-
     const stack = (error as any)?.stack || undefined;
     return new Response(JSON.stringify({ success: false, error: errMsg, stack }), {
       status: 500,
@@ -224,35 +231,6 @@ if (!response.ok) {
   const errorText = await response.text();
   console.log('Claude API Error Details:', errorText);
   throw new Error(`Claude API error: ${response.status} - ${errorText}`);
-}
-// Simple calorie estimate fallback using recent logs and user profile if AI fails
-async function estimateCaloriesFallback(supabase: any, userId: number) {
-  const { data: profile } = await supabase
-    .from('users')
-    .select('gender, body_weight, units, ability_level')
-    .eq('id', userId)
-    .single();
-
-  const twoWeeksAgo = new Date();
-  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-  const { data: logs } = await supabase
-    .from('performance_logs')
-    .select('duration_minutes, rpe, metcon_score')
-    .eq('user_id', userId)
-    .gte('logged_at', twoWeeksAgo.toISOString())
-    .order('logged_at', { ascending: false })
-    .limit(10);
-
-  const bodyWeightKg = profile?.units === 'imperial' ? (profile?.body_weight || 75) * 0.453592 : (profile?.body_weight || 75);
-  const avgDuration = Math.max(20, Math.min(60, Math.round((logs || []).reduce((s: number, l: any) => s + (l.duration_minutes || 30), 0) / Math.max(1, (logs || []).length))));
-  const avgRpe = Math.max(4, Math.min(8.5, (logs || []).reduce((s: number, l: any) => s + (l.rpe || 6), 0) / Math.max(1, (logs || []).length))));
-  const intensityFactor = 0.08 + (avgRpe - 4) * 0.02; // rough scaling
-  const kcalPerMin = intensityFactor * bodyWeightKg * 1.0; // crude kcal/min estimate
-  const est = Math.round(kcalPerMin * avgDuration);
-  const low = Math.max(50, Math.round(est * 0.85));
-  const high = Math.round(est * 1.15);
-
-  return `Based on your recent training data, we estimate you burned between ${low} and ${high} calories today.`;
 }
 
   const data = await response.json();
