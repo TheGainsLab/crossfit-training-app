@@ -13,8 +13,18 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
+
+  // Parse payload outside try so we can safely reference it later
+  let payload: any = null;
   try {
-    const { user_id, week, day, originalProgram } = await req.json();
+    payload = await req.json();
+  } catch (_) {
+    return new Response(JSON.stringify({ success: false, error: 'Invalid JSON payload' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  const { user_id, week, day, originalProgram } = payload || {};
+
+  try {
   
  // ADD THIS COMPLETION CHECK HERE:
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -89,11 +99,11 @@ return new Response(JSON.stringify({
 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
-    // Return original program on any error
+    // Return original program on any error (if provided)
     return new Response(JSON.stringify({
       success: true,
-      program: originalProgram,
-      error: error.message
+      program: originalProgram ?? null,
+      error: (error as any)?.message || 'Unknown error'
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
