@@ -1,48 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export async function POST(request: NextRequest) {
   try {
-    const { programId, week, day, calories } = await request.json()
-    if (!programId || !week || !day || typeof calories !== 'number') {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!supabaseUrl || !serviceKey) {
+      return NextResponse.json({ error: 'Server not configured (Supabase env missing)' }, { status: 500 })
+    }
+
+    const supabase = createClient(supabaseUrl, serviceKey)
+
+    const { programId, week, day, calories, low, high } = await request.json()
+    if (!programId || week == null || day == null || typeof calories !== 'number') {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
 
-    // Expect a column daily_calories on program_workouts or a separate table workout_calories
-    const { data: pw } = await supabase
-      .from('program_workouts')
-      .select('id')
-      .eq('program_id', programId)
-      .eq('week', week)
-      .eq('day', day)
-      .single()
-
-    if (pw) {
-      const { error } = await supabase
+    // Try to update program_workouts.daily_calories if column exists
+    let updatedDaily = false
+    try {
+      const { error: updateErr } = await supabase
         .from('program_workouts')
-        .update({ daily_calories: calories, updated_at: new Date().toISOString() })
-        .eq('id', pw.id)
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-      // also log to audit table
-      await supabase
-        .from('workout_calories')
-        .insert({ program_id: programId, week, day, calories, source: 'ai' })
-      return NextResponse.json({ success: true })
+        .update({ daily_calories: calories })
+        .eq('program_id', programId)
+        .eq('week', week)
+        .eq('day', day)
+      if (!updateErr) updatedDaily = true
+    } catch (_) {
+      // Ignore; may be missing column/table
     }
 
-    // Fallback: upsert into workout_calories table
-    const { error: upsertErr } = await supabase
+    // Always append audit log entry
+    const { error: auditErr } = await supabase
       .from('workout_calories')
-      .insert({ program_id: programId, week, day, calories, source: 'ai' })
-    if (upsertErr) return NextResponse.json({ error: upsertErr.message }, { status: 500 })
-    return NextResponse.json({ success: true })
-  } catch (e) {
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+      .insert({ program_id: programId, week, day, calories, low, high, source: 'ai' })
+    if (auditErr) {
+      return NextResponse.json({ error: auditErr.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, updatedDaily })
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || 'Internal error' }, { status: 500 })
   }
 }
 
