@@ -673,7 +673,10 @@ block.blockName === 'METCONS' ? (
                     conversation_history: []
                   })
                 })
-                if (!res.ok) return
+                if (!res.ok) {
+                  const errText = await res.text().catch(() => '')
+                  throw new Error(`AI request failed (${res.status}): ${errText}`)
+                }
                 const data = await res.json()
                 const text: string = data.response || ''
                 // Parse two numbers from the response
@@ -682,18 +685,23 @@ block.blockName === 'METCONS' ? (
                   const low = Math.min(nums[0], nums[1])
                   const high = Math.max(nums[0], nums[1])
                   const avg = Math.round((low + high) / 2)
-                  await fetch('/api/workouts/save-calories', {
+                  const saveRes = await fetch('/api/workouts/save-calories', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ programId: Number(programId), week: Number(week), day: Number(day), calories: avg })
                   })
+                  if (!saveRes.ok) {
+                    const t = await saveRes.text().catch(() => '')
+                    throw new Error(`Save failed (${saveRes.status}): ${t}`)
+                  }
                   // Optionally show range
                   alert(`Estimated calories saved: ${low}–${high} (avg ~${avg})`)
                 } else {
                   alert('Could not parse calorie estimate from AI response.')
                 }
-              } catch (e) {
-                alert('Failed to estimate calories.')
+              } catch (e: any) {
+                console.error('AI calories error:', e)
+                alert(`Failed to estimate calories. ${e?.message ? `Details: ${e.message}` : ''}`)
               }
             }}
             className="px-4 py-2 rounded-lg"
