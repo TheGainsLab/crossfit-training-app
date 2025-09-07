@@ -130,6 +130,7 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
       window.print()
     }
   }
+  const [isEstimating, setIsEstimating] = useState(false)
   
  
   useEffect(() => {
@@ -657,8 +658,12 @@ block.blockName === 'METCONS' ? (
 
           {/* AI Calories Estimate */}
           <button
+            type="button"
             onClick={async () => {
+              console.log('AI Cals button clicked')
               try {
+                if (isEstimating) return
+                setIsEstimating(true)
                 const userId = await getCurrentUserId()
                 const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/training-assistant`, {
                   method: 'POST',
@@ -702,12 +707,15 @@ block.blockName === 'METCONS' ? (
               } catch (e: any) {
                 console.error('AI calories error:', e)
                 alert(`Failed to estimate calories. ${e?.message ? `Details: ${e.message}` : ''}`)
+              } finally {
+                setIsEstimating(false)
               }
             }}
-            className="px-4 py-2 rounded-lg"
+            className={`px-4 py-2 rounded-lg cursor-pointer ${isEstimating ? 'opacity-60 cursor-not-allowed' : ''}`}
             style={{ backgroundColor: '#509895', color: '#ffffff' }}
+            disabled={isEstimating}
           >
-            AI Cals
+            {isEstimating ? 'Estimating…' : 'AI Cals'}
           </button>
         </div>
       </main>
