@@ -156,10 +156,17 @@ const fetchWorkout = async () => {
       try {
         const userId = await getCurrentUserId()
         
+        // Get user's JWT for auth to Edge Function
+        const { createClient: createSbClient } = await import('@/lib/supabase/client')
+        const sbClient = createSbClient()
+        const { data: { session } } = await sbClient.auth.getSession()
+        const userJwt = session?.access_token
+
         const aiResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/modify-program-session`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...(userJwt ? { 'Authorization': `Bearer ${userJwt}` } : {})
           },
           body: JSON.stringify({
             user_id: userId,
@@ -664,10 +671,17 @@ block.blockName === 'METCONS' ? (
                 if (isEstimating) return
                 setIsEstimating(true)
                 const userId = await getCurrentUserId()
+                // Get user's JWT for auth to Edge Function
+                const { createClient: createSbClient2 } = await import('@/lib/supabase/client')
+                const sbClient2 = createSbClient2()
+                const { data: { session: session2 } } = await sbClient2.auth.getSession()
+                const userJwt2 = session2?.access_token
+
                 const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/training-assistant`, {
                   method: 'POST',
                   headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    ...(userJwt2 ? { 'Authorization': `Bearer ${userJwt2}` } : {})
                   },
                   body: JSON.stringify({
                     user_id: userId,
