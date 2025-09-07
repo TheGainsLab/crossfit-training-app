@@ -64,32 +64,46 @@ serve(async (req) => {
     // Optionally store messages if we have a conversation
     let messageId: number | null = null;
     if (activeConversationId) {
-      // Store user message for continuity
-      if (message) {
-        await supabase
-          .from('chat_messages')
-          .insert({
-            conversation_id: activeConversationId,
-            role: 'user',
-            content: message,
-            created_at: new Date().toISOString()
-          });
+      // Store user message for continuity (best-effort)
+      try {
+        if (message) {
+          await supabase
+            .from('chat_messages')
+            .insert({
+              conversation_id: activeConversationId,
+              role: 'user',
+              content: message,
+              created_at: new Date().toISOString()
+            });
+        }
+      } catch (persistUserErr) {
+        console.warn('Persist user message failed:', persistUserErr);
       }
 
-      messageId = await storeConversationMessage(
-        supabase,
-        activeConversationId,
-        'assistant',
-        aiResponse.content,
-        {
-          safety_flags: safetyAnalysis,
-          context_used: userContext.summary,
-          response_type: aiResponse.responseType
-        }
-      );
+      // Store assistant message (best-effort)
+      try {
+        messageId = await storeConversationMessage(
+          supabase,
+          activeConversationId,
+          'assistant',
+          aiResponse.content,
+          {
+            safety_flags: safetyAnalysis,
+            context_used: userContext.summary,
+            response_type: aiResponse.responseType
+          }
+        );
+      } catch (persistAssistantErr) {
+        console.warn('Persist assistant message failed:', persistAssistantErr);
+      }
 
-      if (safetyAnalysis.coachAlertNeeded) {
-        await createCoachAlert(supabase, user_id, activeConversationId, messageId, safetyAnalysis);
+      // Coach alerts (best-effort)
+      try {
+        if (safetyAnalysis.coachAlertNeeded) {
+          await createCoachAlert(supabase, user_id, activeConversationId, messageId as number, safetyAnalysis);
+        }
+      } catch (alertErr) {
+        console.warn('Create coach alert failed:', alertErr);
       }
     }
 
