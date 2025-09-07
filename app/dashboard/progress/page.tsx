@@ -960,14 +960,40 @@ const EnhancedSkillCard: React.FC<{ skill: any }> = ({ skill }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Badge calculation functions
+  const getThresholdsForSkill = (skillName: string) => {
+    // Per-skill thresholds for badge levels (Bronze, Silver, Gold, Diamond)
+    // Adjust or extend this map as needed; unknown skills use sensible defaults.
+    const map: Record<string, { bronze: number; silver: number; gold: number; diamond: number }> = {
+      'Double Unders': { bronze: 200, silver: 500, gold: 1000, diamond: 2000 },
+      'Wall Balls': { bronze: 150, silver: 400, gold: 800, diamond: 1600 },
+      'Toes to Bar': { bronze: 50, silver: 150, gold: 300, diamond: 600 },
+      'Pull-ups (kipping or butterfly)': { bronze: 40, silver: 120, gold: 240, diamond: 480 },
+      'Chest to Bar Pull-ups': { bronze: 30, silver: 90, gold: 180, diamond: 360 },
+      'Strict Pull-ups': { bronze: 20, silver: 60, gold: 120, diamond: 240 },
+      'Push-ups': { bronze: 100, silver: 300, gold: 600, diamond: 1200 },
+      'Ring Dips': { bronze: 40, silver: 120, gold: 240, diamond: 480 },
+      'Strict Ring Dips': { bronze: 20, silver: 60, gold: 120, diamond: 240 },
+      'Strict Handstand Push-ups': { bronze: 20, silver: 60, gold: 120, diamond: 240 },
+      'Wall Facing Handstand Push-ups': { bronze: 20, silver: 60, gold: 120, diamond: 240 },
+      'Deficit Handstand Push-ups (4")': { bronze: 10, silver: 30, gold: 60, diamond: 120 },
+      'Alternating Pistols': { bronze: 60, silver: 180, gold: 360, diamond: 720 },
+      'GHD Sit-ups': { bronze: 100, silver: 300, gold: 600, diamond: 1200 },
+      'Wall Walks': { bronze: 20, silver: 60, gold: 120, diamond: 240 },
+      'Ring Muscle Ups': { bronze: 10, silver: 30, gold: 60, diamond: 120 },
+      'Bar Muscle Ups': { bronze: 10, silver: 30, gold: 60, diamond: 120 },
+      'Rope Climbs': { bronze: 10, silver: 30, gold: 60, diamond: 120 }
+    }
+    return map[skillName] || { bronze: 50, silver: 100, gold: 250, diamond: 500 }
+  }
+
   const getRepBadge = (totalReps: number) => {
-    if (totalReps >= 1000) return { emoji: '🏆', text: 'Master', color: 'bg-purple-100 text-purple-800' };
-    if (totalReps >= 500) return { emoji: '💎', text: 'Diamond', color: 'bg-blue-100 text-blue-800' };
-    if (totalReps >= 250) return { emoji: '🥇', text: 'Gold', color: 'bg-yellow-100 text-yellow-800' };
-    if (totalReps >= 100) return { emoji: '🥈', text: 'Silver', color: 'bg-gray-100 text-gray-800' };
-    if (totalReps >= 50) return { emoji: '🥉', text: 'Bronze', color: 'bg-orange-100 text-orange-800' };
-    return null;
-  };
+    const { bronze, silver, gold, diamond } = getThresholdsForSkill(skill.name)
+    if (totalReps >= diamond) return { emoji: '💎', text: 'Diamond', color: 'bg-blue-100 text-blue-800' }
+    if (totalReps >= gold) return { emoji: '🥇', text: 'Gold', color: 'bg-yellow-100 text-yellow-800' }
+    if (totalReps >= silver) return { emoji: '🥈', text: 'Silver', color: 'bg-gray-100 text-gray-800' }
+    if (totalReps >= bronze) return { emoji: '🥉', text: 'Bronze', color: 'bg-orange-100 text-orange-800' }
+    return null
+  }
 
   const getPracticeBadge = (daysSince: number) => {
     if (daysSince <= 3) return { emoji: '🟢', text: 'Active', color: 'bg-green-100 text-green-800' };
@@ -977,17 +1003,20 @@ const EnhancedSkillCard: React.FC<{ skill: any }> = ({ skill }) => {
   };
 
   const getNextMilestone = (totalReps: number) => {
-    const milestones = [50, 100, 250, 500, 1000];
-    const nextMilestone = milestones.find(m => m > totalReps);
-    if (!nextMilestone) return null;
-    
-    const remaining = nextMilestone - totalReps;
-    const badgeNames = { 50: 'Bronze 🥉', 100: 'Silver 🥈', 250: 'Gold 🥇', 500: 'Diamond 💎', 1000: 'Master 🏆' };
-    return {
-      remaining,
-      badge: badgeNames[nextMilestone as keyof typeof badgeNames]
-    };
-  };
+    const { bronze, silver, gold, diamond } = getThresholdsForSkill(skill.name)
+    const milestones = [bronze, silver, gold, diamond]
+    const nextMilestone = milestones.find(m => m > totalReps)
+    if (!nextMilestone) return null
+
+    const remaining = nextMilestone - totalReps
+    const badgeNames: Record<number, string> = {
+      [bronze]: 'Bronze 🥉',
+      [silver]: 'Silver 🥈',
+      [gold]: 'Gold 🥇',
+      [diamond]: 'Diamond 💎'
+    }
+    return { remaining, badge: badgeNames[nextMilestone] }
+  }
 
   // Get special badges
   const getSpecialBadges = () => {
