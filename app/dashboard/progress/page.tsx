@@ -911,6 +911,26 @@ if (predictiveRes.status === 'fulfilled' && predictiveRes.value.ok) {
   };
 
 
+  // Fetch per-user threshold multipliers
+  const [thresholdsMap, setThresholdsMap] = useState<Record<string, number>>({})
+  useEffect(() => {
+    const fetchThresholds = async () => {
+      try {
+        if (!userId) return
+        const res = await fetch(`/api/analytics/${userId}/skill-thresholds`)
+        if (res.ok) {
+          const data = await res.json()
+          const map: Record<string, number> = {}
+          ;(data.thresholds || []).forEach((row: any) => {
+            map[row.skill_name] = Number(row.multiplier) || 1
+          })
+          setThresholdsMap(map)
+        }
+      } catch {}
+    }
+    fetchThresholds()
+  }, [userId])
+
   // Enhanced Tab Navigation with Prominent Styling
 
 const TabNavigation = () => (
@@ -956,7 +976,7 @@ className={`px-6 py-4 rounded-lg font-semibold text-base transition-all duration
 
 
 // Enhanced Skill Card Component
-const EnhancedSkillCard: React.FC<{ skill: any }> = ({ skill }) => {
+const EnhancedSkillCard: React.FC<{ skill: any, userId: number | null, thresholdsMap?: Record<string, number> }> = ({ skill, userId, thresholdsMap }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Badge calculation functions
@@ -983,7 +1003,14 @@ const EnhancedSkillCard: React.FC<{ skill: any }> = ({ skill }) => {
       'Bar Muscle Ups': { bronze: 10, silver: 30, gold: 60, diamond: 120 },
       'Rope Climbs': { bronze: 10, silver: 30, gold: 60, diamond: 120 }
     }
-    return map[skillName] || { bronze: 50, silver: 100, gold: 250, diamond: 500 }
+    const base = map[skillName] || { bronze: 50, silver: 100, gold: 250, diamond: 500 }
+    const multiplier = thresholdsMap?.[skillName] || 1
+    return {
+      bronze: Math.ceil(base.bronze * multiplier),
+      silver: Math.ceil(base.silver * multiplier),
+      gold: Math.ceil(base.gold * multiplier),
+      diamond: Math.ceil(base.diamond * multiplier)
+    }
   }
 
   const getRepBadge = (totalReps: number) => {
@@ -1033,6 +1060,25 @@ const EnhancedSkillCard: React.FC<{ skill: any }> = ({ skill }) => {
   const practiceBadge = getPracticeBadge(skill.daysSinceLast);
   const specialBadges = getSpecialBadges();
   const nextMilestone = getNextMilestone(skill.totalReps);
+
+  // If a badge is achieved this month, schedule a 10% increase for next month
+  useEffect(() => {
+    const scheduleIncrement = async () => {
+      try {
+        if (!userId || !repBadge) return
+        const now = new Date()
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+        const nextMonthStr = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`
+        await fetch(`/api/analytics/${userId}/skill-thresholds`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ skillName: skill.name, scheduleForMonth: nextMonthStr })
+        })
+      } catch {}
+    }
+    scheduleIncrement()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, repBadge?.text, skill.name])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -1315,7 +1361,7 @@ const SkillsAnalyticsView = () => {
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Individual Skills Progress</h3>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {skillsArray.map((skill: any, index: number) => (
-            <EnhancedSkillCard key={skill.name || index} skill={skill} />
+            <EnhancedSkillCard key={skill.name || index} skill={skill} userId={userId} thresholdsMap={thresholdsMap} />
           ))}
         </div>
       </div>
