@@ -125,6 +125,11 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({})
+  const handlePrint = () => {
+    if (typeof window !== 'undefined') {
+      window.print()
+    }
+  }
   
  
   useEffect(() => {
@@ -457,9 +462,14 @@ const calculateProgress = () => {
 
   return (
     <div className="min-h-screen bg-ice-blue">
+      <div className="print:hidden max-w-4xl mx-auto px-4 pt-4 flex justify-end">
+        <button onClick={handlePrint} className="px-4 py-2 rounded-lg border text-gray-700 bg-white hover:bg-gray-50">
+          Print / Save as PDF
+        </button>
+      </div>
       
       {/* Header - Optimized for Mobile */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+      <header className="bg-white shadow-sm border-b sticky top-0 z-10 print:hidden">
         <div className="max-w-4xl mx-auto px-4 py-4">
           {/* Desktop Layout */}
           <div className="hidden sm:flex items-center justify-between">
@@ -531,7 +541,7 @@ const calculateProgress = () => {
 
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-6">
+      <main className="print:hidden max-w-4xl mx-auto px-4 py-6">
         {workout.blocks.map((block, blockIndex) => (
           
 <div key={blockIndex} className={`mb-6 rounded-lg border-2 ${getBlockHeaderStyle(block.blockName, block.exercises, completions)}`}>
@@ -646,6 +656,48 @@ block.blockName === 'METCONS' ? (
           </Link>
         </div>
       </main>
+
+      {/* Printable Summary */}
+      {workout && (
+        <div className="hidden print:block max-w-4xl mx-auto px-4 py-6 bg-white">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Training Day Summary</h1>
+          <div className="text-sm text-gray-700 mb-4">
+            Program #{workout.programId} • Week {workout.week} • Day {workout.day}
+          </div>
+          <div className="mb-2"><span className="font-semibold">Day:</span> {workout.dayName}</div>
+          <div className="mb-4"><span className="font-semibold">Main Lift:</span> {workout.mainLift}</div>
+          <div className="space-y-4">
+            {workout.blocks.map((block) => (
+              <div key={block.blockName}>
+                <h2 className="font-semibold text-gray-900 mb-2">{block.blockName}</h2>
+                <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th className="text-left px-2 py-1" style={{ border: '1px solid #ddd' }}>Exercise</th>
+                      <th className="text-left px-2 py-1" style={{ border: '1px solid #ddd' }}>Sets</th>
+                      <th className="text-left px-2 py-1" style={{ border: '1px solid #ddd' }}>Reps</th>
+                      <th className="text-left px-2 py-1" style={{ border: '1px solid #ddd' }}>Weight/Time</th>
+                      <th className="text-left px-2 py-1" style={{ border: '1px solid #ddd' }}>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {block.exercises.map((ex, i) => (
+                      <tr key={`${ex.name}-${i}`}>
+                        <td className="px-2 py-1" style={{ border: '1px solid #ddd' }}>{ex.name}</td>
+                        <td className="px-2 py-1" style={{ border: '1px solid #ddd' }}>{ex.sets || '-'}</td>
+                        <td className="px-2 py-1" style={{ border: '1px solid #ddd' }}>{ex.reps || '-'}</td>
+                        <td className="px-2 py-1" style={{ border: '1px solid #ddd' }}>{ex.weightTime || 'BW'}</td>
+                        <td className="px-2 py-1" style={{ border: '1px solid #ddd' }}>&nbsp;</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 text-xs text-gray-500">Generated on {new Date().toLocaleDateString()}</div>
+        </div>
+      )}
     </div>
   )
 }
