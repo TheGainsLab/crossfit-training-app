@@ -686,7 +686,7 @@ block.blockName === 'METCONS' ? (
                   body: JSON.stringify({
                     user_id: userId,
                     conversation_id: null,
-                    message: 'Estimate how many calories I burned today',
+                    message: 'Estimate how many calories I burned today. Respond strictly in this exact format with integers only: LOW: <int> kcal NEWLINE HIGH: <int> kcal. Use my profile (age, gender, weight), today\'s program context, recent performance logs, and typical CrossFit session demands. Typical sessions are roughly 200–1000 kcal. Do not return values below 100 kcal.',
                     conversation_history: []
                   })
                 })
@@ -696,23 +696,41 @@ block.blockName === 'METCONS' ? (
                 }
                 const data = await res.json()
                 const text: string = data.response || ''
-                // Parse two numbers from the response
-                const nums = (text.match(/\d+[\.,]?\d*/g) || []).map(n => parseFloat(n.replace(',', '')))
-                if (nums.length >= 2) {
-                  const low = Math.min(nums[0], nums[1])
-                  const high = Math.max(nums[0], nums[1])
+                // Prefer numbers adjacent to kcal or the word calories
+                const kcalMatches = Array.from(text.matchAll(/(\d+(?:[\.,]\d+)?)[\s-]*(kcal|calories?)/gi)).map(m => parseFloat(m[1].replace(',', '')))
+                // Fallback: all numbers
+                const allNums = (text.match(/\d+[\.,]?\d*/g) || []).map(n => parseFloat(n.replace(',', '')))
+                let chosenLow: number | null = null
+                let chosenHigh: number | null = null
+                if (kcalMatches.length >= 2) {
+                  const a = kcalMatches[0]
+                  const b = kcalMatches[1]
+                  chosenLow = Math.min(a, b)
+                  chosenHigh = Math.max(a, b)
+                } else if (allNums.length >= 2) {
+                  // Use the two largest numbers to avoid picking reps/percentages
+                  const sorted = allNums.sort((a, b) => b - a)
+                  chosenHigh = sorted[0]
+                  chosenLow = sorted[1]
+                }
+                if (chosenLow != null && chosenHigh != null) {
+                  // Sanity bounds
+                  let low = Math.max(100, Math.round(chosenLow))
+                  let high = Math.max(low + 1, Math.round(chosenHigh))
+                  // Clamp to a reasonable upper bound
+                  if (high > 2000) high = 2000
                   const avg = Math.round((low + high) / 2)
                   const saveRes = await fetch('/api/workouts/save-calories', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ programId: Number(programId), week: Number(week), day: Number(day), calories: avg })
+                    body: JSON.stringify({ programId: Number(programId), week: Number(week), day: Number(day), calories: avg, low, high })
                   })
                   if (!saveRes.ok) {
                     const t = await saveRes.text().catch(() => '')
                     throw new Error(`Save failed (${saveRes.status}): ${t}`)
                   }
                   // Optionally show range
-                  alert(`Estimated calories saved: ${low}–${high} (avg ~${avg})`)
+                  alert(`Estimated calories saved: ${low}–${high} kcal (avg ~${avg} kcal)`)
                 } else {
                   alert('Could not parse calorie estimate from AI response.')
                 }
