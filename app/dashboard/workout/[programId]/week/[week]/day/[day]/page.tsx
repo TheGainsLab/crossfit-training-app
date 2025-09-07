@@ -629,21 +629,21 @@ block.blockName === 'METCONS' ? (
 
         {/* MetCon Special Section */}
         {/* Navigation */}
-        <div className="flex justify-between mt-8 pt-6 border-t border-slate-blue">
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-8 pt-6 border-t border-slate-blue">
           <Link 
             href={`/dashboard/workout/${programId}/week/${week}/day/${Math.max(1, parseInt(day) - 1)}`}
             className={`px-4 py-2 rounded-lg ${parseInt(day) > 1 
               ? 'bg-slate-blue text-charcoal hover:bg-slate-blue' 
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
           >
-            ← Previous Day
+            ← Prev
           </Link>
           
           <Link 
             href="/dashboard"
             className="px-4 py-2 bg-coral text-white rounded-lg hover:bg-coral"
           >
-            Back to Dashboard
+            Dashboard
           </Link>
           
           <Link 
@@ -652,8 +652,54 @@ block.blockName === 'METCONS' ? (
               ? 'bg-slate-blue text-charcoal hover:bg-slate-blue' 
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
           >
-            Next Day →
+            Next →
           </Link>
+
+          {/* AI Calories Estimate */}
+          <button
+            onClick={async () => {
+              try {
+                const userId = await getCurrentUserId()
+                const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/training-assistant`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    user_id: userId,
+                    conversation_id: null,
+                    message: 'Estimate how many calories I burned today',
+                    conversation_history: []
+                  })
+                })
+                if (!res.ok) return
+                const data = await res.json()
+                const text: string = data.response || ''
+                // Parse two numbers from the response
+                const nums = (text.match(/\d+[\.,]?\d*/g) || []).map(n => parseFloat(n.replace(',', '')))
+                if (nums.length >= 2) {
+                  const low = Math.min(nums[0], nums[1])
+                  const high = Math.max(nums[0], nums[1])
+                  const avg = Math.round((low + high) / 2)
+                  await fetch('/api/workouts/save-calories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ programId: Number(programId), week: Number(week), day: Number(day), calories: avg })
+                  })
+                  alert(`Estimated calories saved: ~${avg}`)
+                } else {
+                  alert('Could not parse calorie estimate from AI response.')
+                }
+              } catch (e) {
+                alert('Failed to estimate calories.')
+              }
+            }}
+            className="px-4 py-2 rounded-lg"
+            style={{ backgroundColor: '#509895', color: '#ffffff' }}
+          >
+            AI Cals
+          </button>
         </div>
       </main>
 
