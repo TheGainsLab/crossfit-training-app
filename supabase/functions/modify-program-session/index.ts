@@ -1,7 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
+// Add permissive CORS headers for browser calls
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS'
+};
+
 serve(async (req) => {
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
   try {
     const { user_id, week, day, originalProgram } = await req.json();
   
@@ -36,7 +47,7 @@ if (completedLogs && completedLogs.length > 0) {
     source: storedModification ? 'stored-modified' : 'original-completed',
     plateauInterventions: {},
     plateauStatus: 'completed-day'
-  }));
+  }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
    
  // END OF NEW CODE 
@@ -75,7 +86,7 @@ return new Response(JSON.stringify({
   plateauInterventions: userContext.plateauConstraints || {},
   plateauStatus: userContext.plateauAnalysis?.overallStatus || 'unknown',
   source: modifiedProgram.modifications ? 'ai-enhanced' : 'original'
-}));
+}), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
     // Return original program on any error
@@ -83,7 +94,7 @@ return new Response(JSON.stringify({
       success: true,
       program: originalProgram,
       error: error.message
-    }));
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
 
