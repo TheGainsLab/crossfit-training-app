@@ -1438,7 +1438,7 @@ const StrengthAnalyticsView = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {movementData.map((movement, index) => (
             <div key={movement.name} className="p-4 border rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">{movement.name}</h4>
+              <h4 className="font-bold text-gray-900 mb-3 text-center">{movement.name}</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Sessions:</span>
@@ -1454,7 +1454,7 @@ const StrengthAnalyticsView = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Avg RPE:</span>
-                  <span className="font-medium">{movement.avgRPE}</span>
+                  <span className="font-medium">{Number(movement.avgRPE || 0).toFixed(1)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Volume:</span>
