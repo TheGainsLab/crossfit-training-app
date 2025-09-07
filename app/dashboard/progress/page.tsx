@@ -798,6 +798,20 @@ const [predictiveData, setPredictiveData] = useState<any>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
 const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 'metcons' | 'insights'>('overview');
+  // Read ?tab= from URL to deep-link into a section
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const tab = params.get('tab') as any
+    if (tab && ['overview','skills','strength','metcons','insights'].includes(tab)) {
+      setActiveTab(tab)
+      // Optionally scroll to panel via hash
+      if (window.location.hash) {
+        const el = document.querySelector(window.location.hash)
+        el?.scrollIntoView({ behavior: 'smooth' })
+      }
+    }
+  }, [])
   useEffect(() => {
     loadUser();
   }, []);

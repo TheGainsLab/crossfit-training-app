@@ -1264,13 +1264,15 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       </div>
     </div>
 
-    {/* Fitness Score Card */}
-    <div className="bg-white rounded-lg shadow p-6 border-2 border-slate-blue">
-      <div>
-        <p className="text-sm text-gray-600">Fitness Score</p>
-        <p className="text-2xl font-bold text-coral">{heatMapData?.globalFitnessScore || 0}%</p>
+    {/* Fitness Score Card (links to MetCons heat map) */}
+    <Link href="/dashboard/progress?tab=metcons#metcons-panel" className="block">
+      <div className="bg-white rounded-lg shadow p-6 border-2 border-slate-blue hover:shadow-md transition-shadow">
+        <div>
+          <p className="text-sm text-gray-600">Fitness Score</p>
+          <p className="text-2xl font-bold text-coral">{heatMapData?.globalFitnessScore || 0}%</p>
+        </div>
       </div>
-    </div>
+    </Link>
   </div>
 )}
 
