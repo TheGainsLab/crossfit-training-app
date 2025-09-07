@@ -687,7 +687,8 @@ block.blockName === 'METCONS' ? (
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ programId: Number(programId), week: Number(week), day: Number(day), calories: avg })
                   })
-                  alert(`Estimated calories saved: ~${avg}`)
+                  // Optionally show range
+                  alert(`Estimated calories saved: ${low}–${high} (avg ~${avg})`)
                 } else {
                   alert('Could not parse calorie estimate from AI response.')
                 }

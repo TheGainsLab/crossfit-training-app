@@ -28,13 +28,17 @@ export async function POST(request: NextRequest) {
         .update({ daily_calories: calories, updated_at: new Date().toISOString() })
         .eq('id', pw.id)
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      // also log to audit table
+      await supabase
+        .from('workout_calories')
+        .insert({ program_id: programId, week, day, calories, source: 'ai' })
       return NextResponse.json({ success: true })
     }
 
     // Fallback: upsert into workout_calories table
     const { error: upsertErr } = await supabase
       .from('workout_calories')
-      .upsert({ program_id: programId, week, day, calories, updated_at: new Date().toISOString() }, { onConflict: 'program_id,week,day' })
+      .insert({ program_id: programId, week, day, calories, source: 'ai' })
     if (upsertErr) return NextResponse.json({ error: upsertErr.message }, { status: 500 })
     return NextResponse.json({ success: true })
   } catch (e) {
