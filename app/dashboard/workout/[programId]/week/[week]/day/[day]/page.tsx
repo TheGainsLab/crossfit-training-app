@@ -159,7 +159,6 @@ const fetchWorkout = async () => {
         const aiResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/modify-program-session`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -668,7 +667,6 @@ block.blockName === 'METCONS' ? (
                 const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/training-assistant`, {
                   method: 'POST',
                   headers: {
-                    'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
                     'Content-Type': 'application/json'
                   },
                   body: JSON.stringify({

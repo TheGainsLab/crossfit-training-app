@@ -20,3 +20,15 @@ entrypoint = "./functions/generate-user-profile/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/generate-user-profile/*.html" ]
+
+[functions.modify-program-session]
+enabled = true
+verify_jwt = false
+import_map = "./functions/modify-program-session/deno.json"
+entrypoint = "./functions/modify-program-session/index.ts"
+
+[functions.training-assistant]
+enabled = true
+verify_jwt = false
+import_map = "./functions/training-assistant/deno.json"
+entrypoint = "./functions/training-assistant/index.ts"
