@@ -675,7 +675,7 @@ function ExerciseCard({
   const [isExpanded, setIsExpanded] = useState(!completion)
   const [showCues, setShowCues] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
-  const [completionType, setCompletionType] = useState('')
+  const [completionType, setCompletionType] = useState(completion ? 'modified' : '')
   const [formData, setFormData] = useState({
     setsCompleted: completion?.setsCompleted || '',
     repsCompleted: completion?.repsCompleted || '',
@@ -856,8 +856,8 @@ className="w-6 h-6 bg-coral text-white rounded-full text-xs flex items-center ju
         </div>
       </button>
 
-      {/* SECTION 2: Completion Form (when expanded and not completed) */}
-      {isExpanded && !isCompleted && (
+      {/* SECTION 2: Completion / Update Form (shown when expanded) */}
+      {isExpanded && (
         <div className="px-6 pb-6 space-y-3">
           
           {/* Completion Type Selection - REMOVED HEADER */}
@@ -1014,20 +1014,13 @@ className="w-6 h-6 bg-coral text-white rounded-full text-xs flex items-center ju
               onClick={handleDetailedSubmit}
               className="w-full bg-coral text-white py-4 px-6 rounded-lg hover:bg-coral transition-colors font-semibold text-base shadow-sm"
             >
-              Mark Exercise Complete
+              {isCompleted ? 'Update Exercise' : 'Mark Exercise Complete'}
             </button>
           </div>
         </div>
       )}
 
-{/* SECTION 3: Completed State (when expanded and completed) - SIMPLIFIED */}
-{isExpanded && isCompleted && (
-  <div className="px-6 pb-6">
-    <div className="text-center py-4">
-      <p className="text-charcoal text-sm">Exercise completed - click to collapse</p>
-    </div>
-  </div>
-)}
+      {/* No separate completed state; form above supports updates */}
 
       {/* Custom CSS for the slider */}
       <style jsx>{`
@@ -1396,14 +1389,7 @@ function MetConCard({
         </div>
       )}
 
-      {/* SECTION 3: Completed State (when expanded and completed) */}
-      {isExpanded && isCompleted && (
-        <div className="px-6 pb-6">
-          <div className="text-center py-4">
-            <p className="text-charcoal text-sm">Exercise completed - click to collapse</p>
-          </div>
-        </div>
-      )}
+      {/* No separate completed state for MetCon; keep UI simple */}
 
       {/* Custom CSS for the slider */}
       <style jsx>{`
