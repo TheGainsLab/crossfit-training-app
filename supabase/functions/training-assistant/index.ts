@@ -67,9 +67,12 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Training assistant error:', error);
+    const message = (error as any)?.message || 'Failed to generate training response';
+    const stack = (error as any)?.stack || undefined;
     return new Response(JSON.stringify({
       success: false,
-      error: 'Failed to generate training response'
+      error: message,
+      stack
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
