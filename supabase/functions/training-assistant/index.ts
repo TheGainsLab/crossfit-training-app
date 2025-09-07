@@ -36,22 +36,25 @@ serve(async (req) => {
       safetyAnalysis
     );
 
-    // Store the conversation in database
-    const messageId = await storeConversationMessage(
-      supabase,
-      conversation_id,
-      'assistant',
-      aiResponse.content,
-      {
-        safety_flags: safetyAnalysis,
-        context_used: userContext.summary,
-        response_type: aiResponse.responseType
-      }
-    );
+    // Store the conversation only if a conversation_id was provided
+    let messageId: number | null = null;
+    if (conversation_id) {
+      messageId = await storeConversationMessage(
+        supabase,
+        conversation_id,
+        'assistant',
+        aiResponse.content,
+        {
+          safety_flags: safetyAnalysis,
+          context_used: userContext.summary,
+          response_type: aiResponse.responseType
+        }
+      );
 
-    // Generate coach alerts if needed
-    if (safetyAnalysis.coachAlertNeeded) {
-      await createCoachAlert(supabase, user_id, conversation_id, messageId, safetyAnalysis);
+      // Generate coach alerts if needed and we have a conversation context
+      if (safetyAnalysis.coachAlertNeeded) {
+        await createCoachAlert(supabase, user_id, conversation_id, messageId, safetyAnalysis);
+      }
     }
 
     return new Response(JSON.stringify({
