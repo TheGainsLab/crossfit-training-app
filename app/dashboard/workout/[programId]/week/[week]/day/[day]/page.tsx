@@ -630,7 +630,7 @@ block.blockName === 'METCONS' ? (
 
         {/* MetCon Special Section */}
         {/* Navigation */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-8 pt-6 border-t border-slate-blue">
+        <div className="relative flex flex-wrap items-center justify-between gap-3 mt-8 pt-6 border-t border-slate-blue">
           <Link 
             href={`/dashboard/workout/${programId}/week/${week}/day/${Math.max(1, parseInt(day) - 1)}`}
             className={`px-4 py-2 rounded-lg ${parseInt(day) > 1 
@@ -711,7 +711,7 @@ block.blockName === 'METCONS' ? (
                 setIsEstimating(false)
               }
             }}
-            className={`px-4 py-2 rounded-lg cursor-pointer ${isEstimating ? 'opacity-60 cursor-not-allowed' : ''}`}
+            className={`relative z-10 px-4 py-2 rounded-lg cursor-pointer pointer-events-auto ${isEstimating ? 'opacity-60 cursor-not-allowed' : ''}`}
             style={{ backgroundColor: '#509895', color: '#ffffff' }}
             disabled={isEstimating}
           >
