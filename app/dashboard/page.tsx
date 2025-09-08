@@ -873,6 +873,8 @@ export default function DashboardPage() {
         }
 
         if (!cancelled) {
+          setCurrentWeek(targetWeek)
+          setCurrentDay(targetDay)
           setRedirectingToNext(true)
           router.push(`/dashboard/workout/${programId}/week/${targetWeek}/day/${targetDay}`)
         }
@@ -1071,8 +1073,6 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       }
 
       setCurrentProgram(programData.id)
-      setCurrentWeek(1)
-      setCurrentDay(1)
     } catch (err) {
       console.error('Error loading user program:', err)
       setError('Failed to load program data')
