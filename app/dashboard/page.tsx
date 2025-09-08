@@ -1073,6 +1073,35 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       }
 
       setCurrentProgram(programData.id)
+
+      // Determine next incomplete day based on performance logs
+      try {
+        const { data: workouts } = await supabase
+          .from('program_workouts')
+          .select('week, day')
+          .eq('program_id', programData.id)
+          .order('week', { ascending: true })
+          .order('day', { ascending: true })
+
+        const { data: logs } = await supabase
+          .from('performance_logs')
+          .select('week, day')
+          .eq('user_id', userData.id)
+
+        if (workouts && workouts.length > 0) {
+          const completed = new Set<string>((logs || []).map((l: any) => `${l.week}-${l.day}`))
+          let nextWeek = workouts[0].week
+          let nextDay = workouts[0].day
+          for (const w of workouts) {
+            const key = `${w.week}-${w.day}`
+            if (!completed.has(key)) { nextWeek = w.week; nextDay = w.day; break }
+          }
+          setCurrentWeek(nextWeek)
+          setCurrentDay(nextDay)
+        }
+      } catch {
+        // If anything fails, leave currentWeek/currentDay as defaults
+      }
     } catch (err) {
       console.error('Error loading user program:', err)
       setError('Failed to load program data')
