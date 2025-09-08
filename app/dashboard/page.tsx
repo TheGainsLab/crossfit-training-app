@@ -19,6 +19,7 @@ import {
 } from 'chart.js'
 import { Bar, Doughnut } from 'react-chartjs-2'
 import ProgramNavigationWidget from './ProgramNavigationWidget'  // ADD THIS LINE HERE
+import { useRouter } from 'next/navigation'
 
 // Register Chart.js components
 ChartJS.register(
@@ -811,6 +812,77 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
   }
 
 export default function DashboardPage() {
+  const router = useRouter()
+  const [redirectingToNext, setRedirectingToNext] = useState(false)
+
+  // On landing on the dashboard, route to the next incomplete training day
+  useEffect(() => {
+    let cancelled = false
+    const goToNextIncomplete = async () => {
+      try {
+        if (redirectingToNext) return
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_id', user.id)
+          .single()
+        const userId = userRow?.id
+        if (!userId) return
+
+        const { data: programRow } = await supabase
+          .from('programs')
+          .select('id')
+          .eq('user_id', userId)
+          .order('generated_at', { ascending: false })
+          .limit(1)
+          .single()
+        const programId = programRow?.id
+        if (!programId) return
+
+        const { data: workouts } = await supabase
+          .from('program_workouts')
+          .select('week, day')
+          .eq('program_id', programId)
+          .order('week', { ascending: true })
+          .order('day', { ascending: true })
+        if (!workouts || workouts.length === 0) return
+
+        const weeks = Array.from(new Set(workouts.map((w: any) => w.week))).sort((a: number, b: number) => a - b)
+
+        // Fetch all logs for candidate weeks/days
+        const { data: logs } = await supabase
+          .from('performance_logs')
+          .select('week, day')
+          .eq('user_id', userId)
+        const completed = new Set<string>((logs || []).map((l: any) => `${l.week}-${l.day}`))
+
+        // Find first (week, day) from workouts that is not completed
+        let targetWeek = workouts[0].week
+        let targetDay = workouts[0].day
+        for (const w of workouts) {
+          const key = `${w.week}-${w.day}`
+          if (!completed.has(key)) {
+            targetWeek = w.week
+            targetDay = w.day
+            break
+          }
+        }
+
+        if (!cancelled) {
+          setRedirectingToNext(true)
+          router.push(`/dashboard/workout/${programId}/week/${targetWeek}/day/${targetDay}`)
+        }
+      } catch {
+        // Fail open: stay on dashboard
+      }
+    }
+    goToNextIncomplete()
+    return () => { cancelled = true }
+  }, [router, redirectingToNext])
   const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
