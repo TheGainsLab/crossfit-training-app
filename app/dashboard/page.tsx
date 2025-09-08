@@ -1000,7 +1000,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 
       setCurrentProgram(programData.id)
 
-      // Determine next incomplete day based on performance logs (and reflect in widget state)
+      // Determine next incomplete day based on available data
       try {
         const { data: workouts } = await supabase
           .from('program_workouts')
@@ -1014,8 +1014,10 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
           .select('week, day')
           .eq('user_id', userData.id)
 
+        const completed = new Set<string>((logs || []).map((l: any) => `${l.week}-${l.day}`))
+
         if (workouts && workouts.length > 0) {
-          const completed = new Set<string>((logs || []).map((l: any) => `${l.week}-${l.day}`))
+          // Preferred path: use planned workouts to find first not completed
           let nextWeek = workouts[0].week
           let nextDay = workouts[0].day
           for (const w of workouts) {
@@ -1024,6 +1026,26 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
           }
           setCurrentWeek(nextWeek)
           setCurrentDay(nextDay)
+        } else {
+          // Fallback: program_workouts empty. Infer next day from logs only.
+          let set = false
+          for (let wk = 1; wk <= 13; wk++) {
+            for (let dy = 1; dy <= 5; dy++) {
+              const key = `${wk}-${dy}`
+              if (!completed.has(key)) {
+                setCurrentWeek(wk)
+                setCurrentDay(dy)
+                set = true
+                break
+              }
+            }
+            if (set) break
+          }
+          if (!set) {
+            // If all within bounds completed, default to last slot
+            setCurrentWeek(13)
+            setCurrentDay(5)
+          }
         }
       } catch {
         // If anything fails, leave currentWeek/currentDay as defaults
