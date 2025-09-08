@@ -11,11 +11,90 @@ export default function Navigation() {
   const [userName, setUserName] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [todaysHref, setTodaysHref] = useState<string>('/dashboard')
   const pathname = usePathname()
 
   useEffect(() => {
     loadUser()
   }, [])
+
+  // Compute "Today's Workout" dynamic href based on next incomplete day
+  useEffect(() => {
+    const computeTodaysHref = async () => {
+      try {
+        if (!user) return
+        const supabase = createClient()
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_id', user.id)
+          .single()
+        const userId = userRow?.id
+        if (!userId) return
+
+        const { data: programRow } = await supabase
+          .from('programs')
+          .select('id')
+          .eq('user_id', userId)
+          .order('generated_at', { ascending: false })
+          .limit(1)
+          .single()
+        const programId = programRow?.id
+        if (!programId) {
+          setTodaysHref('/intake')
+          return
+        }
+
+        const { data: workouts } = await supabase
+          .from('program_workouts')
+          .select('week, day')
+          .eq('program_id', programId)
+          .order('week', { ascending: true })
+          .order('day', { ascending: true })
+
+        const { data: logs } = await supabase
+          .from('performance_logs')
+          .select('week, day')
+          .eq('user_id', userId)
+
+        const completed = new Set<string>((logs || []).map((l: any) => `${l.week}-${l.day}`))
+
+        let nextWeek = 1
+        let nextDay = 1
+
+        if (workouts && workouts.length > 0) {
+          nextWeek = workouts[0].week
+          nextDay = workouts[0].day
+          let found = false
+          for (const w of workouts) {
+            const key = `${w.week}-${w.day}`
+            if (!completed.has(key)) { nextWeek = w.week; nextDay = w.day; found = true; break }
+          }
+          if (!found) {
+            // All planned done; point to last planned day
+            const last = workouts[workouts.length - 1]
+            nextWeek = last.week
+            nextDay = last.day
+          }
+        } else {
+          // Fallback when program_workouts is empty: infer from logs (weeks 1–13, days 1–5)
+          let set = false
+          for (let wk = 1; wk <= 13; wk++) {
+            for (let dy = 1; dy <= 5; dy++) {
+              if (!completed.has(`${wk}-${dy}`)) { nextWeek = wk; nextDay = dy; set = true; break }
+            }
+            if (set) break
+          }
+          if (!set) { nextWeek = 13; nextDay = 5 }
+        }
+
+        setTodaysHref(`/dashboard/workout/${programId}/week/${nextWeek}/day/${nextDay}`)
+      } catch (e) {
+        // Keep default
+      }
+    }
+    computeTodaysHref()
+  }, [user])
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -72,7 +151,7 @@ export default function Navigation() {
 
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard' },
-    { href: '/program', label: 'Today\'s Workout' },
+    { href: todaysHref, label: 'Today\'s Workout' },
     { href: '/profile', label: 'Profile' },
   ]
 
