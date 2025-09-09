@@ -778,8 +778,8 @@ const saveUserData = async (userId: number) => {
 
             {/* Section 1: Personal Information */}
             {currentSection === 1 && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
+              <div className="space-y-6 bg-[#DAE2EA] rounded-lg p-4">
+                <h2 className="text-2xl font-semibold text-center mb-6" style={{ color: '#FE5858' }}>
                   Section 1: Personal Information
                 </h2>
 
@@ -992,8 +992,8 @@ const saveUserData = async (userId: number) => {
 
             {/* Section 2: Skills */}
             {currentSection === 2 && (
-              <div className="space-y-8">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
+              <div className="space-y-8 bg-[#DAE2EA] rounded-lg p-4">
+                <h2 className="text-2xl font-semibold text-center mb-6" style={{ color: '#FE5858' }}>
                   Section 2: Skills
                 </h2>
                 <p className="text-gray-600 mb-6">
@@ -1002,8 +1002,8 @@ const saveUserData = async (userId: number) => {
 
                 {skillCategories.map((category, idx) => (
                   <div key={category.name} className="border rounded-lg overflow-hidden">
-                    <div className={`${idx % 4 === 0 ? 'bg-gradient-to-r from-green-600 to-green-700' : idx % 4 === 1 ? 'bg-gradient-to-r from-blue-600 to-blue-700' : idx % 4 === 2 ? 'bg-gradient-to-r from-purple-600 to-purple-700' : 'bg-gradient-to-r from-orange-600 to-orange-700'} p-4 text-left`}>
-                      <h3 className="text-lg font-semibold text-white">
+                    <div className="p-4 text-left" style={{ backgroundColor: '#DAE2EA' }}>
+                      <h3 className="text-lg font-semibold" style={{ color: '#FE5858' }}>
                         {category.name}
                       </h3>
                     </div>
