@@ -40,6 +40,12 @@ export default function SettingsPage() {
   const [userId, setUserId] = useState<number | null>(null)
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
+  // Preferences
+  const [threeMonthGoals, setThreeMonthGoals] = useState<string>('')
+  const [monthlyPrimaryGoal, setMonthlyPrimaryGoal] = useState<string>('')
+  const [preferredMetconExercises, setPreferredMetconExercises] = useState<string[]>([])
+  const [avoidedExercises, setAvoidedExercises] = useState<string[]>([])
+  const [availableExercisesList, setAvailableExercisesList] = useState<string[]>([])
 
   const oneRMExercises = [
     'Snatch', 'Power Snatch', 'Clean and Jerk', 'Power Clean',
@@ -190,6 +196,25 @@ export default function SettingsPage() {
       })
       setSkills(allSkills)
 
+      // Load preferences
+      const { data: prefs } = await supabase
+        .from('user_preferences')
+        .select('three_month_goals, monthly_primary_goal, preferred_metcon_exercises, avoided_exercises')
+        .eq('user_id', userData.id)
+        .single()
+      setThreeMonthGoals(prefs?.three_month_goals || '')
+      setMonthlyPrimaryGoal(prefs?.monthly_primary_goal || '')
+      setPreferredMetconExercises(prefs?.preferred_metcon_exercises || [])
+      setAvoidedExercises(prefs?.avoided_exercises || [])
+
+      // Load exercises for preferences
+      const { data: exData } = await supabase
+        .from('exercises')
+        .select('name')
+        .eq('can_be_metcons', true)
+        .order('name', { ascending: true })
+      setAvailableExercisesList((exData || []).map((r: any) => r.name).filter(Boolean))
+
       setLoading(false)
     } catch (err) {
       console.error('Error loading settings:', err)
@@ -316,6 +341,18 @@ export default function SettingsPage() {
           })
         if (rmError) throw rmError
       }
+
+      // Upsert preferences
+      const { error: prefsError } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: userId,
+          three_month_goals: threeMonthGoals || null,
+          monthly_primary_goal: monthlyPrimaryGoal || null,
+          preferred_metcon_exercises: preferredMetconExercises || [],
+          avoided_exercises: avoidedExercises || []
+        }, { onConflict: 'user_id' })
+      if (prefsError) throw prefsError
 
       setMessage('Settings saved successfully!')
       setSaving(false)
@@ -606,85 +643,109 @@ export default function SettingsPage() {
           })}
         </div>
 
-        {/* 1RM Settings */}
+        {/* 1RM Settings (grouped like intake) */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            1 Rep Max Lifts
-            <span className="text-sm font-normal text-gray-600 ml-2">
-              (in {settings.units === 'Metric (kg)' ? 'kg' : 'lbs'})
-            </span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {oneRMs.map((rm) => (
-              <div key={rm.exercise_name}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {rm.exercise_name}
-                </label>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={rm.one_rm || ''}
-                  onChange={(e) => handleOneRMChange(rm.exercise_name, e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="0"
-                />
+          <div className="p-4 mb-4 rounded" style={{ backgroundColor: '#DAE2EA' }}>
+            <h2 className="text-xl font-bold text-gray-900">1RM Lifts</h2>
+          </div>
+          <div className="space-y-6">
+            <div className="border rounded-lg overflow-hidden">
+              <div className="p-3" style={{ backgroundColor: '#DAE2EA' }}><h3 className="font-semibold text-gray-900">Snatch</h3></div>
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {['Snatch','Power Snatch'].map((ex) => (
+                  <div key={ex}>
+                    <label className="block text-sm text-gray-700 mb-2">{ex}</label>
+                    <input type="number" step="0.5" value={(oneRMs.find(r => r.exercise_name === ex)?.one_rm || 0).toString()} onChange={(e) => handleOneRMChange(ex, e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+            <div className="border rounded-lg overflow-hidden">
+              <div className="p-3" style={{ backgroundColor: '#DAE2EA' }}><h3 className="font-semibold text-gray-900">Clean and Jerk</h3></div>
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {['Clean and Jerk', 'Power Clean', 'Clean (clean only)', 'Jerk (from rack or blocks, max Split or Power Jerk)'].map((ex) => (
+                  <div key={ex}>
+                    <label className="block text-sm text-gray-700 mb-2">{ex}</label>
+                    <input type="number" step="0.5" value={(oneRMs.find(r => r.exercise_name === ex)?.one_rm || 0).toString()} onChange={(e) => handleOneRMChange(ex, e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="border rounded-lg overflow-hidden">
+              <div className="p-3" style={{ backgroundColor: '#DAE2EA' }}><h3 className="font-semibold text-gray-900">Squats</h3></div>
+              <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                {['Back Squat','Front Squat','Overhead Squat'].map((ex) => (
+                  <div key={ex}>
+                    <label className="block text-sm text-gray-700 mb-2">{ex}</label>
+                    <input type="number" step="0.5" value {(oneRMs.find(r => r.exercise_name === ex)?.one_rm || 0).toString()} onChange={(e) => handleOneRMChange(ex, e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="border rounded-lg overflow-hidden">
+              <div className="p-3" style={{ backgroundColor: '#DAE2EA' }}><h3 className="font-semibold text-gray-900">Pulling</h3></div>
+              <div className="p-4 grid grid-cols-1 gap-4">
+                {['Weighted Pullup (do not include body weight)'].map((ex) => (
+                  <div key={ex}>
+                    <label className="block text-sm text-gray-700 mb-2">{ex}</label>
+                    <input type="number" step="0.5" value={(oneRMs.find(r => r.exercise_name === ex)?.one_rm || 0).toString()} onChange={(e) => handleOneRMChange(ex, e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="border rounded-lg overflow-hidden">
+              <div className="p-3" style={{ backgroundColor: '#DAE2EA' }}><h3 className="font-semibold text-gray-900">Presses</h3></div>
+              <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                {['Bench Press','Push Press','Strict Press'].map((ex) => (
+                  <div key={ex}>
+                    <label className="block text-sm text-gray-700 mb-2">{ex}</label>
+                    <input type="number" step="0.5" value={(oneRMs.find(r => r.exercise_name === ex)?.one_rm || 0).toString()} onChange={(e) => handleOneRMChange(ex, e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Conditioning (intake-like) */}
+        {/* Preferences */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Section 3: Conditioning Benchmarks</h2>
+          <div className="p-4 mb-4 rounded" style={{ backgroundColor: '#DAE2EA' }}>
+            <h2 className="text-xl font-bold text-gray-900">Preferences</h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {key:'mileRun', label:'1 Mile Run time (MM:SS)', placeholder:'7:30'},
-              {key:'fiveKRun', label:'5K Run time (MM:SS)', placeholder:'25:30'},
-              {key:'tenKRun', label:'10K Run time (MM:SS)', placeholder:'52:15'},
-              {key:'oneKRow', label:'1K Row time (MM:SS)', placeholder:'3:45'},
-              {key:'twoKRow', label:'2K Row time (MM:SS)', placeholder:'7:20'},
-              {key:'fiveKRow', label:'5K Row time (MM:SS)', placeholder:'19:15'},
-            ].map(field => (
-              <div key={field.key}>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{field.label}</label>
-                <input
-                  type="text"
-                  placeholder={field.placeholder}
-                  value={settings.conditioning_benchmarks[field.key] || ''}
-                  onChange={(e) => handleBenchmarkChange(field.key, e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  inputMode="numeric"
-                  pattern="[0-9:]*"
-                />
-              </div>
-            ))}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">3-Month Goals <span className="text-gray-500">(limit 250 characters)</span></label>
+              <textarea value={threeMonthGoals} onChange={(e) => setThreeMonthGoals(e.target.value)} rows={4} maxLength={250} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Describe your goals for the next 3 months..." />
+              <div className="mt-1 text-xs text-gray-500">{threeMonthGoals.length}/250</div>
+            </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">10-Minute Air Bike Time Trial (calories)</label>
-              <input
-                type="number"
-                placeholder="185"
-                value={settings.conditioning_benchmarks.airBike10MinCalories || ''}
-                onChange={(e) => handleBenchmarkChange('airBike10MinCalories', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Primary Goal <span className="text-gray-500">(limit 100 characters)</span></label>
+              <input type="text" value={monthlyPrimaryGoal} onChange={(e) => setMonthlyPrimaryGoal(e.target.value)} maxLength={100} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Improve aerobic base, Pull-up strength, etc." />
+              <div className="mt-1 text-xs text-gray-500">{monthlyPrimaryGoal.length}/100</div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Preferred MetCon Exercises</label>
+              <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+                {availableExercisesList.map((name) => (
+                  <label key={`pref-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
+                    <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4" checked={preferredMetconExercises.includes(name)} onChange={() => setPreferredMetconExercises(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name])} />
+                    <span className="text-sm text-gray-700">{name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Exercises to Avoid</label>
+              <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+                {availableExercisesList.map((name) => (
+                  <label key={`avoid-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
+                    <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4" checked={avoidedExercises.includes(name)} onChange={() => setAvoidedExercises(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name])} />
+                    <span className="text-sm text-gray-700">{name}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
-
-          {settings.conditioning_benchmarks.airBike10MinCalories?.toString().trim() && (
-            <div className="mt-4">
-              <select
-                value={settings.conditioning_benchmarks.airBikeType || ''}
-                onChange={(e) => handleBenchmarkChange('airBikeType', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                required
-              >
-                <option value="">Select an Air Bike Type</option>
-                {airBikeTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
 
         {/* Action Buttons */}
