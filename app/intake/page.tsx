@@ -212,6 +212,13 @@ const [currentSection, setCurrentSection] = useState<number>(1)
   const primaryBtn = 'px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
   const secondaryBtn = 'px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed'
 
+  // Ensure each section loads at the top of the page
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    }
+  }, [currentSection])
+
   const [formData, setFormData] = useState<IntakeFormData>({
     name: '',
     email: '',
