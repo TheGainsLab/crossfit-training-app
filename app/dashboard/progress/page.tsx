@@ -1315,11 +1315,11 @@ const SkillsAnalyticsView = () => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Development Overview</h3>
         <div className="grid md:grid-cols-2 gap-6">
           <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{totalSkills}</div>
+            <div className="text-3xl font-bold text-coral">{totalSkills}</div>
             <div className="text-sm text-gray-600">Skills Practiced</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">{masteredSkills}</div>
+            <div className="text-3xl font-bold text-coral">{masteredSkills}</div>
             <div className="text-sm text-gray-600">Grade A Skills</div>
           </div>
         </div>
@@ -1332,7 +1332,7 @@ const SkillsAnalyticsView = () => {
         <div className="grid md:grid-cols-2 gap-6 mb-6">
           <div>
             <h4 className="font-medium text-gray-900 mb-3">
-              Total Reps Completed <span className="text-2xl font-bold text-purple-600 ml-2">{totalReps.toLocaleString()}</span>
+              Total Reps Completed <span className="text-2xl font-bold text-coral ml-2">{totalReps.toLocaleString()}</span>
             </h4>
             <div className="h-64">
               <Bar data={skillsChartData} options={{
@@ -1351,7 +1351,7 @@ const SkillsAnalyticsView = () => {
           
           <div>
             <h4 className="font-medium text-gray-900 mb-3">
-              Average RPE <span className="text-2xl font-bold text-orange-600 ml-2">{avgRPE.toFixed(1)}</span>
+              Average RPE <span className="text-2xl font-bold text-coral ml-2">{avgRPE.toFixed(1)}</span>
             </h4>
             <div className="h-64">
               <Bar data={rpeChartData} options={{
