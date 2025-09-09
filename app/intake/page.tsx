@@ -778,8 +778,8 @@ const saveUserData = async (userId: number) => {
 
             {/* Section 1: Personal Information */}
             {currentSection === 1 && (
-              <div className="space-y-6 bg-[#DAE2EA] rounded-lg p-4">
-                <h2 className="text-2xl font-semibold text-center mb-6" style={{ color: '#FE5858' }}>
+              <div className="space-y-6 bg-white rounded-lg p-4">
+                <h2 className="text-2xl font-semibold text-gray-900 text-center mb-6">
                   Section 1: Personal Information
                 </h2>
 
@@ -906,7 +906,7 @@ const saveUserData = async (userId: number) => {
       ]}
       formData={formData}
       toggleEquipment={toggleEquipment}
-      colorClass="bg-gradient-to-r from-green-600 to-green-700"
+      colorClass="bg-[#FE5858]"
     />
 
     <EquipmentCategoryCard
@@ -921,7 +921,7 @@ const saveUserData = async (userId: number) => {
       ]}
       formData={formData}
       toggleEquipment={toggleEquipment}
-      colorClass="bg-gradient-to-r from-blue-600 to-blue-700"
+      colorClass="bg-[#FE5858]"
     />
 
     <EquipmentCategoryCard
@@ -942,7 +942,7 @@ const saveUserData = async (userId: number) => {
       ]}
       formData={formData}
       toggleEquipment={toggleEquipment}
-      colorClass="bg-gradient-to-r from-purple-600 to-purple-700"
+      colorClass="bg-[#FE5858]"
     />
 
     <EquipmentCategoryCard
@@ -954,7 +954,7 @@ const saveUserData = async (userId: number) => {
       ]}
       formData={formData}
       toggleEquipment={toggleEquipment}
-      colorClass="bg-gradient-to-r from-orange-600 to-orange-700"
+      colorClass="bg-[#FE5858]"
     />
   </div>
 
@@ -992,8 +992,8 @@ const saveUserData = async (userId: number) => {
 
             {/* Section 2: Skills */}
             {currentSection === 2 && (
-              <div className="space-y-8 bg-[#DAE2EA] rounded-lg p-4">
-                <h2 className="text-2xl font-semibold text-center mb-6" style={{ color: '#FE5858' }}>
+              <div className="space-y-8 bg-white rounded-lg p-4">
+                <h2 className="text-2xl font-semibold text-gray-900 text-center mb-6">
                   Section 2: Skills
                 </h2>
                 <p className="text-gray-600 mb-6">
@@ -1003,7 +1003,7 @@ const saveUserData = async (userId: number) => {
                 {skillCategories.map((category, idx) => (
                   <div key={category.name} className="border rounded-lg overflow-hidden">
                     <div className="p-4 text-left" style={{ backgroundColor: '#DAE2EA' }}>
-                      <h3 className="text-lg font-semibold" style={{ color: '#FE5858' }}>
+                      <h3 className="text-lg font-semibold text-gray-900">
                         {category.name}
                       </h3>
                     </div>
@@ -1060,108 +1060,79 @@ const saveUserData = async (userId: number) => {
 
             {/* Section 3: Conditioning Benchmarks */}
             {currentSection === 3 && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
+              <div className="space-y-6 bg-white rounded-lg p-4">
+                <h2 className="text-2xl font-semibold text-center mb-6" style={{ color: '#FE5858' }}>
                   Section 3: Conditioning Benchmarks
                 </h2>
                 <p className="text-gray-600 mb-6">
                   Please enter your recent results for each of these common benchmarks. 
                   Enter times in MM:SS, e.g., 7:30. Leave blank if not recently performed.
                 </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      1 Mile Run time (MM:SS)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="7:30"
-                      value={formData.conditioningBenchmarks.mileRun}
-                      onChange={(e) => updateConditioning('mileRun', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                <div className="space-y-6">
+                  {/* Running Benchmarks */}
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                      <h3 className="text-lg font-semibold text-gray-900">Running Benchmarks</h3>
+                    </div>
+                    <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-2">1 Mile Run (MM:SS)</label>
+                        <input type="text" placeholder="7:30" value={formData.conditioningBenchmarks.mileRun} onChange={(e) => updateConditioning('mileRun', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-2">5K Run (MM:SS)</label>
+                        <input type="text" placeholder="25:30" value={formData.conditioningBenchmarks.fiveKRun} onChange={(e) => updateConditioning('fiveKRun', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-2">10K Run (MM:SS)</label>
+                        <input type="text" placeholder="52:15" value={formData.conditioningBenchmarks.tenKRun} onChange={(e) => updateConditioning('tenKRun', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      5K Run time (MM:SS)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="25:30"
-                      value={formData.conditioningBenchmarks.fiveKRun}
-                      onChange={(e) => updateConditioning('fiveKRun', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                  {/* Rowing Benchmarks */}
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                      <h3 className="text-lg font-semibold text-gray-900">Rowing Benchmarks</h3>
+                    </div>
+                    <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-2">1K Row (MM:SS)</label>
+                        <input type="text" placeholder="3:45" value={formData.conditioningBenchmarks.oneKRow} onChange={(e) => updateConditioning('oneKRow', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-2">2K Row (MM:SS)</label>
+                        <input type="text" placeholder="7:20" value={formData.conditioningBenchmarks.twoKRow} onChange={(e) => updateConditioning('twoKRow', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-2">5K Row (MM:SS)</label>
+                        <input type="text" placeholder="19:15" value={formData.conditioningBenchmarks.fiveKRow} onChange={(e) => updateConditioning('fiveKRow', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      10K Run time (MM:SS)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="52:15"
-                      value={formData.conditioningBenchmarks.tenKRun}
-                      onChange={(e) => updateConditioning('tenKRun', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                  {/* Bike Benchmarks */}
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                      <h3 className="text-lg font-semibold text-gray-900">Bike Benchmarks</h3>
+                    </div>
+                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-2">10-Minute Air Bike (calories)</label>
+                        <input type="number" placeholder="185" value={formData.conditioningBenchmarks.airBike10MinCalories} onChange={(e) => updateConditioning('airBike10MinCalories', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div>
+                        {formData.conditioningBenchmarks.airBike10MinCalories?.trim() && (
+                          <select value={formData.conditioningBenchmarks.airBikeType} onChange={(e) => updateConditioning('airBikeType', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" required>
+                            <option value="">Select an Air Bike Type</option>
+                            {airBikeTypes.map((type) => (
+                              <option key={type} value={type}>{type}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    </div>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      1K Row time (MM:SS)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="3:45"
-                      value={formData.conditioningBenchmarks.oneKRow}
-                      onChange={(e) => updateConditioning('oneKRow', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      2K Row time (MM:SS)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="7:20"
-                      value={formData.conditioningBenchmarks.twoKRow}
-                      onChange={(e) => updateConditioning('twoKRow', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      5K Row time (MM:SS)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="19:15"
-                      value={formData.conditioningBenchmarks.fiveKRow}
-                      onChange={(e) => updateConditioning('fiveKRow', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      10-Minute Air Bike Time Trial (calories)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="185"
-                      value={formData.conditioningBenchmarks.airBike10MinCalories}
-                      onChange={(e) => updateConditioning('airBike10MinCalories', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  {/* Removed explicit time trial Y/N selection */}
                 </div>
 
                 {/* Show bike type only when a calorie score is entered */}
@@ -1207,35 +1178,106 @@ const saveUserData = async (userId: number) => {
 
             {/* Section 4: 1RM Lifts + Password Creation for New Users */}
             {currentSection === 4 && (
-              <div className="space-y-6">
+              <div className="space-y-6 bg-white rounded-lg p-4">
 
-             <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
+             <h2 className="text-2xl font-semibold text-center mb-6" style={{ color: '#FE5858' }}>
             Section 4: 1RM Lifts
              </h2>
 
-                
                 <p className="text-gray-600 mb-6">
                   Enter your recent 1-Rep Max for each lift in {formData.units === 'Metric (kg)' ? 'kilograms' : 'pounds'} 
                   (based on your unit preference in Section 1). Decimals may be used (e.g., 225.5). 
                   For Weighted Pullup, <strong>enter added weight only</strong> (e.g., 35).
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {oneRMLifts.map((lift, index) => (
-                    <div key={lift}>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {lift}
-                      </label>
-                      <input
-                        type="number"
-                        step="0.5"
-                        value={formData.oneRMs[index]}
-                        onChange={(e) => updateOneRM(index, e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder={formData.units === 'Metric (kg)' ? 'e.g., 100.5' : 'e.g., 225.5'}
-                      />
-                    </div>
-                  ))}
+                {/* Snatch Group */}
+                <div className="border rounded-lg overflow-hidden mb-4">
+                  <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                    <h3 className="text-lg font-semibold text-gray-900">Snatch</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {['Snatch', 'Power Snatch'].map((lift) => {
+                      const index = oneRMLifts.indexOf(lift)
+                      return (
+                        <div key={lift}>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">{lift}</label>
+                          <input type="number" step="0.5" value={formData.oneRMs[index]} onChange={(e) => updateOneRM(index, e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder={formData.units === 'Metric (kg)' ? 'e.g., 100.5' : 'e.g., 225.5'} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Clean and Jerk Group */}
+                <div className="border rounded-lg overflow-hidden mb-4">
+                  <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                    <h3 className="text-lg font-semibold text-gray-900">Clean and Jerk</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {['Clean and Jerk', 'Power Clean', 'Clean (clean only)', 'Jerk (from rack or blocks, max Split or Power Jerk)'].map((lift) => {
+                      const index = oneRMLifts.indexOf(lift)
+                      return (
+                        <div key={lift}>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">{lift}</label>
+                          <input type="number" step="0.5" value={formData.oneRMs[index]} onChange={(e) => updateOneRM(index, e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder={formData.units === 'Metric (kg)' ? 'e.g., 100.5' : 'e.g., 225.5'} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Squats Group */}
+                <div className="border rounded-lg overflow-hidden mb-4">
+                  <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                    <h3 className="text-lg font-semibold text-gray-900">Squats</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {['Back Squat', 'Front Squat', 'Overhead Squat'].map((lift) => {
+                      const index = oneRMLifts.indexOf(lift)
+                      return (
+                        <div key={lift}>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">{lift}</label>
+                          <input type="number" step="0.5" value={formData.oneRMs[index]} onChange={(e) => updateOneRM(index, e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder={formData.units === 'Metric (kg)' ? 'e.g., 100.5' : 'e.g., 225.5'} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Pulling Group */}
+                <div className="border rounded-lg overflow-hidden mb-4">
+                  <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                    <h3 className="text-lg font-semibold text-gray-900">Pulling</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-1 gap-4">
+                    {['Weighted Pullup (do not include body weight)'].map((lift) => {
+                      const index = oneRMLifts.indexOf(lift)
+                      return (
+                        <div key={lift}>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">{lift}</label>
+                          <input type="number" step="0.5" value={formData.oneRMs[index]} onChange={(e) => updateOneRM(index, e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder={formData.units === 'Metric (kg)' ? 'e.g., 100.5' : 'e.g., 225.5'} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Presses Group */}
+                <div className="border rounded-lg overflow-hidden mb-4">
+                  <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                    <h3 className="text-lg font-semibold text-gray-900">Presses</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {['Bench Press', 'Push Press', 'Strict Press'].map((lift) => {
+                      const index = oneRMLifts.indexOf(lift)
+                      return (
+                        <div key={lift}>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">{lift}</label>
+                          <input type="number" step="0.5" value={formData.oneRMs[index]} onChange={(e) => updateOneRM(index, e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder={formData.units === 'Metric (kg)' ? 'e.g., 100.5' : 'e.g., 225.5'} />
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
           
 
