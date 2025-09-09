@@ -36,6 +36,14 @@ interface IntakeFormData {
   // New: Password fields for new users
   password: string
   confirmPassword: string
+
+  // New: Preferences
+  preferences?: {
+    threeMonthGoals: string
+    monthlyPrimaryGoal: string
+    preferredMetconExercises: string[]
+    avoidedExercises: string[]
+  }
 }
 
 interface StripeSessionData {
@@ -200,7 +208,7 @@ const [currentSection, setCurrentSection] = useState<number>(1)
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const sectionTitles = ['Personal Info', 'Skills', 'Conditioning', '1RM Lifts', 'Generate']
+  const sectionTitles = ['Personal Info', 'Skills', 'Conditioning', '1RM Lifts', 'Preferences', 'Generate']
   const primaryBtn = 'px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
   const secondaryBtn = 'px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed'
 
@@ -225,8 +233,16 @@ const [currentSection, setCurrentSection] = useState<number>(1)
     },
     oneRMs: new Array(14).fill(''),
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    preferences: {
+      threeMonthGoals: '',
+      monthlyPrimaryGoal: '',
+      preferredMetconExercises: [],
+      avoidedExercises: []
+    }
   })
+
+  const [availableExercises, setAvailableExercises] = useState<string[]>([])
 
   // Verify Stripe session
   const verifyStripeSession = async (sessionId: string): Promise<StripeSessionData | null> => {
@@ -365,6 +381,21 @@ setSubscriptionStatus(subscription.status)
     checkUserAndSession()
   }, [router, searchParams])
 
+  // Load exercise catalog for preferences multi-selects
+  useEffect(() => {
+    const loadExercises = async () => {
+      try {
+        const res = await fetch('/api/exercises/available')
+        if (res.ok) {
+          const data = await res.json()
+          const list: string[] = (data?.exercises || []).map((e: any) => e.name || e.exercise_name).filter(Boolean)
+          setAvailableExercises(list)
+        }
+      } catch {}
+    }
+    loadExercises()
+  }, [])
+
   const updateFormData = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
@@ -396,6 +427,28 @@ setSubscriptionStatus(subscription.status)
       ? formData.equipment.filter(e => e !== equipment)
       : [...formData.equipment, equipment]
     updateFormData('equipment', newEquipment)
+  }
+
+  const updatePreferences = (field: keyof NonNullable<IntakeFormData['preferences']>, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      preferences: {
+        ...(prev.preferences || { threeMonthGoals: '', monthlyPrimaryGoal: '', preferredMetconExercises: [], avoidedExercises: [] }),
+        [field]: value
+      }
+    }))
+  }
+
+  const togglePreferredExercise = (name: string) => {
+    const prev = formData.preferences?.preferredMetconExercises || []
+    const next = prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+    updatePreferences('preferredMetconExercises', next)
+  }
+
+  const toggleAvoidedExercise = (name: string) => {
+    const prev = formData.preferences?.avoidedExercises || []
+    const next = prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+    updatePreferences('avoidedExercises', next)
   }
 
   const validatePassword = (password: string) => {
@@ -1187,15 +1240,97 @@ disabled={currentSection <= 1}
   disabled={!isValidSection(currentSection)}
   className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
 >
-  Prepare to Generate Program
+  Next
 </button>            
 
             </div>
             </div>
 		)}
 		
-{/* Section 5: Program Generation & Account Setup */}
+{/* Section 5: Preferences */}
 {currentSection === 5 && (
+  <div className="space-y-6">
+    <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Section 5: Preferences</h2>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="md:col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-2">3-Month Goals</label>
+        <textarea
+          value={formData.preferences?.threeMonthGoals || ''}
+          onChange={(e) => updatePreferences('threeMonthGoals', e.target.value)}
+          rows={4}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Describe your goals for the next 3 months..."
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Primary Goal</label>
+        <input
+          type="text"
+          value={formData.preferences?.monthlyPrimaryGoal || ''}
+          onChange={(e) => updatePreferences('monthlyPrimaryGoal', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="e.g., Improve aerobic base, Pull-up strength, etc."
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Preferred MetCon Exercises</label>
+        <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+          {availableExercises.map((name) => (
+            <label key={`pref-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
+              <input
+                type="checkbox"
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                checked={!!formData.preferences?.preferredMetconExercises?.includes(name)}
+                onChange={() => togglePreferredExercise(name)}
+              />
+              <span className="text-sm text-gray-700">{name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Exercises to Avoid</label>
+        <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+          {availableExercises.map((name) => (
+            <label key={`avoid-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
+              <input
+                type="checkbox"
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                checked={!!formData.preferences?.avoidedExercises?.includes(name)}
+                onChange={() => toggleAvoidedExercise(name)}
+              />
+              <span className="text-sm text-gray-700">{name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div className="flex justify-between mt-8">
+      <button
+        type="button"
+        onClick={prevSection}
+        className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+      >
+        Previous
+      </button>
+      <button
+        type="button"
+        onClick={nextSection}
+        className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+      >
+        Prepare to Generate Program
+      </button>
+    </div>
+  </div>
+)}
+
+{/* Section 6: Program Generation & Account Setup */}
+{currentSection === 6 && (
   <div className="space-y-8">
     {/* Hero Header */}
     <div className="text-center">

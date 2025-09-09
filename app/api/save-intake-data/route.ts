@@ -11,7 +11,8 @@ export async function POST(request: NextRequest) {
       bodyWeight,
       gender,
       units,
-      benchmarks 
+      benchmarks,
+      preferences 
     } = await request.json()
 
     if (!userId) {
@@ -81,6 +82,24 @@ export async function POST(request: NextRequest) {
       }
       
       console.log('✅ Equipment saved:', equipment.length, 'items')
+    }
+
+    // Save user preferences
+    if (preferences) {
+      const payload = {
+        user_id: userId,
+        three_month_goals: preferences.threeMonthGoals || null,
+        monthly_primary_goal: preferences.monthlyPrimaryGoal || null,
+        preferred_metcon_exercises: preferences.preferredMetconExercises || [],
+        avoided_exercises: preferences.avoidedExercises || []
+      }
+      const { error: prefErr } = await supabaseAdmin
+        .from('user_preferences')
+        .upsert(payload, { onConflict: 'user_id' })
+      if (prefErr) {
+        console.error('❌ Preferences upsert error:', prefErr)
+        return NextResponse.json({ error: 'Preferences save failed', details: prefErr.message }, { status: 500 })
+      }
     }
 
   // Save skills
