@@ -78,6 +78,53 @@ interface ProfileData {
   generated_at: string
 }
 
+function GoalsBlock() {
+  const [goals, setGoals] = useState<{ three?: string; monthly?: string } | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) { setLoading(false); return }
+        const { data: dbUser } = await supabase.from('users').select('id').eq('auth_id', user.id).single()
+        if (!dbUser) { setLoading(false); return }
+        const { data: prefs } = await supabase
+          .from('user_preferences')
+          .select('three_month_goals, monthly_primary_goal')
+          .eq('user_id', dbUser.id)
+          .single()
+        setGoals({ three: prefs?.three_month_goals || '', monthly: prefs?.monthly_primary_goal || '' })
+      } catch {
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
+
+  if (loading) return <div className="text-sm text-gray-500">Loading goals…</div>
+  if (!goals || (!goals.three && !goals.monthly)) return <div className="text-sm text-gray-500">No goals set yet.</div>
+
+  return (
+    <div className="space-y-3">
+      {goals.monthly && (
+        <div>
+          <div className="text-sm text-gray-600">Monthly Priority</div>
+          <div className="text-charcoal font-medium">{goals.monthly}</div>
+        </div>
+      )}
+      {goals.three && (
+        <div>
+          <div className="text-sm text-gray-600">3-Month Goals</div>
+          <div className="text-charcoal">{goals.three}</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface OlympicProgressProps {
   lift: string
   weight: string
@@ -552,6 +599,13 @@ const loadProfile = async () => {
           <div className="text-sm text-gray-600 mt-1">
             Generated: {new Date(profile.generated_at).toLocaleDateString()}
           </div>
+        </div>
+
+        {/* YOUR GOALS */}
+        <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
+          <h2 className="text-xl font-bold text-charcoal mb-2">YOUR GOALS</h2>
+          <div className="w-full h-0.5 bg-coral mb-4"></div>
+          <GoalsBlock />
         </div>
 
         {/* New Strength Section */}

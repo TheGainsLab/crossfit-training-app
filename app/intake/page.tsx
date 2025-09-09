@@ -1312,25 +1312,35 @@ disabled={currentSection <= 1}
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700 mb-2">3-Month Goals</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">3-Month Goals <span className="text-gray-500">(limit 250 characters)</span></label>
         <textarea
           value={formData.preferences?.threeMonthGoals || ''}
           onChange={(e) => updatePreferences('threeMonthGoals', e.target.value)}
           rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Describe your goals for the next 3 months..."
+          maxLength={250}
         />
+        <div className="mt-1 text-xs text-gray-500">{(formData.preferences?.threeMonthGoals?.length || 0)}/250</div>
+        {(formData.preferences?.threeMonthGoals?.length || 0) > 250 && (
+          <div className="text-xs text-red-600 mt-1">Please keep this under 250 characters.</div>
+        )}
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Primary Goal</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Primary Goal <span className="text-gray-500">(limit 100 characters)</span></label>
         <input
           type="text"
           value={formData.preferences?.monthlyPrimaryGoal || ''}
           onChange={(e) => updatePreferences('monthlyPrimaryGoal', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="e.g., Improve aerobic base, Pull-up strength, etc."
+          maxLength={100}
         />
+        <div className="mt-1 text-xs text-gray-500">{(formData.preferences?.monthlyPrimaryGoal?.length || 0)}/100</div>
+        {(formData.preferences?.monthlyPrimaryGoal?.length || 0) > 100 && (
+          <div className="text-xs text-red-600 mt-1">Please keep this under 100 characters.</div>
+        )}
       </div>
 
       <div>
