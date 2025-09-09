@@ -164,7 +164,7 @@ function EquipmentCategoryCard({ title, description, icon, equipment, formData, 
       <div className={`${colorClass} text-white p-4`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <h3 className="text-lg font-semibold">{title}</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
           </div>
           <div className="text-right">
             <div className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
@@ -906,7 +906,7 @@ const saveUserData = async (userId: number) => {
       ]}
       formData={formData}
       toggleEquipment={toggleEquipment}
-      colorClass="bg-[#FE5858]"
+      colorClass="bg-[#DAE2EA]"
     />
 
     <EquipmentCategoryCard
@@ -921,7 +921,7 @@ const saveUserData = async (userId: number) => {
       ]}
       formData={formData}
       toggleEquipment={toggleEquipment}
-      colorClass="bg-[#FE5858]"
+      colorClass="bg-[#DAE2EA]"
     />
 
     <EquipmentCategoryCard
@@ -942,7 +942,7 @@ const saveUserData = async (userId: number) => {
       ]}
       formData={formData}
       toggleEquipment={toggleEquipment}
-      colorClass="bg-[#FE5858]"
+      colorClass="bg-[#DAE2EA]"
     />
 
     <EquipmentCategoryCard
@@ -954,7 +954,7 @@ const saveUserData = async (userId: number) => {
       ]}
       formData={formData}
       toggleEquipment={toggleEquipment}
-      colorClass="bg-[#FE5858]"
+      colorClass="bg-[#DAE2EA]"
     />
   </div>
 
