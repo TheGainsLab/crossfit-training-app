@@ -1284,8 +1284,8 @@ const SkillsAnalyticsView = () => {
       {
         label: 'Total Reps',
         data: movementData.map(m => m.totalReps),
-        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: '#6B7BD8', // slate blue fill
+        borderColor: '#333333', // charcoal outline
         borderWidth: 1
       }
     ]
@@ -1297,8 +1297,8 @@ const SkillsAnalyticsView = () => {
       {
         label: 'Average RPE',
         data: movementData.map(m => m.avgRPE),
-        backgroundColor: 'rgba(255, 99, 132, 0.6)',
-        borderColor: 'rgba(255, 99, 132, 1)',
+        backgroundColor: '#6B7BD8', // slate blue fill
+        borderColor: '#333333', // charcoal outline
         borderWidth: 1
       }
     ]
