@@ -1061,7 +1061,7 @@ const saveUserData = async (userId: number) => {
             {/* Section 3: Conditioning Benchmarks */}
             {currentSection === 3 && (
               <div className="space-y-6 bg-white rounded-lg p-4">
-                <h2 className="text-2xl font-semibold text-center mb-6" style={{ color: '#FE5858' }}>
+                <h2 className="text-2xl font-semibold text-gray-900 text-center mb-6">
                   Section 3: Conditioning Benchmarks
                 </h2>
                 <p className="text-gray-600 mb-6">
@@ -1180,7 +1180,7 @@ const saveUserData = async (userId: number) => {
             {currentSection === 4 && (
               <div className="space-y-6 bg-white rounded-lg p-4">
 
-             <h2 className="text-2xl font-semibold text-center mb-6" style={{ color: '#FE5858' }}>
+             <h2 className="text-2xl font-semibold text-gray-900 text-center mb-6">
             Section 4: 1RM Lifts
              </h2>
 
