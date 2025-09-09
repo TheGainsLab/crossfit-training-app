@@ -388,17 +388,23 @@ setSubscriptionStatus(subscription.status)
     checkUserAndSession()
   }, [router, searchParams])
 
-  // Load exercise catalog for preferences multi-selects
+  // Load exercise catalog for preferences multi-selects (client-side via Supabase)
   useEffect(() => {
     const loadExercises = async () => {
       try {
-        const res = await fetch('/api/exercises/available')
-        if (res.ok) {
-          const data = await res.json()
-          const list: string[] = (data?.exercises || []).map((e: any) => e.name || e.exercise_name).filter(Boolean)
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('exercises')
+          .select('name')
+          .eq('can_be_metcons', true)
+          .order('name', { ascending: true })
+        if (!error) {
+          const list: string[] = (data || []).map((row: any) => row.name).filter(Boolean)
           setAvailableExercises(list)
         }
-      } catch {}
+      } catch (e) {
+        // Keep empty list on failure
+      }
     }
     loadExercises()
   }, [])
