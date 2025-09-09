@@ -135,6 +135,12 @@ function buildExerciseSelectionPrompt(
     key.startsWith('needs_') && userContext.weaknesses[key] === true
   );
 
+  // Preferences summary
+  const prefs = userContext?.preferences || {}
+  const avoided = (prefs.avoided_exercises || prefs.avoidedExercises || []).slice(0, 20)
+  const preferred = (prefs.preferred_metcon_exercises || prefs.preferredMetconExercises || []).slice(0, 20)
+  const goals = [prefs.monthly_primary_goal || prefs.monthlyPrimaryGoal, prefs.three_month_goals || prefs.threeMonthGoals].filter(Boolean).join(' | ')
+
   return `
 You are an expert CrossFit coach selecting optimal exercises for personalized programming.
 
@@ -142,6 +148,9 @@ USER PROFILE:
 - Ability: ${userContext.userProfile.ability}
 - Current weaknesses: ${userWeaknesses.join(', ')}
 - Recent training quality: ${userContext.recentPerformance.slice(0, 3).map((p: any) => `${p.exercise_name}: RPE ${p.rpe}, Quality ${p.completion_quality}`).join('; ')}
+- Goals/Focus: ${goals || 'n/a'}
+- Avoid these exercises: ${avoided.length ? avoided.join(', ') : 'none'}
+- Prefer these exercises: ${preferred.length ? preferred.join(', ') : 'none'}
 
 TRAINING BLOCK: ${block} for ${mainLift}
 NEED TO SELECT: ${numExercises} exercises
@@ -157,6 +166,9 @@ SELECTION CRITERIA:
 3. Target user weaknesses when possible
 4. Consider exercise combinations that complement each other
 5. Sequence from easier to harder within the session
+6. EXCLUSION: Do not select any exercise that appears in the Avoid list
+7. PREFERENCE: When options are similar in suitability, prefer exercises in the Prefer list
+8. GOALS: When appropriate, align choices with the user’s stated goals/focus
 
 Respond with JSON only:
 {

@@ -190,6 +190,17 @@ serve(async (req) => {
 
     console.log(`🏗️ Assigning exercises: ${block} for ${user.name}, Week ${week}, Day ${day}`)
 
+    // Fetch user preferences (optional)
+    let userPreferences: any = null
+    try {
+      const { data: prefs } = await supabase
+        .from('user_preferences')
+        .select('three_month_goals, monthly_primary_goal, preferred_metcon_exercises, avoided_exercises')
+        .eq('user_id', user.id || user.userProfile?.id)
+        .single()
+      userPreferences = prefs || null
+    } catch (_) {}
+
     // Get exercises from database
     const { data: exerciseData, error } = await supabase
       .from('exercises')
@@ -573,7 +584,7 @@ try {
     },
     body: JSON.stringify({
       filteredExercises: filtered,
-      userContext: user,
+      userContext: { ...user, preferences: userPreferences },
       block,
       mainLift,
       numExercises,

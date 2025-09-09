@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { user_id, week, day, availableMetcons } = await req.json();
+    const { user_id, week, day, availableMetcons, preferences } = await req.json();
 
     console.log(`Selecting intelligent MetCon for user ${user_id}, Week ${week}, Day ${day}`);
 
@@ -25,7 +25,7 @@ serve(async (req) => {
     // Try AI-based selection first, fallback to random selection
     let selectedMetcon;
     try {
-      selectedMetcon = await selectMetconWithAI(availableMetcons, userContext, heatMapData, week, day);
+      selectedMetcon = await selectMetconWithAI(availableMetcons, userContext, heatMapData, week, day, preferences);
     } catch (aiError) {
       console.warn('AI MetCon selection failed, using random selection:', aiError.message);
       selectedMetcon = randomMetconSelection(availableMetcons);
@@ -91,11 +91,11 @@ async function fetchUserHeatMapData(user_id: number) {
   return null; // No heat map data available
 }
 
-async function selectMetconWithAI(availableMetcons: any[], userContext: any, heatMapData: any, week: number, day: number) {
+async function selectMetconWithAI(availableMetcons: any[], userContext: any, heatMapData: any, week: number, day: number, preferences: any) {
   const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');
   if (!claudeApiKey) throw new Error('Claude API key not found');
 
-  const prompt = buildMetconSelectionPrompt(availableMetcons, userContext, heatMapData, week, day);
+  const prompt = buildMetconSelectionPrompt(availableMetcons, userContext, heatMapData, week, day, preferences);
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -119,10 +119,14 @@ async function selectMetconWithAI(availableMetcons: any[], userContext: any, hea
   return parseMetconSelectionResponse(aiResponse, availableMetcons);
 }
 
-function buildMetconSelectionPrompt(availableMetcons: any[], userContext: any, heatMapData: any, week: number, day: number) {
+function buildMetconSelectionPrompt(availableMetcons: any[], userContext: any, heatMapData: any, week: number, day: number, preferences: any) {
   const weakTimedomains = heatMapData ? identifyWeakTimeDomains(heatMapData) : [];
   const strongTimedomains = heatMapData ? identifyStrongTimeDomains(heatMapData) : [];
   
+  const avoided = (preferences?.avoided_exercises || preferences?.avoidedExercises || []).slice(0, 20)
+  const preferred = (preferences?.preferred_metcon_exercises || preferences?.preferredMetconExercises || []).slice(0, 20)
+  const goals = [preferences?.monthly_primary_goal || preferences?.monthlyPrimaryGoal, preferences?.three_month_goals || preferences?.threeMonthGoals].filter(Boolean).join(' | ')
+
   return `
 You are an expert CrossFit coach selecting the optimal MetCon for this athlete.
 
@@ -134,6 +138,10 @@ PERFORMANCE DATA:
 - Weak time domains: ${weakTimedomains.join(', ') || 'Unknown'}
 - Strong time domains: ${strongTimedomains.join(', ') || 'Unknown'}
 - Recent performance trends: ${JSON.stringify(userContext.recentPerformance.slice(0, 5))}
+
+GOALS/FOCUS: ${goals || 'n/a'}
+AVOID: ${avoided.length ? avoided.join(', ') : 'none'}
+PREFER: ${preferred.length ? preferred.join(', ') : 'none'}
 
 AVAILABLE METCONS:
 ${availableMetcons.slice(0, 10).map((metcon, i) => `
@@ -152,6 +160,9 @@ Choose the MetCon that:
 2. Matches their equipment and ability level
 3. Provides appropriate stimulus for this training phase
 4. Complements recent training patterns
+5. EXCLUSION: Do not choose workouts containing exercises in the AVOID list
+6. PREFERENCE: Break ties in favor of workouts containing exercises in the PREFER list
+7. GOALS: Prefer workouts that align with stated goals
 
 Respond with JSON only:
 {

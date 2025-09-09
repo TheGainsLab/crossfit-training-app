@@ -58,6 +58,17 @@ return new Response(
 // Try intelligent AI selection first, fallback to original logic
 let selectedWorkout;
 try {
+  // Fetch user preferences (optional)
+  let userPreferences: any = null
+  try {
+    const { data: prefs } = await supabase
+      .from('user_preferences')
+      .select('three_month_goals, monthly_primary_goal, preferred_metcon_exercises, avoided_exercises')
+      .eq('user_id', user.id || user.userProfile?.id)
+      .single()
+    userPreferences = prefs || null
+  } catch (_) {}
+
   // Try intelligent AI selection first
   const intelligentResponse = await fetch(`${supabaseUrl}/functions/v1/intelligent-metcon-selection`, {
     method: 'POST',
@@ -69,7 +80,8 @@ try {
       user_id: user.id || user.userProfile?.id,
       week,
       day,
-      availableMetcons: metconData
+      availableMetcons: metconData,
+      preferences: userPreferences
     })
   });
 
