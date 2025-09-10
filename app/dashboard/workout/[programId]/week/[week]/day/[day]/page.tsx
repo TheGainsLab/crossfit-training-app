@@ -172,22 +172,13 @@ function IntensityControls({ programId, week, day, isDeload }: { programId: numb
         Intensity: <span className="font-semibold">{bias != null ? (bias > 0 ? `+${bias}` : bias) : '—'}</span>
         {isDeload && <span className="ml-2 text-yellow-700">(deload)</span>}
       </div>
-      <button
-        type="button"
-        disabled={loading}
-        onClick={(e) => { e.stopPropagation(); sendDelta(-1) }}
-        className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-      >
-        −
-      </button>
-      <button
-        type="button"
-        disabled={loading || isDeload}
-        onClick={(e) => { e.stopPropagation(); sendDelta(+1) }}
-        className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-      >
-        +
-      </button>
+      <div className="flex items-center gap-1">
+        <button type="button" disabled={loading} onClick={(e) => { e.stopPropagation(); sendDelta(-2) }} className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50">−2</button>
+        <button type="button" disabled={loading} onClick={(e) => { e.stopPropagation(); sendDelta(-1) }} className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50">−1</button>
+        <button type="button" disabled={loading} onClick={(e) => { e.stopPropagation(); sendDelta(0 - (bias ?? 0)) }} className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50">0</button>
+        <button type="button" disabled={loading || isDeload} onClick={(e) => { e.stopPropagation(); sendDelta(+1) }} className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50">+1</button>
+        <button type="button" disabled={loading || isDeload} onClick={(e) => { e.stopPropagation(); sendDelta(+2) }} className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50">+2</button>
+      </div>
       {error && <span className="text-xs text-red-600">{error}</span>}
     </div>
   )
