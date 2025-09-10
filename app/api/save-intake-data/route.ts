@@ -298,10 +298,24 @@ if (skills && skills.length > 0) {
       const weeks = programResult?.program?.weeks || []
       if (programId && Array.isArray(weeks) && weeks.length > 0) {
         const rows: any[] = []
+        // Read user preferences for day limit
+        let dayLimit = 5
+        try {
+          const { data: prefs } = await supabaseAdmin
+            .from('user_preferences')
+            .select('training_days_per_week')
+            .eq('user_id', userId)
+            .single()
+          if (prefs && typeof prefs.training_days_per_week === 'number') {
+            dayLimit = Math.max(3, Math.min(6, prefs.training_days_per_week))
+          }
+        } catch (_) {}
+
         for (const w of weeks) {
           const weekNum = w.week
           const daysArr = w.days || []
           for (const d of daysArr) {
+            if (typeof d.day === 'number' && d.day > dayLimit) continue
             const blocksArr = d.blocks || []
             for (const b of blocksArr) {
               const exercises = b.exercises || []
