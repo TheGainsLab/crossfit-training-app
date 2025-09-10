@@ -600,8 +600,24 @@ setSubscriptionStatus(subscription.status)
 
     console.log('✅ User automatically signed in')
     setSubmitMessage('✅ Account created successfully! Your personalized program will be generated shortly.')
-    
-    // Redirect to program page after successful submission
+
+    // Resolve numeric users.id from auth_id and save intake data immediately
+    try {
+      const { data: authInfo } = await supabase.auth.getUser()
+      const authId = authInfo?.user?.id
+      if (authId) {
+        const { data: me } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_id', authId)
+          .single()
+        if (me?.id) {
+          await saveUserData(me.id)
+        }
+      }
+    } catch (_) {}
+
+    // Redirect to dashboard after successful submission
     setTimeout(() => {
       router.push('/dashboard')
     }, 2000)
