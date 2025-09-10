@@ -239,6 +239,39 @@ serve(async (req) => {
 
     console.log(`✅ Program generated successfully!`)
 
+    // Persist scaffold into program_workouts honoring training_days_per_week
+    try {
+      const programId = savedProgram?.id
+      const weeks = programResult?.program?.weeks || []
+      if (programId && Array.isArray(weeks) && weeks.length > 0) {
+        const rows: any[] = []
+        for (const w of weeks) {
+          const weekNum = w.week
+          const daysArr = w.days || []
+          for (const d of daysArr) {
+            rows.push({
+              program_id: programId,
+              week: d.day ? weekNum : weekNum, // ensure week number
+              day: d.day,
+              main_lift: d.mainLift || null,
+              is_deload: !!d.isDeload
+            })
+          }
+        }
+        if (rows.length > 0) {
+          // Best-effort insert; ignore duplicates on reruns
+          const { error: pwErr } = await supabase
+            .from('program_workouts')
+            .insert(rows)
+          if (pwErr) {
+            console.warn('program_workouts insert warning:', pwErr.message)
+          }
+        }
+      }
+    } catch (scaffoldErr) {
+      console.warn('Failed to persist program_workouts scaffold (non-fatal):', scaffoldErr)
+    }
+
 
 
 // Generate user profile

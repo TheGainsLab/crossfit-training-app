@@ -254,8 +254,8 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
     
     for (let day = 0; day < days.length; day++) {
       const dayNumber = day + 1
-      const mainLift = mainLifts[day % 5]
       const isDeload = [4, 8, 12].includes(week)
+      const mainLift = getEquipmentGatedMainLift(mainLifts, day, user?.equipment || [])
       
       console.log(`  📅 Generating ${days[day]} (${mainLift})...`)
       
@@ -308,7 +308,7 @@ if (metconResult.workoutId) {
           }
         } else {
           // Call assign-exercises function
-          const numExercises = getNumExercisesForBlock(block, mainLift, ratios, user?.preferences)
+          const numExercises = getNumExercisesForBlock(block, mainLift, ratios, user?.preferences, isDeload)
           
           const exerciseResponse = await fetch(`${supabaseUrl}/functions/v1/assign-exercises`, {
             method: 'POST',
@@ -388,7 +388,7 @@ if (metconResult.workoutId) {
 }
 
 // === HELPER FUNCTIONS (Exact Google Script Logic) ===
-function getNumExercisesForBlock(block: string, mainLift: string, ratios: any, prefs?: any): number {
+function getNumExercisesForBlock(block: string, mainLift: string, ratios: any, prefs?: any, isDeload?: boolean): number {
   switch (block) {
     case 'SKILLS':
       return 2
@@ -403,7 +403,9 @@ function getNumExercisesForBlock(block: string, mainLift: string, ratios: any, p
         return 2
       }
     case 'STRENGTH AND POWER':
-      // Emphasized lifts get an extra variation on the day they appear
+      // Deload weeks should not add extra volume
+      if (isDeload) return 1
+      // Emphasized lifts get an extra variation on the day they appear (non-deload only)
       if (prefs?.emphasizedStrengthLifts && prefs.emphasizedStrengthLifts.includes(mainLift)) {
         return 2
       }
@@ -413,4 +415,23 @@ function getNumExercisesForBlock(block: string, mainLift: string, ratios: any, p
     default:
       return 2
   }
+}
+
+// Choose a main lift for the day that the user has equipment for
+function getEquipmentGatedMainLift(rotation: string[], dayIndex: number, equipment: string[]): string {
+  const required: Record<string, (eq: string[]) => boolean> = {
+    'Snatch': (eq) => eq.includes('Barbell'),
+    'Clean and Jerk': (eq) => eq.includes('Barbell'),
+    'Back Squat': (eq) => eq.includes('Barbell'),
+    'Front Squat': (eq) => eq.includes('Barbell'),
+    'Press': (eq) => eq.includes('Barbell') || eq.includes('Dumbbells')
+  }
+
+  const tryOrder = [rotation[dayIndex % rotation.length], ...rotation]
+  for (const lift of tryOrder) {
+    const gate = required[lift]
+    if (!gate || gate(equipment)) return lift
+  }
+  // Fallback to first in rotation if none match
+  return rotation[dayIndex % rotation.length]
 }
