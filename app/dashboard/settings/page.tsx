@@ -410,7 +410,9 @@ export default function SettingsPage() {
 
         {/* Basic Settings */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Basic Information</h2>
+          <div className="p-4 mb-4 rounded" style={{ backgroundColor: '#DAE2EA' }}>
+            <h2 className="text-xl font-bold text-gray-900">Basic Information</h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -609,8 +611,8 @@ export default function SettingsPage() {
             const gradient = colors[categoryIndex % colors.length]
             return (
               <div key={category.name} className="border rounded-lg overflow-hidden mb-6">
-                <div className={`bg-gradient-to-r ${gradient} p-4 text-left`}>
-                  <h3 className="text-lg font-semibold text-white">{category.name}</h3>
+                <div className="p-4 text-left" style={{ backgroundColor: '#DAE2EA' }}>
+                  <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
                 </div>
                 <div className="p-6">
                   {category.skills.map((skill, skillIndex) => {
