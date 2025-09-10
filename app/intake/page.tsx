@@ -578,8 +578,8 @@ setSubscriptionStatus(subscription.status)
     const accountData = await createAccountResponse.json()
     console.log('✅ Account created successfully:', accountData.user.id)
 
-    // Save equipment, skills, preferences, and 1RMs
-    await saveUserData(accountData.user.id)
+    // Save equipment, skills, preferences, and 1RMs (use numeric users.id from API response)
+    await saveUserData(accountData.user.userId)
 
     // Sign in the user with the newly created account
     const supabase = createClient()
