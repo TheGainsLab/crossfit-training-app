@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Read current bias and deload flag
+    // Try program_workouts first (if populated in your schema)
     let { data: dayRows, error: readErr } = await supabase
       .from('program_workouts')
       .select('intensity_bias, is_deload')
@@ -79,8 +80,23 @@ export async function POST(request: NextRequest) {
       dayRows = fallbackRows as any
     }
 
-    const current = (dayRows && dayRows.length > 0 && typeof dayRows[0].intensity_bias === 'number') ? dayRows[0].intensity_bias : 0
-    const isDeload = !!(dayRows && dayRows.length > 0 && (dayRows[0] as any).is_deload)
+    let current = (dayRows && dayRows.length > 0 && typeof dayRows[0].intensity_bias === 'number') ? dayRows[0].intensity_bias : 0
+    let isDeload = !!(dayRows && dayRows.length > 0 && (dayRows[0] as any).is_deload)
+
+    // If program_workouts is empty in your project, read overrides table instead
+    if (!dayRows || dayRows.length === 0) {
+      const { data: ov, error: ovErr } = await supabase
+        .from('program_day_overrides')
+        .select('intensity_bias, is_deload')
+        .eq('program_id', programId)
+        .eq('week', week)
+        .eq('day', day)
+        .single()
+      if (!ovErr && ov) {
+        if (typeof ov.intensity_bias === 'number') current = ov.intensity_bias
+        if (typeof (ov as any).is_deload === 'boolean') isDeload = (ov as any).is_deload
+      }
+    }
 
     // Compute new bias
     let requested = typeof bias === 'number' ? bias : current + (typeof delta === 'number' ? delta : 0)
@@ -89,7 +105,7 @@ export async function POST(request: NextRequest) {
     // Deload guard: never above baseline on deload
     if (isDeload) clamped = Math.min(0, clamped)
 
-    // Update all rows for that day so downstream joins are consistent
+    // Attempt update in program_workouts (no-op if table empty)
     const { error: updErr } = await supabase
       .from('program_workouts')
       .update({ intensity_bias: clamped })
@@ -97,8 +113,12 @@ export async function POST(request: NextRequest) {
       .eq('week', week)
       .eq('day', day)
 
-    if (updErr) {
-      return NextResponse.json({ error: updErr.message }, { status: 500 })
+    // Also persist to overrides table (upsert) to support projects that don't populate program_workouts
+    const { error: ovUpErr } = await supabase
+      .from('program_day_overrides')
+      .upsert({ program_id: programId, week, day, intensity_bias: clamped }, { onConflict: 'program_id,week,day' })
+    if (updErr && ovUpErr) {
+      return NextResponse.json({ error: updErr.message || ovUpErr.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, bias: clamped, isDeload })
