@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Read current bias and deload flag
-    const { data: dayRows, error: readErr } = await supabase
+    let { data: dayRows, error: readErr } = await supabase
       .from('program_workouts')
       .select('intensity_bias, is_deload')
       .eq('program_id', programId)
@@ -64,12 +64,23 @@ export async function POST(request: NextRequest) {
       .eq('day', day)
       .limit(1)
 
+    // Fallback if column is_deload does not exist
     if (readErr) {
-      return NextResponse.json({ error: readErr.message }, { status: 500 })
+      const { data: fallbackRows, error: fbErr } = await supabase
+        .from('program_workouts')
+        .select('intensity_bias')
+        .eq('program_id', programId)
+        .eq('week', week)
+        .eq('day', day)
+        .limit(1)
+      if (fbErr) {
+        return NextResponse.json({ error: fbErr.message }, { status: 500 })
+      }
+      dayRows = fallbackRows as any
     }
 
     const current = (dayRows && dayRows.length > 0 && typeof dayRows[0].intensity_bias === 'number') ? dayRows[0].intensity_bias : 0
-    const isDeload = !!(dayRows && dayRows.length > 0 && dayRows[0].is_deload)
+    const isDeload = !!(dayRows && dayRows.length > 0 && (dayRows[0] as any).is_deload)
 
     // Compute new bias
     let requested = typeof bias === 'number' ? bias : current + (typeof delta === 'number' ? delta : 0)
