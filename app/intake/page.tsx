@@ -1404,22 +1404,25 @@ disabled={currentSection <= 1}
 
       <div className="md:col-span-2">
         <label className="block text-sm font-medium text-gray-700 mb-2">Emphasize up to 2 lifts (extra exposure)</label>
-        <div className="flex flex-wrap gap-2">
-          {(formData.preferences?.primaryStrengthLifts || []).map((name) => {
-            const emphasized = formData.preferences?.emphasizedStrengthLifts?.includes(name)
+        <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+          {availableStrengthLifts.map((name) => {
+            const emphasized = !!formData.preferences?.emphasizedStrengthLifts?.includes(name)
+            const maxed = (formData.preferences?.emphasizedStrengthLifts?.length || 0) >= 2
             return (
-              <button
-                key={`emph-${name}`}
-                type="button"
-                onClick={() => toggleEmphasizedStrengthLift(name)}
-                className={`px-3 py-1 rounded-full border ${emphasized ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-800 border-gray-300'} hover:bg-blue-50`}
-              >
-                {name}{emphasized ? ' ★' : ''}
-              </button>
+              <label key={`emph-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                  checked={emphasized}
+                  onChange={() => toggleEmphasizedStrengthLift(name)}
+                  disabled={!emphasized && maxed}
+                />
+                <span className="text-sm text-gray-700">{name}</span>
+              </label>
             )
           })}
         </div>
-        <div className="text-xs text-gray-500 mt-1">You can emphasize at most 2. We’ll keep it safe and deload as needed.</div>
+        <div className="text-xs text-gray-500 mt-1">Select up to two lifts to emphasize. We’ll keep it safe and deload as needed.</div>
       </div>
 
       <div>
