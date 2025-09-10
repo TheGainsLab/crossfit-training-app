@@ -84,24 +84,41 @@ export async function POST(request: NextRequest) {
       console.log('✅ Equipment saved:', equipment.length, 'items')
     }
 
-    // Save user preferences
+    // Save user preferences (with fallback for older schema)
     if (preferences) {
-      const payload = {
+      const fullPayload: any = {
         user_id: userId,
         three_month_goals: preferences.threeMonthGoals || null,
         monthly_primary_goal: preferences.monthlyPrimaryGoal || null,
-        preferred_metcon_exercises: preferences.preferredMetconExercises || [],
-        avoided_exercises: preferences.avoidedExercises || [],
-        training_days_per_week: preferences.trainingDaysPerWeek || 5,
-        primary_strength_lifts: preferences.primaryStrengthLifts || null,
-        emphasized_strength_lifts: preferences.emphasizedStrengthLifts || null
+        preferred_metcon_exercises: Array.isArray(preferences.preferredMetconExercises) ? preferences.preferredMetconExercises : [],
+        avoided_exercises: Array.isArray(preferences.avoidedExercises) ? preferences.avoidedExercises : [],
+        training_days_per_week: typeof preferences.trainingDaysPerWeek === 'number' ? preferences.trainingDaysPerWeek : 5,
+        primary_strength_lifts: Array.isArray(preferences.primaryStrengthLifts) ? preferences.primaryStrengthLifts : null,
+        emphasized_strength_lifts: Array.isArray(preferences.emphasizedStrengthLifts) ? preferences.emphasizedStrengthLifts : null
       }
-      const { error: prefErr } = await supabaseAdmin
+
+      // Attempt upsert with all fields
+      let { error: prefErr } = await supabaseAdmin
         .from('user_preferences')
-        .upsert(payload, { onConflict: 'user_id' })
+        .upsert(fullPayload, { onConflict: 'user_id' })
+
       if (prefErr) {
-        console.error('❌ Preferences upsert error:', prefErr)
-        return NextResponse.json({ error: 'Preferences save failed', details: prefErr.message }, { status: 500 })
+        // If columns don't exist in prod yet, retry with base fields only
+        const basePayload = {
+          user_id: userId,
+          three_month_goals: fullPayload.three_month_goals,
+          monthly_primary_goal: fullPayload.monthly_primary_goal,
+          preferred_metcon_exercises: fullPayload.preferred_metcon_exercises,
+          avoided_exercises: fullPayload.avoided_exercises
+        }
+        const retry = await supabaseAdmin
+          .from('user_preferences')
+          .upsert(basePayload as any, { onConflict: 'user_id' })
+
+        if (retry.error) {
+          console.error('❌ Preferences upsert retry error:', retry.error)
+          return NextResponse.json({ error: 'Preferences save failed', details: retry.error.message }, { status: 500 })
+        }
       }
     }
 

@@ -192,7 +192,7 @@ async function fetchCompleteUserData(supabase: any, user_id: number) {
   // Load user preferences (frequency and lift focus/emphasis)
   const { data: prefs } = await supabase
     .from('user_preferences')
-    .select('training_days_per_week, primary_strength_lifts, emphasized_strength_lifts')
+    .select('*')
     .eq('user_id', user_id)
     .single()
 
