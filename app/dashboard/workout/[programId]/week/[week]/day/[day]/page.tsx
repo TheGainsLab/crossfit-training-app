@@ -121,114 +121,10 @@ const getCurrentUserId = async () => {
 // Intensity local state
 // Note: kept simple (single bias per day) since we only support Strength & Power for now
 
-function IntensityControls({ programId, week, day, isDeload, dayBias, onChangeBias }: { programId: number; week: number; day: number; isDeload: boolean; dayBias: number; onChangeBias: (n: number) => void }) {
-  const bias = dayBias
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const sendDelta = async (delta: number) => {
-    try {
-      setLoading(true)
-      setError(null)
-      const res = await fetch('/api/workouts/intensity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ programId, week, day, delta })
-      })
-      if (!res.ok) throw new Error(await res.text())
-      const data = await res.json()
-      const newBias = typeof data.bias === 'number' ? data.bias : 0
-      onChangeBias(newBias)
-    } catch (e: any) {
-      setError('Failed to update')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="flex items-center justify-end gap-3">
-      <div className="text-xs text-gray-600">
-        Intensity: <span className="font-semibold">{bias != null ? (bias > 0 ? `+${bias}` : bias) : '—'}</span>
-        {isDeload && <span className="ml-2 text-yellow-700">(deload)</span>}
-      </div>
-      <div className="flex items-center gap-1">
-        <button type="button" disabled={loading} onClick={(e) => { e.stopPropagation(); sendDelta(-2) }} className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50">−2</button>
-        <button type="button" disabled={loading} onClick={(e) => { e.stopPropagation(); sendDelta(-1) }} className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50">−1</button>
-        <button type="button" disabled={loading} onClick={(e) => { e.stopPropagation(); sendDelta(0 - (bias ?? 0)) }} className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50">0</button>
-        <button type="button" disabled={loading || isDeload} onClick={(e) => { e.stopPropagation(); sendDelta(+1) }} className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50">+1</button>
-        <button type="button" disabled={loading || isDeload} onClick={(e) => { e.stopPropagation(); sendDelta(+2) }} className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50">+2</button>
-      </div>
-      {error && <span className="text-xs text-red-600">{error}</span>}
-    </div>
-  )
-}
-
-// Helper to adjust Strength & Power prescription in the UI
-function adjustStrengthExercise(ex: Exercise, bias: number, isDeload: boolean): Exercise {
-  const effectiveBias = isDeload && bias > 0 ? 0 : Math.max(-2, Math.min(2, bias || 0))
-  if (effectiveBias === 0) return ex
-
-  const clone: Exercise = { ...ex }
-
-  // Adjust reps if numeric
-  const parseNum = (v: any): number | null => {
-    if (typeof v === 'number') return v
-    if (typeof v === 'string') {
-      const m = v.match(/^\s*(\d+)\s*$/)
-      if (m) return parseInt(m[1])
-    }
-    return null
-  }
-
-  const repsNum = parseNum(clone.reps)
-  if (repsNum !== null) {
-    const repDelta = effectiveBias > 0 ? Math.min(2, effectiveBias) : Math.max(-2, effectiveBias)
-    const newReps = Math.max(1, repsNum + repDelta)
-    clone.reps = newReps
-  }
-
-  // Adjust sets only at +/-2 to keep changes modest
-  const setsNum = parseNum(clone.sets)
-  if (setsNum !== null && Math.abs(effectiveBias) === 2) {
-    const setDelta = effectiveBias > 0 ? 1 : -1
-    const newSets = Math.max(1, setsNum + setDelta)
-    clone.sets = newSets
-  }
-
-  // Adjust weight by ~5% per step if a number is present
-  if (typeof clone.weightTime === 'string') {
-    const wt = clone.weightTime
-    const numMatch = wt.match(/(\d+)(?=\s*(%|kg|lbs|lb|#|$))/i)
-    if (numMatch) {
-      const base = parseInt(numMatch[1])
-      const pct = 1 + 0.05 * effectiveBias
-      let adj = Math.max(1, Math.round(base * pct))
-      // round to nearest 5 for pounds-like units
-      if (!wt.includes('%')) {
-        adj = Math.max(1, Math.round(adj / 5) * 5)
-      }
-      clone.weightTime = wt.replace(numMatch[1], adj.toString())
-    }
-  }
-
-  return clone
-}
+// (Intensity controls removed per request)
 // Client component that handles all the hooks
 function WorkoutPageClient({ programId, week, day }: { programId: string; week: string; day: string }) {
-  const [dayBias, setDayBias] = useState<number>(0)
-
-  useEffect(() => {
-    // Load initial bias from API
-    (async () => {
-      try {
-        const res = await fetch(`/api/workouts/intensity?programId=${Number(programId)}&week=${Number(week)}&day=${Number(day)}`)
-        if (!res.ok) return
-        const data = await res.json()
-        setDayBias(typeof data.bias === 'number' ? data.bias : 0)
-      } catch {}
-    })()
-  }, [programId, week, day])
+  // (Removed intensity state and loaders)
   const [workout, setWorkout] = useState<WorkoutData | null>(null)
   const [completions, setCompletions] = useState<Record<string, Completion>>({})
   const [loading, setLoading] = useState(true)
@@ -696,16 +592,7 @@ const calculateProgress = () => {
         {/* Block Content */}
 {expandedBlocks[block.blockName] && (
   <div className="px-4 pb-4 space-y-4">
-    {block.blockName === 'STRENGTH AND POWER' && (
-      <IntensityControls 
-        programId={Number(programId)} 
-        week={Number(week)} 
-        day={Number(day)} 
-        isDeload={!!workout.isDeload}
-        dayBias={dayBias}
-        onChangeBias={setDayBias}
-      />
-    )}
+    {/* Intensity controls removed */}
     {block.exercises.length === 0 ? (
       <div className="text-center py-8 text-gray-500">
         <div className="text-4xl mb-2">✨</div>
@@ -734,7 +621,7 @@ block.blockName === 'METCONS' ? (
       : exercise.name;
     
     // Apply client-side intensity bias adjustments for Strength & Power only
-    const adjustedExercise = block.blockName === 'STRENGTH AND POWER' ? adjustStrengthExercise(exercise, dayBias, !!workout.isDeload) : exercise
+    const adjustedExercise = exercise
 
     return (
       <ExerciseCard
