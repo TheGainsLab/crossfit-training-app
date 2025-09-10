@@ -603,7 +603,7 @@ setSubscriptionStatus(subscription.status)
     
     // Redirect to program page after successful submission
     setTimeout(() => {
-      router.push('/program')
+      router.push('/dashboard')
     }, 2000)
   }
 
@@ -638,7 +638,7 @@ setSubscriptionStatus(subscription.status)
     setSubmitMessage('✅ Assessment completed successfully! Your personalized program will be generated shortly.')
     
     setTimeout(() => {
-      router.push('/program')
+      router.push('/dashboard')
     }, 2000)
   }
 
@@ -655,7 +655,8 @@ const saveUserData = async (userId: number) => {
       bodyWeight: formData.bodyWeight,
       gender: formData.gender,
       units: formData.units,
-      benchmarks: formData.conditioningBenchmarks  // <-- Use the correct property name
+      benchmarks: formData.conditioningBenchmarks,  // <-- Use the correct property name
+      preferences: formData.preferences
     })
   })
 

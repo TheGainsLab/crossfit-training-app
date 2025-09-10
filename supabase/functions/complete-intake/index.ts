@@ -249,13 +249,30 @@ serve(async (req) => {
           const weekNum = w.week
           const daysArr = w.days || []
           for (const d of daysArr) {
-            rows.push({
-              program_id: programId,
-              week: d.day ? weekNum : weekNum, // ensure week number
-              day: d.day,
-              main_lift: d.mainLift || null,
-              is_deload: !!d.isDeload
-            })
+            const blocksArr = d.blocks || []
+            if (blocksArr.length === 0) {
+              // insert a day-level placeholder to ensure navigation still finds the day
+              rows.push({ program_id: programId, week: weekNum, day: d.day, main_lift: d.mainLift || null, is_deload: !!d.isDeload })
+            } else {
+              for (const b of blocksArr) {
+                const exercises = b.exercises || []
+                if (exercises.length === 0) {
+                  rows.push({ program_id: programId, week: weekNum, day: d.day, block: b.block, main_lift: d.mainLift || null, is_deload: !!d.isDeload })
+                } else {
+                  for (const ex of exercises) {
+                    rows.push({
+                      program_id: programId,
+                      week: weekNum,
+                      day: d.day,
+                      block: b.block,
+                      exercise_name: ex.name,
+                      main_lift: d.mainLift || null,
+                      is_deload: !!d.isDeload
+                    })
+                  }
+                }
+              }
+            }
           }
         }
         if (rows.length > 0) {
