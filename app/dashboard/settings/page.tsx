@@ -647,6 +647,7 @@ export default function SettingsPage() {
 
         {/* 1RM Settings (grouped like intake) */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Section 4: 1RM Lifts</h2>
           <div className="p-4 mb-4 rounded" style={{ backgroundColor: '#DAE2EA' }}>
             <h2 className="text-xl font-bold text-gray-900">1RM Lifts</h2>
           </div>
@@ -711,6 +712,7 @@ export default function SettingsPage() {
 
         {/* Preferences */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Section 5: Preferences</h2>
           <div className="p-4 mb-4 rounded" style={{ backgroundColor: '#DAE2EA' }}>
             <h2 className="text-xl font-bold text-gray-900">Preferences</h2>
           </div>
