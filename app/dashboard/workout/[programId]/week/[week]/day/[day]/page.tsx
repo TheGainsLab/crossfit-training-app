@@ -120,6 +120,73 @@ const getCurrentUserId = async () => {
 
 // Intensity local state
 // Note: kept simple (single bias per day) since we only support Strength & Power for now
+
+function IntensityControls({ programId, week, day, isDeload }: { programId: number; week: number; day: number; isDeload: boolean }) {
+  const [bias, setBias] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        setError(null)
+        const res = await fetch(`/api/workouts/intensity?programId=${programId}&week=${week}&day=${day}`)
+        if (!res.ok) throw new Error(await res.text())
+        const data = await res.json()
+        if (mounted) setBias(typeof data.bias === 'number' ? data.bias : 0)
+      } catch (e: any) {
+        if (mounted) setError('Failed to load intensity')
+      }
+    })()
+    return () => { mounted = false }
+  }, [programId, week, day])
+
+  const sendDelta = async (delta: number) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const res = await fetch('/api/workouts/intensity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ programId, week, day, delta })
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json()
+      setBias(typeof data.bias === 'number' ? data.bias : 0)
+    } catch (e: any) {
+      setError('Failed to update')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-3">
+      <div className="text-xs text-gray-600">
+        Intensity: <span className="font-semibold">{bias != null ? (bias > 0 ? `+${bias}` : bias) : '—'}</span>
+        {isDeload && <span className="ml-2 text-yellow-700">(deload)</span>}
+      </div>
+      <button
+        type="button"
+        disabled={loading}
+        onClick={(e) => { e.stopPropagation(); sendDelta(-1) }}
+        className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+      >
+        −
+      </button>
+      <button
+        type="button"
+        disabled={loading || isDeload}
+        onClick={(e) => { e.stopPropagation(); sendDelta(+1) }}
+        className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+      >
+        +
+      </button>
+      {error && <span className="text-xs text-red-600">{error}</span>}
+    </div>
+  )
+}
 // Client component that handles all the hooks
 function WorkoutPageClient({ programId, week, day }: { programId: string; week: string; day: string }) {
   const [workout, setWorkout] = useState<WorkoutData | null>(null)
