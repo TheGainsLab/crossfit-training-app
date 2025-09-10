@@ -228,6 +228,7 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
   // Determine number of training days from preferences (3-6)
   const clampedDays = Math.max(3, Math.min(6, Number(user?.preferences?.trainingDaysPerWeek || 5)))
   const days = defaultDays.slice(0, clampedDays)
+  console.log(`🗓️ Planned training days per week: ${days.length} (pref=${user?.preferences?.trainingDaysPerWeek})`)
 
   // Determine main lift rotation
   let mainLifts = defaultMainLifts.slice(0)
