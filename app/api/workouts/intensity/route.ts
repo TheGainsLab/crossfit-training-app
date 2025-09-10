@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     // Update all rows for that day so downstream joins are consistent
     const { error: updErr } = await supabase
       .from('program_workouts')
-      .update({ intensity_bias: clamped, updated_at: new Date().toISOString() })
+      .update({ intensity_bias: clamped })
       .eq('program_id', programId)
       .eq('week', week)
       .eq('day', day)
