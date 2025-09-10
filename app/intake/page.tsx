@@ -43,6 +43,9 @@ interface IntakeFormData {
     monthlyPrimaryGoal: string
     preferredMetconExercises: string[]
     avoidedExercises: string[]
+    trainingDaysPerWeek?: number
+    primaryStrengthLifts?: string[]
+    emphasizedStrengthLifts?: string[]
   }
 }
 
@@ -250,6 +253,7 @@ const [currentSection, setCurrentSection] = useState<number>(1)
   })
 
   const [availableExercises, setAvailableExercises] = useState<string[]>([])
+  const [availableStrengthLifts, setAvailableStrengthLifts] = useState<string[]>([])
 
   // Verify Stripe session
   const verifyStripeSession = async (sessionId: string): Promise<StripeSessionData | null> => {
@@ -402,6 +406,12 @@ setSubscriptionStatus(subscription.status)
           const list: string[] = (data || []).map((row: any) => row.name).filter(Boolean)
           setAvailableExercises(list)
         }
+        const { data: strengthData } = await supabase
+          .from('exercises')
+          .select('name')
+          .eq('can_be_strength', true)
+          .order('name', { ascending: true })
+        setAvailableStrengthLifts((strengthData || []).map((r: any) => r.name).filter(Boolean))
       } catch (e) {
         // Keep empty list on failure
       }
@@ -462,6 +472,24 @@ setSubscriptionStatus(subscription.status)
     const prev = formData.preferences?.avoidedExercises || []
     const next = prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
     updatePreferences('avoidedExercises', next)
+  }
+
+  const togglePrimaryStrengthLift = (name: string) => {
+    const prev = formData.preferences?.primaryStrengthLifts || []
+    const next = prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+    updatePreferences('primaryStrengthLifts', next)
+  }
+
+  const toggleEmphasizedStrengthLift = (name: string) => {
+    const prev = formData.preferences?.emphasizedStrengthLifts || []
+    // limit to 2 emphasized
+    let next: string[]
+    if (prev.includes(name)) {
+      next = prev.filter(n => n !== name)
+    } else {
+      next = prev.length >= 2 ? prev : [...prev, name]
+    }
+    updatePreferences('emphasizedStrengthLifts', next)
   }
 
   const validatePassword = (password: string) => {
@@ -1341,6 +1369,57 @@ disabled={currentSection <= 1}
         {(formData.preferences?.monthlyPrimaryGoal?.length || 0) > 100 && (
           <div className="text-xs text-red-600 mt-1">Please keep this under 100 characters.</div>
         )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Training Days per Week</label>
+        <select
+          value={formData.preferences?.trainingDaysPerWeek || 5}
+          onChange={(e) => updatePreferences('trainingDaysPerWeek', parseInt(e.target.value))}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+        >
+          {[3,4,5,6].map(n => (
+            <option key={n} value={n}>{n} days/week</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="md:col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Which lifts shall we train this month?</label>
+        <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+          {availableStrengthLifts.map((name) => (
+            <label key={`focus-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
+              <input
+                type="checkbox"
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                checked={!!formData.preferences?.primaryStrengthLifts?.includes(name)}
+                onChange={() => togglePrimaryStrengthLift(name)}
+              />
+              <span className="text-sm text-gray-700">{name}</span>
+            </label>
+          ))}
+        </div>
+        <div className="text-xs text-gray-500 mt-1">Tip: Choose the lifts you want scheduled most this month.</div>
+      </div>
+
+      <div className="md:col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Emphasize up to 2 lifts (extra exposure)</label>
+        <div className="flex flex-wrap gap-2">
+          {(formData.preferences?.primaryStrengthLifts || []).map((name) => {
+            const emphasized = formData.preferences?.emphasizedStrengthLifts?.includes(name)
+            return (
+              <button
+                key={`emph-${name}`}
+                type="button"
+                onClick={() => toggleEmphasizedStrengthLift(name)}
+                className={`px-3 py-1 rounded-full border ${emphasized ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-800 border-gray-300'} hover:bg-blue-50`}
+              >
+                {name}{emphasized ? ' ★' : ''}
+              </button>
+            )
+          })}
+        </div>
+        <div className="text-xs text-gray-500 mt-1">You can emphasize at most 2. We’ll keep it safe and deload as needed.</div>
       </div>
 
       <div>

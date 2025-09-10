@@ -91,7 +91,10 @@ export async function POST(request: NextRequest) {
         three_month_goals: preferences.threeMonthGoals || null,
         monthly_primary_goal: preferences.monthlyPrimaryGoal || null,
         preferred_metcon_exercises: preferences.preferredMetconExercises || [],
-        avoided_exercises: preferences.avoidedExercises || []
+        avoided_exercises: preferences.avoidedExercises || [],
+        training_days_per_week: preferences.trainingDaysPerWeek || 5,
+        primary_strength_lifts: preferences.primaryStrengthLifts || null,
+        emphasized_strength_lifts: preferences.emphasizedStrengthLifts || null
       }
       const { error: prefErr } = await supabaseAdmin
         .from('user_preferences')
