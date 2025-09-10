@@ -68,6 +68,24 @@ serve(async (req) => {
       skills: abilityResult.skills,
       ability: abilityResult.ability
     }
+
+    // Ensure we have the freshest training_days_per_week from DB
+    try {
+      const { data: freshPrefs } = await supabase
+        .from('user_preferences')
+        .select('training_days_per_week')
+        .eq('user_id', user_id)
+        .single()
+      if (freshPrefs && typeof freshPrefs.training_days_per_week === 'number') {
+        user.preferences = user.preferences || {}
+        user.preferences.trainingDaysPerWeek = freshPrefs.training_days_per_week
+        console.log(`📥 Fresh training_days_per_week: ${freshPrefs.training_days_per_week}`)
+      } else {
+        console.log('📥 No fresh training_days_per_week found; using default/context value')
+      }
+    } catch (e) {
+      console.log('📥 Prefs fetch error; using default/context value')
+    }
     
     // Step 3: Calculate ratios
     console.log('🧮 Step 3: Calculating ratios...')
