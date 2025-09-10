@@ -121,28 +121,10 @@ const getCurrentUserId = async () => {
 // Intensity local state
 // Note: kept simple (single bias per day) since we only support Strength & Power for now
 
-function IntensityControls({ programId, week, day, isDeload }: { programId: number; week: number; day: number; isDeload: boolean }) {
-  const [bias, setBias] = useState<number | null>(null)
+function IntensityControls({ programId, week, day, isDeload, dayBias, onChangeBias }: { programId: number; week: number; day: number; isDeload: boolean; dayBias: number; onChangeBias: (n: number) => void }) {
+  const bias = dayBias
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      try {
-        setError(null)
-        const res = await fetch(`/api/workouts/intensity?programId=${programId}&week=${week}&day=${day}`)
-        if (!res.ok) throw new Error(await res.text())
-        const data = await res.json()
-        if (mounted) setBias(typeof data.bias === 'number' ? data.bias : 0)
-        ;(window as any).__bias__ = typeof data.bias === 'number' ? data.bias : 0
-        window.dispatchEvent(new CustomEvent('intensity-bias-updated', { detail: { programId, week, day, bias: (window as any).__bias__ } }))
-      } catch (e: any) {
-        if (mounted) setError('Failed to load intensity')
-      }
-    })()
-    return () => { mounted = false }
-  }, [programId, week, day])
 
   const sendDelta = async (delta: number) => {
     try {
@@ -155,10 +137,8 @@ function IntensityControls({ programId, week, day, isDeload }: { programId: numb
       })
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
-      setBias(typeof data.bias === 'number' ? data.bias : 0)
-      // inform parent via custom event
-      window.dispatchEvent(new CustomEvent('intensity-bias-updated', { detail: { programId, week, day, bias: data.bias } }))
-      ;(window as any).__bias__ = typeof data.bias === 'number' ? data.bias : 0
+      const newBias = typeof data.bias === 'number' ? data.bias : 0
+      onChangeBias(newBias)
     } catch (e: any) {
       setError('Failed to update')
     } finally {
@@ -236,6 +216,19 @@ function adjustStrengthExercise(ex: Exercise, bias: number, isDeload: boolean): 
 }
 // Client component that handles all the hooks
 function WorkoutPageClient({ programId, week, day }: { programId: string; week: string; day: string }) {
+  const [dayBias, setDayBias] = useState<number>(0)
+
+  useEffect(() => {
+    // Load initial bias from API
+    (async () => {
+      try {
+        const res = await fetch(`/api/workouts/intensity?programId=${Number(programId)}&week=${Number(week)}&day=${Number(day)}`)
+        if (!res.ok) return
+        const data = await res.json()
+        setDayBias(typeof data.bias === 'number' ? data.bias : 0)
+      } catch {}
+    })()
+  }, [programId, week, day])
   const [workout, setWorkout] = useState<WorkoutData | null>(null)
   const [completions, setCompletions] = useState<Record<string, Completion>>({})
   const [loading, setLoading] = useState(true)
@@ -704,7 +697,14 @@ const calculateProgress = () => {
 {expandedBlocks[block.blockName] && (
   <div className="px-4 pb-4 space-y-4">
     {block.blockName === 'STRENGTH AND POWER' && (
-      <IntensityControls programId={Number(programId)} week={Number(week)} day={Number(day)} isDeload={!!workout.isDeload} />
+      <IntensityControls 
+        programId={Number(programId)} 
+        week={Number(week)} 
+        day={Number(day)} 
+        isDeload={!!workout.isDeload}
+        dayBias={dayBias}
+        onChangeBias={setDayBias}
+      />
     )}
     {block.exercises.length === 0 ? (
       <div className="text-center py-8 text-gray-500">
@@ -734,7 +734,7 @@ block.blockName === 'METCONS' ? (
       : exercise.name;
     
     // Apply client-side intensity bias adjustments for Strength & Power only
-    const adjustedExercise = block.blockName === 'STRENGTH AND POWER' ? adjustStrengthExercise(exercise, (window as any).__bias__ ?? 0, !!workout.isDeload) : exercise
+    const adjustedExercise = block.blockName === 'STRENGTH AND POWER' ? adjustStrengthExercise(exercise, dayBias, !!workout.isDeload) : exercise
 
     return (
       <ExerciseCard
