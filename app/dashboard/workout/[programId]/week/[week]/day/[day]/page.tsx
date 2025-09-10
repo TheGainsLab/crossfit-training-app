@@ -135,6 +135,8 @@ function IntensityControls({ programId, week, day, isDeload }: { programId: numb
         if (!res.ok) throw new Error(await res.text())
         const data = await res.json()
         if (mounted) setBias(typeof data.bias === 'number' ? data.bias : 0)
+        ;(window as any).__bias__ = typeof data.bias === 'number' ? data.bias : 0
+        window.dispatchEvent(new CustomEvent('intensity-bias-updated', { detail: { programId, week, day, bias: (window as any).__bias__ } }))
       } catch (e: any) {
         if (mounted) setError('Failed to load intensity')
       }
@@ -154,6 +156,9 @@ function IntensityControls({ programId, week, day, isDeload }: { programId: numb
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
       setBias(typeof data.bias === 'number' ? data.bias : 0)
+      // inform parent via custom event
+      window.dispatchEvent(new CustomEvent('intensity-bias-updated', { detail: { programId, week, day, bias: data.bias } }))
+      ;(window as any).__bias__ = typeof data.bias === 'number' ? data.bias : 0
     } catch (e: any) {
       setError('Failed to update')
     } finally {
@@ -186,6 +191,57 @@ function IntensityControls({ programId, week, day, isDeload }: { programId: numb
       {error && <span className="text-xs text-red-600">{error}</span>}
     </div>
   )
+}
+
+// Helper to adjust Strength & Power prescription in the UI
+function adjustStrengthExercise(ex: Exercise, bias: number, isDeload: boolean): Exercise {
+  const effectiveBias = isDeload && bias > 0 ? 0 : Math.max(-2, Math.min(2, bias || 0))
+  if (effectiveBias === 0) return ex
+
+  const clone: Exercise = { ...ex }
+
+  // Adjust reps if numeric
+  const parseNum = (v: any): number | null => {
+    if (typeof v === 'number') return v
+    if (typeof v === 'string') {
+      const m = v.match(/^\s*(\d+)\s*$/)
+      if (m) return parseInt(m[1])
+    }
+    return null
+  }
+
+  const repsNum = parseNum(clone.reps)
+  if (repsNum !== null) {
+    const repDelta = effectiveBias > 0 ? Math.min(2, effectiveBias) : Math.max(-2, effectiveBias)
+    const newReps = Math.max(1, repsNum + repDelta)
+    clone.reps = newReps
+  }
+
+  // Adjust sets only at +/-2 to keep changes modest
+  const setsNum = parseNum(clone.sets)
+  if (setsNum !== null && Math.abs(effectiveBias) === 2) {
+    const setDelta = effectiveBias > 0 ? 1 : -1
+    const newSets = Math.max(1, setsNum + setDelta)
+    clone.sets = newSets
+  }
+
+  // Adjust weight by ~5% per step if a number is present
+  if (typeof clone.weightTime === 'string') {
+    const wt = clone.weightTime
+    const numMatch = wt.match(/(\d+)(?=\s*(%|kg|lbs|lb|#|$))/i)
+    if (numMatch) {
+      const base = parseInt(numMatch[1])
+      const pct = 1 + 0.05 * effectiveBias
+      let adj = Math.max(1, Math.round(base * pct))
+      // round to nearest 5 for pounds-like units
+      if (!wt.includes('%')) {
+        adj = Math.max(1, Math.round(adj / 5) * 5)
+      }
+      clone.weightTime = wt.replace(numMatch[1], adj.toString())
+    }
+  }
+
+  return clone
 }
 // Client component that handles all the hooks
 function WorkoutPageClient({ programId, week, day }: { programId: string; week: string; day: string }) {
@@ -686,10 +742,13 @@ block.blockName === 'METCONS' ? (
       ? `${exercise.name} - Set ${setNumber}`
       : exercise.name;
     
+    // Apply client-side intensity bias adjustments for Strength & Power only
+    const adjustedExercise = block.blockName === 'STRENGTH AND POWER' ? adjustStrengthExercise(exercise, (window as any).__bias__ ?? 0, !!workout.isDeload) : exercise
+
     return (
       <ExerciseCard
         key={exerciseIndex}
-        exercise={exercise}
+        exercise={adjustedExercise}
         block={block.blockName}
         completion={completions[exerciseKey]}
         onComplete={(completion) => {
