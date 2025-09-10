@@ -514,8 +514,8 @@ export default function SettingsPage() {
 
           <div className="space-y-6">
             <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
-              <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-4">
-                <h3 className="text-lg font-semibold">The Basics</h3>
+              <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                <h3 className="text-lg font-semibold text-gray-900">The Basics</h3>
               </div>
               <div className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -535,8 +535,8 @@ export default function SettingsPage() {
             </div>
 
             <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
-                <h3 className="text-lg font-semibold">The Machines</h3>
+              <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                <h3 className="text-lg font-semibold text-gray-900">The Machines</h3>
               </div>
               <div className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -556,8 +556,8 @@ export default function SettingsPage() {
             </div>
 
             <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
-                <h3 className="text-lg font-semibold">Less Common Equipment</h3>
+              <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                <h3 className="text-lg font-semibold text-gray-900">Less Common Equipment</h3>
               </div>
               <div className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -577,8 +577,8 @@ export default function SettingsPage() {
             </div>
 
             <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
-              <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white p-4">
-                <h3 className="text-lg font-semibold">Minimal Setup</h3>
+              <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                <h3 className="text-lg font-semibold text-gray-900">Minimal Setup</h3>
               </div>
               <div className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
