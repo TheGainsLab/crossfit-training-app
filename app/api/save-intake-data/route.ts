@@ -39,15 +39,16 @@ export async function POST(request: NextRequest) {
 
     // Update user details first
     console.log('👤 Updating user details...')
+    const parsedWeight = typeof bodyWeight === 'number' ? bodyWeight : (bodyWeight ? parseFloat(bodyWeight) : null)
     const { error: userUpdateError } = await supabaseAdmin
       .from('users')
       .update({
-        body_weight: bodyWeight || null,
+        body_weight: parsedWeight,
         gender: gender || null,
         units: units || 'Imperial (lbs)',
         conditioning_benchmarks: benchmarks || {},
         program_generation_pending: false,
-        training_data_updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString()
       })
       .eq('id', userId)
 
