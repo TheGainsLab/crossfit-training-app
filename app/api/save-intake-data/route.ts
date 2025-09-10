@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       console.log('✅ Equipment saved:', equipment.length, 'items')
     }
 
-    // Save user preferences (with fallback for older schema)
+    // Save user preferences (with fallback for older schema and missing unique constraints)
     if (preferences) {
       const fullPayload: any = {
         user_id: userId,
@@ -97,27 +97,53 @@ export async function POST(request: NextRequest) {
         emphasized_strength_lifts: Array.isArray(preferences.emphasizedStrengthLifts) ? preferences.emphasizedStrengthLifts : null
       }
 
-      // Attempt upsert with all fields
-      let { error: prefErr } = await supabaseAdmin
+      const basePayload: any = {
+        user_id: userId,
+        three_month_goals: fullPayload.three_month_goals,
+        monthly_primary_goal: fullPayload.monthly_primary_goal,
+        preferred_metcon_exercises: fullPayload.preferred_metcon_exercises,
+        avoided_exercises: fullPayload.avoided_exercises
+      }
+
+      // Determine if a row already exists
+      const { data: existingRows, error: selError } = await supabaseAdmin
         .from('user_preferences')
-        .upsert(fullPayload, { onConflict: 'user_id' })
+        .select('user_id')
+        .eq('user_id', userId)
 
-      if (prefErr) {
-        // If columns don't exist in prod yet, retry with base fields only
-        const basePayload = {
-          user_id: userId,
-          three_month_goals: fullPayload.three_month_goals,
-          monthly_primary_goal: fullPayload.monthly_primary_goal,
-          preferred_metcon_exercises: fullPayload.preferred_metcon_exercises,
-          avoided_exercises: fullPayload.avoided_exercises
-        }
-        const retry = await supabaseAdmin
+      const exists = !selError && Array.isArray(existingRows) && existingRows.length > 0
+
+      if (exists) {
+        // Try update with all fields, fallback to base fields on error
+        let { error: updErr } = await supabaseAdmin
           .from('user_preferences')
-          .upsert(basePayload as any, { onConflict: 'user_id' })
+          .update(fullPayload)
+          .eq('user_id', userId)
 
-        if (retry.error) {
-          console.error('❌ Preferences upsert retry error:', retry.error)
-          return NextResponse.json({ error: 'Preferences save failed', details: retry.error.message }, { status: 500 })
+        if (updErr) {
+          const retryUpd = await supabaseAdmin
+            .from('user_preferences')
+            .update(basePayload)
+            .eq('user_id', userId)
+          if (retryUpd.error) {
+            console.error('❌ Preferences update error:', updErr, 'retry:', retryUpd.error)
+            return NextResponse.json({ error: 'Preferences save failed', details: retryUpd.error.message }, { status: 500 })
+          }
+        }
+      } else {
+        // Try insert with all fields, fallback to base fields on error
+        let { error: insErr } = await supabaseAdmin
+          .from('user_preferences')
+          .insert(fullPayload)
+
+        if (insErr) {
+          const retryIns = await supabaseAdmin
+            .from('user_preferences')
+            .insert(basePayload)
+          if (retryIns.error) {
+            console.error('❌ Preferences insert error:', insErr, 'retry:', retryIns.error)
+            return NextResponse.json({ error: 'Preferences save failed', details: retryIns.error.message }, { status: 500 })
+          }
         }
       }
     }
