@@ -7,8 +7,8 @@ const corsHeaders = {
 }
 
 // Program configuration (exact from Google Script)
-const days = ['DAY 1', 'DAY 2', 'DAY 3', 'DAY 4', 'DAY 5']
-const mainLifts = ['Snatch', 'Back Squat', 'Press', 'Clean and Jerk', 'Front Squat']
+const defaultDays = ['DAY 1', 'DAY 2', 'DAY 3', 'DAY 4', 'DAY 5']
+const defaultMainLifts = ['Snatch', 'Back Squat', 'Press', 'Clean and Jerk', 'Front Squat']
 const blocks = ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS']
 
 interface GenerateProgramRequest {
@@ -189,6 +189,13 @@ async function fetchCompleteUserData(supabase: any, user_id: number) {
     benchmarks.ten_min_air_bike || ''
   ]
 
+  // Load user preferences (frequency and lift focus/emphasis)
+  const { data: prefs } = await supabase
+    .from('user_preferences')
+    .select('training_days_per_week, primary_strength_lifts, emphasized_strength_lifts')
+    .eq('user_id', user_id)
+    .single()
+
   return {
     name: user.name || 'Unknown User',
     email: user.email || '',
@@ -198,7 +205,12 @@ async function fetchCompleteUserData(supabase: any, user_id: number) {
     equipment: equipmentArray,
     oneRMs: oneRMsArray,
     benchmarks: benchmarksArray,
-    ability: user.ability_level || 'Beginner'
+    ability: user.ability_level || 'Beginner',
+    preferences: {
+      trainingDaysPerWeek: prefs?.training_days_per_week || 5,
+      primaryStrengthLifts: prefs?.primary_strength_lifts || [],
+      emphasizedStrengthLifts: prefs?.emphasized_strength_lifts || []
+    }
   }
 }
 
@@ -212,6 +224,22 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
   // Initialize frequency tracking
   const weeklySkills: Record<string, number> = {}
   const weeklyAccessories: Record<string, number> = {}
+
+  // Determine number of training days from preferences (3-6)
+  const clampedDays = Math.max(3, Math.min(6, Number(user?.preferences?.trainingDaysPerWeek || 5)))
+  const days = defaultDays.slice(0, clampedDays)
+
+  // Determine main lift rotation
+  let mainLifts = defaultMainLifts.slice(0)
+  const preferred = (user?.preferences?.primaryStrengthLifts || []).filter((n: string) => !!n)
+  if (preferred.length > 0) {
+    // Start rotation with preferred lifts, then fill with defaults unique
+    const set = new Set<string>()
+    const ordered: string[] = []
+    preferred.forEach((lift: string) => { if (!set.has(lift)) { set.add(lift); ordered.push(lift) } })
+    defaultMainLifts.forEach((lift) => { if (!set.has(lift)) { set.add(lift); ordered.push(lift) } })
+    mainLifts = ordered
+  }
   
   for (const week of weeksToGenerate) {
     console.log(`📅 Generating Week ${week}...`)
@@ -280,7 +308,7 @@ if (metconResult.workoutId) {
           }
         } else {
           // Call assign-exercises function
-          const numExercises = getNumExercisesForBlock(block, mainLift, ratios)
+          const numExercises = getNumExercisesForBlock(block, mainLift, ratios, user?.preferences)
           
           const exerciseResponse = await fetch(`${supabaseUrl}/functions/v1/assign-exercises`, {
             method: 'POST',
@@ -360,7 +388,7 @@ if (metconResult.workoutId) {
 }
 
 // === HELPER FUNCTIONS (Exact Google Script Logic) ===
-function getNumExercisesForBlock(block: string, mainLift: string, ratios: any): number {
+function getNumExercisesForBlock(block: string, mainLift: string, ratios: any, prefs?: any): number {
   switch (block) {
     case 'SKILLS':
       return 2
@@ -375,6 +403,10 @@ function getNumExercisesForBlock(block: string, mainLift: string, ratios: any): 
         return 2
       }
     case 'STRENGTH AND POWER':
+      // Emphasized lifts get an extra variation on the day they appear
+      if (prefs?.emphasizedStrengthLifts && prefs.emphasizedStrengthLifts.includes(mainLift)) {
+        return 2
+      }
       return 1
     case 'ACCESSORIES':
       return 2

@@ -46,6 +46,10 @@ export default function SettingsPage() {
   const [preferredMetconExercises, setPreferredMetconExercises] = useState<string[]>([])
   const [avoidedExercises, setAvoidedExercises] = useState<string[]>([])
   const [availableExercisesList, setAvailableExercisesList] = useState<string[]>([])
+  const [trainingDaysPerWeek, setTrainingDaysPerWeek] = useState<number>(5)
+  const [primaryStrengthLifts, setPrimaryStrengthLifts] = useState<string[]>([])
+  const [emphasizedStrengthLifts, setEmphasizedStrengthLifts] = useState<string[]>([])
+  const [availableStrengthLifts, setAvailableStrengthLifts] = useState<string[]>([])
 
   const oneRMExercises = [
     'Snatch', 'Power Snatch', 'Clean and Jerk', 'Power Clean',
@@ -199,13 +203,16 @@ export default function SettingsPage() {
       // Load preferences
       const { data: prefs } = await supabase
         .from('user_preferences')
-        .select('three_month_goals, monthly_primary_goal, preferred_metcon_exercises, avoided_exercises')
+        .select('three_month_goals, monthly_primary_goal, preferred_metcon_exercises, avoided_exercises, training_days_per_week, primary_strength_lifts, emphasized_strength_lifts')
         .eq('user_id', userData.id)
         .single()
       setThreeMonthGoals(prefs?.three_month_goals || '')
       setMonthlyPrimaryGoal(prefs?.monthly_primary_goal || '')
       setPreferredMetconExercises(prefs?.preferred_metcon_exercises || [])
       setAvoidedExercises(prefs?.avoided_exercises || [])
+      setTrainingDaysPerWeek(prefs?.training_days_per_week || 5)
+      setPrimaryStrengthLifts(prefs?.primary_strength_lifts || [])
+      setEmphasizedStrengthLifts(prefs?.emphasized_strength_lifts || [])
 
       // Load exercises for preferences
       const { data: exData } = await supabase
@@ -214,6 +221,14 @@ export default function SettingsPage() {
         .eq('can_be_metcons', true)
         .order('name', { ascending: true })
       setAvailableExercisesList((exData || []).map((r: any) => r.name).filter(Boolean))
+
+      // Load strength-capable exercises for lift focus/emphasis (best-effort)
+      const { data: stData } = await supabase
+        .from('exercises')
+        .select('name')
+        .eq('can_be_strength', true)
+        .order('name', { ascending: true })
+      setAvailableStrengthLifts((stData || []).map((r: any) => r.name).filter(Boolean))
 
       setLoading(false)
     } catch (err) {
@@ -350,7 +365,10 @@ export default function SettingsPage() {
           three_month_goals: threeMonthGoals || null,
           monthly_primary_goal: monthlyPrimaryGoal || null,
           preferred_metcon_exercises: preferredMetconExercises || [],
-          avoided_exercises: avoidedExercises || []
+          avoided_exercises: avoidedExercises || [],
+          training_days_per_week: trainingDaysPerWeek || 5,
+          primary_strength_lifts: primaryStrengthLifts || null,
+          emphasized_strength_lifts: emphasizedStrengthLifts || null
         }, { onConflict: 'user_id' })
       if (prefsError) throw prefsError
 
@@ -726,6 +744,40 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Primary Goal <span className="text-gray-500">(limit 100 characters)</span></label>
               <input type="text" value={monthlyPrimaryGoal} onChange={(e) => setMonthlyPrimaryGoal(e.target.value)} maxLength={100} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Improve aerobic base, Pull-up strength, etc." />
               <div className="mt-1 text-xs text-gray-500">{monthlyPrimaryGoal.length}/100</div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Training Days per Week</label>
+              <select value={trainingDaysPerWeek} onChange={(e) => setTrainingDaysPerWeek(parseInt(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                {[3,4,5,6].map(n => (
+                  <option key={n} value={n}>{n} days/week</option>
+                ))}
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Which lifts shall we train this month?</label>
+              <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+                {availableStrengthLifts.map((name) => (
+                  <label key={`focus-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
+                    <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4" checked={primaryStrengthLifts.includes(name)} onChange={() => setPrimaryStrengthLifts(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name])} />
+                    <span className="text-sm text-gray-700">{name}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">Tip: Choose the lifts you want scheduled most this month.</div>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Emphasize up to 2 lifts (extra exposure)</label>
+              <div className="flex flex-wrap gap-2">
+                {primaryStrengthLifts.map((name) => {
+                  const emphasized = emphasizedStrengthLifts.includes(name)
+                  return (
+                    <button key={`emph-${name}`} type="button" onClick={() => setEmphasizedStrengthLifts(prev => prev.includes(name) ? prev.filter(n => n !== name) : (prev.length >= 2 ? prev : [...prev, name]))} className={`px-3 py-1 rounded-full border ${emphasized ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-800 border-gray-300'} hover:bg-blue-50`}>
+                      {name}{emphasized ? ' ★' : ''}
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">You can emphasize at most 2. We’ll keep it safe and deload as needed.</div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Preferred MetCon Exercises</label>
