@@ -1294,8 +1294,8 @@ const saveUserData = async (userId: number) => {
                   <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
                     <h3 className="text-lg font-semibold text-gray-900">Pulling</h3>
                   </div>
-                  <div className="p-4 grid grid-cols-1 md:grid-cols-1 gap-4">
-                    {['Weighted Pullup (do not include body weight)'].map((lift) => {
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {['Weighted Pullup (do not include body weight)', 'Deadlift'].map((lift) => {
                       const index = oneRMLifts.indexOf(lift)
                       return (
                         <div key={lift}>
