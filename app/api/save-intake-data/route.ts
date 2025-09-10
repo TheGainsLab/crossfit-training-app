@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     // Create Supabase client with service role key
     const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Missing Supabase environment variables')
@@ -35,7 +36,30 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log('💾 Saving intake data for user:', userId)
+    // Derive numeric users.id from Authorization header if available
+    let effectiveUserId: number | null = null
+    try {
+      const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
+      if (authHeader && supabaseAnonKey) {
+        const supabaseAuthed = createClient(supabaseUrl, supabaseAnonKey, {
+          global: { headers: { Authorization: authHeader } }
+        })
+        const { data: authData } = await supabaseAuthed.auth.getUser()
+        const authId = authData?.user?.id
+        if (authId) {
+          const { data: urow } = await supabaseAdmin
+            .from('users')
+            .select('id')
+            .eq('auth_id', authId)
+            .single()
+          if (urow?.id) effectiveUserId = urow.id
+        }
+      }
+    } catch {}
+
+    if (!effectiveUserId) effectiveUserId = userId
+
+    console.log('💾 Saving intake data for user:', effectiveUserId)
 
     // Update user details first
     console.log('👤 Updating user details...')
@@ -50,7 +74,7 @@ export async function POST(request: NextRequest) {
         program_generation_pending: false,
         updated_at: new Date().toISOString()
       })
-      .eq('id', userId)
+      .eq('id', effectiveUserId)
 
     if (userUpdateError) {
       console.error('❌ User update error:', userUpdateError)
@@ -62,11 +86,11 @@ export async function POST(request: NextRequest) {
 
     // Save equipment
     console.log('🔧 Saving equipment...')
-    await supabaseAdmin.from('user_equipment').delete().eq('user_id', userId)
+    await supabaseAdmin.from('user_equipment').delete().eq('user_id', effectiveUserId)
     
     if (equipment && equipment.length > 0) {
       const equipmentRecords = equipment.map((equipmentName: string) => ({
-        user_id: userId,
+        user_id: effectiveUserId,
         equipment_name: equipmentName
       }))
       
@@ -88,7 +112,7 @@ export async function POST(request: NextRequest) {
     // Save user preferences (with fallback for older schema and missing unique constraints)
     if (preferences) {
       const fullPayload: any = {
-        user_id: userId,
+        user_id: effectiveUserId,
         three_month_goals: preferences.threeMonthGoals || null,
         monthly_primary_goal: preferences.monthlyPrimaryGoal || null,
         preferred_metcon_exercises: Array.isArray(preferences.preferredMetconExercises) ? preferences.preferredMetconExercises : [],
@@ -99,7 +123,7 @@ export async function POST(request: NextRequest) {
       }
 
       const basePayload: any = {
-        user_id: userId,
+        user_id: effectiveUserId,
         three_month_goals: fullPayload.three_month_goals,
         monthly_primary_goal: fullPayload.monthly_primary_goal,
         preferred_metcon_exercises: fullPayload.preferred_metcon_exercises,
@@ -110,7 +134,7 @@ export async function POST(request: NextRequest) {
       const { data: existingRows, error: selError } = await supabaseAdmin
         .from('user_preferences')
         .select('user_id')
-        .eq('user_id', userId)
+        .eq('user_id', effectiveUserId)
 
       const exists = !selError && Array.isArray(existingRows) && existingRows.length > 0
 
@@ -125,7 +149,7 @@ export async function POST(request: NextRequest) {
           const retryUpd = await supabaseAdmin
             .from('user_preferences')
             .update(basePayload)
-            .eq('user_id', userId)
+            .eq('user_id', effectiveUserId)
           if (retryUpd.error) {
             console.warn('⚠️ Preferences update warning (continuing):', updErr?.message || updErr, 'retry:', retryUpd.error?.message || retryUpd.error)
           }
@@ -149,7 +173,7 @@ export async function POST(request: NextRequest) {
 
   // Save skills
 console.log('🎯 Saving skills...')
-await supabaseAdmin.from('user_skills').delete().eq('user_id', userId)
+await supabaseAdmin.from('user_skills').delete().eq('user_id', effectiveUserId)
 
 if (skills && skills.length > 0) {
   const skillRecords = skills.map((skillLevel: string, index: number) => {
@@ -160,7 +184,7 @@ if (skills && skills.length > 0) {
     }
     
     return {
-      user_id: userId,
+      user_id: effectiveUserId,
       skill_index: index,
       skill_name: getSkillNameByIndex(index),
       skill_level: cleanLevel  // Now saves clean values
@@ -186,7 +210,7 @@ if (skills && skills.length > 0) {
 
     // Save 1RMs
     console.log('💪 Saving 1RMs...')
-    await supabaseAdmin.from('user_one_rms').delete().eq('user_id', userId)
+    await supabaseAdmin.from('user_one_rms').delete().eq('user_id', effectiveUserId)
     
     if (oneRMs && oneRMs.length > 0) {
       const oneRMLifts = [
@@ -197,7 +221,7 @@ if (skills && skills.length > 0) {
       ]
       
       const oneRMRecords = oneRMs.map((oneRMValue: string, index: number) => ({
-        user_id: userId,
+        user_id: effectiveUserId,
         one_rm_index: index,
         exercise_name: oneRMLifts[index],
         one_rm: parseFloat(oneRMValue)
@@ -227,7 +251,7 @@ if (skills && skills.length > 0) {
     const { data: subscription, error: subError } = await supabaseAdmin
       .from('subscriptions')
       .select('billing_interval, status')
-      .eq('user_id', userId)
+      .eq('user_id', effectiveUserId)
       .in('status', ['active', 'trialing'])
       .single()
 
@@ -251,7 +275,7 @@ if (skills && skills.length > 0) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 
-          user_id: userId, 
+          user_id: effectiveUserId, 
           weeksToGenerate 
         })
       }
@@ -274,7 +298,7 @@ if (skills && skills.length > 0) {
     const { data: savedProgram, error: programSaveError } = await supabaseAdmin
       .from('programs')
       .insert({
-        user_id: userId,
+        user_id: effectiveUserId,
         sport_id: 1,
         program_number: 1,
         weeks_generated: weeksToGenerate,
@@ -357,7 +381,7 @@ const profileResponse = await fetch(
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({ 
-      user_id: userId,
+      user_id: effectiveUserId,
       sport_id: 1,
       force_regenerate: false
     })
