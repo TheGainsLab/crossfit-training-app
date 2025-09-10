@@ -587,6 +587,40 @@ const calculateProgress = () => {
         {/* Block Content */}
 {expandedBlocks[block.blockName] && (
   <div className="px-4 pb-4 space-y-4">
+    {block.blockName === 'STRENGTH AND POWER' && (
+      <div className="flex items-center justify-end gap-2">
+        <button
+          type="button"
+          className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          disabled={!!workout.isDeload}
+          onClick={async (e) => {
+            e.stopPropagation()
+            await fetch('/api/workouts/intensity', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ programId: Number(programId), week: Number(week), day: Number(day), delta: -1 })
+            })
+          }}
+        >
+          − Intensity
+        </button>
+        <button
+          type="button"
+          className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          disabled={!!workout.isDeload}
+          onClick={async (e) => {
+            e.stopPropagation()
+            await fetch('/api/workouts/intensity', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ programId: Number(programId), week: Number(week), day: Number(day), delta: +1 })
+            })
+          }}
+        >
+          + Intensity
+        </button>
+      </div>
+    )}
     {block.exercises.length === 0 ? (
       <div className="text-center py-8 text-gray-500">
         <div className="text-4xl mb-2">✨</div>
