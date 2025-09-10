@@ -126,8 +126,7 @@ export async function POST(request: NextRequest) {
             .update(basePayload)
             .eq('user_id', userId)
           if (retryUpd.error) {
-            console.error('❌ Preferences update error:', updErr, 'retry:', retryUpd.error)
-            return NextResponse.json({ error: 'Preferences save failed', details: retryUpd.error.message }, { status: 500 })
+            console.warn('⚠️ Preferences update warning (continuing):', updErr?.message || updErr, 'retry:', retryUpd.error?.message || retryUpd.error)
           }
         }
       } else {
@@ -141,8 +140,7 @@ export async function POST(request: NextRequest) {
             .from('user_preferences')
             .insert(basePayload)
           if (retryIns.error) {
-            console.error('❌ Preferences insert error:', insErr, 'retry:', retryIns.error)
-            return NextResponse.json({ error: 'Preferences save failed', details: retryIns.error.message }, { status: 500 })
+            console.warn('⚠️ Preferences insert warning (continuing):', insErr?.message || insErr, 'retry:', retryIns.error?.message || retryIns.error)
           }
         }
       }
@@ -232,19 +230,13 @@ if (skills && skills.length > 0) {
       .in('status', ['active', 'trialing'])
       .single()
 
-    if (subError || !subscription) {
-      console.error('❌ No active subscription found')
-      return NextResponse.json({ 
-        error: 'No active subscription found',
-        success: false,
-        intakeSaved: true 
-      }, { status: 403 })
-    }
+    // If no active subscription, proceed with default monthly generation (4 weeks)
+    const hasSub = !(subError || !subscription)
 
     // Determine weeks to generate based on subscription
-    const weeksToGenerate = subscription.billing_interval === 'quarter' 
+    const weeksToGenerate = hasSub && subscription.billing_interval === 'quarter' 
       ? Array.from({length: 13}, (_, i) => i + 1)  // Weeks 1-13
-      : [1, 2, 3, 4]  // Weeks 1-4 for monthly
+      : [1, 2, 3, 4]  // Weeks 1-4 for monthly or no subscription
 
     console.log(`🏋️ Generating program for ${weeksToGenerate.length} weeks...`)
 
