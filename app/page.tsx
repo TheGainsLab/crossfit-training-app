@@ -77,12 +77,9 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            Your Personal Coach. Powered by AI.
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
-            Finally, a training program that adapts <strong>with you</strong>. Get a truly personalized fitness journey with an AI coach that learns from every rep, adjusts your plan in real-time, and is available 24/7.
-          </p>
+          <h1 className="text-4xl md:text-6xl font-bold mb-2">AI-Powered Performance.</h1>
+          <h2 className="text-3xl md:text-5xl font-semibold mb-6">In Your Pocket</h2>
+          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">GainsAI learns from every rep, so every workout is high impact</p>
           <button
             onClick={handleGetStarted}
             className="bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors"
