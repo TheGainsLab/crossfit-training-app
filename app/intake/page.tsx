@@ -277,19 +277,23 @@ const [currentSection, setCurrentSection] = useState<number>(1)
         <label className="block text-sm text-gray-700 mb-2">{label}</label>
         <div className="flex items-center gap-2">
           <input
-            type="number"
+            type="text"
             min={0}
             value={m}
+            inputMode="numeric"
+            pattern="[0-9]*"
             onChange={(e) => updateMinutes(e.target.value)}
             className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
             placeholder="MM"
           />
           <span className="text-gray-700">:</span>
           <input
-            type="number"
+            type="text"
             min={0}
             max={59}
             value={s}
+            inputMode="numeric"
+            pattern="[0-9]*"
             onChange={(e) => updateSeconds(e.target.value)}
             className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
             placeholder="SS"
@@ -1426,21 +1430,7 @@ disabled={currentSection <= 1}
         </div>
         <div className="text-xs text-gray-500 mt-1">Choose up to three goals. You can refine with the text box below.</div>
       </div>
-      <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700 mb-2">3-Month Goals <span className="text-gray-500">(limit 250 characters)</span></label>
-        <textarea
-          value={formData.preferences?.threeMonthGoals || ''}
-          onChange={(e) => updatePreferences('threeMonthGoals', e.target.value)}
-          rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Describe your goals for the next 3 months..."
-          maxLength={250}
-        />
-        <div className="mt-1 text-xs text-gray-500">{(formData.preferences?.threeMonthGoals?.length || 0)}/250</div>
-        {(formData.preferences?.threeMonthGoals?.length || 0) > 250 && (
-          <div className="text-xs text-red-600 mt-1">Please keep this under 250 characters.</div>
-        )}
-      </div>
+      {/* 3-Month Goals removed per request */}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">What’s your top priority for this month?</label>
@@ -1490,46 +1480,7 @@ disabled={currentSection <= 1}
         </div>
       </div>
 
-      <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Which lifts shall we train this month?</label>
-        <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-          {availableStrengthLifts.map((name) => (
-            <label key={`focus-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
-              <input
-                type="checkbox"
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-                checked={!!formData.preferences?.primaryStrengthLifts?.includes(name)}
-                onChange={() => togglePrimaryStrengthLift(name)}
-              />
-              <span className="text-sm text-gray-700">{name}</span>
-            </label>
-          ))}
-        </div>
-        <div className="text-xs text-gray-500 mt-1">Tip: Choose the lifts you want scheduled most this month.</div>
-      </div>
-
-      <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Emphasize up to 2 lifts (extra exposure)</label>
-        <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-          {availableStrengthLifts.map((name) => {
-            const emphasized = !!formData.preferences?.emphasizedStrengthLifts?.includes(name)
-            const maxed = (formData.preferences?.emphasizedStrengthLifts?.length || 0) >= 2
-            return (
-              <label key={`emph-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-                  checked={emphasized}
-                  onChange={() => toggleEmphasizedStrengthLift(name)}
-                  disabled={!emphasized && maxed}
-                />
-                <span className="text-sm text-gray-700">{name}</span>
-              </label>
-            )
-          })}
-        </div>
-        <div className="text-xs text-gray-500 mt-1">Select up to two lifts to emphasize. We’ll keep it safe and deload as needed.</div>
-      </div>
+      {/* Lift focus/emphasis removed per request (handled via weekly preview later) */}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Preferred MetCon Exercises</label>
