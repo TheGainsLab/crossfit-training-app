@@ -46,6 +46,8 @@ interface IntakeFormData {
     trainingDaysPerWeek?: number
     primaryStrengthLifts?: string[]
     emphasizedStrengthLifts?: string[]
+    selectedGoals?: string[]
+    metconTimeFocus?: string[]
   }
 }
 
@@ -1393,6 +1395,34 @@ disabled={currentSection <= 1}
     <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Section 5: Preferences</h2>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Quick goal buttons (select up to 3) */}
+      <div className="md:col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Select up to 3 focus areas</label>
+        <div className="flex flex-wrap gap-2">
+          {['Olympic Lifts','General Strength','Gymnastics','Other Skills','Aerobic Capacity','Glycolytic Power (1-5 mins)','Other'].map(opt => {
+            const selected = !!formData.preferences?.selectedGoals?.includes(opt)
+            const canAdd = (formData.preferences?.selectedGoals?.length || 0) < 3
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => {
+                  const current = formData.preferences?.selectedGoals || []
+                  if (selected) {
+                    updatePreferences('selectedGoals', current.filter(o => o !== opt))
+                  } else if (canAdd) {
+                    updatePreferences('selectedGoals', [...current, opt])
+                  }
+                }}
+                className={`px-3 py-1 rounded-full border text-sm ${selected ? 'bg-[#FE5858] text-white border-[#FE5858]' : 'bg-white text-gray-800 border-gray-300'}`}
+              >
+                {opt}
+              </button>
+            )
+          })}
+        </div>
+        <div className="text-xs text-gray-500 mt-1">Choose up to three goals. You can refine with the text box below.</div>
+      </div>
       <div className="md:col-span-2">
         <label className="block text-sm font-medium text-gray-700 mb-2">3-Month Goals <span className="text-gray-500">(limit 250 characters)</span></label>
         <textarea
@@ -1410,19 +1440,16 @@ disabled={currentSection <= 1}
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Primary Goal <span className="text-gray-500">(limit 100 characters)</span></label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">What’s your top priority for this month?</label>
         <input
           type="text"
           value={formData.preferences?.monthlyPrimaryGoal || ''}
           onChange={(e) => updatePreferences('monthlyPrimaryGoal', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="e.g., Improve aerobic base, Pull-up strength, etc."
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
+          placeholder="Describe your top priority (e.g., improve aerobic base)"
           maxLength={100}
         />
         <div className="mt-1 text-xs text-gray-500">{(formData.preferences?.monthlyPrimaryGoal?.length || 0)}/100</div>
-        {(formData.preferences?.monthlyPrimaryGoal?.length || 0) > 100 && (
-          <div className="text-xs text-red-600 mt-1">Please keep this under 100 characters.</div>
-        )}
       </div>
 
       <div>
@@ -1436,6 +1463,28 @@ disabled={currentSection <= 1}
             <option key={n} value={n}>{n} days/week</option>
           ))}
         </select>
+      </div>
+
+      <div className="md:col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-2">MetCon time range you’d like to target more</label>
+        <div className="flex flex-wrap gap-2">
+          {['1:00 - 5:00','5:00 - 10:00','10:00 - 15:00','15:00 - 20:00','20:00 - 30:00','Over 30:00'].map(opt => {
+            const selected = !!formData.preferences?.metconTimeFocus?.includes(opt)
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => {
+                  const current = formData.preferences?.metconTimeFocus || []
+                  updatePreferences('metconTimeFocus', selected ? current.filter(o => o !== opt) : [...current, opt])
+                }}
+                className={`px-3 py-1 rounded-full border text-sm ${selected ? 'bg-[#FE5858] text-white border-[#FE5858]' : 'bg-white text-gray-800 border-gray-300'}`}
+              >
+                {opt}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       <div className="md:col-span-2">
