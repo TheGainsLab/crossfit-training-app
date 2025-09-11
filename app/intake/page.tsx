@@ -159,9 +159,10 @@ interface EquipmentCategoryCardProps {
   formData: IntakeFormData
   toggleEquipment: (equipment: string) => void
   colorClass: string
+  onSetEquipment: (list: string[]) => void
 }
 
-function EquipmentCategoryCard({ title, description, icon, equipment, formData, toggleEquipment, colorClass }: EquipmentCategoryCardProps) {
+function EquipmentCategoryCard({ title, description, icon, equipment, formData, toggleEquipment, colorClass, onSetEquipment }: EquipmentCategoryCardProps) {
   const selectedCount = equipment.filter(item => formData.equipment.includes(item)).length
   
   return (
@@ -180,9 +181,8 @@ function EquipmentCategoryCard({ title, description, icon, equipment, formData, 
                 type="button"
                 className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
                 onClick={() => {
-                  equipment.forEach(item => {
-                    if (!formData.equipment.includes(item)) toggleEquipment(item)
-                  })
+                  const merged = Array.from(new Set([...(formData.equipment || []), ...equipment]))
+                  onSetEquipment(merged)
                 }}
               >
                 Select All
@@ -191,9 +191,8 @@ function EquipmentCategoryCard({ title, description, icon, equipment, formData, 
                 type="button"
                 className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
                 onClick={() => {
-                  equipment.forEach(item => {
-                    if (formData.equipment.includes(item)) toggleEquipment(item)
-                  })
+                  const filtered = (formData.equipment || []).filter(item => !equipment.includes(item))
+                  onSetEquipment(filtered)
                 }}
               >
                 Clear
@@ -1022,6 +1021,7 @@ const saveUserData = async (userId: number) => {
       formData={formData}
       toggleEquipment={toggleEquipment}
       colorClass="bg-[#DAE2EA]"
+      onSetEquipment={(list) => updateFormData('equipment', list)}
     />
 
     <EquipmentCategoryCard
@@ -1037,6 +1037,7 @@ const saveUserData = async (userId: number) => {
       formData={formData}
       toggleEquipment={toggleEquipment}
       colorClass="bg-[#DAE2EA]"
+      onSetEquipment={(list) => updateFormData('equipment', list)}
     />
 
     <EquipmentCategoryCard
@@ -1058,6 +1059,7 @@ const saveUserData = async (userId: number) => {
       formData={formData}
       toggleEquipment={toggleEquipment}
       colorClass="bg-[#DAE2EA]"
+      onSetEquipment={(list) => updateFormData('equipment', list)}
     />
 
     <EquipmentCategoryCard
@@ -1070,6 +1072,7 @@ const saveUserData = async (userId: number) => {
       formData={formData}
       toggleEquipment={toggleEquipment}
       colorClass="bg-[#DAE2EA]"
+      onSetEquipment={(list) => updateFormData('equipment', list)}
     />
   </div>
 
