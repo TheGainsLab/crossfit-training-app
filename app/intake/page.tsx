@@ -246,6 +246,58 @@ const [currentSection, setCurrentSection] = useState<number>(1)
     }
   }, [currentSection])
 
+  // Helper: split MM:SS string into minutes/seconds numbers
+  const getTimeParts = (val?: string) => {
+    const str = (val || '').trim()
+    if (!str || !str.includes(':')) return { m: '', s: '' }
+    const [m, s] = str.split(':')
+    return { m: m || '', s: s || '' }
+  }
+
+  // Helper: render a MM:SS time input (two boxes with a fixed colon)
+  const TimeInput = ({ label, field } : { label: string, field: keyof IntakeFormData['conditioningBenchmarks'] }) => {
+    const { m, s } = getTimeParts(formData.conditioningBenchmarks[field] as string)
+    const updateMinutes = (minStr: string) => {
+      const min = (minStr || '').replace(/[^0-9]/g, '')
+      const sec = (s || '0').replace(/[^0-9]/g, '')
+      const paddedSec = String(Math.max(0, Math.min(59, parseInt(sec || '0')))).padStart(2, '0')
+      const newVal = min ? `${parseInt(min)}:${paddedSec}` : ''
+      updateFormData('conditioningBenchmarks', { ...formData.conditioningBenchmarks, [field]: newVal })
+    }
+    const updateSeconds = (secStr: string) => {
+      const min = (m || '0').replace(/[^0-9]/g, '')
+      const sec = (secStr || '').replace(/[^0-9]/g, '')
+      const secNum = String(Math.max(0, Math.min(59, parseInt(sec || '0')))).padStart(2, '0')
+      const newVal = min ? `${parseInt(min)}:${secNum}` : `0:${secNum}`
+      updateFormData('conditioningBenchmarks', { ...formData.conditioningBenchmarks, [field]: newVal })
+    }
+    return (
+      <div>
+        <label className="block text-sm text-gray-700 mb-2">{label}</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min={0}
+            value={m}
+            onChange={(e) => updateMinutes(e.target.value)}
+            className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
+            placeholder="MM"
+          />
+          <span className="text-gray-700">:</span>
+          <input
+            type="number"
+            min={0}
+            max={59}
+            value={s}
+            onChange={(e) => updateSeconds(e.target.value)}
+            className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
+            placeholder="SS"
+          />
+        </div>
+      </div>
+    )
+  }
+
   const [formData, setFormData] = useState<IntakeFormData>({
     name: '',
     email: '',
@@ -1138,18 +1190,9 @@ const saveUserData = async (userId: number) => {
                       <h3 className="text-lg font-semibold text-gray-900">Running Benchmarks</h3>
                     </div>
                     <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm text-gray-700 mb-2">1 Mile Run (MM:SS)</label>
-                        <input type="text" placeholder="7:30" value={formData.conditioningBenchmarks.mileRun} onChange={(e) => updateConditioning('mileRun', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-700 mb-2">5K Run (MM:SS)</label>
-                        <input type="text" placeholder="25:30" value={formData.conditioningBenchmarks.fiveKRun} onChange={(e) => updateConditioning('fiveKRun', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-700 mb-2">10K Run (MM:SS)</label>
-                        <input type="text" placeholder="52:15" value={formData.conditioningBenchmarks.tenKRun} onChange={(e) => updateConditioning('tenKRun', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      </div>
+                      <TimeInput label="1 Mile Run (MM:SS)" field="mileRun" />
+                      <TimeInput label="5K Run (MM:SS)" field="fiveKRun" />
+                      <TimeInput label="10K Run (MM:SS)" field="tenKRun" />
                     </div>
                   </div>
 
@@ -1159,18 +1202,9 @@ const saveUserData = async (userId: number) => {
                       <h3 className="text-lg font-semibold text-gray-900">Rowing Benchmarks</h3>
                     </div>
                     <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm text-gray-700 mb-2">1K Row (MM:SS)</label>
-                        <input type="text" placeholder="3:45" value={formData.conditioningBenchmarks.oneKRow} onChange={(e) => updateConditioning('oneKRow', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-700 mb-2">2K Row (MM:SS)</label>
-                        <input type="text" placeholder="7:20" value={formData.conditioningBenchmarks.twoKRow} onChange={(e) => updateConditioning('twoKRow', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-700 mb-2">5K Row (MM:SS)</label>
-                        <input type="text" placeholder="19:15" value={formData.conditioningBenchmarks.fiveKRow} onChange={(e) => updateConditioning('fiveKRow', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      </div>
+                      <TimeInput label="1K Row (MM:SS)" field="oneKRow" />
+                      <TimeInput label="2K Row (MM:SS)" field="twoKRow" />
+                      <TimeInput label="5K Row (MM:SS)" field="fiveKRow" />
                     </div>
                   </div>
 
@@ -1182,38 +1216,23 @@ const saveUserData = async (userId: number) => {
                     <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm text-gray-700 mb-2">10-Minute Air Bike (calories)</label>
-                        <input type="number" placeholder="185" value={formData.conditioningBenchmarks.airBike10MinCalories} onChange={(e) => updateConditioning('airBike10MinCalories', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      </div>
-                      <div>
-                        {formData.conditioningBenchmarks.airBike10MinCalories?.trim() && (
-                          <select value={formData.conditioningBenchmarks.airBikeType} onChange={(e) => updateConditioning('airBikeType', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" required>
-                            <option value="">Select an Air Bike Type</option>
-                            {airBikeTypes.map((type) => (
-                              <option key={type} value={type}>{type}</option>
-                            ))}
-                          </select>
-                        )}
+                        <div className="grid grid-cols-1 gap-2">
+                          <input type="number" placeholder="185" value={formData.conditioningBenchmarks.airBike10MinCalories} onChange={(e) => updateConditioning('airBike10MinCalories', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                          {formData.conditioningBenchmarks.airBike10MinCalories?.trim() && (
+                            <select value={formData.conditioningBenchmarks.airBikeType} onChange={(e) => updateConditioning('airBikeType', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" required>
+                              <option value="">Select an Air Bike Type</option>
+                              {airBikeTypes.map((type) => (
+                                <option key={type} value={type}>{type}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Show bike type only when a calorie score is entered */}
-                {formData.conditioningBenchmarks.airBike10MinCalories?.trim() && (
-                  <div className="mt-4">
-                    <select
-                      value={formData.conditioningBenchmarks.airBikeType}
-                      onChange={(e) => updateConditioning('airBikeType', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                      required
-                    >
-                      <option value="">Select an Air Bike Type</option>
-                      {airBikeTypes.map((type) => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                {/* second dropdown removed */}
 
        {/* ADD NAVIGATION BUTTONS HERE */}
                 <div className="flex justify-between mt-8">
