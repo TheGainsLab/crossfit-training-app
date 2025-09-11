@@ -99,23 +99,27 @@ export default function LandingPage() {
             </p>
             
             <div className="bg-blue-50 rounded-lg p-8">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">
-                Ask anything. Get answers that fit <strong>your</strong> life:
-              </h3>
-              <div className="grid md:grid-cols-2 gap-4">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2 text-center">Personalized Guidance</h3>
+              <p className="text-gray-700 mb-6 text-center">GainsAI connects to all of your information to maximize every aspect of your training. Ask it anything!</p>
+              <div className="space-y-4">
                 <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <p className="text-gray-800 italic">"Plan my meals for a high-protein day."</p>
+                  <p className="text-gray-900 font-medium">I need a pacing strategy for today’s MetCon.</p>
+                  <p className="text-gray-700 mt-2"><span className="font-semibold">GainsAI:</span> Based on your 1RMs, you’ll maximize your score with fast singles on the cleans and short sets of toes to bar. This will make your transitions faster and reduce wasted time.</p>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <p className="text-gray-800 italic">"My shoulder is sore, what substitutions can I make?"</p>
+                  <p className="text-gray-900 font-medium">Help me plan my meals for the week. I want to eat 150-175g of protein per day.</p>
+                  <p className="text-gray-700 mt-2"><span className="font-semibold">GainsAI:</span> Here are 6 meal suggestions. Tell me your favorites and I’ll suggest some more like those.</p>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <p className="text-gray-800 italic">"Create a grocery list for my budget."</p>
+                  <p className="text-gray-900 font-medium">Explain the benefit of doing cardio in a fasted state.</p>
+                  <p className="text-gray-700 mt-2"><span className="font-semibold">GainsAI:</span> Fasted cardio can have some benefits in terms of mitochondrial biogenesis, due to demand for increased fat utilization. However, some athletes report decreased intensity. Want to learn more?</p>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <p className="text-gray-800 italic">"Analyze my strength progress this month."</p>
+                  <p className="text-gray-900 font-medium">I’m traveling this week and will be in a hotel gym. Help me revise my training for the next 3 days.</p>
+                  <p className="text-gray-700 mt-2"><span className="font-semibold">GainsAI:</span> No problem. Most hotel gyms have light dumbbells and treadmills. Here are some workouts that mirror the stimulus of your program.</p>
                 </div>
               </div>
+              <p className="text-center text-gray-900 font-semibold mt-6">Stop following generic plans. Be the main character in your training.</p>
             </div>
           </div>
         </div>
