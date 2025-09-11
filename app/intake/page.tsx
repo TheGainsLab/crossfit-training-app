@@ -164,15 +164,15 @@ function EquipmentCategoryCard({ title, description, icon, equipment, formData, 
   
   return (
     <div className="border-2 border-gray-200 rounded-xl overflow-hidden hover:border-blue-300 transition-colors">
-      <div className={`${colorClass} text-white p-4`}>
+      <div className={`${colorClass} p-4`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
           </div>
           <div className="text-right">
-            <div className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
+            <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold" style={{ backgroundColor: '#FE5858', color: '#ffffff' }}>
               {selectedCount}/{equipment.length}
-            </div>
+            </span>
           </div>
         </div>
       </div>
@@ -212,7 +212,7 @@ const [currentSection, setCurrentSection] = useState<number>(1)
   const searchParams = useSearchParams()
 
   const sectionTitles = ['Personal Info', 'Skills', 'Conditioning', '1RM Lifts', 'Preferences', 'Generate']
-  const primaryBtn = 'px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+  const primaryBtn = 'px-6 py-2 bg-[#FE5858] text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed'
   const secondaryBtn = 'px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed'
 
   // Ensure each section loads at the top of the page
@@ -747,7 +747,7 @@ const saveUserData = async (userId: number) => {
             </p>
             <button
               onClick={() => router.push('/pricing')}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+              className="bg-[#FE5858] text-white px-6 py-3 rounded-lg hover:opacity-90"
             >
               View Pricing Plans
             </button>
@@ -770,13 +770,13 @@ const saveUserData = async (userId: number) => {
             <div className="mt-6">
 
             <div className="flex justify-between text-sm text-gray-500 mb-2">
-  <span>Section {currentSection} of 5</span>
-  <span>{Math.round((currentSection / 5) * 100)}% Complete</span>
+  <span>Section {currentSection} of {sectionTitles.length}</span>
+  <span>{Math.round((currentSection / sectionTitles.length) * 100)}% Complete</span>
 </div>
 <div className="w-full bg-gray-200 rounded-full h-2">
   <div 
-    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-    style={{ width: `${(currentSection / 5) * 100}%` }}
+    className="h-2 rounded-full transition-all duration-300"
+    style={{ width: `${(currentSection / sectionTitles.length) * 100}%`, backgroundColor: '#FE5858' }}
   />
 </div>
 
@@ -792,9 +792,9 @@ const saveUserData = async (userId: number) => {
                       key={title}
                       className={`text-center px-3 py-1 rounded-full border ${
                         isActive
-                          ? 'bg-blue-50 text-blue-700 border-blue-200 font-medium'
+                          ? 'bg-[#FE5858]/10 text-[#FE5858] border-[#FE5858]/30 font-medium'
                           : isCompleted
-                            ? 'bg-green-50 text-green-700 border-green-200'
+                            ? 'bg-[#DAE2EA] text-gray-700 border-[#DAE2EA]'
                             : 'text-gray-500 border-gray-200'
                       }`}
                     >
@@ -1026,7 +1026,7 @@ const saveUserData = async (userId: number) => {
                     type="button"
                     onClick={nextSection}
                     disabled={!isValidSection(currentSection)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2 bg-[#FE5858] text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
                   </button>
@@ -1212,7 +1212,7 @@ const saveUserData = async (userId: number) => {
                     type="button"
                     onClick={nextSection}
                     disabled={!isValidSection(currentSection)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2 bg-[#FE5858] text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
                   </button>
