@@ -173,6 +173,30 @@ function EquipmentCategoryCard({ title, description, icon, equipment, formData, 
             <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold" style={{ backgroundColor: '#FE5858', color: '#ffffff' }}>
               {selectedCount}/{equipment.length}
             </span>
+            <div className="mt-1 flex items-center justify-end gap-2 text-xs">
+              <button
+                type="button"
+                className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+                onClick={() => {
+                  equipment.forEach(item => {
+                    if (!formData.equipment.includes(item)) toggleEquipment(item)
+                  })
+                }}
+              >
+                Select All
+              </button>
+              <button
+                type="button"
+                className="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+                onClick={() => {
+                  equipment.forEach(item => {
+                    if (formData.equipment.includes(item)) toggleEquipment(item)
+                  })
+                }}
+              >
+                Clear
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -185,7 +209,7 @@ function EquipmentCategoryCard({ title, description, icon, equipment, formData, 
                 type="checkbox"
                 checked={formData.equipment.includes(item)}
                 onChange={() => toggleEquipment(item)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-5 w-5"
+                className="rounded border-gray-300 h-5 w-5 accent-[#DAE2EA]"
               />
               <span className="text-sm text-gray-700">{item}</span>
             </label>
@@ -866,20 +890,16 @@ const saveUserData = async (userId: number) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Choose your gender *
                   </label>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {['Male', 'Female', 'Prefer not to say'].map((option) => (
-                      <label key={option} className="flex items-center">
-                        <input
-                          type="radio"
-                          name="gender"
-                          value={option}
-                          checked={formData.gender === option}
-                          onChange={(e) => updateFormData('gender', e.target.value)}
-                          className="mr-2 h-5 w-5"
-                          required
-                        />
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => updateFormData('gender', option)}
+                        className={`px-3 py-2 rounded-lg border text-sm ${formData.gender === option ? 'bg-[#FE5858] text-white border-[#FE5858]' : 'bg-white text-gray-700 border-gray-300'}`}
+                      >
                         {option}
-                      </label>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -888,20 +908,16 @@ const saveUserData = async (userId: number) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Which unit system do you prefer? *
                   </label>
-                  <div className="space-y-2">
-                    {['Imperial (lbs)', 'Metric (kg)'].map((option) => (
-                      <label key={option} className="flex items-center">
-                        <input
-                          type="radio"
-                          name="units"
-                          value={option}
-                          checked={formData.units === option}
-                          onChange={(e) => updateFormData('units', e.target.value)}
-                          className="mr-2 h-5 w-5"
-                          required
-                        />
+                  <div className="grid grid-cols-2 gap-2">
+                    {['Metric (kg)', 'Imperial (lbs)'].map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => updateFormData('units', option)}
+                        className={`px-3 py-2 rounded-lg border text-sm ${formData.units === option ? 'bg-[#FE5858] text-white border-[#FE5858]' : 'bg-white text-gray-700 border-gray-300'}`}
+                      >
                         {option}
-                      </label>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -1059,20 +1075,22 @@ const saveUserData = async (userId: number) => {
                         <label className="block text-base font-bold text-gray-800 mb-2">
                           {skill.name}
                         </label>
-                        <div className="space-y-1 text-left flex flex-col items-start sm:flex-row sm:flex-wrap gap-2">
-                          {category.levels.map((level) => (
-                            <label key={level} className="flex items-center mr-4">
-                              <input
-                                type="radio"
-                                name={`skill-${skill.index}`}
-                                value={level}
-                                checked={formData.skills[skill.index] === level}
-                                onChange={(e) => updateSkill(skill.index, e.target.value)}
-                                className="mr-2 h-5 w-5"
-                              />
-                              {level}
-                            </label>
-                          ))}
+                        <div className="grid grid-cols-4 gap-2">
+                          {category.levels.map((level) => {
+                            // Derive a short label (rep range) if present in parentheses
+                            const short = level.includes('(') ? level.substring(level.indexOf('(') + 1, level.indexOf(')')) : level
+                            const selected = formData.skills[skill.index] === level
+                            return (
+                              <button
+                                key={level}
+                                type="button"
+                                onClick={() => updateSkill(skill.index, level)}
+                                className={`px-2 py-2 rounded-md text-xs border ${selected ? 'bg-[#FE5858] text-white border-[#FE5858]' : 'bg-white text-gray-700 border-gray-300'}`}
+                              >
+                                {short}
+                              </button>
+                            )
+                          })}
                         </div>
                       </div>
                     ))}
