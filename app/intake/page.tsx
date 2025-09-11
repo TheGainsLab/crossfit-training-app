@@ -1119,7 +1119,7 @@ const saveUserData = async (userId: number) => {
                   Section 2: Skills
                 </h2>
                 <p className="text-gray-600 mb-6">
-                  Please select your proficiency for each group of skills. We will use this to ensure your workouts have the correct stimulus.
+                  Please choose the range into which your maximum unbroken set falls.
                 </p>
 
                 {skillCategories.map((category, idx) => (
@@ -1482,39 +1482,7 @@ disabled={currentSection <= 1}
 
       {/* Lift focus/emphasis removed per request (handled via weekly preview later) */}
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Preferred MetCon Exercises</label>
-        <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-          {availableExercises.map((name) => (
-            <label key={`pref-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
-              <input
-                type="checkbox"
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-                checked={!!formData.preferences?.preferredMetconExercises?.includes(name)}
-                onChange={() => togglePreferredExercise(name)}
-              />
-              <span className="text-sm text-gray-700">{name}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Exercises to Avoid</label>
-        <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-          {availableExercises.map((name) => (
-            <label key={`avoid-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
-              <input
-                type="checkbox"
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-                checked={!!formData.preferences?.avoidedExercises?.includes(name)}
-                onChange={() => toggleAvoidedExercise(name)}
-              />
-              <span className="text-sm text-gray-700">{name}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+      
     </div>
 
     <div className="flex justify-between mt-8">

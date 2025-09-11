@@ -779,28 +779,7 @@ export default function SettingsPage() {
               </div>
               <div className="text-xs text-gray-500 mt-1">You can emphasize at most 2. We’ll keep it safe and deload as needed.</div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Preferred MetCon Exercises</label>
-              <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-                {availableExercisesList.map((name) => (
-                  <label key={`pref-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
-                    <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4" checked={preferredMetconExercises.includes(name)} onChange={() => setPreferredMetconExercises(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name])} />
-                    <span className="text-sm text-gray-700">{name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Exercises to Avoid</label>
-              <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-                {availableExercisesList.map((name) => (
-                  <label key={`avoid-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
-                    <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4" checked={avoidedExercises.includes(name)} onChange={() => setAvoidedExercises(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name])} />
-                    <span className="text-sm text-gray-700">{name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+            
           </div>
         </div>
 
