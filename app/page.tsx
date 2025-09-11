@@ -133,12 +133,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How GainsAI Adapts Your Training */}
+      {/* How GainsAI Adapts Your Training (retained layout, updated copy) */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">How GainsAI™ Adapts Your Training</h2>
-            <p className="text-xl text-gray-600">Your program evolves as you do. Predict and prevent plateaus. Eliminate guesswork.</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">From Data to Gains.</h2>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
@@ -146,22 +145,22 @@ export default function LandingPage() {
               <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-xl">1</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Log Your Effort with a Tap</h3>
-              <p className="text-gray-600">Easily record your sets, reps, RPE, and movement quality directly in the app. We handle the complex data tracking so you can focus on your workout.</p>
+              <h3 className="text-xl font-semibold mb-2">Tell us your goals and start training.</h3>
+              <p className="text-gray-600">Easily record sets, reps, RPE and quality with a few taps on the screen</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-xl">2</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">AI Analyzes Your Performance</h3>
-              <p className="text-gray-600">GainsAI™ aggregates your data after every session, detecting patterns, plateaus, and opportunities for growth that are impossible to see on your own.</p>
+              <h3 className="text-xl font-semibold mb-2">AI analyzes everything</h3>
+              <p className="text-gray-600">GainsAI analyzes results of after every workout, recognizing opportunities for patterns and growth</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white font-bold text-xl">3</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Your Plan Automatically Adapts</h3>
-              <p className="text-gray-600">Your next workout is intelligently updated based on your most recent performance. It proactively substitutes exercises, adjusts volume, and breaks through plateaus to ensure you're always making progress.</p>
+              <h3 className="text-xl font-semibold mb-2">AI-Powered adjustments</h3>
+              <p className="text-gray-600">Your program automatically adjusts—intelligently updating exercises, volume, and intensity to break plateaus and fuel your progress.</p>
             </div>
           </div>
         </div>
