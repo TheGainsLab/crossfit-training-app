@@ -77,11 +77,11 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-2">AI-Powered Performance.</h1>
+          <h1 className="text-4xl md:text-6xl font-bold mb-2">AI-Powered Performance</h1>
           <h2 className="text-3xl md:text-5xl font-semibold mb-6">In Your Pocket</h2>
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">GainsAI learns from every rep, so every workout is high impact</p>
           <button
-            onClick={handleGetStarted}
+            onClick={() => router.push('/start')}
             className="bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors"
           >
             Start Your AI-Powered Journey
@@ -92,13 +92,10 @@ export default function LandingPage() {
       {/* What is GainsAI Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">What is GainsAI™?</h2>
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">What is Gains AI?</h2>
           <div className="max-w-4xl mx-auto">
-            <p className="text-lg text-gray-700 mb-6 text-center">
-              GainsAI is your dedicated coach in your pocket. It's built on advanced AI that deeply understands fitness, but more importantly, it understands you.
-            </p>
             <p className="text-lg text-gray-700 mb-8 text-center">
-              Unlike a generic chatbot, GainsAI has access to your performance history, goals, and preferences. This means every answer, every adjustment, and every piece of advice is tailored specifically to your body and your progress.
+              GainsAI is an advanced AI powered by your performance history, goals and feedback. As you train, it learns and adapts, tailoring live program adjustments and coaching advice specifically to you.
             </p>
             
             <div className="bg-blue-50 rounded-lg p-8">
