@@ -120,6 +120,14 @@ export default function LandingPage() {
                 </div>
               </div>
               <p className="text-center text-gray-900 font-semibold mt-6">Stop following generic plans. Be the main character in your training.</p>
+              <div className="text-center mt-6">
+                <a
+                  href="https://www.thegainsapps.com/start"
+                  className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+                >
+                  Start Now
+                </a>
+              </div>
             </div>
           </div>
         </div>
