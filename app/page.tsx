@@ -233,42 +233,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Getting Started Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">Getting Started: Your Journey to Smarter Gains</h2>
-          <div className="grid md:grid-cols-4 gap-8 mt-12">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-xl">1</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Set Your Foundation</h3>
-              <p className="text-gray-600">Complete a quick assessment of your goals, strength levels, and equipment. GainsAI™ uses this to build your 100% personalized baseline program.</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-xl">2</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Train & Log with Ease</h3>
-              <p className="text-gray-600">Execute your workouts and log your results with simple taps. Your sets and reps are tracked automatically. Just add your RPE and quality notes.</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-xl">3</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Get AI-Powered Adjustments</h3>
-              <p className="text-gray-600">This is where the magic happens. GainsAI works behind the scenes, evolving your programming in real-time to push you past plateaus and capitalize on breakthroughs.</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-xl">4</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Ask & Analyze</h3>
-              <p className="text-gray-600">Get instant coaching on any fitness topic, backed by your entire training history. Understand your data and make informed decisions like never before.</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       {/* Final CTA */}
       <section className="bg-gray-900 text-white py-16">
