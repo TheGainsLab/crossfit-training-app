@@ -15,7 +15,29 @@ export default function Navigation() {
   const pathname = usePathname()
 
   useEffect(() => {
+    const supabase = createClient()
     loadUser()
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const authedUser = (session?.user as User) || null
+      setUser(authedUser)
+      if (authedUser) {
+        // Refresh name on auth change
+        supabase
+          .from('users')
+          .select('name')
+          .eq('auth_id', authedUser.id)
+          .single()
+          .then(({ data }) => {
+            if (data?.name) setUserName(data.name)
+          })
+      } else {
+        setUserName('')
+      }
+      setIsLoading(false)
+    })
+    return () => {
+      try { authListener?.subscription?.unsubscribe?.() } catch {}
+    }
   }, [])
 
   // Compute "Today's Workout" dynamic href based on next incomplete day
