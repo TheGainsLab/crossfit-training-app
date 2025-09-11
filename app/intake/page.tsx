@@ -1520,32 +1520,24 @@ disabled={currentSection <= 1}
     {/* Program Summary Preview */}
     <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 rounded-xl p-6">
       <h3 className="text-xl font-semibold text-blue-900 mb-4 text-center">
-        🎯 Your Program Will Include:
+        AI-generated programming, hyper-personalized for your goals:
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-blue-800">
         <div className="flex items-center space-x-2">
           <span className="text-green-600">✓</span>
-          <span>Workouts optimized for your {formData.equipment.length} pieces of equipment</span>
+          <span>Strength, Precise: Powered by your 1RM data.</span>
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-green-600">✓</span>
-          <span>Skill progressions based on your current abilities</span>
+          <span>Skills, Mastered: A path based on your current proficiency.</span>
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-green-600">✓</span>
-          <span>Strength programming using your 1RM data</span>
+          <span>Conditioning, Personalized: Tailored to your benchmark times.</span>
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-green-600">✓</span>
-          <span>Conditioning tailored to your benchmarks</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-green-600">✓</span>
-          <span>12-week periodized training plan</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-green-600">✓</span>
-          <span>Advanced analytics and progress tracking</span>
+          <span>Adaptive & Intelligent: Your results power real-time adjustments</span>
         </div>
       </div>
     </div>
