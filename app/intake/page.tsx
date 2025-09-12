@@ -1651,14 +1651,14 @@ disabled={currentSection <= 1}
     )}
 
     {/* Final Confirmation & Launch */}
-    <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-8">
+    <div className="border-2 border-green-200 rounded-xl p-8" style={{ backgroundColor: '#F8FBFE' }}>
       <div className="text-center space-y-6">
         <h3 className="text-2xl font-bold text-gray-900">
           Launch Your Training Program
         </h3>
         
         <div className="space-y-4">
-          <div className="bg-white/70 rounded-lg p-4 border border-green-200">
+          <div className="rounded-lg p-4 border border-green-200" style={{ backgroundColor: '#DAE2EA' }}>
             <label className="flex items-start space-x-3">
               <input
                 type="checkbox"
@@ -1667,9 +1667,6 @@ disabled={currentSection <= 1}
                 className="mt-1 rounded border-green-300"
               />
               <div className="text-left">
-                <p className="font-medium text-gray-800">
-                  ✨ Ready to Generate My Program
-                </p>
                 <p className="text-sm text-gray-600">
                   I have reviewed my information and am ready to create my personalized training program.
                   {isNewPaidUser 
@@ -1684,7 +1681,8 @@ disabled={currentSection <= 1}
           <button
             type="submit"
             disabled={isSubmitting || !isValidSection(currentSection) || !confirmSubmission}
-            className="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white text-xl font-bold py-4 px-8 rounded-xl hover:from-green-700 hover:to-blue-700 transform hover:scale-105 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="w-full text-white text-xl font-bold py-4 px-8 rounded-xl transform hover:scale-105 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            style={{ backgroundColor: '#FE5858' }}
           >
             {isSubmitting 
               ? (
