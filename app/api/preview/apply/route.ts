@@ -13,10 +13,10 @@ export async function POST(req: Request) {
     let userId: number | null = null
     try {
       const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
-      if (authHeader && anon) {
-        const authClient = createClient(supabaseUrl, anon, { global: { headers: { Authorization: authHeader } } })
-        const { data: au } = await authClient.auth.getUser()
-        const auth_id = au?.user?.id
+      const token = authHeader?.replace('Bearer ', '') || ''
+      if (token) {
+        const { data: authUser } = await createClient(supabaseUrl, serviceKey).auth.getUser(token)
+        const auth_id = authUser?.user?.id
         if (auth_id) {
           const { data: u } = await supabase.from('users').select('id').eq('auth_id', auth_id).single()
           if (u?.id) userId = u.id
