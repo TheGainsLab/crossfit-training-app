@@ -1551,19 +1551,19 @@ disabled={currentSection <= 1}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ color: '#282B34' }}>
         <div className="flex items-center space-x-2">
-          <span className="text-green-600">✓</span>
+          <span style={{ color: '#FE5858' }}>✓</span>
           <span><strong>Strength, Precise</strong>: Powered by your 1RM data.</span>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="text-green-600">✓</span>
+          <span style={{ color: '#FE5858' }}>✓</span>
           <span><strong>Skills, Mastered</strong>: A path based on your current proficiency.</span>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="text-green-600">✓</span>
+          <span style={{ color: '#FE5858' }}>✓</span>
           <span><strong>Conditioning, Personalized</strong>: Tailored to your benchmark times.</span>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="text-green-600">✓</span>
+          <span style={{ color: '#FE5858' }}>✓</span>
           <span><strong>Adaptive & Intelligent</strong>: Your results power real-time adjustments.</span>
         </div>
       </div>
@@ -1613,15 +1613,15 @@ disabled={currentSection <= 1}
               const validation = validatePassword(formData.password)
               return (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                  <div className={`flex items-center ${validation.isLongEnough ? 'text-green-600' : 'text-gray-500'}`}>
+                  <div className={`flex items-center`} style={{ color: validation.isLongEnough ? '#FE5858' : '#6B7280' }}>
                     <span className="mr-2">{validation.isLongEnough ? '✓' : '○'}</span>
                     8+ characters
                   </div>
-                  <div className={`flex items-center ${validation.hasUppercase ? 'text-green-600' : 'text-gray-500'}`}>
+                  <div className={`flex items-center`} style={{ color: validation.hasUppercase ? '#FE5858' : '#6B7280' }}>
                     <span className="mr-2">{validation.hasUppercase ? '✓' : '○'}</span>
                     1+ uppercase
                   </div>
-                  <div className={`flex items-center ${validation.hasSpecialChar ? 'text-green-600' : 'text-gray-500'}`}>
+                  <div className={`flex items-center`} style={{ color: validation.hasSpecialChar ? '#FE5858' : '#6B7280' }}>
                     <span className="mr-2">{validation.hasSpecialChar ? '✓' : '○'}</span>
                     1+ special char
                   </div>
@@ -1634,7 +1634,7 @@ disabled={currentSection <= 1}
           {formData.confirmPassword && (
             <div className="text-sm">
               {formData.password === formData.confirmPassword ? (
-                <p className="text-green-600 flex items-center">
+                <p className="flex items-center" style={{ color: '#FE5858' }}>
                   <span className="mr-2">✓</span>
                   Passwords match
                 </p>
@@ -1654,7 +1654,7 @@ disabled={currentSection <= 1}
     <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-8">
       <div className="text-center space-y-6">
         <h3 className="text-2xl font-bold text-gray-900">
-          🚀 Launch Your Training Program
+          Launch Your Training Program
         </h3>
         
         <div className="space-y-4">
