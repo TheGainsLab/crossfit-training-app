@@ -85,7 +85,9 @@ if (modifiedProgram.modifications && modifiedProgram.modifications.length > 0) {
       week: week,
       day: day,
       modified_program: modifiedProgram,
-      modifications_applied: modifiedProgram.modifications
+      modifications_applied: modifiedProgram.modifications,
+      is_preview: true,
+      source: 'weekly' // or 'on_load'/'chat' when applicable
     });
 }
 
