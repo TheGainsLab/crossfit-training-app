@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-export async function GET(req: Request, { params }: { params: { week: string } }) {
+export async function GET(req: Request, context: any) {
   try {
-    const week = parseInt(params.week)
+    const week = parseInt(context?.params?.week)
     const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL as string
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
     const supabase = createClient(supabaseUrl, serviceKey)
