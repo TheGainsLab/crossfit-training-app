@@ -54,20 +54,12 @@ export default function LandingPage() {
                   </button>
                 </div>
               ) : (
-                <>
-                  <button
-                    onClick={handleSignIn}
-                    className="text-gray-700 hover:text-blue-600 font-medium"
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    onClick={handleGetStarted}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium"
-                  >
-                    Get Started
-                  </button>
-                </>
+                <button
+                  onClick={handleSignIn}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium"
+                >
+                  Sign In
+                </button>
               )}
             </div>
           </div>
