@@ -1515,9 +1515,9 @@ disabled={currentSection <= 1}
     </div>
 
     {/* Program Summary Preview */}
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 rounded-xl p-6">
+    <div className="rounded-xl p-6 border-2" style={{ backgroundColor: '#DAE2EA', borderColor: '#FE5858' }}>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-blue-800">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ color: '#282B34' }}>
         <div className="flex items-center space-x-2">
           <span className="text-green-600">✓</span>
           <span><strong>Strength, Precise</strong>: Powered by your 1RM data.</span>
