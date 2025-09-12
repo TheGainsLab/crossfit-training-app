@@ -1126,7 +1126,8 @@ const saveUserData = async (userId: number) => {
                     type="button"
                     onClick={prevSection}
                     disabled={currentSection <= 1}
-                    className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2 rounded-md text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: '#DAE2EA' }}
                   >
                     Previous
                   </button>
@@ -1135,7 +1136,8 @@ const saveUserData = async (userId: number) => {
                     type="button"
                     onClick={nextSection}
                     disabled={!isValidSection(currentSection)}
-                    className="px-6 py-2 bg-[#FE5858] text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2 text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: '#FE5858' }}
                   >
                     Next
                   </button>
@@ -1197,7 +1199,8 @@ const saveUserData = async (userId: number) => {
     type="button"
     onClick={prevSection}
     disabled={currentSection <= 1}
-    className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+    className="px-6 py-2 rounded-md text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+    style={{ backgroundColor: '#DAE2EA' }}
   >
     Previous
   </button>
@@ -1206,7 +1209,8 @@ const saveUserData = async (userId: number) => {
     type="button"
     onClick={nextSection}
     disabled={!isValidSection(currentSection)}
-    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+    className="px-6 py-2 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+    style={{ backgroundColor: '#FE5858' }}
   >
     Next
   </button>
@@ -1227,7 +1231,7 @@ const saveUserData = async (userId: number) => {
                 <div className="space-y-6">
                   {/* Running Benchmarks */}
                   <div className="border rounded-lg overflow-hidden">
-                    <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                    <div className="p-4 text-center" style={{ backgroundColor: '#DAE2EA' }}>
                       <h3 className="text-lg font-semibold text-gray-900">Running Benchmarks</h3>
                     </div>
                     <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1239,7 +1243,7 @@ const saveUserData = async (userId: number) => {
 
                   {/* Rowing Benchmarks */}
                   <div className="border rounded-lg overflow-hidden">
-                    <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                    <div className="p-4 text-center" style={{ backgroundColor: '#DAE2EA' }}>
                       <h3 className="text-lg font-semibold text-gray-900">Rowing Benchmarks</h3>
                     </div>
                     <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1251,7 +1255,7 @@ const saveUserData = async (userId: number) => {
 
                   {/* Bike Benchmarks */}
                   <div className="border rounded-lg overflow-hidden">
-                    <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                    <div className="p-4 text-center" style={{ backgroundColor: '#DAE2EA' }}>
                       <h3 className="text-lg font-semibold text-gray-900">Bike Benchmarks</h3>
                     </div>
                     <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1315,7 +1319,7 @@ const saveUserData = async (userId: number) => {
 
                 {/* Snatch Group */}
                 <div className="border rounded-lg overflow-hidden mb-4">
-                  <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                  <div className="p-4 text-center" style={{ backgroundColor: '#DAE2EA' }}>
                     <h3 className="text-lg font-semibold text-gray-900">Snatch</h3>
                   </div>
                   <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1333,7 +1337,7 @@ const saveUserData = async (userId: number) => {
 
                 {/* Clean and Jerk Group */}
                 <div className="border rounded-lg overflow-hidden mb-4">
-                  <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                  <div className="p-4 text-center" style={{ backgroundColor: '#DAE2EA' }}>
                     <h3 className="text-lg font-semibold text-gray-900">Clean and Jerk</h3>
                   </div>
                   <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1351,7 +1355,7 @@ const saveUserData = async (userId: number) => {
 
                 {/* Squats Group */}
                 <div className="border rounded-lg overflow-hidden mb-4">
-                  <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                  <div className="p-4 text-center" style={{ backgroundColor: '#DAE2EA' }}>
                     <h3 className="text-lg font-semibold text-gray-900">Squats</h3>
                   </div>
                   <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1369,7 +1373,7 @@ const saveUserData = async (userId: number) => {
 
                 {/* Pulling Group */}
                 <div className="border rounded-lg overflow-hidden mb-4">
-                  <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                  <div className="p-4 text-center" style={{ backgroundColor: '#DAE2EA' }}>
                     <h3 className="text-lg font-semibold text-gray-900">Pulling</h3>
                   </div>
                   <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1387,7 +1391,7 @@ const saveUserData = async (userId: number) => {
 
                 {/* Presses Group */}
                 <div className="border rounded-lg overflow-hidden mb-4">
-                  <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
+                  <div className="p-4 text-center" style={{ backgroundColor: '#DAE2EA' }}>
                     <h3 className="text-lg font-semibold text-gray-900">Presses</h3>
                   </div>
                   <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1409,8 +1413,9 @@ const saveUserData = async (userId: number) => {
               <button
                 type="button"
                 onClick={prevSection}
-disabled={currentSection <= 1}                
-                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={currentSection <= 1}                
+                className="px-6 py-2 rounded-md text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#DAE2EA' }}
               >
                 Previous
               </button>
@@ -1419,7 +1424,8 @@ disabled={currentSection <= 1}
   type="button"
   onClick={nextSection}
   disabled={!isValidSection(currentSection)}
-  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+  className="px-6 py-2 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+  style={{ backgroundColor: '#FE5858' }}
 >
   Next
 </button>            
@@ -1651,14 +1657,14 @@ disabled={currentSection <= 1}
     )}
 
     {/* Final Confirmation & Launch */}
-    <div className="border-2 border-green-200 rounded-xl p-8" style={{ backgroundColor: '#F8FBFE' }}>
+    <div className="border-2 rounded-xl p-8" style={{ backgroundColor: '#F8FBFE', borderColor: '#FE5858' }}>
       <div className="text-center space-y-6">
         <h3 className="text-2xl font-bold text-gray-900">
           Launch Your Training Program
         </h3>
         
         <div className="space-y-4">
-          <div className="rounded-lg p-4 border border-green-200" style={{ backgroundColor: '#DAE2EA' }}>
+          <div className="rounded-lg p-4 border" style={{ backgroundColor: '#DAE2EA', borderColor: '#FE5858' }}>
             <label className="flex items-start space-x-3">
               <input
                 type="checkbox"
@@ -1696,7 +1702,7 @@ disabled={currentSection <= 1}
               ) 
               : (
                 <span>
-                  🎯 {isNewPaidUser ? 'Create Account & Generate My Program' : 'Generate My Updated Program'}
+                  {isNewPaidUser ? 'Create Account & Generate My Program' : 'Generate My Updated Program'}
                 </span>
               )
             }
