@@ -8,6 +8,7 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string|null>(null)
   const [data, setData] = useState<any>(null)
+  const [blockFilter, setBlockFilter] = useState<string>('All')
   // No jwt state; we resolve a fresh token before each API call to avoid races
 
   useEffect(() => {
@@ -36,26 +37,7 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
   if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-700">Loading preview…</div>
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-600">{error}</div>
 
-  const applyDay = async (day: number) => {
-    const { createClient } = await import('@/lib/supabase/client')
-    const sb = createClient()
-    const { data: { session } } = await sb.auth.getSession()
-    const token = session?.access_token || ''
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (token) headers['Authorization'] = `Bearer ${token}`
-    await fetch(`/api/preview/apply`, { method: 'POST', headers, body: JSON.stringify({ week: Number(week), day }) })
-    location.reload()
-  }
-  const revertDay = async (day: number) => {
-    const { createClient } = await import('@/lib/supabase/client')
-    const sb = createClient()
-    const { data: { session } } = await sb.auth.getSession()
-    const token = session?.access_token || ''
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (token) headers['Authorization'] = `Bearer ${token}`
-    await fetch(`/api/preview/revert`, { method: 'POST', headers, body: JSON.stringify({ week: Number(week), day }) })
-    location.reload()
-  }
+  const blockNames = ['All', 'SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS']
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -65,29 +47,44 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
           <Link href="/dashboard" className="text-blue-600 hover:text-blue-700">Back to Dashboard</Link>
         </div>
 
+        {/* Block Filter */}
+        <div className="mb-6 flex flex-wrap gap-2">
+          {blockNames.map((bn) => (
+            <button
+              key={bn}
+              onClick={() => setBlockFilter(bn)}
+              className={`px-3 py-1 rounded border text-sm ${blockFilter === bn ? 'bg-coral text-white border-coral' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+            >
+              {bn === 'All' ? 'All Blocks' : bn}
+            </button>
+          ))}
+        </div>
+
         <div className="space-y-6">
           {(data?.days || []).map((d: any) => (
             <div key={d.day} className="bg-white rounded-lg border p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-lg font-semibold text-gray-900">Day {d.day} • {d.mainLift || '—'}</div>
-                <div className="flex gap-2">
-                  {d.hasPreview ? (
-                    <>
-                      <button onClick={() => applyDay(d.day)} className="px-3 py-1 bg-green-600 text-white rounded">Apply</button>
-                      <button onClick={() => revertDay(d.day)} className="px-3 py-1 border rounded">Revert</button>
-                    </>
-                  ) : (
-                    <span className="text-sm text-gray-500">No changes</span>
-                  )}
-                </div>
               </div>
-              {/* Simple diff list */}
-              {d.diff && d.diff.length > 0 ? (
-                <ul className="list-disc pl-6 text-sm text-gray-700">
-                  {d.diff.map((line: string, i: number) => (<li key={i}>{line}</li>))}
-                </ul>
+
+              {/* Original blocks preview with filter */}
+              {d.original ? (
+                <div className="space-y-4">
+                  {Object.keys(d.original)
+                    .filter((blk) => blockFilter === 'All' || blk === blockFilter)
+                    .map((blk) => (
+                      <div key={blk}>
+                        <div className="font-semibold text-gray-800 mb-1">{blk}</div>
+                        <ul className="list-disc pl-6 text-sm text-gray-700">
+                          {(d.original[blk] as string[]).map((name: string, idx: number) => (
+                            <li key={`${blk}-${idx}`}>{name}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                </div>
               ) : (
-                <div className="text-sm text-gray-500">No differences from original</div>
+                <div className="text-sm text-gray-500">No data for this day</div>
               )}
             </div>
           ))}

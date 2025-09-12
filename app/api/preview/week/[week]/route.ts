@@ -46,12 +46,13 @@ export async function GET(req: Request, context: any) {
       .order('day')
 
     // Previews
-    const { data: previews } = await supabase
-      .from('modified_workouts')
-      .select('week, day, modified_program, is_preview')
-      .eq('user_id', userId)
-      .eq('program_id', programId)
-      .eq('week', week)
+    // For first iteration, preview page shows original only. Keep the previews fetch commented for later.
+    // const { data: previews } = await supabase
+    //   .from('modified_workouts')
+    //   .select('week, day, modified_program, is_preview')
+    //   .eq('user_id', userId)
+    //   .eq('program_id', programId)
+    //   .eq('week', week)
 
     // Shape days and diffs (simple line diffs by exercise names)
     const daysMap: Record<number, any> = {}
@@ -61,21 +62,7 @@ export async function GET(req: Request, context: any) {
       daysMap[r.day].original[r.block].push(r.exercise_name)
       daysMap[r.day].isDeload = r.is_deload
     })
-    ;(previews || []).forEach((p) => {
-      const day = p.day as number
-      daysMap[day] = daysMap[day] || { day, original: {}, diff: [] }
-      daysMap[day].hasPreview = !!p.is_preview
-      try {
-        const blocks = (p.modified_program?.blocks || []) as Array<{ blockName: string, exercises: Array<{ name: string }> }>
-        const originalBlocks = daysMap[day].original || {}
-        blocks.forEach((b) => {
-          const orig = new Set((originalBlocks[b.blockName] || []) as string[])
-          const after = (b.exercises || []).map(e => e.name)
-          after.forEach(n => { if (!orig.has(n)) daysMap[day].diff.push(`+ ${b.blockName}: ${n}`) })
-          orig.forEach((n: string) => { if (!after.includes(n)) daysMap[day].diff.push(`- ${b.blockName}: ${n}`) })
-        })
-      } catch {}
-    })
+    // (Diffs omitted for initial read-only preview)
 
     const days = Object.values(daysMap).sort((a: any, b: any) => a.day - b.day)
     return NextResponse.json({ success: true, programId, week, days })
