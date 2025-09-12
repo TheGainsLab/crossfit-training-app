@@ -54,25 +54,20 @@ export default function Navigation() {
         const userId = userRow?.id
         if (!userId) return
 
+        // Get latest program with JSON data
         const { data: programRow } = await supabase
           .from('programs')
-          .select('id')
+          .select('id, program_data')
           .eq('user_id', userId)
-          .order('generated_at', { ascending: false })
+          .order('id', { ascending: false })
           .limit(1)
           .single()
         const programId = programRow?.id
-        if (!programId) {
+        const programData: any = programRow?.program_data || {}
+        if (!programId || !programData?.weeks) {
           setTodaysHref('/intake')
           return
         }
-
-        const { data: workouts } = await supabase
-          .from('program_workouts')
-          .select('week, day')
-          .eq('program_id', programId)
-          .order('week', { ascending: true })
-          .order('day', { ascending: true })
 
         const { data: logs } = await supabase
           .from('performance_logs')
@@ -81,33 +76,38 @@ export default function Navigation() {
 
         const completed = new Set<string>((logs || []).map((l: any) => `${l.week}-${l.day}`))
 
+        // Build planned days from program JSON (weeks[].days[].day)
+        const planned: Array<{ week: number; day: number }> = []
+        try {
+          const weeks: any[] = Array.isArray(programData.weeks) ? programData.weeks : []
+          weeks.forEach((w: any) => {
+            const wk = Number(w?.week) || 0
+            const days: any[] = Array.isArray(w?.days) ? w.days : []
+            days.forEach((d: any) => {
+              const dy = Number(d?.day) || 0
+              if (wk > 0 && dy > 0) planned.push({ week: wk, day: dy })
+            })
+          })
+          planned.sort((a, b) => (a.week - b.week) || (a.day - b.day))
+        } catch {}
+
+        // Find first incomplete planned day
         let nextWeek = 1
         let nextDay = 1
-
-        if (workouts && workouts.length > 0) {
-          nextWeek = workouts[0].week
-          nextDay = workouts[0].day
+        if (planned.length > 0) {
+          const first = planned[0]
+          nextWeek = first.week
+          nextDay = first.day
           let found = false
-          for (const w of workouts) {
-            const key = `${w.week}-${w.day}`
-            if (!completed.has(key)) { nextWeek = w.week; nextDay = w.day; found = true; break }
+          for (const p of planned) {
+            const key = `${p.week}-${p.day}`
+            if (!completed.has(key)) { nextWeek = p.week; nextDay = p.day; found = true; break }
           }
           if (!found) {
-            // All planned done; point to last planned day
-            const last = workouts[workouts.length - 1]
+            const last = planned[planned.length - 1]
             nextWeek = last.week
             nextDay = last.day
           }
-        } else {
-          // Fallback when program_workouts is empty: infer from logs (weeks 1–13, days 1–5)
-          let set = false
-          for (let wk = 1; wk <= 13; wk++) {
-            for (let dy = 1; dy <= 5; dy++) {
-              if (!completed.has(`${wk}-${dy}`)) { nextWeek = wk; nextDay = dy; set = true; break }
-            }
-            if (set) break
-          }
-          if (!set) { nextWeek = 13; nextDay = 5 }
         }
 
         setTodaysHref(`/dashboard/workout/${programId}/week/${nextWeek}/day/${nextDay}`)
