@@ -64,7 +64,7 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
           {(data?.days || []).map((d: any) => (
             <div key={d.day} className="bg-white rounded-lg border p-4">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-lg font-semibold text-gray-900">Day {d.day} • {d.mainLift || '—'}</div>
+                <div className="text-lg font-semibold text-gray-900">Day {d.day}</div>
               </div>
 
               {/* Original blocks preview with filter */}

@@ -40,7 +40,7 @@ export async function GET(req: Request, context: any) {
     // Original scaffold for the target week
     const { data: originals, error: originalsErr } = await supabase
       .from('program_workouts')
-      .select('week, day, block, exercise_name, main_lift, is_deload')
+      .select('week, day, block, exercise_name')
       .eq('program_id', programId)
       .eq('week', week)
       .order('day')
@@ -60,10 +60,9 @@ export async function GET(req: Request, context: any) {
     // Shape days and diffs (simple line diffs by exercise names)
     const daysMap: Record<number, any> = {}
     ;(originals || []).forEach((r) => {
-      daysMap[r.day] = daysMap[r.day] || { day: r.day, mainLift: r.main_lift, original: {}, diff: [], hasPreview: false }
+      daysMap[r.day] = daysMap[r.day] || { day: r.day, original: {}, diff: [], hasPreview: false }
       daysMap[r.day].original[r.block] = daysMap[r.day].original[r.block] || []
       daysMap[r.day].original[r.block].push(r.exercise_name)
-      daysMap[r.day].isDeload = r.is_deload
     })
     // (Diffs omitted for initial read-only preview)
 
