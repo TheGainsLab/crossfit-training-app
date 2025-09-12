@@ -8,24 +8,18 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string|null>(null)
   const [data, setData] = useState<any>(null)
-  const [jwt, setJwt] = useState<string>('')
+  // No jwt state; we resolve a fresh token before each API call to avoid races
 
   useEffect(() => {
     const run = async () => {
       try {
         setLoading(true)
-        // Get Supabase session token for auth to API
-        try {
-          const { createClient } = await import('@/lib/supabase/client')
-          const sb = createClient()
-          const { data: { session } } = await sb.auth.getSession()
-          const token = session?.access_token || ''
-          setJwt(token)
-        } catch {}
-
+        const { createClient } = await import('@/lib/supabase/client')
+        const sb = createClient()
+        const { data: { session } } = await sb.auth.getSession()
+        const token = session?.access_token || ''
         const headers: Record<string, string> = {}
-        if (jwt) headers['Authorization'] = `Bearer ${jwt}`
-
+        if (token) headers['Authorization'] = `Bearer ${token}`
         const res = await fetch(`/api/preview/week/${week}`, { headers })
         const json = await res.json()
         if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load preview')
@@ -37,20 +31,28 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
       }
     }
     run()
-  }, [week, jwt])
+  }, [week])
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-700">Loading preview…</div>
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-600">{error}</div>
 
   const applyDay = async (day: number) => {
+    const { createClient } = await import('@/lib/supabase/client')
+    const sb = createClient()
+    const { data: { session } } = await sb.auth.getSession()
+    const token = session?.access_token || ''
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (jwt) headers['Authorization'] = `Bearer ${jwt}`
+    if (token) headers['Authorization'] = `Bearer ${token}`
     await fetch(`/api/preview/apply`, { method: 'POST', headers, body: JSON.stringify({ week: Number(week), day }) })
     location.reload()
   }
   const revertDay = async (day: number) => {
+    const { createClient } = await import('@/lib/supabase/client')
+    const sb = createClient()
+    const { data: { session } } = await sb.auth.getSession()
+    const token = session?.access_token || ''
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (jwt) headers['Authorization'] = `Bearer ${jwt}`
+    if (token) headers['Authorization'] = `Bearer ${token}`
     await fetch(`/api/preview/revert`, { method: 'POST', headers, body: JSON.stringify({ week: Number(week), day }) })
     location.reload()
   }
