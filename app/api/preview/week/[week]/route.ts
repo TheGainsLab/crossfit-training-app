@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-export async function GET(_req: NextRequest, { params }: { params: { week: string } }) {
+export async function GET(req: Request, { params }: { params: { week: string } }) {
   try {
     const week = parseInt(params.week)
     const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL as string
@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest, { params }: { params: { week: strin
     const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
     let userId: number | null = null
     try {
-      const authHeader = _req.headers.get('authorization') || _req.headers.get('Authorization')
+      const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
       if (authHeader && anon) {
         const authClient = createClient(supabaseUrl, anon, { global: { headers: { Authorization: authHeader } } })
         const { data: au } = await authClient.auth.getUser()
