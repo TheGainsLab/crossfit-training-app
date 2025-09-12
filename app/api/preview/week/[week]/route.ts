@@ -37,34 +37,32 @@ export async function GET(req: Request, context: any) {
     const programId = prog?.id
     if (!programId) return NextResponse.json({ success: true, days: [] })
 
-    // Original scaffold for the target week
-    const { data: originals, error: originalsErr } = await supabase
-      .from('program_workouts')
-      .select('week, day, block, exercise_name')
-      .eq('program_id', programId)
-      .eq('week', week)
-      .order('day')
-    if (originalsErr) {
-      return NextResponse.json({ success: false, error: originalsErr.message }, { status: 500 })
-    }
-
-    // Previews
-    // For first iteration, preview page shows original only. Keep the previews fetch commented for later.
-    // const { data: previews } = await supabase
-    //   .from('modified_workouts')
-    //   .select('week, day, modified_program, is_preview')
-    //   .eq('user_id', userId)
-    //   .eq('program_id', programId)
-    //   .eq('week', week)
-
-    // Shape days and diffs (simple line diffs by exercise names)
+    // Build originals directly from programs.program_data JSON (source of truth)
     const daysMap: Record<number, any> = {}
-    ;(originals || []).forEach((r) => {
-      daysMap[r.day] = daysMap[r.day] || { day: r.day, original: {}, diff: [], hasPreview: false }
-      daysMap[r.day].original[r.block] = daysMap[r.day].original[r.block] || []
-      daysMap[r.day].original[r.block].push(r.exercise_name)
-    })
-    // (Diffs omitted for initial read-only preview)
+    try {
+      const programData: any = prog?.program_data || {}
+      const weeksArr: any[] = Array.isArray(programData.weeks) ? programData.weeks : []
+      const targetWeek = weeksArr.find((w: any) => Number(w?.week) === Number(week))
+      const daysArr: any[] = Array.isArray(targetWeek?.days) ? targetWeek.days : []
+
+      for (const d of daysArr) {
+        const dayNum = Number(d?.day)
+        if (!dayNum) continue
+        const blocks: any[] = Array.isArray(d?.blocks) ? d.blocks : []
+        const dayObj = (daysMap[dayNum] = daysMap[dayNum] || { day: dayNum, original: {}, diff: [], hasPreview: false })
+        for (const b of blocks) {
+          const blockName = b?.blockName || b?.block || 'UNKNOWN'
+          if (!dayObj.original[blockName]) dayObj.original[blockName] = []
+          const exercises: any[] = Array.isArray(b?.exercises) ? b.exercises : []
+          for (const ex of exercises) {
+            const name = ex?.name || ex?.exercise_name || ''
+            if (name) dayObj.original[blockName].push(name)
+          }
+        }
+      }
+    } catch (e) {
+      // fall through with empty daysMap
+    }
 
     // Also attach a normalized list of blocks per day
     const days = Object.values(daysMap).sort((a: any, b: any) => a.day - b.day).map((d: any) => ({
