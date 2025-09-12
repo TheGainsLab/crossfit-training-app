@@ -31,19 +31,22 @@ export async function GET(req: Request, context: any) {
       .from('programs')
       .select('id, program_data')
       .eq('user_id', userId)
-      .order('generated_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(1)
       .single()
     const programId = prog?.id
     if (!programId) return NextResponse.json({ success: true, days: [] })
 
     // Original scaffold for the target week
-    const { data: originals } = await supabase
+    const { data: originals, error: originalsErr } = await supabase
       .from('program_workouts')
       .select('week, day, block, exercise_name, main_lift, is_deload')
       .eq('program_id', programId)
       .eq('week', week)
       .order('day')
+    if (originalsErr) {
+      return NextResponse.json({ success: false, error: originalsErr.message }, { status: 500 })
+    }
 
     // Previews
     // For first iteration, preview page shows original only. Keep the previews fetch commented for later.
@@ -64,7 +67,11 @@ export async function GET(req: Request, context: any) {
     })
     // (Diffs omitted for initial read-only preview)
 
-    const days = Object.values(daysMap).sort((a: any, b: any) => a.day - b.day)
+    // Also attach a normalized list of blocks per day
+    const days = Object.values(daysMap).sort((a: any, b: any) => a.day - b.day).map((d: any) => ({
+      ...d,
+      blocks: Object.keys(d.original || {})
+    }))
     return NextResponse.json({ success: true, programId, week, days })
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e?.message || 'Failed' }, { status: 500 })
