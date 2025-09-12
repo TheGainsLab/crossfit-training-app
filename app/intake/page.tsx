@@ -1507,37 +1507,32 @@ disabled={currentSection <= 1}
 {/* Section 6: Program Generation & Account Setup */}
 {currentSection === 6 && (
   <div className="space-y-8">
-    {/* Hero Header */}
+    {/* Intro copy (no header) */}
     <div className="text-center">
-      <h2 className="text-3xl font-bold text-gray-900 mb-4 text-center">
-        Ready to Generate Your Program?
-      </h2>
-      <p className="text-lg text-gray-600">
-        You've provided all the data we need. Let's create your personalized CrossFit training program.
+      <p className="text-lg text-gray-900 font-medium">
+        You’ve provided your data, time to create your AI-Powered personalized program!
       </p>
     </div>
 
     {/* Program Summary Preview */}
     <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 rounded-xl p-6">
-      <h3 className="text-xl font-semibold text-blue-900 mb-4 text-center">
-        AI-generated programming, hyper-personalized for your goals:
-      </h3>
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-blue-800">
         <div className="flex items-center space-x-2">
           <span className="text-green-600">✓</span>
-          <span>Strength, Precise: Powered by your 1RM data.</span>
+          <span><strong>Strength, Precise</strong>: Powered by your 1RM data.</span>
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-green-600">✓</span>
-          <span>Skills, Mastered: A path based on your current proficiency.</span>
+          <span><strong>Skills, Mastered</strong>: A path based on your current proficiency.</span>
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-green-600">✓</span>
-          <span>Conditioning, Personalized: Tailored to your benchmark times.</span>
+          <span><strong>Conditioning, Personalized</strong>: Tailored to your benchmark times.</span>
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-green-600">✓</span>
-          <span>Adaptive & Intelligent: Your results power real-time adjustments</span>
+          <span><strong>Adaptive & Intelligent</strong>: Your results power real-time adjustments.</span>
         </div>
       </div>
     </div>
