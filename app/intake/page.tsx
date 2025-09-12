@@ -226,6 +226,7 @@ function IntakeFormContent() {
   
 const [currentSection, setCurrentSection] = useState<number>(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [genProgress, setGenProgress] = useState<number>(0)
   const [confirmSubmission, setConfirmSubmission] = useState(false)
   const [submitMessage, setSubmitMessage] = useState('')
   const [loading, setLoading] = useState(true)
@@ -246,6 +247,19 @@ const [currentSection, setCurrentSection] = useState<number>(1)
       window.scrollTo({ top: 0, behavior: 'auto' })
     }
   }, [currentSection])
+
+  // Simulated generation progress while submitting
+  useEffect(() => {
+    if (!isSubmitting) return
+    setGenProgress(0)
+    const interval = setInterval(() => {
+      setGenProgress(prev => {
+        const next = Math.min(prev + 0.75, 90) // ease up to 90%
+        return next
+      })
+    }, 500)
+    return () => clearInterval(interval)
+  }, [isSubmitting])
 
   // Helper: split MM:SS string into minutes/seconds numbers
   const getTimeParts = (val?: string) => {
@@ -613,7 +627,8 @@ setSubscriptionStatus(subscription.status)
       console.error('Submission error:', error)
       setSubmitMessage(`❌ Error: ${error instanceof Error ? error.message : 'Something went wrong'}`)
     } finally {
-      setIsSubmitting(false)
+      // allow overlay to show completion briefly
+      setTimeout(() => setIsSubmitting(false), 500)
     }
   }
 
@@ -694,6 +709,7 @@ setSubscriptionStatus(subscription.status)
           .single()
         if (me?.id) {
           await saveUserData(me.id)
+          setGenProgress(100)
         }
       }
     } catch (_) {}
@@ -731,6 +747,7 @@ setSubscriptionStatus(subscription.status)
     }
 
     await saveUserData(user.id)
+    setGenProgress(100)
 
     setSubmitMessage('✅ Assessment completed successfully! Your personalized program will be generated shortly.')
     
@@ -842,6 +859,21 @@ const saveUserData = async (userId: number) => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-5xl mx-auto px-4">
         <div className="bg-white rounded-lg shadow-lg p-8">
+          {isSubmitting && (
+            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+              <div className="bg-white rounded-xl shadow-lg p-6 w-11/12 max-w-md text-center">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Generating your program…</h3>
+                <p className="text-gray-600 mb-4">This takes about 60 seconds. Hang tight while we personalize everything for you.</p>
+                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                  <div
+                    className="h-3 rounded-full transition-all duration-300"
+                    style={{ width: `${genProgress}%`, backgroundColor: '#FE5858' }}
+                  />
+                </div>
+                <p className="text-sm text-gray-500 mt-2">{Math.floor(genProgress)}%</p>
+              </div>
+            </div>
+          )}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Athlete Intake
