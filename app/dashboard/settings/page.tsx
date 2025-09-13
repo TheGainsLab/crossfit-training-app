@@ -754,8 +754,8 @@ export default function SettingsPage() {
             </div>
             <div className="border rounded-lg overflow-hidden">
               <div className="p-3" style={{ backgroundColor: '#DAE2EA' }}><h3 className="font-semibold text-gray-900">Pulling</h3></div>
-              <div className="p-4 grid grid-cols-1 gap-4">
-                {['Weighted Pullup (do not include body weight)'].map((ex) => (
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {['Weighted Pullup (do not include body weight)','Deadlift'].map((ex) => (
                   <div key={ex}>
                     <label className="block text-sm text-gray-700 mb-2">{ex}</label>
                     <input type="number" step="0.5" value={(oneRMs.find(r => r.exercise_name === ex)?.one_rm || 0).toString()} onChange={(e) => handleOneRMChange(ex, e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
