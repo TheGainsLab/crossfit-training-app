@@ -379,6 +379,19 @@ async function assignExercises(
     }
 
     console.log(`✅ Created ${strengthSets.length} strength sets`)
+    try {
+      await supabase.from('function_traces').insert({
+        function_name: 'assign-exercises',
+        block,
+        week,
+        day,
+        user_id: user.id || user.userProfile?.id || null,
+        status: 'ok',
+        count: strengthSets.length,
+        sample_names: strengthSets.slice(0, 3).map((e: any) => e.name),
+        raw: { type: 'strength', mainLift }
+      })
+    } catch (_) {}
     return strengthSets
   }
 
@@ -799,6 +812,19 @@ try {
       }
     }
   }
+  try {
+    await supabase.from('function_traces').insert({
+      function_name: 'assign-exercises',
+      block,
+      week,
+      day,
+      user_id: user.id || user.userProfile?.id || null,
+      status: 'ok',
+      count: exercises.length,
+      sample_names: (exercises || []).slice(0, 3).map((e: any) => e?.name || ''),
+      raw: { filteredCount: filtered.length }
+    })
+  } catch (_) {}
   return exercises
 }
 
