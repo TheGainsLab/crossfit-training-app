@@ -791,10 +791,29 @@ export default function SettingsPage() {
             <h2 className="text-xl font-bold text-gray-900">Preferences</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Focus areas (up to 3) */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">3-Month Goals <span className="text-gray-500">(limit 250 characters)</span></label>
-              <textarea value={threeMonthGoals} onChange={(e) => setThreeMonthGoals(e.target.value)} rows={4} maxLength={250} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Describe your goals for the next 3 months..." />
-              <div className="mt-1 text-xs text-gray-500">{threeMonthGoals.length}/250</div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select up to 3 focus areas</label>
+              <div className="flex flex-wrap gap-2">
+                {['Olympic Lifts','General Strength','Gymnastics','Other Skills','Aerobic Capacity','Glycolytic Power (1-5 mins)','Other'].map(opt => {
+                  const selected = selectedGoals.includes(opt)
+                  const canAdd = selectedGoals.length < 3
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        if (selected) setSelectedGoals(selectedGoals.filter(o => o !== opt))
+                        else if (canAdd) setSelectedGoals([...selectedGoals, opt])
+                      }}
+                      className={`px-3 py-1 rounded-full border text-sm ${selected ? 'bg-[#FE5858] text-white border-[#FE5858]' : 'bg-white text-gray-800 border-gray-300'}`}
+                    >
+                      {opt}
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">Choose up to three goals.</div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Primary Goal <span className="text-gray-500">(limit 100 characters)</span></label>
@@ -809,33 +828,25 @@ export default function SettingsPage() {
                 ))}
               </select>
             </div>
+            {/* MetCon time range focus */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Which lifts shall we train this month?</label>
-              <div className="h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-                {availableStrengthLifts.map((name) => (
-                  <label key={`focus-${name}`} className="flex items-center space-x-2 p-1 cursor-pointer">
-                    <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4" checked={primaryStrengthLifts.includes(name)} onChange={() => setPrimaryStrengthLifts(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name])} />
-                    <span className="text-sm text-gray-700">{name}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">Tip: Choose the lifts you want scheduled most this month.</div>
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Emphasize up to 2 lifts (extra exposure)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">MetCon time range you’d like to target more</label>
               <div className="flex flex-wrap gap-2">
-                {primaryStrengthLifts.map((name) => {
-                  const emphasized = emphasizedStrengthLifts.includes(name)
+                {['1:00 - 5:00','5:00 - 10:00','10:00 - 15:00','15:00 - 20:00','20:00 - 30:00','Over 30:00'].map(opt => {
+                  const selected = metconTimeFocus.includes(opt)
                   return (
-                    <button key={`emph-${name}`} type="button" onClick={() => setEmphasizedStrengthLifts(prev => prev.includes(name) ? prev.filter(n => n !== name) : (prev.length >= 2 ? prev : [...prev, name]))} className={`px-3 py-1 rounded-full border ${emphasized ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-800 border-gray-300'} hover:bg-blue-50`}>
-                      {name}{emphasized ? ' ★' : ''}
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setMetconTimeFocus(selected ? metconTimeFocus.filter(o => o !== opt) : [...metconTimeFocus, opt])}
+                      className={`px-3 py-1 rounded-full border text-sm ${selected ? 'bg-[#FE5858] text-white border-[#FE5858]' : 'bg-white text-gray-800 border-gray-300'}`}
+                    >
+                      {opt}
                     </button>
                   )
                 })}
               </div>
-              <div className="text-xs text-gray-500 mt-1">You can emphasize at most 2. We’ll keep it safe and deload as needed.</div>
             </div>
-            
           </div>
         </div>
 
