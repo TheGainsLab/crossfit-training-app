@@ -850,6 +850,7 @@ function StrengthFallback({
   day,
   mainLift,
   blocksInDay,
+  strengthIndexWithinDay,
   onPopulate
 }: {
   programId: string
