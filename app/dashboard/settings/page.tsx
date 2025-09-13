@@ -427,6 +427,23 @@ export default function SettingsPage() {
           .from('users')
           .update({ program_generation_pending: true, updated_at: new Date().toISOString() })
           .eq('id', userId)
+
+        // Enqueue context refresh job (deduped per user)
+        await fetch('/api/ai/enqueue', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            jobType: 'context_refresh',
+            payload: { reason: {
+              rmTrigger,
+              tdwTrigger,
+              primTrigger,
+              emphTrigger
+            } },
+            dedupeKey: `context_refresh:${userId}`
+          })
+        }).catch(() => {})
       }
 
       setMessage('Settings saved successfully!')
@@ -559,34 +576,9 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Equipment (intake-like categories) */}
+        {/* Equipment (normalized to intake categories) */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Section 1: Personal Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Body Weight</label>
-              <input
-                type="number"
-                step="0.1"
-                value={settings.body_weight || ''}
-                onChange={(e) => handleSettingsChange('body_weight', parseFloat(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder={settings.units === 'Metric (kg)' ? 'e.g., 70.5' : 'e.g., 155.5'}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Units</label>
-              <select
-                value={settings.units}
-                onChange={(e) => handleSettingsChange('units', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="Imperial (lbs)">Imperial (lbs)</option>
-                <option value="Metric (kg)">Metric (kg)</option>
-              </select>
-            </div>
-          </div>
-
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Section 1: Equipment</h2>
           <div className="space-y-6">
             <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
               <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
@@ -594,7 +586,7 @@ export default function SettingsPage() {
               </div>
               <div className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {['Barbell','Dumbbells','Kettlebells','Pull-up Bar','Rings','Bench','Squat Rack','Open Space','Wall Space','Jump Rope','Wall Ball'].map(eq => (
+                  {basicsEquipment.map(eq => (
                     <label key={eq} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
                       <input
                         type="checkbox"
@@ -615,7 +607,7 @@ export default function SettingsPage() {
               </div>
               <div className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {['Rowing Machine','Assault Bike','Bike','Ski Erg','Bike Erg'].map(eq => (
+                  {machinesEquipment.map(eq => (
                     <label key={eq} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
                       <input
                         type="checkbox"
@@ -636,7 +628,7 @@ export default function SettingsPage() {
               </div>
               <div className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {['GHD','Axle Bar','Climbing Rope','Pegboard','Parallette Bars','Dball','Dip Bar','Plyo Box','HS Walk Obstacle','Sandbag'].map(eq => (
+                  {lessCommonEquipment.map(eq => (
                     <label key={eq} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
                       <input
                         type="checkbox"
