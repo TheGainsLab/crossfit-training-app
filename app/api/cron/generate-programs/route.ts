@@ -10,7 +10,7 @@ export async function GET() {
   try {
     console.log('Running scheduled program generation check...')
     
-    // Get all active subscribers with their programs
+    // Get all subscribers (active or trialing) with their programs
     const { data: users, error } = await supabase
       .from('users')
       .select(`
@@ -18,8 +18,7 @@ export async function GET() {
         subscriptions!inner(billing_interval, status),
         programs(program_number, generated_at)
       `)
-      .eq('subscription_status', 'ACTIVE')
-      .eq('subscriptions.status', 'active')
+      .in('subscriptions.status', ['active','trialing'])
 
     if (error) throw error
 
@@ -40,7 +39,7 @@ export async function GET() {
       const programsDue = monthsSinceFirst + 1 // +1 because they start with program 1
       const currentProgramCount = user.programs.length
       
-      // If user is due for more programs than they have, generate the next one
+      // If user is due for more programs than they have, generate the next one (monthly cadence regardless of billing)
       if (programsDue > currentProgramCount) {
         console.log(`User ${user.id} is due for program #${currentProgramCount + 1}`)
         await generateScheduledProgram(user.id, user.subscriptions[0].billing_interval)
@@ -62,80 +61,32 @@ export async function GET() {
 }
 
 async function generateScheduledProgram(userId: number, billingInterval: string) {
-  // Copy your generateRenewalProgram logic here, but modify it to work with userId instead of stripe subscription ID
   try {
-    console.log(`Generating scheduled program for user ${userId}`)
-    
-    // Get current program count
-    const { data: programData, error: programError } = await supabase
+    // Determine next program number for dedupe key only
+    const { data: progCount } = await supabase
       .from('programs')
       .select('program_number')
       .eq('user_id', userId)
       .order('program_number', { ascending: false })
       .limit(1)
+    const nextProgramNumber = (progCount?.[0]?.program_number || 0) + 1
 
-    if (programError) {
-      console.error('Error getting program count:', programError)
-      return
-    }
-
-    const nextProgramNumber = (programData?.[0]?.program_number || 0) + 1
-    
-    // Get current user data from settings (reuse your existing getCurrentUserData function logic)
-    const userData = await getCurrentUserDataForCron(userId)
-    
-    // Always generate 4-week programs regardless of billing interval
-    const weeksToGenerate = Array.from({length: 4}, (_, i) => i + 1 + (4 * (nextProgramNumber - 1)))
-
-    // Call program generation
-    const programResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-program`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          user_id: userId,
-          weeksToGenerate
-        })
-      }
-    )
-
-    if (!programResponse.ok) {
-      console.error('Scheduled program generation failed')
-      return
-    }
-
-    const programResult = await programResponse.json()
-
-    // Save program
-    const { error: programSaveError } = await supabase
-      .from('programs')
+    // Enqueue generate_program job; worker will build context (last 40 logs) and call edge function
+    const ym = new Date().toISOString().slice(0,7).replace('-','')
+    const dedupeKey = `generate_program:${userId}:${ym}`
+    const { error: insErr } = await supabase
+      .from('ai_jobs')
       .insert({
         user_id: userId,
-        sport_id: 1,
-        program_number: nextProgramNumber,
-        weeks_generated: weeksToGenerate,
-        program_data: programResult.program,
-        user_snapshot: programResult.program.metadata.userSnapshot,
-        ratio_snapshot: programResult.program.metadata.ratioSnapshot
+        job_type: 'generate_program',
+        payload: { nextProgramNumber },
+        dedupe_key: dedupeKey,
+        status: 'pending'
       })
-
-    if (programSaveError) {
-      console.error('Failed to save scheduled program:', programSaveError)
-      return
+    if (insErr && (insErr as any).code !== '23505') {
+      console.error('Failed to enqueue generate_program job:', insErr)
     }
-
-    console.log(`Successfully generated scheduled program #${nextProgramNumber} for user ${userId}`)
-
   } catch (error) {
-    console.error('Error in generateScheduledProgram:', error)
+    console.error('Error enqueuing scheduled program:', error)
   }
-}
-
-async function getCurrentUserDataForCron(userId: number) {
-  // Copy your getCurrentUserData function here since it needs to be accessible in this file
-  // ... same logic as your existing function
 }
