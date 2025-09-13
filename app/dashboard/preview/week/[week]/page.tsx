@@ -70,18 +70,34 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
               {/* Original blocks preview with filter */}
               {d.original ? (
                 <div className="space-y-4">
-                  {Object.keys(d.original)
-                    .filter((blk) => blockFilter === 'All' || blk === blockFilter)
-                    .map((blk) => (
-                      <div key={blk}>
-                        <div className="font-semibold text-gray-800 mb-1">{blk}</div>
-                        <ul className="list-disc pl-6 text-sm text-gray-700">
-                          {(d.original[blk] as string[]).map((name: string, idx: number) => (
-                            <li key={`${blk}-${idx}`}>{name}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
+                  {/* Per-instance rendering preserves duplicate Strength blocks */}
+                  {(d.instances as any[] | undefined)?.length ? (
+                    (d.instances as any[])
+                      .filter((inst) => blockFilter === 'All' || inst.blockName === blockFilter)
+                      .map((inst, i) => (
+                        <div key={`${inst.blockName}-${i}`}>
+                          <div className="font-semibold text-gray-800 mb-1">{inst.label || inst.blockName}</div>
+                          <ul className="list-disc pl-6 text-sm text-gray-700">
+                            {(inst.names as string[]).map((name: string, idx: number) => (
+                              <li key={`${inst.blockName}-${i}-${idx}`}>{name}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))
+                  ) : (
+                    Object.keys(d.original)
+                      .filter((blk) => blockFilter === 'All' || blk === blockFilter)
+                      .map((blk) => (
+                        <div key={blk}>
+                          <div className="font-semibold text-gray-800 mb-1">{blk}</div>
+                          <ul className="list-disc pl-6 text-sm text-gray-700">
+                            {(d.original[blk] as string[]).map((name: string, idx: number) => (
+                              <li key={`${blk}-${idx}`}>{name}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))
+                  )}
                 </div>
               ) : (
                 <div className="text-sm text-gray-500">No data for this day</div>

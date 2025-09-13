@@ -568,7 +568,18 @@ const calculateProgress = () => {
                     <span className="text-2xl text-coral">{getBlockStatusIcon(block.blockName, block.exercises, completions)}</span>
                   )}
                   <div>
-                    <h2 className="text-xl font-bold text-charcoal">{block.blockName}</h2>
+                    <h2 className="text-xl font-bold text-charcoal">{
+                      (() => {
+                        if (block.blockName === 'STRENGTH AND POWER') {
+                          const strengthBlocks = workout.blocks.filter(b => b.blockName === 'STRENGTH AND POWER')
+                          if (strengthBlocks.length > 1) {
+                            const idx = strengthBlocks.indexOf(block)
+                            return `Strength & Power (${idx + 1}/${strengthBlocks.length})`
+                          }
+                        }
+                        return block.blockName
+                      })()
+                    }</h2>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">

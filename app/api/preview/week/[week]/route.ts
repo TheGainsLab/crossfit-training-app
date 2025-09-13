@@ -49,16 +49,34 @@ export async function GET(req: Request, context: any) {
         const dayNum = Number(d?.day)
         if (!dayNum) continue
         const blocks: any[] = Array.isArray(d?.blocks) ? d.blocks : []
-        const dayObj = (daysMap[dayNum] = daysMap[dayNum] || { day: dayNum, original: {}, diff: [], hasPreview: false })
+        const dayObj = (daysMap[dayNum] = daysMap[dayNum] || { day: dayNum, original: {}, instances: [], diff: [], hasPreview: false })
         for (const b of blocks) {
-          const blockName = b?.blockName || b?.block || 'UNKNOWN'
-          if (!dayObj.original[blockName]) dayObj.original[blockName] = []
+          const baseName = b?.blockName || b?.block || 'UNKNOWN'
+          if (!dayObj.original[baseName]) dayObj.original[baseName] = []
           const exercises: any[] = Array.isArray(b?.exercises) ? b.exercises : []
+          const namesForInstance: string[] = []
           for (const ex of exercises) {
             const name = ex?.name || ex?.exercise_name || ''
-            if (name) dayObj.original[blockName].push(name)
+            if (name) {
+              dayObj.original[baseName].push(name)
+              namesForInstance.push(name)
+            }
           }
+          // Preserve per-instance data including subOrder for duplicate blocks like Strength
+          dayObj.instances.push({
+            blockName: baseName,
+            subOrder: typeof b?.subOrder === 'number' ? b.subOrder : null,
+            names: namesForInstance
+          })
         }
+        // Compute labels for instances (e.g., "STRENGTH AND POWER (1/2)")
+        const strengthCount = (dayObj.instances || []).filter((inst: any) => inst.blockName === 'STRENGTH AND POWER').length
+        dayObj.instances = (dayObj.instances || []).map((inst: any) => ({
+          ...inst,
+          label: (inst.blockName === 'STRENGTH AND POWER' && strengthCount > 1 && typeof inst.subOrder === 'number')
+            ? `${inst.blockName} (${inst.subOrder}/${strengthCount})`
+            : inst.blockName
+        }))
       }
     } catch (e) {
       // fall through with empty daysMap
