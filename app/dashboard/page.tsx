@@ -2,7 +2,7 @@
 
 // Add this import at the top
 import TrainingChatInterface from '@/components/TrainingChatInterface'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import AthleteDetailModal from './AthleteDetailModal'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -61,6 +61,7 @@ interface DashboardAnalytics {
 // Training Blocks Visualization Component - Streamlined Version
 const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ analytics, blockData }) => {
   const router = useRouter()
+  const donutRef = useRef<any>(null)
   if (!blockData?.data?.blockAnalysis?.blockSummaries) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -197,7 +198,16 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
           <Doughnut 
             data={donutChartData} 
             options={donutChartOptions} 
-            onClick={(event: any, elements: any[]) => {
+            ref={donutRef}
+            onClick={(event: any) => {
+              const chart = donutRef.current
+              if (!chart) return
+              const elements = chart.getElementsAtEventForMode(
+                event.nativeEvent,
+                'nearest',
+                { intersect: true },
+                true
+              )
               if (!elements || elements.length === 0) return
               const idx = elements[0].index
               const block = sortedBlockSummaries[idx]
