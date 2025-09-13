@@ -605,10 +605,26 @@ const calculateProgress = () => {
   <div className="px-4 pb-4 space-y-4">
     {/* Intensity controls removed */}
     {block.exercises.length === 0 ? (
-      <div className="text-center py-8 text-gray-500">
-        <div className="text-4xl mb-2">✨</div>
-        <p>No exercises in this block today</p>
-      </div>
+      block.blockName === 'STRENGTH AND POWER' ? (
+        <StrengthFallback
+          programId={programId}
+          week={week}
+          day={day}
+          mainLift={workout.mainLift}
+          blocksInDay={workout.blocks.filter(b => b.blockName === 'STRENGTH AND POWER').length}
+          onPopulate={(sets) => {
+            // Insert synthesized sets into this block instance
+            const updated = { ...workout }
+            updated.blocks[blockIndex] = { ...updated.blocks[blockIndex], exercises: sets }
+            setWorkout(updated)
+          }}
+        />
+      ) : (
+        <div className="text-center py-8 text-gray-500">
+          <div className="text-4xl mb-2">✨</div>
+          <p>No exercises in this block today</p>
+        </div>
+      )
     ) : (
       
 block.blockName === 'METCONS' ? (
@@ -824,6 +840,73 @@ export default function WorkoutPage({
   const resolvedParams = use(params)
   
   return <WorkoutPageClient {...resolvedParams} />
+}
+
+function StrengthFallback({
+  programId,
+  week,
+  day,
+  mainLift,
+  blocksInDay,
+  onPopulate
+}: {
+  programId: string
+  week: string
+  day: string
+  mainLift: string
+  blocksInDay: number
+  onPopulate: (sets: Exercise[]) => void
+}) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const synthesize = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const userId = await getCurrentUserId()
+      const res = await fetch('/api/strength/synthesize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, mainLift, week: Number(week), strengthBlocksCount: blocksInDay })
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to synthesize')
+      const sets = Array.isArray(json.blocks) && json.blocks.length > 0 ? (json.blocks[0] as Exercise[]) : []
+      onPopulate(sets)
+    } catch (e: any) {
+      setError(e?.message || 'Failed to synthesize')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    synthesize()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <div className="text-center py-8 text-gray-500">
+      {loading ? (
+        <>
+          <div className="text-4xl mb-2">⏳</div>
+          <p>Building Strength sets…</p>
+        </>
+      ) : error ? (
+        <>
+          <div className="text-4xl mb-2">⚠️</div>
+          <p>{error}</p>
+          <button onClick={synthesize} className="mt-3 px-3 py-2 bg-coral text-white rounded">Retry</button>
+        </>
+      ) : (
+        <>
+          <div className="text-4xl mb-2">✨</div>
+          <p>Strength sets added</p>
+        </>
+      )}
+    </div>
+  )
 }
 
 function ExerciseCard({ 
