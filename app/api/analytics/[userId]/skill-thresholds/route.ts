@@ -8,10 +8,10 @@ const supabase = createClient(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: { userId: string } }
 ) {
   try {
-    const { userId } = await params
+    const { userId } = params
     const body = await request.json()
     const { skillName, scheduleForMonth } = body as { skillName: string; scheduleForMonth?: string }
 
@@ -19,43 +19,65 @@ export async function POST(
       return NextResponse.json({ error: 'Missing userId or skillName' }, { status: 400 })
     }
 
-    // Ensure per-user thresholds table exists (documented expectation)
-    // Table: user_skill_thresholds(user_id int, skill_name text, multiplier numeric, updated_at timestamptz)
-    // Insert or bump multiplier by 10%
-    const { data: existing } = await supabase
+    const userIdNum = parseInt(userId, 10)
+    if (!Number.isFinite(userIdNum)) {
+      return NextResponse.json({ error: 'Invalid userId' }, { status: 400 })
+    }
+
+    // Read existing multiplier (avoid relying on unique index for upsert)
+    const { data: rows, error: selError } = await supabase
       .from('user_skill_thresholds')
       .select('multiplier')
-      .eq('user_id', parseInt(userId))
+      .eq('user_id', userIdNum)
       .eq('skill_name', skillName)
-      .single()
+      .limit(1)
 
-    const newMultiplier = existing?.multiplier ? Number(existing.multiplier) * 1.1 : 1.1
+    if (selError) {
+      console.error('skill-thresholds select error:', selError)
+      return NextResponse.json({ error: selError.message }, { status: 500 })
+    }
 
-    const { error: upsertError } = await supabase
-      .from('user_skill_thresholds')
-      .upsert({
-        user_id: parseInt(userId),
-        skill_name: skillName,
-        multiplier: newMultiplier,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id,skill_name' })
+    const existingMultiplier = Array.isArray(rows) && rows.length > 0 ? Number(rows[0].multiplier) : null
+    const newMultiplier = existingMultiplier ? existingMultiplier * 1.1 : 1.1
 
-    if (upsertError) {
-      return NextResponse.json({ error: upsertError.message }, { status: 500 })
+    if (existingMultiplier !== null) {
+      const { error: updErr } = await supabase
+        .from('user_skill_thresholds')
+        .update({ multiplier: newMultiplier, updated_at: new Date().toISOString() })
+        .eq('user_id', userIdNum)
+        .eq('skill_name', skillName)
+      if (updErr) {
+        console.error('skill-thresholds update error:', updErr)
+        return NextResponse.json({ error: updErr.message }, { status: 500 })
+      }
+    } else {
+      const { error: insErr } = await supabase
+        .from('user_skill_thresholds')
+        .insert({
+          user_id: userIdNum,
+          skill_name: skillName,
+          multiplier: newMultiplier,
+          updated_at: new Date().toISOString()
+        })
+      if (insErr) {
+        console.error('skill-thresholds insert error:', insErr)
+        return NextResponse.json({ error: insErr.message }, { status: 500 })
+      }
     }
 
     return NextResponse.json({ success: true, multiplier: newMultiplier })
   } catch (error) {
+    console.error('skill-thresholds POST error:', error)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: { userId: string } }
 ) {
   try {
-    const { userId } = await params
+    const { userId } = params
     if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
 
     const { data, error } = await supabase
@@ -63,10 +85,14 @@ export async function GET(
       .select('skill_name, multiplier')
       .eq('user_id', parseInt(userId))
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('skill-thresholds GET error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
 
     return NextResponse.json({ success: true, thresholds: data || [] })
   } catch (error) {
+    console.error('skill-thresholds GET catch error:', error)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
