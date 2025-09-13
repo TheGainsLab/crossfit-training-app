@@ -381,7 +381,7 @@ if (metconResult.workoutId) {
             }
 
             dayData.blocks.push({
-              block: block,
+              blockName: block,
               subOrder: s + 1,
               exercises: strengthBlockExercises
             })
@@ -444,7 +444,7 @@ if (metconResult.workoutId) {
         }
         
         dayData.blocks.push({
-          block: block,
+          blockName: block,
           exercises: blockExercises
         })
         
