@@ -575,10 +575,11 @@ const calculateProgress = () => {
                           const strengthBlocks = workout.blocks.filter(b => b.blockName === 'STRENGTH AND POWER')
                           if (strengthBlocks.length > 1) {
                             const idx = strengthBlocks.indexOf(block)
-                            return `Strength & Power (${idx + 1}/${strengthBlocks.length})`
+                            return `STRENGTH AND POWER (${idx + 1}/${strengthBlocks.length})`
                           }
+                          return 'STRENGTH AND POWER'
                         }
-                        return block.blockName
+                        return (block.blockName || '').toUpperCase()
                       })()
                     }</h2>
                   </div>
