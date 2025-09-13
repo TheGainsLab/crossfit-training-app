@@ -183,14 +183,13 @@ const fetchWorkout = async () => {
 
         if (aiResponse.ok) {
           const aiData = await aiResponse.json()
-          if (aiData.success) {
-            // Use AI-enhanced program
+          console.log('program blocks:', aiData.program?.blocks)
+          if (aiData.success && Array.isArray(aiData.program?.blocks)) {
             setWorkout(aiData.program)
-            console.log('✅ AI modifications applied:', aiData.modificationsApplied || 'No modifications needed')
+            console.log('✅ AI modifications applied:', aiData.modificationsApplied || [])
           } else {
-            // Fallback to original program
             setWorkout(data.workout)
-            console.log('⚡ Using original program (AI returned unsuccessful)')
+            console.warn('⚠️ Using original program (AI returned no blocks)')
           }
         } else {
           // AI service failed, use original
