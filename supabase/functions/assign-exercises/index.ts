@@ -1080,3 +1080,4 @@ function truncateNotes(notes: string | null): string | null {
 }
 
 
+}
