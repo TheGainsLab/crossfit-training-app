@@ -432,16 +432,16 @@ const getBlockHeaderStyle = (blockName: string, exercises: Exercise[], completio
 
 const calculateProgress = () => {
   if (!workout) return 0
-  const totalExercises = workout.blocks.reduce((sum, block) => sum + block.exercises.length, 0)
+  const blocks = Array.isArray((workout as any)?.blocks) ? (workout as any).blocks : []
+  const totalExercises = blocks.reduce((sum: number, block: any) => sum + (Array.isArray(block.exercises) ? block.exercises.length : 0), 0)
   const completedExercises = Object.keys(completions).length
-  
-  // DEBUG: Log the data
+
   console.log('🔢 PROGRESS DEBUG:')
   console.log('Total exercises:', totalExercises)
-  console.log('Completed exercises:', completedExercises)  
+  console.log('Completed exercises:', completedExercises)
   console.log('Completions object:', completions)
-  console.log('Workout blocks:', workout.blocks.map(b => ({name: b.blockName, count: b.exercises.length})))
-  
+  console.log('Workout blocks:', blocks.map((b: any) => ({ name: b.blockName, count: Array.isArray(b.exercises) ? b.exercises.length : 0 })))
+
   return totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0
 }
 

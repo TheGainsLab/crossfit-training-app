@@ -116,7 +116,7 @@ return new Response(JSON.stringify({
     // Return original program on any error (if provided)
     return new Response(JSON.stringify({
       success: true,
-      program: originalProgram ?? null,
+      program: originalProgram1 ?? null,
       error: (error as any)?.message || 'Unknown error'
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
