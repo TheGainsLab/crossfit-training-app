@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Make Supabase env available across module (handler + helpers)
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
 interface AssignExercisesRequest {
   user: any  // User data object passed from generate-program
   block: string
@@ -623,10 +627,10 @@ const userSkillLevel = user.skills[skillIndex].includes('Advanced') ? 3 :
 let exercises: any[] = [];
 
 try {
-  const contextualResponse = await fetch(`${supabaseUrl}/functions/v1/contextual-exercise-selection`, {
+  const contextualResponse = await fetch(`${SUPABASE_URL}/functions/v1/contextual-exercise-selection`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${supabaseKey}`,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
