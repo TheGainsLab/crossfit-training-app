@@ -313,9 +313,9 @@ if (skills && skills.length > 0) {
         sport_id: 1,
         program_number: 1,
         weeks_generated: weeksToGenerate,
-        program_data: programResult.program,
-        user_snapshot: programResult.program.metadata.userSnapshot,
-        ratio_snapshot: programResult.program.metadata.ratioSnapshot
+        program_data: programResult?.program || {},
+        user_snapshot: programResult?.program?.metadata?.userSnapshot || null,
+        ratio_snapshot: programResult?.program?.metadata?.ratioSnapshot || null
       })
       .select('id')
       .single()

@@ -28,11 +28,29 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
     
-    const { user_id, weeksToGenerate = [1, 2, 3, 4] }: GenerateProgramRequest = await req.json()
-    
-    if (!user_id) {
+    // Validate request body
+    let parsed: any
+    try {
+      parsed = await req.json()
+    } catch (_) {
       return new Response(
-        JSON.stringify({ error: 'Missing user_id in request body' }),
+        JSON.stringify({ error: 'Invalid JSON body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const { user_id, weeksToGenerate = [1, 2, 3, 4] }: GenerateProgramRequest = parsed || {}
+
+    if (!user_id || typeof user_id !== 'number' || user_id <= 0) {
+      return new Response(
+        JSON.stringify({ error: 'Missing or invalid user_id (number > 0 required)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!Array.isArray(weeksToGenerate) || weeksToGenerate.length === 0 || !weeksToGenerate.every((w) => Number.isInteger(w) && w > 0)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid weeksToGenerate (array of positive integers required)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -56,7 +74,10 @@ serve(async (req) => {
     })
     
     if (!abilityResponse.ok) {
-      throw new Error('Failed to determine user ability: ' + await abilityResponse.text())
+      let errText = ''
+      try { errText = await abilityResponse.text() } catch (_) {}
+      console.error('determine-user-ability error', abilityResponse.status, errText)
+      throw new Error('Failed to determine user ability: ' + errText)
     }
     
     const abilityResult = await abilityResponse.json()
@@ -99,7 +120,10 @@ serve(async (req) => {
     })
     
     if (!ratiosResponse.ok) {
-      throw new Error('Failed to calculate ratios: ' + await ratiosResponse.text())
+      let errText = ''
+      try { errText = await ratiosResponse.text() } catch (_) {}
+      console.error('calculate-ratios error', ratiosResponse.status, errText)
+      throw new Error('Failed to calculate ratios: ' + errText)
     }
     
     const ratiosResult = await ratiosResponse.json()
@@ -313,20 +337,27 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
           })
           
           if (metconResponse.ok) {
-            const metconResult = await metconResponse.json()
-            blockExercises = metconResult.exercises || []
-            
-           // Add MetCon metadata
-if (metconResult.workoutId) {
-  dayData.metconData = {
-    workoutId: metconResult.workoutId,
-    workoutFormat: metconResult.workoutFormat,
-    timeRange: metconResult.timeRange,
-    percentileGuidance: metconResult.percentileGuidance,
-    workoutNotes: metconResult.workoutNotes || ''  // Add this line
-  }
-}
-
+            try {
+              const metconResult = await metconResponse.json()
+              blockExercises = Array.isArray(metconResult.exercises) ? metconResult.exercises : []
+              
+              // Add MetCon metadata
+              if (metconResult.workoutId) {
+                dayData.metconData = {
+                  workoutId: metconResult.workoutId,
+                  workoutFormat: metconResult.workoutFormat,
+                  timeRange: metconResult.timeRange,
+                  percentileGuidance: metconResult.percentileGuidance,
+                  workoutNotes: metconResult.workoutNotes || ''
+                }
+              }
+            } catch (e) {
+              console.error('    ↳ assign-metcon JSON parse error:', e)
+            }
+          } else {
+            let errText = ''
+            try { errText = await metconResponse.text() } catch (_) {}
+            console.error(`    ↳ assign-metcon HTTP ${metconResponse.status}: ${errText}`)
           }
         } else if (block === 'STRENGTH AND POWER') {
           // Determine how many separate strength blocks to emit
