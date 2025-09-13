@@ -1,14 +1,26 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
-// Add permissive CORS headers for browser calls
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-authorization, x-requested-with',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS'
-};
+// CORS: reflect a trusted origin for browser calls with Authorization header
+const ALLOWED_ORIGINS = [
+  'https://www.thegainsapps.com',
+  'https://crossfit-training-app.vercel.app',
+  'http://localhost:3000'
+];
+
+function buildCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || ''
+  const allowOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-authorization, x-requested-with',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Vary': 'Origin'
+  }
+}
 
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req)
   // Handle preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
