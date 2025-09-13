@@ -315,8 +315,49 @@ async function assignExercises(
     })
 
     if (strengthExercises.length === 0) {
-      console.log('❌ No strength exercises found for:', mainLift)
-      return defaultBodyweightExercises.slice(0, 1)
+      console.log('❌ No strength exercises found for:', mainLift, '- generating synthetic main-lift sets')
+
+      // Use progression based on mainLift type/level to synthesize sets for the main lift itself
+      const liftType = ['Snatch', 'Clean and Jerk'].includes(mainLift) ? 'Olympic Lifts' :
+        ['Back Squat', 'Front Squat'].includes(mainLift) ? 'Squats' : 'Presses'
+
+      const liftLevel = mainLift === 'Snatch' ? (user.snatch_level || 'Beginner') :
+        mainLift === 'Clean and Jerk' ? (user.clean_jerk_level || 'Beginner') :
+        ['Back Squat', 'Front Squat'].includes(mainLift) ? (user.back_squat_level || 'Beginner') :
+        (user.press_level || 'Beginner')
+
+      const progression = liftingProgressions[liftType][liftLevel].find(p => p.week === week)
+
+      if (!progression) {
+        console.log('❌ No progression data for week in synthetic path:', week)
+        // As an absolute last resort, return a single BW placeholder to avoid empty array
+        return [{ name: mainLift, sets: 1, reps: 5, weightTime: '', notes: `${liftLevel} - Synthetic` }]
+      }
+
+      const oneRMIndex = find1RMIndex(mainLift)
+      const oneRM = user.oneRMs && user.oneRMs[oneRMIndex]
+
+      const strengthSets = []
+      for (let setIndex = 0; setIndex < progression.reps.length; setIndex++) {
+        let weightTime = ''
+        if (oneRM && oneRM > 0) {
+          const percent = progression.percentages[setIndex] / 100
+          const rawWeight = oneRM * percent
+          const roundedWeight = roundWeight(rawWeight, user.units)
+          weightTime = roundedWeight.toString()
+          console.log(`💪 (synthetic) Set ${setIndex + 1}: ${progression.reps[setIndex]} reps @ ${weightTime} (${progression.percentages[setIndex]}% of ${oneRM})`)
+        }
+        strengthSets.push({
+          name: mainLift,
+          sets: 1,
+          reps: progression.reps[setIndex],
+          weightTime: weightTime,
+          notes: `${liftLevel} - Set ${setIndex + 1}`
+        })
+      }
+
+      console.log(`✅ (synthetic) Created ${strengthSets.length} strength sets for ${mainLift}`)
+      return strengthSets
     }
 
     // Filter out weekly-used strength names to avoid repeats
