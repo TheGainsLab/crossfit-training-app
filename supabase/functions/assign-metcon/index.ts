@@ -40,19 +40,31 @@ serve(async (req) => {
     if (!metconData || metconData.length === 0) {
       console.log('No MetCons found, creating fallback')
       const fallbackResult = createFallbackMetCon(user)
-     
-return new Response(
-  JSON.stringify({
-    success: true,
-    exercises: fallbackResult.exercises,
-    workoutId: fallbackResult.workoutId,
-    workoutFormat: fallbackResult.format,
-    timeRange: fallbackResult.timeRange,
-    percentileGuidance: fallbackResult.percentileGuidance,
-    workoutNotes: ''  // Add this line
-  }),
-  { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-)
+      try {
+        await supabase.from('function_traces').insert({
+          function_name: 'assign-metcon',
+          block: 'METCONS',
+          week,
+          day,
+          user_id: user.id || user.userProfile?.id || null,
+          status: 'fallback',
+          count: (fallbackResult.exercises || []).length,
+          sample_names: (fallbackResult.exercises || []).slice(0, 3).map((e: any) => e?.name || ''),
+          raw: { workoutId: fallbackResult.workoutId }
+        })
+      } catch (_) {}
+      return new Response(
+        JSON.stringify({
+          success: true,
+          exercises: fallbackResult.exercises,
+          workoutId: fallbackResult.workoutId,
+          workoutFormat: fallbackResult.format,
+          timeRange: fallbackResult.timeRange,
+          percentileGuidance: fallbackResult.percentileGuidance,
+          workoutNotes: ''  // Add this line
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
 // Try intelligent AI selection first, fallback to original logic
@@ -108,7 +120,21 @@ try {
     // Generate percentile guidance (exact Google Script logic)
     const percentileGuidance = generatePercentileGuidance(selectedWorkout, user)
 
-return new Response(
+    try {
+      await supabase.from('function_traces').insert({
+        function_name: 'assign-metcon',
+        block: 'METCONS',
+        week,
+        day,
+        user_id: user.id || user.userProfile?.id || null,
+        status: 'ok',
+        count: (conversionResult.exercises || []).length,
+        sample_names: (conversionResult.exercises || []).slice(0, 3).map((e: any) => e?.name || ''),
+        raw: { workoutId: selectedWorkout?.workout_id }
+      })
+    } catch (_) {}
+
+    return new Response(
   JSON.stringify({
     success: true,
     exercises: conversionResult.exercises,
@@ -120,7 +146,6 @@ return new Response(
   }),
   { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
 )
-
 
 
 

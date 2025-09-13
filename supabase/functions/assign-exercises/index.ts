@@ -240,6 +240,7 @@ serve(async (req) => {
       previousDayAccessories,
       previousDaySkills,
       dailyStrengthExercises,
+      usedStrengths,
       supabase
     )
 
@@ -272,9 +273,14 @@ async function assignExercises(
   previousDayAccessories: string[],
   previousDaySkills: string[],
   dailyStrengthExercises: string[],
+  usedStrengths: string[] = [],
   supabase: any
 ) {
   console.log(`🏗️ Starting exercise assignment for ${block}`)
+
+  // Ensure env vars are available in this scope for cross-function calls
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
   // For MetCons, call separate MetCon assignment (this should be handled by assign-metcon function)
   if (block === 'METCONS') {
@@ -373,6 +379,19 @@ async function assignExercises(
     }
 
     console.log(`✅ Created ${strengthSets.length} strength sets`)
+    try {
+      await supabase.from('function_traces').insert({
+        function_name: 'assign-exercises',
+        block,
+        week,
+        day,
+        user_id: user.id || user.userProfile?.id || null,
+        status: 'ok',
+        count: strengthSets.length,
+        sample_names: strengthSets.slice(0, 3).map((e: any) => e.name),
+        raw: { type: 'strength', mainLift }
+      })
+    } catch (_) {}
     return strengthSets
   }
 
@@ -580,6 +599,9 @@ const userSkillLevel = user.skills[skillIndex].includes('Advanced') ? 3 :
 let exercises: any[] = [];
 
 try {
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in function environment')
+  }
   const contextualResponse = await fetch(`${supabaseUrl}/functions/v1/contextual-exercise-selection`, {
     method: 'POST',
     headers: {
@@ -790,6 +812,20 @@ try {
       }
     }
   }
+  try {
+    await supabase.from('function_traces').insert({
+      function_name: 'assign-exercises',
+      block,
+      week,
+      day,
+      user_id: user.id || user.userProfile?.id || null,
+      status: 'ok',
+      count: exercises.length,
+      sample_names: (exercises || []).slice(0, 3).map((e: any) => e?.name || ''),
+      raw: { filteredCount: filtered.length }
+    })
+  } catch (_) {}
+  return exercises
 }
 
 
@@ -1039,3 +1075,4 @@ function truncateNotes(notes: string | null): string | null {
 }
 
 
+}

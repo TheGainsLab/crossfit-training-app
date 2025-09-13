@@ -56,7 +56,9 @@ serve(async (req) => {
     })
     
     if (!abilityResponse.ok) {
-      throw new Error('Failed to determine user ability: ' + await abilityResponse.text())
+      const errText = await abilityResponse.text()
+      console.error('determine-user-ability error', abilityResponse.status, errText)
+      throw new Error('Failed to determine user ability: ' + errText)
     }
     
     const abilityResult = await abilityResponse.json()
@@ -99,7 +101,9 @@ serve(async (req) => {
     })
     
     if (!ratiosResponse.ok) {
-      throw new Error('Failed to calculate ratios: ' + await ratiosResponse.text())
+      const errText = await ratiosResponse.text()
+      console.error('calculate-ratios error', ratiosResponse.status, errText)
+      throw new Error('Failed to calculate ratios: ' + errText)
     }
     
     const ratiosResult = await ratiosResponse.json()
@@ -327,6 +331,9 @@ if (metconResult.workoutId) {
   }
 }
 
+          } else {
+            const errText = await metconResponse.text()
+            console.error('assign-metcon error', metconResponse.status, errText)
           }
         } else if (block === 'STRENGTH AND POWER') {
           // Determine how many separate strength blocks to emit
@@ -440,6 +447,9 @@ if (metconResult.workoutId) {
               })
               previousDayAccessories = blockExercises.map(ex => ex.name)
             }
+          } else {
+            const errText = await exerciseResponse.text()
+            console.error('assign-exercises error', exerciseResponse.status, errText)
           }
         }
         
