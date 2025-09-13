@@ -50,6 +50,9 @@ export default function SettingsPage() {
   const [primaryStrengthLifts, setPrimaryStrengthLifts] = useState<string[]>([])
   const [emphasizedStrengthLifts, setEmphasizedStrengthLifts] = useState<string[]>([])
   const [availableStrengthLifts, setAvailableStrengthLifts] = useState<string[]>([])
+  // Mirror intake Section 5 extras
+  const [selectedGoals, setSelectedGoals] = useState<string[]>([])
+  const [metconTimeFocus, setMetconTimeFocus] = useState<string[]>([])
 
   // Originals for AI-trigger detection
   const [originalOneRMs, setOriginalOneRMs] = useState<Record<string, number>>({})
@@ -224,7 +227,7 @@ export default function SettingsPage() {
       // Load preferences
       const { data: prefs } = await supabase
         .from('user_preferences')
-        .select('three_month_goals, monthly_primary_goal, preferred_metcon_exercises, avoided_exercises, training_days_per_week, primary_strength_lifts, emphasized_strength_lifts')
+        .select('three_month_goals, monthly_primary_goal, preferred_metcon_exercises, avoided_exercises, training_days_per_week, primary_strength_lifts, emphasized_strength_lifts, selected_goals, metcon_time_focus')
         .eq('user_id', userData.id)
         .single()
       setThreeMonthGoals(prefs?.three_month_goals || '')
@@ -237,6 +240,8 @@ export default function SettingsPage() {
       const emph = prefs?.emphasized_strength_lifts || []
       setPrimaryStrengthLifts(prim)
       setEmphasizedStrengthLifts(emph)
+      setSelectedGoals(prefs?.selected_goals || [])
+      setMetconTimeFocus(prefs?.metcon_time_focus || [])
       setOriginalTDW(tdw)
       setOriginalPrimaryLifts(prim)
       setOriginalEmphasizedLifts(emph)
@@ -395,7 +400,9 @@ export default function SettingsPage() {
           avoided_exercises: avoidedExercises || [],
           training_days_per_week: trainingDaysPerWeek || 5,
           primary_strength_lifts: primaryStrengthLifts || null,
-          emphasized_strength_lifts: emphasizedStrengthLifts || null
+          emphasized_strength_lifts: emphasizedStrengthLifts || null,
+          selected_goals: selectedGoals || [],
+          metcon_time_focus: metconTimeFocus || []
         }, { onConflict: 'user_id' })
       if (prefsError) throw prefsError
 
