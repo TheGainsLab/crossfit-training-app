@@ -368,8 +368,12 @@ if (metconResult.workoutId) {
 
             let strengthBlockExercises: any[] = []
             if (exerciseResponse.ok) {
-              const exerciseResult = await exerciseResponse.json()
-              strengthBlockExercises = exerciseResult.exercises || []
+              try {
+                const exerciseResult = await exerciseResponse.json()
+                strengthBlockExercises = Array.isArray(exerciseResult.exercises) ? exerciseResult.exercises : []
+              } catch (e) {
+                console.error('    ↳ assign-exercises JSON parse error (Strength):', e)
+              }
               // Update trackers
               if (strengthBlockExercises.length > 0) {
                 const chosenName = strengthBlockExercises[0]?.name
@@ -378,6 +382,10 @@ if (metconResult.workoutId) {
                   dailyStrengthExercises = [...dailyStrengthExercises, chosenName]
                 }
               }
+            } else {
+              let errText = ''
+              try { errText = await exerciseResponse.text() } catch (_) {}
+              console.error(`    ↳ assign-exercises HTTP ${exerciseResponse.status} (Strength): ${errText}`)
             }
 
             dayData.blocks.push({
@@ -418,8 +426,12 @@ if (metconResult.workoutId) {
           })
           
           if (exerciseResponse.ok) {
-            const exerciseResult = await exerciseResponse.json()
-            blockExercises = exerciseResult.exercises || []
+            try {
+              const exerciseResult = await exerciseResponse.json()
+              blockExercises = Array.isArray(exerciseResult.exercises) ? exerciseResult.exercises : []
+            } catch (e) {
+              console.error('    ↳ assign-exercises JSON parse error:', e)
+            }
             
             // Track strength exercises for technical work filtering
             if (block === 'STRENGTH AND POWER') {
@@ -440,6 +452,10 @@ if (metconResult.workoutId) {
               })
               previousDayAccessories = blockExercises.map(ex => ex.name)
             }
+          } else {
+            let errText = ''
+            try { errText = await exerciseResponse.text() } catch (_) {}
+            console.error(`    ↳ assign-exercises HTTP ${exerciseResponse.status} (${block}): ${errText}`)
           }
         }
         
