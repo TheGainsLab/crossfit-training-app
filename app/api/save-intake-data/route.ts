@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
         let { error: updErr } = await supabaseAdmin
           .from('user_preferences')
           .update(fullPayload)
-          .eq('user_id', userId)
+          .eq('user_id', effectiveUserId)
 
         if (updErr) {
           const retryUpd = await supabaseAdmin
@@ -328,7 +328,7 @@ if (skills && skills.length > 0) {
           const { data: prefs } = await supabaseAdmin
             .from('user_preferences')
             .select('training_days_per_week')
-            .eq('user_id', userId)
+            .eq('user_id', effectiveUserId)
             .single()
           if (prefs && typeof prefs.training_days_per_week === 'number') {
             dayLimit = Math.max(3, Math.min(6, prefs.training_days_per_week))
