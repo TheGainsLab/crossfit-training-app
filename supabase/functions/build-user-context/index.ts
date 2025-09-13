@@ -195,16 +195,13 @@ async function fetchUserRatios(supabase: any, user_id: number) {
 }
 
 async function fetchRecentPerformance(supabase: any, user_id: number) {
-  const twoWeeksAgo = new Date();
-  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-
+  // Fetch the 40 most recent logs regardless of date
   const { data, error } = await supabase
     .from('performance_logs')
     .select('exercise_name, rpe, completion_quality, logged_at, week, day')
     .eq('user_id', user_id)
-    .gte('logged_at', twoWeeksAgo.toISOString())
     .order('logged_at', { ascending: false })
-    .limit(50);
+    .limit(40);
   
   if (error) throw new Error(`Failed to fetch recent performance: ${error.message}`);
   return data || [];
