@@ -214,10 +214,10 @@ try {
  userGender: userGender,  // ← ADD THIS LINE      
 
 blocks: targetDay.blocks.map((block: any) => ({
-  blockName: block.block,
+  blockName: block.blockName || block.block,
   exercises: block.exercises.map((exercise: any, exerciseIndex: number) => {
     // Check for coach modifications
-    const modKey = `${block.block}-${exerciseIndex}`;
+    const modKey = `${(block.blockName || block.block)}-${exerciseIndex}`;
     const modification = modificationMap.get(modKey);
     
     // Start with original exercise data
