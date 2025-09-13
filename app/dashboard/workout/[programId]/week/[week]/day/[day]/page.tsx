@@ -369,10 +369,12 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
 }
 
 
-  const toggleBlock = (blockName: string) => {
+  const getBlockKey = (blockName: string, index: number) => `${blockName}-${index}`
+  const toggleBlock = (blockName: string, index: number) => {
+    const key = getBlockKey(blockName, index)
     setExpandedBlocks(prev => ({
       ...prev,
-      [blockName]: !prev[blockName]
+      [key]: !prev[key]
     }))
   }
 
@@ -559,7 +561,7 @@ const calculateProgress = () => {
 <div key={blockIndex} className={`mb-6 rounded-lg border-2 ${getBlockHeaderStyle(block.blockName, block.exercises, completions)}`}>
             {/* Block Header */}
             <button
-              onClick={() => toggleBlock(block.blockName)}
+              onClick={() => toggleBlock(block.blockName, blockIndex)}
               className="w-full p-4 text-left hover:bg-white/50 transition-colors rounded-lg"
             >
               <div className="flex items-center justify-between">
@@ -594,14 +596,14 @@ const calculateProgress = () => {
 
                   </span>
                   <span className="text-gray-400">
-                    {expandedBlocks[block.blockName] ? '▼' : '▶'}
+                    {expandedBlocks[getBlockKey(block.blockName, blockIndex)] ? '▼' : '▶'}
                   </span>
                 </div>
               </div>
             </button>
 
         {/* Block Content */}
-{expandedBlocks[block.blockName] && (
+{expandedBlocks[getBlockKey(block.blockName, blockIndex)] && (
   <div className="px-4 pb-4 space-y-4">
     {/* Intensity controls removed */}
     {block.exercises.length === 0 ? (
@@ -612,8 +614,8 @@ const calculateProgress = () => {
           day={day}
           mainLift={workout.mainLift}
           blocksInDay={workout.blocks.filter(b => b.blockName === 'STRENGTH AND POWER').length}
+          strengthIndexWithinDay={workout.blocks.slice(0, blockIndex + 1).filter(b => b.blockName === 'STRENGTH AND POWER').length - 1}
           onPopulate={(sets) => {
-            // Insert synthesized sets into this block instance
             const updated = { ...workout }
             updated.blocks[blockIndex] = { ...updated.blocks[blockIndex], exercises: sets }
             setWorkout(updated)
@@ -855,6 +857,7 @@ function StrengthFallback({
   day: string
   mainLift: string
   blocksInDay: number
+  strengthIndexWithinDay?: number
   onPopulate: (sets: Exercise[]) => void
 }) {
   const [loading, setLoading] = useState(false)
@@ -872,7 +875,8 @@ function StrengthFallback({
       })
       const json = await res.json()
       if (!res.ok || !json.success) throw new Error(json.error || 'Failed to synthesize')
-      const sets = Array.isArray(json.blocks) && json.blocks.length > 0 ? (json.blocks[0] as Exercise[]) : []
+      const idx = typeof strengthIndexWithinDay === 'number' ? Math.max(0, Math.min(json.blocks.length - 1, strengthIndexWithinDay)) : 0
+      const sets = Array.isArray(json.blocks) && json.blocks.length > 0 ? (json.blocks[idx] as Exercise[]) : []
       onPopulate(sets)
     } catch (e: any) {
       setError(e?.message || 'Failed to synthesize')
