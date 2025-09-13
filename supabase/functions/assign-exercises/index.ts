@@ -240,6 +240,7 @@ serve(async (req) => {
       previousDayAccessories,
       previousDaySkills,
       dailyStrengthExercises,
+      usedStrengths,
       supabase
     )
 
@@ -272,9 +273,14 @@ async function assignExercises(
   previousDayAccessories: string[],
   previousDaySkills: string[],
   dailyStrengthExercises: string[],
+  usedStrengths: string[] = [],
   supabase: any
 ) {
   console.log(`🏗️ Starting exercise assignment for ${block}`)
+
+  // Ensure env vars are available in this scope for cross-function calls
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
   // For MetCons, call separate MetCon assignment (this should be handled by assign-metcon function)
   if (block === 'METCONS') {
@@ -580,6 +586,9 @@ const userSkillLevel = user.skills[skillIndex].includes('Advanced') ? 3 :
 let exercises: any[] = [];
 
 try {
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in function environment')
+  }
   const contextualResponse = await fetch(`${supabaseUrl}/functions/v1/contextual-exercise-selection`, {
     method: 'POST',
     headers: {
