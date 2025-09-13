@@ -38,7 +38,7 @@ serve(async (req) => {
 
   try {
   
- // ADD THIS COMPLETION CHECK HERE:
+ // ADD THIS COMPLETION/CACHE CHECK HERE:
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -72,6 +72,26 @@ if (completedLogs && completedLogs.length > 0) {
   }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
    
+ // If not completed, return cached modified workout if it exists to avoid re-calling AI on every load
+ const { data: cachedModification } = await supabase
+   .from('modified_workouts')
+   .select('modified_program, modifications_applied')
+   .eq('user_id', user_id)
+   .eq('week', week)
+   .eq('day', day)
+   .single();
+
+ if (cachedModification) {
+   return new Response(JSON.stringify({
+     success: true,
+     program: cachedModification.modified_program,
+     modificationsApplied: cachedModification.modifications_applied || [],
+     source: 'stored-modified',
+     plateauInterventions: {},
+     plateauStatus: 'not-completed'
+   }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+ }
+ 
  // END OF NEW CODE 
 
     // Get user context and recent performance
@@ -87,21 +107,19 @@ if (completedLogs && completedLogs.length > 0) {
     }
 
 // ADD STORAGE LOGIC HERE (before the return statement):
-// Store the modified workout for historical preservation
-if (modifiedProgram.modifications && modifiedProgram.modifications.length > 0) {
-  await supabase
-    .from('modified_workouts')
-    .upsert({
-      user_id: user_id,
-      program_id: originalProgram.programId || null,
-      week: week,
-      day: day,
-      modified_program: modifiedProgram,
-      modifications_applied: modifiedProgram.modifications,
-      is_preview: true,
-      source: 'weekly' // or 'on_load'/'chat' when applicable
-    });
-}
+// Store the modified workout (even if no modifications) so subsequent loads use cache instead of re-calling AI
+await supabase
+  .from('modified_workouts')
+  .upsert({
+    user_id: user_id,
+    program_id: originalProgram?.programId || null,
+    week: week,
+    day: day,
+    modified_program: modifiedProgram,
+    modifications_applied: modifiedProgram?.modifications || [],
+    is_preview: true,
+    source: 'on_load' // or 'weekly'/'chat' when applicable
+  });
 
 return new Response(JSON.stringify({
   success: true,
@@ -116,7 +134,7 @@ return new Response(JSON.stringify({
     // Return original program on any error (if provided)
     return new Response(JSON.stringify({
       success: true,
-      program: originalProgram1 ?? null,
+      program: originalProgram ?? null,
       error: (error as any)?.message || 'Unknown error'
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
