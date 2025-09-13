@@ -136,6 +136,7 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
     }
   }
   const [isEstimating, setIsEstimating] = useState(false)
+  const [isRefreshingAI, setIsRefreshingAI] = useState(false)
   
  
   useEffect(() => {
@@ -473,6 +474,38 @@ const calculateProgress = () => {
 
   const progress = calculateProgress()
 
+  const handleRefreshAI = async () => {
+    try {
+      if (isRefreshingAI) return
+      setIsRefreshingAI(true)
+      const { createClient: createSbClient } = await import('@/lib/supabase/client')
+      const sbClient = createSbClient()
+      const { data: { session } } = await sbClient.auth.getSession()
+      const token = session?.access_token
+      const res = await fetch('/api/ai/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      })
+      if (res.status === 200) {
+        alert('Queued. We\'ll refresh your context and adapt upcoming sessions.')
+      } else if (res.status === 429) {
+        const j = await res.json().catch(() => ({}))
+        const when = j?.nextAvailableAt ? new Date(j.nextAvailableAt).toLocaleString() : 'later'
+        alert(`Refresh limit reached. Available again at ${when}.`)
+      } else {
+        const t = await res.text().catch(() => '')
+        alert(`Failed to enqueue refresh. ${t}`)
+      }
+    } catch (e: any) {
+      alert(`Failed to enqueue refresh. ${e?.message || ''}`)
+    } finally {
+      setIsRefreshingAI(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-ice-blue">
       <div className="print:hidden max-w-4xl mx-auto px-4 pt-4 flex justify-end">
@@ -514,6 +547,13 @@ const calculateProgress = () => {
 
               </div>
               <span className="text-sm font-medium text-charcoal">{Math.round(progress)}%</span>
+              <button
+                onClick={handleRefreshAI}
+                disabled={isRefreshingAI}
+                className="ml-3 px-3 py-1.5 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                {isRefreshingAI ? 'Refreshing…' : 'Refresh with AI'}
+              </button>
             </div>
           </div>
 
@@ -536,6 +576,13 @@ const calculateProgress = () => {
                   ></div>
                 </div>
                 <span className="text-sm font-medium text-charcoal">{Math.round(progress)}%</span>
+                <button
+                  onClick={handleRefreshAI}
+                  disabled={isRefreshingAI}
+                  className="ml-2 px-2 py-1 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {isRefreshingAI ? 'Refreshing…' : 'AI Refresh'}
+                </button>
               </div>
             </div>
             

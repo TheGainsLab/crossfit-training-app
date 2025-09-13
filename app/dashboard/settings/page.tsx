@@ -40,6 +40,7 @@ export default function SettingsPage() {
   const [userId, setUserId] = useState<number | null>(null)
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [isRefreshingAI, setIsRefreshingAI] = useState(false)
   // Preferences
   const [threeMonthGoals, setThreeMonthGoals] = useState<string>('')
   const [monthlyPrimaryGoal, setMonthlyPrimaryGoal] = useState<string>('')
@@ -463,6 +464,38 @@ export default function SettingsPage() {
     }
   }
 
+  const handleRefreshAI = async () => {
+    try {
+      if (isRefreshingAI) return
+      setIsRefreshingAI(true)
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const res = await fetch('/api/ai/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      })
+      if (res.status === 200) {
+        setMessage('AI refresh queued. We\'ll adapt your plan shortly.')
+      } else if (res.status === 429) {
+        const j = await res.json().catch(() => ({}))
+        const when = j?.nextAvailableAt ? new Date(j.nextAvailableAt).toLocaleString() : 'later'
+        setMessage(`AI refresh available again at ${when}.`)
+      } else {
+        setMessage('Failed to enqueue AI refresh')
+      }
+      setTimeout(() => setMessage(''), 4000)
+    } catch (e) {
+      setMessage('Failed to enqueue AI refresh')
+      setTimeout(() => setMessage(''), 4000)
+    } finally {
+      setIsRefreshingAI(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -858,7 +891,14 @@ export default function SettingsPage() {
           >
             View Full Profile Analysis →
           </Link>
-          
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRefreshAI}
+              disabled={isRefreshingAI}
+              className="border border-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            >
+              {isRefreshingAI ? 'Refreshing…' : 'Refresh with AI'}
+            </button>
           <button
             onClick={saveSettings}
             disabled={saving}
@@ -866,6 +906,7 @@ export default function SettingsPage() {
           >
             {saving ? 'Saving...' : 'Save All Changes'}
           </button>
+          </div>
         </div>
 
         {/* Note */}

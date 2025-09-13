@@ -20,6 +20,7 @@ import {
 } from 'chart.js'
 import { Bar, Doughnut } from 'react-chartjs-2'
 import ProgramNavigationWidget from './ProgramNavigationWidget'  // ADD THIS LINE HERE
+import { useRef } from 'react'
 
 // Register Chart.js components
 ChartJS.register(
@@ -882,6 +883,7 @@ const [heatMapData, setHeatMapData] = useState<any>(null)
   const [viewMode, setViewMode] = useState('athlete') // 'athlete' or 'coach'
   const [pendingInvitations, setPendingInvitations] = useState([])
   const [invitationsLoading, setInvitationsLoading] = useState(false)
+  const [isRefreshingAI, setIsRefreshingAI] = useState(false)
 
   useEffect(() => {
     loadUserAndProgram()
@@ -1107,6 +1109,36 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       console.error('Error loading user program:', err)
       setError('Failed to load program data')
       setLoading(false)
+    }
+  }
+
+  const handleRefreshAI = async () => {
+    try {
+      if (isRefreshingAI) return
+      setIsRefreshingAI(true)
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const res = await fetch('/api/ai/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      })
+      if (res.status === 200) {
+        alert('Queued AI refresh.')
+      } else if (res.status === 429) {
+        const j = await res.json().catch(() => ({}))
+        const when = j?.nextAvailableAt ? new Date(j.nextAvailableAt).toLocaleString() : 'later'
+        alert(`Refresh available again at ${when}.`)
+      } else {
+        alert('Failed to enqueue AI refresh')
+      }
+    } catch (e) {
+      alert('Failed to enqueue AI refresh')
+    } finally {
+      setIsRefreshingAI(false)
     }
   }
 
@@ -1375,6 +1407,15 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         </div>
       </div>
     </Link>
+  </div>
+  <div className="flex justify-end mb-4">
+    <button
+      onClick={handleRefreshAI}
+      disabled={isRefreshingAI}
+      className="px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+    >
+      {isRefreshingAI ? 'Refreshing…' : 'Refresh with AI'}
+    </button>
   </div>
 )}
 
