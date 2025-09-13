@@ -8,10 +8,10 @@ const supabase = createClient(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  context: any
 ) {
   try {
-    const { userId } = params
+    const { userId } = (context?.params || {}) as { userId?: string }
     const body = await request.json()
     const { skillName, scheduleForMonth } = body as { skillName: string; scheduleForMonth?: string }
 
@@ -74,10 +74,10 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  context: any
 ) {
   try {
-    const { userId } = params
+    const { userId } = (context?.params || {}) as { userId?: string }
     if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
 
     const { data, error } = await supabase
