@@ -5,6 +5,7 @@ import TrainingChatInterface from '@/components/TrainingChatInterface'
 import { useState, useEffect } from 'react'
 import AthleteDetailModal from './AthleteDetailModal'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import {
@@ -59,6 +60,7 @@ interface DashboardAnalytics {
 // Training Blocks Visualization Component
 // Training Blocks Visualization Component - Streamlined Version
 const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ analytics, blockData }) => {
+  const router = useRouter()
   if (!blockData?.data?.blockAnalysis?.blockSummaries) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -150,15 +152,26 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
       tooltip: {
         callbacks: {
           label: function(context: any) {
-            const label = context.label || '';
-            const value = context.parsed;
-            const block = sortedBlockSummaries[context.dataIndex];
-            const percentage = block?.percentageOfTotal || 0;
-            return `${label}: ${value} exercises (${percentage}%)`;
+            const label = context.label || ''
+            const value = context.parsed
+            const block = sortedBlockSummaries[context.dataIndex]
+            const percentage = block?.percentageOfTotal || 0
+            const perf = formatPerformanceMetric(block)
+            return `${label}: ${value} exercises (${percentage}%) • ${perf}`
           }
         }
       }
     }
+  }
+
+  const navigateForBlock = (blockName: string) => {
+    let tab = 'overview'
+    let hash = ''
+    const name = (blockName || '').toLowerCase()
+    if (name.includes('skill')) { tab = 'skills'; hash = '#skills-panel' }
+    else if (name.includes('strength')) { tab = 'strength'; hash = '#strength-panel' }
+    else if (name.includes('metcon')) { tab = 'metcons'; hash = '#metcons-panel' }
+    router.push(`/dashboard/progress?tab=${tab}${hash}`)
   }
 
   // Helper function to format performance metric
@@ -179,10 +192,40 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
     <div className="bg-white rounded-lg shadow p-6">
 <h3 className="font-semibold text-gray-900 mb-6">Training Block Overview</h3>      
       {/* Donut Chart */}
-      <div className="mb-8">
-        <div className="h-64">
-          <Doughnut data={donutChartData} options={donutChartOptions} />
+      <div className="mb-6">
+        <div className="h-44">
+          <Doughnut 
+            data={donutChartData} 
+            options={donutChartOptions} 
+            onClick={(event: any, elements: any[]) => {
+              if (!elements || elements.length === 0) return
+              const idx = elements[0].index
+              const block = sortedBlockSummaries[idx]
+              if (block?.blockName) navigateForBlock(block.blockName)
+            }}
+          />
         </div>
+      </div>
+
+      {/* Quick links to detailed analytics */}
+      <div className="flex flex-wrap gap-2 mb-2">
+        {sortedBlockSummaries.map((block: any) => {
+          let href = '/dashboard/progress?tab=overview'
+          const name = (block.blockName || '').toLowerCase()
+          if (name.includes('skill')) href = '/dashboard/progress?tab=skills#skills-panel'
+          else if (name.includes('strength')) href = '/dashboard/progress?tab=strength#strength-panel'
+          else if (name.includes('metcon')) href = '/dashboard/progress?tab=metcons#metcons-panel'
+          return (
+            <Link
+              key={block.blockName}
+              href={href}
+              className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-gray-50 border border-gray-200 text-gray-800 hover:bg-gray-100"
+              title={`Go to ${block.blockName} analytics`}
+            >
+              {block.blockName}: {block.exercisesCompleted} ({block.percentageOfTotal}%)
+            </Link>
+          )
+        })}
       </div>
 
       {/* View Detailed Analytics Link */}
