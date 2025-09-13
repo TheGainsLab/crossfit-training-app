@@ -34,6 +34,11 @@ export async function POST(
 
     if (selError) {
       console.error('skill-thresholds select error:', selError)
+      // Gracefully handle missing table in prod (undefined_table: 42P01)
+      const code = (selError as any)?.code
+      if (code === '42P01' || /relation .* user_skill_thresholds .* does not exist/i.test(selError.message || '')) {
+        return NextResponse.json({ success: false, reason: 'table_missing' })
+      }
       return NextResponse.json({ error: selError.message }, { status: 500 })
     }
 
@@ -48,6 +53,10 @@ export async function POST(
         .eq('skill_name', skillName)
       if (updErr) {
         console.error('skill-thresholds update error:', updErr)
+        const code = (updErr as any)?.code
+        if (code === '42P01' || /relation .* user_skill_thresholds .* does not exist/i.test(updErr.message || '')) {
+          return NextResponse.json({ success: false, reason: 'table_missing' })
+        }
         return NextResponse.json({ error: updErr.message }, { status: 500 })
       }
     } else {
@@ -61,6 +70,10 @@ export async function POST(
         })
       if (insErr) {
         console.error('skill-thresholds insert error:', insErr)
+        const code = (insErr as any)?.code
+        if (code === '42P01' || /relation .* user_skill_thresholds .* does not exist/i.test(insErr.message || '')) {
+          return NextResponse.json({ success: false, reason: 'table_missing' })
+        }
         return NextResponse.json({ error: insErr.message }, { status: 500 })
       }
     }
@@ -87,6 +100,10 @@ export async function GET(
 
     if (error) {
       console.error('skill-thresholds GET error:', error)
+      const code = (error as any)?.code
+      if (code === '42P01' || /relation .* user_skill_thresholds .* does not exist/i.test(error.message || '')) {
+        return NextResponse.json({ success: true, thresholds: [] })
+      }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
