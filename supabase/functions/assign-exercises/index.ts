@@ -162,6 +162,8 @@ const liftingProgressions = {
       { week: 12, reps: [4, 3, 2], percentages: [50, 60, 70] }
     ]
   }
+  console.log(`✅ Selected ${exercises.length} exercises for ${block}`)
+  return exercises
 }
 
 serve(async (req) => {
