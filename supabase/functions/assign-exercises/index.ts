@@ -240,6 +240,7 @@ serve(async (req) => {
       previousDayAccessories,
       previousDaySkills,
       dailyStrengthExercises,
+      usedStrengths,
       supabase
     )
 
@@ -272,6 +273,7 @@ async function assignExercises(
   previousDayAccessories: string[],
   previousDaySkills: string[],
   dailyStrengthExercises: string[],
+  usedStrengths: string[],
   supabase: any
 ) {
   console.log(`🏗️ Starting exercise assignment for ${block}`)
