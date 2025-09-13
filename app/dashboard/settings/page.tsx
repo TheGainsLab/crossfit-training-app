@@ -51,6 +51,12 @@ export default function SettingsPage() {
   const [emphasizedStrengthLifts, setEmphasizedStrengthLifts] = useState<string[]>([])
   const [availableStrengthLifts, setAvailableStrengthLifts] = useState<string[]>([])
 
+  // Originals for AI-trigger detection
+  const [originalOneRMs, setOriginalOneRMs] = useState<Record<string, number>>({})
+  const [originalTDW, setOriginalTDW] = useState<number>(5)
+  const [originalPrimaryLifts, setOriginalPrimaryLifts] = useState<string[]>([])
+  const [originalEmphasizedLifts, setOriginalEmphasizedLifts] = useState<string[]>([])
+
   const oneRMExercises = [
     'Snatch', 'Power Snatch', 'Clean and Jerk', 'Power Clean',
     'Clean (clean only)', 'Jerk (from rack or blocks, max Split or Power Jerk)',
@@ -58,15 +64,13 @@ export default function SettingsPage() {
     'Bench Press', 'Push Press', 'Strict Press', 'Weighted Pullup (do not include body weight)'
   ]
 
-  const availableEquipment = [
-    'Barbell', 'Dumbbells', 'Kettlebells', 'Pull-up Bar', 'Rings',
-    'Rowing Machine', 'Bike', 'Assault Bike', 'Box/Platform',
-    'Medicine Ball', 'Wall Ball', 'Jump Rope', 'Resistance Bands',
-    'TRX/Suspension Trainer', 'Parallette Bars', 'GHD Machine',
-    'Plyo Box', 'Slam Ball', 'Battle Ropes', 'Sled', 'Tire',
-    'Atlas Stone/Heavy Object', 'Sandbag', 'Farmers Walk Handles',
-    'Yoke/Safety Squat Bar', 'Log Bar', 'Axle Bar'
+  // Normalized equipment labels to match intake exactly
+  const basicsEquipment = [
+    'Barbell', 'Dumbbells', 'Kettlebells', 'Pullup Bar or Rig', 'High Rings', 'Low or Adjustable Rings',
+    'Bench', 'Squat Rack', 'Open Space', 'Wall Space', 'Jump Rope', 'Wall Ball'
   ]
+  const machinesEquipment = ['Rowing Machine', 'Air Bike', 'Ski Erg', 'Bike Erg']
+  const lessCommonEquipment = ['GHD', 'Axle Bar', 'Climbing Rope', 'Pegboard', 'Parallettes', 'Dball', 'Dip Bar', 'Plyo Box', 'HS Walk Obstacle', 'Sandbag']
 
   const skillCategories = [
     {
@@ -171,6 +175,10 @@ export default function SettingsPage() {
         one_rm: oneRMMap.get(exercise) || 0
       }))
       setOneRMs(allOneRMs)
+      // Capture originals for AI trigger detection
+      const origMap: Record<string, number> = {}
+      allOneRMs.forEach(r => { origMap[r.exercise_name] = r.one_rm || 0 })
+      setOriginalOneRMs(origMap)
 
       // Load equipment
       const { data: equipmentData, error: equipmentError } = await supabase
@@ -179,7 +187,20 @@ export default function SettingsPage() {
         .eq('user_id', userData.id)
 
       if (equipmentError) throw equipmentError
-      setEquipment(equipmentData?.map(eq => eq.equipment_name) || [])
+      // Map legacy names to normalized
+      const rawEquip = equipmentData?.map(eq => eq.equipment_name) || []
+      const normalized = new Set<string>()
+      rawEquip.forEach(name => {
+        if (!name) return
+        const n = name.trim()
+        if (n === 'Assault Bike') normalized.add('Air Bike')
+        else if (n === 'Bike') normalized.add('Bike Erg')
+        else if (n === 'Pull-up Bar' || n === 'Pull up Bar' || n === 'Pullup Bar') normalized.add('Pullup Bar or Rig')
+        else if (n === 'Rings') { normalized.add('High Rings'); normalized.add('Low or Adjustable Rings') }
+        else if (n === 'Parallette Bars') normalized.add('Parallettes')
+        else normalized.add(n)
+      })
+      setEquipment(Array.from(normalized))
 
       // Load skills
       const { data: skillsData, error: skillsError } = await supabase
@@ -210,9 +231,15 @@ export default function SettingsPage() {
       setMonthlyPrimaryGoal(prefs?.monthly_primary_goal || '')
       setPreferredMetconExercises(prefs?.preferred_metcon_exercises || [])
       setAvoidedExercises(prefs?.avoided_exercises || [])
-      setTrainingDaysPerWeek(prefs?.training_days_per_week || 5)
-      setPrimaryStrengthLifts(prefs?.primary_strength_lifts || [])
-      setEmphasizedStrengthLifts(prefs?.emphasized_strength_lifts || [])
+      const tdw = prefs?.training_days_per_week || 5
+      setTrainingDaysPerWeek(tdw)
+      const prim = prefs?.primary_strength_lifts || []
+      const emph = prefs?.emphasized_strength_lifts || []
+      setPrimaryStrengthLifts(prim)
+      setEmphasizedStrengthLifts(emph)
+      setOriginalTDW(tdw)
+      setOriginalPrimaryLifts(prim)
+      setOriginalEmphasizedLifts(emph)
 
       // Load exercises for preferences
       const { data: exData } = await supabase
@@ -371,6 +398,36 @@ export default function SettingsPage() {
           emphasized_strength_lifts: emphasizedStrengthLifts || null
         }, { onConflict: 'user_id' })
       if (prefsError) throw prefsError
+
+      // Detect AI-triggering changes
+      const primaryLiftsForDelta = ['Snatch','Clean and Jerk','Back Squat','Front Squat','Deadlift','Strict Press']
+      let rmTrigger = false
+      for (const lift of primaryLiftsForDelta) {
+        const before = originalOneRMs[lift] || 0
+        const after = (oneRMs.find(r => r.exercise_name === lift)?.one_rm) || 0
+        if (before === 0 && after > 0) { rmTrigger = true; break }
+        if (before > 0) {
+          const pct = Math.abs(after - before) / before
+          if (pct >= 0.05) { rmTrigger = true; break }
+        }
+      }
+      const tdwTrigger = trainingDaysPerWeek !== originalTDW
+      const arrEq = (a: string[], b: string[]) => {
+        const sa = [...(a||[])].sort().join('|')
+        const sb = [...(b||[])].sort().join('|')
+        return sa === sb
+      }
+      const primTrigger = !arrEq(primaryStrengthLifts, originalPrimaryLifts)
+      const emphTrigger = !arrEq(emphasizedStrengthLifts, originalEmphasizedLifts)
+
+      const newsworthy = rmTrigger || tdwTrigger || primTrigger || emphTrigger
+
+      if (newsworthy && userId) {
+        await supabase
+          .from('users')
+          .update({ program_generation_pending: true, updated_at: new Date().toISOString() })
+          .eq('id', userId)
+      }
 
       setMessage('Settings saved successfully!')
       setSaving(false)
