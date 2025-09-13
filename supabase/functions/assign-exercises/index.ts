@@ -19,6 +19,7 @@ interface AssignExercisesRequest {
   previousDayAccessories?: string[]
   previousDaySkills?: string[]
   dailyStrengthExercises?: string[]
+  usedStrengths?: string[]
 }
 
 // Default bodyweight exercises fallback (exact from Google Script)
@@ -185,7 +186,8 @@ serve(async (req) => {
       weeklyAccessories = {},
       previousDayAccessories = [],
       previousDaySkills = [],
-      dailyStrengthExercises = []
+      dailyStrengthExercises = [],
+      usedStrengths = []
     }: AssignExercisesRequest = await req.json()
 
     console.log(`🏗️ Assigning exercises: ${block} for ${user.name}, Week ${week}, Day ${day}`)
@@ -317,8 +319,10 @@ async function assignExercises(
       return defaultBodyweightExercises.slice(0, 1)
     }
 
-    // Pick the first suitable exercise
-    const selectedExercise = strengthExercises[0]
+    // Filter out weekly-used strength names to avoid repeats
+    const usedSet = new Set(Array.isArray(usedStrengths) ? usedStrengths : [])
+    const candidate = strengthExercises.find(ex => !usedSet.has(ex.name)) || strengthExercises[0]
+    const selectedExercise = candidate
     console.log('✅ Selected strength exercise:', selectedExercise.name)
 
     // Get progression data

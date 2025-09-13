@@ -271,6 +271,9 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
     let previousDayAccessories: string[] = []
     let previousDaySkills: string[] = []
     
+    // Track used strength exercise names within the week to prevent repeats
+    const usedWeeklyStrengths: Set<string> = new Set()
+
     for (let day = 0; day < days.length; day++) {
       const dayNumber = day + 1
       const isDeload = [4, 8, 12].includes(week)
@@ -325,6 +328,69 @@ if (metconResult.workoutId) {
 }
 
           }
+        } else if (block === 'STRENGTH AND POWER') {
+          // Determine how many separate strength blocks to emit
+          let strengthBlocksCount = 1
+          const daysPerWeek = days.length
+          if (!isDeload) {
+            if (daysPerWeek === 3) {
+              strengthBlocksCount = 2
+            } else if (daysPerWeek === 4) {
+              strengthBlocksCount = (dayNumber === 1 || dayNumber === 3) ? 2 : 1
+            }
+          }
+
+          for (let s = 0; s < strengthBlocksCount; s++) {
+            // Always one exercise per strength block (distinct lift)
+            const numExercises = 1
+            const exerciseResponse = await fetch(`${supabaseUrl}/functions/v1/assign-exercises`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                user: { ...user, ...ratios },
+                block: block,
+                mainLift: mainLift,
+                week: week,
+                day: dayNumber,
+                isDeload: isDeload,
+                numExercises: numExercises,
+                weeklySkills: weeklySkills,
+                weeklyAccessories: weeklyAccessories,
+                previousDayAccessories: previousDayAccessories,
+                previousDaySkills: previousDaySkills,
+                dailyStrengthExercises: dailyStrengthExercises,
+                usedStrengths: Array.from(usedWeeklyStrengths)
+              })
+            })
+
+            let strengthBlockExercises: any[] = []
+            if (exerciseResponse.ok) {
+              const exerciseResult = await exerciseResponse.json()
+              strengthBlockExercises = exerciseResult.exercises || []
+              // Update trackers
+              if (strengthBlockExercises.length > 0) {
+                const chosenName = strengthBlockExercises[0]?.name
+                if (chosenName) {
+                  usedWeeklyStrengths.add(chosenName)
+                  dailyStrengthExercises = [...dailyStrengthExercises, chosenName]
+                }
+              }
+            }
+
+            dayData.blocks.push({
+              block: block,
+              subOrder: s + 1,
+              exercises: strengthBlockExercises
+            })
+            totalExercises += strengthBlockExercises.length
+            console.log(`    ✅ ${block} (${s + 1}/${strengthBlocksCount}): ${strengthBlockExercises.length} exercises assigned`)
+          }
+
+          // Skip default push below since we already pushed blocks
+          continue
         } else {
           // Call assign-exercises function
           const numExercises = getNumExercisesForBlock(block, mainLift, ratios, user?.preferences, isDeload)
