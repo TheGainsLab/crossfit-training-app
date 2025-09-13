@@ -465,38 +465,31 @@ async function assignExercises(
         return false
       }
 
-      // Get the user's specific level for THIS skill
+      // Determine user's level for THIS skill; if index invalid, fall back to overall ability
       const skillIndex = exercise.skill_index
-
-      if (skillIndex === null || skillIndex === undefined || skillIndex < 0 || skillIndex > 25) {
-        console.log(`Skipping ${exerciseName}: Invalid skillIndex: ${skillIndex}`)
-        return false
-      }
-
-const userSkillLevel = user.skills[skillIndex].includes('Advanced') ? 3 :
-        user.skills[skillIndex].includes('Intermediate') ? 2 :
-        user.skills[skillIndex].includes('Beginner') ? 1 : 0
+      const abilityLevel = user.ability === 'Advanced' ? 3 : user.ability === 'Intermediate' ? 2 : 1
+      const userSkillLevel = (skillIndex !== null && skillIndex !== undefined && skillIndex >= 0 && skillIndex <= 25)
+        ? (user.skills[skillIndex].includes('Advanced') ? 3 : user.skills[skillIndex].includes('Intermediate') ? 2 : user.skills[skillIndex].includes('Beginner') ? 1 : 0)
+        : abilityLevel
 
       const exerciseLevel = exercise.difficulty_level === 'Elite' ? 4 :
         exercise.difficulty_level === 'Advanced' ? 3 :
         exercise.difficulty_level === 'Intermediate' ? 2 :
         exercise.difficulty_level === 'Beginner' ? 1 : 0
 
-
-
-      // Only allow exercises at or below the user's level for THIS specific skill
+      // Only allow exercises at or below the user's level
       if (exerciseLevel > userSkillLevel) {
-        console.log(`Skipping ${exerciseName}: Exercise level ${exerciseLevel} > user skill level ${userSkillLevel}`)
         return false
       }
 
-      // Elite access requires BOTH: 10+ advanced skills overall AND Advanced in this specific skill
+      // Elite access requires BOTH: 10+ advanced skills overall AND Advanced in this specific skill (when available)
       const advancedSkillCount = user.skills.filter((s: string) => s.includes('Advanced')).length
       const isEliteEligible = advancedSkillCount >= 10
-
-      if (exerciseLevel === 4 && (!isEliteEligible || userSkillLevel < 3)) {
-        console.log(`Skipping ${exerciseName}: Elite requires 10+ advanced skills AND Advanced in this skill`)
-        return false
+      if (exerciseLevel === 4) {
+        const hasAdvancedForThisSkill = (skillIndex !== null && skillIndex !== undefined && skillIndex >= 0 && skillIndex <= 25) ? user.skills[skillIndex].includes('Advanced') : (abilityLevel >= 3)
+        if (!isEliteEligible || !hasAdvancedForThisSkill) {
+          return false
+        }
       }
 
       // Handle Novice skills - only show as scaling when user lacks the base skill
@@ -506,9 +499,7 @@ const userSkillLevel = user.skills[skillIndex].includes('Advanced') ? 3 :
           const baseSkillIndex = findSkillIndexForScaling(scalingFor)
           if (baseSkillIndex !== -1) {
             const userBaseSkillLevel = user.skills[baseSkillIndex]
-            // Only show novice skill if user "Don't have it" for the base skill
             if (userBaseSkillLevel !== "Don't have it") {
-              console.log(`Skipping ${exerciseName}: User has ${scalingFor}, no need for novice scaling`)
               return false
             }
           }
@@ -526,7 +517,20 @@ const userSkillLevel = user.skills[skillIndex].includes('Advanced') ? 3 :
         return false
       }
 
-      return dependencies.includes(mainLift)
+      // Exact dependency match first
+      if (dependencies.includes(mainLift)) return true
+
+      // Family fallback: Press/Squat/Oly mapping to tolerate naming variants
+      const pressFamily = ['Strict Press', 'Push Press', 'Press']
+      const squatFamily = ['Back Squat', 'Front Squat', 'Squat']
+      const olyFamily = ['Snatch', 'Clean and Jerk', 'Clean', 'Jerk']
+
+      const inFamily = (fam: string[]) => fam.some(n => dependencies.includes(n))
+      if (pressFamily.includes(mainLift) && inFamily(pressFamily)) return true
+      if (squatFamily.includes(mainLift) && inFamily(squatFamily)) return true
+      if (olyFamily.includes(mainLift) && inFamily(olyFamily)) return true
+
+      return false
     }
 
     // ACCESSORIES block specific filtering (exact logic from Google Script)
