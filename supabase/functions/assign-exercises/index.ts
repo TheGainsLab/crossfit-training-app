@@ -801,6 +801,7 @@ try {
       }
     }
   }
+  return exercises
 }
 
 
