@@ -20,7 +20,6 @@ import {
 } from 'chart.js'
 import { Bar, Doughnut } from 'react-chartjs-2'
 import ProgramNavigationWidget from './ProgramNavigationWidget'  // ADD THIS LINE HERE
-import { useRef } from 'react'
 
 // Register Chart.js components
 ChartJS.register(
