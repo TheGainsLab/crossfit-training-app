@@ -9,13 +9,15 @@ interface NavigationProps {
   currentDay: number;
   programId: number;
   onNavigate: (week: number, day: number) => void;
+  updatedDays?: Array<{ week: number; day: number }>
 }
 
 const ProgramNavigationWidget: React.FC<NavigationProps> = ({ 
   currentWeek, 
   currentDay, 
   programId, 
-  onNavigate 
+  onNavigate,
+  updatedDays = []
 }) => {
   // Helper functions for navigation
   const getPreviousDay = () => {
@@ -123,6 +125,9 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
             {nextDay && (
               <div className="text-xs text-gray-500">
                 {formatWeekLabel(nextDay.week)}, Day {nextDay.day}
+                {updatedDays.some(d => d.week === nextDay.week && d.day === nextDay.day) && (
+                  <span className="ml-2 inline-block px-2 py-0.5 text-[10px] rounded-full bg-green-100 text-green-700 border border-green-200">Updated</span>
+                )}
               </div>
             )}
           </div>

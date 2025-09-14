@@ -883,6 +883,7 @@ const [heatMapData, setHeatMapData] = useState<any>(null)
   const [pendingInvitations, setPendingInvitations] = useState([])
   const [invitationsLoading, setInvitationsLoading] = useState(false)
   const [isRefreshingAI, setIsRefreshingAI] = useState(false)
+  const [lastRefresh, setLastRefresh] = useState<any>(null)
 
   useEffect(() => {
     loadUserAndProgram()
@@ -1110,6 +1111,23 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+        const res = await fetch('/api/ai/last-refresh', {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined
+        })
+        if (res.ok) {
+          const j = await res.json()
+          setLastRefresh(j)
+        }
+      } catch {}
+    })()
+  }, [])
 
   const handleRefreshAI = async () => {
     try {
@@ -1365,6 +1383,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
             currentWeek={currentWeek}
             currentDay={currentDay}
             programId={currentProgram}
+            updatedDays={(lastRefresh?.changeSummary?.updatedDays) || []}
             onNavigate={(week, day) => {
               setCurrentWeek(week)
               setCurrentDay(day)
