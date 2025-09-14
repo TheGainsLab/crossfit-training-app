@@ -17,7 +17,11 @@ import {
   RadialLinearScale,
   ArcElement
 } from 'chart.js';
-import { Line, Bar, Radar, Doughnut } from 'react-chartjs-2';
+import dynamic from 'next/dynamic';
+const Bar = dynamic(() => import('react-chartjs-2').then(m => m.Bar), { ssr: false, loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded" /> })
+const Line = dynamic(() => import('react-chartjs-2').then(m => m.Line), { ssr: false, loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded" /> })
+const Doughnut = dynamic(() => import('react-chartjs-2').then(m => m.Doughnut), { ssr: false, loading: () => <div className="h-48 bg-gray-100 animate-pulse rounded" /> })
+const Radar = dynamic(() => import('react-chartjs-2').then(m => m.Radar), { ssr: false, loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded" /> })
 
 // Quality grade conversion utilities
 function convertQualityToGradeDetailed(numericQuality: number): string {
@@ -819,6 +823,23 @@ const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 
   useEffect(() => {
     if (userId) {
       fetchTabAnalytics(activeTab);
+      // Background prefetch adjacent tabs (low priority)
+      const controller = new AbortController()
+      const prefetch = async () => {
+        try {
+          if (activeTab !== 'skills') {
+            fetch(`/api/analytics/${userId}/skills-analytics?prefetch=1`, { signal: controller.signal })
+          }
+          if (activeTab !== 'strength') {
+            fetch(`/api/analytics/${userId}/strength-tracker?prefetch=1`, { signal: controller.signal })
+          }
+          if (activeTab !== 'metcons') {
+            fetch(`/api/analytics/${userId}/metcon-analyzer?prefetch=1`, { signal: controller.signal })
+          }
+        } catch {}
+      }
+      setTimeout(prefetch, 300)
+      return () => controller.abort()
     }
   }, [userId, activeTab]);
 
