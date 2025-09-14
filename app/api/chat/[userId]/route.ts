@@ -32,6 +32,67 @@ export async function POST(
       return NextResponse.json({ error: 'Active subscription required' }, { status: 403 });
     }
 
+    // Rate limiting: 5 messages/min and 50/day per user (user role messages)
+    const now = new Date()
+    const cutoffMin = new Date(now.getTime() - 60 * 1000).toISOString()
+    const cutoffDay = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
+
+    // Gather user's conversation ids to count messages
+    const { data: convIdsData } = await supabase
+      .from('chat_conversations')
+      .select('id')
+      .eq('user_id', parseInt(userId))
+
+    const convIds = (convIdsData || []).map((c: any) => c.id)
+
+    let minuteCount = 0
+    let dayCount = 0
+    if (convIds.length > 0) {
+      const { count: mCount } = await supabase
+        .from('chat_messages')
+        .select('id', { count: 'exact', head: true })
+        .in('conversation_id', convIds)
+        .eq('role', 'user')
+        .gte('created_at', cutoffMin)
+      minuteCount = mCount || 0
+
+      const { count: dCount } = await supabase
+        .from('chat_messages')
+        .select('id', { count: 'exact', head: true })
+        .in('conversation_id', convIds)
+        .eq('role', 'user')
+        .gte('created_at', cutoffDay)
+      dayCount = dCount || 0
+    }
+
+    if (minuteCount >= 5) {
+      return NextResponse.json(
+        { success: false, error: 'rate_limit', message: 'Too many messages. Try again in a minute.' },
+        { status: 429 }
+      )
+    }
+    if (dayCount >= 50) {
+      return NextResponse.json(
+        { success: false, error: 'rate_limit', message: 'Daily chat limit reached. Try again tomorrow.' },
+        { status: 429 }
+      )
+    }
+
+    // Domain fence: allow only fitness/health/nutrition/training/program topics
+    const onTopic = isOnTopic((message || '').toLowerCase())
+    if (!onTopic) {
+      const guidance =
+        "I'm here for fitness, health, nutrition, training, and your program. " +
+        "Ask me about your workouts, technique, recovery, endurance, or supplements, and I'll help."
+      return NextResponse.json({
+        success: true,
+        response: guidance,
+        conversation_id: conversation_id || null,
+        responseType: 'domain_guard',
+        coachAlertGenerated: false
+      })
+    }
+
     // Get or create conversation
     let conversationId = conversation_id;
     if (!conversationId) {
@@ -137,4 +198,23 @@ function generateConversationTitle(firstMessage: string): string {
   
   const words = firstMessage.split(' ').slice(0, 3).join(' ');
   return words.length > 20 ? words.substring(0, 20) + '...' : words;
+}
+
+// Simple on-topic classifier (broad, fitness-first)
+function isOnTopic(text: string): boolean {
+  const allow = [
+    'train', 'training', 'workout', 'program', 'cycle', 'block', 'week', 'day',
+    'strength', 'power', 'endurance', 'cardio', 'aerobic', 'anaerobic', 'vo2', 'zone 2',
+    'hypertrophy', 'mobility', 'flexibility', 'technique', 'form', 'injury', 'pain', 'rehab', 'physical therapy', 'physio',
+    'recovery', 'sleep', 'stress', 'hrv', 'rest', 'deload', 'rpe', 'volume', 'intensity', 'sets', 'reps', 'tempo',
+    'nutrition', 'diet', 'macros', 'protein', 'carbs', 'fat', 'calorie', 'calories', 'hydration', 'electrolyte', 'supplement', 'creatine', 'caffeine',
+    'body weight', 'bodyweight', 'weight loss', 'gain', 'cut', 'bulk',
+    'run', 'rowing', 'bike', 'erg', 'metcon', 'wod', 'crossfit', 'olympic lift', 'snatch', 'clean', 'jerk', 'squat', 'deadlift', 'press', 'pull-up', 'ring',
+    'goal', 'progression', 'plateau', '1rm', 'one rep max', 'percentage'
+  ]
+
+  for (const token of allow) {
+    if (text.includes(token)) return true
+  }
+  return false
 }

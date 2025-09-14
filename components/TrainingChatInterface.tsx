@@ -110,6 +110,19 @@ const response = await fetch(`/api/chat/${userId}`, {
 console.log('Response status:', response.status) // Add this line here
       const data = await response.json()
 
+      // Handle rate limits gracefully
+      if (response.status === 429) {
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: (data && (data.message || data.error)) || 'You have reached the chat limit. Please try again later.',
+          timestamp: new Date().toISOString(),
+          responseType: 'error'
+        }
+        setMessages(prev => [...prev, assistantMessage])
+        setLoading(false)
+        return
+      }
+
       if (data.success) {
         // Update conversation ID if this is a new conversation
         if (!activeConversationId) {
