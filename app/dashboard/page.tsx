@@ -1375,6 +1375,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 
 {/* Overview Cards */}
 {dashboardAnalytics?.data?.dashboard && (
+  <>
   <div className="grid md:grid-cols-3 gap-6 mb-6">
     {/* Training Activity Card */}
     <div className="bg-white rounded-lg shadow p-6 border-2 border-slate-blue">
@@ -1417,6 +1418,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       {isRefreshingAI ? 'Refreshing…' : 'Refresh with AI'}
     </button>
   </div>
+  </>
 )}
 
 {/* Training Blocks Visualization */}
