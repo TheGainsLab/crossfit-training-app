@@ -509,7 +509,7 @@ const calculateProgress = () => {
   return (
     <div className="min-h-screen bg-ice-blue">
       <div className="print:hidden max-w-4xl mx-auto px-4 pt-4 flex justify-end">
-        <button onClick={handlePrint} className="px-4 py-2 rounded-lg border text-gray-700 bg-white hover:bg-gray-50">
+        <button onClick={handlePrint} className="px-4 py-2 rounded-lg hover:opacity-90" style={{ backgroundColor: '#FE5858', color: '#ffffff' }}>
           Print / Save as PDF
         </button>
       </div>
