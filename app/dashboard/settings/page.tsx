@@ -895,7 +895,8 @@ export default function SettingsPage() {
             <button
               onClick={handleRefreshAI}
               disabled={isRefreshingAI}
-              className="border border-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="px-4 py-3 rounded-lg hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: '#509895', color: '#ffffff' }}
             >
               {isRefreshingAI ? 'Saving…' : 'AI Save'}
             </button>

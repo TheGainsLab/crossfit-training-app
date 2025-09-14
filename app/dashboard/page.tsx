@@ -1431,7 +1431,8 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
     <button
       onClick={handleRefreshAI}
       disabled={isRefreshingAI}
-      className="px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+      className="px-3 py-2 text-sm rounded-md hover:opacity-90 disabled:opacity-50"
+      style={{ backgroundColor: '#509895', color: '#ffffff' }}
     >
       {isRefreshingAI ? 'Saving…' : 'AI Save'}
     </button>
