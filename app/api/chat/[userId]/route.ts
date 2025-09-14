@@ -129,6 +129,66 @@ export async function POST(
       throw new Error('Failed to store message');
     }
 
+    // If the user asked for specific exercise history, serve a direct, accurate DB answer
+    const exerciseIntent = extractExerciseHistoryIntent(message || '')
+    if (exerciseIntent) {
+      try {
+        const exercise = exerciseIntent
+        const { data: logs } = await supabase
+          .from('performance_logs')
+          .select('*')
+          .eq('user_id', parseInt(userId))
+          .ilike('exercise_name', `%${exercise}%`)
+          .order('logged_at', { ascending: false })
+          .limit(20)
+
+        const { data: rms } = await supabase
+          .from('user_one_rms')
+          .select('*')
+          .eq('user_id', parseInt(userId))
+          .ilike('exercise_name', `%${exercise}%`)
+          .order('created_at', { ascending: false })
+          .limit(10)
+
+        const lines: string[] = []
+        if (Array.isArray(logs) && logs.length > 0) {
+          lines.push(`Recent ${exercise} sessions:`)
+          logs.forEach((row: any) => {
+            const d = row.logged_at ? new Date(row.logged_at).toLocaleDateString() : 'Unknown date'
+            const rpe = row.rpe ? `, RPE ${row.rpe}` : ''
+            const reps = row.reps ? `${row.reps} reps` : (row.total_reps ? `${row.total_reps} reps` : '')
+            const weight = row.weight ? `${row.weight}${row.units ? ' ' + row.units : ''}` : ''
+            const vol = row.volume ? `, vol ${row.volume}` : ''
+            const note = row.notes ? ` — ${row.notes}` : ''
+            const main = [weight, reps].filter(Boolean).join(' x ')
+            lines.push(`• ${d}: ${main || 'Logged'}${rpe}${vol}${note}`)
+          })
+        } else {
+          lines.push(`No recent ${exercise} logs found.`)
+        }
+
+        if (Array.isArray(rms) && rms.length > 0) {
+          const values = rms.map((r: any) => Number(r.one_rm)).filter((v: any) => !isNaN(v))
+          if (values.length > 0) {
+            const latest = values[0]
+            const best = Math.max(...values)
+            const change = latest - values[values.length - 1]
+            lines.push(`One-Rep Max snapshots (latest ${values.length}): latest ${latest}, best ${best}, change vs oldest ${change >= 0 ? '+' : ''}${change}`)
+          }
+        }
+
+        return NextResponse.json({
+          success: true,
+          response: lines.join('\n'),
+          conversation_id: conversationId,
+          responseType: 'data_lookup',
+          coachAlertGenerated: false
+        })
+      } catch (e) {
+        // fall through to assistant if any error
+      }
+    }
+
     // Get conversation history
     const { data: conversationHistory, error: historyError } = await supabase
       .from('chat_messages')
@@ -218,4 +278,19 @@ function isOnTopic(text: string): boolean {
     if (text.includes(token)) return true
   }
   return false
+}
+
+// Extract a simple exercise history intent; returns canonical exercise term or null
+function extractExerciseHistoryIntent(text: string): string | null {
+  const t = text.toLowerCase()
+  const wantsHistory = /(history|logs|log|trend|progress|sessions|recent)/.test(t)
+  if (!wantsHistory) return null
+  const exercises = [
+    'snatch', 'clean and jerk', 'clean', 'jerk', 'back squat', 'front squat', 'squat',
+    'deadlift', 'bench press', 'strict press', 'press', 'pull-up', 'pull ups', 'ring muscle up', 'bar muscle up'
+  ]
+  for (const ex of exercises) {
+    if (t.includes(ex)) return ex
+  }
+  return null
 }
