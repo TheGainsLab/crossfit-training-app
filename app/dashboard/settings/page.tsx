@@ -479,17 +479,17 @@ export default function SettingsPage() {
         }
       })
       if (res.status === 200) {
-        setMessage('AI refresh queued. We\'ll adapt your plan shortly.')
+        setMessage('AI Save queued. Upcoming sessions will adapt shortly.')
       } else if (res.status === 429) {
         const j = await res.json().catch(() => ({}))
         const when = j?.nextAvailableAt ? new Date(j.nextAvailableAt).toLocaleString() : 'later'
-        setMessage(`AI refresh available again at ${when}.`)
+        setMessage(`Next AI Save available at ${when}.`)
       } else {
-        setMessage('Failed to enqueue AI refresh')
+        setMessage('Failed to enqueue AI Save')
       }
       setTimeout(() => setMessage(''), 4000)
     } catch (e) {
-      setMessage('Failed to enqueue AI refresh')
+      setMessage('Failed to enqueue AI Save')
       setTimeout(() => setMessage(''), 4000)
     } finally {
       setIsRefreshingAI(false)
@@ -897,7 +897,7 @@ export default function SettingsPage() {
               disabled={isRefreshingAI}
               className="border border-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-50 disabled:opacity-50"
             >
-              {isRefreshingAI ? 'Refreshing…' : 'Refresh with AI'}
+              {isRefreshingAI ? 'Saving…' : 'AI Save'}
             </button>
           <button
             onClick={saveSettings}

@@ -1126,16 +1126,16 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         }
       })
       if (res.status === 200) {
-        alert('Queued AI refresh.')
+        alert('AI Save queued. Upcoming sessions will adapt.')
       } else if (res.status === 429) {
         const j = await res.json().catch(() => ({}))
         const when = j?.nextAvailableAt ? new Date(j.nextAvailableAt).toLocaleString() : 'later'
-        alert(`Refresh available again at ${when}.`)
+        alert(`Next AI Save available at ${when}.`)
       } else {
-        alert('Failed to enqueue AI refresh')
+        alert('Failed to enqueue AI Save')
       }
     } catch (e) {
-      alert('Failed to enqueue AI refresh')
+      alert('Failed to enqueue AI Save')
     } finally {
       setIsRefreshingAI(false)
     }
@@ -1414,7 +1414,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       disabled={isRefreshingAI}
       className="px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
     >
-      {isRefreshingAI ? 'Refreshing…' : 'Refresh with AI'}
+      {isRefreshingAI ? 'Saving…' : 'AI Save'}
     </button>
   </div>
   </>

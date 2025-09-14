@@ -490,17 +490,17 @@ const calculateProgress = () => {
         }
       })
       if (res.status === 200) {
-        alert('Queued. We\'ll refresh your context and adapt upcoming sessions.')
+        alert('Queued. Your AI Save will update upcoming sessions.')
       } else if (res.status === 429) {
         const j = await res.json().catch(() => ({}))
         const when = j?.nextAvailableAt ? new Date(j.nextAvailableAt).toLocaleString() : 'later'
-        alert(`Refresh limit reached. Available again at ${when}.`)
+        alert(`AI Save limit reached. Next AI Save at ${when}.`)
       } else {
         const t = await res.text().catch(() => '')
-        alert(`Failed to enqueue refresh. ${t}`)
+        alert(`Failed to enqueue AI Save. ${t}`)
       }
     } catch (e: any) {
-      alert(`Failed to enqueue refresh. ${e?.message || ''}`)
+      alert(`Failed to enqueue AI Save. ${e?.message || ''}`)
     } finally {
       setIsRefreshingAI(false)
     }
@@ -552,7 +552,7 @@ const calculateProgress = () => {
                 disabled={isRefreshingAI}
                 className="ml-3 px-3 py-1.5 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
-                {isRefreshingAI ? 'Refreshing…' : 'Refresh with AI'}
+                {isRefreshingAI ? 'Saving…' : 'AI Save'}
               </button>
             </div>
           </div>
@@ -581,7 +581,7 @@ const calculateProgress = () => {
                   disabled={isRefreshingAI}
                   className="ml-2 px-2 py-1 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
-                  {isRefreshingAI ? 'Refreshing…' : 'AI Refresh'}
+                  {isRefreshingAI ? 'Saving…' : 'AI Save'}
                 </button>
               </div>
             </div>
