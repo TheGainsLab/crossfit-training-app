@@ -82,8 +82,9 @@ export async function POST(
     const onTopic = isOnTopic((message || '').toLowerCase())
     if (!onTopic) {
       const guidance =
-        "I'm here for fitness, health, nutrition, training, and your program. " +
-        "Ask me about your workouts, technique, recovery, endurance, or supplements, and I'll help."
+        "I am GainsAI. I can help with every aspect of training, performance, and relevant topics. " +
+        "Ask me about fitness, health, nutrition, your program, goals, endurance work, or supplements. " +
+        "I have access to your profile and training history, so I can tailor advice to you."
       return NextResponse.json({
         success: true,
         response: guidance,

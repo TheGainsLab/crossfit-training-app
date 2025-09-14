@@ -137,14 +137,15 @@ console.log('Response status:', response.status) // Add this line here
           responseType: data.responseType
         }
         setMessages(prev => [...prev, assistantMessage])
-
-        // Show alert if coach was notified
-        if (data.coachAlertGenerated) {
-          // Could add a subtle notification here
+        // Keep domain guard visible; avoid auto-refresh that might clear it
+        if (data.responseType !== 'domain_guard') {
+          // Show alert if coach was notified
+          if (data.coachAlertGenerated) {
+            // Could add a subtle notification here
+          }
+          // Refresh conversations list to show updated conversation
+          fetchConversations()
         }
-
-        // Refresh conversations list to show updated conversation
-        fetchConversations()
       } else {
         throw new Error(data.error || 'Failed to send message')
       }
