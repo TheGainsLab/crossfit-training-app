@@ -1370,6 +1370,50 @@ const SkillsAnalyticsView = () => {
         </div>
       </div>
 
+      {/* Skills Heatmap by Level */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">Skills Overview by Level</h3>
+        {(() => {
+          const levelOrder = ["Don't have it", 'Beginner', 'Intermediate', 'Advanced']
+          const normalize = (lvl: string) => {
+            const t = (lvl || '').toLowerCase()
+            if (t.includes("don't") || t.includes('dont')) return "Don't have it"
+            if (t.startsWith('begin')) return 'Beginner'
+            if (t.startsWith('inter')) return 'Intermediate'
+            if (t.startsWith('adv')) return 'Advanced'
+            return 'Beginner'
+          }
+          const byLevel: Record<string, string[]> = { "Don't have it": [], Beginner: [], Intermediate: [], Advanced: [] }
+          skillsArray.forEach((s: any) => {
+            const lvl = normalize(s.intakeLevel || s.skillLevel || s.level || '')
+            const name = s.name || 'Skill'
+            byLevel[lvl] = [...byLevel[lvl], name]
+          })
+          return (
+            <div>
+              <div className="grid grid-cols-4 gap-4">
+                {levelOrder.map(level => (
+                  <div key={level} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">{level}</span>
+                      <span className="text-sm font-bold text-coral">{byLevel[level].length}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {byLevel[level].slice(0, 8).map((n, i) => (
+                        <span key={i} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{n}</span>
+                      ))}
+                      {byLevel[level].length > 8 && (
+                        <span className="text-xs text-gray-500">+{byLevel[level].length - 8} more</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+      </div>
+
       {/* Enhanced Skill Cards */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Individual Skills Progress</h3>
