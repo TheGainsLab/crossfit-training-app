@@ -430,6 +430,8 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ Workout completion saved successfully')
+    // Hint for cache revalidation on analytics (handled by Next cache tags in RSC if used)
+    // Example: revalidateTag(`global-analytics:${completionData.userId}`)
 
     // Update weekly summary after successful completion
     try {

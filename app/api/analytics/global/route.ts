@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { unstable_cache } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
 
 export async function GET(request: NextRequest) {
@@ -29,39 +30,40 @@ export async function GET(request: NextRequest) {
     // Date window: last 90 days for KPIs
     const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
 
-    // Training days and exercises completed
-    const { data: logs } = await supabase
-      .from('performance_logs')
-      .select('id, logged_at, block_name')
-      .eq('user_id', userId)
-      .gte('logged_at', since)
+    const compute = unstable_cache(async () => {
+      const { data: logs } = await supabase
+        .from('performance_logs')
+        .select('id, logged_at, block_name')
+        .eq('user_id', userId)
+        .gte('logged_at', since)
 
-    const trainingDays = new Set<string>()
-    const blockCounts: Record<string, number> = {}
-    let totalExercises = 0
-    for (const row of logs || []) {
-      const dayKey = row.logged_at ? new Date(row.logged_at).toISOString().slice(0, 10) : ''
-      if (dayKey) trainingDays.add(dayKey)
-      const block = (row as any).block_name || 'UNKNOWN'
-      blockCounts[block] = (blockCounts[block] || 0) + 1
-      totalExercises++
-    }
+      const trainingDays = new Set<string>()
+      const blockCounts: Record<string, number> = {}
+      let totalExercises = 0
+      for (const row of logs || []) {
+        const dayKey = row.logged_at ? new Date(row.logged_at).toISOString().slice(0, 10) : ''
+        if (dayKey) trainingDays.add(dayKey)
+        const block = (row as any).block_name || 'UNKNOWN'
+        blockCounts[block] = (blockCounts[block] || 0) + 1
+        totalExercises++
+      }
 
-    // Fitness score (placeholder: proportion of completed exercises vs expected proxy)
-    // In absence of a canonical metric here, derive a simple scaled score
-    const fitnessScore = Math.min(100, Math.round((totalExercises / Math.max(1, trainingDays.size * 12)) * 100))
+      const fitnessScore = Math.min(100, Math.round((totalExercises / Math.max(1, trainingDays.size * 12)) * 100))
+      const distributionByBlock = Object.keys(blockCounts).map(k => ({ block: k, count: blockCounts[k] }))
+      return { fitnessScore, trainingDays: trainingDays.size, totalExercises, distributionByBlock }
+    }, [`global-analytics:${userId}`], { revalidate: 300 })
 
-    const distributionByBlock = Object.keys(blockCounts).map(k => ({ block: k, count: blockCounts[k] }))
+    const cached = await compute()
 
     return NextResponse.json({
       success: true,
       data: {
         kpis: {
-          fitnessScore,
-          trainingDays: trainingDays.size,
-          totalExercises
+          fitnessScore: cached.fitnessScore,
+          trainingDays: cached.trainingDays,
+          totalExercises: cached.totalExercises
         },
-        distributionByBlock
+        distributionByBlock: cached.distributionByBlock
       },
       metadata: { since }
     }, {
