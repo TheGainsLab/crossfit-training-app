@@ -818,9 +818,9 @@ const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 
 
   useEffect(() => {
     if (userId) {
-      fetchAllAnalytics();
+      fetchTabAnalytics(activeTab);
     }
-  }, [userId]);
+  }, [userId, activeTab]);
 
   const loadUser = async () => {
     try {
@@ -854,75 +854,61 @@ const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 
     }
   };
 
-  const fetchAllAnalytics = async () => {
-    if (!userId) return;
-    
-    setAnalyticsLoading(true);
+  const fetchTabAnalytics = async (tab: 'overview' | 'skills' | 'strength' | 'metcons' | 'insights') => {
+    if (!userId) return
+    setAnalyticsLoading(true)
     try {
-      console.log('📊 Fetching all analytics for user:', userId);
-      
-      // Fetch all analytics in parallel
-const [dashboardRes, blockRes, skillsRes, strengthRes, metconRes, predictiveRes] = await Promise.allSettled([
-  fetch(`/api/analytics/${userId}/dashboard`),
-  fetch(`/api/analytics/${userId}/block-analyzer`),
-  fetch(`/api/analytics/${userId}/skills-analytics`),
-  fetch(`/api/analytics/${userId}/strength-tracker`),
-  fetch(`/api/analytics/${userId}/metcon-analyzer`),
-  fetch(`/api/analytics/${userId}/predictive-insights`)
-]);
-
-
-
-      // Process Dashboard Data
-      if (dashboardRes.status === 'fulfilled' && dashboardRes.value.ok) {
-        const data = await dashboardRes.value.json();
-        setDashboardData(data);
-        console.log('✅ Dashboard data loaded');
+      console.log(`📊 Fetching analytics for tab=${tab}, user=${userId}`)
+      if (tab === 'overview') {
+        const [dashboardRes, blockRes, predictiveRes] = await Promise.allSettled([
+          fetch(`/api/analytics/${userId}/dashboard`),
+          fetch(`/api/analytics/${userId}/block-analyzer`),
+          fetch(`/api/analytics/${userId}/predictive-insights`)
+        ])
+        if (dashboardRes.status === 'fulfilled' && dashboardRes.value.ok) {
+          setDashboardData(await dashboardRes.value.json())
+          console.log('✅ Dashboard data loaded')
+        }
+        if (blockRes.status === 'fulfilled' && blockRes.value.ok) {
+          setBlockData(await blockRes.value.json())
+          console.log('✅ Block analytics loaded')
+        }
+        if (predictiveRes.status === 'fulfilled' && predictiveRes.value.ok) {
+          setPredictiveData(await predictiveRes.value.json())
+          console.log('✅ Predictive insights loaded')
+        }
+      } else if (tab === 'skills') {
+        const res = await fetch(`/api/analytics/${userId}/skills-analytics`)
+        if (res.ok) {
+          setSkillsData(await res.json())
+          console.log('✅ Skills analytics loaded')
+        }
+      } else if (tab === 'strength') {
+        const res = await fetch(`/api/analytics/${userId}/strength-tracker`)
+        if (res.ok) {
+          setStrengthData(await res.json())
+          console.log('✅ Strength analytics loaded')
+        }
+      } else if (tab === 'metcons') {
+        const res = await fetch(`/api/analytics/${userId}/metcon-analyzer`)
+        if (res.ok) {
+          setMetconData(await res.json())
+          console.log('✅ MetCon analytics loaded')
+        }
+      } else if (tab === 'insights') {
+        const res = await fetch(`/api/analytics/${userId}/predictive-insights`)
+        if (res.ok) {
+          setPredictiveData(await res.json())
+          console.log('✅ Predictive insights loaded')
+        }
       }
-
-      // Process Block Analytics
-      if (blockRes.status === 'fulfilled' && blockRes.value.ok) {
-        const data = await blockRes.value.json();
-        setBlockData(data);
-        console.log('✅ Block analytics loaded');
-      }
-
-      // Process Skills Analytics  
-      if (skillsRes.status === 'fulfilled' && skillsRes.value.ok) {
-        const data = await skillsRes.value.json();
-        setSkillsData(data);
-        console.log('✅ Skills analytics loaded');
-      }
-
-      // Process Strength Analytics
-      if (strengthRes.status === 'fulfilled' && strengthRes.value.ok) {
-        const data = await strengthRes.value.json();
-        setStrengthData(data);
-        console.log('✅ Strength analytics loaded');
-      }
-
-      // Process MetCon Analytics
-      if (metconRes.status === 'fulfilled' && metconRes.value.ok) {
-        const data = await metconRes.value.json();
-        setMetconData(data);
-        console.log('✅ MetCon analytics loaded');
-      }
-
-// Process Predictive Insights
-if (predictiveRes.status === 'fulfilled' && predictiveRes.value.ok) {
-  const data = await predictiveRes.value.json();
-  setPredictiveData(data);
-  console.log('✅ Predictive insights loaded');
-}
-
-
     } catch (error) {
-      console.error('Error fetching analytics:', error);
-      setError('Failed to load analytics data');
+      console.error('Error fetching tab analytics:', error)
+      setError('Failed to load analytics data')
     } finally {
-      setAnalyticsLoading(false);
+      setAnalyticsLoading(false)
     }
-  };
+  }
 
 
   // Fetch per-user threshold multipliers
