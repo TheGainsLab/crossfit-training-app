@@ -2,7 +2,7 @@
 
 -- performance_logs hot paths
 create index if not exists idx_perflogs_user_logged_at on public.performance_logs (user_id, logged_at desc);
-create index if not exists idx_perflogs_user_block_logged_at on public.performance_logs (user_id, block_name, logged_at desc);
+create index if not exists idx_perflogs_user_block_logged_at on public.performance_logs (user_id, block, logged_at desc);
 create index if not exists idx_perflogs_user_exercise_logged_at on public.performance_logs (user_id, exercise_name, logged_at desc);
 
 -- user_one_rms lookups

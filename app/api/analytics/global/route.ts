@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const compute = unstable_cache(async () => {
       const { data: logs } = await supabase
         .from('performance_logs')
-        .select('id, logged_at, block_name')
+        .select('id, logged_at, block')
         .eq('user_id', userId)
         .gte('logged_at', since)
 
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       for (const row of logs || []) {
         const dayKey = row.logged_at ? new Date(row.logged_at).toISOString().slice(0, 10) : ''
         if (dayKey) trainingDays.add(dayKey)
-        const block = (row as any).block_name || 'UNKNOWN'
+        const block = (row as any).block || 'UNKNOWN'
         blockCounts[block] = (blockCounts[block] || 0) + 1
         totalExercises++
       }
