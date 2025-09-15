@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       const fitnessScore = Math.min(100, Math.round((totalExercises / Math.max(1, trainingDays.size * 12)) * 100))
       const distributionByBlock = Object.keys(blockCounts).map(k => ({ block: k, count: blockCounts[k] }))
       return { fitnessScore, trainingDays: trainingDays.size, totalExercises, distributionByBlock }
-    }, [`global-analytics:${userId}`], { revalidate: 300 })
+    }, [`global-analytics:${userId}`], { revalidate: 300, tags: [`global-analytics:${userId}`] })
 
     const cached = await compute()
 
