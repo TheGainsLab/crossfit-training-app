@@ -189,6 +189,67 @@ export async function POST(
       }
     }
 
+    // Build lightweight user context to help the assistant personalize replies
+    const userContext: any = {}
+    {
+      // Basic profile
+      const { data: profile } = await supabase
+        .from('users')
+        .select('id, name, email, gender, body_weight, units, ability_level')
+        .eq('id', userIdNum)
+        .single()
+      if (profile) {
+        userContext.profile = profile
+      }
+      // Preferences
+      const { data: prefs } = await supabase
+        .from('user_preferences')
+        .select('training_days_per_week, selected_goals, metcon_time_focus, primary_strength_lifts, emphasized_strength_lifts')
+        .eq('user_id', userIdNum)
+        .single()
+      if (prefs) {
+        userContext.preferences = prefs
+      }
+      // Equipment
+      const { data: equip } = await supabase
+        .from('user_equipment')
+        .select('equipment_name')
+        .eq('user_id', userIdNum)
+      if (equip) {
+        userContext.equipment = (equip || []).map((e: any) => e.equipment_name)
+      }
+      // Latest 1RMs (by exercise)
+      const { data: oneRMs } = await supabase
+        .from('user_one_rms')
+        .select('exercise_name, one_rm, recorded_at')
+        .eq('user_id', userIdNum)
+        .order('recorded_at', { ascending: false })
+        .limit(100)
+      if (oneRMs) {
+        const latestMap: Record<string, { one_rm: number; recorded_at: string }> = {}
+        for (const r of oneRMs) {
+          if (!latestMap[r.exercise_name]) latestMap[r.exercise_name] = { one_rm: Number(r.one_rm), recorded_at: r.recorded_at as any }
+        }
+        userContext.oneRMs = latestMap
+      }
+      // Recent performance summary (last 90 days)
+      const sinceIso = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+      const { data: perf } = await supabase
+        .from('performance_logs')
+        .select('block, rpe, completion_quality, logged_at')
+        .eq('user_id', userIdNum)
+        .gte('logged_at', sinceIso)
+      if (perf) {
+        const summary: any = { counts: { SKILLS: 0, 'STRENGTH AND POWER': 0, METCONS: 0 }, avgRPE: 0, n: 0 }
+        for (const p of perf) {
+          const b = (p as any).block
+          if (summary.counts[b] !== undefined) summary.counts[b] += 1
+          if ((p as any).rpe) { summary.avgRPE = (summary.avgRPE * summary.n + Number((p as any).rpe)) / (summary.n + 1); summary.n += 1 }
+        }
+        userContext.performance = { counts: summary.counts, avgRPE: summary.n ? Number(summary.avgRPE.toFixed(1)) : null, since: sinceIso }
+      }
+    }
+
     // Get conversation history
     const { data: conversationHistory, error: historyError } = await supabase
       .from('chat_messages')
@@ -213,7 +274,8 @@ export async function POST(
         user_id: parseInt(userId),
         conversation_id: conversationId,
         message,
-        conversation_history: conversationHistory || []
+        conversation_history: conversationHistory || [],
+        user_context: userContext
       })
     });
 
