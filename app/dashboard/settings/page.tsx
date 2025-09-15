@@ -54,6 +54,7 @@ export default function SettingsPage() {
   // Mirror intake Section 5 extras
   const [selectedGoals, setSelectedGoals] = useState<string[]>([])
   const [metconTimeFocus, setMetconTimeFocus] = useState<string[]>([])
+  const [aiAutoApply, setAiAutoApply] = useState<boolean>(false)
 
   // Originals for AI-trigger detection
   const [originalOneRMs, setOriginalOneRMs] = useState<Record<string, number>>({})
@@ -205,6 +206,14 @@ export default function SettingsPage() {
         else normalized.add(n)
       })
       setEquipment(Array.from(normalized))
+
+      // Load AI preference
+      const { data: pref } = await supabase
+        .from('user_preferences')
+        .select('ai_auto_apply_low_risk')
+        .eq('user_id', userData.id)
+        .single()
+      setAiAutoApply(Boolean(pref?.ai_auto_apply_low_risk))
 
       // Load skills
       const { data: skillsData, error: skillsError } = await supabase
@@ -403,7 +412,8 @@ export default function SettingsPage() {
           primary_strength_lifts: primaryStrengthLifts || null,
           emphasized_strength_lifts: emphasizedStrengthLifts || null,
           selected_goals: selectedGoals || [],
-          metcon_time_focus: metconTimeFocus || []
+          metcon_time_focus: metconTimeFocus || [],
+          ai_auto_apply_low_risk: aiAutoApply
         }, { onConflict: 'user_id' })
       if (prefsError) throw prefsError
 
@@ -892,6 +902,10 @@ export default function SettingsPage() {
             View Full Profile Analysis →
           </Link>
           <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-gray-700 mr-2">
+              <input type="checkbox" checked={aiAutoApply} onChange={(e) => setAiAutoApply(e.target.checked)} />
+              Auto-apply low-risk AI recommendations
+            </label>
             <button
               onClick={handleRefreshAI}
               disabled={isRefreshingAI}

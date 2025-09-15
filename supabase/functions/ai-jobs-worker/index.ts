@@ -22,8 +22,33 @@ async function processJob(job: any) {
       const action = payload?.action
       if (!action) throw new Error('Missing action')
 
-      // Example: metcon time-domain swap placeholder (real logic would pick future uncached days and swap catalog entries)
-      // For now, simply mark job completed; actual write to modified_workouts happens in a fuller implementation
+      // Minimal apply: mark a placeholder future day as AI updated (to surface end-to-end flow)
+      const targetWeekOffset = action?.targetWindow?.weekOffset ?? 1
+      const { data: prog } = await supabase
+        .from('programs')
+        .select('id, user_id, generated_at')
+        .eq('user_id', user_id)
+        .order('generated_at', { ascending: false })
+        .limit(1)
+        .single()
+      if (prog) {
+        const programId = prog.id
+        const week = Math.max(1, Math.min(13, 1 + Number(targetWeekOffset)))
+        const day = 1
+        await supabase.from('modified_workouts').upsert({
+          user_id,
+          program_id: programId,
+          week,
+          day,
+          modified_program: null,
+          modifications_applied: [action],
+          is_preview: false,
+          applied_at: new Date().toISOString(),
+          source: 'ai',
+          rationale: { message: action?.rationale || 'AI applied action', action },
+          applied_by_job_id: job.id
+        }, { onConflict: 'user_id,program_id,week,day' })
+      }
       await supabase.from('ai_jobs').update({ status: 'completed' }).eq('id', job.id)
       return
     }
