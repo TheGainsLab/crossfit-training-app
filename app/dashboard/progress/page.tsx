@@ -917,7 +917,12 @@ const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 
         const [dashboardRes, blockRes, predictiveRes] = await Promise.allSettled([
           fetch(`/api/analytics/${userId}/dashboard`),
           fetch(`/api/analytics/${userId}/block-analyzer`),
-          fetch(`/api/analytics/${userId}/predictive-insights`)
+          (async () => {
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            return fetch(`/api/analytics/insights`, { headers: token ? { Authorization: `Bearer ${token}` } : undefined })
+          })() as any
         ])
         if (dashboardRes.status === 'fulfilled' && dashboardRes.value.ok) {
           setDashboardData(await dashboardRes.value.json())
@@ -950,7 +955,10 @@ const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 
           console.log('✅ MetCon analytics loaded')
         }
       } else if (tab === 'insights') {
-        const res = await fetch(`/api/analytics/${userId}/predictive-insights`)
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        const res = await fetch(`/api/analytics/insights`, { headers: token ? { Authorization: `Bearer ${token}` } : undefined })
         if (res.ok) {
           setPredictiveData(await res.json())
           console.log('✅ Predictive insights loaded')
