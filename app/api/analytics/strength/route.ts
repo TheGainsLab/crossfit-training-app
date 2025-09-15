@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { unstable_cache } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
 
 export async function GET(request: NextRequest) {
@@ -24,27 +25,35 @@ export async function GET(request: NextRequest) {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 
     if (mode === 'summary') {
-      const { data: latest } = await supabase
-        .from('user_one_rms')
-        .select('exercise_name, one_rm, recorded_at')
-        .eq('user_id', userId)
-        .order('recorded_at', { ascending: false })
-        .limit(100)
-      return NextResponse.json({ success: true, data: { oneRMs: latest || [] }, metadata: { days, mode } }, {
+      const compute = unstable_cache(async () => {
+        const { data: latest } = await supabase
+          .from('user_one_rms')
+          .select('exercise_name, one_rm, recorded_at')
+          .eq('user_id', userId)
+          .order('recorded_at', { ascending: false })
+          .limit(100)
+        return latest || []
+      }, [`strength-analytics:${userId}:${days}:summary`], { revalidate: 300, tags: [`strength-analytics:${userId}`] })
+      const oneRMs = await compute()
+      return NextResponse.json({ success: true, data: { oneRMs }, metadata: { days, mode } }, {
         headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' }
       })
     }
 
-    const { data: logs } = await supabase
-      .from('performance_logs')
-      .select('exercise_name, weight, reps, sets, rpe, logged_at')
-      .eq('user_id', userId)
-      .eq('block_name', 'STRENGTH AND POWER')
-      .gte('logged_at', since)
-      .order('logged_at', { ascending: false })
-      .limit(500)
+    const computeDetail = unstable_cache(async () => {
+      const { data: logs } = await supabase
+        .from('performance_logs')
+        .select('exercise_name, weight, reps, sets, rpe, logged_at')
+        .eq('user_id', userId)
+        .eq('block_name', 'STRENGTH AND POWER')
+        .gte('logged_at', since)
+        .order('logged_at', { ascending: false })
+        .limit(500)
+      return logs || []
+    }, [`strength-analytics:${userId}:${days}:detail`], { revalidate: 120, tags: [`strength-analytics:${userId}`] })
 
-    return NextResponse.json({ success: true, data: { sessions: logs || [] }, metadata: { days, mode } }, {
+    const sessions = await computeDetail()
+    return NextResponse.json({ success: true, data: { sessions }, metadata: { days, mode } }, {
       headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=60' }
     })
   } catch (e: any) {

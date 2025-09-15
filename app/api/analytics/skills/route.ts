@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { unstable_cache } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
 
 export async function GET(request: NextRequest) {
@@ -25,45 +26,47 @@ export async function GET(request: NextRequest) {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 
     if (mode === 'summary') {
-      // Minimal fields only, last N days
-      const { data: logs } = await supabase
-        .from('performance_logs')
-        .select('exercise_name, rpe, quality, logged_at')
-        .eq('user_id', userId)
-        .eq('block_name', 'SKILLS')
-        .gte('logged_at', since)
+      const compute = unstable_cache(async () => {
+        const { data: logs } = await supabase
+          .from('performance_logs')
+          .select('exercise_name, rpe, quality, logged_at')
+          .eq('user_id', userId)
+          .eq('block_name', 'SKILLS')
+          .gte('logged_at', since)
 
-      const bySkill: Record<string, { count: number; avgRPE: number; avgQuality: number }> = {}
-      for (const row of logs || []) {
-        const name = (row as any).exercise_name || 'Unknown'
-        const rpe = Number((row as any).rpe) || 0
-        const q = Number((row as any).quality) || 0
-        if (!bySkill[name]) bySkill[name] = { count: 0, avgRPE: 0, avgQuality: 0 }
-        const s = bySkill[name]
-        s.avgRPE = (s.avgRPE * s.count + rpe) / (s.count + 1)
-        s.avgQuality = (s.avgQuality * s.count + q) / (s.count + 1)
-        s.count += 1
-      }
+        const bySkill: Record<string, { count: number; avgRPE: number; avgQuality: number }> = {}
+        for (const row of logs || []) {
+          const name = (row as any).exercise_name || 'Unknown'
+          const rpe = Number((row as any).rpe) || 0
+          const q = Number((row as any).quality) || 0
+          if (!bySkill[name]) bySkill[name] = { count: 0, avgRPE: 0, avgQuality: 0 }
+          const s = bySkill[name]
+          s.avgRPE = (s.avgRPE * s.count + rpe) / (s.count + 1)
+          s.avgQuality = (s.avgQuality * s.count + q) / (s.count + 1)
+          s.count += 1
+        }
+        return Object.keys(bySkill).map(n => ({ name: n, ...bySkill[n] }))
+      }, [`skills-analytics:${userId}:${days}:summary`], { revalidate: 120, tags: [`skills-analytics:${userId}`] })
 
-      const summary = Object.keys(bySkill).map(n => ({ name: n, ...bySkill[n] }))
-      return NextResponse.json({ success: true, data: { summary }, metadata: { days, mode } }, {
-        headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=60' }
-      })
+      const summary = await compute()
+      return NextResponse.json({ success: true, data: { summary }, metadata: { days, mode } }, { headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=60' } })
     }
 
     // detail: limited recent sessions per skill
-    const { data: recent } = await supabase
-      .from('performance_logs')
-      .select('exercise_name, rpe, quality, sets, reps, notes, logged_at')
-      .eq('user_id', userId)
-      .eq('block_name', 'SKILLS')
-      .gte('logged_at', since)
-      .order('logged_at', { ascending: false })
-      .limit(300)
+    const computeDetail = unstable_cache(async () => {
+      const { data: recent } = await supabase
+        .from('performance_logs')
+        .select('exercise_name, rpe, quality, sets, reps, notes, logged_at')
+        .eq('user_id', userId)
+        .eq('block_name', 'SKILLS')
+        .gte('logged_at', since)
+        .order('logged_at', { ascending: false })
+        .limit(300)
+      return recent || []
+    }, [`skills-analytics:${userId}:${days}:detail`], { revalidate: 60, tags: [`skills-analytics:${userId}`] })
 
-    return NextResponse.json({ success: true, data: { sessions: recent || [] }, metadata: { days, mode } }, {
-      headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=60' }
-    })
+    const sessions = await computeDetail()
+    return NextResponse.json({ success: true, data: { sessions }, metadata: { days, mode } }, { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=60' } })
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e?.message || 'Internal error' }, { status: 500 })
   }

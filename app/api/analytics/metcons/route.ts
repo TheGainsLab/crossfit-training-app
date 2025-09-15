@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { unstable_cache } from 'next/cache'
 import { createClient } from '@supabase/supabase-js'
 
 export async function GET(request: NextRequest) {
@@ -24,35 +25,36 @@ export async function GET(request: NextRequest) {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 
     if (mode === 'summary') {
-      const { data: heat } = await supabase
-        .rpc('get_metcon_heatmap', { p_user_id: userId, p_since: since })
-      // If RPC not present, fallback to basic counts
-      if (!heat) {
+      const compute = unstable_cache(async () => {
+        const { data: heat } = await supabase
+          .rpc('get_metcon_heatmap', { p_user_id: userId, p_since: since })
+        if (heat) return heat
         const { data: rows } = await supabase
           .from('performance_logs')
           .select('workout_id, percentile, logged_at')
           .eq('user_id', userId)
           .eq('block_name', 'METCONS')
           .gte('logged_at', since)
-        return NextResponse.json({ success: true, data: { heatmap: rows || [] }, metadata: { days, mode } }, {
-          headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' }
-        })
-      }
-      return NextResponse.json({ success: true, data: { heatmap: heat }, metadata: { days, mode } }, {
-        headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' }
-      })
+        return rows || []
+      }, [`metcons-analytics:${userId}:${days}:summary`], { revalidate: 300, tags: [`metcons-analytics:${userId}`] })
+      const heatmap = await compute()
+      return NextResponse.json({ success: true, data: { heatmap }, metadata: { days, mode } }, { headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' } })
     }
 
-    const { data: recents } = await supabase
-      .from('performance_logs')
-      .select('workout_id, workout_name, time_sec, rounds, reps, percentile, logged_at')
-      .eq('user_id', userId)
-      .eq('block_name', 'METCONS')
-      .gte('logged_at', since)
-      .order('logged_at', { ascending: false })
-      .limit(200)
+    const computeDetail = unstable_cache(async () => {
+      const { data: recents } = await supabase
+        .from('performance_logs')
+        .select('workout_id, workout_name, time_sec, rounds, reps, percentile, logged_at')
+        .eq('user_id', userId)
+        .eq('block_name', 'METCONS')
+        .gte('logged_at', since)
+        .order('logged_at', { ascending: false })
+        .limit(200)
+      return recents || []
+    }, [`metcons-analytics:${userId}:${days}:detail`], { revalidate: 120, tags: [`metcons-analytics:${userId}`] })
 
-    return NextResponse.json({ success: true, data: { workouts: recents || [] }, metadata: { days, mode } }, {
+    const workouts = await computeDetail()
+    return NextResponse.json({ success: true, data: { workouts }, metadata: { days, mode } }, {
       headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=60' }
     })
   } catch (e: any) {
