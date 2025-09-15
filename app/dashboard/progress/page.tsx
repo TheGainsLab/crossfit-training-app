@@ -511,6 +511,30 @@ const PredictiveInsightsView = ({ predictiveData }: { predictiveData: any }) => 
 
   const { predictions, blockStatus, insights } = predictiveData.data;
 
+  const enqueueAction = async (action: any, kind: 'preview' | 'apply') => {
+    try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const res = await fetch(`/api/ai/actions/${kind}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ action, context_hash: predictiveData?.data?.context_hash })
+      })
+      if (res.ok) {
+        alert(kind === 'preview' ? 'Preview queued.' : 'Apply queued.')
+      } else {
+        const t = await res.text().catch(() => '')
+        alert(`Failed to enqueue ${kind}. ${t}`)
+      }
+    } catch (e: any) {
+      alert(`Failed to enqueue ${kind}. ${e?.message || ''}`)
+    }
+  }
+
   return (
     <div id="insights-panel" role="tabpanel" aria-labelledby="insights-tab" className="space-y-8">
       
@@ -577,11 +601,19 @@ const PredictiveInsightsView = ({ predictiveData }: { predictiveData: any }) => 
               <div className="mt-1 text-gray-600">{blockStatus?.skills?.count || 0}/10 skills sessions completed</div>
             </div>
           ) : (
-            <ul className="list-disc pl-5 space-y-2 text-gray-800 text-sm">
+            <div className="space-y-3">
               {(insights?.skills || []).map((it: any, idx: number) => (
-                <li key={idx}><span className="font-medium">{it.message}</span>{it.action ? ` — ${it.action}` : ''}</li>
+                <div key={idx} className="text-sm text-gray-800">
+                  <div className="font-medium mb-2">{it.message}</div>
+                  {it.action && (
+                    <div className="flex gap-2">
+                      <button onClick={() => enqueueAction(it.action, 'preview')} className="px-3 py-1.5 rounded-md border text-gray-700 hover:bg-gray-50">Preview</button>
+                      <button onClick={() => enqueueAction(it.action, 'apply')} className="px-3 py-1.5 rounded-md" style={{ backgroundColor: '#509895', color: '#ffffff' }}>Apply</button>
+                    </div>
+                  )}
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
 
@@ -594,11 +626,19 @@ const PredictiveInsightsView = ({ predictiveData }: { predictiveData: any }) => 
               <div className="mt-1 text-gray-600">{blockStatus?.strength?.count || 0}/10 strength sessions completed</div>
             </div>
           ) : (
-            <ul className="list-disc pl-5 space-y-2 text-gray-800 text-sm">
+            <div className="space-y-3">
               {(insights?.strength || []).map((it: any, idx: number) => (
-                <li key={idx}><span className="font-medium">{it.message}</span>{it.action ? ` — ${it.action}` : ''}</li>
+                <div key={idx} className="text-sm text-gray-800">
+                  <div className="font-medium mb-2">{it.message}</div>
+                  {it.action && (
+                    <div className="flex gap-2">
+                      <button onClick={() => enqueueAction(it.action, 'preview')} className="px-3 py-1.5 rounded-md border text-gray-700 hover:bg-gray-50">Preview</button>
+                      <button onClick={() => enqueueAction(it.action, 'apply')} className="px-3 py-1.5 rounded-md" style={{ backgroundColor: '#509895', color: '#ffffff' }}>Apply</button>
+                    </div>
+                  )}
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
 
@@ -611,11 +651,19 @@ const PredictiveInsightsView = ({ predictiveData }: { predictiveData: any }) => 
               <div className="mt-1 text-gray-600">{blockStatus?.metcons?.count || 0}/10 metcon sessions completed</div>
             </div>
           ) : (
-            <ul className="list-disc pl-5 space-y-2 text-gray-800 text-sm">
+            <div className="space-y-3">
               {(insights?.metcons || []).map((it: any, idx: number) => (
-                <li key={idx}><span className="font-medium">{it.message}</span>{it.action ? ` — ${it.action}` : ''}</li>
+                <div key={idx} className="text-sm text-gray-800">
+                  <div className="font-medium mb-2">{it.message}</div>
+                  {it.action && (
+                    <div className="flex gap-2">
+                      <button onClick={() => enqueueAction(it.action, 'preview')} className="px-3 py-1.5 rounded-md border text-gray-700 hover:bg-gray-50">Preview</button>
+                      <button onClick={() => enqueueAction(it.action, 'apply')} className="px-3 py-1.5 rounded-md" style={{ backgroundColor: '#509895', color: '#ffffff' }}>Apply</button>
+                    </div>
+                  )}
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       </div>
