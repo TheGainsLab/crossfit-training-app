@@ -50,10 +50,40 @@ export async function GET(request: NextRequest) {
       }
 
       // Decision policy for structured actions (only passes counts for now)
+      // Enrich features with latest 1RMs, preferences, and equipment
+      const recentOneRMsArr: Array<{ exercise: string; value: number; recorded_at: string }> = []
+      {
+        const { data: oneRMs } = await supabase
+          .from('user_one_rms')
+          .select('exercise_name, one_rm, recorded_at')
+          .eq('user_id', userId)
+          .order('recorded_at', { ascending: false })
+          .limit(100)
+        const seen = new Set<string>()
+        for (const r of (oneRMs || [])) {
+          if (!seen.has(r.exercise_name)) {
+            recentOneRMsArr.push({ exercise: r.exercise_name as any, value: Number(r.one_rm), recorded_at: (r.recorded_at as any) || '' })
+            seen.add(r.exercise_name)
+          }
+        }
+      }
+      const { data: prefs } = await supabase
+        .from('user_preferences')
+        .select('training_days_per_week, selected_goals, metcon_time_focus, primary_strength_lifts, emphasized_strength_lifts')
+        .eq('user_id', userId)
+        .single()
+      const { data: equip } = await supabase
+        .from('user_equipment')
+        .select('equipment_name')
+        .eq('user_id', userId)
+
       const features: ContextFeatures = {
         userId,
         sinceIso: since,
-        blockCounts: { 'SKILLS': skillsCount, 'STRENGTH AND POWER': strengthCount, 'METCONS': metconsCount }
+        blockCounts: { 'SKILLS': skillsCount, 'STRENGTH AND POWER': strengthCount, 'METCONS': metconsCount },
+        recentOneRMs: recentOneRMsArr,
+        preferences: prefs || {},
+        equipment: (equip || []).map((e: any) => e.equipment_name)
       }
       const cfg: PolicyConfig = { sessionGatePerBlock: threshold }
       const decision = runDecisionPolicy(features, cfg)
