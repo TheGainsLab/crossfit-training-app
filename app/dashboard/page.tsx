@@ -249,23 +249,7 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
         })}
       </div>
 
-      {/* View Detailed Analytics Link */}
-      <Link
-        href="/dashboard/progress"
-        className="block w-full text-center py-4 px-6 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors group"
-      >
-        <div className="flex items-center justify-center space-x-3">
-          <span className="text-2xl">📊</span>
-          <div className="text-left">
-            <div className="font-semibold text-gray-900 group-hover:text-blue-700">
-              View Detailed Analytics
-            </div>
-            <div className="text-sm text-gray-600">
-              Skills progress, strength analysis & conditioning insights
-            </div>
-          </div>
-        </div>
-      </Link>
+      
     </div>
   )
 }
