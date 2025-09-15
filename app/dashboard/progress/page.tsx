@@ -510,6 +510,8 @@ const PredictiveInsightsView = ({ predictiveData }: { predictiveData: any }) => 
   }
 
   const { predictions, blockStatus, insights } = predictiveData.data;
+  const [showPreview, setShowPreview] = useState(false)
+  const [selectedAction, setSelectedAction] = useState<any>(null)
 
   const enqueueAction = async (action: any, kind: 'preview' | 'apply') => {
     try {
@@ -525,7 +527,12 @@ const PredictiveInsightsView = ({ predictiveData }: { predictiveData: any }) => 
         body: JSON.stringify({ action, context_hash: predictiveData?.data?.context_hash })
       })
       if (res.ok) {
-        alert(kind === 'preview' ? 'Preview queued.' : 'Apply queued.')
+        if (kind === 'preview') {
+          setSelectedAction(action)
+          setShowPreview(true)
+        } else {
+          alert('Apply queued.')
+        }
       } else {
         const t = await res.text().catch(() => '')
         alert(`Failed to enqueue ${kind}. ${t}`)
@@ -667,6 +674,30 @@ const PredictiveInsightsView = ({ predictiveData }: { predictiveData: any }) => 
           )}
         </div>
       </div>
+
+      {/* Preview Modal */}
+      {showPreview && selectedAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+            <div className="flex items-start justify-between mb-4">
+              <h4 className="text-lg font-semibold text-gray-900">Preview Changes</h4>
+              <button onClick={() => setShowPreview(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            <div className="text-sm text-gray-800 space-y-2">
+              <div><span className="font-medium">Action:</span> {selectedAction.kind} • {selectedAction.objective}</div>
+              {selectedAction.block && <div><span className="font-medium">Block:</span> {selectedAction.block}</div>}
+              {selectedAction.params?.timeDomain && <div><span className="font-medium">Time Domain:</span> {selectedAction.params.timeDomain} min</div>}
+              {selectedAction.params?.count && <div><span className="font-medium">Count:</span> {selectedAction.params.count}</div>}
+              {selectedAction.targetWindow?.weekOffset !== undefined && <div><span className="font-medium">Target:</span> Week +{selectedAction.targetWindow.weekOffset}</div>}
+              <div className="mt-2 text-gray-700">A preview job has been queued. You can apply these changes now or close this window.</div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button onClick={() => setShowPreview(false)} className="px-3 py-1.5 rounded-md border text-gray-700 hover:bg-gray-50">Close</button>
+              <button onClick={() => { enqueueAction(selectedAction, 'apply'); setShowPreview(false) }} className="px-3 py-1.5 rounded-md" style={{ backgroundColor: '#509895', color: '#ffffff' }}>Apply</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Achievements Section - NEW */}
       {predictions.achievements && predictions.achievements.length > 0 && (
