@@ -861,6 +861,14 @@ const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 
           if (activeTab !== 'metcons') {
             fetch(`/api/analytics/${userId}/metcon-analyzer?prefetch=1`, { signal: controller.signal })
           }
+          // Prefetch most likely next tab first
+          const order = ['overview','skills','strength','metcons','insights'] as const
+          const nextIdx = Math.max(0, order.indexOf(activeTab) + 1)
+          const next = order[nextIdx] || 'skills'
+          const url = next === 'skills' ? `/api/analytics/${userId}/skills-analytics?mode=summary` :
+                      next === 'strength' ? `/api/analytics/${userId}/strength-tracker?mode=summary` :
+                      next === 'metcons' ? `/api/analytics/${userId}/metcon-analyzer?mode=summary` : ''
+          if (url) fetch(url, { signal: controller.signal })
         } catch {}
       }
       setTimeout(prefetch, 300)
