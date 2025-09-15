@@ -509,13 +509,13 @@ const PredictiveInsightsView = ({ predictiveData }: { predictiveData: any }) => 
     return <div className="bg-white rounded-lg shadow p-6">Loading predictive insights...</div>;
   }
 
-  const { predictions } = predictiveData.data;
+  const { predictions, blockStatus, insights } = predictiveData.data;
 
   return (
     <div id="insights-panel" role="tabpanel" aria-labelledby="insights-tab" className="space-y-8">
       
       {/* Weekly Training Narrative - NEW SECTION */}
-      {predictions.weeklyNarrative && (
+      {predictions?.weeklyNarrative && (
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow p-6 border border-blue-200">
           <div className="flex items-center mb-4">
             <div className="text-2xl mr-3">📊</div>
@@ -565,6 +565,60 @@ const PredictiveInsightsView = ({ predictiveData }: { predictiveData: any }) => 
           </div>
         </div>
       )}
+
+      {/* Block-specific insights with gating */}
+      <div className="grid md:grid-cols-3 gap-6">
+        {/* Skills */}
+        <div className="bg-white rounded-lg shadow p-6 border">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Skills Insights</h3>
+          {blockStatus?.skills?.status !== 'ready' ? (
+            <div className="text-gray-700 text-sm">
+              Building your baseline…
+              <div className="mt-1 text-gray-600">{blockStatus?.skills?.count || 0}/10 skills sessions completed</div>
+            </div>
+          ) : (
+            <ul className="list-disc pl-5 space-y-2 text-gray-800 text-sm">
+              {(insights?.skills || []).map((it: any, idx: number) => (
+                <li key={idx}><span className="font-medium">{it.message}</span>{it.action ? ` — ${it.action}` : ''}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Strength */}
+        <div className="bg-white rounded-lg shadow p-6 border">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Strength Insights</h3>
+          {blockStatus?.strength?.status !== 'ready' ? (
+            <div className="text-gray-700 text-sm">
+              Building your baseline…
+              <div className="mt-1 text-gray-600">{blockStatus?.strength?.count || 0}/10 strength sessions completed</div>
+            </div>
+          ) : (
+            <ul className="list-disc pl-5 space-y-2 text-gray-800 text-sm">
+              {(insights?.strength || []).map((it: any, idx: number) => (
+                <li key={idx}><span className="font-medium">{it.message}</span>{it.action ? ` — ${it.action}` : ''}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* MetCons */}
+        <div className="bg-white rounded-lg shadow p-6 border">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">MetCon Insights</h3>
+          {blockStatus?.metcons?.status !== 'ready' ? (
+            <div className="text-gray-700 text-sm">
+              Building your baseline…
+              <div className="mt-1 text-gray-600">{blockStatus?.metcons?.count || 0}/10 metcon sessions completed</div>
+            </div>
+          ) : (
+            <ul className="list-disc pl-5 space-y-2 text-gray-800 text-sm">
+              {(insights?.metcons || []).map((it: any, idx: number) => (
+                <li key={idx}><span className="font-medium">{it.message}</span>{it.action ? ` — ${it.action}` : ''}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
 
       {/* Achievements Section - NEW */}
       {predictions.achievements && predictions.achievements.length > 0 && (
