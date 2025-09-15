@@ -100,6 +100,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         {/* Today's Workout */}
         <div className="text-center">
           <Link
+            prefetch
             href={`/dashboard/workout/${programId}/week/${currentWeek}/day/${currentDay}`}
             className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
           >
@@ -140,6 +141,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         {/* Primary Action Button */}
         <div className="text-center">
           <Link
+            prefetch
             href={`/dashboard/workout/${programId}/week/${currentWeek}/day/${currentDay}`}
             className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors text-lg w-full justify-center"
           >

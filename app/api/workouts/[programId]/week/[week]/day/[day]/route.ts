@@ -204,7 +204,7 @@ try {
 
 
     // Format the workout for frontend consumption
-    const workout = {
+    let workout = {
       programId: programIdNum,
       week: weekNum,
       day: dayNum,
@@ -251,9 +251,54 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
       totalBlocks: targetDay.blocks.length
     }
 
+    // Apply AI modifications server-side to avoid extra client roundtrip
+    try {
+      const aiRes = await fetch(`${process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/modify-program-session`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: program.user_id, week: weekNum, day: dayNum, originalProgram: workout })
+      })
+      if (aiRes.ok) {
+        const ai = await aiRes.json()
+        if (ai?.success && ai?.program?.blocks?.length) {
+          workout = ai.program
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ AI modify-program-session failed, returning original workout')
+    }
+
+    // Include completions inline to reduce client requests
+    let mappedCompletions: any[] = []
+    try {
+      const { data: completions } = await supabase
+        .from('performance_logs')
+        .select('*')
+        .eq('user_id', program.user_id)
+        .eq('program_id', programIdNum)
+        .eq('week', weekNum)
+        .eq('day', dayNum)
+        .order('logged_at', { ascending: true })
+      mappedCompletions = (completions || []).map((log: any) => ({
+        exercise_name: log.set_number > 1 ? `${log.exercise_name} - Set ${log.set_number}` : log.exercise_name,
+        sets_completed: parseInt(log.sets) || 0,
+        reps_completed: log.reps,
+        weight_used: parseFloat(log.weight_time) || 0,
+        rpe: log.rpe,
+        quality: log.quality_grade,
+        notes: log.result,
+        was_rx: true,
+        set_number: log.set_number || 1
+      }))
+    } catch {}
+
     return NextResponse.json({
       success: true,
       workout,
+      completions: mappedCompletions,
       metadata: {
        programCreatedAt: program.generated_at,
         availableWeeks: program.weeks_generated,

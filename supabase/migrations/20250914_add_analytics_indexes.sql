@@ -11,6 +11,9 @@ create index if not exists idx_useronerms_user_exercise_recorded on public.user_
 -- workout_completions day aggregation
 create index if not exists idx_workoutcompletions_user_program_week_day on public.workout_completions (user_id, program_id, week, day);
 
+-- modified_workouts cache lookup
+create index if not exists idx_modified_workouts_user_program_week_day on public.modified_workouts (user_id, program_id, week, day);
+
 -- weekly_summaries recency
 create index if not exists idx_weekly_summaries_user_week on public.weekly_summaries (user_id, week);
 

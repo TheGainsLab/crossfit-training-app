@@ -141,14 +141,13 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
  
   useEffect(() => {
     fetchWorkout()
-    fetchCompletions()
   }, [programId, week, day])
 
 const fetchWorkout = async () => {
   try {
     setLoading(true)
     
-    // Step 1: Get the original stored program
+    // Server merges program + AI modifications + completions
     const response = await fetch(`/api/workouts/${programId}/week/${week}/day/${day}`)
     
     if (!response.ok) {
@@ -158,76 +157,13 @@ const fetchWorkout = async () => {
     const data = await response.json()
     
     if (data.success) {
-      // Step 2: Apply AI modifications to the original program
-      try {
-        const userId = await getCurrentUserId()
-        
-        // Get user's JWT for auth to Edge Function
-        const { createClient: createSbClient } = await import('@/lib/supabase/client')
-        const sbClient = createSbClient()
-        const { data: { session } } = await sbClient.auth.getSession()
-        const userJwt = session?.access_token
-
-        const aiResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/modify-program-session`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(userJwt ? { 'Authorization': `Bearer ${userJwt}` } : {})
-          },
-          body: JSON.stringify({
-            user_id: userId,
-            week: parseInt(week),
-            day: parseInt(day),
-            originalProgram: data.workout
-          })
-        })
-
-        if (aiResponse.ok) {
-          const aiData = await aiResponse.json()
-          console.log('program blocks:', aiData.program?.blocks)
-          if (aiData.success && Array.isArray(aiData.program?.blocks)) {
-            setWorkout(aiData.program)
-            console.log('✅ AI modifications applied:', aiData.modificationsApplied || [])
-          } else {
-            setWorkout(data.workout)
-            console.warn('⚠️ Using original program (AI returned no blocks)')
-          }
-        } else {
-          // AI service failed, use original
-          setWorkout(data.workout)
-          console.warn('⚠️ AI modification service failed, using original program')
-        }
-        
-      } catch (aiError) {
-        // AI failed, use original program (graceful degradation)
-        console.warn('⚠️ AI modifications failed:', aiError)
-        setWorkout(data.workout)
-      }
-    }
-  } catch (err) {
-    setError(err instanceof Error ? err.message : 'Unknown error')
-  } finally {
-    setLoading(false)
-  }
-}
-
-const fetchCompletions = async () => {
-  try {
-    const userId = await getCurrentUserId()
-    const response = await fetch(`/api/workouts/complete?userId=${userId}&programId=${programId}&week=${week}&day=${day}`)
-    
-    if (response.ok) {
-      const data = await response.json()
-      if (data.success) {
+      setWorkout(data.workout)
+      if (Array.isArray(data.completions)) {
         const completionMap: Record<string, Completion> = {}
         data.completions.forEach((comp: any) => {
-          // Create unique key that includes set number
           const setNumber = comp.set_number || 1
-          const completionKey = setNumber > 1 
-            ? `${comp.exercise_name} - Set ${setNumber}`
-            : comp.exercise_name
-            
-          completionMap[completionKey] = {
+          const key = setNumber > 1 ? `${comp.exercise_name} - Set ${setNumber}` : comp.exercise_name
+          completionMap[key] = {
             exerciseName: comp.exercise_name,
             setsCompleted: comp.sets_completed,
             repsCompleted: comp.reps_completed,
@@ -241,9 +177,11 @@ const fetchCompletions = async () => {
       }
     }
   } catch (err) {
-    console.log('No previous completions found')
+    setError(err instanceof Error ? err.message : 'Unknown error')
+  } finally {
+    setLoading(false)
   }
-}  
+}
 
 
 const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
