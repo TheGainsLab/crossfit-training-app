@@ -485,6 +485,12 @@ const calculateProgress = () => {
 
               </div>
               <span className="text-sm font-medium text-charcoal">{Math.round(progress)}%</span>
+              {/* AI applied badge if this day was modified by AI */}
+              {Boolean((workout as any)?.source === 'ai') && (
+                <span className="text-xs text-green-700 bg-green-100 border border-green-200 rounded-full px-2 py-0.5" title={(workout as any)?.rationale?.message || 'Updated by AI'}>
+                  AI updated
+                </span>
+              )}
               {/* Optional: small chip for recent AI Save */}
               {/* <span className="text-xs text-green-700 bg-green-100 border border-green-200 rounded-full px-2 py-0.5">Updated</span> */}
               <button
