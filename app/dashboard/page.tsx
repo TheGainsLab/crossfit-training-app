@@ -215,6 +215,17 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
             }}
           />
         </div>
+        {/* AI Insights quick button */}
+        <div className="mt-4 flex justify-end">
+          <Link
+            href="/dashboard/progress?tab=insights#insights-panel"
+            className="px-3 py-2 text-sm rounded-md hover:opacity-90"
+            style={{ backgroundColor: '#509895', color: '#ffffff' }}
+            title="Open AI Insights"
+          >
+            AI Insights
+          </Link>
+        </div>
       </div>
 
       {/* Quick links to detailed analytics */}
