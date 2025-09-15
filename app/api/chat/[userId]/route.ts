@@ -196,7 +196,7 @@ export async function POST(
       const { data: profile } = await supabase
         .from('users')
         .select('id, name, email, gender, body_weight, units, ability_level')
-        .eq('id', userIdNum)
+        .eq('id', parseInt(userId))
         .single()
       if (profile) {
         userContext.profile = profile
@@ -205,7 +205,7 @@ export async function POST(
       const { data: prefs } = await supabase
         .from('user_preferences')
         .select('training_days_per_week, selected_goals, metcon_time_focus, primary_strength_lifts, emphasized_strength_lifts')
-        .eq('user_id', userIdNum)
+        .eq('user_id', parseInt(userId))
         .single()
       if (prefs) {
         userContext.preferences = prefs
@@ -214,7 +214,7 @@ export async function POST(
       const { data: equip } = await supabase
         .from('user_equipment')
         .select('equipment_name')
-        .eq('user_id', userIdNum)
+        .eq('user_id', parseInt(userId))
       if (equip) {
         userContext.equipment = (equip || []).map((e: any) => e.equipment_name)
       }
@@ -222,7 +222,7 @@ export async function POST(
       const { data: oneRMs } = await supabase
         .from('user_one_rms')
         .select('exercise_name, one_rm, recorded_at')
-        .eq('user_id', userIdNum)
+        .eq('user_id', parseInt(userId))
         .order('recorded_at', { ascending: false })
         .limit(100)
       if (oneRMs) {
