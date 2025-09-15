@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
+import { runDecisionPolicy, buildContextHash, type ContextFeatures, type PolicyConfig } from '@/lib/ai/decision-policy'
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,23 +49,21 @@ export async function GET(request: NextRequest) {
         metcons: { count: metconsCount, threshold, status: metconsCount >= threshold ? 'ready' : 'insufficient_context' }
       }
 
-      // Placeholder insights payloads (compute only if ready)
-      const insights = {
-        skills: blockStatus.skills.status === 'ready' ? [
-          { message: 'Increase practice frequency for weakest skills', action: 'Add 1 extra skills block weekly' }
-        ] : [],
-        strength: blockStatus.strength.status === 'ready' ? [
-          { message: 'Progress intensity on primary lifts', action: 'Add +2.5% top sets next week' }
-        ] : [],
-        metcons: blockStatus.metcons.status === 'ready' ? [
-          { message: 'Focus on 8–12 min time domain', action: 'Target 2 workouts in that range next week' }
-        ] : []
+      // Decision policy for structured actions (only passes counts for now)
+      const features: ContextFeatures = {
+        userId,
+        sinceIso: since,
+        blockCounts: { 'SKILLS': skillsCount, 'STRENGTH AND POWER': strengthCount, 'METCONS': metconsCount }
       }
+      const cfg: PolicyConfig = { sessionGatePerBlock: threshold }
+      const decision = runDecisionPolicy(features, cfg)
+      const insights = decision.insights
+      const context_hash = buildContextHash(features)
 
       // Keep a minimal predictions object for UI compatibility
       const predictions = {}
 
-      return { blockStatus, insights, predictions, since }
+      return { blockStatus, insights, predictions, since, context_hash }
     }, [`insights-analytics:${userId}:${days}`], { revalidate: 300, tags: [`insights-analytics:${userId}`] })
 
     const result = await compute()
