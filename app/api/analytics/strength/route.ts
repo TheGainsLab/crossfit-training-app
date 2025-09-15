@@ -26,9 +26,9 @@ export async function GET(request: NextRequest) {
     if (mode === 'summary') {
       const { data: latest } = await supabase
         .from('user_one_rms')
-        .select('exercise_name, one_rm, created_at')
+        .select('exercise_name, one_rm, recorded_at')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false })
+        .order('recorded_at', { ascending: false })
         .limit(100)
       return NextResponse.json({ success: true, data: { oneRMs: latest || [] }, metadata: { days, mode } }, {
         headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' }
