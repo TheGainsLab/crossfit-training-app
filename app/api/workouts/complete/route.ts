@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { revalidateTag } from 'next/cache'
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -430,8 +431,13 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ Workout completion saved successfully')
-    // Hint for cache revalidation on analytics (handled by Next cache tags in RSC if used)
-    // Example: revalidateTag(`global-analytics:${completionData.userId}`)
+    // Revalidate analytics caches (global and domain tabs)
+    try {
+      revalidateTag(`global-analytics:${completionData.userId}`)
+      revalidateTag(`skills-analytics:${completionData.userId}`)
+      revalidateTag(`strength-analytics:${completionData.userId}`)
+      revalidateTag(`metcons-analytics:${completionData.userId}`)
+    } catch {}
 
     // Update weekly summary after successful completion
     try {

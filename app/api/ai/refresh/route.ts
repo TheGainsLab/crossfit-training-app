@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { revalidateTag } from 'next/cache'
 
 // Service client for writes
 const supabaseService = createClient(
@@ -82,6 +83,13 @@ export async function POST(request: NextRequest) {
     if (insErr && (insErr as any).code !== '23505') {
       return NextResponse.json({ error: insErr.message }, { status: 500 })
     }
+
+    try {
+      revalidateTag(`global-analytics:${userId}`)
+      revalidateTag(`skills-analytics:${userId}`)
+      revalidateTag(`strength-analytics:${userId}`)
+      revalidateTag(`metcons-analytics:${userId}`)
+    } catch {}
 
     return NextResponse.json({ success: true })
   } catch (e: any) {
