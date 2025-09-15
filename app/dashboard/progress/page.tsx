@@ -18,10 +18,35 @@ import {
   ArcElement
 } from 'chart.js';
 import dynamic from 'next/dynamic';
+import { useRef } from 'react'
 const Bar = dynamic(() => import('react-chartjs-2').then(m => m.Bar), { ssr: false, loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded" /> })
 const Line = dynamic(() => import('react-chartjs-2').then(m => m.Line), { ssr: false, loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded" /> })
 const Doughnut = dynamic(() => import('react-chartjs-2').then(m => m.Doughnut), { ssr: false, loading: () => <div className="h-48 bg-gray-100 animate-pulse rounded" /> })
 const Radar = dynamic(() => import('react-chartjs-2').then(m => m.Radar), { ssr: false, loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded" /> })
+
+// Defer rendering until section scrolls into view
+const DeferredSection: React.FC<{ children: React.ReactNode; minHeightClass?: string }> = ({ children, minHeightClass = 'min-h-[12rem]' }) => {
+  const [visible, setVisible] = useState(false)
+  const anchorRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = anchorRef.current
+    if (!el || visible) return
+    const io = new IntersectionObserver((entries) => {
+      const entry = entries[0]
+      if (entry.isIntersecting) {
+        setVisible(true)
+        io.disconnect()
+      }
+    }, { rootMargin: '200px 0px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [visible])
+  return (
+    <div ref={anchorRef} className={visible ? '' : minHeightClass}>
+      {visible ? children : <div className="w-full h-full bg-gray-100 animate-pulse rounded" />}
+    </div>
+  )
+}
 
 // Quality grade conversion utilities
 function convertQualityToGradeDetailed(numericQuality: number): string {
@@ -1336,45 +1361,47 @@ const SkillsAnalyticsView = () => {
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills Progress Charts</h3>
         
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <h4 className="font-medium text-gray-900 mb-3">
-              Total Reps Completed <span className="text-2xl font-bold text-coral ml-2">{totalReps.toLocaleString()}</span>
-            </h4>
-            <div className="h-64">
-              <Bar data={skillsChartData} options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { display: false },
-                  title: { display: true, text: 'Reps per Movement' }
-                },
-                scales: {
-                  y: { beginAtZero: true }
-                }
-              }} />
+        <DeferredSection>
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3">
+                Total Reps Completed <span className="text-2xl font-bold text-coral ml-2">{totalReps.toLocaleString()}</span>
+              </h4>
+              <div className="h-64">
+                <Bar data={skillsChartData} options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Reps per Movement' }
+                  },
+                  scales: {
+                    y: { beginAtZero: true }
+                  }
+                }} />
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3">
+                Average RPE <span className="text-2xl font-bold text-coral ml-2">{avgRPE.toFixed(1)}</span>
+              </h4>
+              <div className="h-64">
+                <Bar data={rpeChartData} options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Effort Level by Movement' }
+                  },
+                  scales: {
+                    y: { beginAtZero: true, max: 10 }
+                  }
+                }} />
+              </div>
             </div>
           </div>
-          
-          <div>
-            <h4 className="font-medium text-gray-900 mb-3">
-              Average RPE <span className="text-2xl font-bold text-coral ml-2">{avgRPE.toFixed(1)}</span>
-            </h4>
-            <div className="h-64">
-              <Bar data={rpeChartData} options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { display: false },
-                  title: { display: true, text: 'Effort Level by Movement' }
-                },
-                scales: {
-                  y: { beginAtZero: true, max: 10 }
-                }
-              }} />
-            </div>
-          </div>
-        </div>
+        </DeferredSection>
       </div>
 
       {/* Skills Heatmap by Level */}
