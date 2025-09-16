@@ -20,7 +20,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ success: false, error: 'Invalid JSON payload' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 
-  const { user_id, conversation_id, message, conversation_history } = body || {};
+  const { user_id, conversation_id, message, conversation_history, user_context } = body || {};
 
   try {
 
@@ -31,8 +31,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Gather comprehensive user context for personalized responses
-    const userContext = await gatherTrainingContext(supabase, user_id);
+    // Prefer provided user_context; fallback to building server-side if absent
+    const userContext = user_context || (await gatherTrainingContext(supabase, user_id));
     
     // Check for safety concerns and coach escalation needs
     const safetyAnalysis = await analyzeSafetyAndEscalation(message, conversation_history);
