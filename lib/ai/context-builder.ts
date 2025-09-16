@@ -67,51 +67,63 @@ export interface ContextFeatures {
 export async function buildContextFeatures(supabase: SupabaseClientLike, userId: number): Promise<ContextFeatures> {
   const since90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
 
-  const [users, userPrefs, userEquip, userSkills, oneRms, perfLogs, program, progMet] = await Promise.all([
-    supabase.from('users').select('name, ability_level, body_weight, units, created_at').eq('id', userId).single(),
-    supabase.from('user_preferences').select('training_days_per_week, selected_goals, metcon_time_focus, primary_strength_lifts, emphasized_strength_lifts, ai_auto_apply_low_risk').eq('user_id', userId).single(),
-    supabase.from('user_equipment').select('equipment_name').eq('user_id', userId),
-    supabase.from('user_skills').select('skill_name, skill_level').eq('user_id', userId),
-    supabase.from('user_one_rms').select('exercise_name, one_rm, recorded_at').eq('user_id', userId).order('recorded_at', { ascending: false }),
-    supabase.from('performance_logs').select('block, exercise_name, rpe, completion_quality, result, logged_at').eq('user_id', userId),
-    supabase.from('programs').select('id, generated_at').eq('user_id', userId).order('generated_at', { ascending: false }).limit(1).single(),
-    supabase.from('program_metcons').select('metcon_id, percentile, completed_at, programs!inner(user_id)').eq('programs.user_id', userId).not('completed_at', 'is', null).order('completed_at', { ascending: false })
+  // Use optimized views wherever possible; fetch a bounded slice of performance_logs for light aggregates
+  const [ucp, urp, ulo, uss, ums, perfLogsRes] = await Promise.all([
+    supabase.from('user_complete_profile').select('*').eq('user_id', userId).single(),
+    supabase.from('user_recent_performance').select('*').eq('user_id', userId).single(),
+    supabase.from('user_latest_one_rms').select('*').eq('user_id', userId).single(),
+    supabase.from('user_skills_summary').select('*').eq('user_id', userId).single(),
+    supabase.from('user_metcon_summary').select('*').eq('user_id', userId).single(),
+    supabase.from('performance_logs').select('block, exercise_name, rpe, completion_quality, result, logged_at').eq('user_id', userId).order('logged_at', { ascending: false }).limit(400)
   ])
 
   const identity = {
-    name: users?.data?.name,
-    abilityLevel: users?.data?.ability_level,
-    units: users?.data?.units,
-    bodyWeight: users?.data?.body_weight ? Number(users.data.body_weight) : undefined,
-    joinDate: users?.data?.created_at
+    name: ucp?.data?.name,
+    abilityLevel: ucp?.data?.ability_level,
+    units: ucp?.data?.units,
+    bodyWeight: ucp?.data?.body_weight ? Number(ucp.data.body_weight) : undefined,
+    joinDate: ucp?.data?.join_date
   }
 
   const preferences = {
-    trainingDaysPerWeek: userPrefs?.data?.training_days_per_week || undefined,
-    selectedGoals: userPrefs?.data?.selected_goals || [],
-    metconTimeFocus: userPrefs?.data?.metcon_time_focus || [],
-    primaryStrengthLifts: userPrefs?.data?.primary_strength_lifts || [],
-    emphasizedStrengthLifts: userPrefs?.data?.emphasized_strength_lifts || [],
-    aiAutoApplyLowRisk: Boolean(userPrefs?.data?.ai_auto_apply_low_risk)
+    trainingDaysPerWeek: ucp?.data?.training_days_per_week || undefined,
+    selectedGoals: (ucp?.data?.three_month_goals as any) || [],
+    metconTimeFocus: [],
+    primaryStrengthLifts: (ucp?.data?.primary_strength_lifts as any) || [],
+    emphasizedStrengthLifts: (ucp?.data?.emphasized_strength_lifts as any) || [],
+    aiAutoApplyLowRisk: undefined
   }
 
-  const equipment = (userEquip?.data || []).map((e: any) => e.equipment_name).filter(Boolean)
+  const equipment = ((ucp?.data?.available_equipment as any[]) || []).filter(Boolean)
 
-  const oneRMsLatest = dedupeLatestOneRms(oneRms?.data || [])
+  // Transform latest 1RMs view object -> array
+  const oneRMsLatest: Array<{ exercise: string; value: number; recordedAt: string }> = []
+  if (ulo?.data?.latest_one_rms) {
+    const entries = ulo.data.latest_one_rms as Record<string, { value: number; recorded_at: string }>
+    for (const exercise of Object.keys(entries)) {
+      const rec = entries[exercise]
+      const v = Number(rec?.value)
+      if (Number.isFinite(v)) {
+        oneRMsLatest.push({ exercise, value: v, recordedAt: rec?.recorded_at })
+      }
+    }
+    oneRMsLatest.sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime())
+  }
   const oneRMsBestEver = computeBestEver(oneRMsLatest)
 
-  const logs = (perfLogs?.data || []) as Array<any>
-  const blockCounts = { 'SKILLS': 0, 'STRENGTH AND POWER': 0, 'METCONS': 0 } as Record<'SKILLS'|'STRENGTH AND POWER'|'METCONS', number>
-  for (const p of logs) {
-    if (blockCounts[p.block as keyof typeof blockCounts] !== undefined) blockCounts[p.block as keyof typeof blockCounts] += 1
-  }
+  const logs = (perfLogsRes?.data || []) as Array<any>
+
+  // Use view-derived block counts for last 30d; fallback to simple counts if view missing
+  const blockCounts = {
+    'SKILLS': Number(urp?.data?.skills_sessions_30d || 0),
+    'STRENGTH AND POWER': Number(urp?.data?.strength_sessions_30d || 0),
+    'METCONS': Number(urp?.data?.metcons_sessions_30d || 0)
+  } as Record<'SKILLS'|'STRENGTH AND POWER'|'METCONS', number>
 
   const rpePatterns = windowAverages(logs, 'rpe')
   const completionQuality = windowAverages(logs, 'completion_quality')
 
   const lastNLogs = logs
-    .slice()
-    .sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime())
     .slice(0, 20)
     .map(l => ({
       date: l.logged_at,
@@ -122,11 +134,20 @@ export async function buildContextFeatures(supabase: SupabaseClientLike, userId:
       result: l.result || undefined
     }))
 
-  // MetCon exposure (use simple derivation from last entries)
-  const metRows = (progMet?.data || []) as any[]
-  const metconsLast = metRows.map(r => ({ metconId: r.metcon_id, completedAt: r.completed_at, percentile: r.percentile }))
+  // Metcons recent via view
+  const recentMet = (ums?.data?.recent_metcons as any[]) || []
+  const metconsLast = recentMet.map((r: any) => ({ metconId: r.metcon_id, completedAt: r.completed_at, percentile: r.percentile }))
   const timeDomainExposure: Record<'0-6'|'8-12'|'14-20'|'20+', number> = { '0-6': 0, '8-12': 0, '14-20': 0, '20+': 0 }
-  // Unknown time domains here; leave exposure neutral for now
+
+  // Skills profile from view; practiced from recent logs only (bounded)
+  const skillsProfileArr: Array<{ skillName: string; skillLevel: 'DontHave'|'Beginner'|'Intermediate'|'Advanced' }> = []
+  if (uss?.data?.skills_profile) {
+    const prof = uss.data.skills_profile as Record<string, { level: string }>
+    for (const skillName of Object.keys(prof)) {
+      const level = normalizeSkillLevel((prof[skillName] as any)?.level || '') as any
+      skillsProfileArr.push({ skillName, skillLevel: level })
+    }
+  }
 
   const features: ContextFeatures = {
     userId,
@@ -139,30 +160,29 @@ export async function buildContextFeatures(supabase: SupabaseClientLike, userId:
     completionQuality,
     lastNLogs,
     skills: {
-      profile: (userSkills?.data || []).map((s: any) => ({ skillName: s.skill_name, skillLevel: normalizeSkillLevel(s.skill_level) as any }))
-        .filter((s: any) => !!s.skillName),
+      profile: skillsProfileArr,
       practiced: computeSkillsPracticed(logs)
     },
-    program: { currentProgramId: program?.data?.id, generatedAt: program?.data?.generated_at },
+    program: { currentProgramId: ucp?.data?.current_program_id, generatedAt: ucp?.data?.program_generated_at },
     metcons: { last: metconsLast, timeDomainExposure },
     oly: computeOlyAggregates(logs, oneRMsLatest),
     blockCounts,
     contextHash: '',
     manifests: {
       performanceLogs: {
-        count: logs.length,
-        earliest: logs.length ? String(logs.reduce((a, b) => new Date(a.logged_at) < new Date(b.logged_at) ? a : b).logged_at) : undefined,
-        latest: logs.length ? String(logs.reduce((a, b) => new Date(a.logged_at) > new Date(b.logged_at) ? a : b).logged_at) : undefined
+        count: Number(urp?.data?.total_sessions_all_time || logs.length || 0),
+        earliest: undefined,
+        latest: urp?.data?.last_session_date || undefined
       },
       metcons: {
-        count: metRows.length,
-        earliest: metRows.length ? String(metRows[metRows.length - 1].completed_at) : undefined,
-        latest: metRows.length ? String(metRows[0].completed_at) : undefined
+        count: Number(ums?.data?.total_metcons_completed || 0),
+        earliest: undefined,
+        latest: ums?.data?.last_metcon_date || undefined
       },
       oneRms: {
-        count: (oneRms?.data || []).length,
-        earliest: (oneRms?.data || []).length ? String((oneRms!.data as any[])[(oneRms!.data as any[]).length - 1].recorded_at) : undefined,
-        latest: (oneRms?.data || []).length ? String((oneRms!.data as any[])[0].recorded_at) : undefined
+        count: Number(ulo?.data?.total_one_rms || 0),
+        earliest: undefined,
+        latest: ulo?.data?.last_one_rm_date || undefined
       }
     }
   }
