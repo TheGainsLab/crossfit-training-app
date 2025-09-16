@@ -45,6 +45,13 @@ export interface ContextFeatures {
 
   blockCounts: Record<'SKILLS'|'STRENGTH AND POWER'|'METCONS', number>
   contextHash: string
+
+  // Manifests for unbounded history (counts and ranges)
+  manifests?: {
+    performanceLogs?: { count: number; earliest?: string; latest?: string }
+    metcons?: { count: number; earliest?: string; latest?: string }
+    oneRms?: { count: number; earliest?: string; latest?: string }
+  }
 }
 
 export async function buildContextFeatures(supabase: SupabaseClientLike, userId: number): Promise<ContextFeatures> {
@@ -55,10 +62,10 @@ export async function buildContextFeatures(supabase: SupabaseClientLike, userId:
     supabase.from('user_preferences').select('training_days_per_week, selected_goals, metcon_time_focus, primary_strength_lifts, emphasized_strength_lifts, ai_auto_apply_low_risk').eq('user_id', userId).single(),
     supabase.from('user_equipment').select('equipment_name').eq('user_id', userId),
     supabase.from('user_skills').select('skill_name, skill_level').eq('user_id', userId),
-    supabase.from('user_one_rms').select('exercise_name, one_rm, recorded_at').eq('user_id', userId).order('recorded_at', { ascending: false }).limit(100),
-    supabase.from('performance_logs').select('block, exercise_name, rpe, completion_quality, result, logged_at').eq('user_id', userId).gte('logged_at', since90),
+    supabase.from('user_one_rms').select('exercise_name, one_rm, recorded_at').eq('user_id', userId).order('recorded_at', { ascending: false }),
+    supabase.from('performance_logs').select('block, exercise_name, rpe, completion_quality, result, logged_at').eq('user_id', userId),
     supabase.from('programs').select('id, generated_at').eq('user_id', userId).order('generated_at', { ascending: false }).limit(1).single(),
-    supabase.from('program_metcons').select('metcon_id, percentile, completed_at, programs!inner(user_id)').eq('programs.user_id', userId).not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(20)
+    supabase.from('program_metcons').select('metcon_id, percentile, completed_at, programs!inner(user_id)').eq('programs.user_id', userId).not('completed_at', 'is', null).order('completed_at', { ascending: false })
   ])
 
   const identity = {
@@ -129,7 +136,24 @@ export async function buildContextFeatures(supabase: SupabaseClientLike, userId:
     program: { currentProgramId: program?.data?.id, generatedAt: program?.data?.generated_at },
     metcons: { last: metconsLast, timeDomainExposure },
     blockCounts,
-    contextHash: ''
+    contextHash: '',
+    manifests: {
+      performanceLogs: {
+        count: logs.length,
+        earliest: logs.length ? String(logs.reduce((a, b) => new Date(a.logged_at) < new Date(b.logged_at) ? a : b).logged_at) : undefined,
+        latest: logs.length ? String(logs.reduce((a, b) => new Date(a.logged_at) > new Date(b.logged_at) ? a : b).logged_at) : undefined
+      },
+      metcons: {
+        count: metRows.length,
+        earliest: metRows.length ? String(metRows[metRows.length - 1].completed_at) : undefined,
+        latest: metRows.length ? String(metRows[0].completed_at) : undefined
+      },
+      oneRms: {
+        count: (oneRms?.data || []).length,
+        earliest: (oneRms?.data || []).length ? String((oneRms!.data as any[])[(oneRms!.data as any[]).length - 1].recorded_at) : undefined,
+        latest: (oneRms?.data || []).length ? String((oneRms!.data as any[])[0].recorded_at) : undefined
+      }
+    }
   }
 
   // Build short hash expected by decision layer
