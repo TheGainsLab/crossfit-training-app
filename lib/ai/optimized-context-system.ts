@@ -212,7 +212,7 @@ export class OptimizedContextBuilder {
     const earlier5 = (data || []).slice(5, 10)
     let trend = 'stable'
     if (recent5.length >= 3 && earlier5.length >= 3) {
-      const avg = (arr: any[]) => arr.reduce((s, m) => s + (m.percentile || 0), 0) / arr.length
+      const avg = (arr: Array<{ percentile?: number }>) => arr.reduce((s, m) => s + (m.percentile || 0), 0) / arr.length
       const rAvg = avg(recent5)
       const eAvg = avg(earlier5)
       if (rAvg > eAvg + 10) trend = 'improving'
@@ -238,10 +238,10 @@ export class OptimizedContextBuilder {
     const { data } = await query.order('recorded_at', { ascending: false }).limit(filters.limit || 50)
 
     const map = new Map<string, any[]>()
-    for (const r of (data || [])) {
-      const key = (r as any).exercise_name
+    for (const r of ((data || []) as Array<{ exercise_name: string }>)) {
+      const key = r.exercise_name
       if (!map.has(key)) map.set(key, [])
-      map.get(key)!.push(r)
+      map.get(key)!.push(r as any)
     }
     const progressionAnalysis = Array.from(map.entries()).map(([exercise, rows]) => {
       if (rows.length < 2) return { exercise, trend: 'insufficient_data' }
@@ -280,19 +280,19 @@ export class OptimizedContextBuilder {
     const { data } = await query.order('logged_at', { ascending: false }).limit(filters.limit || 100)
 
     const skillsMap = new Map<string, any[]>()
-    for (const s of (data || [])) {
-      const name = (s as any).exercise_name
+    for (const s of (data || []) as Array<{ exercise_name: string }>) {
+      const name = s.exercise_name
       if (!skillsMap.has(name)) skillsMap.set(name, [])
-      skillsMap.get(name)!.push(s)
+      skillsMap.get(name)!.push(s as any)
     }
     const skillsAnalysis = Array.from(skillsMap.entries()).map(([skill, sessions]) => {
-      const qSessions = sessions.filter(s => (s as any).completion_quality !== null && (s as any).completion_quality !== undefined)
-      const avgQ = qSessions.length ? qSessions.reduce((sum, s) => sum + Number((s as any).completion_quality), 0) / qSessions.length : 0
+      const qSessions = sessions.filter((s: any) => s.completion_quality !== null && s.completion_quality !== undefined)
+      const avgQ = qSessions.length ? qSessions.reduce((sum, s: any) => sum + Number(s.completion_quality), 0) / qSessions.length : 0
       const recent = qSessions.slice(0, 5)
       const earlier = qSessions.slice(5, 10)
       let trend = 'stable'
       if (recent.length >= 3 && earlier.length >= 3) {
-        const avg = (arr: any[]) => arr.reduce((s, r) => s + Number((r as any).completion_quality), 0) / arr.length
+        const avg = (arr: any[]) => arr.reduce((s, r: any) => s + Number(r.completion_quality), 0) / arr.length
         const rAvg = avg(recent)
         const eAvg = avg(earlier)
         if (rAvg > eAvg + 0.3) trend = 'improving'
@@ -307,7 +307,7 @@ export class OptimizedContextBuilder {
       skillsAnalysis,
       summary: {
         totalSessions: (data || []).length,
-        uniqueSkills: [...new Set((data || []).map(d => (d as any).exercise_name))].length,
+        uniqueSkills: [...new Set(((data || []) as Array<{ exercise_name: string }>).map(d => d.exercise_name))].length,
         skillsNeedingWork: skillsAnalysis.filter(s => s.needsWork).length
       }
     }
@@ -323,7 +323,7 @@ export class OptimizedContextBuilder {
     return {
       type: 'recent_logs',
       results: data || [],
-      summary: { totalSessions: (data || []).length, blocks: [...new Set((data || []).map(d => (d as any).block))] }
+      summary: { totalSessions: (data || []).length, blocks: [...new Set(((data || []) as Array<{ block: string }>).map(d => d.block))] }
     }
   }
 
@@ -391,7 +391,7 @@ export function classifyQuestionAdvanced(message: string): QuestionClassificatio
 }
 
 function isEducationalQuestion(text: string): boolean {
-  const educational = [
+  const educational: RegExp[] = [
     /what are (good|best|some).*(exercise|drill|movement|stretch|food|supplement)/,
     /how (to|do you).*(perform|do|execute|improve).*(squat|deadlift|press|clean|snatch)/,
     /what is.*(proper form|correct technique|best way|recommended)/,
