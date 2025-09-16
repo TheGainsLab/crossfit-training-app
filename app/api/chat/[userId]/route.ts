@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { callTrainingAssistant } from '@/lib/ai/client'
-import { OptimizedContextBuilder, classifyQuestionAdvanced, clearCache } from '@/lib/ai/optimized-context-system'
+import { OptimizedContextBuilder, classifyQuestionAdvanced } from '@/lib/ai/context-builder'
 
 export async function POST(
   request: NextRequest,
