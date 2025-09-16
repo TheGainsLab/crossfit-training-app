@@ -192,7 +192,7 @@ export async function POST(
             const tt = taskText[String(r.metcon_id)] || ''
             if (!tt) return false
             if (!terms.length) return true
-            return terms.some(term => tt.includes(term))
+            return terms.some((term: string) => tt.includes(term))
           })
 
           if (!filtered.length) {
