@@ -18,6 +18,20 @@ export async function POST(
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify user has active subscription (same as A1-A9)
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('status')
+      .eq('user_id', parseInt(userId))
+      .eq('status', 'active')
+      .single();
+
+    if (subError || !subscription) {
+      return NextResponse.json({ error: 'Active subscription required' }, { status: 403 });
+    }
+
     // Special-case: MetCons filtered by keyword in tasks (e.g., "metcons with barbells")
     {
       const t = (message || '').toLowerCase()
@@ -148,66 +162,6 @@ export async function POST(
       }
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Verify user has active subscription (same as A1-A9)
-    const { data: subscription, error: subError } = await supabase
-      .from('subscriptions')
-      .select('status')
-      .eq('user_id', parseInt(userId))
-      .eq('status', 'active')
-      .single();
-
-    if (subError || !subscription) {
-      return NextResponse.json({ error: 'Active subscription required' }, { status: 403 });
-    }
-
-    // Rate limiting: 5 messages/min and 50/day per user (user role messages)
-    const now = new Date()
-    const cutoffMin = new Date(now.getTime() - 60 * 1000).toISOString()
-    const cutoffDay = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
-
-    // Gather user's conversation ids to count messages
-    const { data: convIdsData } = await supabase
-      .from('chat_conversations')
-      .select('id')
-      .eq('user_id', parseInt(userId))
-
-    const convIds = (convIdsData || []).map((c: any) => c.id)
-
-    let minuteCount = 0
-    let dayCount = 0
-    if (convIds.length > 0) {
-      const { count: mCount } = await supabase
-        .from('chat_messages')
-        .select('id', { count: 'exact', head: true })
-        .in('conversation_id', convIds)
-        .eq('role', 'user')
-        .gte('created_at', cutoffMin)
-      minuteCount = mCount || 0
-
-      const { count: dCount } = await supabase
-        .from('chat_messages')
-        .select('id', { count: 'exact', head: true })
-        .in('conversation_id', convIds)
-        .eq('role', 'user')
-        .gte('created_at', cutoffDay)
-      dayCount = dCount || 0
-    }
-
-    if (minuteCount >= 5) {
-      return NextResponse.json(
-        { success: false, error: 'rate_limit', message: 'Too many messages. Try again in a minute.' },
-        { status: 429 }
-      )
-    }
-    if (dayCount >= 50) {
-      return NextResponse.json(
-        { success: false, error: 'rate_limit', message: 'Daily chat limit reached. Try again tomorrow.' },
-        { status: 429 }
-      )
-    }
-
     // Domain fence: allow only fitness/health/nutrition/training/program topics
     const onTopic = isOnTopic((message || '').toLowerCase())
     if (!onTopic) {
@@ -259,6 +213,38 @@ export async function POST(
     if (userMessageError) {
       console.error('Error storing user message:', userMessageError);
       throw new Error('Failed to store message');
+    }
+
+    // Quick route for "list skills practiced" type queries (persist assistant reply)
+    if (/(list|show|what are).*skills.*(practic(e|ed)|worked on|trained)/i.test(message || '')) {
+      try {
+        const { data: srows } = await supabase
+          .from('performance_logs')
+          .select('exercise_name')
+          .eq('user_id', parseInt(userId))
+          .eq('block', 'SKILLS')
+          .order('logged_at', { ascending: false })
+          .limit(500)
+        const set = new Set<string>()
+        for (const r of srows || []) {
+          if ((r as any).exercise_name) set.add((r as any).exercise_name)
+        }
+        const list = Array.from(set)
+        const msg = list.length ? `Skills practiced so far (${list.length}):\n• ` + list.join('\n• ') : 'I could not find any skills practice yet.'
+
+        await supabase.from('chat_messages').insert({
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: msg,
+          created_at: new Date().toISOString()
+        })
+        await supabase
+          .from('chat_conversations')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', conversationId)
+
+        return NextResponse.json({ success: true, response: msg, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
+      } catch {}
     }
 
     // If the user asked for specific exercise history, serve a direct, accurate DB answer
@@ -320,6 +306,7 @@ export async function POST(
           .from('chat_conversations')
           .update({ updated_at: new Date().toISOString() })
           .eq('id', conversationId)
+
         return NextResponse.json({
           success: true,
           response: respContent,
@@ -520,12 +507,12 @@ export async function POST(
         }
         const lines = [`Average over last ${logs.length} ${term} sessions:`]
         if (rpeN) lines.push(`• Avg RPE: ${avgRpe.toFixed(1)}`)
-        if (loadN) lines.push(`• Avg load/time: ${avgLoad.toFixed(2)} (units as logged)`) 
-        const respContent3 = lines.join('\n')
+        if (loadN) lines.push(`• Avg load/time: ${avgLoad.toFixed(2)} (units as logged)`)
+        const respContent = lines.join('\n')
         await supabase.from('chat_messages').insert({
           conversation_id: conversationId,
           role: 'assistant',
-          content: respContent3,
+          content: respContent,
           created_at: new Date().toISOString()
         })
         await supabase
@@ -534,7 +521,7 @@ export async function POST(
           .eq('id', conversationId)
         return NextResponse.json({
           success: true,
-          response: respContent3,
+          response: respContent,
           conversation_id: conversationId,
           responseType: 'data_lookup',
           coachAlertGenerated: false
@@ -680,31 +667,6 @@ export async function POST(
   }
 }
 
-// Render metcon tasks JSON into readable lines
-function formatMetconTasks(tasks: any): string {
-  try {
-    if (!tasks) return ''
-    const arr = Array.isArray(tasks) ? tasks : (typeof tasks === 'string' ? JSON.parse(tasks) : [])
-    if (!Array.isArray(arr)) return ''
-    const lines: string[] = []
-    for (const t of arr) {
-      if (!t || typeof t !== 'object') continue
-      const kind = t.kind || t.type || ''
-      const title = t.title || t.name || ''
-      const reps = t.reps || t.rounds || t.count || ''
-      const details = t.details || t.description || t.movements || ''
-      const movementList = Array.isArray(details) ? details.join(', ') : (typeof details === 'string' ? details : '')
-      const duration = t.time || t.duration || ''
-      const parts = [kind, title, reps, duration].filter(Boolean).join(' ')
-      const line = parts ? `${parts}${movementList ? ': ' + movementList : ''}` : movementList
-      if (line) lines.push(line)
-    }
-    return lines.length ? lines.join(' | ') : ''
-  } catch {
-    return ''
-  }
-}
-
 // Helper function (copied from your original)
 function generateConversationTitle(firstMessage: string): string {
   const message = firstMessage.toLowerCase();
@@ -754,4 +716,29 @@ function extractExerciseHistoryIntent(text: string): string | null {
     if (t.includes(ex)) return ex
   }
   return null
+}
+
+// Render metcon tasks JSON into readable lines
+function formatMetconTasks(tasks: any): string {
+  try {
+    if (!tasks) return ''
+    const arr = Array.isArray(tasks) ? tasks : (typeof tasks === 'string' ? JSON.parse(tasks) : [])
+    if (!Array.isArray(arr)) return ''
+    const lines: string[] = []
+    for (const t of arr) {
+      if (!t || typeof t !== 'object') continue
+      const kind = t.kind || t.type || ''
+      const title = t.title || t.name || ''
+      const reps = t.reps || t.rounds || t.count || ''
+      const details = t.details || t.description || t.movements || ''
+      const movementList = Array.isArray(details) ? details.join(', ') : (typeof details === 'string' ? details : '')
+      const duration = t.time || t.duration || ''
+      const parts = [kind, title, reps, duration].filter(Boolean).join(' ')
+      const line = parts ? `${parts}${movementList ? ': ' + movementList : ''}` : movementList
+      if (line) lines.push(line)
+    }
+    return lines.length ? lines.join(' | ') : ''
+  } catch {
+    return ''
+  }
 }
