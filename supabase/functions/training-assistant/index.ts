@@ -39,73 +39,13 @@ serve(async (req) => {
 
     // Generate AI response with full training context
     const aiResponse = await generateTrainingAssistantResponse(
-      userContext, 
-      message, 
+      userContext,
+      message,
       conversation_history,
       safetyAnalysis
     );
-
-    // Ensure a conversation exists: auto-create if missing for persistence
-    let activeConversationId = conversation_id;
-    if (!activeConversationId && user_id) {
-      const title = (message || 'Training Conversation').slice(0, 80);
-      const { data: newConv, error: convErr } = await supabase
-        .from('chat_conversations')
-        .insert({ user_id, title, is_active: true })
-        .select('id')
-        .single();
-      if (!convErr) {
-        activeConversationId = newConv.id;
-      } else {
-        console.warn('Auto-create conversation failed:', convErr);
-      }
-    }
-
-    // Optionally store messages if we have a conversation
-    let messageId: number | null = null;
-    if (activeConversationId) {
-      // Store user message for continuity (best-effort)
-      try {
-        if (message) {
-          await supabase
-            .from('chat_messages')
-            .insert({
-              conversation_id: activeConversationId,
-              role: 'user',
-              content: message,
-              created_at: new Date().toISOString()
-            });
-        }
-      } catch (persistUserErr) {
-        console.warn('Persist user message failed:', persistUserErr);
-      }
-
-      // Store assistant message (best-effort)
-      try {
-        messageId = await storeConversationMessage(
-          supabase,
-          activeConversationId,
-          'assistant',
-          aiResponse.content,
-          {
-            safety_flags: safetyAnalysis,
-            context_used: userContext.summary,
-            response_type: aiResponse.responseType
-          }
-        );
-      } catch (persistAssistantErr) {
-        console.warn('Persist assistant message failed:', persistAssistantErr);
-      }
-
-      // Coach alerts (best-effort)
-      try {
-        if (safetyAnalysis.coachAlertNeeded) {
-          await createCoachAlert(supabase, user_id, activeConversationId, messageId as number, safetyAnalysis);
-        }
-      } catch (alertErr) {
-        console.warn('Create coach alert failed:', alertErr);
-      }
-    }
+    // Do not persist here to avoid duplicates; API route handles persistence
+    const messageId: number | null = null;
 
     return new Response(JSON.stringify({
       success: true,
@@ -229,14 +169,12 @@ if (!claudeApiKey) throw new Error('Claude API key not found');
       "anthropic-version": "2023-06-01"
     },
     body: JSON.stringify({
-model: "claude-3-5-haiku-20241022", // Haiku model
+      model: "claude-3-5-haiku-20241022",
       max_tokens: 2000,
-messages: [
-  {
-    role: "user",
-    content: prompt
-  }
-]      
+      temperature: 0.25,
+      messages: [
+        { role: "user", content: prompt }
+      ]
     })
   });
 
@@ -257,57 +195,47 @@ if (!response.ok) {
 }
 
 function buildTrainingAssistantPrompt(userContext: any, userMessage: string, conversationHistory: any[], safetyAnalysis: any): string {
-  const { profile, program, performance, insights, coaches } = userContext;
+  const lower = (userMessage || '').toLowerCase()
+  const wantsOly = /(olympic|oly|snatch|clean\s*&?\s*jerk|clean and jerk)/i.test(lower)
 
-  return `
-You are a knowledgeable CrossFit training assistant for ${profile?.name || 'this athlete'}. You have access to their complete training data and should provide personalized, contextual advice.
+  // Prefer full context from chat route if provided
+  const profile = userContext?.identity || userContext?.profile || {}
+  const preferences = userContext?.preferences || {}
+  const oly = userContext?.oly || {}
 
-ATHLETE PROFILE:
-- Name: ${profile?.name || 'Unknown'}
-- Experience: ${profile?.ability_level || 'Unknown'} level
-- Training Age: ${profile?.created_at ? Math.floor((Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24 * 30)) : '?'} months
-- Has Active Coach: ${coaches.length > 0 ? `Yes (${coaches.map(c => c.coaches.coach_name).join(', ')})` : 'No'}
+  if (wantsOly) {
+    const sn = oly?.snatch || {}
+    const cj = oly?.cleanJerk || {}
+    const proxies = oly?.proxies || {}
+    return `You are an expert weightlifting coach.
+User asked about Olympic lifts. Output two sections only: Snatch, Clean & Jerk. Facts-first. Do not mention unrelated movements.
 
-CURRENT PROGRAM CONTEXT:
-- Program ID: ${program.id}
-- Current Week: ${program.currentWeek}
-- Recent Workouts: ${program.recentWorkouts.map(w => `Week ${w.week} Day ${w.day}: ${w.main_lift}${w.is_deload ? ' (Deload)' : ''}`).join(', ')}
+ATHLETE: ${profile?.name || 'Athlete'} (${profile?.abilityLevel || 'level unknown'}). Training days/week: ${preferences?.trainingDaysPerWeek ?? 'n/a'}.
 
-RECENT PERFORMANCE (Last 2 weeks):
-- Sessions Completed: ${performance.recentLogs.length}
-- Average RPE: ${userContext.summary.avgRecentRPE.toFixed(1)}/10
-- Training Frequency: ${performance.trainingFrequency.sessionsPerWeek.toFixed(1)} sessions/week
-- Recent Exercises: ${performance.recentLogs.slice(0, 5).map(log => 
-    `${log.exercise_name} (RPE: ${log.rpe}, Quality: ${log.completion_quality}/4)`
-  ).join('; ')}
+SNATCH (facts only)
+- Latest 1RM: ${sn.latestOneRm ?? 'n/a'}
+- Sessions (90d): ${sn.sessions ?? 0}
+- Avg RPE (90d): ${sn.avgRpe ?? 'n/a'}
+- Avg quality (90d): ${sn.avgQuality ?? 'n/a'}
+- Proxies (90d): OHS sessions ${proxies?.overheadSquat?.sessions ?? 0}, SB sessions ${proxies?.snatchBalance?.sessions ?? 0}
 
-LATEST INSIGHTS:
-${insights ? 
-  `Recent AI analysis: ${insights.weeklyNarrative?.summary || 'Continue current training approach'}
-  ${insights.plateauPredictions?.length > 0 ? `\nPlateau alerts: ${insights.plateauPredictions.map(p => `${p.exercise} (${p.timeframe})`).join(', ')}` : ''}
-  ${insights.progressionOpportunities?.length > 0 ? `\nProgression ready: ${insights.progressionOpportunities.map(p => p.area).join(', ')}` : ''}` 
-  : 'No recent insights available'
-}
+CLEAN & JERK (facts only)
+- Latest 1RM: ${cj.latestOneRm ?? 'n/a'}
+- Sessions (90d): ${cj.sessions ?? 0}
+- Avg RPE (90d): ${cj.avgRpe ?? 'n/a'}
+- Avg quality (90d): ${cj.avgQuality ?? 'n/a'}
+- Proxy Front Squat (90d): sessions ${proxies?.frontSquat?.sessions ?? 0}
 
-SAFETY CONSIDERATIONS:
-${safetyAnalysis.concerns.length > 0 ? 
-  `IMPORTANT: ${safetyAnalysis.concerns.join(', ')}` : 
-  'No immediate safety concerns detected'
-}
+Now provide a concise interpretation (2–3 lines) based strictly on the above numbers (plateau/progression, likely limiter). If insufficient data, state exactly what is missing. No drills unless explicitly asked.`
+  }
 
-COACHING GUIDELINES:
-- Provide specific, actionable advice based on their actual training data
-- Reference specific exercises, RPE patterns, and performance trends when relevant
-- Maintain encouraging but realistic tone
-- If they have a coach, complement rather than override coach guidance
-- For injury concerns, refer to healthcare professionals
-- For complex program changes, suggest discussing with their coach if they have one
-- Use their actual performance data to explain recommendations
-
-USER'S CURRENT QUESTION: "${userMessage}"
-
-Respond as a knowledgeable training partner who knows their complete training history. Be specific, reference their actual data, and provide practical guidance they can implement immediately.
-`;
+  // Default coaching prompt
+  return `You are a knowledgeable CrossFit training assistant. Use the user's actual logged data, preferences, and recent history to answer.
+User: "${userMessage}"
+Rules:
+- Cite concrete numbers (RPE, sessions, 1RMs, percentiles) from context.
+- Be brief and specific. If data is missing, say what and where.
+`
 }
 
 async function analyzeSafetyAndEscalation(message: string, conversationHistory: any[]) {
