@@ -94,25 +94,7 @@ export async function POST(
       })
     }
 
-    // Quick route for "list skills practiced" type queries
-    if (/(list|show|what are).*skills.*(practic(e|ed)|worked on|trained)/i.test(message || '')) {
-      try {
-        const { data: srows } = await supabase
-          .from('performance_logs')
-          .select('exercise_name')
-          .eq('user_id', parseInt(userId))
-          .eq('block', 'SKILLS')
-          .order('logged_at', { ascending: false })
-          .limit(500)
-        const set = new Set<string>()
-        for (const r of srows || []) {
-          if ((r as any).exercise_name) set.add((r as any).exercise_name)
-        }
-        const list = Array.from(set)
-        const msg = list.length ? `Skills practiced so far (${list.length}):\n• ` + list.join('\n• ') : 'I could not find any skills practice yet.'
-        return NextResponse.json({ success: true, response: msg, conversation_id: (conversation_id || null), responseType: 'data_lookup', coachAlertGenerated: false })
-      } catch {}
-    }
+    // (moved) quick route handled after conversation creation so we can persist assistant reply
 
     // Get or create conversation
     let conversationId = conversation_id;
@@ -167,7 +149,7 @@ export async function POST(
           .select('*')
           .eq('user_id', parseInt(userId))
           .ilike('exercise_name', `%${exercise}%`)
-          .order('created_at', { ascending: false })
+          .order('recorded_at', { ascending: false })
           .limit(10)
 
         const lines: string[] = []
@@ -197,9 +179,20 @@ export async function POST(
           }
         }
 
+        const respContent = lines.join('\n')
+        await supabase.from('chat_messages').insert({
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: respContent,
+          created_at: new Date().toISOString()
+        })
+        await supabase
+          .from('chat_conversations')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', conversationId)
         return NextResponse.json({
           success: true,
-          response: lines.join('\n'),
+          response: respContent,
           conversation_id: conversationId,
           responseType: 'data_lookup',
           coachAlertGenerated: false
@@ -227,9 +220,20 @@ export async function POST(
         const rows: any[] = metRows || []
 
         if (!rows || rows.length === 0) {
+          const respContent = 'I could not find any recent MetCons in your logs.'
+          await supabase.from('chat_messages').insert({
+            conversation_id: conversationId,
+            role: 'assistant',
+            content: respContent,
+            created_at: new Date().toISOString()
+          })
+          await supabase
+            .from('chat_conversations')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', conversationId)
           return NextResponse.json({
             success: true,
-            response: 'I could not find any recent MetCons in your logs.',
+            response: respContent,
             conversation_id: conversationId,
             responseType: 'data_lookup',
             coachAlertGenerated: false
@@ -258,9 +262,20 @@ export async function POST(
           lines.push(`• ${d} — ${name}: ${pct}\n  Tasks: ${tasks}`)
         }
 
+        const respContent2 = lines.join('\n')
+        await supabase.from('chat_messages').insert({
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: respContent2,
+          created_at: new Date().toISOString()
+        })
+        await supabase
+          .from('chat_conversations')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', conversationId)
         return NextResponse.json({
           success: true,
-          response: lines.join('\n'),
+          response: respContent2,
           conversation_id: conversationId,
           responseType: 'data_lookup',
           coachAlertGenerated: false
@@ -284,9 +299,20 @@ export async function POST(
           .order('logged_at', { ascending: false })
           .limit(n)
         if (!logs || logs.length === 0) {
+          const respContent = `No recent sessions found matching “${term}”.`
+          await supabase.from('chat_messages').insert({
+            conversation_id: conversationId,
+            role: 'assistant',
+            content: respContent,
+            created_at: new Date().toISOString()
+          })
+          await supabase
+            .from('chat_conversations')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', conversationId)
           return NextResponse.json({
             success: true,
-            response: `No recent sessions found matching “${term}”.`,
+            response: respContent,
             conversation_id: conversationId,
             responseType: 'data_lookup',
             coachAlertGenerated: false
@@ -307,9 +333,20 @@ export async function POST(
         const lines = [`Average over last ${logs.length} ${term} sessions:`]
         if (rpeN) lines.push(`• Avg RPE: ${avgRpe.toFixed(1)}`)
         if (loadN) lines.push(`• Avg load/time: ${avgLoad.toFixed(2)} (units as logged)`) 
+        const respContent3 = lines.join('\n')
+        await supabase.from('chat_messages').insert({
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: respContent3,
+          created_at: new Date().toISOString()
+        })
+        await supabase
+          .from('chat_conversations')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', conversationId)
         return NextResponse.json({
           success: true,
-          response: lines.join('\n'),
+          response: respContent3,
           conversation_id: conversationId,
           responseType: 'data_lookup',
           coachAlertGenerated: false
@@ -424,7 +461,15 @@ export async function POST(
 
     const assistantData = await assistantResponse.json();
 
-    // Update conversation timestamp
+    // Store assistant message and update conversation timestamp
+    await supabase
+      .from('chat_messages')
+      .insert({
+        conversation_id: conversationId,
+        role: 'assistant',
+        content: assistantData.response,
+        created_at: new Date().toISOString()
+      })
     await supabase
       .from('chat_conversations')
       .update({ updated_at: new Date().toISOString() })
