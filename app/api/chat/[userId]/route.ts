@@ -32,73 +32,7 @@ export async function POST(
       return NextResponse.json({ error: 'Active subscription required' }, { status: 403 });
     }
 
-    // Special-case: MetCons filtered by keyword in tasks (e.g., "metcons with barbells")
-    {
-      const t = (message || '').toLowerCase()
-      const kwMatch = t.match(/metcon[s]?\s+(?:with|containing|including|featuring)\s+([a-z0-9 ,\-_/]+)/i)
-      if (kwMatch) {
-        try {
-          const termBlob = kwMatch[1].toLowerCase().trim()
-          const terms = termBlob
-            .split(/[,]+|\band\b/)
-            .map((s: string) => s.trim())
-            .filter((s: string) => Boolean(s))
-          // Fetch recent completed user metcons
-          const { data: metRows } = await supabase
-            .from('program_metcons')
-            .select('metcon_id, percentile, completed_at, programs!inner(user_id)')
-            .eq('programs.user_id', parseInt(userId))
-            .not('completed_at', 'is', null)
-            .order('completed_at', { ascending: false })
-            .limit(50)
-          const rows: any[] = metRows || []
-          if (!rows.length) {
-            const resp = 'I could not find any completed MetCons to search.'
-            await supabase.from('chat_messages').insert({ conversation_id: conversationId, role: 'assistant', content: resp, created_at: new Date().toISOString() })
-            await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
-            return NextResponse.json({ success: true, response: resp, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
-          }
-
-          const ids = Array.from(new Set(rows.map((r: any) => r.metcon_id).filter((v: any) => v !== null && v !== undefined)))
-          const { data: metas } = await supabase
-            .from('metcons')
-            .select('id, tasks')
-            .in('id', ids)
-          const taskText: Record<string, string> = {}
-          for (const m of metas || []) {
-            taskText[String((m as any).id)] = (formatMetconTasks((m as any).tasks) || '').toLowerCase()
-          }
-
-          const filtered = rows.filter((r: any) => {
-            const tt = taskText[String(r.metcon_id)] || ''
-            if (!tt) return false
-            if (!terms.length) return true
-            return terms.some(term => tt.includes(term))
-          })
-
-          if (!filtered.length) {
-            const resp = `I did not find any of your recent MetCons matching: ${terms.join(', ')}`
-            await supabase.from('chat_messages').insert({ conversation_id: conversationId, role: 'assistant', content: resp, created_at: new Date().toISOString() })
-            await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
-            return NextResponse.json({ success: true, response: resp, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
-          }
-
-          const lines: string[] = [`MetCons matching “${terms.join(', ')}”:`]
-          for (const r of filtered.slice(0, 10)) {
-            const d = r.completed_at ? new Date(r.completed_at as any).toLocaleDateString() : 'Unknown date'
-            const name = r.metcon_id ? `MetCon #${r.metcon_id}` : 'MetCon'
-            const pct = (r as any).percentile !== null && (r as any).percentile !== undefined ? `${(r as any).percentile}%ile` : 'percentile not recorded'
-            const tasks = (taskText[String(r.metcon_id)] || '').replace(/\s*\|\s*/g, '; ')
-            lines.push(`• ${d} — ${name}: ${pct}\n  Tasks: ${tasks || '(not available)'}`)
-          }
-
-          const resp = lines.join('\n')
-          await supabase.from('chat_messages').insert({ conversation_id: conversationId, role: 'assistant', content: resp, created_at: new Date().toISOString() })
-          await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
-          return NextResponse.json({ success: true, response: resp, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
-        } catch {}
-      }
-    }
+    // (moved) keyword MetCon handler is placed after conversation creation where conversationId exists
 
     // Special-case: Which profile skills need work?
     {
@@ -215,6 +149,73 @@ export async function POST(
       throw new Error('Failed to store message');
     }
 
+    // Special-case: MetCons filtered by keyword in tasks (e.g., "metcons with barbells")
+    {
+      const t = (message || '').toLowerCase()
+      const kwMatch = t.match(/metcon[s]?\s+(?:with|containing|including|featuring)\s+([a-z0-9 ,\-_/]+)/i)
+      if (kwMatch) {
+        try {
+          const termBlob = kwMatch[1].toLowerCase().trim()
+          const terms = termBlob
+            .split(/[,]+|\band\b/)
+            .map((s: string) => s.trim())
+            .filter((s: string) => Boolean(s))
+          // Fetch recent completed user metcons
+          const { data: metRows } = await supabase
+            .from('program_metcons')
+            .select('metcon_id, percentile, completed_at, programs!inner(user_id)')
+            .eq('programs.user_id', parseInt(userId))
+            .not('completed_at', 'is', null)
+            .order('completed_at', { ascending: false })
+            .limit(50)
+          const rows: any[] = metRows || []
+          if (!rows.length) {
+            const resp = 'I could not find any completed MetCons to search.'
+            await supabase.from('chat_messages').insert({ conversation_id: conversationId, role: 'assistant', content: resp, created_at: new Date().toISOString() })
+            await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
+            return NextResponse.json({ success: true, response: resp, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
+          }
+
+          const ids = Array.from(new Set(rows.map((r: any) => r.metcon_id).filter((v: any) => v !== null && v !== undefined)))
+          const { data: metas } = await supabase
+            .from('metcons')
+            .select('id, tasks')
+            .in('id', ids)
+          const taskText: Record<string, string> = {}
+          for (const m of metas || []) {
+            taskText[String((m as any).id)] = (formatMetconTasks((m as any).tasks) || '').toLowerCase()
+          }
+
+          const filtered = rows.filter((r: any) => {
+            const tt = taskText[String(r.metcon_id)] || ''
+            if (!tt) return false
+            if (!terms.length) return true
+            return terms.some(term => tt.includes(term))
+          })
+
+          if (!filtered.length) {
+            const resp = `I did not find any of your recent MetCons matching: ${terms.join(', ')}`
+            await supabase.from('chat_messages').insert({ conversation_id: conversationId, role: 'assistant', content: resp, created_at: new Date().toISOString() })
+            await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
+            return NextResponse.json({ success: true, response: resp, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
+          }
+
+          const lines: string[] = [`MetCons matching “${terms.join(', ')}”:`]
+          for (const r of filtered.slice(0, 10)) {
+            const d = r.completed_at ? new Date(r.completed_at as any).toLocaleDateString() : 'Unknown date'
+            const name = r.metcon_id ? `MetCon #${r.metcon_id}` : 'MetCon'
+            const pct = (r as any).percentile !== null && (r as any).percentile !== undefined ? `${(r as any).percentile}%ile` : 'percentile not recorded'
+            const tasks = (taskText[String(r.metcon_id)] || '').replace(/\s*\|\s*/g, '; ')
+            lines.push(`• ${d} — ${name}: ${pct}\n  Tasks: ${tasks || '(not available)'}`)
+          }
+
+          const resp = lines.join('\n')
+          await supabase.from('chat_messages').insert({ conversation_id: conversationId, role: 'assistant', content: resp, created_at: new Date().toISOString() })
+          await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
+          return NextResponse.json({ success: true, response: resp, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
+        } catch {}
+      }
+    }
     // Quick route for "list skills practiced" type queries (persist assistant reply)
     if (/(list|show|what are).*skills.*(practic(e|ed)|worked on|trained)/i.test(message || '')) {
       try {
