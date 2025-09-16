@@ -94,6 +94,26 @@ export async function POST(
       })
     }
 
+    // Quick route for "list skills practiced" type queries
+    if (/(list|show|what are).*skills.*(practic(e|ed)|worked on|trained)/i.test(message || '')) {
+      try {
+        const { data: srows } = await supabase
+          .from('performance_logs')
+          .select('exercise_name')
+          .eq('user_id', parseInt(userId))
+          .eq('block', 'SKILLS')
+          .order('logged_at', { ascending: false })
+          .limit(500)
+        const set = new Set<string>()
+        for (const r of srows || []) {
+          if ((r as any).exercise_name) set.add((r as any).exercise_name)
+        }
+        const list = Array.from(set)
+        const msg = list.length ? `Skills practiced so far (${list.length}):\n• ` + list.join('\n• ') : 'I could not find any skills practice yet.'
+        return NextResponse.json({ success: true, response: msg, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
+      } catch {}
+    }
+
     // Get or create conversation
     let conversationId = conversation_id;
     if (!conversationId) {
@@ -472,8 +492,10 @@ function isOnTopic(text: string): boolean {
     'run', 'rowing', 'bike', 'erg', 'metcon', 'wod', 'crossfit', 'olympic lift', 'snatch', 'clean', 'jerk', 'squat', 'deadlift', 'press', 'pull-up', 'ring',
     'goal', 'progression', 'plateau', '1rm', 'one rep max', 'percentage'
   ]
+  // Broaden matching for skills-related intents
+  const extra = ['skill', 'skills', 'practice', 'practiced']
 
-  for (const token of allow) {
+  for (const token of [...allow, ...extra]) {
     if (text.includes(token)) return true
   }
   return false
