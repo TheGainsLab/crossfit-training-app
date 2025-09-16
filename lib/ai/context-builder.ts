@@ -43,6 +43,16 @@ export interface ContextFeatures {
     timeDomainExposure?: Record<'0-6'|'8-12'|'14-20'|'20+', number>
   }
 
+  oly?: {
+    snatch: { sessions: number; avgRpe?: number; avgQuality?: number; latestOneRm?: number }
+    cleanJerk: { sessions: number; avgRpe?: number; avgQuality?: number; latestOneRm?: number }
+    proxies?: {
+      overheadSquat?: { sessions: number; avgRpe?: number; avgQuality?: number }
+      snatchBalance?: { sessions: number; avgRpe?: number; avgQuality?: number }
+      frontSquat?: { sessions: number; avgRpe?: number; avgQuality?: number }
+    }
+  }
+
   blockCounts: Record<'SKILLS'|'STRENGTH AND POWER'|'METCONS', number>
   contextHash: string
 
@@ -135,6 +145,7 @@ export async function buildContextFeatures(supabase: SupabaseClientLike, userId:
     },
     program: { currentProgramId: program?.data?.id, generatedAt: program?.data?.generated_at },
     metcons: { last: metconsLast, timeDomainExposure },
+    oly: computeOlyAggregates(logs, oneRMsLatest),
     blockCounts,
     contextHash: '',
     manifests: {
@@ -231,5 +242,43 @@ function normalizeSkillLevel(level: string): 'DontHave'|'Beginner'|'Intermediate
   if (t.includes('begin')) return 'Beginner'
   if (t.includes('inter')) return 'Intermediate'
   return 'Advanced'
+}
+
+function computeOlyAggregates(
+  logs: Array<{ block: string; exercise_name?: string; rpe?: number; completion_quality?: number }>,
+  oneRmsLatest: Array<{ exercise: string; value: number }>
+) {
+  const agg = (names: string[]) => {
+    let n = 0, rpeSum = 0, rpeN = 0, qSum = 0, qN = 0
+    for (const l of logs) {
+      const ex = (l as any).exercise_name || ''
+      if (!ex) continue
+      if (names.some(name => ex.toLowerCase().includes(name))) {
+        n++
+        const rpe = Number((l as any).rpe)
+        if (Number.isFinite(rpe)) { rpeSum += rpe; rpeN++ }
+        const q = Number((l as any).completion_quality)
+        if (Number.isFinite(q)) { qSum += q; qN++ }
+      }
+    }
+    return { sessions: n, avgRpe: rpeN ? Number((rpeSum / rpeN).toFixed(2)) : undefined, avgQuality: qN ? Number((qSum / qN).toFixed(2)) : undefined }
+  }
+
+  const latest = (exerciseLike: string) => {
+    for (const r of oneRmsLatest) {
+      if (r.exercise.toLowerCase().includes(exerciseLike)) return r.value
+    }
+    return undefined
+  }
+
+  return {
+    snatch: { ...agg(['snatch']), latestOneRm: latest('snatch') },
+    cleanJerk: { ...agg(['clean and jerk', 'clean & jerk', 'c&j', 'clean', 'jerk']), latestOneRm: latest('clean') || latest('jerk') },
+    proxies: {
+      overheadSquat: agg(['overhead squat']),
+      snatchBalance: agg(['snatch balance']),
+      frontSquat: agg(['front squat'])
+    }
+  }
 }
 
