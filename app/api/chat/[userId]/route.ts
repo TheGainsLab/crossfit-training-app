@@ -189,17 +189,41 @@ export async function POST(
       }
     }
 
-    // Special-case: MetCon history (tasks + percentiles)
-    if (/(metcon|met-con|met con)/i.test(message || '') && /(last\s*4|last four|recent)/i.test(message || '')) {
+    // Special-case: MetCon history (tasks + percentiles) with numeric support
+    const lastNMatch = (message || '').match(/last\s*(\d+)/i)
+    const wantsMetcon = /(metcon|met-con|met con)/i.test(message || '')
+    if (wantsMetcon && (lastNMatch || /(recent|last few)/i.test(message || ''))) {
       try {
-        // Fetch last 4 MetCons from performance_logs
-        const { data: rows } = await supabase
-          .from('performance_logs')
-          .select('workout_id, workout_name, percentile, logged_at')
-          .eq('user_id', parseInt(userId))
-          .eq('block', 'METCONS')
-          .order('logged_at', { ascending: false })
-          .limit(4)
+        const n = lastNMatch ? Math.max(1, Math.min(50, parseInt(lastNMatch[1], 10))) : 4
+
+        // Prefer program_metcons joined by programs.user_id for user-scoped metcon results; fallback to performance_logs
+        let rows: any[] = []
+        {
+          const { data: metRows } = await supabase
+            .from('program_metcons')
+            .select('workout_id, workout_name, percentile, completed_at, programs!inner(user_id)')
+            .eq('programs.user_id', parseInt(userId))
+            .not('completed_at', 'is', null)
+            .order('completed_at', { ascending: false })
+            .limit(n)
+          if (metRows && metRows.length > 0) {
+            rows = metRows.map((r: any) => ({
+              workout_id: r.workout_id,
+              workout_name: r.workout_name,
+              percentile: r.percentile,
+              logged_at: r.completed_at
+            }))
+          } else {
+            const { data: perfRows } = await supabase
+              .from('performance_logs')
+              .select('workout_id, workout_name, percentile, logged_at')
+              .eq('user_id', parseInt(userId))
+              .eq('block', 'METCONS')
+              .order('logged_at', { ascending: false })
+              .limit(n)
+            rows = perfRows || []
+          }
+        }
 
         if (!rows || rows.length === 0) {
           return NextResponse.json({
@@ -241,6 +265,55 @@ export async function POST(
         })
       } catch (e) {
         // fall through to assistant if any error
+      }
+    }
+
+    // Special-case: average of last N for a named exercise
+    const avgMatch = (message || '').match(/\b(avg|average)\s+of\s+last\s*(\d+)\s+([a-zA-Z\s]+?)\s*(?:days|sessions)?\b/i)
+    if (avgMatch) {
+      try {
+        const n = Math.max(1, Math.min(50, parseInt(avgMatch[2], 10)))
+        const term = avgMatch[3].trim()
+        const { data: logs } = await supabase
+          .from('performance_logs')
+          .select('exercise_name, rpe, weight_time, reps, sets, logged_at')
+          .eq('user_id', parseInt(userId))
+          .ilike('exercise_name', `%${term}%`)
+          .order('logged_at', { ascending: false })
+          .limit(n)
+        if (!logs || logs.length === 0) {
+          return NextResponse.json({
+            success: true,
+            response: `No recent sessions found matching “${term}”.`,
+            conversation_id: conversationId,
+            responseType: 'data_lookup',
+            coachAlertGenerated: false
+          })
+        }
+        let avgRpe = 0, rpeN = 0
+        let avgLoad = 0, loadN = 0
+        const asNum = (v: any) => {
+          const x = Number(v)
+          return isNaN(x) ? null : x
+        }
+        for (const r of logs) {
+          const rpe = asNum((r as any).rpe)
+          if (rpe !== null) { avgRpe = (avgRpe * rpeN + rpe) / (rpeN + 1); rpeN++ }
+          const load = asNum((r as any).weight_time)
+          if (load !== null) { avgLoad = (avgLoad * loadN + load) / (loadN + 1); loadN++ }
+        }
+        const lines = [`Average over last ${logs.length} ${term} sessions:`]
+        if (rpeN) lines.push(`• Avg RPE: ${avgRpe.toFixed(1)}`)
+        if (loadN) lines.push(`• Avg load/time: ${avgLoad.toFixed(2)} (units as logged)`) 
+        return NextResponse.json({
+          success: true,
+          response: lines.join('\n'),
+          conversation_id: conversationId,
+          responseType: 'data_lookup',
+          coachAlertGenerated: false
+        })
+      } catch (e) {
+        // fall through
       }
     }
 
