@@ -216,34 +216,15 @@ export async function POST(
       try {
         const n = lastNMatch ? Math.max(1, Math.min(50, parseInt(lastNMatch[1], 10))) : 4
 
-        // Prefer program_metcons joined by programs.user_id for user-scoped metcon results; fallback to performance_logs
-        let rows: any[] = []
-        {
-          const { data: metRows } = await supabase
-            .from('program_metcons')
-            .select('workout_id, workout_name, percentile, completed_at, programs!inner(user_id)')
-            .eq('programs.user_id', parseInt(userId))
-            .not('completed_at', 'is', null)
-            .order('completed_at', { ascending: false })
-            .limit(n)
-          if (metRows && metRows.length > 0) {
-            rows = metRows.map((r: any) => ({
-              workout_id: r.workout_id,
-              workout_name: r.workout_name,
-              percentile: r.percentile,
-              logged_at: r.completed_at
-            }))
-          } else {
-            const { data: perfRows } = await supabase
-              .from('performance_logs')
-              .select('workout_id, workout_name, percentile, logged_at')
-              .eq('user_id', parseInt(userId))
-              .eq('block', 'METCONS')
-              .order('logged_at', { ascending: false })
-              .limit(n)
-            rows = perfRows || []
-          }
-        }
+        // Prefer program_metcons joined by programs.user_id (metcon_id, percentile, completed_at)
+        const { data: metRows } = await supabase
+          .from('program_metcons')
+          .select('metcon_id, percentile, completed_at, programs!inner(user_id)')
+          .eq('programs.user_id', parseInt(userId))
+          .not('completed_at', 'is', null)
+          .order('completed_at', { ascending: false })
+          .limit(n)
+        const rows: any[] = metRows || []
 
         if (!rows || rows.length === 0) {
           return NextResponse.json({
@@ -255,23 +236,24 @@ export async function POST(
           })
         }
 
-        const ids = Array.from(new Set(rows.map((r: any) => r.workout_id).filter(Boolean)))
+        const ids = Array.from(new Set(rows.map((r: any) => r.metcon_id).filter((v: any) => v !== null && v !== undefined)))
         let tasksMap: Record<string, string> = {}
         if (ids.length > 0) {
+          // Assume metcons.id = metcon_id
           const { data: metas } = await supabase
             .from('metcons')
-            .select('workout_id, tasks')
-            .in('workout_id', ids)
+            .select('id, tasks')
+            .in('id', ids)
           for (const m of metas || []) {
-            tasksMap[m.workout_id] = m.tasks || ''
+            tasksMap[String(m.id)] = m.tasks || ''
           }
         }
 
-        const lines: string[] = ['Last 4 MetCons:']
+        const lines: string[] = [`Last ${rows.length} MetCons:`]
         for (const r of rows) {
-          const d = r.logged_at ? new Date(r.logged_at as any).toLocaleDateString() : 'Unknown date'
-          const name = r.workout_name || r.workout_id || 'Workout'
-          const tasks = tasksMap[String(r.workout_id)] || '(tasks not available)'
+          const d = r.completed_at ? new Date(r.completed_at as any).toLocaleDateString() : 'Unknown date'
+          const name = r.metcon_id ? `MetCon #${r.metcon_id}` : 'MetCon'
+          const tasks = tasksMap[String(r.metcon_id)] || '(tasks not available)'
           const pct = (r as any).percentile !== null && (r as any).percentile !== undefined ? `${(r as any).percentile}%ile` : 'percentile not recorded'
           lines.push(`• ${d} — ${name}: ${pct}\n  Tasks: ${tasks}`)
         }
