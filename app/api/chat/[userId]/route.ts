@@ -329,6 +329,15 @@ export async function POST(
       if (profile) {
         userContext.profile = profile
       }
+      // Extended profile (user_profiles)
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', parseInt(userId))
+        .single()
+      if (userProfile) {
+        userContext.user_profile = userProfile
+      }
       // Preferences
       const { data: prefs } = await supabase
         .from('user_preferences')
