@@ -17,6 +17,7 @@ export async function callTrainingAssistant(
     message: string
     conversation_history: Array<{ role: 'user'|'assistant'; content: string }>
     user_context: any
+    context_type?: string
   }
 ): Promise<AiClientResponse> {
   const res = await fetch(`${supabaseUrl}/functions/v1/training-assistant`, {
