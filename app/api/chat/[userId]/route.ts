@@ -110,7 +110,7 @@ export async function POST(
         }
         const list = Array.from(set)
         const msg = list.length ? `Skills practiced so far (${list.length}):\n• ` + list.join('\n• ') : 'I could not find any skills practice yet.'
-        return NextResponse.json({ success: true, response: msg, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
+        return NextResponse.json({ success: true, response: msg, conversation_id: (conversation_id || null), responseType: 'data_lookup', coachAlertGenerated: false })
       } catch {}
     }
 
