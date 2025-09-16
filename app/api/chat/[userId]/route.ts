@@ -202,6 +202,64 @@ export async function POST(
       }
     }
 
+    // Special-case: last N skills sessions/blocks
+    {
+      const t = (message || '').toLowerCase()
+      const nMatch = t.match(/last\s*(\d+)\s*(skill|skills)\s*(blocks?|sessions?)/i)
+      const wantRecent = /(recent|last few).*(skill|skills)/i.test(t)
+      const n = nMatch ? Math.max(1, Math.min(50, parseInt(nMatch[1], 10))) : (wantRecent ? 4 : null)
+      if (n) {
+        try {
+          const { data: logs } = await supabase
+            .from('performance_logs')
+            .select('exercise_name, rpe, completion_quality, logged_at')
+            .eq('user_id', parseInt(userId))
+            .eq('block', 'SKILLS')
+            .order('logged_at', { ascending: false })
+            .limit(n)
+
+          if (!logs || logs.length === 0) {
+            const respContent = 'I could not find any recent SKILLS sessions.'
+            await supabase.from('chat_messages').insert({
+              conversation_id: conversationId,
+              role: 'assistant',
+              content: respContent,
+              created_at: new Date().toISOString()
+            })
+            await supabase
+              .from('chat_conversations')
+              .update({ updated_at: new Date().toISOString() })
+              .eq('id', conversationId)
+            return NextResponse.json({ success: true, response: respContent, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
+          }
+
+          const lines: string[] = [`Last ${logs.length} SKILLS sessions:`]
+          for (const row of logs) {
+            const d = (row as any).logged_at ? new Date((row as any).logged_at as any).toLocaleDateString() : 'Unknown date'
+            const ex = (row as any).exercise_name || 'Skills work'
+            const rpe = (row as any).rpe ? `, RPE ${(row as any).rpe}` : ''
+            const q = (row as any).completion_quality ? `, Quality ${(row as any).completion_quality}/4` : ''
+            lines.push(`• ${d}: ${ex}${rpe}${q}`)
+          }
+
+          const respContent = lines.join('\n')
+          await supabase.from('chat_messages').insert({
+            conversation_id: conversationId,
+            role: 'assistant',
+            content: respContent,
+            created_at: new Date().toISOString()
+          })
+          await supabase
+            .from('chat_conversations')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', conversationId)
+          return NextResponse.json({ success: true, response: respContent, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
+        } catch (e) {
+          // fall through
+        }
+      }
+    }
+
     // Special-case: MetCon history (tasks + percentiles) with numeric support
     const lastNMatch = (message || '').match(/last\s*(\d+)/i)
     const wantsMetcon = /(metcon|met-con|met con)/i.test(message || '')
