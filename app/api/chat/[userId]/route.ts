@@ -307,7 +307,7 @@ export async function POST(
             .select('id, tasks')
             .in('id', ids)
           for (const m of metas || []) {
-            tasksMap[String(m.id)] = m.tasks || ''
+            tasksMap[String(m.id)] = formatMetconTasks((m as any).tasks)
           }
         }
 
@@ -547,6 +547,31 @@ export async function POST(
       success: false,
       error: 'Failed to process chat message'
     }, { status: 500 });
+  }
+}
+
+// Render metcon tasks JSON into readable lines
+function formatMetconTasks(tasks: any): string {
+  try {
+    if (!tasks) return ''
+    const arr = Array.isArray(tasks) ? tasks : (typeof tasks === 'string' ? JSON.parse(tasks) : [])
+    if (!Array.isArray(arr)) return ''
+    const lines: string[] = []
+    for (const t of arr) {
+      if (!t || typeof t !== 'object') continue
+      const kind = t.kind || t.type || ''
+      const title = t.title || t.name || ''
+      const reps = t.reps || t.rounds || t.count || ''
+      const details = t.details || t.description || t.movements || ''
+      const movementList = Array.isArray(details) ? details.join(', ') : (typeof details === 'string' ? details : '')
+      const duration = t.time || t.duration || ''
+      const parts = [kind, title, reps, duration].filter(Boolean).join(' ')
+      const line = parts ? `${parts}${movementList ? ': ' + movementList : ''}` : movementList
+      if (line) lines.push(line)
+    }
+    return lines.length ? lines.join(' | ') : ''
+  } catch {
+    return ''
   }
 }
 
