@@ -34,6 +34,61 @@ export async function POST(
 
     // (moved) keyword MetCon handler is placed after conversation creation where conversationId exists
 
+    // (moved) Which profile skills need work? handled after conversation creation
+
+    // Domain fence: allow only fitness/health/nutrition/training/program topics
+    const onTopic = isOnTopic((message || '').toLowerCase())
+    if (!onTopic) {
+      const guidance =
+        "I am GainsAI. I can help with every aspect of training, performance, and relevant topics. " +
+        "Ask me about fitness, health, nutrition, your program, goals, endurance work, or supplements. " +
+        "I have access to your profile and training history, so I can tailor advice to you."
+      return NextResponse.json({
+        success: true,
+        response: guidance,
+        conversation_id: conversation_id || null,
+        responseType: 'domain_guard',
+        coachAlertGenerated: false
+      })
+    }
+
+    // (moved) quick route handled after conversation creation so we can persist assistant reply
+
+    // Get or create conversation
+    let conversationId = conversation_id;
+    if (!conversationId) {
+      const { data: newConversation, error: convError } = await supabase
+        .from('chat_conversations')
+        .insert({
+          user_id: parseInt(userId),
+          title: generateConversationTitle(message),
+          is_active: true
+        })
+        .select('id')
+        .single();
+
+      if (convError) {
+        console.error('Error creating conversation:', convError);
+        throw new Error('Failed to create conversation');
+      }
+      conversationId = newConversation.id;
+    }
+
+    // Store user message
+    const { error: userMessageError } = await supabase
+      .from('chat_messages')
+      .insert({
+        conversation_id: conversationId,
+        role: 'user',
+        content: message,
+        created_at: new Date().toISOString()
+      });
+
+    if (userMessageError) {
+      console.error('Error storing user message:', userMessageError);
+      throw new Error('Failed to store message');
+    }
+
     // Special-case: Which profile skills need work?
     {
       const t = (message || '').toLowerCase()
@@ -94,59 +149,6 @@ export async function POST(
           return NextResponse.json({ success: true, response: resp, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
         } catch {}
       }
-    }
-
-    // Domain fence: allow only fitness/health/nutrition/training/program topics
-    const onTopic = isOnTopic((message || '').toLowerCase())
-    if (!onTopic) {
-      const guidance =
-        "I am GainsAI. I can help with every aspect of training, performance, and relevant topics. " +
-        "Ask me about fitness, health, nutrition, your program, goals, endurance work, or supplements. " +
-        "I have access to your profile and training history, so I can tailor advice to you."
-      return NextResponse.json({
-        success: true,
-        response: guidance,
-        conversation_id: conversation_id || null,
-        responseType: 'domain_guard',
-        coachAlertGenerated: false
-      })
-    }
-
-    // (moved) quick route handled after conversation creation so we can persist assistant reply
-
-    // Get or create conversation
-    let conversationId = conversation_id;
-    if (!conversationId) {
-      const { data: newConversation, error: convError } = await supabase
-        .from('chat_conversations')
-        .insert({
-          user_id: parseInt(userId),
-          title: generateConversationTitle(message),
-          is_active: true
-        })
-        .select('id')
-        .single();
-
-      if (convError) {
-        console.error('Error creating conversation:', convError);
-        throw new Error('Failed to create conversation');
-      }
-      conversationId = newConversation.id;
-    }
-
-    // Store user message
-    const { error: userMessageError } = await supabase
-      .from('chat_messages')
-      .insert({
-        conversation_id: conversationId,
-        role: 'user',
-        content: message,
-        created_at: new Date().toISOString()
-      });
-
-    if (userMessageError) {
-      console.error('Error storing user message:', userMessageError);
-      throw new Error('Failed to store message');
     }
 
     // Special-case: MetCons filtered by keyword in tasks (e.g., "metcons with barbells")
