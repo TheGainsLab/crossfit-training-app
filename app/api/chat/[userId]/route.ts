@@ -25,7 +25,10 @@ export async function POST(
       if (kwMatch) {
         try {
           const termBlob = kwMatch[1].toLowerCase().trim()
-          const terms = termBlob.split(/[,]+|\band\b/).map(s => s.trim()).filter(Boolean)
+          const terms = termBlob
+            .split(/[,]+|\band\b/)
+            .map((s: string) => s.trim())
+            .filter((s: string) => Boolean(s))
           // Fetch recent completed user metcons
           const { data: metRows } = await supabase
             .from('program_metcons')
