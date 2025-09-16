@@ -18,6 +18,133 @@ export async function POST(
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
+    // Special-case: MetCons filtered by keyword in tasks (e.g., "metcons with barbells")
+    {
+      const t = (message || '').toLowerCase()
+      const kwMatch = t.match(/metcon[s]?\s+(?:with|containing|including|featuring)\s+([a-z0-9 ,\-_/]+)/i)
+      if (kwMatch) {
+        try {
+          const termBlob = kwMatch[1].toLowerCase().trim()
+          const terms = termBlob.split(/[,]+|\band\b/).map(s => s.trim()).filter(Boolean)
+          // Fetch recent completed user metcons
+          const { data: metRows } = await supabase
+            .from('program_metcons')
+            .select('metcon_id, percentile, completed_at, programs!inner(user_id)')
+            .eq('programs.user_id', parseInt(userId))
+            .not('completed_at', 'is', null)
+            .order('completed_at', { ascending: false })
+            .limit(50)
+          const rows: any[] = metRows || []
+          if (!rows.length) {
+            const resp = 'I could not find any completed MetCons to search.'
+            await supabase.from('chat_messages').insert({ conversation_id: conversationId, role: 'assistant', content: resp, created_at: new Date().toISOString() })
+            await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
+            return NextResponse.json({ success: true, response: resp, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
+          }
+
+          const ids = Array.from(new Set(rows.map((r: any) => r.metcon_id).filter((v: any) => v !== null && v !== undefined)))
+          const { data: metas } = await supabase
+            .from('metcons')
+            .select('id, tasks')
+            .in('id', ids)
+          const taskText: Record<string, string> = {}
+          for (const m of metas || []) {
+            taskText[String((m as any).id)] = (formatMetconTasks((m as any).tasks) || '').toLowerCase()
+          }
+
+          const filtered = rows.filter((r: any) => {
+            const tt = taskText[String(r.metcon_id)] || ''
+            if (!tt) return false
+            if (!terms.length) return true
+            return terms.some(term => tt.includes(term))
+          })
+
+          if (!filtered.length) {
+            const resp = `I did not find any of your recent MetCons matching: ${terms.join(', ')}`
+            await supabase.from('chat_messages').insert({ conversation_id: conversationId, role: 'assistant', content: resp, created_at: new Date().toISOString() })
+            await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
+            return NextResponse.json({ success: true, response: resp, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
+          }
+
+          const lines: string[] = [`MetCons matching “${terms.join(', ')}”:`]
+          for (const r of filtered.slice(0, 10)) {
+            const d = r.completed_at ? new Date(r.completed_at as any).toLocaleDateString() : 'Unknown date'
+            const name = r.metcon_id ? `MetCon #${r.metcon_id}` : 'MetCon'
+            const pct = (r as any).percentile !== null && (r as any).percentile !== undefined ? `${(r as any).percentile}%ile` : 'percentile not recorded'
+            const tasks = (taskText[String(r.metcon_id)] || '').replace(/\s*\|\s*/g, '; ')
+            lines.push(`• ${d} — ${name}: ${pct}\n  Tasks: ${tasks || '(not available)'}`)
+          }
+
+          const resp = lines.join('\n')
+          await supabase.from('chat_messages').insert({ conversation_id: conversationId, role: 'assistant', content: resp, created_at: new Date().toISOString() })
+          await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
+          return NextResponse.json({ success: true, response: resp, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
+        } catch {}
+      }
+    }
+
+    // Special-case: Which profile skills need work?
+    {
+      const t = (message || '').toLowerCase()
+      const wantsSkillsGap = /(which|what).*(skill|skills).*(need|needs|weak|improv|improve|focus|work)/i.test(t)
+      if (wantsSkillsGap) {
+        try {
+          const { data: skills } = await supabase
+            .from('user_skills')
+            .select('skill_name, skill_level')
+            .eq('user_id', parseInt(userId))
+          if (skills && skills.length) {
+            const low = [] as string[]
+            const mid = [] as string[]
+            for (const s of skills) {
+              const lvl = String((s as any).skill_level || '').toLowerCase()
+              const name = (s as any).skill_name
+              if (!name) continue
+              if (lvl.includes("don't have") || lvl.includes('dont have') || lvl.includes('beginner')) low.push(name)
+              else if (lvl.includes('intermediate')) mid.push(name)
+            }
+            const lines: string[] = []
+            if (low.length) lines.push(`Needs work (profile): ${low.join(', ')}`)
+            if (mid.length) lines.push(`Mid-tier (profile): ${mid.join(', ')}`)
+            if (!lines.length) lines.push('Your profile skills are mostly at Advanced or not set.')
+            const resp = lines.join('\n')
+            await supabase.from('chat_messages').insert({ conversation_id: conversationId, role: 'assistant', content: resp, created_at: new Date().toISOString() })
+            await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
+            return NextResponse.json({ success: true, response: resp, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
+          }
+
+          // Fallback: infer from performance logs (least-practiced or lower quality)
+          const { data: logs } = await supabase
+            .from('performance_logs')
+            .select('exercise_name, completion_quality, logged_at')
+            .eq('user_id', parseInt(userId))
+            .eq('block', 'SKILLS')
+            .order('logged_at', { ascending: false })
+            .limit(200)
+          const stat: Record<string, { n: number; q: number; qn: number }> = {}
+          for (const r of logs || []) {
+            const name = (r as any).exercise_name
+            if (!name) continue
+            if (!stat[name]) stat[name] = { n: 0, q: 0, qn: 0 }
+            stat[name].n += 1
+            const q = Number((r as any).completion_quality)
+            if (!Number.isNaN(q)) { stat[name].q = (stat[name].q * stat[name].qn + q) / (stat[name].qn + 1); stat[name].qn += 1 }
+          }
+          const entries = Object.entries(stat)
+            .map(([name, s]) => ({ name, count: s.n, avgQ: s.qn ? Number(s.q.toFixed(2)) : null }))
+            .sort((a, b) => (a.avgQ ?? 99) - (b.avgQ ?? 99) || a.count - b.count)
+            .slice(0, 8)
+          const lines = entries.length
+            ? ['Skills that likely need focus (inferred from recent practice):', ...entries.map(e => `• ${e.name} — avg quality ${e.avgQ ?? 'n/a'}, sessions ${e.count}`)]
+            : ['I could not infer weak skills from recent logs.']
+          const resp = lines.join('\n')
+          await supabase.from('chat_messages').insert({ conversation_id: conversationId, role: 'assistant', content: resp, created_at: new Date().toISOString() })
+          await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
+          return NextResponse.json({ success: true, response: resp, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
+        } catch {}
+      }
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Verify user has active subscription (same as A1-A9)
