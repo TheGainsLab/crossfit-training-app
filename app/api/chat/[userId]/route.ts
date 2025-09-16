@@ -237,7 +237,7 @@ export async function POST(
       const { data: perf } = await supabase
         .from('performance_logs')
         .select('block, rpe, completion_quality, logged_at')
-        .eq('user_id', userIdNum)
+        .eq('user_id', parseInt(userId))
         .gte('logged_at', sinceIso)
       if (perf) {
         const summary: any = { counts: { SKILLS: 0, 'STRENGTH AND POWER': 0, METCONS: 0 }, avgRPE: 0, n: 0 }
