@@ -189,6 +189,61 @@ export async function POST(
       }
     }
 
+    // Special-case: MetCon history (tasks + percentiles)
+    if (/(metcon|met-con|met con)/i.test(message || '') && /(last\s*4|last four|recent)/i.test(message || '')) {
+      try {
+        // Fetch last 4 MetCons from performance_logs
+        const { data: rows } = await supabase
+          .from('performance_logs')
+          .select('workout_id, workout_name, percentile, logged_at')
+          .eq('user_id', parseInt(userId))
+          .eq('block', 'METCONS')
+          .order('logged_at', { ascending: false })
+          .limit(4)
+
+        if (!rows || rows.length === 0) {
+          return NextResponse.json({
+            success: true,
+            response: 'I could not find any recent MetCons in your logs.',
+            conversation_id: conversationId,
+            responseType: 'data_lookup',
+            coachAlertGenerated: false
+          })
+        }
+
+        const ids = Array.from(new Set(rows.map((r: any) => r.workout_id).filter(Boolean)))
+        let tasksMap: Record<string, string> = {}
+        if (ids.length > 0) {
+          const { data: metas } = await supabase
+            .from('metcons')
+            .select('workout_id, tasks')
+            .in('workout_id', ids)
+          for (const m of metas || []) {
+            tasksMap[m.workout_id] = m.tasks || ''
+          }
+        }
+
+        const lines: string[] = ['Last 4 MetCons:']
+        for (const r of rows) {
+          const d = r.logged_at ? new Date(r.logged_at as any).toLocaleDateString() : 'Unknown date'
+          const name = r.workout_name || r.workout_id || 'Workout'
+          const tasks = tasksMap[String(r.workout_id)] || '(tasks not available)'
+          const pct = (r as any).percentile !== null && (r as any).percentile !== undefined ? `${(r as any).percentile}%ile` : 'percentile not recorded'
+          lines.push(`• ${d} — ${name}: ${pct}\n  Tasks: ${tasks}`)
+        }
+
+        return NextResponse.json({
+          success: true,
+          response: lines.join('\n'),
+          conversation_id: conversationId,
+          responseType: 'data_lookup',
+          coachAlertGenerated: false
+        })
+      } catch (e) {
+        // fall through to assistant if any error
+      }
+    }
+
     // Build lightweight user context to help the assistant personalize replies
     const userContext: any = {}
     {
