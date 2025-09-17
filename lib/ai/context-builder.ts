@@ -215,7 +215,7 @@ export async function buildContextFeatures(supabase: SupabaseClientLike, userId:
     families: {
       recentByFamily: groupRecentByFamily(logs),
       skillsByFamily: groupSkillsByFamily(skillsProfileArr),
-      planByFamily: await summarizePlanByFamily(supabase, ucp?.data?.current_program_id)
+      planByFamily: undefined
     }
   }
 
@@ -811,21 +811,7 @@ function groupSkillsByFamily(skillsProfileArr: Array<{ skillName: string; skillL
   return out
 }
 
-async function summarizePlanByFamily(supabase: SupabaseClientLike, programId?: number | null): Promise<Record<string, number>> {
-  if (!programId) return {}
-  const { data, error } = await supabase
-    .from('program_workouts')
-    .select('main_lift')
-    .eq('program_id', programId)
-  if (error || !Array.isArray(data)) return {}
-  const out: Record<string, number> = {}
-  for (const row of data) {
-    const fam = normalizeExerciseToFamily((row as any).main_lift || '')
-    if (!fam) continue
-    out[fam] = (out[fam] || 0) + 1
-  }
-  return out
-}
+// Note: program_workouts is intentionally not used; upcoming plan summaries are omitted
 
 function buildRatios(row: any | null | undefined) {
   if (!row) return undefined
