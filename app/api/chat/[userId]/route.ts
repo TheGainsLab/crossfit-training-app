@@ -100,48 +100,6 @@ export async function POST(
       throw new Error('Failed to store message');
     }
 
-    // Quick summary: MetCon performance overview
-    {
-      const t = (message || '').toLowerCase()
-      const wantsMetconSummary = /(metcon|met-con|met con).*\b(summary|summarize|overview|performance|so far|how am i)\b/i.test(t)
-      if (wantsMetconSummary) {
-        try {
-          const { data: ums } = await supabase
-            .from('user_metcon_summary')
-            .select('total_metcons_completed, avg_percentile, last_metcon_date, recent_metcons')
-            .eq('user_id', parseInt(userId))
-            .single()
-
-          const total = ums?.total_metcons_completed || 0
-          const avgPct = ums?.avg_percentile != null ? Number(ums.avg_percentile).toFixed(1) : 'n/a'
-          const lastDate = ums?.last_metcon_date ? new Date(ums.last_metcon_date).toLocaleDateString() : 'never'
-          const recent = Array.isArray(ums?.recent_metcons) ? ums!.recent_metcons.slice(0, 5) : []
-
-          const lines: string[] = [
-            `MetCon performance summary:`,
-            `• Total completed: ${total}`,
-            `• Average percentile: ${avgPct}`,
-            `• Last completed: ${lastDate}`
-          ]
-          if (recent.length) {
-            lines.push(`• Recent (latest ${recent.length}):`)
-            for (const r of recent) {
-              const d = r.completed_at ? new Date(r.completed_at).toLocaleDateString() : 'Unknown date'
-              const pct = r.percentile != null ? `${r.percentile}%ile` : 'n/a'
-              lines.push(`  - ${d}: MetCon #${r.metcon_id} — ${pct}`)
-            }
-          }
-
-          const resp = lines.join('\n')
-          await supabase.from('chat_messages').insert({ conversation_id: conversationId, role: 'assistant', content: resp, created_at: new Date().toISOString() })
-          await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
-          return NextResponse.json({ success: true, response: resp, conversation_id: conversationId, responseType: 'data_lookup', coachAlertGenerated: false })
-        } catch (e) {
-          // fall through to assistant
-        }
-      }
-    }
-
     // Special-case: Which profile skills need work?
     {
       const t = (message || '').toLowerCase()
