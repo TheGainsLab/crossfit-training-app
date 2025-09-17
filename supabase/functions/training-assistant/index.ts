@@ -195,16 +195,15 @@ if (!response.ok) {
   };
 }
 
-function buildTrainingAssistantPrompt(userContext: any, userMessage: string, conversationHistory: any[], safetyAnalysis: any): string {
+function buildTrainingAssistantPrompt(userContext: any, userMessage: string, _conversationHistory: any[], safetyAnalysis: any, contextType?: string): string {
   const lower = (userMessage || '').toLowerCase()
   const wantsOly = /(olympic|oly|snatch|clean\s*&?\s*jerk|clean and jerk)/i.test(lower)
 
-  // Prefer full context from chat route if provided
   const profile = userContext?.identity || userContext?.profile || {}
   const preferences = userContext?.preferences || {}
   const oly = userContext?.oly || {}
 
-  if (wantsOly) {
+  if (wantsOly && oly) {
     const sn = oly?.snatch || {}
     const cj = oly?.cleanJerk || {}
     const proxies = oly?.proxies || {}
@@ -230,13 +229,67 @@ CLEAN & JERK (facts only)
 Now provide a concise interpretation (2–3 lines) based strictly on the above numbers (plateau/progression, likely limiter). If insufficient data, state exactly what is missing. No drills unless explicitly asked.`
   }
 
-  // Default coaching prompt
-  return `You are a knowledgeable CrossFit training assistant. Use the user's actual logged data, preferences, and recent history to answer.
-User: "${userMessage}"
-Rules:
+  // General unified ContextFeatures prompt with context_type steering
+  if (userContext?.identity && userContext?.oneRMs && userContext?.rpePatterns) {
+    const id = userContext.identity || {}
+    const prefs = userContext.preferences || {}
+    const latestRms = Array.isArray(userContext.oneRMs?.latest) ? userContext.oneRMs.latest.slice(0, 3) : []
+    const units = id.units === 'lb' || id.units === 'lbs' || id.units === 'Imperial (lbs)' ? 'lb' : 'kg'
+    const sessions = (userContext.manifests?.performanceLogs?.count) ?? (userContext.lastNLogs?.length ?? 0)
+    const rpeTrend = userContext.rpePatterns?.trend || 'n/a'
+    const q30 = userContext.completionQuality?.d30 ?? 'n/a'
+    const avgPct = (() => {
+      const arr = Array.isArray(userContext.metcons?.last) ? userContext.metcons.last : []
+      const vals = arr.map((m: any) => Number(m.percentile)).filter((v: number) => Number.isFinite(v))
+      if (!vals.length) return null
+      return Number((vals.reduce((a: number, b: number) => a + b, 0) / vals.length).toFixed(1))
+    })()
+    const skillsCount = Array.isArray(userContext.skills?.profile) ? userContext.skills.profile.length : 0
+
+    const header = `You are a knowledgeable CrossFit training assistant.`
+    const contextLine1 = `ATHLETE: ${id.name || 'Athlete'} (${id.abilityLevel || 'unknown'}). Days/week: ${prefs.trainingDaysPerWeek ?? 'n/a'}`
+    const contextLine2 = `Recent sessions: ${sessions}. RPE trend: ${rpeTrend}; Q30d: ${q30}/4`
+    const contextLine3 = `1RMs: ${latestRms.map((r: any) => `${r.exercise} ${r.value}${units}`).join(', ') || 'none'}; Skills profiled: ${skillsCount}${avgPct !== null ? `; MetCon avg percentile: ${avgPct}` : ''}`
+
+    // Guidelines by context_type
+    let guidelines = ''
+    switch (contextType) {
+      case 'performance':
+        guidelines = `Guidelines (context: performance):
+- Compare recent vs baseline (e.g., d14 vs d30 RPE/quality) and block exposure counts.
+- Propose 1–2 tactical tweaks for next week with specific numbers (volume/intensity/time-domain).
+- If data is weak, state exactly what's missing and where to log it.`
+        break
+      case 'historical':
+        guidelines = `Guidelines (context: historical):
+- Summarize trends (e.g., 1RM change%, MetCon percentile trend, session coverage).
+- Provide a concise "Then vs Now" and 1–2 targeted follow-ups/tests to confirm progress.
+- Link gaps to actions (e.g., "log X to enable Y insight").`
+        break
+      case 'basic':
+        guidelines = `Guidelines (context: basic):
+- Give 3 simple, low-risk next steps personalized to profile/preferences.
+- Cite 1–2 concrete facts (e.g., training days/week, a latest 1RM).
+- Avoid deep trend claims without evidence.`
+        break
+      case 'educational':
+        guidelines = `Guidelines (context: educational):
+- Keep to 200–400 words, evidence-based, practical.
+- Personalize lightly by level/preferences; avoid heavy data claims.`
+        break
+      default:
+        guidelines = `Guidelines:
 - Cite concrete numbers (RPE, sessions, 1RMs, percentiles) from context.
 - Be brief and specific. If data is missing, say what and where.
-`
+- Offer 1–3 actionable next steps for the coming week.`
+    }
+
+    const safety = safetyAnalysis?.concerns?.length ? `\nSAFETY: ${safetyAnalysis.concerns.join(', ')}` : ''
+    return `${header}\n${contextLine1}\n${contextLine2}\n${contextLine3}\n\nUSER: "${userMessage}"\n\n${guidelines}${safety}`
+  }
+
+  // Fallback legacy prompt
+  return buildFallbackPrompt(userContext, userMessage, _conversationHistory, safetyAnalysis)
 }
 
 async function analyzeSafetyAndEscalation(message: string, conversationHistory: any[]) {
