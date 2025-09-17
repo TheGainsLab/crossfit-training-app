@@ -31,11 +31,11 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Prefer provided user_context; fallback to building server-side if absent
-    const userContext = user_context || (await gatherTrainingContext(supabase, user_id));
+    // Always use provided ContextFeatures (API guarantees presence)
+    const userContext = user_context;
     
     // Check for safety concerns and coach escalation needs
-    const safetyAnalysis = await analyzeSafetyAndEscalation(message, conversation_history);
+    const safetyAnalysis = await analyzeSafetyAndEscalation(message, conversation_history || []);
 
     // Generate AI response with full training context
     const aiResponse = await generateTrainingAssistantResponse(
