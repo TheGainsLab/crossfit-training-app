@@ -563,6 +563,12 @@ function stableStringify(obj: any): string {
 
 export function classifyQuestionAdvanced(message: string): QuestionClassification {
   const normalized = (message || '').toLowerCase().trim()
+
+  // Strength-focused queries should use performance context
+  const strengthTerms = /(strength|1rm|personal\s*record|pr\b|squat|deadlift|bench|press|clean|snatch|jerk)/i
+  if (strengthTerms.test(normalized)) {
+    return { type: 'performance', confidence: 0.9, requiresDatabase: true, estimatedQueries: 2 }
+  }
   if (isEducationalQuestion(normalized)) {
     return { type: 'educational', confidence: 0.9, requiresDatabase: false, estimatedQueries: 0 }
   }
