@@ -20,7 +20,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ success: false, error: 'Invalid JSON payload' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 
-  const { user_id, conversation_id, message, conversation_history, user_context } = body || {};
+  const { user_id, conversation_id, message, conversation_history, user_context, context_type } = body || {};
 
   try {
 
@@ -42,7 +42,8 @@ serve(async (req) => {
       userContext,
       message,
       conversation_history,
-      safetyAnalysis
+      safetyAnalysis,
+      context_type
     );
     // Do not persist here to avoid duplicates; API route handles persistence
     const messageId: number | null = null;
@@ -151,7 +152,7 @@ async function gatherTrainingContext(supabase: any, user_id: number) {
   };
 }
 
-async function generateTrainingAssistantResponse(userContext: any, userMessage: string, conversationHistory: any[], safetyAnalysis: any) {
+async function generateTrainingAssistantResponse(userContext: any, userMessage: string, conversationHistory: any[], safetyAnalysis: any, contextType?: string) {
 const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');  
 console.log('API Key exists:', !!claudeApiKey);
 console.log('API Key length:', claudeApiKey?.length || 0);
@@ -159,7 +160,7 @@ console.log('API Key starts with sk-ant:', claudeApiKey?.startsWith('sk-ant-'));
 
 if (!claudeApiKey) throw new Error('Claude API key not found');
 
-  const prompt = buildTrainingAssistantPrompt(userContext, userMessage, conversationHistory, safetyAnalysis);
+  const prompt = buildTrainingAssistantPrompt(userContext, userMessage, conversationHistory, safetyAnalysis, contextType);
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
