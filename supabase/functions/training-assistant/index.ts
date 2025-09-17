@@ -34,8 +34,8 @@ serve(async (req) => {
     // Always use provided ContextFeatures (API guarantees presence)
     const userContext = user_context;
     
-    // Check for safety concerns and coach escalation needs
-    const safetyAnalysis = await analyzeSafetyAndEscalation(message, conversation_history || []);
+    // Check for safety concerns and coach escalation needs (uses message + context)
+    const safetyAnalysis = await analyzeSafetyAndEscalation(message, conversation_history || [], userContext);
 
     // Generate AI response with full training context
     const aiResponse = await generateTrainingAssistantResponse(
@@ -292,12 +292,12 @@ Now provide a concise interpretation (2–3 lines) based strictly on the above n
   return buildFallbackPrompt(userContext, userMessage, _conversationHistory, safetyAnalysis)
 }
 
-async function analyzeSafetyAndEscalation(message: string, conversationHistory: any[]) {
+async function analyzeSafetyAndEscalation(message: string, conversationHistory: any[], userContext?: any) {
   const concerns = [];
   let coachAlertNeeded = false;
   let medicalReferralSuggested = false;
 
-  const lowerMessage = message.toLowerCase();
+  const lowerMessage = (message || '').toLowerCase();
 
   // Injury-related keywords
   if (lowerMessage.includes('pain') || lowerMessage.includes('injury') || lowerMessage.includes('hurt')) {
@@ -322,6 +322,18 @@ async function analyzeSafetyAndEscalation(message: string, conversationHistory: 
   // Excessive exercise compulsion
   if (lowerMessage.includes('have to work out') || lowerMessage.includes('cant skip') || lowerMessage.includes('feel guilty')) {
     concerns.push('exercise_compulsion');
+    coachAlertNeeded = true;
+  }
+
+  // Context-aware amplification
+  const rpe30 = Number(userContext?.rpePatterns?.d30);
+  const sessionsPerWeek = Number(userContext?.sessionsPerWeek);
+  if (Number.isFinite(rpe30) && rpe30 >= 8 && lowerMessage.includes('exhaust')) {
+    concerns.push('high_rpe_exhaustion_combo');
+    coachAlertNeeded = true;
+  }
+  if (Number.isFinite(sessionsPerWeek) && sessionsPerWeek > 6 && (lowerMessage.includes('tired') || lowerMessage.includes('burnout') || lowerMessage.includes('cant recover'))) {
+    concerns.push('overfrequency_fatigue_combo');
     coachAlertNeeded = true;
   }
 
@@ -423,12 +435,25 @@ function getCurrentProgramDay(): number {
 function determineResponseType(userMessage: string, aiResponse: string, safetyAnalysis: any): string {
   if (safetyAnalysis.medicalReferralSuggested) return 'medical_referral';
   if (safetyAnalysis.coachAlertNeeded) return 'coach_escalation';
-  
-  const lowerMessage = userMessage.toLowerCase();
+
+  const lowerMessage = (userMessage || '').toLowerCase();
+  const lowerAI = (aiResponse || '').toLowerCase();
+
+  // Prefer classification based on AI output semantics
+  const hasLoadNumbers = /(\d+\s*(?:x|by|×)\s*\d+)|(\d+%\s*1rm)|(rpe\s*\d+(?:\.\d+)?)|(\b\d+\s*(?:reps|sets|minutes|min|cal|meters|m)\b)/i.test(lowerAI);
+  const techniqueCues = /(keep|maintain|neutral spine|brace|bar path|elbow high|knees out|drive|finish|foot position|catch|pull under|tension|tempo|pause)/i.test(lowerAI);
+  const nutritionCues = /(protein|carb|fat|calorie|kcal|hydration|electrolyte|supplement|creatine|caffeine)/i.test(lowerAI);
+  const recoveryCues = /(sleep|rest day|deload|hrv|stress|recovery|fatigue)/i.test(lowerAI);
+
+  if (hasLoadNumbers && !techniqueCues) return 'program_guidance';
+  if (techniqueCues && !hasLoadNumbers) return 'technique_advice';
+  if (nutritionCues) return 'nutrition_guidance';
+  if (recoveryCues) return 'recovery_advice';
+
+  // Fallback to user intent if AI text is ambiguous
   if (lowerMessage.includes('program') || lowerMessage.includes('workout')) return 'program_guidance';
   if (lowerMessage.includes('form') || lowerMessage.includes('technique')) return 'technique_advice';
   if (lowerMessage.includes('nutrition') || lowerMessage.includes('eating')) return 'nutrition_guidance';
   if (lowerMessage.includes('recovery') || lowerMessage.includes('rest')) return 'recovery_advice';
-  
   return 'general_training';
 }
