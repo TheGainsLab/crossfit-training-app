@@ -26,7 +26,7 @@ export interface ContextFeatures {
   }
   rpePatterns: { d7?: number; d30?: number; d90?: number; trend?: 'up'|'down'|'flat' }
   completionQuality: { d7?: number; d30?: number; d90?: number }
-  lastNLogs: Array<{ date: string; block: 'SKILLS'|'STRENGTH AND POWER'|'METCONS'; exercise?: string; rpe?: number; quality?: number; result?: string }>
+  lastNLogs: Array<{ date: string; block: 'SKILLS'|'STRENGTH AND POWER'|'METCONS'; exercise?: string; rpe?: number; quality?: number; result?: string; sets?: number; reps?: number; weight_time?: number }>
 
   skills: {
     profile: Array<{ skillName: string; skillLevel: 'DontHave'|'Beginner'|'Intermediate'|'Advanced' }>
@@ -56,6 +56,15 @@ export interface ContextFeatures {
   blockCounts: Record<'SKILLS'|'STRENGTH AND POWER'|'METCONS', number>
   contextHash: string
 
+  // Optional extended fields
+  sessionsPerWeek?: number
+  ratios?: {
+    limiters?: string[]
+    key?: { frontSquatBackSquat?: number; overheadSquatBackSquat?: number }
+    technicalFocus?: string
+  }
+  performanceRisks?: string[]
+
   // Manifests for unbounded history (counts and ranges)
   manifests?: {
     performanceLogs?: { count: number; earliest?: string; latest?: string }
@@ -68,13 +77,14 @@ export async function buildContextFeatures(supabase: SupabaseClientLike, userId:
   const since90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
 
   // Use optimized views wherever possible; fetch a bounded slice of performance_logs for light aggregates
-  const [ucp, urp, ulo, uss, ums, perfLogsRes] = await Promise.all([
+  const [ucp, urp, ulo, uss, ums, perfLogsRes, ratiosRes] = await Promise.all([
     supabase.from('user_complete_profile').select('*').eq('user_id', userId).single(),
     supabase.from('user_recent_performance').select('*').eq('user_id', userId).single(),
     supabase.from('user_latest_one_rms').select('*').eq('user_id', userId).single(),
     supabase.from('user_skills_summary').select('*').eq('user_id', userId).single(),
     supabase.from('user_metcon_summary').select('*').eq('user_id', userId).single(),
-    supabase.from('performance_logs').select('block, exercise_name, rpe, completion_quality, result, logged_at').eq('user_id', userId).order('logged_at', { ascending: false }).limit(400)
+    supabase.from('performance_logs').select('block, exercise_name, rpe, completion_quality, result, logged_at, sets, reps, weight_time').eq('user_id', userId).order('logged_at', { ascending: false }).limit(500),
+    supabase.from('latest_user_ratios').select('*').eq('user_id', userId).maybeSingle?.() ?? supabase.from('latest_user_ratios').select('*').eq('user_id', userId).single()
   ])
 
   const identity = {
@@ -124,14 +134,17 @@ export async function buildContextFeatures(supabase: SupabaseClientLike, userId:
   const completionQuality = windowAverages(logs, 'completion_quality')
 
   const lastNLogs = logs
-    .slice(0, 20)
+    .slice(0, 100)
     .map(l => ({
       date: l.logged_at,
       block: l.block,
       exercise: l.exercise_name || undefined,
       rpe: typeof l.rpe === 'number' ? l.rpe : undefined,
       quality: typeof l.completion_quality === 'number' ? l.completion_quality : undefined,
-      result: l.result || undefined
+      result: l.result || undefined,
+      sets: typeof (l as any).sets === 'number' ? Number((l as any).sets) : undefined,
+      reps: typeof (l as any).reps === 'number' ? Number((l as any).reps) : undefined,
+      weight_time: typeof (l as any).weight_time === 'number' ? Number((l as any).weight_time) : undefined
     }))
 
   // Metcons recent via view
@@ -168,6 +181,9 @@ export async function buildContextFeatures(supabase: SupabaseClientLike, userId:
     oly: computeOlyAggregates(logs, oneRMsLatest),
     blockCounts,
     contextHash: '',
+    sessionsPerWeek: Number(urp?.data?.sessions_per_week ?? 0) || undefined,
+    ratios: buildRatios(ratiosRes?.data),
+    performanceRisks: buildPerformanceRisks(rpePatterns, completionQuality, Number(urp?.data?.sessions_per_week ?? 0)) ,
     manifests: {
       performanceLogs: {
         count: Number(urp?.data?.total_sessions_all_time || logs.length || 0),
@@ -739,5 +755,37 @@ function computeOlyAggregates(
       frontSquat: agg(['front squat'])
     }
   }
+}
+
+function buildRatios(row: any | null | undefined) {
+  if (!row) return undefined
+  const limiters: string[] = []
+  if (row.needs_upper_back) limiters.push('upper_back')
+  if (row.needs_posterior_chain) limiters.push('posterior_chain')
+  if (row.needs_leg_strength) limiters.push('leg_strength')
+  if (row.needs_upper_body_pulling) limiters.push('upper_body_pulling')
+  return {
+    limiters: limiters.length ? limiters : undefined,
+    key: {
+      frontSquatBackSquat: asNumOrUndef(row.front_squat_back_squat),
+      overheadSquatBackSquat: asNumOrUndef(row.overhead_squat_back_squat)
+    },
+    technicalFocus: row.back_squat_technical_focus || undefined
+  }
+}
+
+function buildPerformanceRisks(rpe: any, quality: any, sessionsPerWeek: number): string[] | undefined {
+  const risks: string[] = []
+  const rpe30 = Number(rpe?.d30)
+  const q30 = Number(quality?.d30)
+  if (Number.isFinite(rpe30) && rpe30 > 8.5) risks.push('high_fatigue')
+  if (Number.isFinite(q30) && q30 < 2.5) risks.push('declining_quality')
+  if (Number.isFinite(sessionsPerWeek) && sessionsPerWeek > 7) risks.push('high_frequency')
+  return risks.length ? risks : undefined
+}
+
+function asNumOrUndef(v: any): number | undefined {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : undefined
 }
 
