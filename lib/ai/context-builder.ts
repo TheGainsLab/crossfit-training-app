@@ -3,6 +3,7 @@
 // NOTE: This is a first pass that focuses on the most impactful signals.
 
 import { buildContextHash } from '@/lib/ai/decision-policy'
+import { normalizeExerciseToFamily } from '@/lib/ai/families'
 
 type SupabaseClientLike = any
 
@@ -71,6 +72,16 @@ export interface ContextFeatures {
     metcons?: { count: number; earliest?: string; latest?: string }
     oneRms?: { count: number; earliest?: string; latest?: string }
   }
+
+  // Families/groupings (exercise taxonomy)
+  families?: {
+    recentByFamily?: Record<string, { sessions: number; avgRpe?: number; avgQuality?: number }>
+    skillsByFamily?: Record<string, { count: number; highestLevel?: 'DontHave'|'Beginner'|'Intermediate'|'Advanced' }>
+    planByFamily?: Record<string, number>
+  }
+
+  // Optional: extracted at API level for current question
+  mentionedExerciseFamily?: string | null
 }
 
 export async function buildContextFeatures(supabase: SupabaseClientLike, userId: number): Promise<ContextFeatures> {
@@ -200,6 +211,11 @@ export async function buildContextFeatures(supabase: SupabaseClientLike, userId:
         earliest: undefined,
         latest: ulo?.data?.last_one_rm_date || undefined
       }
+    },
+    families: {
+      recentByFamily: groupRecentByFamily(logs),
+      skillsByFamily: groupSkillsByFamily(skillsProfileArr),
+      planByFamily: await summarizePlanByFamily(supabase, ucp?.data?.current_program_id)
     }
   }
 
@@ -755,6 +771,60 @@ function computeOlyAggregates(
       frontSquat: agg(['front squat'])
     }
   }
+}
+
+function groupRecentByFamily(logs: Array<{ exercise_name?: string; rpe?: number; completion_quality?: number }>): Record<string, { sessions: number; avgRpe?: number; avgQuality?: number }> {
+  const map: Record<string, { n: number; rpeSum: number; rpeN: number; qSum: number; qN: number }> = {}
+  for (const l of logs) {
+    const fam = normalizeExerciseToFamily((l as any).exercise_name || '')
+    if (!fam) continue
+    if (!map[fam]) map[fam] = { n: 0, rpeSum: 0, rpeN: 0, qSum: 0, qN: 0 }
+    map[fam].n += 1
+    const r = Number((l as any).rpe)
+    if (Number.isFinite(r)) { map[fam].rpeSum += r; map[fam].rpeN += 1 }
+    const q = Number((l as any).completion_quality)
+    if (Number.isFinite(q)) { map[fam].qSum += q; map[fam].qN += 1 }
+  }
+  const out: Record<string, { sessions: number; avgRpe?: number; avgQuality?: number }> = {}
+  for (const fam of Object.keys(map)) {
+    const s = map[fam]
+    out[fam] = {
+      sessions: s.n,
+      avgRpe: s.rpeN ? Number((s.rpeSum / s.rpeN).toFixed(2)) : undefined,
+      avgQuality: s.qN ? Number((s.qSum / s.qN).toFixed(2)) : undefined
+    }
+  }
+  return out
+}
+
+function groupSkillsByFamily(skillsProfileArr: Array<{ skillName: string; skillLevel: 'DontHave'|'Beginner'|'Intermediate'|'Advanced' }>): Record<string, { count: number; highestLevel?: 'DontHave'|'Beginner'|'Intermediate'|'Advanced' }> {
+  const rank = { 'DontHave': 0, 'Beginner': 1, 'Intermediate': 2, 'Advanced': 3 } as const
+  const out: Record<string, { count: number; highestLevel?: 'DontHave'|'Beginner'|'Intermediate'|'Advanced' }> = {}
+  for (const s of skillsProfileArr) {
+    const fam = normalizeExerciseToFamily(s.skillName)
+    if (!fam) continue
+    if (!out[fam]) out[fam] = { count: 0, highestLevel: undefined }
+    out[fam].count += 1
+    const current = out[fam].highestLevel
+    if (!current || rank[s.skillLevel] > rank[current]) out[fam].highestLevel = s.skillLevel
+  }
+  return out
+}
+
+async function summarizePlanByFamily(supabase: SupabaseClientLike, programId?: number | null): Promise<Record<string, number>> {
+  if (!programId) return {}
+  const { data, error } = await supabase
+    .from('program_workouts')
+    .select('main_lift')
+    .eq('program_id', programId)
+  if (error || !Array.isArray(data)) return {}
+  const out: Record<string, number> = {}
+  for (const row of data) {
+    const fam = normalizeExerciseToFamily((row as any).main_lift || '')
+    if (!fam) continue
+    out[fam] = (out[fam] || 0) + 1
+  }
+  return out
 }
 
 function buildRatios(row: any | null | undefined) {

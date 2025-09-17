@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { callTrainingAssistant } from '@/lib/ai/client'
 import { buildContextFeatures, classifyQuestionAdvanced } from '@/lib/ai/context-builder'
+import { normalizeExerciseToFamily } from '@/lib/ai/families'
 
 export async function POST(
   request: NextRequest,
@@ -101,6 +102,12 @@ export async function POST(
     const classification = classifyQuestionAdvanced(message || '')
     // Always build full ContextFeatures
     const contextFeatures = await buildContextFeatures(supabase, parseInt(userId))
+
+    // Extract mentioned exercise family from the message and attach for prompt steering
+    const mentionedExerciseFamily = normalizeExerciseToFamily(message || '')
+    if (mentionedExerciseFamily) {
+      (contextFeatures as any).mentionedExerciseFamily = mentionedExerciseFamily
+    }
 
     // Get conversation history (shorter for basic)
     const { data: conversationHistory, error: historyError } = await supabase
