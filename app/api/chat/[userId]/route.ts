@@ -1,9 +1,7 @@
 // /app/api/chat/[userId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { callTrainingAssistant } from '@/lib/ai/client'
-import { buildContextFeatures, classifyQuestionAdvanced } from '@/lib/ai/context-builder'
-import { normalizeExerciseToFamily } from '@/lib/ai/families'
+import { createAITrainingAssistantForUser } from '@/lib/ai/ai-training-service'
 
 export async function POST(
   request: NextRequest,
@@ -119,27 +117,13 @@ export async function POST(
       // Continue without history rather than fail
     }
 
-    // Build rich context features for the Edge Function
-    const contextFeatures = await buildContextFeatures(supabase as any, parseInt(userId))
-    const classification = classifyQuestionAdvanced(message || '')
-    const mentionedExerciseFamily = normalizeExerciseToFamily(message || '')
-    if (mentionedExerciseFamily) {
-      (contextFeatures as any).mentionedExerciseFamily = mentionedExerciseFamily
-    }
-
-    // Call Supabase Edge Function (training-assistant) with service key
-    const serviceUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!serviceUrl || !serviceKey) {
-      return NextResponse.json({ success: false, error: 'Server configuration error' }, { status: 500 })
-    }
-    const assistantData = await callTrainingAssistant(serviceUrl, serviceKey, {
-      user_id: parseInt(userId),
-      conversation_id: conversationId,
-      message,
-      conversation_history: conversationHistory || [],
-      user_context: contextFeatures,
-      context_type: classification.type
+    // In-route AI assistant bound to the user's Supabase client
+    const ai = createAITrainingAssistantForUser(supabase as any)
+    const assistantData = await ai.generateResponse({
+      userQuestion: message,
+      userId: parseInt(userId),
+      conversationHistory: conversationHistory || [],
+      userContext: await getBasicUserContextInternal(supabase as any, parseInt(userId))
     })
 
     // Store assistant message and update conversation timestamp
@@ -148,7 +132,7 @@ export async function POST(
       .insert({
         conversation_id: conversationId,
         role: 'assistant',
-        content: assistantData.response,
+      content: assistantData.response,
         created_at: new Date().toISOString()
       })
     await supabase
@@ -160,8 +144,8 @@ export async function POST(
       success: true,
       response: assistantData.response,
       conversation_id: conversationId,
-      responseType: assistantData.responseType,
-      coachAlertGenerated: assistantData.coachAlertGenerated
+      responseType: 'program_guidance',
+      coachAlertGenerated: false
     });
 
   } catch (error) {
