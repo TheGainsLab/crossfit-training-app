@@ -17,7 +17,7 @@ export default function Navigation() {
   useEffect(() => {
     const supabase = createClient()
     loadUser()
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event: any, session: { user?: User } | null) => {
       const authedUser = (session?.user as User) || null
       setUser(authedUser)
       if (authedUser) {
