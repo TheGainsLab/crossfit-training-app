@@ -1,0 +1,37 @@
+{
+  "version": "2025-09-18",
+  "hash": "placeholder",
+  "tables": {
+    "performance_logs": {
+      "name": "performance_logs",
+      "description": "Exercise performance records with RPE and form quality.",
+      "key_columns": ["user_id (int)", "exercise_name (text)", "rpe (numeric)", "completion_quality (numeric)", "logged_at (timestamp)"],
+      "use_cases": ["exercise trends", "RPE/quality windows", "recent sessions"]
+    },
+    "latest_user_one_rms": {
+      "name": "latest_user_one_rms",
+      "description": "Current one-rep max values per exercise.",
+      "key_columns": ["user_id (int)", "exercise_name (text)", "one_rm (numeric)"],
+      "use_cases": ["current strength levels", "progress checks"]
+    },
+    "user_recent_performance": {
+      "name": "user_recent_performance",
+      "description": "14/30-day training averages and session counts.",
+      "key_columns": ["user_id (int)", "avg_rpe_30d (numeric)", "avg_quality_30d (numeric)", "sessions_30d (int)"],
+      "use_cases": ["recovery status", "overreaching signals"]
+    },
+    "user_complete_profile": {
+      "name": "user_complete_profile",
+      "description": "Identity, preferences, equipment, current program.",
+      "key_columns": ["user_id (int)", "name (text)", "ability_level (text)", "current_program_id (int)"],
+      "use_cases": ["light personalization"]
+    },
+    "program_metcons": {
+      "name": "program_metcons",
+      "description": "Assigned MetCons and results.",
+      "key_columns": ["program_id (int)", "metcon_id (int)", "percentile (numeric)", "completed_at (timestamp)"],
+      "use_cases": ["conditioning summaries"]
+    }
+  }
+}
+
