@@ -154,6 +154,19 @@ USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level ||
 SCHEMA GUIDANCE:
 ${schemaGuidance}
 
+COMMON PATTERNS (examples):
+- Highest quality skills →
+  SELECT exercise_name, AVG(completion_quality) AS avg_quality, COUNT(*) AS sessions
+  FROM performance_logs
+  WHERE user_id = ${req.userId} AND block = 'SKILLS' AND completion_quality IS NOT NULL
+    AND logged_at >= NOW() - INTERVAL '90 days'
+  GROUP BY exercise_name
+  HAVING COUNT(*) >= 3
+  ORDER BY avg_quality DESC
+  LIMIT 10
+
+- Olympic lifting overview → join recent SKILLS and STRENGTH blocks by exercise family or use user_latest_one_rms for latest 1RMs
+
 Generate only the JSON object described above.`
   }
 
