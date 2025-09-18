@@ -27,7 +27,7 @@ export default function Navigation() {
           .select('name')
           .eq('auth_id', authedUser.id)
           .single()
-          .then(({ data }) => {
+          .then(({ data }: { data?: { name?: string } | null }) => {
             if (data?.name) setUserName(data.name)
           })
       } else {
