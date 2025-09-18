@@ -71,7 +71,8 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   const fetchConversations = async () => {
     try {
       const response = await fetch(`/api/chat/${userId}/conversations`, {
-        headers: {
+credentials: 'include',      
+  headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`, // <-- ADDED
         },
@@ -151,7 +152,8 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
     try {
       const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
-        headers: {
+  credentials: 'include',      
+  headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`, // <-- ADDED
         },
