@@ -34,6 +34,26 @@ export interface TrainingAssistantResponse {
 type CacheEntry = { data: any[]; timestamp: number; ttl: number; sql: string }
 const queryCache = new Map<string, CacheEntry>()
 
+// Build schema allowlist for simple SQL identifier validation
+type TableColumns = Record<string, Set<string>>
+const tableToColumns: TableColumns = (() => {
+  try {
+    const map: TableColumns = {}
+    const rows: Array<{ table_name: string; column_name: string }> = (databaseSchema as any)?.tables || []
+    for (const r of rows) {
+      const t = (r.table_name || '').toLowerCase()
+      const c = (r.column_name || '').toLowerCase()
+      if (!t || !c) continue
+      if (!map[t]) map[t] = new Set<string>()
+      map[t].add(c)
+    }
+    return map
+  } catch {
+    return {}
+  }
+})()
+const allowedTables = new Set<string>(Object.keys(tableToColumns))
+
 function getCacheKey(userId: number, sql: string): string {
   const normalized = sql.replace(/\s+/g, ' ').trim().toLowerCase()
   return crypto.createHash('md5').update(`user:${userId}|${normalized}`).digest('hex')
@@ -182,6 +202,7 @@ Generate only the JSON object described above.`
       .map(m => `${m.role.toUpperCase()}: ${m.content}`)
       .join('\n')
     return `You are an expert CrossFit coach analyzing a user's training data. Provide specific, actionable coaching advice based on their actual performance patterns.
+IMPORTANT: Use ONLY the datasets shown below; do not mention skills/exercises not present in DATA. If DATA shows no rows for the intent, say "no data" and stop.
 
 USER: "${req.userQuestion}"
 USER CONTEXT: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'} level, ${req.userContext?.units || 'Unknown'} units)
@@ -200,7 +221,7 @@ INTERPRETATION GUIDE (reminder):
 - RPE 1-6: easy; 7-8: solid; 9-10: limit
 - Quality 4 excellent; 3 good; 2 breakdown; 1 struggling
 
-RESPONSE STRUCTURE:
+RESPONSE STRUCTURE (no invented examples):
 1) Direct answer
 2) Key observations (with exact numbers)
 3) Actionable recommendations
@@ -228,8 +249,17 @@ RESPONSE STRUCTURE:
     const out: string[] = []
     for (const q of parsed.queries.slice(0, 5)) {
       if (!q?.sql || typeof q.sql !== 'string') continue
+      const sql = q.sql.trim()
+      // Enforce required predicates
+      if (!/where\s+.*user_id\s*=\s*\d+/i.test(sql)) continue
+      // Validate identifiers (very light check)
+      const fromMatch = sql.match(/from\s+([a-zA-Z0-9_]+)(?:\s+as\s+([a-zA-Z0-9_]+)|\s+([a-zA-Z0-9_]+))?/i)
+      if (fromMatch) {
+        const table = (fromMatch[1] || '').toLowerCase()
+        if (!allowedTables.has(table)) continue
+      }
       const purpose = (q?.purpose && typeof q.purpose === 'string') ? q.purpose : 'Database query'
-      out.push(`-- Purpose: ${purpose}\n${q.sql.trim()}`)
+      out.push(`-- Purpose: ${purpose}\n${sql}`)
     }
     if (!out.length) throw new Error('No valid queries')
     return out
