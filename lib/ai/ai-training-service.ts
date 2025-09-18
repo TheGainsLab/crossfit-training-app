@@ -206,7 +206,7 @@ Output:
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': this.claudeApiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-3-5-sonnet-20241022', max_tokens: 2000, temperature: 0.2, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model: 'claude-3-5-haiku-20241022', max_tokens: 2000, temperature: 0.2, messages: [{ role: 'user', content: prompt }] })
     })
     if (!res.ok) throw new Error(`Claude API error ${res.status}`)
     const data = await res.json()
