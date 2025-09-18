@@ -1,7 +1,9 @@
 // /app/api/chat/[userId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { createAITrainingAssistantForUser } from '@/lib/ai/ai-training-service'
+import { callTrainingAssistant } from '@/lib/ai/client'
+import { buildContextFeatures, classifyQuestionAdvanced } from '@/lib/ai/context-builder'
+import { normalizeExerciseToFamily } from '@/lib/ai/families'
 
 export async function POST(
   request: NextRequest,
@@ -117,13 +119,27 @@ export async function POST(
       // Continue without history rather than fail
     }
 
-    // Call AI Training Assistant (LLM + RPC) with user-bound client
-    const ai = createAITrainingAssistantForUser(supabase)
-    const assistantData = await ai.generateResponse({
-      userQuestion: message,
-      userId: parseInt(userId),
-      conversationHistory: conversationHistory || [],
-      userContext: await getBasicUserContextInternal(supabase, parseInt(userId))
+    // Build rich context features for the Edge Function
+    const contextFeatures = await buildContextFeatures(supabase as any, parseInt(userId))
+    const classification = classifyQuestionAdvanced(message || '')
+    const mentionedExerciseFamily = normalizeExerciseToFamily(message || '')
+    if (mentionedExerciseFamily) {
+      (contextFeatures as any).mentionedExerciseFamily = mentionedExerciseFamily
+    }
+
+    // Call Supabase Edge Function (training-assistant) with service key
+    const serviceUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!serviceUrl || !serviceKey) {
+      return NextResponse.json({ success: false, error: 'Server configuration error' }, { status: 500 })
+    }
+    const assistantData = await callTrainingAssistant(serviceUrl, serviceKey, {
+      user_id: parseInt(userId),
+      conversation_id: conversationId,
+      message,
+      conversation_history: conversationHistory || [],
+      user_context: contextFeatures,
+      context_type: classification.type
     })
 
     // Store assistant message and update conversation timestamp
@@ -144,8 +160,8 @@ export async function POST(
       success: true,
       response: assistantData.response,
       conversation_id: conversationId,
-      responseType: 'program_guidance',
-      coachAlertGenerated: false
+      responseType: assistantData.responseType,
+      coachAlertGenerated: assistantData.coachAlertGenerated
     });
 
   } catch (error) {
@@ -156,23 +172,7 @@ export async function POST(
     }, { status: 500 });
   }
 }
-async function getBasicUserContextInternal(userSb: any, userId: number) {
-  try {
-    const { data } = await userSb
-      .from('user_complete_profile')
-      .select('name, ability_level, units, current_program_id')
-      .eq('user_id', userId)
-      .single()
-    return {
-      name: data?.name || 'Athlete',
-      ability_level: data?.ability_level || 'Unknown',
-      units: data?.units || 'Unknown',
-      current_program_id: data?.current_program_id || null
-    }
-  } catch {
-    return { name: 'Athlete', ability_level: 'Unknown', units: 'Unknown', current_program_id: null }
-  }
-}
+// (removed internal basic context; using unified buildContextFeatures instead)
 
 export async function GET(
   _request: NextRequest,
