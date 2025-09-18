@@ -129,7 +129,7 @@ export class AITrainingAssistant {
   }
 
   private buildQueryPrompt(req: TrainingAssistantRequest): string {
-    const schemaGuidance = (this as any).buildSchemaGuidance(req.userQuestion)
+    const schemaGuidance = this.buildSchemaGuidance(req.userQuestion)
     return `You are a database query specialist for a fitness application. Generate the MINIMAL set of SQL queries (1-3) to retrieve data needed to answer the user's question.
 
 STRICT OUTPUT CONTRACT:
@@ -261,6 +261,31 @@ RESPONSE STRUCTURE:
     if (!res.ok) throw new Error(`Claude API error ${res.status}`)
     const data = await res.json()
     return data.content?.[0]?.text || ''
+  }
+
+  private buildSchemaGuidance(userQuestion: string): string {
+    const lower = (userQuestion || '').toLowerCase()
+    let targeted = ''
+    if (/(performance|workout|exercise)/.test(lower)) {
+      targeted += `\n**performance_logs**: block, exercise_name, rpe, completion_quality, logged_at (use WHERE user_id, ORDER BY logged_at DESC)`
+    }
+    if (/(strength|1rm|max|pr)/.test(lower)) {
+      targeted += `\n**user_latest_one_rms**: latest one_rm values by exercise (use WHERE user_id)`
+    }
+    if (/(tired|recovery|rest|overtraining)/.test(lower)) {
+      targeted += `\n**user_recent_performance**: avg_rpe, avg_quality, sessions, trends (use WHERE user_id)`
+    }
+    if (/(program|plan|schedule|today)/.test(lower)) {
+      targeted += `\n**program_workouts**: week, day, main_lift, is_deload (filter by current program if applicable)`
+    }
+    const concept = this.truncateForPrompt(JSON.stringify(conceptualSchema))
+    const full = this.truncateForPrompt(JSON.stringify(databaseSchema))
+    return `${targeted || '\n(Use recent, relevant tables)'}\n\nCONCEPTUAL SCHEMA (summary):\n${concept}\n\nDATABASE SCHEMA (summary):\n${full}`
+  }
+
+  private truncateForPrompt(s: string, max = 1200): string {
+    if (!s) return ''
+    return s.length > max ? s.slice(0, max) + '... (truncated)' : s
   }
 
   private estimateTokens(s: string): number { return Math.ceil((s || '').length / 4) }
