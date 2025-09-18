@@ -1,9 +1,7 @@
 // /app/api/chat/[userId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { callTrainingAssistant } from '@/lib/ai/client'
-import { buildContextFeatures, classifyQuestionAdvanced } from '@/lib/ai/context-builder'
-import { normalizeExerciseToFamily } from '@/lib/ai/families'
+import { createAITrainingAssistantForUser } from '@/lib/ai/ai-training-service'
 
 export async function POST(
   request: NextRequest,
@@ -13,15 +11,23 @@ export async function POST(
     const { userId } = await params;
     const { message, conversation_id } = await request.json();
 
+    // Require user Authorization header (JWT) to bind RLS for RPC calls
+    const authHeader = request.headers.get('authorization') || ''
+    const userToken = authHeader.replace(/^Bearer\s+/i, '')
+    if (!userToken) {
+      return NextResponse.json({ success: false, error: 'Missing Authorization header' }, { status: 401 })
+    }
+
     // Same auth pattern as your working A1-A9 APIs
     const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Per-request user-bound client (RLS-on)
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: `Bearer ${userToken}` } } });
 
     // Verify user has active subscription (same as A1-A9)
     const { data: subscription, error: subError } = await supabase
@@ -98,38 +104,26 @@ export async function POST(
       throw new Error('Failed to store message');
     }
 
-    // Classification for prompt steering only
-    const classification = classifyQuestionAdvanced(message || '')
-    // Always build full ContextFeatures
-    const contextFeatures = await buildContextFeatures(supabase, parseInt(userId))
-
-    // Extract mentioned exercise family from the message and attach for prompt steering
-    const mentionedExerciseFamily = normalizeExerciseToFamily(message || '')
-    if (mentionedExerciseFamily) {
-      (contextFeatures as any).mentionedExerciseFamily = mentionedExerciseFamily
-    }
-
-    // Get conversation history (shorter for basic)
+    // Get conversation history
     const { data: conversationHistory, error: historyError } = await supabase
       .from('chat_messages')
       .select('role, content')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
-      .limit(classification.type === 'basic' ? 8 : 20);
+      .limit(20);
 
     if (historyError) {
       console.error('Error fetching conversation history:', historyError);
       // Continue without history rather than fail
     }
 
-    // Call training assistant Edge Function with full ContextFeatures and context_type
-    const assistantData = await callTrainingAssistant(supabaseUrl, supabaseServiceKey, {
-      user_id: parseInt(userId),
-      conversation_id: conversationId,
-      message,
-      conversation_history: conversationHistory || [],
-      user_context: contextFeatures,
-      context_type: classification.type
+    // Call AI Training Assistant (LLM + RPC) with user-bound client
+    const ai = createAITrainingAssistantForUser(supabase)
+    const assistantData = await ai.generateResponse({
+      userQuestion: message,
+      userId: parseInt(userId),
+      conversationHistory: conversationHistory || [],
+      userContext: await getBasicUserContextInternal(supabase, parseInt(userId))
     })
 
     // Store assistant message and update conversation timestamp
@@ -150,8 +144,8 @@ export async function POST(
       success: true,
       response: assistantData.response,
       conversation_id: conversationId,
-      responseType: assistantData.responseType,
-      coachAlertGenerated: assistantData.coachAlertGenerated
+      responseType: 'program_guidance',
+      coachAlertGenerated: false
     });
 
   } catch (error) {
@@ -160,6 +154,23 @@ export async function POST(
       success: false,
       error: 'Failed to process chat message'
     }, { status: 500 });
+  }
+}
+async function getBasicUserContextInternal(userSb: any, userId: number) {
+  try {
+    const { data } = await userSb
+      .from('user_complete_profile')
+      .select('name, ability_level, units, current_program_id')
+      .eq('user_id', userId)
+      .single()
+    return {
+      name: data?.name || 'Athlete',
+      ability_level: data?.ability_level || 'Unknown',
+      units: data?.units || 'Unknown',
+      current_program_id: data?.current_program_id || null
+    }
+  } catch {
+    return { name: 'Athlete', ability_level: 'Unknown', units: 'Unknown', current_program_id: null }
   }
 }
 
