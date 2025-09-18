@@ -96,9 +96,12 @@ export class AITrainingAssistant {
       const queryPrompt = this.buildQueryPrompt(req)
       const qStart = Date.now()
       const queryPlan = await this.callClaude(queryPrompt)
+      console.debug('[AI][queryPlan]', queryPlan?.slice(0, 800))
       const queries = this.extractQueries(queryPlan)
+      console.debug('[AI][queries]', queries)
       const executions = await this.executeQueries(req.userId, queries)
       const queryTime = Date.now() - qStart
+      console.debug('[AI][executions]', executions.map(e => ({ purpose: e.purpose, rows: e.rowCount })))
 
       const coachingPrompt = this.buildCoachingPrompt(req, executions)
       const rStart = Date.now()
