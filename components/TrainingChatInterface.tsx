@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js' // <-- ADDED
+import { supabase } from '@/lib/supabase/client'
 
 interface Message {
   id?: number
@@ -30,23 +30,19 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   const [showConversations, setShowConversations] = useState(false)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
-  // --- Supabase client + access token state (ADDED) ---
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  // --- Supabase singleton client + access token state ---
   const [token, setToken] = useState<string | null>(null)
 
   // Prime session and subscribe to changes
   useEffect(() => {
     let isMounted = true
 
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }: { data: { session: { access_token?: string } | null } }) => {
       if (!isMounted) return
       setToken(data.session?.access_token ?? null)
     })
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_event: any, session: { access_token?: string } | null) => {
       setToken(session?.access_token ?? null)
     })
 
