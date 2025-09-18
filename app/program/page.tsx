@@ -171,10 +171,12 @@ export default function SettingsPage() {
 
       if (oneRMError) throw oneRMError
 
-      const oneRMMap = new Map(oneRMData?.map(rm => [rm.exercise_name, rm.one_rm]) || [])
-      const allOneRMs = oneRMExercises.map(exercise => ({
+      const oneRMMap: Map<string, number> = new Map(
+        (oneRMData || []).map((rm: { exercise_name: string; one_rm: number }) => [rm.exercise_name, Number(rm.one_rm) || 0])
+      )
+      const allOneRMs: OneRM[] = oneRMExercises.map((exercise: string) => ({
         exercise_name: exercise,
-        one_rm: oneRMMap.get(exercise) || 0
+        one_rm: Number(oneRMMap.get(exercise) ?? 0)
       }))
       setOneRMs(allOneRMs)
 
@@ -185,7 +187,7 @@ export default function SettingsPage() {
         .eq('user_id', userData.id)
 
       if (equipmentError) throw equipmentError
-      setEquipment(equipmentData?.map(eq => eq.equipment_name) || [])
+      setEquipment((equipmentData?.map((eq: { equipment_name: string | null }) => eq.equipment_name).filter(Boolean) as string[]) || [])
 
       // Load skills
       const { data: skillsData, error: skillsError } = await supabase
@@ -200,7 +202,7 @@ export default function SettingsPage() {
 const allSkills: string[] = []
 skillCategories.forEach((category) => {
   category.skills.forEach((skillName: string) => {
-    const userSkill = skillsData?.find((s) => s.skill_name === skillName)
+    const userSkill = skillsData?.find((s: { skill_name: string; skill_level: string }) => s.skill_name === skillName)
     const skillLevel: string = userSkill?.skill_level || 'Unable to perform'
     allSkills.push(skillLevel)
   })   
