@@ -411,7 +411,7 @@ export default function ProfilePage() {
 
           if (skillsData) {
             const skillsMap: {[key: string]: string} = {}
-            skillsData.forEach(skill => {
+            skillsData.forEach((skill: { skill_name: string; skill_level: string }) => {
               let level = 'Don\'t Have'
               if (skill.skill_level.includes('Advanced')) level = 'Advanced'
               else if (skill.skill_level.includes('Intermediate')) level = 'Intermediate'
