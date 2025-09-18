@@ -174,7 +174,9 @@ export default function SettingsPage() {
 
       if (oneRMError) throw oneRMError
 
-      const oneRMMap = new Map(oneRMData?.map(rm => [rm.exercise_name, rm.one_rm]) || [])
+      const oneRMMap = new Map(
+        (oneRMData || []).map((rm: { exercise_name: string; one_rm: number }) => [rm.exercise_name, rm.one_rm])
+      )
       const allOneRMs = oneRMExercises.map(exercise => ({
         exercise_name: exercise,
         one_rm: oneRMMap.get(exercise) || 0
