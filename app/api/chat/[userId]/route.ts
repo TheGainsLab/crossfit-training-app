@@ -174,6 +174,21 @@ async function getBasicUserContextInternal(userSb: any, userId: number) {
   }
 }
 
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) {
+  try {
+    const { userId } = await params
+    if (!userId) {
+      return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 })
+    }
+    return NextResponse.json({ success: true, status: 'ok', userId })
+  } catch (error) {
+    return NextResponse.json({ success: false, error: 'Invalid request' }, { status: 400 })
+  }
+}
+
 // Helper function (copied from your original)
 function generateConversationTitle(firstMessage: string): string {
   const message = firstMessage.toLowerCase();
