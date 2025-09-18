@@ -213,8 +213,14 @@ export default function ExerciseDeepDivePage() {
           .eq('block', selectedBlock);
 
         if (!error && performanceData) {
-          const uniqueExercises = [...new Set(performanceData.map((row: { exercise_name?: string | null }) => row.exercise_name))];
-          exercises = uniqueExercises.filter(name => name);
+          const uniqueExercises: string[] = Array.from(
+            new Set(
+              (performanceData as Array<{ exercise_name?: string | null }>)
+                .map(r => r.exercise_name)
+                .filter((n): n is string => typeof n === 'string' && n.length > 0)
+            )
+          )
+          exercises = uniqueExercises
         }
       } catch (error) {
         console.error('Error fetching exercises for block:', selectedBlock, error);
