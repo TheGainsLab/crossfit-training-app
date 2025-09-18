@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { createClient } from '@supabase/supabase-js' // <-- ADDED
 
 interface Message {
   id?: number
@@ -29,43 +30,79 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   const [showConversations, setShowConversations] = useState(false)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
+  // --- Supabase client + access token state (ADDED) ---
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  const [token, setToken] = useState<string | null>(null)
+
+  // Prime session and subscribe to changes
   useEffect(() => {
-    fetchConversations()
+    let isMounted = true
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!isMounted) return
+      setToken(data.session?.access_token ?? null)
+    })
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setToken(session?.access_token ?? null)
+    })
+
+    return () => {
+      isMounted = false
+      sub.subscription.unsubscribe()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Fetch conversations once we have a token
+  useEffect(() => {
+    if (token) fetchConversations()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token])
+
+  // Keep the list scrolled to bottom on new messages
   useEffect(() => {
     scrollToBottom()
   }, [messages])
 
-const fetchConversations = async () => {
-  try {   
-    const response = await fetch(`/api/chat/${userId}/conversations`) // Changed this line
-    const data = await response.json()
-console.log('API Response:', data) // Add only this line
+  const fetchConversations = async () => {
+    try {
+      const response = await fetch(`/api/chat/${userId}/conversations`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`, // <-- ADDED
+        },
+      })
+      const data = await response.json()
+      console.log('API Response:', data)
 
+      if (data.success) {
+        setConversations(data.conversations || [])
 
-    if (data.success) { 
-      setConversations(data.conversations || [])
-
-      // Load most recent conversation if available
-      if (data.conversations?.length > 0) {
-        loadConversation(data.conversations[0])
+        if (data.conversations?.length > 0) {
+          loadConversation(data.conversations[0])
+        }
+      } else {
+        console.error('Conversations fetch failed:', data)
       }
+    } catch (error) {
+      console.error('Error fetching conversations:', error)
     }
-  } catch (error) {
-    console.error('Error fetching conversations:', error)
   }
-}
 
   const loadConversation = (conversation: Conversation) => {
     setActiveConversationId(conversation.id)
-    
 
-setMessages(conversation.chat_messages?.map(msg => ({
-  role: msg.role,
-  content: msg.content,
-  timestamp: msg.created_at || msg.timestamp || new Date().toISOString()
-})) || [])
+    setMessages(
+      conversation.chat_messages?.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.created_at || msg.timestamp || new Date().toISOString(),
+      })) || []
+    )
     setShowConversations(false)
   }
 
@@ -86,37 +123,55 @@ setMessages(conversation.chat_messages?.map(msg => ({
     e.preventDefault()
     if (!input.trim() || loading) return
 
+    if (!token) {
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'Please log in to use chat.',
+          timestamp: new Date().toISOString(),
+          responseType: 'error',
+        },
+      ])
+      return
+    }
+
     const userMessage = input.trim()
     setInput('')
     setLoading(true)
 
-    // Add user message to UI immediately
+    // Optimistic render of user message
     const tempUserMessage: Message = {
       role: 'user',
       content: userMessage,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     }
     setMessages(prev => [...prev, tempUserMessage])
 
     try {
-const response = await fetch(`/api/chat/${userId}`, {
+      const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`, // <-- ADDED
+        },
         body: JSON.stringify({
           message: userMessage,
-          conversation_id: activeConversationId
-        })
+          conversation_id: activeConversationId,
+        }),
       })
-console.log('Response status:', response.status) // Add this line here
+      console.log('Response status:', response.status)
       const data = await response.json()
 
-      // Handle rate limits gracefully
+      // Rate limit
       if (response.status === 429) {
         const assistantMessage: Message = {
           role: 'assistant',
-          content: (data && (data.message || data.error)) || 'You have reached the chat limit. Please try again later.',
+          content:
+            (data && (data.message || data.error)) ||
+            'You have reached the chat limit. Please try again later.',
           timestamp: new Date().toISOString(),
-          responseType: 'error'
+          responseType: 'error',
         }
         setMessages(prev => [...prev, assistantMessage])
         setLoading(false)
@@ -124,26 +179,22 @@ console.log('Response status:', response.status) // Add this line here
       }
 
       if (data.success) {
-        // Update conversation ID if this is a new conversation
         if (!activeConversationId) {
           setActiveConversationId(data.conversation_id)
         }
 
-        // Add assistant response
         const assistantMessage: Message = {
           role: 'assistant',
           content: data.response,
           timestamp: new Date().toISOString(),
-          responseType: data.responseType
+          responseType: data.responseType,
         }
         setMessages(prev => [...prev, assistantMessage])
-        // Keep domain guard visible; avoid auto-refresh that might clear it
+
         if (data.responseType !== 'domain_guard') {
-          // Show alert if coach was notified
           if (data.coachAlertGenerated) {
-            // Could add a subtle notification here
+            // optional toast/notification
           }
-          // Refresh conversations list to show updated conversation
           fetchConversations()
         }
       } else {
@@ -151,13 +202,12 @@ console.log('Response status:', response.status) // Add this line here
       }
     } catch (error) {
       console.error('Error sending message:', error)
-      
-      // Add error message to chat
       const errorMessage: Message = {
         role: 'assistant',
-        content: 'Sorry, I encountered an error processing your message. Please try again.',
+        content:
+          'Sorry, I encountered an error processing your message. Please try again.',
         timestamp: new Date().toISOString(),
-        responseType: 'error'
+        responseType: 'error',
       }
       setMessages(prev => [...prev, errorMessage])
     } finally {
@@ -169,8 +219,6 @@ console.log('Response status:', response.status) // Add this line here
     if (message.role === 'user') {
       return 'bg-blue-600 text-white ml-auto'
     }
-    
-    // Different styles based on response type
     switch (message.responseType) {
       case 'medical_referral':
         return 'bg-red-50 border border-red-200 text-red-800'
@@ -185,14 +233,22 @@ console.log('Response status:', response.status) // Add this line here
 
   const getResponseTypeIcon = (responseType?: string) => {
     switch (responseType) {
-      case 'medical_referral': return '🏥'
-      case 'coach_escalation': return '👨‍🏫'
-      case 'program_guidance': return '📋'
-      case 'technique_advice': return '🎯'
-      case 'nutrition_guidance': return '🥗'
-      case 'recovery_advice': return '💤'
-      case 'error': return '⚠️'
-      default: return '💪'
+      case 'medical_referral':
+        return '🏥'
+      case 'coach_escalation':
+        return '👨‍🏫'
+      case 'program_guidance':
+        return '📋'
+      case 'technique_advice':
+        return '🎯'
+      case 'nutrition_guidance':
+        return '🥗'
+      case 'recovery_advice':
+        return '💤'
+      case 'error':
+        return '⚠️'
+      default:
+        return '💪'
     }
   }
 
@@ -207,7 +263,7 @@ console.log('Response status:', response.status) // Add this line here
             <p className="text-sm text-gray-600">Ask me anything about your training</p>
           </div>
         </div>
-        
+
         <div className="flex space-x-2">
           <button
             onClick={() => setShowConversations(!showConversations)}
@@ -236,7 +292,9 @@ console.log('Response status:', response.status) // Add this line here
                 key={conv.id}
                 onClick={() => loadConversation(conv)}
                 className={`w-full text-left p-2 text-sm rounded hover:bg-gray-100 ${
-                  activeConversationId === conv.id ? 'bg-blue-50 text-blue-800' : 'text-gray-700'
+                  activeConversationId === conv.id
+                    ? 'bg-blue-50 text-blue-800'
+                    : 'text-gray-700'
                 }`}
               >
                 <div className="font-medium truncate">{conv.title}</div>
@@ -255,17 +313,18 @@ console.log('Response status:', response.status) // Add this line here
           <div className="text-center py-8 text-gray-500">
             <div className="text-4xl mb-4">💬</div>
             <h4 className="font-medium text-gray-900 mb-2">Start a conversation!</h4>
-            <p className="text-sm">Ask me about your workouts, form, nutrition, or any training questions.</p>
-            
-            {/* Suggested questions */}
+            <p className="text-sm">
+              Ask me about your workouts, form, nutrition, or any training questions.
+            </p>
+
             <div className="mt-6 space-y-2">
               <p className="text-xs font-medium text-gray-700">Try asking:</p>
               <div className="flex flex-wrap gap-2 justify-center">
                 {[
                   "How's my squat progression?",
                   "Why was today's workout so hard?",
-                  "Should I modify my program?",
-                  "How can I improve my recovery?"
+                  'Should I modify my program?',
+                  'How can I improve my recovery?',
                 ].map(suggestion => (
                   <button
                     key={suggestion}
@@ -292,13 +351,13 @@ console.log('Response status:', response.status) // Add this line here
                   <span className="capitalize">{message.responseType.replace('_', ' ')}</span>
                 </div>
               )}
-              
+
               <div className="whitespace-pre-wrap">{message.content}</div>
-              
+
               <div className="text-xs opacity-75 mt-2">
-{new Date(message.timestamp || new Date()).toLocaleTimeString([], {
-                  hour: '2-digit', 
-                  minute: '2-digit' 
+                {new Date(message.timestamp || new Date()).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
                 })}
               </div>
             </div>
@@ -310,17 +369,21 @@ console.log('Response status:', response.status) // Add this line here
             <div className="bg-gray-100 text-gray-800 p-3 rounded-lg">
               <div className="flex items-center space-x-2">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 rounded-full animate-bounce bg-gray-500"></div>
+                  <div
+                    className="w-2 h-2 rounded-full animate-bounce bg-gray-500"
+                    style={{ animationDelay: '0.1s' }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 rounded-full animate-bounce bg-gray-500"
+                    style={{ animationDelay: '0.2s' }}
+                  ></div>
                 </div>
                 <span className="text-sm">Thinking...</span>
               </div>
             </div>
           </div>
         )}
-
-        {/* bottom sentinel not needed; we scroll container directly */}
       </div>
 
       {/* Input */}
@@ -332,23 +395,30 @@ console.log('Response status:', response.status) // Add this line here
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about your training..."
             className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            disabled={loading}
+            disabled={loading || !token} // <-- disable until token exists
           />
           <button
             type="submit"
-            disabled={loading || !input.trim()}
+            disabled={loading || !input.trim() || !token} // <-- disable until token exists
             className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? '...' : 'Send'}
           </button>
         </form>
-        
-        <p className="text-xs text-gray-500 mt-2">
-          I have access to your complete training history and can provide personalized advice.
-        </p>
+
+        {!token ? (
+          <p className="text-xs text-red-600 mt-2">
+            Please log in to use chat.
+          </p>
+        ) : (
+          <p className="text-xs text-gray-500 mt-2">
+            I have access to your complete training history and can provide personalized advice.
+          </p>
+        )}
       </div>
     </div>
   )
 }
 
 export default TrainingChatInterface
+
