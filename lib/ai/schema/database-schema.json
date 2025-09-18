@@ -1,63 +1,959 @@
 {
-  "version": "2025-09-18",
-  "hash": "placeholder",
-  "generated_at": "2025-09-18T00:00:00.000Z",
+  "version": "1.0.0",
+  "hash": "f8a4b2c6d9e1a3f7b5c8d2e9f1a4b7c9",
+  "generated_at": "2025-01-17T12:00:00Z",
+  "description": "Complete fitness application database schema for AI query generation",
   "tables": [
     {
-      "table_name": "performance_logs",
+      "table_name": "chat_conversations",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('chat_conversations_id_seq'::regclass)"
+    },
+    {
+      "table_name": "chat_conversations",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "chat_conversations",
+      "column_name": "title",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": "'Training Chat'::character varying"
+    },
+    {
+      "table_name": "chat_conversations",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "chat_conversations",
+      "column_name": "updated_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "chat_conversations",
+      "column_name": "is_active",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "true"
+    },
+    {
+      "table_name": "chat_messages",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('chat_messages_id_seq'::regclass)"
+    },
+    {
+      "table_name": "chat_messages",
+      "column_name": "conversation_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "chat_messages",
+      "column_name": "role",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "chat_messages",
+      "column_name": "content",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "chat_messages",
+      "column_name": "metadata",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": "'{}'::jsonb"
+    },
+    {
+      "table_name": "chat_messages",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "chat_messages",
+      "column_name": "coach_flagged",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "table_name": "chat_messages",
+      "column_name": "safety_review_needed",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "table_name": "coach_applications",
       "column_name": "id",
       "data_type": "integer",
       "is_nullable": "NO",
       "column_default": null
     },
     {
-      "table_name": "performance_logs",
+      "table_name": "coach_applications",
       "column_name": "user_id",
       "data_type": "integer",
       "is_nullable": "NO",
       "column_default": null
     },
     {
-      "table_name": "performance_logs",
-      "column_name": "exercise_name",
+      "table_name": "coach_applications",
+      "column_name": "application_data",
+      "data_type": "jsonb",
+      "is_nullable": "NO",
+      "column_default": "'{}'::jsonb"
+    },
+    {
+      "table_name": "coach_applications",
+      "column_name": "certifications",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_applications",
+      "column_name": "experience_years",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_applications",
+      "column_name": "specialties",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_applications",
+      "column_name": "bio",
       "data_type": "text",
       "is_nullable": "YES",
       "column_default": null
     },
     {
-      "table_name": "performance_logs",
-      "column_name": "rpe",
-      "data_type": "numeric",
+      "table_name": "coach_applications",
+      "column_name": "why_coach",
+      "data_type": "text",
       "is_nullable": "YES",
       "column_default": null
     },
     {
-      "table_name": "performance_logs",
-      "column_name": "completion_quality",
-      "data_type": "numeric",
+      "table_name": "coach_applications",
+      "column_name": "status",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'pending'::character varying"
+    },
+    {
+      "table_name": "coach_applications",
+      "column_name": "reviewed_by",
+      "data_type": "integer",
       "is_nullable": "YES",
       "column_default": null
     },
     {
-      "table_name": "performance_logs",
+      "table_name": "coach_applications",
+      "column_name": "reviewed_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_applications",
+      "column_name": "rejection_reason",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_applications",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "coach_applications",
+      "column_name": "updated_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "coach_athlete_relationships",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_athlete_relationships",
+      "column_name": "coach_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_athlete_relationships",
+      "column_name": "athlete_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_athlete_relationships",
+      "column_name": "permission_level",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'view'::character varying"
+    },
+    {
+      "table_name": "coach_athlete_relationships",
+      "column_name": "status",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'pending'::character varying"
+    },
+    {
+      "table_name": "coach_athlete_relationships",
+      "column_name": "assigned_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "coach_athlete_relationships",
+      "column_name": "assigned_by",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_athlete_relationships",
+      "column_name": "primary_coach",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "table_name": "coach_athlete_relationships",
+      "column_name": "invitation_message",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_athlete_relationships",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "coach_athlete_relationships",
+      "column_name": "updated_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "coach_chat_alerts",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('coach_chat_alerts_id_seq'::regclass)"
+    },
+    {
+      "table_name": "coach_chat_alerts",
+      "column_name": "coach_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_chat_alerts",
+      "column_name": "athlete_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_chat_alerts",
+      "column_name": "conversation_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_chat_alerts",
+      "column_name": "message_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_chat_alerts",
+      "column_name": "alert_type",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_chat_alerts",
+      "column_name": "alert_reason",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_chat_alerts",
+      "column_name": "is_resolved",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "table_name": "coach_chat_alerts",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "coach_notes",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('coach_notes_id_seq'::regclass)"
+    },
+    {
+      "table_name": "coach_notes",
+      "column_name": "coach_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_notes",
+      "column_name": "athlete_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_notes",
+      "column_name": "note_type",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": "'general'::character varying"
+    },
+    {
+      "table_name": "coach_notes",
+      "column_name": "content",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_notes",
+      "column_name": "exercise_name",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_notes",
+      "column_name": "week",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_notes",
+      "column_name": "day",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_notes",
+      "column_name": "performance_log_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_notes",
+      "column_name": "is_private",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "true"
+    },
+    {
+      "table_name": "coach_notes",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "coach_notes",
+      "column_name": "updated_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('coach_program_modifications_id_seq'::regclass)"
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "coach_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "athlete_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "program_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "week",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "day",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "block_name",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "exercise_index",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "modification_type",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "original_data",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "modified_data",
+      "data_type": "jsonb",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "notes",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "coach_program_modifications",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "coaches",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coaches",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coaches",
+      "column_name": "coach_name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "coaches",
+      "column_name": "bio",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coaches",
+      "column_name": "specialties",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coaches",
+      "column_name": "certifications",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coaches",
+      "column_name": "experience_years",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coaches",
+      "column_name": "status",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'approved'::character varying"
+    },
+    {
+      "table_name": "coaches",
+      "column_name": "approved_by",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "coaches",
+      "column_name": "approved_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "coaches",
+      "column_name": "max_athletes",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": "50"
+    },
+    {
+      "table_name": "coaches",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "coaches",
+      "column_name": "updated_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "equipment_options",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('equipment_options_id_seq'::regclass)"
+    },
+    {
+      "table_name": "equipment_options",
+      "column_name": "name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "equipment_options",
+      "column_name": "display_order",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "equipment_options",
+      "column_name": "active",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "true"
+    },
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('exercise_percentile_log_id_seq'::regclass)"
+    },
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "program_metcon_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "metcon_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "exercise_name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "percentile",
+      "data_type": "numeric",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "performance_tier",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "week",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "day",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "time_domain",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "workout_level",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "time_range",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "workout_id",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "exercise_percentile_log",
       "column_name": "logged_at",
-      "data_type": "timestamp",
+      "data_type": "timestamp without time zone",
       "is_nullable": "NO",
       "column_default": null
     },
-
+    {
+      "table_name": "exercise_percentile_log",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('exercises_id_seq'::regclass)"
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "required_equipment",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "prerequisite_1",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "prerequisite_2",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "can_be_skills",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "can_be_technical",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "can_be_strength",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "can_be_accessories",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "can_be_metcons",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "program_notes",
+      "data_type": "jsonb",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "one_rm_reference",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "scaling_for",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "scaling_options",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "difficulty_level",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "technical_dependency",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "bodyweight_accessible",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "lift_groups",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "beginner_weight",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": "5.0"
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "intermediate_weight",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": "5.0"
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "advanced_weight",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": "5.0"
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "default_weight",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": "5.0"
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "skill_index",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "accessory_category",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "performance_cues",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "sport_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": "1"
+    },
+    {
+      "table_name": "exercises",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
     {
       "table_name": "latest_user_one_rms",
       "column_name": "user_id",
       "data_type": "integer",
-      "is_nullable": "NO",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_one_rms",
+      "column_name": "one_rm_index",
+      "data_type": "integer",
+      "is_nullable": "YES",
       "column_default": null
     },
     {
       "table_name": "latest_user_one_rms",
       "column_name": "exercise_name",
-      "data_type": "text",
-      "is_nullable": "NO",
+      "data_type": "character varying",
+      "is_nullable": "YES",
       "column_default": null
     },
     {
@@ -67,12 +963,1341 @@
       "is_nullable": "YES",
       "column_default": null
     },
-
+    {
+      "table_name": "latest_user_one_rms",
+      "column_name": "recorded_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "calculated_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "snatch_back_squat",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "clean_jerk_back_squat",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "jerk_clean",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "power_snatch_snatch",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "power_clean_clean",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "front_squat_back_squat",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "overhead_squat_back_squat",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "back_squat_body_weight",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "deadlift_body_weight",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "bench_press_body_weight",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "weighted_pullup_bench_press",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "push_press_strict_press",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "snatch_clean_jerk",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "weighted_pullup_body_weight",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "needs_upper_back",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "needs_leg_strength",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "needs_posterior_chain",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "needs_upper_body_pressing",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "needs_upper_body_pulling",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "needs_core",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "snatch_technical_count",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "clean_jerk_technical_count",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "back_squat_technical_focus",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "front_squat_technical_focus",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "press_technical_focus",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "snatch_level",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "clean_jerk_level",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "back_squat_level",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_ratios",
+      "column_name": "press_level",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_skills",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_skills",
+      "column_name": "skill_index",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_skills",
+      "column_name": "skill_name",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_skills",
+      "column_name": "skill_level",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "latest_user_skills",
+      "column_name": "recorded_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('metcons_id_seq'::regclass)"
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "workout_id",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "level",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "time_range",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "format",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "max_weight_male",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "max_weight_female",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "required_equipment",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "workout_notes",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "tasks",
+      "data_type": "jsonb",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "male_p90",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "male_p50",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "male_std_dev",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "female_p90",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "female_p50",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "female_std_dev",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "sport_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": "1"
+    },
+    {
+      "table_name": "metcons",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('modified_workouts_id_seq'::regclass)"
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "program_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "week",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "day",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "modified_program",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "modifications_applied",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "is_preview",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "true"
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "applied_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "source",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "signature",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "rationale",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "version",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": "1"
+    },
+    {
+      "table_name": "modified_workouts",
+      "column_name": "applied_by_job_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "one_rm_definitions",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('one_rm_definitions_id_seq'::regclass)"
+    },
+    {
+      "table_name": "one_rm_definitions",
+      "column_name": "one_rm_index",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "one_rm_definitions",
+      "column_name": "exercise_name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "one_rm_definitions",
+      "column_name": "display_order",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "one_rm_definitions",
+      "column_name": "instructions",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('performance_logs_id_seq'::regclass)"
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "program_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "program_workout_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "week",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "day",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "block",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "exercise_name",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "sets",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "reps",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "weight_time",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "result",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "rpe",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "completion_quality",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "flags",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "analysis",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "logged_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "quality_grade",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "performance_logs",
+      "column_name": "set_number",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": "1"
+    },
+    {
+      "table_name": "program_day_overrides",
+      "column_name": "program_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "program_day_overrides",
+      "column_name": "week",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "program_day_overrides",
+      "column_name": "day",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "program_day_overrides",
+      "column_name": "intensity_bias",
+      "data_type": "smallint",
+      "is_nullable": "YES",
+      "column_default": "0"
+    },
+    {
+      "table_name": "program_day_overrides",
+      "column_name": "is_deload",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_metcons",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('program_metcons_id_seq'::regclass)"
+    },
+    {
+      "table_name": "program_metcons",
+      "column_name": "program_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_metcons",
+      "column_name": "program_workout_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_metcons",
+      "column_name": "week",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "program_metcons",
+      "column_name": "day",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "program_metcons",
+      "column_name": "metcon_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_metcons",
+      "column_name": "user_score",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_metcons",
+      "column_name": "percentile",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_metcons",
+      "column_name": "performance_tier",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_metcons",
+      "column_name": "excellent_score",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_metcons",
+      "column_name": "median_score",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_metcons",
+      "column_name": "std_dev",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_metcons",
+      "column_name": "completed_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('program_workouts_id_seq'::regclass)"
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "program_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "week",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "day",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "block",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "exercise_order",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "exercise_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "exercise_name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "sets",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "reps",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "weight_time",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "notes",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "user_result",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "user_rpe",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "completed_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "user_quality",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "daily_calories",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "program_workouts",
+      "column_name": "intensity_bias",
+      "data_type": "smallint",
+      "is_nullable": "YES",
+      "column_default": "0"
+    },
+    {
+      "table_name": "programs",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('programs_id_seq'::regclass)"
+    },
+    {
+      "table_name": "programs",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "programs",
+      "column_name": "program_number",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "programs",
+      "column_name": "weeks_generated",
+      "data_type": "ARRAY",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "programs",
+      "column_name": "user_snapshot",
+      "data_type": "jsonb",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "programs",
+      "column_name": "ratio_snapshot",
+      "data_type": "jsonb",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "programs",
+      "column_name": "created_by_user_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "programs",
+      "column_name": "sport_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": "1"
+    },
+    {
+      "table_name": "programs",
+      "column_name": "generated_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "programs",
+      "column_name": "program_data",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "programs",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "skill_categories",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('skill_categories_id_seq'::regclass)"
+    },
+    {
+      "table_name": "skill_categories",
+      "column_name": "category_name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "skill_categories",
+      "column_name": "display_order",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "skill_categories",
+      "column_name": "description",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "skill_definitions",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('skill_definitions_id_seq'::regclass)"
+    },
+    {
+      "table_name": "skill_definitions",
+      "column_name": "skill_index",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "skill_definitions",
+      "column_name": "skill_name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "skill_definitions",
+      "column_name": "category_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "skill_definitions",
+      "column_name": "progression_levels",
+      "data_type": "jsonb",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "skill_definitions",
+      "column_name": "display_order_in_category",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "name",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "email",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "ability_level",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "body_weight",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "units",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "gender",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "join_date",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "role",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "subscription_tier",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "subscription_status",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "training_days_per_week",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "three_month_goals",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "monthly_primary_goal",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "preferred_metcon_exercises",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "avoided_exercises",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "primary_strength_lifts",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "emphasized_strength_lifts",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "available_equipment",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "current_program_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "weeks_generated",
+      "data_type": "ARRAY",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_complete_profile",
+      "column_name": "program_generated_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_metcon_summary",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_metcon_summary",
+      "column_name": "total_metcons_completed",
+      "data_type": "bigint",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_metcon_summary",
+      "column_name": "avg_percentile",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_metcon_summary",
+      "column_name": "last_metcon_date",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_metcon_summary",
+      "column_name": "recent_metcons",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_one_rms",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('user_one_rms_id_seq'::regclass)"
+    },
+    {
+      "table_name": "user_one_rms",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_one_rms",
+      "column_name": "one_rm_index",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "user_one_rms",
+      "column_name": "exercise_name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "user_one_rms",
+      "column_name": "one_rm",
+      "data_type": "numeric",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "user_one_rms",
+      "column_name": "recorded_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
     {
       "table_name": "user_recent_performance",
       "column_name": "user_id",
       "data_type": "integer",
-      "is_nullable": "NO",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_recent_performance",
+      "column_name": "total_sessions_all_time",
+      "data_type": "bigint",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_recent_performance",
+      "column_name": "last_session_date",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_recent_performance",
+      "column_name": "sessions_14d",
+      "data_type": "bigint",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_recent_performance",
+      "column_name": "avg_rpe_14d",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_recent_performance",
+      "column_name": "avg_quality_14d",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_recent_performance",
+      "column_name": "sessions_30d",
+      "data_type": "bigint",
+      "is_nullable": "YES",
       "column_default": null
     },
     {
@@ -89,28 +2314,425 @@
       "is_nullable": "YES",
       "column_default": null
     },
-
     {
-      "table_name": "user_complete_profile",
+      "table_name": "user_recent_performance",
+      "column_name": "skills_sessions_30d",
+      "data_type": "bigint",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_recent_performance",
+      "column_name": "strength_sessions_30d",
+      "data_type": "bigint",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_recent_performance",
+      "column_name": "metcons_sessions_30d",
+      "data_type": "bigint",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_recent_performance",
+      "column_name": "sessions_per_week",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_skills",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('user_skills_id_seq'::regclass)"
+    },
+    {
+      "table_name": "user_skills",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_skills",
+      "column_name": "skill_index",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "user_skills",
+      "column_name": "skill_name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "user_skills",
+      "column_name": "skill_level",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "user_skills",
+      "column_name": "recorded_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "user_skills_summary",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_skills_summary",
+      "column_name": "skills_profile",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_skills_summary",
+      "column_name": "skills_practiced",
+      "data_type": "bigint",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_skills_summary",
+      "column_name": "total_skills_sessions",
+      "data_type": "bigint",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "user_skills_summary",
+      "column_name": "avg_skills_quality",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('weekly_summaries_id_seq'::regclass)"
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "program_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "user_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "week",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "skills_completed",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": "0"
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "skills_avg_rpe",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "skills_avg_quality",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "technical_completed",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": "0"
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "technical_avg_rpe",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "technical_avg_quality",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "strength_completed",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": "0"
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "strength_avg_rpe",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "strength_avg_quality",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "accessories_completed",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": "0"
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "accessories_avg_rpe",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "accessories_avg_quality",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "metcons_completed",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": "0"
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "metcons_avg_percentile",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "total_exercises_completed",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": "0"
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "overall_avg_rpe",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "overall_avg_quality",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "progression_signals",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "recommendations",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "week_ending_date",
+      "data_type": "date",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "weekly_summaries",
+      "column_name": "calculated_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES",
+      "column_default": "CURRENT_TIMESTAMP"
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "table_name": "workout_completions",
       "column_name": "user_id",
       "data_type": "integer",
       "is_nullable": "NO",
       "column_default": null
     },
     {
-      "table_name": "user_complete_profile",
-      "column_name": "name",
+      "table_name": "workout_completions",
+      "column_name": "program_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "week",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "day",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "block",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "exercise_name",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "sets_completed",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "reps_completed",
       "data_type": "text",
       "is_nullable": "YES",
       "column_default": null
     },
     {
-      "table_name": "user_complete_profile",
-      "column_name": "ability_level",
+      "table_name": "workout_completions",
+      "column_name": "weight_used",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "time_completed",
       "data_type": "text",
       "is_nullable": "YES",
       "column_default": null
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "calories_completed",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "distance_completed",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "rpe",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "notes",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "was_rx",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "scaling_used",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "completed_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "table_name": "workout_completions",
+      "column_name": "set_number",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": "1"
     }
   ]
 }
-

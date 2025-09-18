@@ -1,37 +1,278 @@
 {
-  "version": "2025-09-18",
-  "hash": "placeholder",
+  "version": "1.0.0",
+  "hash": "a1b2c3d4e5f6789",
+  "description": "LLM-optimized conceptual schema for fitness application",
   "tables": {
     "performance_logs": {
       "name": "performance_logs",
-      "description": "Exercise performance records with RPE and form quality.",
-      "key_columns": ["user_id (int)", "exercise_name (text)", "rpe (numeric)", "completion_quality (numeric)", "logged_at (timestamp)"],
-      "use_cases": ["exercise trends", "RPE/quality windows", "recent sessions"]
-    },
-    "latest_user_one_rms": {
-      "name": "latest_user_one_rms",
-      "description": "Current one-rep max values per exercise.",
-      "key_columns": ["user_id (int)", "exercise_name (text)", "one_rm (numeric)"],
-      "use_cases": ["current strength levels", "progress checks"]
+      "description": "Individual exercise performance records with RPE and quality ratings",
+      "key_columns": [
+        "user_id (integer)",
+        "exercise_name (character varying)",
+        "rpe (integer)",
+        "completion_quality (integer)",
+        "weight_time (character varying)",
+        "reps (character varying)",
+        "logged_at (timestamp)",
+        "block (character varying)"
+      ],
+      "relationships": ["program_workouts", "user_one_rms"],
+      "use_cases": [
+        "Exercise performance trends",
+        "RPE and quality analysis", 
+        "Individual set tracking",
+        "Form quality assessment"
+      ]
     },
     "user_recent_performance": {
       "name": "user_recent_performance",
-      "description": "14/30-day training averages and session counts.",
-      "key_columns": ["user_id (int)", "avg_rpe_30d (numeric)", "avg_quality_30d (numeric)", "sessions_30d (int)"],
-      "use_cases": ["recovery status", "overreaching signals"]
+      "description": "Pre-calculated performance trends (14-day and 30-day averages)",
+      "key_columns": [
+        "user_id (integer)",
+        "avg_rpe_14d (numeric)",
+        "avg_quality_14d (numeric)",
+        "avg_rpe_30d (numeric)",
+        "avg_quality_30d (numeric)",
+        "sessions_14d (bigint)",
+        "sessions_30d (bigint)",
+        "last_session_date (timestamp)"
+      ],
+      "use_cases": [
+        "Recovery status assessment",
+        "Overtraining detection",
+        "Training frequency analysis",
+        "Fatigue monitoring"
+      ]
     },
-    "user_complete_profile": {
-      "name": "user_complete_profile",
-      "description": "Identity, preferences, equipment, current program.",
-      "key_columns": ["user_id (int)", "name (text)", "ability_level (text)", "current_program_id (int)"],
-      "use_cases": ["light personalization"]
+    "latest_user_one_rms": {
+      "name": "latest_user_one_rms", 
+      "description": "Current one-rep max values (most recent for each exercise)",
+      "key_columns": [
+        "user_id (integer)",
+        "exercise_name (character varying)",
+        "one_rm (numeric)",
+        "recorded_at (timestamp)",
+        "one_rm_index (integer)"
+      ],
+      "relationships": ["user_one_rms", "latest_user_ratios"],
+      "use_cases": [
+        "Current strength levels",
+        "Strength progression tracking",
+        "Program weight calculations",
+        "Load prescription"
+      ]
+    },
+    "latest_user_ratios": {
+      "name": "latest_user_ratios",
+      "description": "Strength ratios and weakness analysis based on current 1RMs",
+      "key_columns": [
+        "user_id (integer)",
+        "snatch_back_squat (numeric)",
+        "clean_jerk_back_squat (numeric)",
+        "front_squat_back_squat (numeric)",
+        "needs_upper_back (boolean)",
+        "needs_leg_strength (boolean)",
+        "needs_posterior_chain (boolean)"
+      ],
+      "relationships": ["latest_user_one_rms"],
+      "use_cases": [
+        "Weakness identification",
+        "Strength imbalance analysis",
+        "Program focus areas",
+        "Technical emphasis recommendations"
+      ]
+    },
+    "program_workouts": {
+      "name": "program_workouts",
+      "description": "Specific workout prescriptions within programs",
+      "key_columns": [
+        "program_id (integer)",
+        "week (integer)",
+        "day (integer)",
+        "block (character varying)",
+        "exercise_name (character varying)",
+        "sets (character varying)",
+        "reps (character varying)",
+        "weight_time (character varying)"
+      ],
+      "relationships": ["programs", "performance_logs"],
+      "use_cases": [
+        "Daily workout structure",
+        "Exercise prescriptions",
+        "Program adherence tracking",
+        "Workout planning"
+      ]
     },
     "program_metcons": {
       "name": "program_metcons",
-      "description": "Assigned MetCons and results.",
-      "key_columns": ["program_id (int)", "metcon_id (int)", "percentile (numeric)", "completed_at (timestamp)"],
-      "use_cases": ["conditioning summaries"]
+      "description": "MetCon (conditioning) workout assignments and results",
+      "key_columns": [
+        "program_id (integer)",
+        "week (integer)",
+        "day (integer)",
+        "metcon_id (integer)",
+        "user_score (character varying)",
+        "percentile (numeric)",
+        "performance_tier (character varying)"
+      ],
+      "relationships": ["metcons", "programs"],
+      "use_cases": [
+        "Conditioning performance tracking",
+        "MetCon percentile analysis",
+        "Cardiovascular fitness assessment",
+        "Time domain performance"
+      ]
+    },
+    "user_metcon_summary": {
+      "name": "user_metcon_summary",
+      "description": "MetCon performance summary with percentiles and trends",
+      "key_columns": [
+        "user_id (integer)",
+        "total_metcons_completed (bigint)",
+        "avg_percentile (numeric)",
+        "last_metcon_date (timestamp)",
+        "recent_metcons (jsonb)"
+      ],
+      "use_cases": [
+        "Overall conditioning assessment",
+        "MetCon performance trends",
+        "Cardiovascular fitness level",
+        "Conditioning progression"
+      ]
+    },
+    "user_skills": {
+      "name": "user_skills",
+      "description": "Skill level assessments for gymnastic and technical movements",
+      "key_columns": [
+        "user_id (integer)",
+        "skill_name (character varying)",
+        "skill_level (character varying)",
+        "recorded_at (timestamp)",
+        "skill_index (integer)"
+      ],
+      "relationships": ["latest_user_skills", "skill_definitions"],
+      "use_cases": [
+        "Technical skill progression",
+        "Movement quality assessment",
+        "Skill development tracking",
+        "Prerequisites evaluation"
+      ]
+    },
+    "latest_user_skills": {
+      "name": "latest_user_skills",
+      "description": "Current skill levels (most recent assessment for each skill)",
+      "key_columns": [
+        "user_id (integer)",
+        "skill_name (character varying)",
+        "skill_level (character varying)",
+        "recorded_at (timestamp)",
+        "skill_index (integer)"
+      ],
+      "use_cases": [
+        "Current technical abilities",
+        "Skill-based exercise selection",
+        "Movement readiness assessment",
+        "Progression pathway planning"
+      ]
+    },
+    "user_complete_profile": {
+      "name": "user_complete_profile",
+      "description": "Complete user profile with goals, preferences, and settings",
+      "key_columns": [
+        "user_id (integer)",
+        "name (character varying)",
+        "ability_level (character varying)",
+        "body_weight (numeric)",
+        "units (character varying)",
+        "training_days_per_week (integer)",
+        "three_month_goals (text)",
+        "current_program_id (integer)"
+      ],
+      "use_cases": [
+        "User context and goals",
+        "Training preferences",
+        "Ability level assessment",
+        "Program personalization"
+      ]
+    },
+    "weekly_summaries": {
+      "name": "weekly_summaries",
+      "description": "Weekly training summaries with block-specific performance data",
+      "key_columns": [
+        "user_id (integer)",
+        "week (integer)",
+        "program_id (integer)",
+        "skills_completed (integer)",
+        "strength_completed (integer)",
+        "metcons_completed (integer)",
+        "overall_avg_rpe (numeric)",
+        "overall_avg_quality (numeric)"
+      ],
+      "use_cases": [
+        "Weekly performance analysis",
+        "Training volume tracking",
+        "Block-specific assessment",
+        "Program adherence monitoring"
+      ]
+    },
+    "workout_completions": {
+      "name": "workout_completions",
+      "description": "Detailed workout completion data with sets, reps, weights",
+      "key_columns": [
+        "user_id (integer)",
+        "program_id (integer)",
+        "week (integer)",
+        "day (integer)",
+        "exercise_name (text)",
+        "weight_used (numeric)",
+        "rpe (integer)",
+        "completed_at (timestamp)"
+      ],
+      "relationships": ["program_workouts", "performance_logs"],
+      "use_cases": [
+        "Detailed completion tracking",
+        "Load progression analysis",
+        "Workout adherence",
+        "Performance consistency"
+      ]
+    },
+    "modified_workouts": {
+      "name": "modified_workouts",
+      "description": "Coach-modified or customized workout variations",
+      "key_columns": [
+        "user_id (integer)",
+        "program_id (integer)",
+        "week (integer)",
+        "day (integer)",
+        "modified_program (jsonb)",
+        "source (text)"
+      ],
+      "relationships": ["program_workouts", "programs"],
+      "use_cases": [
+        "Personalized workout variations",
+        "Coach modifications",
+        "Program adaptations",
+        "Custom exercise selection"
+      ]
+    },
+    "coach_notes": {
+      "name": "coach_notes",
+      "description": "Coach observations and recommendations for athletes",
+      "key_columns": [
+        "coach_id (integer)",
+        "athlete_id (integer)",
+        "content (text)",
+        "note_type (character varying)",
+        "exercise_name (character varying)",
+        "created_at (timestamp)"
+      ],
+      "relationships": ["coach_athlete_relationships"],
+      "use_cases": [
+        "Coach feedback tracking",
+        "Exercise-specific notes",
+        "Performance observations",
+        "Training recommendations"
+      ]
     }
   }
 }
-
