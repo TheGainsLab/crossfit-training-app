@@ -213,7 +213,7 @@ export default function ExerciseDeepDivePage() {
           .eq('block', selectedBlock);
 
         if (!error && performanceData) {
-          const uniqueExercises = [...new Set(performanceData.map(row => row.exercise_name))];
+          const uniqueExercises = [...new Set(performanceData.map((row: { exercise_name?: string | null }) => row.exercise_name))];
           exercises = uniqueExercises.filter(name => name);
         }
       } catch (error) {
