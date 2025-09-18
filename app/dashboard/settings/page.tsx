@@ -174,12 +174,12 @@ export default function SettingsPage() {
 
       if (oneRMError) throw oneRMError
 
-      const oneRMMap = new Map(
-        (oneRMData || []).map((rm: { exercise_name: string; one_rm: number }) => [rm.exercise_name, rm.one_rm])
+      const oneRMMap: Map<string, number> = new Map(
+        (oneRMData || []).map((rm: { exercise_name: string; one_rm: number }) => [rm.exercise_name, Number(rm.one_rm) || 0])
       )
-      const allOneRMs = oneRMExercises.map(exercise => ({
+      const allOneRMs: OneRM[] = oneRMExercises.map((exercise: string) => ({
         exercise_name: exercise,
-        one_rm: oneRMMap.get(exercise) || 0
+        one_rm: Number(oneRMMap.get(exercise) ?? 0)
       }))
       setOneRMs(allOneRMs)
       // Capture originals for AI trigger detection
@@ -195,9 +195,9 @@ export default function SettingsPage() {
 
       if (equipmentError) throw equipmentError
       // Map legacy names to normalized
-      const rawEquip = equipmentData?.map(eq => eq.equipment_name) || []
+      const rawEquip = (equipmentData?.map((eq: { equipment_name: string | null }) => eq.equipment_name) || []) as (string | null)[]
       const normalized = new Set<string>()
-      rawEquip.forEach(name => {
+      rawEquip.forEach((name: string | null) => {
         if (!name) return
         const n = name.trim()
         if (n === 'Assault Bike') normalized.add('Air Bike')
@@ -228,9 +228,9 @@ export default function SettingsPage() {
 
       // Create skills array matching the order of skill categories
       const allSkills: string[] = []
-      skillCategories.forEach(category => {
-        category.skills.forEach(skillName => {
-          const userSkill = skillsData?.find(s => s.skill_name === skillName)
+      skillCategories.forEach((category) => {
+        category.skills.forEach((skillName) => {
+          const userSkill = skillsData?.find((s: { skill_name: string; skill_level: string }) => s.skill_name === skillName)
           allSkills.push(userSkill?.skill_level || 'Unable to perform')
         })
       })
