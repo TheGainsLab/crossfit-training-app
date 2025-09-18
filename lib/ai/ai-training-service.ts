@@ -2,6 +2,8 @@
 // Single-LLM flow: generate SQL → fetch via RPC with user JWT → synthesize response
 
 import { SupabaseClient, createClient } from '@supabase/supabase-js'
+import conceptualSchema from '@/lib/ai/schema/conceptual-schema.json'
+import databaseSchema from '@/lib/ai/schema/database-schema.json'
 import crypto from 'crypto'
 
 export interface TrainingAssistantRequest {
@@ -127,38 +129,86 @@ export class AITrainingAssistant {
   }
 
   private buildQueryPrompt(req: TrainingAssistantRequest): string {
-    return `You generate minimal SQL (1-5 queries) to answer the question using the user's own data.
-Rules: single SELECT per query; include WHERE user_id = ${req.userId}; add ORDER BY (date DESC) and LIMIT (10-30).
-Return strictly JSON: { "queries": [ { "purpose": "...", "sql": "..." } ] }
+    const schemaGuidance = (this as any).buildSchemaGuidance(req.userQuestion)
+    return `You are a database query specialist for a fitness application. Generate the MINIMAL set of SQL queries (1-3) to retrieve data needed to answer the user's question.
 
-QUESTION: "${req.userQuestion}"
+STRICT OUTPUT CONTRACT:
+- OUTPUT JSON ONLY (no prose, no code fences)
+- EXACT SHAPE:
+{
+  "queries": [
+    { "purpose": "...", "sql": "SELECT ... WHERE user_id = ${req.userId} ... LIMIT X" }
+  ]
+}
+
+HARD RULES:
+1) Every query MUST include: WHERE user_id = ${req.userId}
+2) Use single SELECT per query
+3) LIMIT 10-30 rows; ORDER BY relevant date DESC when applicable
+4) Only include columns that exist
+5) Prefer recent data and focused scopes
+
+USER QUESTION: "${req.userQuestion}"
 USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'}, ${req.userContext?.units || 'Unknown'})
-`
+
+SCHEMA GUIDANCE:
+${schemaGuidance}
+
+Generate only the JSON object described above.`
   }
 
   private buildCoachingPrompt(req: TrainingAssistantRequest, results: QueryExecution[]): string {
-    const data = results.map((r, i) => `Dataset ${i + 1} (${r.purpose}) rows=${r.rowCount}: ${JSON.stringify(r.result.slice(0, 3))}`).join('\n')
-    const recent = (req.conversationHistory || []).slice(-3).map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
-    return `You are a precise coach. Answer using ONLY the data below.
+    const data = results
+      .map((r, i) => `Dataset ${i + 1} (${r.purpose}) rows=${r.rowCount}: ${JSON.stringify(r.result.slice(0, 3))}`)
+      .join('\n')
+    const recent = (req.conversationHistory || [])
+      .slice(-3)
+      .map(m => `${m.role.toUpperCase()}: ${m.content}`)
+      .join('\n')
+    return `You are an expert CrossFit coach analyzing a user's training data. Provide specific, actionable coaching advice based on their actual performance patterns.
 
-QUESTION: "${req.userQuestion}"
-USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'}, ${req.userContext?.units || 'Unknown'})
+USER: "${req.userQuestion}"
+USER CONTEXT: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'} level, ${req.userContext?.units || 'Unknown'} units)
 
-DATA:\n${data || 'none'}
-${recent ? `\nRECENT:\n${recent}` : ''}
+AVAILABLE DATA:
+${data || 'none'}
+${recent ? `\nRECENT CONVERSATION:\n${recent}` : ''}
 
-Output:
+COACHING GUIDELINES:
+1) Be specific: reference actual numbers, dates, and trends from the data
+2) Explain patterns (e.g., rising RPE + declining quality = overreaching)
+3) Give 1-3 concrete next steps (volume/intensity/time-domain)
+4) Stay in scope: only what the data supports
+
+INTERPRETATION GUIDE (reminder):
+- RPE 1-6: easy; 7-8: solid; 9-10: limit
+- Quality 4 excellent; 3 good; 2 breakdown; 1 struggling
+
+RESPONSE STRUCTURE:
 1) Direct answer
-2) Key observations with exact numbers
-3) 1-3 actionable next steps (volume/intensity/time-domain)
-4) Sources (list datasets used)
+2) Key observations (with exact numbers)
+3) Actionable recommendations
+4) Sources (datasets used)
 `
   }
 
   private extractQueries(responseText: string): string[] {
-    const text = responseText.replace(/```json\s*|```/g, '').trim()
-    const parsed = JSON.parse(text)
-    if (!parsed || !Array.isArray(parsed.queries)) throw new Error('Invalid query JSON')
+    // Strip common wrappers
+    let text = (responseText || '').replace(/```json\s*|```/g, '').trim()
+    let parsed: any = null
+    try {
+      parsed = JSON.parse(text)
+    } catch {
+      // Fallback: attempt to locate first JSON object in the string
+      const match = text.match(/\{[\s\S]*\}/)
+      if (match) {
+        try { parsed = JSON.parse(match[0]) } catch {}
+      }
+    }
+    if (!parsed || !Array.isArray(parsed.queries)) {
+      // Safe default: no queries (coach prompt will reflect 'none')
+      return []
+    }
     const out: string[] = []
     for (const q of parsed.queries.slice(0, 5)) {
       if (!q?.sql || typeof q.sql !== 'string') continue
