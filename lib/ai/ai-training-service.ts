@@ -115,7 +115,13 @@ export class AITrainingAssistant {
     try {
       const queryPrompt = this.buildQueryPrompt(req)
       const qStart = Date.now()
-      const queryPlan = await this.callClaude(queryPrompt)
+      // Use Sonnet (or configured planner model) for query planning, fallback to Haiku
+      let queryPlan: string
+      try {
+        queryPlan = await this.callClaudeWithModel(process.env.CLAUDE_PLANNER_MODEL || 'claude-3-5-sonnet-20241022', queryPrompt, 0.2)
+      } catch (_e) {
+        queryPlan = await this.callClaudeWithModel(process.env.CLAUDE_COACH_MODEL || 'claude-3-5-haiku-20241022', queryPrompt, 0.2)
+      }
       console.debug('[AI][queryPlan]', queryPlan?.slice(0, 800))
       const queries = this.extractQueries(queryPlan)
       console.debug('[AI][queries]', queries)
@@ -125,7 +131,7 @@ export class AITrainingAssistant {
 
       const coachingPrompt = this.buildCoachingPrompt(req, executions)
       const rStart = Date.now()
-      const coaching = await this.callClaude(coachingPrompt)
+      const coaching = await this.callClaudeWithModel(process.env.CLAUDE_COACH_MODEL || 'claude-3-5-haiku-20241022', coachingPrompt, 0.3)
       const responseTime = Date.now() - rStart
 
       const totalTime = Date.now() - t0
@@ -170,6 +176,7 @@ HARD RULES:
 3) LIMIT 10-30 rows; ORDER BY relevant date DESC when applicable
 4) Only include columns that exist
 5) Prefer recent data and focused scopes
+6) Safe numeric parsing: For text numeric fields (e.g., reps), only cast after validating with a numeric-only regex (e.g., column ~ '^[0-9]+$'). Exclude NULL/empty/non-numeric rows from aggregates.
 
 USER QUESTION: "${req.userQuestion}"
 USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'}, ${req.userContext?.units || 'Unknown'})
@@ -187,6 +194,17 @@ COMMON PATTERNS (examples):
   HAVING COUNT(*) >= 3
   ORDER BY avg_quality DESC
   LIMIT 10
+
+- Top skills by total reps →
+  SELECT exercise_name, SUM(reps::int) AS total_reps
+  FROM performance_logs
+  WHERE user_id = ${req.userId}
+    AND block = 'SKILLS'
+    AND reps IS NOT NULL
+    AND reps ~ '^[0-9]+$'
+  GROUP BY exercise_name
+  ORDER BY total_reps DESC
+  LIMIT 2
 
 - Recent metcon results →
   SELECT pm.metcon_id, pm.user_score, pm.percentile, pm.performance_tier, pm.completed_at, pm.week, pm.day
@@ -231,7 +249,7 @@ Generate only the JSON object described above.`
 
     return `You are an expert CrossFit coach analyzing a user's training data. Provide specific, actionable coaching advice based on their actual performance patterns.
 IMPORTANT HARD CONSTRAINTS:
-- Only mention exercises that appear in ALLOWED_EXERCISES below. If an exercise was not returned in the datasets, do not reference it.
+- Only mention entities that appear in ALLOWED_ENTITIES below. If something was not returned in the datasets, do not reference it.
 - If the datasets contain zero rows relevant to the user's question, reply with exactly: "no data".
 
 USER: "${req.userQuestion}"
@@ -330,11 +348,11 @@ RESPONSE STRUCTURE (no invented examples):
     return `${text}\n\nSources:\n${lines.join('\n')}`
   }
 
-  private async callClaude(prompt: string): Promise<string> {
+  private async callClaudeWithModel(model: string, prompt: string, temperature = 0.2): Promise<string> {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': this.claudeApiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-3-5-haiku-20241022', max_tokens: 2000, temperature: 0.2, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model, max_tokens: 2000, temperature, messages: [{ role: 'user', content: prompt }] })
     })
     if (!res.ok) throw new Error(`Claude API error ${res.status}`)
     const data = await res.json()
