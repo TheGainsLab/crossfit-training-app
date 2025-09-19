@@ -139,9 +139,13 @@ export class AITrainingAssistant {
       // Use Sonnet (or configured planner model) for query planning, fallback to Haiku
       let queryPlan: string
       try {
-        queryPlan = await this.callClaudeWithModel(process.env.CLAUDE_PLANNER_MODEL || 'claude-3-5-sonnet-20241022', queryPrompt, 0.2)
+        const plannerModel = process.env.CLAUDE_PLANNER_MODEL || 'claude-3-5-sonnet-20241022'
+        console.debug('[AI][model][planner] using', plannerModel)
+        queryPlan = await this.callClaudeWithModel(plannerModel, queryPrompt, 0.2)
       } catch (_e) {
-        queryPlan = await this.callClaudeWithModel(process.env.CLAUDE_COACH_MODEL || 'claude-3-5-haiku-20241022', queryPrompt, 0.2)
+        const fallbackModel = process.env.CLAUDE_COACH_MODEL || 'claude-3-5-haiku-20241022'
+        console.debug('[AI][model][planner] fallback to', fallbackModel)
+        queryPlan = await this.callClaudeWithModel(fallbackModel, queryPrompt, 0.2)
       }
       console.debug('[AI][queryPlan]', queryPlan?.slice(0, 800))
       const queries = this.extractQueries(queryPlan)
@@ -152,7 +156,9 @@ export class AITrainingAssistant {
 
       const coachingPrompt = this.buildCoachingPrompt(req, executions)
       const rStart = Date.now()
-      const coaching = await this.callClaudeWithModel(process.env.CLAUDE_COACH_MODEL || 'claude-3-5-haiku-20241022', coachingPrompt, 0.3)
+      const coachModel = process.env.CLAUDE_COACH_MODEL || 'claude-3-5-haiku-20241022'
+      console.debug('[AI][model][coach] using', coachModel)
+      const coaching = await this.callClaudeWithModel(coachModel, coachingPrompt, 0.3)
       const responseTime = Date.now() - rStart
 
       const totalTime = Date.now() - t0
