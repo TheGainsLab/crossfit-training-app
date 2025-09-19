@@ -258,6 +258,7 @@ SUBSET_SCHEMA (the ONLY allowed source for this query):
 - Columns: id, program_id, user_id, program_workout_id, week, day, block, exercise_name,
   sets, reps, weight_time, result, rpe, completion_quality, flags, analysis,
   logged_at, quality_grade, set_number
+      - Notes: block common values = 'SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS'
 
 SCHEMA GUIDANCE:
 ${schemaGuidance}
