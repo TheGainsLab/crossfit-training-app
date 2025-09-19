@@ -188,11 +188,11 @@ COMMON PATTERNS (examples):
   ORDER BY avg_quality DESC
   LIMIT 10
 
-- Recent metcon results →
+ - Recent metcon results →
   SELECT exercise_name, result, rpe, completion_quality, logged_at
   FROM performance_logs
   WHERE user_id = ${req.userId}
-    AND block IN ('METCON','CONDITIONING')
+    AND block = 'METCON'
   ORDER BY logged_at DESC
   LIMIT 20
 
@@ -340,7 +340,7 @@ RESPONSE STRUCTURE (no invented examples):
       targeted += `\n**performance_logs**: block, exercise_name, rpe, completion_quality, logged_at (use WHERE user_id, ORDER BY logged_at DESC)`
     }
     if (/(metcon|metcons|conditioning)/.test(lower)) {
-      targeted += `\n**performance_logs**: use block IN ('METCON','CONDITIONING') for conditioning results (result, rpe, completion_quality, logged_at)`
+      targeted += `\n**performance_logs**: use block = 'METCON' for metcon results (result, rpe, completion_quality, logged_at)`
       targeted += `\n**program_metcons**: optional metcon assignments and percentiles (join by program/day if needed)`
       targeted += `\n**user_metcon_summary**: total_metcons_completed, recent_metcons JSON summary`
     }
