@@ -249,6 +249,8 @@ ${glossary}
 SCHEMA GUIDANCE:
 ${schemaGuidance}
 
+${validatorFeedback ? `VALIDATION FEEDBACK (fix these issues exactly):\n${validatorFeedback}\n` : ''}
+
 COMMON PATTERNS (examples):
 - Highest quality skills →
   SELECT exercise_name, AVG(completion_quality) AS avg_quality, COUNT(*) AS sessions
