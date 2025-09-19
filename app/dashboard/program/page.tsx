@@ -150,23 +150,22 @@ export default function ProgramPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
         <div className="bg-white rounded-lg shadow p-6 mb-6 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">My Training Programs</h1>
-          <p className="text-gray-600 mt-1">Month-by-month view with weekly and daily completion</p>
+          <h1 className="text-3xl font-bold text-gray-900">Training Overview</h1>
         </div>
 
         <div className="space-y-8">
           {programs.map((program) => (
             <div key={program.id} className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-bold text-gray-900">Month {program.monthIndex}</h2>
-                <div className="text-sm text-gray-500">Generated {new Date(program.generatedAt).toLocaleDateString()}</div>
               </div>
+              <div className="text-sm text-gray-500 mb-4">Generated {new Date(program.generatedAt).toLocaleDateString()}</div>
 
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {program.weeks.map((week) => (
-                  <div key={week.week} className="border rounded-lg p-4">
+                  <div key={week.week} className="border rounded-lg p-4 bg-slate-blue border-coral">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-gray-900">Week {week.week}</h3>
+                      <h3 className="font-semibold text-coral">Week {week.week}</h3>
                       <Link href={`/dashboard/workout/${program.id}/week/${week.week}/day/1`} className="text-sm text-blue-600 hover:text-blue-700">Open week →</Link>
                     </div>
 
