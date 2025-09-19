@@ -383,8 +383,8 @@ RESPONSE STRUCTURE (no invented examples):
     for (const q of parsed.queries.slice(0, 5)) {
       if (!q?.sql || typeof q.sql !== 'string') continue
       const sql = q.sql.trim()
-      // Enforce required predicates
-      if (!/where\s+.*user_id\s*=\s*\d+/i.test(sql)) continue
+      // Enforce required predicates (allow qualified aliases: p.user_id, programs.user_id)
+      if (!/where\s+.*(?:\b[a-z_]+\.)?user_id\s*=\s*\d+/i.test(sql)) continue
       // Validate identifiers (very light check)
       if (!this.validateSqlAgainstSchema(sql)) continue
       const purpose = (q?.purpose && typeof q.purpose === 'string') ? q.purpose : 'Database query'
