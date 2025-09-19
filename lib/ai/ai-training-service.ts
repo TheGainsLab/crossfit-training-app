@@ -155,24 +155,20 @@ export class AITrainingAssistant {
         queries = this.extractQueries(queryPlan)
       } catch (e) {
         const msg = String((e as Error)?.message || '')
-        if (msg.toLowerCase().includes('no valid queries')) {
-          // Retry once with validator feedback appended to the planner prompt
-          console.debug('[AI][planner][retry] validator feedback:', msg)
-          queryPrompt = this.buildQueryPrompt(req, plannerExtras, msg)
-          try {
-            const plannerModel = process.env.CLAUDE_PLANNER_MODEL || 'claude-3-5-sonnet-20241022'
-            console.debug('[AI][model][planner] retry using', plannerModel)
-            queryPlan = await this.callClaudeWithModel(plannerModel, queryPrompt, 0.1)
-          } catch (_e2) {
-            const fallbackModel = process.env.CLAUDE_COACH_MODEL || 'claude-3-5-haiku-20241022'
-            console.debug('[AI][model][planner] retry fallback to', fallbackModel)
-            queryPlan = await this.callClaudeWithModel(fallbackModel, queryPrompt, 0.1)
-          }
-          console.debug('[AI][queryPlan][retry]', queryPlan?.slice(0, 800))
-          queries = this.extractQueries(queryPlan)
-        } else {
-          throw e
+        // Retry once with specific validator feedback for ANY validation failure
+        console.debug('[AI][planner][retry] validator feedback:', msg)
+        queryPrompt = this.buildQueryPrompt(req, plannerExtras, msg)
+        try {
+          const plannerModel = process.env.CLAUDE_PLANNER_MODEL || 'claude-3-5-sonnet-20241022'
+          console.debug('[AI][model][planner] retry using', plannerModel)
+          queryPlan = await this.callClaudeWithModel(plannerModel, queryPrompt, 0.1)
+        } catch (_e2) {
+          const fallbackModel = process.env.CLAUDE_COACH_MODEL || 'claude-3-5-haiku-20241022'
+          console.debug('[AI][model][planner] retry fallback to', fallbackModel)
+          queryPlan = await this.callClaudeWithModel(fallbackModel, queryPrompt, 0.1)
         }
+        console.debug('[AI][queryPlan][retry]', queryPlan?.slice(0, 800))
+        queries = this.extractQueries(queryPlan)
       }
       console.debug('[AI][queries]', queries)
       const executions = await this.executeQueries(req.userId, queries)
@@ -274,9 +270,10 @@ COMMON PATTERNS (examples):
   LIMIT 2
 
 - Recent metcon results →
-  SELECT pm.metcon_id, pm.user_score, pm.percentile, pm.performance_tier, pm.completed_at, pm.week, pm.day
+  SELECT pm.metcon_id, m.workout_id AS metcon_label, pm.user_score, pm.percentile, pm.performance_tier, pm.completed_at, pm.week, pm.day
   FROM program_metcons pm
   JOIN programs p ON p.id = pm.program_id
+  LEFT JOIN metcons m ON m.id = pm.metcon_id
   WHERE p.user_id = ${req.userId} AND pm.completed_at IS NOT NULL
   ORDER BY pm.completed_at DESC
   LIMIT 20
