@@ -212,6 +212,14 @@ export class AITrainingAssistant {
   ): string {
     const schemaGuidance = this.buildSchemaGuidance(req.userQuestion)
     const glossary = this.buildShorthandGlossary()
+    const intentLower = (req.userQuestion || '').toLowerCase()
+    const wantsSkills = /(\bskill\b|\bskills\b)/.test(intentLower)
+    const wantsAccessories = /(\baccessory\b|\baccessories\b)/.test(intentLower)
+    const blockRule = wantsSkills
+      ? "9) For skills-related requests, add AND block = 'SKILLS' to the WHERE clause"
+      : wantsAccessories
+      ? "9) For accessories-related requests, add AND block = 'ACCESSORIES' to the WHERE clause"
+      : ''
     return `You are a database query specialist for a fitness application. Generate the MINIMAL set of SQL queries (1-3) to retrieve data needed to answer the user's question.
 
 STRICT OUTPUT CONTRACT:
@@ -228,10 +236,13 @@ HARD RULES:
 2) Every query MUST include: WHERE user_id = ${req.userId}
 3) Time column is logged_at; for recent queries, ORDER BY logged_at DESC
 4) LIMIT 10-50 rows; single SELECT per query; no multi-statement SQL
-5) Safe numeric parsing: for text numerics (e.g., reps), only cast after validating with regex (column ~ '^[0-9]+$'). Exclude NULL/empty/non-numeric from aggregates
+5) Safe numeric parsing: for text numerics (e.g., reps), only cast after validating that the value contains ONLY digits WITHOUT using regex:
+   - Use translate(reps, '0123456789', '') = '' to ensure reps is digits-only before casting
+   - Then use reps::int safely in aggregates
 6) Do NOT reference any table/column not listed in SUBSET_SCHEMA
 7) Use ONLY exercise_name values from EXERCISE_NAMES below. Do NOT invent or alias names
 8) One-way normalization: Map user shorthand to canonical names using GLOSSARY below. NEVER turn canonical names into abbreviations. NEVER use abbreviations in SQL
+${blockRule ? blockRule + '\n' : ''}
 
 USER QUESTION: "${req.userQuestion}"
 USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'}, ${req.userContext?.units || 'Unknown'})
@@ -260,7 +271,7 @@ COMMON PATTERNS (examples):
   WHERE user_id = ${req.userId}
     AND block = 'SKILLS'
     AND reps IS NOT NULL
-    AND reps ~ '^[0-9]+$'
+    AND translate(reps, '0123456789', '') = ''
   GROUP BY exercise_name
   ORDER BY total_reps DESC
   LIMIT 2
