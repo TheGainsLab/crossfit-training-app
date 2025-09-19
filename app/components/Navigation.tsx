@@ -179,14 +179,14 @@ export default function Navigation() {
 
   return (
     <>
-      <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
+			<nav className="supports-[backdrop-filter]:bg-white/80 bg-white/95 backdrop-blur border-b shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             {/* Left side - Logo and main nav */}
             <div className="flex">
               {/* Logo */}
               <div className="flex-shrink-0 flex items-center">
-                <Link href="/dashboard" className="text-xl font-bold text-gray-900">
+								<Link href="/dashboard" className="text-xl font-bold text-gray-900 hover:text-coral transition-colors">
                   The Gains Apps
                 </Link>
               </div>
@@ -197,11 +197,11 @@ export default function Navigation() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      isActive(link.href)
-                        ? 'border-blue-500 text-gray-900'
-                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                    }`}
+									className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+										isActive(link.href)
+											? 'border-coral text-gray-900'
+											: 'border-transparent text-gray-500 hover:border-slate-300 hover:text-gray-800'
+									}`}
                   >
                     {link.label}
                   </Link>
@@ -218,10 +218,10 @@ export default function Navigation() {
                       {userName || user.email}
                     </p>
                   </div>
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-                  >
+					<button
+						onClick={handleLogout}
+						className="px-4 py-2 text-sm font-medium text-white bg-coral hover:opacity-90 rounded-md transition-colors"
+					>
                     Logout
                   </button>
                 </>
@@ -232,7 +232,7 @@ export default function Navigation() {
             <div className="flex items-center sm:hidden">
               <button
                 type="button"
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+					className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-coral"
                 onClick={toggleMobileMenu}
                 aria-expanded={isMobileMenuOpen}
               >
@@ -269,11 +269,11 @@ export default function Navigation() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`block px-3 py-3 rounded-md text-base font-medium transition-colors ${
-                    isActive(link.href)
-                      ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-500'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
+								className={`block px-3 py-3 rounded-md text-base font-medium transition-colors ${
+									isActive(link.href)
+										? 'bg-coral/10 text-coral border-l-4 border-coral'
+										: 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+								}`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {link.label}
