@@ -224,14 +224,14 @@ STRICT OUTPUT CONTRACT:
 }
 
 HARD RULES:
-1) Every query MUST include: WHERE user_id = ${req.userId}
-2) Use single SELECT per query
-3) LIMIT 10-30 rows; ORDER BY relevant date DESC when applicable
-4) Only include columns that exist
-5) Prefer recent data and focused scopes
-6) Safe numeric parsing: For text numeric fields (e.g., reps), only cast after validating with a numeric-only regex (e.g., column ~ '^[0-9]+$'). Exclude NULL/empty/non-numeric rows from aggregates.
-7) Use ONLY exercise_name values from EXERCISE_NAMES below. Do NOT invent or alias names.
-8) One-way normalization: Map user shorthand to canonical names using GLOSSARY below. NEVER turn canonical names into abbreviations. NEVER use abbreviations in SQL.
+1) Use ONLY table performance_logs and ONLY the columns listed in SUBSET_SCHEMA below.
+2) Every query MUST include: WHERE user_id = ${req.userId}
+3) Time column is logged_at; for recent queries, ORDER BY logged_at DESC
+4) LIMIT 10-50 rows; single SELECT per query; no multi-statement SQL
+5) Safe numeric parsing: for text numerics (e.g., reps), only cast after validating with regex (column ~ '^[0-9]+$'). Exclude NULL/empty/non-numeric from aggregates
+6) Do NOT reference any table/column not listed in SUBSET_SCHEMA
+7) Use ONLY exercise_name values from EXERCISE_NAMES below. Do NOT invent or alias names
+8) One-way normalization: Map user shorthand to canonical names using GLOSSARY below. NEVER turn canonical names into abbreviations. NEVER use abbreviations in SQL
 
 USER QUESTION: "${req.userQuestion}"
 USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'}, ${req.userContext?.units || 'Unknown'})
@@ -242,22 +242,18 @@ EQUIPMENT_AVAILABLE: ${extras.equipment.length ? extras.equipment.join(', ') : '
 GLOSSARY (shorthand → canonical):
 ${glossary}
 
+SUBSET_SCHEMA (the ONLY allowed source for this query):
+- Table: performance_logs
+- Columns: id, program_id, user_id, program_workout_id, week, day, block, exercise_name,
+  sets, reps, weight_time, result, rpe, completion_quality, flags, analysis,
+  logged_at, quality_grade, set_number
+
 SCHEMA GUIDANCE:
 ${schemaGuidance}
 
 ${validatorFeedback ? `VALIDATION FEEDBACK (fix these issues exactly):\n${validatorFeedback}\n` : ''}
 
 COMMON PATTERNS (examples):
-- Highest quality skills →
-  SELECT exercise_name, AVG(completion_quality) AS avg_quality, COUNT(*) AS sessions
-  FROM performance_logs
-  WHERE user_id = ${req.userId} AND block = 'SKILLS' AND completion_quality IS NOT NULL
-    AND logged_at >= NOW() - INTERVAL '90 days'
-  GROUP BY exercise_name
-  HAVING COUNT(*) >= 3
-  ORDER BY avg_quality DESC
-  LIMIT 10
-
 - Top skills by total reps →
   SELECT exercise_name, SUM(reps::int) AS total_reps
   FROM performance_logs
@@ -268,17 +264,6 @@ COMMON PATTERNS (examples):
   GROUP BY exercise_name
   ORDER BY total_reps DESC
   LIMIT 2
-
-- Recent metcon results →
-  SELECT pm.metcon_id, m.workout_id AS metcon_label, pm.user_score, pm.percentile, pm.performance_tier, pm.completed_at, pm.week, pm.day
-  FROM program_metcons pm
-  JOIN programs p ON p.id = pm.program_id
-  LEFT JOIN metcons m ON m.id = pm.metcon_id
-  WHERE p.user_id = ${req.userId} AND pm.completed_at IS NOT NULL
-  ORDER BY pm.completed_at DESC
-  LIMIT 20
-
-- Olympic lifting overview → join recent SKILLS and STRENGTH blocks by exercise family or use user_latest_one_rms for latest 1RMs
 
 Generate only the JSON object described above.`
   }
