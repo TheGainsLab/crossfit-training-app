@@ -409,11 +409,6 @@ RESPONSE STRUCTURE (no invented examples):
     for (const q of parsed.queries.slice(0, 5)) {
       if (!q?.sql || typeof q.sql !== 'string') continue
       const sql = q.sql.trim()
-      // Enforce required predicates (allow qualified aliases: p.user_id, programs.user_id)
-      if (!/where\s+.*(?:\b[a-z_]+\.)?user_id\s*=\s*\d+/i.test(sql)) {
-        errors.push("Missing required predicate: filter by user_id via qualified form (e.g., programs.user_id or p.user_id)")
-        continue
-      }
       // Validate identifiers against schema
       const validation = this.validateSqlAgainstSchema(sql)
       if (!validation.ok) { if (validation.error) errors.push(validation.error) ; continue }
