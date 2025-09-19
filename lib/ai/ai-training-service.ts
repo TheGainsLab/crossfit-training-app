@@ -190,6 +190,7 @@ export class AITrainingAssistant {
     extras: { exerciseNames: string[]; equipment: string[] }
   ): string {
     const schemaGuidance = this.buildSchemaGuidance(req.userQuestion)
+    const glossary = this.buildShorthandGlossary()
     return `You are a database query specialist for a fitness application. Generate the MINIMAL set of SQL queries (1-3) to retrieve data needed to answer the user's question.
 
 STRICT OUTPUT CONTRACT:
@@ -209,12 +210,16 @@ HARD RULES:
 5) Prefer recent data and focused scopes
 6) Safe numeric parsing: For text numeric fields (e.g., reps), only cast after validating with a numeric-only regex (e.g., column ~ '^[0-9]+$'). Exclude NULL/empty/non-numeric rows from aggregates.
 7) Use ONLY exercise_name values from EXERCISE_NAMES below. Do NOT invent or alias names.
+8) One-way normalization: Map user shorthand to canonical names using GLOSSARY below. NEVER turn canonical names into abbreviations. NEVER use abbreviations in SQL.
 
 USER QUESTION: "${req.userQuestion}"
 USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'}, ${req.userContext?.units || 'Unknown'})
 
 EXERCISE_NAMES (canonical): ${extras.exerciseNames.length ? extras.exerciseNames.join(', ') : '(none)'}
 EQUIPMENT_AVAILABLE: ${extras.equipment.length ? extras.equipment.join(', ') : '(unknown)'}
+
+GLOSSARY (shorthand → canonical):
+${glossary}
 
 SCHEMA GUIDANCE:
 ${schemaGuidance}
@@ -459,6 +464,55 @@ RESPONSE STRUCTURE (no invented examples):
     const concept = this.truncateForPrompt(JSON.stringify(conceptualSchema))
     const full = this.truncateForPrompt(JSON.stringify(databaseSchema))
     return `${targeted || '\n(Use recent, relevant tables)'}\n\nCONCEPTUAL SCHEMA (summary):\n${concept}\n\nDATABASE SCHEMA (summary):\n${full}`
+  }
+
+  // Build a compact shorthand → canonical glossary for the planner
+  private buildShorthandGlossary(): string {
+    const items: Array<[string, string]> = [
+      ['DB', '(equipment) Dumbbell'],
+      ['BB', '(equipment) Barbell'],
+      ['KB', '(equipment) Kettlebell'],
+      ['BW', '(equipment) Bodyweight'],
+      ['WB', '(equipment) Wall Ball'],
+      ['C2B, CTB', 'Chest to Bar Pull-ups'],
+      ['T2B, TTB', 'Toes to Bar'],
+      ['HKR', 'Hanging Knee Raise'],
+      ['MU', 'Muscle Ups'],
+      ['BMU', 'Bar Muscle Ups'],
+      ['RMU', 'Ring Muscle Ups'],
+      ['WPU, Weighted PU', 'Weighted Pull Ups'],
+      ['Kipping PU', 'Pull-ups (kipping or butterfly)'],
+      ['Strict PU', 'Strict Pull-ups'],
+      ['C&J, CJ', 'Clean and Jerk'],
+      ['PC', 'Power Clean'],
+      ['PS', 'Power Snatch'],
+      ['SC, Squat Clean', 'Clean (clean only)'],
+      ['Hang Clean', 'Hang Cleans'],
+      ['HPC, Hang PC', 'Hang Power Cleans'],
+      ['Hang Snatch', 'Hang Snatch'],
+      ['OHP, OH Press, MP, Military Press', 'Strict Press'],
+      ['PP', 'Push Press'],
+      ['S2O, STOH, S2OH', 'Shoulder to Overhead'],
+      ['BP', 'Bench Press'],
+      ['DB BP', 'Dumbbell Bench Press'],
+      ['HSPU', 'Handstand Push-ups'],
+      ['SHSPU', 'Strict Handstand Push-ups'],
+      ['DHSPU', 'Deficit Handstand Push-ups'],
+      ['BB Row', 'Barbell Row'],
+      ['DB Row', 'Dumbbell Row'],
+      ['DL', 'Deadlift'],
+      ['RDL, SLDL', 'Romanian Deadlift'],
+      ['Sumo DL', 'Deadlift'],
+      ['DB DL', 'Dumbbell Deadlift'],
+      ['KB DL', 'Double Kettlebell Deadlifts'],
+      ['1 Leg DL', '1 Leg Deadlift'],
+      ['FS', 'Front Squat'],
+      ['BS', 'Back Squat'],
+      ['OHS', 'Overhead Squat'],
+      ['Snatch', 'Snatch'],
+      ['Push-ups', 'Push-ups']
+    ]
+    return items.map(([k, v]) => `- ${k} → ${v}`).join('\n')
   }
 
   private truncateForPrompt(s: string, max = 1200): string {
