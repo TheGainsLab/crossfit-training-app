@@ -1391,19 +1391,19 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
     {/* Training Days */}
     <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
       <p className="text-xs sm:text-sm text-gray-600">Training Days</p>
-      <p className="text-xl sm:text-2xl font-bold text-charcoal">{dashboardAnalytics.data.dashboard.overallMetrics.totalTrainingDays}</p>
+      <p className="text-xl sm:text-2xl font-bold text-coral">{dashboardAnalytics.data.dashboard.overallMetrics.totalTrainingDays}</p>
     </div>
 
     {/* Completed Tasks */}
     <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
       <p className="text-xs sm:text-sm text-gray-600">Completed Tasks</p>
-      <p className="text-xl sm:text-2xl font-bold text-charcoal">{dashboardAnalytics.data.dashboard.overallMetrics.totalExercises}</p>
+      <p className="text-xl sm:text-2xl font-bold text-coral">{dashboardAnalytics.data.dashboard.overallMetrics.totalExercises}</p>
     </div>
 
     {/* MetCons Completed */}
     <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
       <p className="text-xs sm:text-sm text-gray-600">MetCons Completed</p>
-      <p className="text-xl sm:text-2xl font-bold text-charcoal">{heatMapData?.totalCompletedWorkouts || 0}</p>
+      <p className="text-xl sm:text-2xl font-bold text-coral">{heatMapData?.totalCompletedWorkouts || 0}</p>
     </div>
 
     {/* Fitness Score - remains a link */}
