@@ -405,7 +405,7 @@ RESPONSE STRUCTURE (no invented examples):
   private validateSqlAgainstSchema(sql: string): { ok: boolean; error?: string } {
     try {
       const parser = new Parser()
-      const ast = parser.astify(sql)
+      const ast = parser.astify(sql, { database: 'postgresql' })
       const aliasToTable: Record<string, string> = {}
       const selectAliases = new Set<string>()
       const tablesInScope = new Set<string>()
