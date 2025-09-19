@@ -250,6 +250,39 @@ credentials: 'include',
     }
   }
 
+  // Render assistant content with basic JSON-aware formatting for raw query results
+  const renderAssistantContent = (message: Message) => {
+    if (message.role !== 'assistant') {
+      return <div className="whitespace-pre-wrap">{message.content}</div>
+    }
+    try {
+      const parsed = JSON.parse(message.content)
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0] && typeof parsed[0] === 'object') {
+        const block = parsed[0] as any
+        const rows = Array.isArray(block.data) ? block.data : []
+        // If it's a list of skills: objects with exercise_name
+        if (rows.length > 0 && rows.every((r: any) => r && typeof r === 'object' && 'exercise_name' in r)) {
+          const names = rows.map((r: any) => String(r.exercise_name)).filter(Boolean)
+          return (
+            <div>
+              <ul className="list-disc list-inside">
+                {names.map((n: string) => (
+                  <li key={n}>{n}</li>
+                ))}
+              </ul>
+            </div>
+          )
+        }
+        // Generic table fallback: render first block as pre
+        return <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(block.data ?? parsed, null, 2)}</pre>
+      }
+      // If parsed is not the expected structure, fall back to raw
+      return <pre className="whitespace-pre-wrap text-sm">{message.content}</pre>
+    } catch {
+      return <div className="whitespace-pre-wrap">{message.content}</div>
+    }
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-lg border h-[600px] flex flex-col">
       {/* Header */}
@@ -350,7 +383,7 @@ credentials: 'include',
                 </div>
               )}
 
-              <div className="whitespace-pre-wrap">{message.content}</div>
+              {renderAssistantContent(message)}
 
               <div className="text-xs opacity-75 mt-2">
                 {new Date(message.timestamp || new Date()).toLocaleTimeString([], {
