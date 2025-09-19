@@ -188,6 +188,14 @@ COMMON PATTERNS (examples):
   ORDER BY avg_quality DESC
   LIMIT 10
 
+- Recent metcon results →
+  SELECT exercise_name, result, rpe, completion_quality, logged_at
+  FROM performance_logs
+  WHERE user_id = ${req.userId}
+    AND block IN ('METCON','CONDITIONING')
+  ORDER BY logged_at DESC
+  LIMIT 20
+
 - Olympic lifting overview → join recent SKILLS and STRENGTH blocks by exercise family or use user_latest_one_rms for latest 1RMs
 
 Generate only the JSON object described above.`
@@ -330,6 +338,11 @@ RESPONSE STRUCTURE (no invented examples):
     let targeted = ''
     if (/(performance|workout|exercise)/.test(lower)) {
       targeted += `\n**performance_logs**: block, exercise_name, rpe, completion_quality, logged_at (use WHERE user_id, ORDER BY logged_at DESC)`
+    }
+    if (/(metcon|metcons|conditioning)/.test(lower)) {
+      targeted += `\n**performance_logs**: use block IN ('METCON','CONDITIONING') for conditioning results (result, rpe, completion_quality, logged_at)`
+      targeted += `\n**program_metcons**: optional metcon assignments and percentiles (join by program/day if needed)`
+      targeted += `\n**user_metcon_summary**: total_metcons_completed, recent_metcons JSON summary`
     }
     if (/(strength|1rm|max|pr)/.test(lower)) {
       targeted += `\n**user_latest_one_rms**: latest one_rm values by exercise (use WHERE user_id)`
