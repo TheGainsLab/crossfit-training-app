@@ -1387,36 +1387,30 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 {/* Overview Cards */}
 {dashboardAnalytics?.data?.dashboard && (
   <>
-  <div className="grid md:grid-cols-3 gap-6 mb-6">
-    {/* Training Activity Card */}
-    <div className="bg-white rounded-lg shadow p-6 border-2 border-slate-blue">
-      <div className="flex items-center justify-between">
-        <div className="text-left">
-          <p className="text-sm text-gray-600">Training Days</p>
-          <p className="text-2xl font-bold text-charcoal">{dashboardAnalytics.data.dashboard.overallMetrics.totalTrainingDays}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-600">Completed Tasks</p>
-          <p className="text-2xl font-bold text-charcoal">{dashboardAnalytics.data.dashboard.overallMetrics.totalExercises}</p>
-        </div>
-      </div>
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-6">
+    {/* Training Days */}
+    <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
+      <p className="text-xs sm:text-sm text-gray-600">Training Days</p>
+      <p className="text-xl sm:text-2xl font-bold text-charcoal">{dashboardAnalytics.data.dashboard.overallMetrics.totalTrainingDays}</p>
     </div>
 
-    {/* MetCons Completed Card */}
-    <div className="bg-white rounded-lg shadow p-6 border-2 border-slate-blue">
-      <div>
-        <p className="text-sm text-gray-600">MetCons Completed</p>
-        <p className="text-2xl font-bold text-charcoal">{heatMapData?.totalCompletedWorkouts || 0}</p>
-      </div>
+    {/* Completed Tasks */}
+    <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
+      <p className="text-xs sm:text-sm text-gray-600">Completed Tasks</p>
+      <p className="text-xl sm:text-2xl font-bold text-charcoal">{dashboardAnalytics.data.dashboard.overallMetrics.totalExercises}</p>
     </div>
 
-    {/* Fitness Score Card (links to MetCons heat map) */}
+    {/* MetCons Completed */}
+    <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
+      <p className="text-xs sm:text-sm text-gray-600">MetCons Completed</p>
+      <p className="text-xl sm:text-2xl font-bold text-charcoal">{heatMapData?.totalCompletedWorkouts || 0}</p>
+    </div>
+
+    {/* Fitness Score - remains a link */}
     <Link href="/dashboard/progress?tab=metcons#metcons-panel" className="block">
-      <div className="bg-white rounded-lg shadow p-6 border-2 border-slate-blue hover:shadow-md transition-shadow">
-        <div>
-          <p className="text-sm text-gray-600">Fitness Score</p>
-          <p className="text-2xl font-bold text-coral">{heatMapData?.globalFitnessScore || 0}%</p>
-        </div>
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue hover:shadow-md transition-shadow">
+        <p className="text-xs sm:text-sm text-gray-600">Fitness Score</p>
+        <p className="text-xl sm:text-2xl font-bold text-coral">{heatMapData?.globalFitnessScore || 0}%</p>
       </div>
     </Link>
   </div>
