@@ -134,7 +134,8 @@ export class AITrainingAssistant {
   async generateResponse(req: TrainingAssistantRequest): Promise<TrainingAssistantResponse> {
     const t0 = Date.now()
     try {
-      const queryPrompt = this.buildQueryPrompt(req)
+      const plannerExtras = await this.buildPlannerExtras(req)
+      const queryPrompt = this.buildQueryPrompt(req, plannerExtras)
       const qStart = Date.now()
       // Use Sonnet (or configured planner model) for query planning, fallback to Haiku
       let queryPlan: string
@@ -184,7 +185,10 @@ export class AITrainingAssistant {
     }
   }
 
-  private buildQueryPrompt(req: TrainingAssistantRequest): string {
+  private buildQueryPrompt(
+    req: TrainingAssistantRequest,
+    extras: { exerciseNames: string[]; equipment: string[] }
+  ): string {
     const schemaGuidance = this.buildSchemaGuidance(req.userQuestion)
     return `You are a database query specialist for a fitness application. Generate the MINIMAL set of SQL queries (1-3) to retrieve data needed to answer the user's question.
 
@@ -204,9 +208,13 @@ HARD RULES:
 4) Only include columns that exist
 5) Prefer recent data and focused scopes
 6) Safe numeric parsing: For text numeric fields (e.g., reps), only cast after validating with a numeric-only regex (e.g., column ~ '^[0-9]+$'). Exclude NULL/empty/non-numeric rows from aggregates.
+7) Use ONLY exercise_name values from EXERCISE_NAMES below. Do NOT invent or alias names.
 
 USER QUESTION: "${req.userQuestion}"
 USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'}, ${req.userContext?.units || 'Unknown'})
+
+EXERCISE_NAMES (canonical): ${extras.exerciseNames.length ? extras.exerciseNames.join(', ') : '(none)'}
+EQUIPMENT_AVAILABLE: ${extras.equipment.length ? extras.equipment.join(', ') : '(unknown)'}
 
 SCHEMA GUIDANCE:
 ${schemaGuidance}
@@ -244,6 +252,48 @@ COMMON PATTERNS (examples):
 - Olympic lifting overview → join recent SKILLS and STRENGTH blocks by exercise family or use user_latest_one_rms for latest 1RMs
 
 Generate only the JSON object described above.`
+  }
+
+  // Fetch canonical exercise names and user's equipment to reduce query guessing
+  private async buildPlannerExtras(
+    req: TrainingAssistantRequest
+  ): Promise<{ exerciseNames: string[]; equipment: string[] }> {
+    try {
+      const intent = (req.userQuestion || '').toLowerCase()
+      let exerciseQuery = this.supabase
+        .from('exercises')
+        .select('name, can_be_skills, can_be_strength, can_be_metcons, sport_id')
+        .eq('sport_id', 1)
+        .limit(2000)
+
+      const { data: exRows } = await exerciseQuery
+      let names = Array.isArray(exRows) ? exRows.map((r: any) => r.name).filter(Boolean) : []
+
+      // Narrow list by simple intent heuristics to keep tokens small
+      if (Array.isArray(exRows)) {
+        const skills = exRows.filter((r: any) => r?.can_be_skills)
+        const strength = exRows.filter((r: any) => r?.can_be_strength)
+        const metcons = exRows.filter((r: any) => r?.can_be_metcons)
+        if (/(skill|skills)/.test(intent) && skills.length) names = skills.map((r: any) => r.name)
+        else if (/(metcon|conditioning)/.test(intent) && metcons.length) names = metcons.map((r: any) => r.name)
+        else if (/(strength|1rm|max|pr)/.test(intent) && strength.length) names = strength.map((r: any) => r.name)
+      }
+
+      const { data: eqRows } = await this.supabase
+        .from('user_equipment')
+        .select('equipment_name')
+        .eq('user_id', req.userId)
+      const equipment = (eqRows || [])
+        .map((r: any) => r?.equipment_name)
+        .filter((n: any) => typeof n === 'string' && !!n)
+
+      // De-duplicate and limit to keep prompt size reasonable
+      const uniqNames = Array.from(new Set(names)).slice(0, 500)
+      const uniqEquip = Array.from(new Set(equipment)).slice(0, 200)
+      return { exerciseNames: uniqNames, equipment: uniqEquip }
+    } catch {
+      return { exerciseNames: [], equipment: [] }
+    }
   }
 
   private buildCoachingPrompt(req: TrainingAssistantRequest, results: QueryExecution[]): string {
