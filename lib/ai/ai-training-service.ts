@@ -445,6 +445,11 @@ RESPONSE STRUCTURE (no invented examples):
             const t = ensureTable(f.table)
             if (f.as) aliasToTable[f.as.toLowerCase()] = t
           }
+          // Some AST shapes use .join to denote joined table name with .as alias
+          if (f.join) {
+            const t = ensureTable(f.join)
+            if (f.as) aliasToTable[f.as.toLowerCase()] = t
+          }
           // Join entries often appear as separate from-items with .table/.as/.on
           if (f.on) {
             walkExpr(f.on)
