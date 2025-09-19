@@ -175,11 +175,11 @@ export class AITrainingAssistant {
       const queryTime = Date.now() - qStart
       console.debug('[AI][executions]', executions.map(e => ({ purpose: e.purpose, rows: e.rowCount })))
 
-      const coachingPrompt = this.buildCoachingPrompt(req, executions)
+      // Coaching disabled for one-table phase: return raw query results only
       const rStart = Date.now()
-      const coachModel = process.env.CLAUDE_COACH_MODEL || 'claude-3-5-haiku-20241022'
-      console.debug('[AI][model][coach] using', coachModel)
-      const coaching = await this.callClaudeWithModel(coachModel, coachingPrompt, 0.3)
+      const rawResponse = JSON.stringify(
+        executions.map(e => ({ purpose: e.purpose, rows: e.rowCount, data: e.result }))
+      )
       const responseTime = Date.now() - rStart
 
       const totalTime = Date.now() - t0
@@ -187,12 +187,12 @@ export class AITrainingAssistant {
       const cacheHitRate = executions.length ? cacheHits / executions.length : 0
       const errorClasses = [...new Set(executions.filter(e => e.errorClass).map(e => e.errorClass!))]
 
-      const withSources = this.appendSources(coaching, executions)
+      const withSources = rawResponse
 
       return {
         response: withSources,
         queriesExecuted: executions,
-        performance: { totalTime, queryTime, responseTime, totalTokens: this.estimateTokens(queryPrompt + coachingPrompt + queryPlan + coaching), cacheHitRate },
+        performance: { totalTime, queryTime, responseTime, totalTokens: this.estimateTokens(queryPrompt + queryPlan + rawResponse), cacheHitRate },
         metadata: { queriesMade: executions.length, totalRows: executions.reduce((s, e) => s + e.rowCount, 0), hasErrors: executions.some(e => !!e.error), errorClasses }
       }
     } catch (err) {
