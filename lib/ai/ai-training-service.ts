@@ -5,6 +5,7 @@ import { SupabaseClient, createClient } from '@supabase/supabase-js'
 import conceptualSchema from '@/lib/ai/schema/conceptual-schema.json'
 import databaseSchema from '@/lib/ai/schema/database-schema.json'
 import crypto from 'crypto'
+import { Parser } from 'node-sql-parser'
 
 export interface TrainingAssistantRequest {
   userQuestion: string
@@ -385,16 +386,131 @@ RESPONSE STRUCTURE (no invented examples):
       // Enforce required predicates
       if (!/where\s+.*user_id\s*=\s*\d+/i.test(sql)) continue
       // Validate identifiers (very light check)
-      const fromMatch = sql.match(/from\s+([a-zA-Z0-9_]+)(?:\s+as\s+([a-zA-Z0-9_]+)|\s+([a-zA-Z0-9_]+))?/i)
-      if (fromMatch) {
-        const table = (fromMatch[1] || '').toLowerCase()
-        if (!allowedTables.has(table)) continue
-      }
+      if (!this.validateSqlAgainstSchema(sql)) continue
       const purpose = (q?.purpose && typeof q.purpose === 'string') ? q.purpose : 'Database query'
       out.push(`-- Purpose: ${purpose}\n${sql}`)
     }
     if (!out.length) throw new Error('No valid queries')
     return out
+  }
+
+  // AST-based schema validation: tables, columns, ORDER BY
+  private validateSqlAgainstSchema(sql: string): boolean {
+    try {
+      const parser = new Parser()
+      const ast = parser.astify(sql)
+      const aliasToTable: Record<string, string> = {}
+      const tablesInScope = new Set<string>()
+
+      const ensureTable = (name: string) => {
+        const t = (name || '').toLowerCase()
+        if (!t || !allowedTables.has(t)) throw new Error(`Unknown table '${name}'`)
+        tablesInScope.add(t)
+        return t
+      }
+
+      const collectFrom = (node: any) => {
+        const list = Array.isArray(node.from) ? node.from : []
+        for (const f of list) {
+          if (f && f.table) {
+            const t = ensureTable(f.table)
+            if (f.as) aliasToTable[f.as.toLowerCase()] = t
+          }
+          if (f && f.join) {
+            const t = ensureTable(f.join)
+            if (f.as) aliasToTable[f.as.toLowerCase()] = t
+          }
+        }
+      }
+
+      const resolveColumn = (col: any): { table: string; column: string } | null => {
+        if (!col) return null
+        if (col.type === 'column_ref') {
+          const table = (col.table || '').toLowerCase()
+          const column = (col.column || '').toLowerCase()
+          if (!column) return null
+          if (table) {
+            const base = aliasToTable[table] || table
+            if (!allowedTables.has(base)) throw new Error(`Unknown table '${table}'`)
+            if (!tableToColumns[base] || !tableToColumns[base].has(column)) {
+              const cols = Array.from(tableToColumns[base] || []).join(', ')
+              throw new Error(`Column '${col.column}' does not exist on '${base}'. Available: ${cols}`)
+            }
+            return { table: base, column }
+          } else {
+            if (tablesInScope.size === 1) {
+              const base = Array.from(tablesInScope)[0]
+              if (!tableToColumns[base] || !tableToColumns[base].has(column)) {
+                const cols = Array.from(tableToColumns[base] || []).join(', ')
+                throw new Error(`Column '${col.column}' does not exist on '${base}'. Available: ${cols}`)
+              }
+              return { table: base, column }
+            } else if (tablesInScope.size > 1) {
+              throw new Error(`Ambiguous column '${col.column}' with multiple tables in scope`)
+            }
+          }
+        }
+        return null
+      }
+
+      const walkExpr = (expr: any) => {
+        if (!expr) return
+        if (expr.type === 'aggr_func' || expr.type === 'function') {
+          if (Array.isArray(expr.args?.expr)) {
+            expr.args.expr.forEach(walkExpr)
+          } else if (expr.args?.expr) {
+            walkExpr(expr.args.expr)
+          }
+          return
+        }
+        if (expr.type === 'binary_expr') {
+          walkExpr(expr.left)
+          walkExpr(expr.right)
+          return
+        }
+        if (expr.type === 'column_ref') {
+          resolveColumn(expr)
+          return
+        }
+      }
+
+      const validateOrderBy = (node: any) => {
+        const order = node.orderby || []
+        for (const o of order) {
+          const expr = o?.expr
+          if (!expr) continue
+          if (expr.type === 'number') continue // ORDER BY 2
+          if (expr.type === 'column_ref') {
+            // allow SELECT alias
+            resolveColumn(expr)
+          }
+        }
+      }
+
+      const selectNodes = Array.isArray(ast) ? ast : [ast]
+      for (const node of selectNodes) {
+        if (node.type !== 'select') continue
+        collectFrom(node)
+        // SELECT columns
+        const columns = node.columns || []
+        for (const c of columns) {
+          if (c.expr) walkExpr(c.expr)
+        }
+        // WHERE
+        walkExpr(node.where)
+        // GROUP BY
+        const groupby = node.groupby || []
+        for (const g of groupby) walkExpr(g)
+        // HAVING
+        walkExpr(node.having)
+        // ORDER BY
+        validateOrderBy(node)
+      }
+      return true
+    } catch (e) {
+      console.debug('[AI][validate] error', (e as Error).message)
+      return false
+    }
   }
 
   private async executeQueries(userId: number, queries: string[]): Promise<QueryExecution[]> {
