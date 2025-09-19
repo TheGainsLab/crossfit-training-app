@@ -400,6 +400,7 @@ RESPONSE STRUCTURE (no invented examples):
       const parser = new Parser()
       const ast = parser.astify(sql)
       const aliasToTable: Record<string, string> = {}
+      const selectAliases = new Set<string>()
       const tablesInScope = new Set<string>()
 
       const ensureTable = (name: string) => {
@@ -410,15 +411,16 @@ RESPONSE STRUCTURE (no invented examples):
       }
 
       const collectFrom = (node: any) => {
-        const list = Array.isArray(node.from) ? node.from : []
+        const list = Array.isArray(node?.from) ? node.from : []
         for (const f of list) {
-          if (f && f.table) {
+          if (!f) continue
+          if (f.table) {
             const t = ensureTable(f.table)
             if (f.as) aliasToTable[f.as.toLowerCase()] = t
           }
-          if (f && f.join) {
-            const t = ensureTable(f.join)
-            if (f.as) aliasToTable[f.as.toLowerCase()] = t
+          // Join entries often appear as separate from-items with .table/.as/.on
+          if (f.on) {
+            walkExpr(f.on)
           }
         }
       }
@@ -475,13 +477,15 @@ RESPONSE STRUCTURE (no invented examples):
       }
 
       const validateOrderBy = (node: any) => {
-        const order = node.orderby || []
+        const order = Array.isArray(node?.orderby) ? node.orderby : []
         for (const o of order) {
           const expr = o?.expr
           if (!expr) continue
           if (expr.type === 'number') continue // ORDER BY 2
           if (expr.type === 'column_ref') {
-            // allow SELECT alias
+            // allow ORDER BY on a SELECT alias
+            const aliasName = (expr.column || '').toLowerCase()
+            if (!expr.table && aliasName && selectAliases.has(aliasName)) continue
             resolveColumn(expr)
           }
         }
@@ -492,8 +496,9 @@ RESPONSE STRUCTURE (no invented examples):
         if (node.type !== 'select') continue
         collectFrom(node)
         // SELECT columns
-        const columns = node.columns || []
+        const columns = Array.isArray(node?.columns) ? node.columns : []
         for (const c of columns) {
+          if (c?.as) selectAliases.add(String(c.as).toLowerCase())
           if (c.expr) walkExpr(c.expr)
         }
         // WHERE
