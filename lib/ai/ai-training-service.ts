@@ -440,8 +440,12 @@ RESPONSE STRUCTURE (no invented examples):
       const resolveColumn = (col: any): { table: string; column: string } | null => {
         if (!col) return null
         if (col.type === 'column_ref') {
-          const table = (col.table || '').toLowerCase()
-          const column = (col.column || '').toLowerCase()
+          const table = (typeof col.table === 'string' ? col.table : '').toLowerCase()
+          const columnRaw = col.column
+          if (typeof columnRaw !== 'string') {
+            return null
+          }
+          const column = columnRaw.toLowerCase()
           if (!column) return null
           if (table) {
             const base = aliasToTable[table] || table
@@ -496,7 +500,7 @@ RESPONSE STRUCTURE (no invented examples):
           if (expr.type === 'number') continue // ORDER BY 2
           if (expr.type === 'column_ref') {
             // allow ORDER BY on a SELECT alias
-            const aliasName = (expr.column || '').toLowerCase()
+            const aliasName = typeof expr.column === 'string' ? expr.column.toLowerCase() : ''
             if (!expr.table && aliasName && selectAliases.has(aliasName)) continue
             resolveColumn(expr)
           }
