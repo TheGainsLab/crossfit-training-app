@@ -136,7 +136,7 @@ export class AITrainingAssistant {
     const t0 = Date.now()
     try {
       const plannerExtras = await this.buildPlannerExtras(req)
-      const queryPrompt = this.buildQueryPrompt(req, plannerExtras)
+      let queryPrompt = this.buildQueryPrompt(req, plannerExtras)
       const qStart = Date.now()
       // Use Sonnet (or configured planner model) for query planning, fallback to Haiku
       let queryPlan: string
@@ -150,7 +150,30 @@ export class AITrainingAssistant {
         queryPlan = await this.callClaudeWithModel(fallbackModel, queryPrompt, 0.2)
       }
       console.debug('[AI][queryPlan]', queryPlan?.slice(0, 800))
-      const queries = this.extractQueries(queryPlan)
+      let queries: string[] = []
+      try {
+        queries = this.extractQueries(queryPlan)
+      } catch (e) {
+        const msg = String((e as Error)?.message || '')
+        if (msg.toLowerCase().includes('no valid queries')) {
+          // Retry once with validator feedback appended to the planner prompt
+          console.debug('[AI][planner][retry] validator feedback:', msg)
+          queryPrompt = this.buildQueryPrompt(req, plannerExtras, msg)
+          try {
+            const plannerModel = process.env.CLAUDE_PLANNER_MODEL || 'claude-3-5-sonnet-20241022'
+            console.debug('[AI][model][planner] retry using', plannerModel)
+            queryPlan = await this.callClaudeWithModel(plannerModel, queryPrompt, 0.1)
+          } catch (_e2) {
+            const fallbackModel = process.env.CLAUDE_COACH_MODEL || 'claude-3-5-haiku-20241022'
+            console.debug('[AI][model][planner] retry fallback to', fallbackModel)
+            queryPlan = await this.callClaudeWithModel(fallbackModel, queryPrompt, 0.1)
+          }
+          console.debug('[AI][queryPlan][retry]', queryPlan?.slice(0, 800))
+          queries = this.extractQueries(queryPlan)
+        } else {
+          throw e
+        }
+      }
       console.debug('[AI][queries]', queries)
       const executions = await this.executeQueries(req.userId, queries)
       const queryTime = Date.now() - qStart
@@ -188,7 +211,8 @@ export class AITrainingAssistant {
 
   private buildQueryPrompt(
     req: TrainingAssistantRequest,
-    extras: { exerciseNames: string[]; equipment: string[] }
+    extras: { exerciseNames: string[]; equipment: string[] },
+    validatorFeedback?: string
   ): string {
     const schemaGuidance = this.buildSchemaGuidance(req.userQuestion)
     const glossary = this.buildShorthandGlossary()
@@ -376,8 +400,7 @@ RESPONSE STRUCTURE (no invented examples):
       }
     }
     if (!parsed || !Array.isArray(parsed.queries)) {
-      // Safe default: no queries (coach prompt will reflect 'none')
-      return []
+      throw new Error('No valid queries')
     }
     const out: string[] = []
     for (const q of parsed.queries.slice(0, 5)) {
