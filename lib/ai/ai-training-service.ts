@@ -254,7 +254,7 @@ ${schemaGuidance}
 ${validatorFeedback ? `VALIDATION FEEDBACK (fix these issues exactly):\n${validatorFeedback}\n` : ''}
 
 COMMON PATTERNS (examples):
-- Top skills by total reps →
+        - Top skills by total reps →
   SELECT exercise_name, SUM(reps::int) AS total_reps
   FROM performance_logs
   WHERE user_id = ${req.userId}
@@ -264,6 +264,13 @@ COMMON PATTERNS (examples):
   GROUP BY exercise_name
   ORDER BY total_reps DESC
   LIMIT 2
+
+        - List all accessories completed (unique names) →
+          SELECT DISTINCT exercise_name
+          FROM performance_logs
+          WHERE user_id = ${req.userId}
+            AND block = 'ACCESSORIES'
+          ORDER BY exercise_name ASC
 
 Generate only the JSON object described above.`
   }
@@ -276,7 +283,7 @@ Generate only the JSON object described above.`
       const intent = (req.userQuestion || '').toLowerCase()
       let exerciseQuery = this.supabase
         .from('exercises')
-        .select('name, can_be_skills, can_be_strength, can_be_metcons, sport_id')
+        .select('name, can_be_skills, can_be_strength, can_be_metcons, can_be_accessories, sport_id')
         .eq('sport_id', 1)
         .limit(2000)
 
@@ -288,9 +295,11 @@ Generate only the JSON object described above.`
         const skills = exRows.filter((r: any) => r?.can_be_skills)
         const strength = exRows.filter((r: any) => r?.can_be_strength)
         const metcons = exRows.filter((r: any) => r?.can_be_metcons)
+        const accessories = exRows.filter((r: any) => r?.can_be_accessories)
         if (/(skill|skills)/.test(intent) && skills.length) names = skills.map((r: any) => r.name)
         else if (/(metcon|conditioning)/.test(intent) && metcons.length) names = metcons.map((r: any) => r.name)
         else if (/(strength|1rm|max|pr)/.test(intent) && strength.length) names = strength.map((r: any) => r.name)
+        else if (/(accessory|accessories)/.test(intent) && accessories.length) names = accessories.map((r: any) => r.name)
       }
 
       const { data: eqRows } = await this.supabase

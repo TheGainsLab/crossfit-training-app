@@ -220,7 +220,7 @@ function isOnTopic(text: string): boolean {
     'goal', 'progression', 'plateau', '1rm', 'one rep max', 'percentage'
   ]
   // Broaden matching for skills-related intents
-  const extra = ['skill', 'skills', 'practice', 'practiced']
+  const extra = ['skill', 'skills', 'practice', 'practiced', 'accessory', 'accessories']
 
   for (const token of [...allow, ...extra]) {
     if (text.includes(token)) return true
