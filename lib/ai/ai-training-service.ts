@@ -79,8 +79,29 @@ setInterval(() => {
 
 function normalizeSql(sql: string): string {
   let s = sql.replace(/^--\s*Purpose:.*$/mi, '').trim().replace(/\s+/g, ' ')
-  if (!/\border\s+by\b/i.test(s)) s += ' order by logged_at desc'
-  if (!/\blimit\s+\d+\b/i.test(s)) s += ' limit 30'
+  const lower = s.toLowerCase()
+  const isAggregateOnly = /^select\s+\s*(count\(|sum\(|avg\()/i.test(s)
+
+  // Skip normalization for pure aggregate queries (COUNT/SUM/AVG only)
+  if (isAggregateOnly) {
+    return s
+  }
+
+  // Decide a safe time column if any
+  let timeCol: string | null = null
+  if (/from\s+performance_logs\b/i.test(s)) {
+    timeCol = 'logged_at'
+  } else if (/from\s+program_metcons\b/i.test(s) || /\bpm\./i.test(s)) {
+    // Prefer aliased pm.completed_at if alias is used
+    timeCol = /\bpm\./i.test(s) ? 'pm.completed_at' : 'completed_at'
+  }
+
+  if (timeCol && !/\border\s+by\b/i.test(s)) {
+    s += ` order by ${timeCol} desc`
+  }
+  if (!/\blimit\s+\d+\b/i.test(s)) {
+    s += ' limit 30'
+  }
   s = s.replace(/\blimit\s+(\d+)\b/i, (_m, n) => `limit ${Math.min(parseInt(n, 10) || 30, 50)}`)
   return s
 }
