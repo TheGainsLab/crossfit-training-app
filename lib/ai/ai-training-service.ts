@@ -499,8 +499,11 @@ RESPONSE STRUCTURE (no invented examples):
         // WHERE
         walkExpr(node.where)
         // GROUP BY
-        const groupby = node.groupby || []
-        for (const g of groupby) walkExpr(g)
+        const gb = node.groupby
+        if (gb) {
+          const gbCols = Array.isArray(gb) ? gb : (Array.isArray(gb.columns) ? gb.columns : [])
+          for (const g of gbCols) walkExpr(g)
+        }
         // HAVING
         walkExpr(node.having)
         // ORDER BY
