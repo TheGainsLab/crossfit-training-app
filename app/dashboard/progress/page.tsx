@@ -148,9 +148,9 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+  <div className="bg-white rounded-lg shadow p-6">
       
-<h3 className="text-lg font-semibold text-charcoal mb-6">Recent Training Activity</h3>
+<h3 className="text-lg font-semibold text-coral mb-6">Recent Training Activity</h3>
       <div className="space-y-4">
         {recentActivity.slice(0, 5).map((session, index) => (
           
@@ -158,7 +158,7 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
 <Link 
   key={session.sessionId || index}
   href={`/dashboard/session-review/${userId}-${session.programId}-${session.week}-${session.day}`}
-  className="block border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300 cursor-pointer"
+  className="block border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-coral cursor-pointer"
 >
 
 
@@ -1161,7 +1161,7 @@ className={`px-6 py-4 rounded-lg font-semibold text-base transition-all duration
      
 <Link
   href="/dashboard/exercise-deep-dive"
-  className="px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200"
+  className="px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200"
 >
   <span className="font-medium">Exercise Deep Dive</span>
       </Link>
