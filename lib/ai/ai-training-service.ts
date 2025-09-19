@@ -201,11 +201,27 @@ Generate only the JSON object described above.`
       .slice(-3)
       .map(m => `${m.role.toUpperCase()}: ${m.content}`)
       .join('\n')
+
+    // Build allowlist of exercises from returned datasets
+    const allowedExerciseSet = new Set<string>()
+    for (const exec of results) {
+      const rows = Array.isArray(exec.result) ? exec.result : []
+      for (const row of rows) {
+        const ex = (row?.exercise_name || row?.skill_name || row?.movement || row?.exercise || '').toString().trim()
+        if (ex) allowedExerciseSet.add(ex)
+      }
+    }
+    const allowedExercises = Array.from(allowedExerciseSet)
+
     return `You are an expert CrossFit coach analyzing a user's training data. Provide specific, actionable coaching advice based on their actual performance patterns.
-IMPORTANT: Use ONLY the datasets shown below; do not mention skills/exercises not present in DATA. If DATA shows no rows for the intent, say "no data" and stop.
+IMPORTANT HARD CONSTRAINTS:
+- Only mention exercises that appear in ALLOWED_EXERCISES below. If an exercise was not returned in the datasets, do not reference it.
+- If the datasets contain zero rows relevant to the user's question, reply with exactly: "no data".
 
 USER: "${req.userQuestion}"
 USER CONTEXT: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'} level, ${req.userContext?.units || 'Unknown'} units)
+
+ALLOWED_EXERCISES: ${allowedExercises.length ? allowedExercises.join(', ') : '(none)'}
 
 AVAILABLE DATA:
 ${data || 'none'}
@@ -215,7 +231,7 @@ COACHING GUIDELINES:
 1) Be specific: reference actual numbers, dates, and trends from the data
 2) Explain patterns (e.g., rising RPE + declining quality = overreaching)
 3) Give 1-3 concrete next steps (volume/intensity/time-domain)
-4) Stay in scope: only what the data supports
+4) Stay in scope: only what the data supports, and only use ALLOWED_EXERCISES
 
 INTERPRETATION GUIDE (reminder):
 - RPE 1-6: easy; 7-8: solid; 9-10: limit
