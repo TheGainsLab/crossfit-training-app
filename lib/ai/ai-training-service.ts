@@ -338,15 +338,10 @@ Generate only the JSON object described above.`
     const allowedExercises = Array.from(allowedExerciseSet)
     const allowedEntitiesText = `EXERCISES: ${allowedExercises.join(', ') || '(none)'} | METCON_IDS: ${Array.from(allowedMetconIds).join(', ') || '(none)'} | FIELDS: ${Array.from(allowedFields).slice(0, 30).join(', ')}`
 
-    // If the user asked to "list" skills and dataset contains exercise_name, force list-only mode
-    const uq = (req.userQuestion || '').toLowerCase()
-    const listOnly = /\blist\b/.test(uq) && /skill/.test(uq) && allowedExercises.length > 0
-
     return `You are an expert CrossFit coach analyzing a user's training data. Provide specific, actionable coaching advice based on their actual performance patterns.
 IMPORTANT HARD CONSTRAINTS:
 - Only mention entities that appear in ALLOWED_ENTITIES below. If something was not returned in the datasets, do not reference it.
 - If the datasets contain zero rows relevant to the user's question, reply with exactly: "no data".
-${listOnly ? '- If the user asked to list skills and the dataset contains exercise_name, output ONLY the full list of exercise_name values found, one per line, with no extra commentary.' : ''}
 
 USER: "${req.userQuestion}"
 USER CONTEXT: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'} level, ${req.userContext?.units || 'Unknown'} units)
@@ -355,19 +350,23 @@ ALLOWED_ENTITIES: ${allowedEntitiesText}
 
 AVAILABLE DATA:
 ${data || 'none'}
-${listOnly ? '' : (recent ? `\nRECENT CONVERSATION:\n${recent}` : '')}
+${recent ? `\nRECENT CONVERSATION:\n${recent}` : ''}
 
 COACHING GUIDELINES:
-${listOnly ? 'Return only the list as described; no headers, no bullets, no extra text.' : `1) Be specific: reference actual numbers, dates, and trends from the data
+1) Be specific: reference actual numbers, dates, and trends from the data
 2) Explain patterns (e.g., rising RPE + declining quality = overreaching)
 3) Give 1-3 concrete next steps (volume/intensity/time-domain)
-4) Stay in scope: only what the data supports, and only use ALLOWED_ENTITIES`}
+4) Stay in scope: only what the data supports, and only use ALLOWED_ENTITIES
 
 INTERPRETATION GUIDE (reminder):
 - RPE 1-6: easy; 7-8: solid; 9-10: limit
 - Quality 4 excellent; 3 good; 2 breakdown; 1 struggling
 
-${listOnly ? 'RESPONSE STRUCTURE: output only the exercise_name values, one per line, sorted alphabetically. Do not include any other text.' : 'RESPONSE STRUCTURE (no invented examples):\n1) Direct answer\n2) Key observations (with exact numbers)\n3) Actionable recommendations\n4) Sources (datasets used)'}
+RESPONSE STRUCTURE (no invented examples):
+1) Direct answer
+2) Key observations (with exact numbers)
+3) Actionable recommendations
+4) Sources (datasets used)
 `
   }
 
