@@ -405,22 +405,24 @@ RESPONSE STRUCTURE (no invented examples):
       throw new Error('No valid queries')
     }
     const out: string[] = []
+    const errors: string[] = []
     for (const q of parsed.queries.slice(0, 5)) {
       if (!q?.sql || typeof q.sql !== 'string') continue
       const sql = q.sql.trim()
       // Enforce required predicates (allow qualified aliases: p.user_id, programs.user_id)
       if (!/where\s+.*(?:\b[a-z_]+\.)?user_id\s*=\s*\d+/i.test(sql)) continue
-      // Validate identifiers (very light check)
-      if (!this.validateSqlAgainstSchema(sql)) continue
+      // Validate identifiers against schema
+      const validation = this.validateSqlAgainstSchema(sql)
+      if (!validation.ok) { if (validation.error) errors.push(validation.error) ; continue }
       const purpose = (q?.purpose && typeof q.purpose === 'string') ? q.purpose : 'Database query'
       out.push(`-- Purpose: ${purpose}\n${sql}`)
     }
-    if (!out.length) throw new Error('No valid queries')
+    if (!out.length) throw new Error(errors.length ? errors.join('; ') : 'No valid queries')
     return out
   }
 
   // AST-based schema validation: tables, columns, ORDER BY
-  private validateSqlAgainstSchema(sql: string): boolean {
+  private validateSqlAgainstSchema(sql: string): { ok: boolean; error?: string } {
     try {
       const parser = new Parser()
       const ast = parser.astify(sql)
@@ -539,10 +541,11 @@ RESPONSE STRUCTURE (no invented examples):
         // ORDER BY
         validateOrderBy(node)
       }
-      return true
+      return { ok: true }
     } catch (e) {
-      console.debug('[AI][validate] error', (e as Error).message)
-      return false
+      const msg = (e as Error).message
+      console.debug('[AI][validate] error', msg)
+      return { ok: false, error: msg }
     }
   }
 
