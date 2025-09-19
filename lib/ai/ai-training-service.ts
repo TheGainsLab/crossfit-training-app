@@ -188,12 +188,12 @@ COMMON PATTERNS (examples):
   ORDER BY avg_quality DESC
   LIMIT 10
 
- - Recent metcon results →
-  SELECT exercise_name, result, rpe, completion_quality, logged_at
-  FROM performance_logs
-  WHERE user_id = ${req.userId}
-    AND block = 'METCON'
-  ORDER BY logged_at DESC
+- Recent metcon results →
+  SELECT pm.metcon_id, pm.user_score, pm.percentile, pm.performance_tier, pm.completed_at, pm.week, pm.day
+  FROM program_metcons pm
+  JOIN programs p ON p.id = pm.program_id
+  WHERE p.user_id = ${req.userId} AND pm.completed_at IS NOT NULL
+  ORDER BY pm.completed_at DESC
   LIMIT 20
 
 - Olympic lifting overview → join recent SKILLS and STRENGTH blocks by exercise family or use user_latest_one_rms for latest 1RMs
@@ -210,16 +210,24 @@ Generate only the JSON object described above.`
       .map(m => `${m.role.toUpperCase()}: ${m.content}`)
       .join('\n')
 
-    // Build allowlist of exercises from returned datasets
+    // Build allowlist of entities from returned datasets (exercises and metcon identifiers)
     const allowedExerciseSet = new Set<string>()
+    const allowedMetconIds = new Set<string>()
+    const allowedFields = new Set<string>()
     for (const exec of results) {
       const rows = Array.isArray(exec.result) ? exec.result : []
       for (const row of rows) {
         const ex = (row?.exercise_name || row?.skill_name || row?.movement || row?.exercise || '').toString().trim()
         if (ex) allowedExerciseSet.add(ex)
+        if (row?.metcon_id !== undefined && row?.metcon_id !== null) allowedMetconIds.add(String(row.metcon_id))
+        // Collect common fields that can be referenced safely in prose
+        for (const key of Object.keys(row || {})) {
+          allowedFields.add(key)
+        }
       }
     }
     const allowedExercises = Array.from(allowedExerciseSet)
+    const allowedEntitiesText = `EXERCISES: ${allowedExercises.join(', ') || '(none)'} | METCON_IDS: ${Array.from(allowedMetconIds).join(', ') || '(none)'} | FIELDS: ${Array.from(allowedFields).slice(0, 30).join(', ')}`
 
     return `You are an expert CrossFit coach analyzing a user's training data. Provide specific, actionable coaching advice based on their actual performance patterns.
 IMPORTANT HARD CONSTRAINTS:
@@ -229,7 +237,7 @@ IMPORTANT HARD CONSTRAINTS:
 USER: "${req.userQuestion}"
 USER CONTEXT: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'} level, ${req.userContext?.units || 'Unknown'} units)
 
-ALLOWED_EXERCISES: ${allowedExercises.length ? allowedExercises.join(', ') : '(none)'}
+ALLOWED_ENTITIES: ${allowedEntitiesText}
 
 AVAILABLE DATA:
 ${data || 'none'}
@@ -239,7 +247,7 @@ COACHING GUIDELINES:
 1) Be specific: reference actual numbers, dates, and trends from the data
 2) Explain patterns (e.g., rising RPE + declining quality = overreaching)
 3) Give 1-3 concrete next steps (volume/intensity/time-domain)
-4) Stay in scope: only what the data supports, and only use ALLOWED_EXERCISES
+4) Stay in scope: only what the data supports, and only use ALLOWED_ENTITIES
 
 INTERPRETATION GUIDE (reminder):
 - RPE 1-6: easy; 7-8: solid; 9-10: limit
@@ -340,8 +348,8 @@ RESPONSE STRUCTURE (no invented examples):
       targeted += `\n**performance_logs**: block, exercise_name, rpe, completion_quality, logged_at (use WHERE user_id, ORDER BY logged_at DESC)`
     }
     if (/(metcon|metcons|conditioning)/.test(lower)) {
-      targeted += `\n**performance_logs**: use block = 'METCON' for metcon results (result, rpe, completion_quality, logged_at)`
-      targeted += `\n**program_metcons**: optional metcon assignments and percentiles (join by program/day if needed)`
+      targeted += `\n**program_metcons** (PRIMARY): metcon completions and percentiles; join programs to filter by user_id; use completed_at DESC`
+      targeted += `\n**performance_logs** (SECONDARY tasks): block task entries; not authoritative for metcon summary`
       targeted += `\n**user_metcon_summary**: total_metcons_completed, recent_metcons JSON summary`
     }
     if (/(strength|1rm|max|pr)/.test(lower)) {
