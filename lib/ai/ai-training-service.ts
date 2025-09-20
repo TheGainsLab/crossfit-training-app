@@ -218,9 +218,9 @@ export class AITrainingAssistant {
     const wantsSkills = /(\bskill\b|\bskills\b)/.test(intentLower)
     const wantsAccessories = /(\baccessory\b|\baccessories\b)/.test(intentLower)
     const blockRule = wantsSkills
-      ? "9) For skills-related requests, add AND block = 'SKILLS' to the WHERE clause"
+      ? "10) For skills-related requests, add AND block = 'SKILLS' to the WHERE clause"
       : wantsAccessories
-      ? "9) For accessories-related requests, add AND block = 'ACCESSORIES' to the WHERE clause"
+      ? "10) For accessories-related requests, add AND block = 'ACCESSORIES' to the WHERE clause"
       : ''
     return `You are a database query specialist for a fitness application. Generate the MINIMAL set of SQL queries (1-3) to retrieve data needed to answer the user's question.
 
@@ -250,6 +250,7 @@ HARD RULES:
 6) Do NOT reference any table/column not listed in SUBSET_SCHEMA
 7) Use ONLY exercise_name values from EXERCISE_NAMES below. Do NOT invent or alias names
 8) One-way normalization: Map user shorthand to canonical names using GLOSSARY below. NEVER turn canonical names into abbreviations. NEVER use abbreviations in SQL
+      9) Do not use or join on program_workout_id; it is often NULL and non-authoritative
 ${blockRule ? blockRule + '\n' : ''}
 
 USER QUESTION: "${req.userQuestion}"
@@ -263,7 +264,7 @@ ${glossary}
 
 SUBSET_SCHEMA (the ONLY allowed source for this query):
 - Table: performance_logs
-- Columns: id, program_id, user_id, program_workout_id, week, day, block, exercise_name,
+      - Columns: id, program_id, user_id, week, day, block, exercise_name,
   sets, reps, weight_time, result, rpe, completion_quality, flags, analysis,
   logged_at, quality_grade, set_number
       - Notes: block common values = 'SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS'
