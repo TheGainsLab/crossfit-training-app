@@ -164,9 +164,8 @@ export default function ProgramPage() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {program.weeks.map((week) => (
                   <div key={week.week} className="border rounded-lg p-4 bg-slate-blue border-coral">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center mb-3">
                       <h3 className="font-semibold text-coral">Week {week.week}</h3>
-                      <Link href={`/dashboard/workout/${program.id}/week/${week.week}/day/1`} className="text-sm text-blue-600 hover:text-blue-700">Open week →</Link>
                     </div>
 
                     <div className="space-y-2">
