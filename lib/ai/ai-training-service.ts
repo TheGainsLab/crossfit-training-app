@@ -485,14 +485,42 @@ RESPONSE STRUCTURE (no invented examples):
   }
 
   private async callClaudeWithModel(model: string, prompt: string, temperature = 0.2): Promise<string> {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': this.claudeApiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model, max_tokens: 2000, temperature, messages: [{ role: 'user', content: prompt }] })
-    })
-    if (!res.ok) throw new Error(`Claude API error ${res.status}`)
-    const data = await res.json()
-    return data.content?.[0]?.text || ''
+    const maxRetries = 3
+    const baseDelayMs = 500
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 25_000)
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': this.claudeApiKey, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model, max_tokens: 2000, temperature, messages: [{ role: 'user', content: prompt }] }),
+          signal: controller.signal
+        })
+        clearTimeout(timeout)
+        if (res.ok) {
+          const data = await res.json()
+          return data.content?.[0]?.text || ''
+        }
+        const status = res.status
+        const retriable = status === 408 || status === 409 || status === 425 || status === 429 || (status >= 500 && status <= 599) || status === 529
+        if (!retriable || attempt === maxRetries) {
+          throw new Error(`Claude API error ${status}`)
+        }
+      } catch (err: any) {
+        clearTimeout(timeout)
+        const isAbort = (err?.name === 'AbortError')
+        if (!isAbort && attempt === maxRetries) {
+          throw err
+        }
+        // Backoff with jitter
+        const delay = Math.min(4000, baseDelayMs * Math.pow(2, attempt)) + Math.floor(Math.random() * 200)
+        console.debug('[AI][model][retry]', model, 'attempt', attempt + 1, 'delay', delay, 'ms')
+        await new Promise(r => setTimeout(r, delay))
+        continue
+      }
+    }
+    throw new Error('Claude API error (unknown)')
   }
 
   private buildSchemaGuidance(userQuestion: string): string {
