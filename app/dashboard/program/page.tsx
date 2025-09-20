@@ -171,26 +171,28 @@ export default function ProgramPage() {
 
                     <div className="space-y-2">
                       {week.days.map((day) => (
-                        <Link
-                          key={day.day}
-                          href={`/dashboard/workout/${program.id}/week/${week.week}/day/${day.day}`}
-                          className="relative flex items-center justify-between rounded border px-3 py-2 bg-white"
-                        >
+                        <div key={day.day} className="relative">
+                          {/* status icon positioned outside top-right */}
                           {(day.completed > 0 && day.completed < day.totalExercises) && (
-                            <span className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full border-2 border-coral" />
+                            <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-coral bg-white" />
                           )}
                           {(day.totalExercises > 0 && day.completed >= day.totalExercises) && (
-                            <span className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full bg-coral text-white flex items-center justify-center">
+                            <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-coral text-white flex items-center justify-center shadow">
                               <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M20 6L9 17l-5-5" />
                               </svg>
                             </span>
                           )}
-                          <div className="text-sm text-gray-800">{day.dayName}</div>
-                          <div className="text-sm font-medium">
-                            {day.completed}/{day.totalExercises} complete
-                          </div>
-                        </Link>
+                          <Link
+                            href={`/dashboard/workout/${program.id}/week/${week.week}/day/${day.day}`}
+                            className="flex items-center justify-between rounded border px-3 py-2 bg-white"
+                          >
+                            <div className="text-sm text-gray-800">{day.dayName}</div>
+                            <div className="text-sm font-medium">
+                              {day.completed}/{day.totalExercises} complete
+                            </div>
+                          </Link>
+                        </div>
                       ))}
                     </div>
                   </div>
