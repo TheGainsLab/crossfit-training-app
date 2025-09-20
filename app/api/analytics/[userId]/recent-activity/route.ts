@@ -72,15 +72,11 @@ export async function GET(
 
     console.log(`📈 Fetching recent activity for User ${userIdNum} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
 
-    // Get recent performance data - last 30 days to ensure we find 5 active days
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - 30)
-
+    // Get performance data - all-time to align with session review and dashboard semantics
     const { data: performanceData, error: perfError } = await supabase
       .from('performance_logs')
       .select('*')
       .eq('user_id', userIdNum)
-      .gte('logged_at', startDate.toISOString())
       .order('logged_at', { ascending: false })
 
     if (perfError) {
@@ -143,13 +139,14 @@ export async function GET(
  * Process performance data into recent training sessions
  */
 function processRecentActivity(performanceData: any[]) {
-  // Group exercises by week and day (program structure)
+  // Group exercises by program_id + week + day (session structure)
   const sessionGroups: { [key: string]: any[] } = {}
   
   performanceData.forEach(exercise => {
+    const programId = exercise.program_id || 0
     const week = exercise.week || 1
     const day = exercise.day || 1
-    const sessionKey = `W${week}D${day}` // e.g., "W1D2"
+    const sessionKey = `${programId}-W${week}D${day}` // e.g., "37-W1D2"
     
     if (!sessionGroups[sessionKey]) {
       sessionGroups[sessionKey] = []
@@ -197,7 +194,9 @@ function processRecentActivity(performanceData: any[]) {
         day,
         totalExercises: exercises.length,
         programId,
-        blocks: blocks.sort((a, b) => b.exerciseCount - a.exerciseCount), // Sort by exercise count
+        blocks: blocks
+          // Keep a stable, meaningful order for blocks: show all existing blocks
+          .sort((a, b) => a.blockName.localeCompare(b.blockName)),
         mostRecentTimestamp: new Date(firstExercise.logged_at).getTime() // For sorting sessions
       }
     })
