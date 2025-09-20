@@ -241,9 +241,9 @@ HARD RULES:
       5) Safe numeric parsing:
          - Integer-only fields (e.g., reps): validate digits-only before cast
            • Prefer: translate(reps, '0123456789', '') = '' then reps::int
-           • Or: reps ~ '^[0-9]+$' then reps::int
-         - Decimal fields (e.g., rpe): allow one optional decimal point
-           • Use: rpe ~ '^[0-9]+(\\.[0-9]+)?$' then rpe::numeric
+           • Or extract digits: NULLIF(regexp_replace(reps, '[^0-9]', '', 'g'), '')::int
+         - Decimal fields (e.g., rpe): allow decimals by extracting digits+dot
+           • Use: NULLIF(regexp_replace(rpe, '[^0-9\\.]', '', 'g'), '')::numeric
 6) Do NOT reference any table/column not listed in SUBSET_SCHEMA
 7) Use ONLY exercise_name values from EXERCISE_NAMES below. Do NOT invent or alias names
 8) One-way normalization: Map user shorthand to canonical names using GLOSSARY below. NEVER turn canonical names into abbreviations. NEVER use abbreviations in SQL
@@ -283,11 +283,9 @@ COMMON PATTERNS (examples):
   LIMIT 2
 
       - Average RPE by exercise (decimals allowed) →
-        SELECT exercise_name, ROUND(AVG(rpe::numeric), 2) AS avg_rpe
+        SELECT exercise_name, ROUND(AVG(NULLIF(regexp_replace(rpe, '[^0-9\\.]', '', 'g'), '')::numeric), 2) AS avg_rpe
         FROM performance_logs
         WHERE user_id = ${req.userId}
-          AND rpe IS NOT NULL
-          AND rpe ~ '^[0-9]+(\\.[0-9]+)?$'
         GROUP BY exercise_name
         ORDER BY avg_rpe DESC
         LIMIT 10
