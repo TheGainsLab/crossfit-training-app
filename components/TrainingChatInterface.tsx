@@ -271,13 +271,13 @@ credentials: 'include',
                 <ul className="list-disc list-inside">
                   {rows.map((r: any, idx: number) => {
                     const name = String(r.exercise_name ?? '')
-                    const parts: string[] = []
-                    if (hasTotalReps && r.total_reps !== undefined && r.total_reps !== null) parts.push(`${r.total_reps} reps`)
-                    if (hasAvgRpe && r.avg_rpe !== undefined && r.avg_rpe !== null) parts.push(`${r.avg_rpe} RPE`)
+                    const repsStr = (hasTotalReps && r.total_reps !== undefined && r.total_reps !== null) ? `: ${r.total_reps} reps` : ''
+                    const rpeStr = (hasAvgRpe && r.avg_rpe !== undefined && r.avg_rpe !== null) ? `: ${r.avg_rpe} RPE` : ''
+                    const sessionVal = r.session_count ?? r.sessions
+                    const sessionsStr = (sessionVal !== undefined && sessionVal !== null) ? ` (${sessionVal} sessions)` : ''
                     return (
                       <li key={idx}>
-                        {name}
-                        {parts.length ? ` — ${parts.join(' | ')}` : ''}
+                        {`${name}${repsStr}${rpeStr}${sessionsStr}`}
                       </li>
                     )
                   })}
