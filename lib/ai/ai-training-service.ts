@@ -82,6 +82,7 @@ function normalizeSql(sql: string): string {
   let s = sql.replace(/^--\s*Purpose:.*$/mi, '').trim().replace(/\s+/g, ' ')
   const lower = s.toLowerCase()
   const isAggregateOnly = /^select\s+\s*(count\(|sum\(|avg\()/i.test(s)
+  const hasGroupBy = /\bgroup\s+by\b/i.test(s)
 
   // Skip normalization for pure aggregate queries (COUNT/SUM/AVG only)
   if (isAggregateOnly) {
@@ -97,7 +98,7 @@ function normalizeSql(sql: string): string {
     timeCol = /\bpm\./i.test(s) ? 'pm.completed_at' : 'completed_at'
   }
 
-  if (timeCol && !/\border\s+by\b/i.test(s)) {
+  if (timeCol && !/\border\s+by\b/i.test(s) && !hasGroupBy) {
     s += ` order by ${timeCol} desc`
   }
   if (!/\blimit\s+\d+\b/i.test(s)) {
@@ -658,6 +659,10 @@ LIMIT 50`
       const purpose = extractPurpose(raw)
       const sql = normalizeSql(raw)
       try {
+        // Optional: EXPLAIN preflight with read-only RLS via RPC; ignore failures silently
+        try {
+          await this.supabase.rpc('explain_user_query', { query_sql: sql, requesting_user_id: userId })
+        } catch (_) {}
         const cached = getCachedResult(userId, sql)
         if (cached) {
           results.push({ sql, purpose, result: cached, rowCount: cached.length, executionTime: Date.now() - t, cacheHit: true })
