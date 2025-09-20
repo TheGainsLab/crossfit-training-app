@@ -1389,10 +1389,12 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
   <>
   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-6">
     {/* Training Days */}
-    <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
+    <Link href="/dashboard/program" className="block">
+    <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue hover:shadow-md transition-shadow">
       <p className="text-xs sm:text-sm text-gray-600">Training Days</p>
       <p className="text-xl sm:text-2xl font-bold text-coral">{dashboardAnalytics.data.dashboard.overallMetrics.totalTrainingDays}</p>
     </div>
+    </Link>
 
     {/* Completed Tasks */}
     <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">

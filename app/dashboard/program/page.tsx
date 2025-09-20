@@ -174,8 +174,18 @@ export default function ProgramPage() {
                         <Link
                           key={day.day}
                           href={`/dashboard/workout/${program.id}/week/${week.week}/day/${day.day}`}
-                          className="flex items-center justify-between rounded border px-3 py-2 hover:bg-gray-50"
+                          className="relative flex items-center justify-between rounded border px-3 py-2 bg-white"
                         >
+                          {(day.completed > 0 && day.completed < day.totalExercises) && (
+                            <span className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full border-2 border-coral" />
+                          )}
+                          {(day.totalExercises > 0 && day.completed >= day.totalExercises) && (
+                            <span className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full bg-coral text-white flex items-center justify-center">
+                              <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M20 6L9 17l-5-5" />
+                              </svg>
+                            </span>
+                          )}
                           <div className="text-sm text-gray-800">{day.dayName}</div>
                           <div className="text-sm font-medium">
                             {day.completed}/{day.totalExercises} complete
