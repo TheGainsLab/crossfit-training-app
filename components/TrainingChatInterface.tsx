@@ -264,8 +264,9 @@ credentials: 'include',
         if (rows.length > 0 && rows.every((r: any) => r && typeof r === 'object' && 'exercise_name' in r)) {
           const hasAvgRpe = rows.some((r: any) => 'avg_rpe' in r)
           const hasTotalReps = rows.some((r: any) => 'total_reps' in r)
+          const hasSessions = rows.some((r: any) => ('session_count' in r) || ('sessions' in r))
 
-          if (hasAvgRpe || hasTotalReps) {
+          if (hasAvgRpe || hasTotalReps || hasSessions) {
             return (
               <div>
                 <ul className="list-disc list-inside">
