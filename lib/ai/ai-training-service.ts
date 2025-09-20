@@ -238,12 +238,15 @@ HARD RULES:
 2) Every query MUST include: WHERE user_id = ${req.userId}
 3) Time column is logged_at; for recent queries, ORDER BY logged_at DESC
 4) LIMIT 10-50 rows; single SELECT per query; no multi-statement SQL
-      5) Safe numeric parsing:
-         - Integer-only fields (e.g., reps): validate digits-only before cast
-           • Prefer: translate(reps, '0123456789', '') = '' then reps::int
-           • Or extract digits: NULLIF(regexp_replace(reps, '[^0-9]', '', 'g'), '')::int
-         - Decimal fields (e.g., rpe): allow decimals by extracting digits+dot
-           • Use: NULLIF(regexp_replace(rpe, '[^0-9\\.]', '', 'g'), '')::numeric
+      5) Column typing rules (use exact types; avoid unnecessary casting/regex):
+         - rpe (integer): use rpe directly (AVG(rpe)), filter rpe IS NOT NULL. Do NOT regex/translate rpe
+         - completion_quality (integer 1-4): use as numeric, filter IS NOT NULL when aggregating
+         - week/day/set_number (integer): use directly
+         - reps (text): may be '', NULL, or mixed; guard before cast
+           • Prefer: translate(reps, '0123456789', '') = '' THEN reps::int
+           • Or: NULLIF(regexp_replace(reps, '[^0-9]', '', 'g'), '')::int
+         - weight_time/result (text): polymorphic; only extract numerics if explicitly needed; otherwise treat as text
+         - quality_grade (text): not numeric. Prefer completion_quality when a numeric grade is needed
 6) Do NOT reference any table/column not listed in SUBSET_SCHEMA
 7) Use ONLY exercise_name values from EXERCISE_NAMES below. Do NOT invent or alias names
 8) One-way normalization: Map user shorthand to canonical names using GLOSSARY below. NEVER turn canonical names into abbreviations. NEVER use abbreviations in SQL
@@ -282,10 +285,11 @@ COMMON PATTERNS (examples):
   ORDER BY total_reps DESC
   LIMIT 2
 
-      - Average RPE by exercise (decimals allowed) →
-        SELECT exercise_name, ROUND(AVG(NULLIF(regexp_replace(rpe, '[^0-9\\.]', '', 'g'), '')::numeric), 2) AS avg_rpe
+      - Average RPE by exercise (rpe is integer) →
+        SELECT exercise_name, ROUND(AVG(rpe), 2) AS avg_rpe
         FROM performance_logs
         WHERE user_id = ${req.userId}
+          AND rpe IS NOT NULL
         GROUP BY exercise_name
         ORDER BY avg_rpe DESC
         LIMIT 10
