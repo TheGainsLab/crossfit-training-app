@@ -136,30 +136,7 @@ export class AITrainingAssistant {
   async generateResponse(req: TrainingAssistantRequest): Promise<TrainingAssistantResponse> {
     const t0 = Date.now()
     try {
-      // 1) Intent router: fast-path for common, simple intents (no LLM, no AST)
-      const routed = this.routeIntent(req)
-      if (routed && routed.length) {
-        const qStart = Date.now()
-        const executions = await this.executeQueries(req.userId, routed)
-        const queryTime = Date.now() - qStart
-        const rStart = Date.now()
-        const rawResponse = JSON.stringify(
-          executions.map(e => ({ purpose: e.purpose, rows: e.rowCount, data: e.result }))
-        )
-        const responseTime = Date.now() - rStart
-        const totalTime = Date.now() - t0
-        const cacheHits = executions.filter(e => e.cacheHit).length
-        const cacheHitRate = executions.length ? cacheHits / executions.length : 0
-        const errorClasses = [...new Set(executions.filter(e => e.errorClass).map(e => e.errorClass!))]
-        return {
-          response: rawResponse,
-          queriesExecuted: executions,
-          performance: { totalTime, queryTime, responseTime, totalTokens: 0, cacheHitRate },
-          metadata: { queriesMade: executions.length, totalRows: executions.reduce((s, e) => s + e.rowCount, 0), hasErrors: executions.some(e => !!e.error), errorClasses }
-        }
-      }
-
-      // 2) Planner flow (LLM)
+      // Planner flow (LLM)
       const plannerExtras = await this.buildPlannerExtras(req)
       let queryPrompt = this.buildQueryPrompt(req, plannerExtras)
       const qStart = Date.now()
@@ -468,35 +445,7 @@ RESPONSE STRUCTURE (no invented examples):
   // Tier 2 fallback validation: simple shape and allowlist checks without full AST
   private validateBySafeShape(sql: string): { ok: boolean; error?: string } { return { ok: true } }
 
-  // Simple intent router for common asks; returns prebuilt queries (with purpose headers) or null
-  private routeIntent(req: TrainingAssistantRequest): string[] | null {
-    const q = (req.userQuestion || '').toLowerCase()
-    const userId = req.userId
-    // Skills: total reps per exercise
-    if (q.includes('skill') && (q.includes('rep') || q.includes('total') || q.includes('sum'))) {
-      const sql = `SELECT exercise_name,
-       SUM(CASE
-             WHEN regexp_replace(trim(reps), '[^0-9]', '', 'g') <> ''
-               THEN regexp_replace(trim(reps), '[^0-9]', '', 'g')::int
-             WHEN regexp_replace(trim(result), '[^0-9]', '', 'g') <> ''
-               THEN regexp_replace(trim(result), '[^0-9]', '', 'g')::int
-             ELSE 0
-           END) AS total_reps,
-       COUNT(*) AS sessions
-FROM performance_logs
-WHERE user_id = ${userId} AND block = 'SKILLS'
-GROUP BY exercise_name
-ORDER BY total_reps DESC, sessions DESC
-LIMIT 50`
-      return [`-- Purpose: Skills total reps\n${sql}`]
-    }
-    // Accessories: list unique
-    if (q.includes('accessor') && (q.includes('list') || !q.includes('rep'))) {
-      const sql = `SELECT DISTINCT exercise_name FROM performance_logs WHERE user_id = ${userId} AND block = 'ACCESSORIES' ORDER BY exercise_name ASC`
-      return [`-- Purpose: Accessories completed (unique)\n${sql}`]
-    }
-    return null
-  }
+  
 
   private async executeQueries(userId: number, queries: string[]): Promise<QueryExecution[]> {
     const results: QueryExecution[] = []
