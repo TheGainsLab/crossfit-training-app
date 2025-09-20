@@ -136,7 +136,8 @@ function calculateOverallMetrics(input: DashboardInput): OverallMetrics {
   let totalQuality = 0
   let totalVolume = 0
   let sessionCount = 0
-  const uniqueDays = new Set<string>()
+  // Count unique PROGRAM days, not calendar days: (program_id, week, day)
+  const uniqueProgramDays = new Set<string>()
 
   performanceData.forEach(session => {
     const rpe = parseFloat(session.rpe) || 0
@@ -149,9 +150,13 @@ function calculateOverallMetrics(input: DashboardInput): OverallMetrics {
     totalVolume += sets * reps
     sessionCount++
     
-    // Track unique training days
-    const sessionDate = new Date(session.logged_at).toDateString()
-    uniqueDays.add(sessionDate)
+    // Track unique program days with any activity
+    const programId = String((session as any).program_id || '')
+    const week = String((session as any).week || '')
+    const day = String((session as any).day || '')
+    if (programId && week && day) {
+      uniqueProgramDays.add(`${programId}-${week}-${day}`)
+    }
   })
 
   // Calculate consistency score (based on weekly summaries)
@@ -163,7 +168,7 @@ function calculateOverallMetrics(input: DashboardInput): OverallMetrics {
   const trainingPhase = determineTrainingPhase(currentWeek, weeklySummaries)
 
   return {
-    totalTrainingDays: uniqueDays.size,
+    totalTrainingDays: uniqueProgramDays.size,
     totalExercises: sessionCount,
     averageRPE: sessionCount > 0 ? Math.round((totalRPE / sessionCount) * 10) / 10 : 0,
     averageQuality: sessionCount > 0 ? Math.round((totalQuality / sessionCount) * 10) / 10 : 0,
