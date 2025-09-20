@@ -191,7 +191,7 @@ export async function GET(
       performanceData: performanceData.data || [],
       weeklySummaries: weeklySummaries.data || [],
       metconData: includeMetCons ? (metconData.data || []) : [],
-      timeRange,
+      timeRange: (rangeDays || 0),
       dashboardType
     })
     
