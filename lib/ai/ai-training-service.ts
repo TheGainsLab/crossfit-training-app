@@ -628,18 +628,16 @@ RESPONSE STRUCTURE (no invented examples):
       const sql = `SELECT exercise_name,
        SUM(CASE
              WHEN regexp_replace(trim(reps), '[^0-9]', '', 'g') <> ''
-             THEN regexp_replace(trim(reps), '[^0-9]', '', 'g')::int
+               THEN regexp_replace(trim(reps), '[^0-9]', '', 'g')::int
+             WHEN regexp_replace(trim(result), '[^0-9]', '', 'g') <> ''
+               THEN regexp_replace(trim(result), '[^0-9]', '', 'g')::int
              ELSE 0
-           END) AS total_reps
+           END) AS total_reps,
+       COUNT(*) AS sessions
 FROM performance_logs
 WHERE user_id = ${userId} AND block = 'SKILLS'
 GROUP BY exercise_name
-HAVING SUM(CASE
-             WHEN regexp_replace(trim(reps), '[^0-9]', '', 'g') <> ''
-             THEN regexp_replace(trim(reps), '[^0-9]', '', 'g')::int
-             ELSE 0
-           END) > 0
-ORDER BY total_reps DESC
+ORDER BY total_reps DESC, sessions DESC
 LIMIT 50`
       return [`-- Purpose: Skills total reps\n${sql}`]
     }
