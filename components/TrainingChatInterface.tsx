@@ -28,6 +28,7 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null)
   const [showConversations, setShowConversations] = useState(false)
+  const [expandedMessages, setExpandedMessages] = useState<Record<number, boolean>>({})
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   // --- Supabase singleton client + access token state ---
@@ -213,6 +214,44 @@ credentials: 'include',
     }
   }
 
+  // Send a quick follow-up without typing
+  const sendQuickQuery = async (text: string) => {
+    if (!text || loading) return
+    if (!token) return
+    setLoading(true)
+    const tempUserMessage: Message = { role: 'user', content: text, timestamp: new Date().toISOString() }
+    setMessages(prev => [...prev, tempUserMessage])
+    try {
+      const response = await fetch(`/api/chat/${userId}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message: text, conversation_id: activeConversationId })
+      })
+      const data = await response.json()
+      if (data?.success) {
+        if (!activeConversationId) setActiveConversationId(data.conversation_id)
+        const assistantMessage: Message = { role: 'assistant', content: data.response, timestamp: new Date().toISOString(), responseType: data.responseType }
+        setMessages(prev => [...prev, assistantMessage])
+        if (data.responseType !== 'domain_guard') fetchConversations()
+      } else {
+        throw new Error(data?.error || 'Failed')
+      }
+    } catch (_e) {
+      const errorMessage: Message = { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.', timestamp: new Date().toISOString(), responseType: 'error' }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatNumber = (v: any) => {
+    if (v === null || v === undefined || v === '') return ''
+    const n = Number(v)
+    if (!isNaN(n)) return n.toLocaleString(undefined, { maximumFractionDigits: 2 })
+    return String(v)
+  }
+
   const getMessageStyle = (message: Message) => {
     if (message.role === 'user') {
       return 'bg-blue-600 text-white ml-auto'
@@ -251,7 +290,7 @@ credentials: 'include',
   }
 
   // Render assistant content with basic JSON-aware formatting for raw query results
-  const renderAssistantContent = (message: Message) => {
+  const renderAssistantContent = (message: Message, idx: number) => {
     if (message.role !== 'assistant') {
       return <div className="whitespace-pre-wrap">{message.content}</div>
     }
@@ -260,6 +299,22 @@ credentials: 'include',
       if (Array.isArray(parsed) && parsed.length > 0 && parsed[0] && typeof parsed[0] === 'object') {
         const block = parsed[0] as any
         const rows = Array.isArray(block.data) ? block.data : []
+        // Zero-state UX when no rows
+        if (rows.length === 0) {
+          return (
+            <div className="text-sm">
+              <div className="text-gray-700">No results for this window.</div>
+              <div className="text-gray-500 mb-2">Try a different range:</div>
+              <div className="flex flex-wrap gap-2">
+                {['Last 7 days', 'Last 14 days', 'Last 30 days', 'All time'].map(label => (
+                  <button key={label} onClick={() => sendQuickQuery(label)} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border">
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        }
         // If it's a list with exercise_name plus aggregates (avg_rpe, total_reps)
         if (rows.length > 0 && rows.every((r: any) => r && typeof r === 'object' && 'exercise_name' in r)) {
           const hasAvgRpe = rows.some((r: any) => 'avg_rpe' in r)
@@ -267,22 +322,30 @@ credentials: 'include',
           const hasSessions = rows.some((r: any) => ('session_count' in r) || ('sessions' in r))
 
           if (hasAvgRpe || hasTotalReps || hasSessions) {
+            const topN = 10
+            const expanded = !!expandedMessages[idx]
+            const displayRows = expanded ? rows : rows.slice(0, topN)
             return (
               <div>
                 <ul className="list-disc list-inside">
-                  {rows.map((r: any, idx: number) => {
+                  {displayRows.map((r: any, ridx: number) => {
                     const name = String(r.exercise_name ?? '')
                     const repsStr = (hasTotalReps && r.total_reps !== undefined && r.total_reps !== null) ? `: ${r.total_reps} reps` : ''
                     const rpeStr = (hasAvgRpe && r.avg_rpe !== undefined && r.avg_rpe !== null) ? `: ${r.avg_rpe} RPE` : ''
                     const sessionVal = r.session_count ?? r.sessions
                     const sessionsStr = (sessionVal !== undefined && sessionVal !== null) ? ` (${sessionVal} sessions)` : ''
                     return (
-                      <li key={idx}>
+                      <li key={ridx}>
                         {`${name}${repsStr}${rpeStr}${sessionsStr}`}
                       </li>
                     )
                   })}
                 </ul>
+                {rows.length > topN && (
+                  <button onClick={() => setExpandedMessages(s => ({ ...s, [idx]: !expanded }))} className="mt-2 text-xs text-blue-600 hover:underline">
+                    {expanded ? 'Show less' : `Show all (${rows.length})`}
+                  </button>
+                )}
               </div>
             )
           }
@@ -299,7 +362,59 @@ credentials: 'include',
             </div>
           )
         }
-        // Generic table fallback: render first block as pre
+        // If single-metric rows (e.g., [{ unique_exercises: 41 }]) render stat cards
+        if (rows.length && rows.every((r: any) => r && typeof r === 'object')) {
+          const keys = Object.keys(rows[0] || {})
+          if (keys.length === 1 && rows.length <= 3) {
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {rows.map((r: any, i: number) => {
+                  const k = Object.keys(r)[0]
+                  const v = r[k]
+                  const label = k.replace(/_/g, ' ')
+                  return (
+                    <div key={i} className="p-3 border rounded bg-white">
+                      <div className="text-xs text-gray-500">{label}</div>
+                      <div className="text-lg font-semibold">{formatNumber(v)}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          }
+          // Generic table fallback
+          const columns: string[] = Array.from(new Set(rows.flatMap((r: any) => Object.keys(r)))) as string[]
+          const topN = 10
+          const expanded = !!expandedMessages[idx]
+          const displayRows = expanded ? rows : rows.slice(0, topN)
+          return (
+            <div className="overflow-x-auto text-sm">
+              <table className="min-w-full border">
+                <thead>
+                  <tr className="bg-gray-50">
+                    {columns.map((c: string) => (
+                      <th key={String(c)} className="text-left p-2 border-b capitalize">{String(c).replace(/_/g, ' ')}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayRows.map((r: any, i: number) => (
+                    <tr key={i} className="odd:bg-white even:bg-gray-50">
+                      {columns.map((c: string) => (
+                        <td key={String(c)} className="p-2 border-b">{formatNumber((r as any)[c])}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {rows.length > topN && (
+                <button onClick={() => setExpandedMessages(s => ({ ...s, [idx]: !expanded }))} className="mt-2 text-xs text-blue-600 hover:underline">
+                  {expanded ? 'Show less' : `Show all (${rows.length})`}
+                </button>
+              )}
+            </div>
+          )
+        }
         return <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(block.data ?? parsed, null, 2)}</pre>
       }
       // If parsed is not the expected structure, fall back to raw
@@ -409,7 +524,7 @@ credentials: 'include',
                 </div>
               )}
 
-              {renderAssistantContent(message)}
+              {renderAssistantContent(message, index)}
 
               <div className="text-xs opacity-75 mt-2">
                 {new Date(message.timestamp || new Date()).toLocaleTimeString([], {
