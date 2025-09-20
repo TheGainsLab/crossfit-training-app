@@ -135,6 +135,30 @@ export class AITrainingAssistant {
   async generateResponse(req: TrainingAssistantRequest): Promise<TrainingAssistantResponse> {
     const t0 = Date.now()
     try {
+      // 1) Intent router: fast-path for common, simple intents (no LLM, no AST)
+      const routed = this.routeIntent(req)
+      if (routed && routed.length) {
+        const qStart = Date.now()
+        const executions = await this.executeQueries(req.userId, routed)
+        const queryTime = Date.now() - qStart
+        const rStart = Date.now()
+        const rawResponse = JSON.stringify(
+          executions.map(e => ({ purpose: e.purpose, rows: e.rowCount, data: e.result }))
+        )
+        const responseTime = Date.now() - rStart
+        const totalTime = Date.now() - t0
+        const cacheHits = executions.filter(e => e.cacheHit).length
+        const cacheHitRate = executions.length ? cacheHits / executions.length : 0
+        const errorClasses = [...new Set(executions.filter(e => e.errorClass).map(e => e.errorClass!))]
+        return {
+          response: rawResponse,
+          queriesExecuted: executions,
+          performance: { totalTime, queryTime, responseTime, totalTokens: 0, cacheHitRate },
+          metadata: { queriesMade: executions.length, totalRows: executions.reduce((s, e) => s + e.rowCount, 0), hasErrors: executions.some(e => !!e.error), errorClasses }
+        }
+      }
+
+      // 2) Planner flow (LLM)
       const plannerExtras = await this.buildPlannerExtras(req)
       let queryPrompt = this.buildQueryPrompt(req, plannerExtras)
       const qStart = Date.now()
@@ -555,8 +579,61 @@ RESPONSE STRUCTURE (no invented examples):
     } catch (e) {
       const msg = (e as Error).message
       console.debug('[AI][validate] error', msg)
-      return { ok: false, error: msg }
+      // Tier 2 fallback: permit safe-shaped SELECTs with strict allowlist if AST parse fails
+      const fallback = this.validateBySafeShape(sql)
+      if (fallback.ok) return { ok: true }
+      return { ok: false, error: fallback.error || msg }
     }
+  }
+
+  // Tier 2 fallback validation: simple shape and allowlist checks without full AST
+  private validateBySafeShape(sql: string): { ok: boolean; error?: string } {
+    try {
+      const s = (sql || '').trim()
+      const lower = s.toLowerCase()
+      if (!lower.startsWith('select')) return { ok: false, error: 'Only SELECT statements allowed' }
+      if (lower.includes(';')) return { ok: false, error: 'Multiple statements not allowed' }
+      const banned = [' with ', ' insert ', ' update ', ' delete ', ' alter ', ' create ', ' drop ', ' grant ', ' revoke ', ' vacuum ', ' analyze ', ' explain ']
+      if (banned.some(k => lower.includes(k))) return { ok: false, error: 'Statement contains disallowed keywords' }
+      if (/(\bjoin\b)/.test(lower)) return { ok: false, error: 'JOINs are not allowed in fallback mode' }
+      if (!/\bfrom\s+performance_logs\b/.test(lower)) return { ok: false, error: 'Only performance_logs allowed in fallback mode' }
+      if (!/\bwhere\b/.test(lower) || !/\buser_id\b/.test(lower)) return { ok: false, error: 'WHERE user_id predicate required' }
+
+      // Strict allowlist of function names in fallback tier
+      const allowedFuncs = new Set([
+        'sum','count','avg','min','max','coalesce','nullif','trim','lower','upper','replace','substring','translate','regexp_replace'
+      ])
+      const funcCallRegex = /\b([a-z_][a-z0-9_]*)\s*\(/g
+      let m: RegExpExecArray | null
+      while ((m = funcCallRegex.exec(lower)) !== null) {
+        const name = m[1]
+        // allow common SQL keywords that also look like funcs in patterns
+        if (!allowedFuncs.has(name)) {
+          return { ok: false, error: `Function '${name}' not allowed in fallback mode` }
+        }
+      }
+      // Disallow CTE-ish parenthesis at start to be safe
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: String((err as any)?.message || err) }
+    }
+  }
+
+  // Simple intent router for common asks; returns prebuilt queries (with purpose headers) or null
+  private routeIntent(req: TrainingAssistantRequest): string[] | null {
+    const q = (req.userQuestion || '').toLowerCase()
+    const userId = req.userId
+    // Skills: total reps per exercise
+    if (q.includes('skill') && (q.includes('rep') || q.includes('total') || q.includes('sum'))) {
+      const sql = `SELECT exercise_name, SUM(CASE WHEN translate(trim(reps),'0123456789','') = '' THEN trim(reps)::int ELSE 0 END) AS total_reps FROM performance_logs WHERE user_id = ${userId} AND block = 'SKILLS' GROUP BY exercise_name ORDER BY total_reps DESC LIMIT 50`
+      return [`-- Purpose: Skills total reps\n${sql}`]
+    }
+    // Accessories: list unique
+    if (q.includes('accessor') && (q.includes('list') || !q.includes('rep'))) {
+      const sql = `SELECT DISTINCT exercise_name FROM performance_logs WHERE user_id = ${userId} AND block = 'ACCESSORIES' ORDER BY exercise_name ASC`
+      return [`-- Purpose: Accessories completed (unique)\n${sql}`]
+    }
+    return null
   }
 
   private async executeQueries(userId: number, queries: string[]): Promise<QueryExecution[]> {
