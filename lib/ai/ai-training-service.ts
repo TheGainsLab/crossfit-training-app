@@ -238,9 +238,12 @@ HARD RULES:
 2) Every query MUST include: WHERE user_id = ${req.userId}
 3) Time column is logged_at; for recent queries, ORDER BY logged_at DESC
 4) LIMIT 10-50 rows; single SELECT per query; no multi-statement SQL
-5) Safe numeric parsing: for text numerics (e.g., reps), only cast after validating that the value contains ONLY digits WITHOUT using regex:
-   - Use translate(reps, '0123456789', '') = '' to ensure reps is digits-only before casting
-   - Then use reps::int safely in aggregates
+      5) Safe numeric parsing:
+         - Integer-only fields (e.g., reps): validate digits-only before cast
+           • Prefer: translate(reps, '0123456789', '') = '' then reps::int
+           • Or: reps ~ '^[0-9]+$' then reps::int
+         - Decimal fields (e.g., rpe): allow one optional decimal point
+           • Use: rpe ~ '^[0-9]+(\\.[0-9]+)?$' then rpe::numeric
 6) Do NOT reference any table/column not listed in SUBSET_SCHEMA
 7) Use ONLY exercise_name values from EXERCISE_NAMES below. Do NOT invent or alias names
 8) One-way normalization: Map user shorthand to canonical names using GLOSSARY below. NEVER turn canonical names into abbreviations. NEVER use abbreviations in SQL
@@ -278,6 +281,16 @@ COMMON PATTERNS (examples):
   GROUP BY exercise_name
   ORDER BY total_reps DESC
   LIMIT 2
+
+      - Average RPE by exercise (decimals allowed) →
+        SELECT exercise_name, ROUND(AVG(rpe::numeric), 2) AS avg_rpe
+        FROM performance_logs
+        WHERE user_id = ${req.userId}
+          AND rpe IS NOT NULL
+          AND rpe ~ '^[0-9]+(\\.[0-9]+)?$'
+        GROUP BY exercise_name
+        ORDER BY avg_rpe DESC
+        LIMIT 10
 
         - List all accessories completed (unique names) →
           SELECT DISTINCT exercise_name
