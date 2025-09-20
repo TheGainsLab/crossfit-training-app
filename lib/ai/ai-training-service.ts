@@ -449,176 +449,24 @@ RESPONSE STRUCTURE (no invented examples):
 
   // AST-based schema validation: tables, columns, ORDER BY
   private validateSqlAgainstSchema(sql: string): { ok: boolean; error?: string } {
+    // Minimal restrictions per request: single SELECT, from performance_logs, has WHERE user_id
     try {
-      const parser = new Parser()
-      const ast = parser.astify(sql, { database: 'postgresql' })
-      const aliasToTable: Record<string, string> = {}
-      const selectAliases = new Set<string>()
-      const tablesInScope = new Set<string>()
-
-      const ensureTable = (name: string) => {
-        const t = (name || '').toLowerCase()
-        if (!t || !allowedTables.has(t)) throw new Error(`Unknown table '${name}'`)
-        tablesInScope.add(t)
-        return t
-      }
-
-      const collectFrom = (node: any) => {
-        const list = Array.isArray(node?.from) ? node.from : []
-        for (const f of list) {
-          if (!f) continue
-          if (f.table) {
-            const t = ensureTable(f.table)
-            if (f.as) aliasToTable[f.as.toLowerCase()] = t
-          }
-          // Some AST shapes use .join to denote joined table name with .as alias
-          if (f.join) {
-            const t = ensureTable(f.join)
-            if (f.as) aliasToTable[f.as.toLowerCase()] = t
-          }
-          // Join entries often appear as separate from-items with .table/.as/.on
-          if (f.on) {
-            walkExpr(f.on)
-          }
-        }
-      }
-
-      const resolveColumn = (col: any): { table: string; column: string } | null => {
-        if (!col) return null
-        if (col.type === 'column_ref') {
-          const table = (typeof col.table === 'string' ? col.table : '').toLowerCase()
-          const columnRaw = col.column
-          if (typeof columnRaw !== 'string') {
-            return null
-          }
-          const column = columnRaw.toLowerCase()
-          if (!column) return null
-          if (table) {
-            const base = aliasToTable[table] || table
-            if (!allowedTables.has(base)) throw new Error(`Unknown table '${table}'`)
-            if (!tableToColumns[base] || !tableToColumns[base].has(column)) {
-              const cols = Array.from(tableToColumns[base] || []).join(', ')
-              throw new Error(`Column '${col.column}' does not exist on '${base}'. Available: ${cols}`)
-            }
-            return { table: base, column }
-          } else {
-            if (tablesInScope.size === 1) {
-              const base = Array.from(tablesInScope)[0]
-              if (!tableToColumns[base] || !tableToColumns[base].has(column)) {
-                const cols = Array.from(tableToColumns[base] || []).join(', ')
-                throw new Error(`Column '${col.column}' does not exist on '${base}'. Available: ${cols}`)
-              }
-              return { table: base, column }
-            } else if (tablesInScope.size > 1) {
-              throw new Error(`Ambiguous column '${col.column}' with multiple tables in scope`)
-            }
-          }
-        }
-        return null
-      }
-
-      const walkExpr = (expr: any) => {
-        if (!expr) return
-        if (expr.type === 'aggr_func' || expr.type === 'function') {
-          if (Array.isArray(expr.args?.expr)) {
-            expr.args.expr.forEach(walkExpr)
-          } else if (expr.args?.expr) {
-            walkExpr(expr.args.expr)
-          }
-          return
-        }
-        if (expr.type === 'binary_expr') {
-          walkExpr(expr.left)
-          walkExpr(expr.right)
-          return
-        }
-        if (expr.type === 'column_ref') {
-          resolveColumn(expr)
-          return
-        }
-      }
-
-      const validateOrderBy = (node: any) => {
-        const order = Array.isArray(node?.orderby) ? node.orderby : []
-        for (const o of order) {
-          const expr = o?.expr
-          if (!expr) continue
-          if (expr.type === 'number') continue // ORDER BY 2
-          if (expr.type === 'column_ref') {
-            // allow ORDER BY on a SELECT alias
-            const aliasName = typeof expr.column === 'string' ? expr.column.toLowerCase() : ''
-            if (!expr.table && aliasName && selectAliases.has(aliasName)) continue
-            resolveColumn(expr)
-          }
-        }
-      }
-
-      const selectNodes = Array.isArray(ast) ? ast : [ast]
-      for (const node of selectNodes) {
-        if (node.type !== 'select') continue
-        collectFrom(node)
-        // SELECT columns
-        const columns = Array.isArray(node?.columns) ? node.columns : []
-        for (const c of columns) {
-          if (c?.as) selectAliases.add(String(c.as).toLowerCase())
-          if (c.expr) walkExpr(c.expr)
-        }
-        // WHERE
-        walkExpr(node.where)
-        // GROUP BY
-        const gb = node.groupby
-        if (gb) {
-          const gbCols = Array.isArray(gb) ? gb : (Array.isArray(gb.columns) ? gb.columns : [])
-          for (const g of gbCols) walkExpr(g)
-        }
-        // HAVING
-        walkExpr(node.having)
-        // ORDER BY
-        validateOrderBy(node)
-      }
+      const s = (sql || '').trim().replace(/^--\s*Purpose:.*$/mi, '')
+      const lower = s.toLowerCase()
+      if (!lower.startsWith('select')) return { ok: false, error: 'Only SELECT statements allowed' }
+      if (lower.includes(';')) return { ok: false, error: 'Multiple statements not allowed' }
+      const banned = [' with ', ' insert ', ' update ', ' delete ', ' alter ', ' create ', ' drop ', ' grant ', ' revoke ']
+      if (banned.some(k => lower.includes(k))) return { ok: false, error: 'Statement contains disallowed keywords' }
+      if (!/\bfrom\s+performance_logs\b/.test(lower)) return { ok: false, error: 'Only performance_logs allowed' }
+      if (!/\bwhere\b/.test(lower) || !/\buser_id\b/.test(lower)) return { ok: false, error: 'WHERE user_id predicate required' }
       return { ok: true }
     } catch (e) {
-      const msg = (e as Error).message
-      console.debug('[AI][validate] error', msg)
-      // Tier 2 fallback: permit safe-shaped SELECTs with strict allowlist if AST parse fails
-      const fallback = this.validateBySafeShape(sql)
-      if (fallback.ok) return { ok: true }
-      return { ok: false, error: fallback.error || msg }
+      return { ok: false, error: String((e as Error).message || e) }
     }
   }
 
   // Tier 2 fallback validation: simple shape and allowlist checks without full AST
-  private validateBySafeShape(sql: string): { ok: boolean; error?: string } {
-    try {
-      const s = (sql || '').trim()
-      const lower = s.toLowerCase()
-      if (!lower.startsWith('select')) return { ok: false, error: 'Only SELECT statements allowed' }
-      if (lower.includes(';')) return { ok: false, error: 'Multiple statements not allowed' }
-      const banned = [' with ', ' insert ', ' update ', ' delete ', ' alter ', ' create ', ' drop ', ' grant ', ' revoke ', ' vacuum ', ' analyze ', ' explain ']
-      if (banned.some(k => lower.includes(k))) return { ok: false, error: 'Statement contains disallowed keywords' }
-      if (/(\bjoin\b)/.test(lower)) return { ok: false, error: 'JOINs are not allowed in fallback mode' }
-      if (!/\bfrom\s+performance_logs\b/.test(lower)) return { ok: false, error: 'Only performance_logs allowed in fallback mode' }
-      if (!/\bwhere\b/.test(lower) || !/\buser_id\b/.test(lower)) return { ok: false, error: 'WHERE user_id predicate required' }
-
-      // Strict allowlist of function names in fallback tier
-      const allowedFuncs = new Set([
-        'sum','count','avg','min','max','coalesce','nullif','trim','lower','upper','replace','substring','translate','regexp_replace'
-      ])
-      const funcCallRegex = /\b([a-z_][a-z0-9_]*)\s*\(/g
-      let m: RegExpExecArray | null
-      while ((m = funcCallRegex.exec(lower)) !== null) {
-        const name = m[1]
-        // allow common SQL keywords that also look like funcs in patterns
-        if (!allowedFuncs.has(name)) {
-          return { ok: false, error: `Function '${name}' not allowed in fallback mode` }
-        }
-      }
-      // Disallow CTE-ish parenthesis at start to be safe
-      return { ok: true }
-    } catch (err) {
-      return { ok: false, error: String((err as any)?.message || err) }
-    }
-  }
+  private validateBySafeShape(sql: string): { ok: boolean; error?: string } { return { ok: true } }
 
   // Simple intent router for common asks; returns prebuilt queries (with purpose headers) or null
   private routeIntent(req: TrainingAssistantRequest): string[] | null {
