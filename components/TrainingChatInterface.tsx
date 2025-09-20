@@ -260,8 +260,35 @@ credentials: 'include',
       if (Array.isArray(parsed) && parsed.length > 0 && parsed[0] && typeof parsed[0] === 'object') {
         const block = parsed[0] as any
         const rows = Array.isArray(block.data) ? block.data : []
-        // If it's a list of skills: objects with exercise_name
+        // If it's a list with exercise_name plus aggregates (avg_rpe, total_reps, sessions)
         if (rows.length > 0 && rows.every((r: any) => r && typeof r === 'object' && 'exercise_name' in r)) {
+          const hasAvgRpe = rows.some((r: any) => 'avg_rpe' in r)
+          const hasTotalReps = rows.some((r: any) => 'total_reps' in r)
+          const hasSessions = rows.some((r: any) => 'sessions' in r)
+
+          if (hasAvgRpe || hasTotalReps || hasSessions) {
+            return (
+              <div>
+                <ul className="list-disc list-inside">
+                  {rows.map((r: any, idx: number) => {
+                    const name = String(r.exercise_name ?? '')
+                    const parts: string[] = []
+                    if (hasAvgRpe && r.avg_rpe !== undefined && r.avg_rpe !== null) parts.push(`avg RPE: ${r.avg_rpe}`)
+                    if (hasTotalReps && r.total_reps !== undefined && r.total_reps !== null) parts.push(`total reps: ${r.total_reps}`)
+                    if (hasSessions && r.sessions !== undefined && r.sessions !== null) parts.push(`sessions: ${r.sessions}`)
+                    return (
+                      <li key={idx}>
+                        {name}
+                        {parts.length ? ` — ${parts.join(' | ')}` : ''}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )
+          }
+
+          // Otherwise, render just the names
           const names = rows.map((r: any) => String(r.exercise_name)).filter(Boolean)
           return (
             <div>
