@@ -625,7 +625,22 @@ RESPONSE STRUCTURE (no invented examples):
     const userId = req.userId
     // Skills: total reps per exercise
     if (q.includes('skill') && (q.includes('rep') || q.includes('total') || q.includes('sum'))) {
-      const sql = `SELECT exercise_name, SUM(CASE WHEN translate(trim(reps),'0123456789','') = '' THEN trim(reps)::int ELSE 0 END) AS total_reps FROM performance_logs WHERE user_id = ${userId} AND block = 'SKILLS' GROUP BY exercise_name ORDER BY total_reps DESC LIMIT 50`
+      const sql = `SELECT exercise_name,
+       SUM(CASE
+             WHEN regexp_replace(trim(reps), '[^0-9]', '', 'g') <> ''
+             THEN regexp_replace(trim(reps), '[^0-9]', '', 'g')::int
+             ELSE 0
+           END) AS total_reps
+FROM performance_logs
+WHERE user_id = ${userId} AND block = 'SKILLS'
+GROUP BY exercise_name
+HAVING SUM(CASE
+             WHEN regexp_replace(trim(reps), '[^0-9]', '', 'g') <> ''
+             THEN regexp_replace(trim(reps), '[^0-9]', '', 'g')::int
+             ELSE 0
+           END) > 0
+ORDER BY total_reps DESC
+LIMIT 50`
       return [`-- Purpose: Skills total reps\n${sql}`]
     }
     // Accessories: list unique
