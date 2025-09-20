@@ -14,7 +14,33 @@ export async function GET(
     const { userId } = await params
     const { searchParams } = new URL(request.url)
     
-    const timeRange = parseInt(searchParams.get('timeRange') || '30')
+    // New: optional range parameter (e.g., "30d"). Defaults to all-time.
+    const rangeParam = (searchParams.get('range') || '').trim().toLowerCase()
+    // Back-compat: legacy timeRange param in days (number)
+    const legacyTimeRange = searchParams.get('timeRange')
+    const parsedLegacyDays = legacyTimeRange ? parseInt(legacyTimeRange) : NaN
+    const rangeDays = (() => {
+      if (rangeParam) {
+        const match = rangeParam.match(/^(\d+)\s*([dwmy])$/)
+        if (match) {
+          const value = parseInt(match[1])
+          const unit = match[2]
+          if (!isNaN(value) && value > 0) {
+            if (unit === 'd') return value
+            if (unit === 'w') return value * 7
+            if (unit === 'm') return value * 30
+            if (unit === 'y') return value * 365
+          }
+        }
+        // If malformed, ignore and treat as all-time
+        return null
+      }
+      if (!isNaN(parsedLegacyDays) && parsedLegacyDays > 0) {
+        return parsedLegacyDays
+      }
+      return null
+    })()
+
     const includeMetCons = false  // Temporarily disable MetCons
     const dashboardType = searchParams.get('type') || 'overview' // overview, detailed, summary
 
@@ -79,9 +105,11 @@ export async function GET(
 
     console.log(`📊 Generating analytics dashboard for User ${userIdNum} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
 
-    // Calculate date range
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - timeRange)
+    // Calculate optional date range (all-time if rangeDays is null)
+    const startDate = rangeDays ? new Date() : null
+    if (startDate && rangeDays) {
+      startDate.setDate(startDate.getDate() - rangeDays)
+    }
 
     // Fetch all required data concurrently
     const [
@@ -90,12 +118,19 @@ export async function GET(
       metconData
     ] = await Promise.all([
       // Performance logs
-      supabase
-        .from('performance_logs')
-        .select('*')
-        .eq('user_id', userIdNum)
-        .gte('logged_at', startDate.toISOString())
-        .order('logged_at', { ascending: true }),
+      (async () => {
+        const query = supabase
+          .from('performance_logs')
+          .select('*')
+          .eq('user_id', userIdNum)
+          .order('logged_at', { ascending: true })
+        if (startDate) {
+          // Apply time window only when specified
+          // @ts-ignore - query builder chaining
+          query.gte('logged_at', startDate.toISOString())
+        }
+        return query
+      })(),
       
       // Weekly summaries
       supabase
@@ -105,19 +140,25 @@ export async function GET(
         .order('week', { ascending: true }),
       
       // MetCon data (if requested)
-      includeMetCons ? supabase
-        .from('program_metcons')
-        .select(`
-          *,
-          metcons!inner(
-            workout_id,
-            time_range,
-            tasks
-          )
-        `)
-        .eq('user_id', userIdNum)
-        .gte('completed_at', startDate.toISOString())
-        .order('completed_at', { ascending: true }) : Promise.resolve({ data: [], error: null })
+      includeMetCons ? (async () => {
+        const query = supabase
+          .from('program_metcons')
+          .select(`
+            *,
+            metcons!inner(
+              workout_id,
+              time_range,
+              tasks
+            )
+          `)
+          .eq('user_id', userIdNum)
+          .order('completed_at', { ascending: true })
+        if (startDate) {
+          // @ts-ignore - query builder chaining
+          query.gte('completed_at', startDate.toISOString())
+        }
+        return query
+      })() : Promise.resolve({ data: [], error: null })
     ])
 
     // Check for errors
@@ -181,11 +222,12 @@ export async function GET(
       },
       metadata: {
         generatedAt: new Date().toISOString(),
-        dataRange: `${timeRange} days`,
+        dataRange: rangeDays ? `${rangeDays} days` : 'all-time',
         totalPerformanceLogs: performanceData.data?.length || 0,
         totalWeeklySummaries: weeklySummaries.data?.length || 0,
         totalMetCons: includeMetCons ? (metconData.data?.length || 0) : 0,
         dashboardType,
+        range: rangeDays ? `${rangeDays}d` : 'all-time',
         includeMetCons,
         accessType: isCoach ? 'coach' : 'self',
         permissionLevel
