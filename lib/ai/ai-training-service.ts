@@ -12,6 +12,9 @@ export interface TrainingAssistantRequest {
   userId: number
   conversationHistory?: Array<{ role: string; content: string }>
   userContext?: { name?: string; ability_level?: string; units?: string; current_program_id?: number }
+  // Optional context from UI chips
+  entity?: string | null
+  range?: string | null
 }
 
 export interface QueryExecution {
@@ -222,6 +225,14 @@ export class AITrainingAssistant {
       : wantsAccessories
       ? "10) For accessories-related requests, add AND block = 'ACCESSORIES' to the WHERE clause"
       : ''
+    const entityFilter = (req.entity || '').trim()
+    const rangeToken = (req.range || '').trim()
+    const timeFilter = rangeToken === 'last_7_days' ? "AND logged_at >= now() - interval '7 days'"
+      : rangeToken === 'last_14_days' ? "AND logged_at >= now() - interval '14 days'"
+      : rangeToken === 'last_30_days' ? "AND logged_at >= now() - interval '30 days'"
+      : rangeToken === 'this_week' ? "AND logged_at >= date_trunc('week', current_date)"
+      : ''
+
     return `You are a database query specialist for a fitness application. Generate the MINIMAL set of SQL queries (1-3) to retrieve data needed to answer the user's question.
 
 STRICT OUTPUT CONTRACT:
@@ -252,6 +263,8 @@ HARD RULES:
 8) One-way normalization: Map user shorthand to canonical names using GLOSSARY below. NEVER turn canonical names into abbreviations. NEVER use abbreviations in SQL
       9) Do not use or join on program_workout_id; it is often NULL and non-authoritative
 ${blockRule ? blockRule + '\n' : ''}
+      ${entityFilter ? `10) ENTITY provided: include WHERE exercise_name ILIKE '%${entityFilter.replace(/"/g, '')}%' in every query` : ''}
+      ${timeFilter ? `11) TIME RANGE provided: include "${timeFilter}" in every query` : ''}
 
 AMBIGUOUS TERMS & DEFAULTS:
 - Terms like "workout", "session", "training" can mean different things.
@@ -297,6 +310,8 @@ COMMON PATTERNS (examples):
         SELECT COUNT(DISTINCT DATE(logged_at)) AS total_days
         FROM performance_logs
         WHERE user_id = ${req.userId}
+        ${entityFilter ? `AND exercise_name ILIKE '%${entityFilter.replace(/"/g, '')}%'` : ''}
+        ${timeFilter}
 
         - Top skills by total reps →
   SELECT exercise_name, SUM(reps::int) AS total_reps
@@ -313,6 +328,8 @@ COMMON PATTERNS (examples):
         SELECT block, COUNT(DISTINCT DATE(logged_at)) AS days_with_block
         FROM performance_logs
         WHERE user_id = ${req.userId}
+        ${entityFilter ? `AND exercise_name ILIKE '%${entityFilter.replace(/"/g, '')}%'` : ''}
+        ${timeFilter}
         GROUP BY block
         ORDER BY days_with_block DESC
         LIMIT 10

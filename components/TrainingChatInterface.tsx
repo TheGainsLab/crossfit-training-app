@@ -231,6 +231,16 @@ credentials: 'include',
 
   // Send a quick follow-up without typing
   const withRange = (text: string) => (lastRangeLabel ? `${text} for ${lastRangeLabel.toLowerCase()}` : text)
+  const getRangeToken = (): string | null => {
+    const l = (lastRangeLabel || '').toLowerCase()
+    if (!l) return null
+    if (l.includes('7')) return 'last_7_days'
+    if (l.includes('14')) return 'last_14_days'
+    if (l.includes('30')) return 'last_30_days'
+    if (l.includes('all')) return 'all_time'
+    if (l.includes('week')) return 'this_week'
+    return null
+  }
 
   // Heuristic entity detection from last user message
   const getEntityFromLastUserMessage = (): string | null => {
@@ -256,7 +266,13 @@ credentials: 'include',
       const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(actionName ? { 'X-Action-Name': actionName } : {}) },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          ...(actionName ? { 'X-Action-Name': actionName } : {}),
+          ...(getEntityFromLastUserMessage() ? { 'X-Entity': String(getEntityFromLastUserMessage()) } : {}),
+          ...(getRangeToken() ? { 'X-Range': String(getRangeToken()) } : {}),
+        },
         body: JSON.stringify({ message: text, conversation_id: activeConversationId })
       })
       const data = await response.json()

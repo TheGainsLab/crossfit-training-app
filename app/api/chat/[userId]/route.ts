@@ -41,113 +41,50 @@ export async function POST(
       return NextResponse.json({ error: 'Active subscription required' }, { status: 403 });
     }
 
-    // (moved) keyword MetCon handler is placed after conversation creation where conversationId exists
-
-    // (moved) Which profile skills need work? handled after conversation creation
-
-    // Domain fence with persistence
-    const onTopic = isOnTopic((message || '').toLowerCase())
-    if (!onTopic) {
-      // Ensure conversation exists to persist guard message
-      let conversationId = conversation_id;
-      if (!conversationId) {
-        const { data: newConversation } = await supabase
-          .from('chat_conversations')
-          .insert({ user_id: parseInt(userId), title: generateConversationTitle(message), is_active: true })
-          .select('id')
-          .single();
-        conversationId = newConversation?.id;
-      }
-      const guidance =
-        "I am GainsAI. I can help with every aspect of training, performance, and relevant topics. " +
-        "Ask me about fitness, health, nutrition, your program, goals, endurance work, or supplements. " +
-        "I have access to your profile and training history, so I can tailor advice to you."
-      if (conversationId) {
-        await supabase.from('chat_messages').insert({ conversation_id: conversationId, role: 'assistant', content: guidance, created_at: new Date().toISOString() })
-        await supabase.from('chat_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
-      }
-      return NextResponse.json({ success: true, response: guidance, conversation_id: conversationId || null, responseType: 'domain_guard', coachAlertGenerated: false })
-    }
-
-    // Get or create conversation
-    let conversationId = conversation_id;
-    if (!conversationId) {
-      const { data: newConversation, error: convError } = await supabase
-        .from('chat_conversations')
-        .insert({
-          user_id: parseInt(userId),
-          title: generateConversationTitle(message),
-          is_active: true
-        })
-        .select('id')
-        .single();
-
-      if (convError) {
-        console.error('Error creating conversation:', convError);
-        throw new Error('Failed to create conversation');
-      }
-      conversationId = newConversation.id;
-    }
-
-    // Store user message
-    const { error: userMessageError } = await supabase
-      .from('chat_messages')
-      .insert({
-        conversation_id: conversationId,
-        role: 'user',
-        content: message,
-        created_at: new Date().toISOString()
-      });
-
-    if (userMessageError) {
-      console.error('Error storing user message:', userMessageError);
-      throw new Error('Failed to store message');
-    }
-
     // Get conversation history
-    const { data: conversationHistory, error: historyError } = await supabase
+    const { data: conversationHistory } = await supabase
       .from('chat_messages')
       .select('role, content')
-      .eq('conversation_id', conversationId)
+      .eq('conversation_id', conversation_id || -1)
       .order('created_at', { ascending: true })
       .limit(20);
 
-    if (historyError) {
-      console.error('Error fetching conversation history:', historyError);
-      // Continue without history rather than fail
-    }
-
     // In-route AI assistant bound to the user's Supabase client
     const actionName = request.headers.get('x-action-name') || null
+    const entity = request.headers.get('x-entity') || null
+    const range = request.headers.get('x-range') || null
     if (actionName) {
-      console.log('[CHAT][action]', { userId: parseInt(userId), actionName })
+      console.log('[CHAT][action]', { userId: parseInt(userId), actionName, entity, range })
     }
     const ai = createAITrainingAssistantForUser(supabase as any)
     const assistantData = await ai.generateResponse({
       userQuestion: message,
       userId: parseInt(userId),
       conversationHistory: conversationHistory || [],
-      userContext: await getBasicUserContextInternal(supabase as any, parseInt(userId))
+      userContext: await getBasicUserContextInternal(supabase as any, parseInt(userId)),
+      // @ts-ignore pass context
+      entity,
+      range
     })
 
     // Store assistant message and update conversation timestamp
     await supabase
       .from('chat_messages')
       .insert({
-        conversation_id: conversationId,
+        conversation_id: conversation_id,
         role: 'assistant',
-      content: assistantData.response,
+        content: assistantData.response,
         created_at: new Date().toISOString()
       })
     await supabase
       .from('chat_conversations')
       .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversationId);
+      .eq('id', conversation_id || -1);
 
     return NextResponse.json({
       success: true,
       response: assistantData.response,
-      conversation_id: conversationId,
+      conversation_id: conversation_id,
       responseType: 'program_guidance',
       coachAlertGenerated: false
     });
@@ -160,7 +97,6 @@ export async function POST(
     }, { status: 500 });
   }
 }
-// (removed internal basic context; using unified buildContextFeatures instead)
 
 export async function GET(
   _request: NextRequest,
