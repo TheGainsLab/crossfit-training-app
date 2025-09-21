@@ -16,7 +16,7 @@ export async function GET() {
       .select(`
         id,
         subscriptions!inner(billing_interval, status),
-        programs(program_number, generated_at)
+        programs:programs!programs_user_id_fkey(program_number, generated_at)
       `)
       .in('subscriptions.status', ['active','trialing'])
 
