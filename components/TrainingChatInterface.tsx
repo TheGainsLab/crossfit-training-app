@@ -385,6 +385,51 @@ credentials: 'include',
             </div>
           )
         }
+
+        // If rows include training_date, render date-grouped sessions
+        if (rows.length > 0 && rows.some((r: any) => 'training_date' in r)) {
+          // Group by date (string or Date)
+          const byDate = new Map<string, Array<{ name: string; sets?: any; reps?: any; weight?: any }>>()
+          for (const r of rows) {
+            const dRaw = r.training_date
+            const d = typeof dRaw === 'string' ? dRaw : (dRaw?.toString?.() || '')
+            const name = String(r.exercise_name ?? '')
+            const sets = r.sets
+            const reps = r.reps
+            const weight = r.weight_time
+            if (!byDate.has(d)) byDate.set(d, [])
+            byDate.get(d)!.push({ name, sets, reps, weight })
+          }
+          const orderedDates = Array.from(byDate.keys()).sort((a, b) => (a < b ? 1 : -1))
+          const entity = getEntityFromLastUserMessage()
+          const labelSuffix = entity ? ` (${entity})` : ''
+          return (
+            <div className="text-sm">
+              {orderedDates.map(date => (
+                <div key={date} className="mb-3">
+                  <div className="font-semibold">{date}</div>
+                  <ul className="list-disc list-inside">
+                    {(byDate.get(date) || []).map((it, i) => (
+                      <li key={`${date}-${i}`}>
+                        {it.name}
+                        {/* Optionally show details if present */}
+                        {it.reps ? ` — ${it.reps}` : ''}
+                        {it.sets ? ` ${it.sets}` : ''}
+                        {it.weight ? ` ${it.weight}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              {/* Refinement-only chips */}
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `By block for ${entity}` : 'By block'), 'chip_individual_blocks')}>Individual Blocks{labelSuffix}</button>
+                <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `Total reps for ${entity}` : 'Total reps'), 'chip_total_reps')}>Total Reps{labelSuffix}</button>
+                <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `Avg RPE for ${entity}` : 'Avg RPE'), 'chip_avg_rpe')}>Avg RPE{labelSuffix}</button>
+              </div>
+            </div>
+          )
+        }
         const renderActionBar = () => {
           const entity = getEntityFromLastUserMessage()
           const labelSuffix = entity ? ` (${entity})` : ''
