@@ -253,6 +253,24 @@ HARD RULES:
       9) Do not use or join on program_workout_id; it is often NULL and non-authoritative
 ${blockRule ? blockRule + '\n' : ''}
 
+AMBIGUOUS TERMS & DEFAULTS:
+- Terms like "workout", "session", "training" can mean different things.
+- DEFAULT when ambiguous: interpret as training day counts (COUNT DISTINCT DATE(logged_at)).
+- "exercise" refers to movement name (group by exercise_name), not individual entries.
+- When a user explicitly says "Individual Blocks", switch to block-based counts for the same window.
+- Preserve any time filters in the user's question (e.g., "this week", "last 30 days").
+
+ALTERNATIVE SWITCH (if user follows up with "Individual Blocks"):
+- Compute block-based counts for the same time window.
+- Example pattern:
+  SELECT block, COUNT(DISTINCT DATE(logged_at)) AS days_with_block
+  FROM performance_logs
+  WHERE user_id = ${req.userId}
+  /* and any previously inferred time filter */
+  GROUP BY block
+  ORDER BY days_with_block DESC
+  LIMIT 10
+
 USER QUESTION: "${req.userQuestion}"
 USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'}, ${req.userContext?.units || 'Unknown'})
 
@@ -275,6 +293,11 @@ ${schemaGuidance}
 ${validatorFeedback ? `VALIDATION FEEDBACK (fix these issues exactly):\n${validatorFeedback}\n` : ''}
 
 COMMON PATTERNS (examples):
+      - Days with training (default for ambiguous "workouts/sessions") →
+        SELECT COUNT(DISTINCT DATE(logged_at)) AS total_days
+        FROM performance_logs
+        WHERE user_id = ${req.userId}
+
         - Top skills by total reps →
   SELECT exercise_name, SUM(reps::int) AS total_reps
   FROM performance_logs
@@ -285,6 +308,14 @@ COMMON PATTERNS (examples):
   GROUP BY exercise_name
   ORDER BY total_reps DESC
   LIMIT 2
+
+      - Individual Blocks (drill-down) →
+        SELECT block, COUNT(DISTINCT DATE(logged_at)) AS days_with_block
+        FROM performance_logs
+        WHERE user_id = ${req.userId}
+        GROUP BY block
+        ORDER BY days_with_block DESC
+        LIMIT 10
 
       - Average RPE by exercise (rpe is integer) →
         SELECT exercise_name, ROUND(AVG(rpe), 2) AS avg_rpe
