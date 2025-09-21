@@ -41,11 +41,32 @@ export async function POST(
       return NextResponse.json({ error: 'Active subscription required' }, { status: 403 });
     }
 
+    // Ensure a conversation exists (create if missing)
+    let conversationId = conversation_id as number | null
+    if (!conversationId) {
+      const title = String((message || '').slice(0, 40) || 'New conversation')
+      const { data: newConv, error: convErr } = await supabase
+        .from('chat_conversations')
+        .insert({ user_id: parseInt(userId), title, is_active: true })
+        .select('id')
+        .single()
+      if (!convErr && newConv?.id) {
+        conversationId = newConv.id
+      }
+    }
+
+    // Optionally persist the user message for history
+    if (conversationId) {
+      await supabase
+        .from('chat_messages')
+        .insert({ conversation_id: conversationId, role: 'user', content: message, created_at: new Date().toISOString() })
+    }
+
     // Get conversation history
     const { data: conversationHistory } = await supabase
       .from('chat_messages')
       .select('role, content')
-      .eq('conversation_id', conversation_id || -1)
+      .eq('conversation_id', conversationId || -1)
       .order('created_at', { ascending: true })
       .limit(20);
 
@@ -68,23 +89,25 @@ export async function POST(
     })
 
     // Store assistant message and update conversation timestamp
-    await supabase
-      .from('chat_messages')
-      .insert({
-        conversation_id: conversation_id,
-        role: 'assistant',
-        content: assistantData.response,
-        created_at: new Date().toISOString()
-      })
-    await supabase
-      .from('chat_conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversation_id || -1);
+    if (conversationId) {
+      await supabase
+        .from('chat_messages')
+        .insert({
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: assistantData.response,
+          created_at: new Date().toISOString()
+        })
+      await supabase
+        .from('chat_conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', conversationId)
+    }
 
     return NextResponse.json({
       success: true,
       response: assistantData.response,
-      conversation_id: conversation_id,
+      conversation_id: conversationId,
       responseType: 'program_guidance',
       coachAlertGenerated: false
     });
