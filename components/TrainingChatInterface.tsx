@@ -31,6 +31,7 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   const [expandedMessages, setExpandedMessages] = useState<Record<number, boolean>>({})
   const [lastRangeLabel, setLastRangeLabel] = useState<string | null>(null)
   const [lastEntity, setLastEntity] = useState<string | null>(null)
+  const [exerciseNames, setExerciseNames] = useState<string[]>([])
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   // --- Supabase singleton client + access token state ---
@@ -66,6 +67,17 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Fetch canonical exercise names for allowlist matching
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from('exercises').select('name').limit(2000)
+        const names = (data || []).map((r: any) => String(r.name || '')).filter(Boolean)
+        setExerciseNames(names)
+      } catch {}
+    })()
+  }, [])
 
   const fetchConversations = async () => {
     try {
@@ -247,13 +259,38 @@ credentials: 'include',
     if (lastEntity) return lastEntity
     const lastUser = [...messages].reverse().find(m => m.role === 'user')
     if (!lastUser?.content) return null
-    const stop = new Set(['how','many','much','the','a','an','and','or','of','to','for','with','have','i','you','my','sessions','session','workouts','workout','training','trainings','days','day','count','total','avg','average','rpe','last','this','week','month','year'])
-    // Prefer text inside parentheses e.g., "(squats)"
-    const paren = lastUser.content.match(/\(([^)]+)\)/)
-    if (paren && paren[1]) return paren[1].trim()
-    const words = lastUser.content.toLowerCase().match(/[a-z][a-z\-']{3,}/g) || []
-    const cand = words.filter(w => !stop.has(w))
-    return cand[0] || null
+    const text = lastUser.content.toLowerCase()
+    // Prefer content inside parentheses
+    const paren = text.match(/\(([^)]+)\)/)
+    const parenVal = paren && paren[1] ? paren[1].trim() : ''
+    const candidates: string[] = []
+    if (parenVal) candidates.push(parenVal)
+    // Tokenize message
+    const tokens = (text.match(/[a-z][a-z\-']{3,}/g) || [])
+    // Stopwords (expanded)
+    const stop = new Set(['how','many','much','the','a','an','and','or','of','to','for','with','have','i','you','my','sessions','session','workouts','workout','training','trainings','days','day','count','total','avg','average','rpe','last','this','week','month','year','completed','completion','completions'])
+    const filtered = tokens.filter(w => !stop.has(w))
+    candidates.push(...filtered)
+    // If we have canonical names, try to match best
+    const names = exerciseNames.map(n => n.toLowerCase())
+    let best: string | null = null
+    let bestScore = 0
+    for (const cand of candidates) {
+      if (!cand) continue
+      // Exact ilike (token equals a full name token)
+      for (const name of names) {
+        const score = name.includes(cand) ? cand.length : 0
+        if (score > bestScore) { bestScore = score; best = cand }
+      }
+    }
+    // Fallback: common movement roots
+    const roots = ['squat','deadlift','snatch','clean','press','pull','row','dip','push','handstand','rope','pistol','lunge','muscle','double','single','burpee','swing','bench']
+    if (!best) {
+      for (const r of roots) {
+        if (text.includes(r)) { best = r; break }
+      }
+    }
+    return best
   }
 
   const sendQuickQuery = async (text: string, actionName?: string) => {
