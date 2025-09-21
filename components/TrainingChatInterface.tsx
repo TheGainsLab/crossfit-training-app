@@ -29,6 +29,7 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null)
   const [showConversations, setShowConversations] = useState(false)
   const [expandedMessages, setExpandedMessages] = useState<Record<number, boolean>>({})
+  const [lastRangeLabel, setLastRangeLabel] = useState<string | null>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   // --- Supabase singleton client + access token state ---
@@ -215,6 +216,8 @@ credentials: 'include',
   }
 
   // Send a quick follow-up without typing
+  const withRange = (text: string) => (lastRangeLabel ? `${text} for ${lastRangeLabel.toLowerCase()}` : text)
+
   const sendQuickQuery = async (text: string) => {
     if (!text || loading) return
     if (!token) return
@@ -307,7 +310,7 @@ credentials: 'include',
               <div className="text-gray-500 mb-2">Try a different range:</div>
               <div className="flex flex-wrap gap-2">
                 {['Last 7 days', 'Last 14 days', 'Last 30 days', 'All time'].map(label => (
-                  <button key={label} onClick={() => sendQuickQuery(label)} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border">
+                  <button key={label} onClick={() => { setLastRangeLabel(label); sendQuickQuery(label) }} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border">
                     {label}
                   </button>
                 ))}
@@ -315,6 +318,15 @@ credentials: 'include',
             </div>
           )
         }
+        const renderActionBar = () => (
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Individual Blocks'))}>Individual Blocks</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Exercises tried (count)'))}>Exercises Tried (count)</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Show exercises list'))}>Show Exercises List</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Metcons completed (days)'))}>Metcons Completed</button>
+          </div>
+        )
+
         // If it's a list with exercise_name plus aggregates (avg_rpe, total_reps)
         if (rows.length > 0 && rows.every((r: any) => r && typeof r === 'object' && 'exercise_name' in r)) {
           const hasAvgRpe = rows.some((r: any) => 'avg_rpe' in r)
@@ -346,6 +358,7 @@ credentials: 'include',
                     {expanded ? 'Show less' : `Show all (${rows.length})`}
                   </button>
                 )}
+                {renderActionBar()}
               </div>
             )
           }
@@ -359,6 +372,7 @@ credentials: 'include',
                   <li key={n}>{n}</li>
                 ))}
               </ul>
+              {renderActionBar()}
             </div>
           )
         }
@@ -379,6 +393,7 @@ credentials: 'include',
                     </div>
                   )
                 })}
+                <div className="col-span-full">{renderActionBar()}</div>
               </div>
             )
           }
