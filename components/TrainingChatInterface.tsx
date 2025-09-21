@@ -218,7 +218,20 @@ credentials: 'include',
   // Send a quick follow-up without typing
   const withRange = (text: string) => (lastRangeLabel ? `${text} for ${lastRangeLabel.toLowerCase()}` : text)
 
-  const sendQuickQuery = async (text: string) => {
+  // Heuristic entity detection from last user message
+  const getEntityFromLastUserMessage = (): string | null => {
+    const lastUser = [...messages].reverse().find(m => m.role === 'user')
+    if (!lastUser?.content) return null
+    const stop = new Set(['how','many','much','the','a','an','and','or','of','to','for','with','have','i','you','my','sessions','session','workouts','workout','training','days','day','count','total','avg','average','rpe','last','this','week','month','year'])
+    // Prefer text inside parentheses e.g., "(squats)"
+    const paren = lastUser.content.match(/\(([^)]+)\)/)
+    if (paren && paren[1]) return paren[1].trim()
+    const words = lastUser.content.toLowerCase().match(/[a-z][a-z\-']{3,}/g) || []
+    const cand = words.filter(w => !stop.has(w))
+    return cand[0] || null
+  }
+
+  const sendQuickQuery = async (text: string, actionName?: string) => {
     if (!text || loading) return
     if (!token) return
     setLoading(true)
@@ -228,7 +241,7 @@ credentials: 'include',
       const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(actionName ? { 'X-Action-Name': actionName } : {}) },
         body: JSON.stringify({ message: text, conversation_id: activeConversationId })
       })
       const data = await response.json()
@@ -309,8 +322,8 @@ credentials: 'include',
               <div className="text-gray-700">No results for this window.</div>
               <div className="text-gray-500 mb-2">Try a different range:</div>
               <div className="flex flex-wrap gap-2">
-                {['Last 7 days', 'Last 14 days', 'Last 30 days', 'All time'].map(label => (
-                  <button key={label} onClick={() => { setLastRangeLabel(label); sendQuickQuery(label) }} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border">
+        {['Last 7 days', 'Last 14 days', 'Last 30 days', 'All time'].map(label => (
+                  <button key={label} onClick={() => { setLastRangeLabel(label); sendQuickQuery(label, 'range_chip') }} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border">
                     {label}
                   </button>
                 ))}
@@ -318,14 +331,18 @@ credentials: 'include',
             </div>
           )
         }
-        const renderActionBar = () => (
+        const renderActionBar = () => {
+          const entity = getEntityFromLastUserMessage()
+          const labelSuffix = entity ? ` (${entity})` : ''
+          return (
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Individual Blocks'))}>Individual Blocks</button>
-            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Exercises tried (count)'))}>Exercises Tried (count)</button>
-            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Show exercises list by block'))}>Show Exercises List</button>
-            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Metcons completed (days)'))}>Metcons Completed</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(`By block${labelSuffix}`), 'chip_individual_blocks')}>Individual Blocks{labelSuffix}</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(`Total reps${labelSuffix}`), 'chip_total_reps')}>Total Reps{labelSuffix}</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(`Avg RPE${labelSuffix}`), 'chip_avg_rpe')}>Avg RPE{labelSuffix}</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Show exercises list by block'), 'chip_show_exercises')}>Show Exercises List</button>
           </div>
-        )
+          )
+        }
 
         // If it's a list with exercise_name plus aggregates (avg_rpe, total_reps)
         if (rows.length > 0 && rows.every((r: any) => r && typeof r === 'object' && 'exercise_name' in r)) {

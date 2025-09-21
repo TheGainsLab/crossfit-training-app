@@ -118,6 +118,10 @@ export async function POST(
     }
 
     // In-route AI assistant bound to the user's Supabase client
+    const actionName = request.headers.get('x-action-name') || null
+    if (actionName) {
+      console.log('[CHAT][action]', { userId: parseInt(userId), actionName })
+    }
     const ai = createAITrainingAssistantForUser(supabase as any)
     const assistantData = await ai.generateResponse({
       userQuestion: message,
