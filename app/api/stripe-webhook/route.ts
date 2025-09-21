@@ -10,6 +10,26 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Helper: normalize Stripe timestamps (seconds, milliseconds, ISO) -> ISO date string or null
+function toIsoDate(value: any, { dateOnly = true }: { dateOnly?: boolean } = {}): string | null {
+  if (value === null || value === undefined) return null
+  let d: Date
+  if (typeof value === 'number') {
+    // Heuristic: seconds epoch is much smaller than ms
+    d = new Date(value < 10_000_000_000 ? value * 1000 : value)
+  } else if (typeof value === 'string') {
+    const parsed = new Date(value)
+    d = parsed
+  } else if (value instanceof Date) {
+    d = value
+  } else {
+    return null
+  }
+  if (isNaN(d.getTime())) return null
+  const iso = d.toISOString()
+  return dateOnly ? iso.split('T')[0] : iso
+}
+
 // MOVED OUTSIDE - Now accessible to all handler functions
 async function getCurrentUserData(userId: number) {
   // Get basic user info
@@ -346,9 +366,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         plan: 'premium',
         amount_cents: amountTotal,
         billing_interval: (subscription as any).items.data[0].price.recurring?.interval || 'month',
-        subscription_start: (subscription as any).created ? new Date((subscription as any).created * 1000).toISOString().split('T')[0] : null,
-        current_period_start: (subscription as any).current_period_start ? new Date((subscription as any).current_period_start * 1000).toISOString().split('T')[0] : null,
-        current_period_end: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString().split('T')[0] : null,
+        subscription_start: toIsoDate((subscription as any).created),
+        current_period_start: toIsoDate((subscription as any).current_period_start),
+        current_period_end: toIsoDate((subscription as any).current_period_end),
         updated_at: new Date().toISOString()
       }
 
@@ -424,9 +444,9 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     status: subscription.status,
     plan: 'premium',
     billing_interval: (subscription as any).items.data[0].price.recurring?.interval || 'month',
-    subscription_start: new Date((subscription as any).created * 1000).toISOString().split('T')[0],
-    current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString().split('T')[0],
-    current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString().split('T')[0],
+    subscription_start: toIsoDate((subscription as any).created),
+    current_period_start: toIsoDate((subscription as any).current_period_start),
+    current_period_end: toIsoDate((subscription as any).current_period_end),
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }
@@ -449,9 +469,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     .from('subscriptions')
     .update({
       status: subscription.status,
-      current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString().split('T')[0],
-      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString().split('T')[0],
-      canceled_at: (subscription as any).canceled_at ? new Date((subscription as any).canceled_at * 1000).toISOString() : null,
+      current_period_start: toIsoDate((subscription as any).current_period_start),
+      current_period_end: toIsoDate((subscription as any).current_period_end),
+      canceled_at: toIsoDate((subscription as any).canceled_at, { dateOnly: false }),
       updated_at: new Date().toISOString()
     })
     .eq('stripe_subscription_id', subscription.id)
