@@ -161,19 +161,7 @@ credentials: 'include',
     setMessages(prev => [...prev, tempUserMessage])
 
     try {
-      // Extract and persist entity from freeform user message (not chips)
-      try {
-        const stop = new Set(['how','many','much','the','a','an','and','or','of','to','for','with','have','i','you','my','sessions','session','workouts','workout','training','trainings','days','day','count','total','avg','average','rpe','last','this','week','month','year'])
-        const paren = userMessage.match(/\(([^)]+)\)/)
-        let ent: string | null = null
-        if (paren && paren[1]) ent = paren[1].trim()
-        if (!ent) {
-          const words = userMessage.toLowerCase().match(/[a-z][a-z\-']{3,}/g) || []
-          const cand = words.filter(w => !stop.has(w))
-          ent = cand[0] || null
-        }
-        if (ent) setLastEntity(ent)
-      } catch {}
+      // Do not set lastEntity from naive tokens; entity is derived via allowlist elsewhere
       const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
   credentials: 'include',      
@@ -256,41 +244,39 @@ credentials: 'include',
 
   // Heuristic entity detection from last user message
   const getEntityFromLastUserMessage = (): string | null => {
-    if (lastEntity) return lastEntity
+    if (lastEntity && exerciseNames.includes(lastEntity)) return lastEntity
     const lastUser = [...messages].reverse().find(m => m.role === 'user')
     if (!lastUser?.content) return null
     const text = lastUser.content.toLowerCase()
     // Prefer content inside parentheses
     const paren = text.match(/\(([^)]+)\)/)
     const parenVal = paren && paren[1] ? paren[1].trim() : ''
-    const candidates: string[] = []
-    if (parenVal) candidates.push(parenVal)
-    // Tokenize message
+    // Helper to find best canonical match
+    const findBest = (needle: string): string | null => {
+      if (!needle) return null
+      const n = needle.toLowerCase()
+      // Exact ILIKE
+      const exact = exerciseNames.find(en => en.toLowerCase() === n)
+      if (exact) return exact
+      // Substring ILIKE
+      let bestName: string | null = null
+      let bestLen = 0
+      for (const en of exerciseNames) {
+        const el = en.toLowerCase()
+        if (el.includes(n) && n.length > bestLen) { bestLen = n.length; bestName = en }
+      }
+      return bestName
+    }
+    // Try parentheses first
+    const fromParen = findBest(parenVal)
+    if (fromParen) return fromParen
+    // Tokenize and try tokens against allowlist
     const tokens = (text.match(/[a-z][a-z\-']{3,}/g) || [])
-    // Stopwords (expanded)
-    const stop = new Set(['how','many','much','the','a','an','and','or','of','to','for','with','have','i','you','my','sessions','session','workouts','workout','training','trainings','days','day','count','total','avg','average','rpe','last','this','week','month','year','completed','completion','completions'])
-    const filtered = tokens.filter(w => !stop.has(w))
-    candidates.push(...filtered)
-    // If we have canonical names, try to match best
-    const names = exerciseNames.map(n => n.toLowerCase())
-    let best: string | null = null
-    let bestScore = 0
-    for (const cand of candidates) {
-      if (!cand) continue
-      // Exact ilike (token equals a full name token)
-      for (const name of names) {
-        const score = name.includes(cand) ? cand.length : 0
-        if (score > bestScore) { bestScore = score; best = cand }
-      }
+    for (const tok of tokens) {
+      const m = findBest(tok)
+      if (m) return m
     }
-    // Fallback: common movement roots
-    const roots = ['squat','deadlift','snatch','clean','press','pull','row','dip','push','handstand','rope','pistol','lunge','muscle','double','single','burpee','swing','bench']
-    if (!best) {
-      for (const r of roots) {
-        if (text.includes(r)) { best = r; break }
-      }
-    }
-    return best
+    return null
   }
 
   const sendQuickQuery = async (text: string, actionName?: string) => {
@@ -402,6 +388,28 @@ credentials: 'include',
         const renderActionBar = () => {
           const entity = getEntityFromLastUserMessage()
           const labelSuffix = entity ? ` (${entity})` : ''
+          if (!entity) {
+            // Disambiguation: propose top matching exercises from message tokens
+            const lastUser = [...messages].reverse().find(m => m.role === 'user')
+            const text = (lastUser?.content || '').toLowerCase()
+            const tokens = (text.match(/[a-z][a-z\-']{3,}/g) || [])
+            const suggestions: string[] = []
+            for (const en of exerciseNames) {
+              const el = en.toLowerCase()
+              if (tokens.some(t => el.includes(t))) suggestions.push(en)
+              if (suggestions.length >= 6) break
+            }
+            if (!suggestions.length) return null
+            return (
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                {suggestions.map(s => (
+                  <button key={s} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => setLastEntity(s)}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )
+          }
           return (
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `By block for ${entity}` : 'By block'), 'chip_individual_blocks')}>Individual Blocks{labelSuffix}</button>
