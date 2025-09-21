@@ -215,7 +215,7 @@ function isOnTopic(text: string): boolean {
     'hypertrophy', 'mobility', 'flexibility', 'technique', 'form', 'injury', 'pain', 'rehab', 'physical therapy', 'physio',
     'recovery', 'sleep', 'stress', 'hrv', 'rest', 'deload', 'rpe', 'volume', 'intensity', 'sets', 'reps', 'tempo',
     'nutrition', 'diet', 'macros', 'protein', 'carbs', 'fat', 'calorie', 'calories', 'hydration', 'electrolyte', 'supplement', 'creatine', 'caffeine',
-    'body weight', 'bodyweight', 'weight loss', 'gain', 'cut', 'bulk',
+    'body weight', 'bodyweight', 'weight loss', 'gain', 'cut', 'bulk', 'exercise', 'exercises', 'movement', 'movements',
     'run', 'rowing', 'bike', 'erg', 'metcon', 'wod', 'crossfit', 'olympic', 'olympic lift', 'oly', 'weightlifting', 'lifting', 'snatch', 'clean', 'jerk', 'squat', 'deadlift', 'press', 'pull-up', 'ring',
     'goal', 'progression', 'plateau', '1rm', 'one rep max', 'percentage'
   ]
