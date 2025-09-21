@@ -30,6 +30,7 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   const [showConversations, setShowConversations] = useState(false)
   const [expandedMessages, setExpandedMessages] = useState<Record<number, boolean>>({})
   const [lastRangeLabel, setLastRangeLabel] = useState<string | null>(null)
+  const [lastEntity, setLastEntity] = useState<string | null>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   // --- Supabase singleton client + access token state ---
@@ -148,6 +149,19 @@ credentials: 'include',
     setMessages(prev => [...prev, tempUserMessage])
 
     try {
+      // Extract and persist entity from freeform user message (not chips)
+      try {
+        const stop = new Set(['how','many','much','the','a','an','and','or','of','to','for','with','have','i','you','my','sessions','session','workouts','workout','training','trainings','days','day','count','total','avg','average','rpe','last','this','week','month','year'])
+        const paren = userMessage.match(/\(([^)]+)\)/)
+        let ent: string | null = null
+        if (paren && paren[1]) ent = paren[1].trim()
+        if (!ent) {
+          const words = userMessage.toLowerCase().match(/[a-z][a-z\-']{3,}/g) || []
+          const cand = words.filter(w => !stop.has(w))
+          ent = cand[0] || null
+        }
+        if (ent) setLastEntity(ent)
+      } catch {}
       const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
   credentials: 'include',      
@@ -220,9 +234,10 @@ credentials: 'include',
 
   // Heuristic entity detection from last user message
   const getEntityFromLastUserMessage = (): string | null => {
+    if (lastEntity) return lastEntity
     const lastUser = [...messages].reverse().find(m => m.role === 'user')
     if (!lastUser?.content) return null
-    const stop = new Set(['how','many','much','the','a','an','and','or','of','to','for','with','have','i','you','my','sessions','session','workouts','workout','training','days','day','count','total','avg','average','rpe','last','this','week','month','year'])
+    const stop = new Set(['how','many','much','the','a','an','and','or','of','to','for','with','have','i','you','my','sessions','session','workouts','workout','training','trainings','days','day','count','total','avg','average','rpe','last','this','week','month','year'])
     // Prefer text inside parentheses e.g., "(squats)"
     const paren = lastUser.content.match(/\(([^)]+)\)/)
     if (paren && paren[1]) return paren[1].trim()
@@ -336,10 +351,10 @@ credentials: 'include',
           const labelSuffix = entity ? ` (${entity})` : ''
           return (
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(`By block${labelSuffix}`), 'chip_individual_blocks')}>Individual Blocks{labelSuffix}</button>
-            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(`Total reps${labelSuffix}`), 'chip_total_reps')}>Total Reps{labelSuffix}</button>
-            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(`Avg RPE${labelSuffix}`), 'chip_avg_rpe')}>Avg RPE{labelSuffix}</button>
-            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Show exercises list by block'), 'chip_show_exercises')}>Show Exercises List</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `By block for ${entity}` : 'By block'), 'chip_individual_blocks')}>Individual Blocks{labelSuffix}</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `Total reps for ${entity}` : 'Total reps'), 'chip_total_reps')}>Total Reps{labelSuffix}</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `Avg RPE for ${entity}` : 'Avg RPE'), 'chip_avg_rpe')}>Avg RPE{labelSuffix}</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `Show exercises list by block for ${entity}` : 'Show exercises list by block'), 'chip_show_exercises')}>Show Exercises List</button>
           </div>
           )
         }
