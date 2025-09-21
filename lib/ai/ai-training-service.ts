@@ -84,11 +84,11 @@ setInterval(() => {
 function normalizeSql(sql: string): string {
   let s = sql.replace(/^--\s*Purpose:.*$/mi, '').trim().replace(/\s+/g, ' ')
   const lower = s.toLowerCase()
-  const isAggregateOnly = /^select\s+\s*(count\(|sum\(|avg\()/i.test(s)
+  const hasAggregate = /\b(count|sum|avg)\s*\(/i.test(s)
   const hasGroupBy = /\bgroup\s+by\b/i.test(s)
 
   // Skip normalization for pure aggregate queries (COUNT/SUM/AVG only)
-  if (isAggregateOnly) {
+  if (hasAggregate && !hasGroupBy) {
     return s
   }
 
