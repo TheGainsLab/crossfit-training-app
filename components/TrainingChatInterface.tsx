@@ -322,7 +322,7 @@ credentials: 'include',
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Individual Blocks'))}>Individual Blocks</button>
             <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Exercises tried (count)'))}>Exercises Tried (count)</button>
-            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Show exercises list'))}>Show Exercises List</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Show exercises list by block'))}>Show Exercises List</button>
             <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Metcons completed (days)'))}>Metcons Completed</button>
           </div>
         )
@@ -364,17 +364,45 @@ credentials: 'include',
           }
 
           // Otherwise, render just the names
-          const names = rows.map((r: any) => String(r.exercise_name)).filter(Boolean)
-          return (
-            <div>
-              <ul className="list-disc list-inside">
-                {names.map((n: string) => (
-                  <li key={n}>{n}</li>
+          const hasBlock = rows.some((r: any) => 'block' in r)
+          if (hasBlock) {
+            const groups = new Map<string, Set<string>>()
+            for (const r of rows) {
+              const b = String(r.block ?? '').trim() || 'UNKNOWN'
+              const n = String(r.exercise_name ?? '').trim()
+              if (!n) continue
+              if (!groups.has(b)) groups.set(b, new Set<string>())
+              groups.get(b)!.add(n)
+            }
+            const orderedBlocks = Array.from(groups.keys())
+            return (
+              <div>
+                {orderedBlocks.map(blockName => (
+                  <div key={blockName} className="mb-2">
+                    <div className="font-semibold">{blockName}</div>
+                    <ul className="list-disc list-inside">
+                      {Array.from(groups.get(blockName) || []).map((n: string) => (
+                        <li key={n}>{n}</li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
-              {renderActionBar()}
-            </div>
-          )
+                {renderActionBar()}
+              </div>
+            )
+          } else {
+            const names = rows.map((r: any) => String(r.exercise_name)).filter(Boolean)
+            return (
+              <div>
+                <ul className="list-disc list-inside">
+                  {names.map((n: string) => (
+                    <li key={n}>{n}</li>
+                  ))}
+                </ul>
+                {renderActionBar()}
+              </div>
+            )
+          }
         }
         // If single-metric rows (e.g., [{ unique_exercises: 41 }]) render stat cards
         if (rows.length && rows.every((r: any) => r && typeof r === 'object')) {
