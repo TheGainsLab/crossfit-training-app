@@ -452,6 +452,28 @@ credentials: 'include',
                   </button>
                 ))}
               </div>
+              {/* Block chips */}
+              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                <span className="text-gray-500">Block:</span>
+                {['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS'].map(b => (
+                  <button
+                    key={b}
+                    disabled={!patternTerms.length}
+                    className={`px-2 py-1 rounded border ${patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`}
+                    onClick={() => { setContextBlock(b); sendQuickQuery(`Block ${b}`, 'block_chip', { 'X-Mode': 'by_block', 'X-Block': b }) }}
+                  >
+                    {b}
+                  </button>
+                ))}
+                {contextBlock && (
+                  <button
+                    className="px-2 py-1 rounded border bg-gray-100 hover:bg-gray-200"
+                    onClick={() => { setContextBlock(null); sendQuickQuery('Clear block', 'block_clear', { 'X-Mode': 'by_block' }) }}
+                  >
+                    Clear Block
+                  </button>
+                )}
+              </div>
             </div>
           )
         }
