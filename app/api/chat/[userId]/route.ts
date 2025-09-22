@@ -83,29 +83,53 @@ export async function POST(
     if (actionName) {
       console.log('[CHAT][action]', { userId: parseInt(userId), actionName, range, block, filterRpe, filterQuality, mode, limit, sort, pattern })
     }
-    const ai = createAITrainingAssistantForUser(supabase as any)
-    const assistantData = await ai.generateResponse({
-      userQuestion: message,
-      userId: parseInt(userId),
-      conversationHistory: conversationHistory || [],
-      userContext: await getBasicUserContextInternal(supabase as any, parseInt(userId)),
-      // @ts-ignore pass context
-      pattern,
-      // @ts-ignore pass context
-      range,
-      // @ts-ignore
-      block,
-      // @ts-ignore
-      filterRpe,
-      // @ts-ignore
-      filterQuality,
-      // @ts-ignore
-      mode,
-      // @ts-ignore
-      limit,
-      // @ts-ignore
-      sort
-    })
+    // Deterministic chip handling: if mode present, build SQL directly and bypass LLM
+    let assistantData: { response: string }
+    if (mode) {
+      const sql = buildChipSql({
+        userId: parseInt(userId),
+        mode,
+        range,
+        block,
+        filterRpe,
+        filterQuality,
+        sort,
+        limit,
+        pattern,
+      })
+      const t0 = Date.now()
+      const { data, error } = await supabase.rpc('execute_user_query', { query_sql: sql, requesting_user_id: parseInt(userId) })
+      if (error) throw error
+      const rows = Array.isArray(data) ? data : []
+      const purpose = describePurpose(mode, pattern, block)
+      const responsePayload = [{ purpose, rows: rows.length, data: rows }]
+      assistantData = { response: JSON.stringify(responsePayload) }
+    } else {
+      const ai = createAITrainingAssistantForUser(supabase as any)
+      const aiResp = await ai.generateResponse({
+        userQuestion: message,
+        userId: parseInt(userId),
+        conversationHistory: conversationHistory || [],
+        userContext: await getBasicUserContextInternal(supabase as any, parseInt(userId)),
+        // @ts-ignore pass context
+        pattern,
+        // @ts-ignore pass context
+        range,
+        // @ts-ignore
+        block,
+        // @ts-ignore
+        filterRpe,
+        // @ts-ignore
+        filterQuality,
+        // @ts-ignore
+        mode,
+        // @ts-ignore
+        limit,
+        // @ts-ignore
+        sort
+      })
+      assistantData = { response: aiResp.response }
+    }
 
     // Store assistant message and update conversation timestamp
     if (conversationId) {
