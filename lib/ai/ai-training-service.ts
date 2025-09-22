@@ -264,6 +264,7 @@ HARD RULES:
 6) Do NOT reference any table/column not listed in SUBSET_SCHEMA
 7) Do NOT use IN (...) on exercise_name. Do NOT invent names. Avoid LIKE unless user typed a literal pattern (not provided here)
 8) Do NOT use or join on program_workout_id
+9) Never use case-sensitive LIKE for exercise_name. If filtering by name, use ILIKE (case-insensitive) only
 ${timeFilter ? `11) TIME RANGE provided: include "${timeFilter}" in every query` : ''}
 ${blockWhere ? `12) BLOCK provided: include "${blockWhere}" in every query` : ''}
 ${rpeWhere ? `13) RPE filter provided: include "${rpeWhere}" in every query` : ''}
@@ -473,6 +474,10 @@ RESPONSE STRUCTURE (no invented examples):
     try {
       const s = (sql || '').trim().replace(/^--\s*Purpose:.*$/mi, '')
       const lower = s.toLowerCase()
+      // Reject case-sensitive LIKE on exercise_name
+      if (/exercise_name\s+like\s+'/.test(lower)) {
+        return { ok: false, error: "Use ILIKE for exercise_name (case-insensitive); 'LIKE' is not allowed" }
+      }
       if (!lower.startsWith('select')) return { ok: false, error: 'Only SELECT statements allowed' }
       if (lower.includes(';')) return { ok: false, error: 'Multiple statements not allowed' }
       const banned = [' with ', ' insert ', ' update ', ' delete ', ' alter ', ' create ', ' drop ', ' grant ', ' revoke ']
