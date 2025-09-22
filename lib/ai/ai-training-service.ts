@@ -398,7 +398,8 @@ Generate only the JSON object described above.`
         .from('user_equipment')
         .select('equipment_name')
         .eq('user_id', req.userId)
-      const equipment = (eqRows || [])
+      const equipmentRows: any[] = (eqRows as any[]) || []
+      const equipment = equipmentRows
         .map((r: any) => r?.equipment_name)
         .filter((n: any) => typeof n === 'string' && !!n)
 
@@ -602,28 +603,13 @@ RESPONSE STRUCTURE (no invented examples):
   }
 
   private buildSchemaGuidance(userQuestion: string): string {
-    const lower = (userQuestion || '').toLowerCase()
-    let targeted = ''
-    if (/(performance|workout|exercise)/.test(lower)) {
-      targeted += `\n**performance_logs**: block, exercise_name, rpe, completion_quality, logged_at (use WHERE user_id, ORDER BY logged_at DESC)`
-    }
-    if (/(metcon|metcons|conditioning)/.test(lower)) {
-      targeted += `\n**program_metcons** (PRIMARY): metcon completions and percentiles; join programs to filter by user_id; use completed_at DESC`
-      targeted += `\n**performance_logs** (SECONDARY tasks): block task entries; not authoritative for metcon summary`
-      targeted += `\n**user_metcon_summary**: total_metcons_completed, recent_metcons JSON summary`
-    }
-    if (/(strength|1rm|max|pr)/.test(lower)) {
-      targeted += `\n**user_latest_one_rms**: latest one_rm values by exercise (use WHERE user_id)`
-    }
-    if (/(tired|recovery|rest|overtraining)/.test(lower)) {
-      targeted += `\n**user_recent_performance**: avg_rpe, avg_quality, sessions, trends (use WHERE user_id)`
-    }
-    if (/(program|plan|schedule|today)/.test(lower)) {
-      targeted += `\n**program_workouts**: week, day, main_lift, is_deload (filter by current program if applicable)`
-    }
-    const concept = this.truncateForPrompt(JSON.stringify(conceptualSchema))
-    const full = this.truncateForPrompt(JSON.stringify(databaseSchema))
-    return `${targeted || '\n(Use recent, relevant tables)'}\n\nCONCEPTUAL SCHEMA (summary):\n${concept}\n\nDATABASE SCHEMA (summary):\n${full}`
+    // Logs-only guidance
+    const summary = [
+      'Use ONLY performance_logs with these columns:',
+      'id, program_id, user_id, week, day, block, exercise_name, sets, reps, weight_time, result, rpe, completion_quality, flags, analysis, logged_at, quality_grade, set_number.',
+      'Always include WHERE user_id = <userId>. When recency matters, ORDER BY logged_at DESC. LIMIT 10-50.'
+    ].join(' ')
+    return summary
   }
 
   // Build a compact shorthand → canonical glossary for the planner
