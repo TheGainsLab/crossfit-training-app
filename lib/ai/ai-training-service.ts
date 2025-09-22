@@ -222,6 +222,7 @@ export class AITrainingAssistant {
     const intentLower = (req.userQuestion || '').toLowerCase()
     const wantsSkills = /(\bskill\b|\bskills\b)/.test(intentLower)
     const wantsAccessories = /(\baccessory\b|\baccessories\b)/.test(intentLower)
+    const wantsSessions = /(session|sessions|workout|workouts|training|days)/.test(intentLower)
     const blockRule = wantsSkills
       ? "10) For skills-related requests, add AND block = 'SKILLS' to the WHERE clause"
       : wantsAccessories
@@ -295,7 +296,7 @@ ${blockRule ? blockRule + '\n' : ''}
 
 AMBIGUOUS TERMS & DEFAULTS:
 - Terms like "workout", "session", "training" can mean different things.
-- DEFAULT when ambiguous: interpret as training day counts (COUNT DISTINCT DATE(logged_at)).
+- DEFAULT when ambiguous: interpret as training day counts (COUNT DISTINCT DATE(logged_at)). If the user specifically asks to list sessions, return DISTINCT DATE(logged_at) AS training_date (plus exercise_name if relevant) ordered by date DESC.
 - "exercise" refers to movement name (group by exercise_name), not individual entries.
 - When a user explicitly says "Individual Blocks", switch to block-based counts for the same window.
 - Preserve any time filters in the user's question (e.g., "this week", "last 30 days").
@@ -378,6 +379,15 @@ COMMON PATTERNS (examples):
           WHERE user_id = ${req.userId}
             AND block = 'ACCESSORIES'
           ORDER BY exercise_name ASC
+
+      - List training sessions by date for an entity →
+        SELECT DISTINCT DATE(logged_at) AS training_date, exercise_name
+        FROM performance_logs
+        WHERE user_id = ${req.userId}
+        ${entityFilter ? (entityType === 'family' && familyVariantsText ? `AND exercise_name IN (${familyVariantsText.replace('FAMILY_VARIANTS: ', '').split(', ').map(v => `'${v.replace(/'/g, "''")}'`).join(', ')})` : `AND exercise_name ILIKE '%${entityFilter.replace(/"/g, '')}%'`) : ''}
+        ${timeFilter}
+        ORDER BY training_date DESC
+        LIMIT 50
 
 Generate only the JSON object described above.`
   }

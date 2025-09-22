@@ -279,11 +279,24 @@ credentials: 'include',
     return bestToken
   }
 
+  const exactVariantMentioned = (variant: string | null): boolean => {
+    if (!variant) return false
+    const text = getLastUserText()
+    if (!text) return false
+    const v = variant.toLowerCase()
+    // require the full variant phrase to appear
+    return text.includes(v)
+  }
+
   const getEntityType = (): 'family' | 'variant' | null => {
-    const canonical = getEntityFromLastUserMessage()
-    if (canonical && exerciseNames.includes(canonical)) return 'variant'
     const family = getFamilyRootFromMessage()
-    if (family) return 'family'
+    const canonical = getEntityFromLastUserMessage()
+    // Prefer family when present unless the exact variant phrase is explicitly in the message
+    if (family) {
+      if (canonical && exactVariantMentioned(canonical)) return 'variant'
+      return 'family'
+    }
+    if (canonical && exerciseNames.includes(canonical)) return 'variant'
     return null
   }
 
