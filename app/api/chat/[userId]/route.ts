@@ -72,12 +72,15 @@ export async function POST(
 
     // In-route AI assistant bound to the user's Supabase client
     const actionName = request.headers.get('x-action-name') || null
-    const entity = request.headers.get('x-entity') || null
     const range = request.headers.get('x-range') || null
     const block = request.headers.get('x-block') || null
-    const entityType = request.headers.get('x-entity-type') || null
+    const filterRpe = request.headers.get('x-filter-rpe') || null // e.g., gte:8 | lte:5
+    const filterQuality = request.headers.get('x-filter-quality') || null // e.g., gte:3 | lte:2
+    const mode = request.headers.get('x-mode') || null // sessions | by_block | total_reps | avg_rpe | table
+    const limit = request.headers.get('x-limit') || null // 10 | 20 | 50
+    const sort = request.headers.get('x-sort') || null // newest | oldest
     if (actionName) {
-      console.log('[CHAT][action]', { userId: parseInt(userId), actionName, entity, range, block, entityType })
+      console.log('[CHAT][action]', { userId: parseInt(userId), actionName, range, block, filterRpe, filterQuality, mode, limit, sort })
     }
     const ai = createAITrainingAssistantForUser(supabase as any)
     const assistantData = await ai.generateResponse({
@@ -86,12 +89,19 @@ export async function POST(
       conversationHistory: conversationHistory || [],
       userContext: await getBasicUserContextInternal(supabase as any, parseInt(userId)),
       // @ts-ignore pass context
-      entity,
       range,
       // @ts-ignore
       block,
       // @ts-ignore
-      entityType
+      filterRpe,
+      // @ts-ignore
+      filterQuality,
+      // @ts-ignore
+      mode,
+      // @ts-ignore
+      limit,
+      // @ts-ignore
+      sort
     })
 
     // Store assistant message and update conversation timestamp

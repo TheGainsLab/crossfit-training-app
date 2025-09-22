@@ -30,8 +30,7 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   const [showConversations, setShowConversations] = useState(false)
   const [expandedMessages, setExpandedMessages] = useState<Record<number, boolean>>({})
   const [lastRangeLabel, setLastRangeLabel] = useState<string | null>(null)
-  const [lastEntity, setLastEntity] = useState<string | null>(null)
-  const [exerciseNames, setExerciseNames] = useState<string[]>([])
+  // Removed exercises/variant-family inference
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   // --- Supabase singleton client + access token state ---
@@ -68,16 +67,7 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
     scrollToBottom()
   }, [messages])
 
-  // Fetch canonical exercise names for allowlist matching
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await supabase.from('exercises').select('name').limit(2000)
-        const names = (data || []).map((r: any) => String(r.name || '')).filter(Boolean)
-        setExerciseNames(names)
-      } catch {}
-    })()
-  }, [])
+  // No global exercises prefetch; chips derive only from table columns
 
   const fetchConversations = async () => {
     try {
@@ -161,17 +151,15 @@ credentials: 'include',
     setMessages(prev => [...prev, tempUserMessage])
 
     try {
-      // Do not set lastEntity from naive tokens; entity is derived via allowlist elsewhere
       const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
   credentials: 'include',      
   headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`, // <-- ADDED
-          ...(getEntityForHeaders() ? { 'X-Entity': String(getEntityForHeaders()) } : {}),
           ...(getRangeToken() ? { 'X-Range': String(getRangeToken()) } : {}),
           ...(getBlockFromMessage() ? { 'X-Block': String(getBlockFromMessage()) } : {}),
-          ...(getEntityType() ? { 'X-Entity-Type': String(getEntityType()) } : {}),
+          // Optional filters/modes can be attached by quick chips below
         },
         body: JSON.stringify({
           message: userMessage,
@@ -254,109 +242,13 @@ credentials: 'include',
     return null
   }
 
-  // Determine entity type for planner (family vs specific variant)
   const getLastUserText = (): string => {
     const lastUser = [...messages].reverse().find(m => m.role === 'user')
     return (lastUser?.content || '').toLowerCase()
   }
+  // Removed variant/family detection and suggestions
 
-  const getFamilyRootFromMessage = (): string | null => {
-    const text = getLastUserText()
-    if (!text) return null
-    const tokens = (text.match(/[a-z][a-z\-']{3,}/g) || []).map(t => t.toLowerCase())
-    let bestToken: string | null = null
-    let bestCount = 0
-    for (const tok of tokens) {
-      let count = 0
-      for (const name of exerciseNames) {
-        if (name.toLowerCase().includes(tok)) count++
-      }
-      if (count >= 2 && count > bestCount) {
-        bestCount = count
-        bestToken = tok
-      }
-    }
-    return bestToken
-  }
-
-  const exactVariantMentioned = (variant: string | null): boolean => {
-    if (!variant) return false
-    const text = getLastUserText()
-    if (!text) return false
-    const v = variant.toLowerCase()
-    // require the full variant phrase to appear
-    return text.includes(v)
-  }
-
-  const getEntityType = (): 'family' | 'variant' | null => {
-    const family = getFamilyRootFromMessage()
-    const canonical = getEntityFromLastUserMessage()
-    // Prefer family when present unless the exact variant phrase is explicitly in the message
-    if (family) {
-      if (canonical && exactVariantMentioned(canonical)) return 'variant'
-      return 'family'
-    }
-    if (canonical && exerciseNames.includes(canonical)) return 'variant'
-    return null
-  }
-
-  const getEntityForHeaders = (): string | null => {
-    const type = getEntityType()
-    if (type === 'variant') return getEntityFromLastUserMessage()
-    if (type === 'family') return getFamilyRootFromMessage()
-    return getEntityFromLastUserMessage()
-  }
-
-  const getEntityLabelForUI = (): string | null => {
-    const type = getEntityType()
-    if (type === 'family') {
-      const fam = getFamilyRootFromMessage()
-      if (!fam) return null
-      // Show pluralized family label for readability (squat -> squats)
-      return fam.endsWith('s') ? fam : `${fam}s`
-    }
-    const canonical = getEntityFromLastUserMessage()
-    return canonical || null
-  }
-
-  // Heuristic entity detection from last user message
-  const getEntityFromLastUserMessage = (): string | null => {
-    if (lastEntity && exerciseNames.includes(lastEntity)) return lastEntity
-    const lastUser = [...messages].reverse().find(m => m.role === 'user')
-    if (!lastUser?.content) return null
-    const text = lastUser.content.toLowerCase()
-    // Prefer content inside parentheses
-    const paren = text.match(/\(([^)]+)\)/)
-    const parenVal = paren && paren[1] ? paren[1].trim() : ''
-    // Helper to find best canonical match
-    const findBest = (needle: string): string | null => {
-      if (!needle) return null
-      const n = needle.toLowerCase()
-      // Exact ILIKE
-      const exact = exerciseNames.find(en => en.toLowerCase() === n)
-      if (exact) return exact
-      // Substring ILIKE
-      let bestName: string | null = null
-      let bestLen = 0
-      for (const en of exerciseNames) {
-        const el = en.toLowerCase()
-        if (el.includes(n) && n.length > bestLen) { bestLen = n.length; bestName = en }
-      }
-      return bestName
-    }
-    // Try parentheses first
-    const fromParen = findBest(parenVal)
-    if (fromParen) return fromParen
-    // Tokenize and try tokens against allowlist
-    const tokens = (text.match(/[a-z][a-z\-']{3,}/g) || [])
-    for (const tok of tokens) {
-      const m = findBest(tok)
-      if (m) return m
-    }
-    return null
-  }
-
-  const sendQuickQuery = async (text: string, actionName?: string) => {
+  const sendQuickQuery = async (text: string, actionName?: string, extraHeaders?: Record<string, string>) => {
     if (!text || loading) return
     if (!token) return
     setLoading(true)
@@ -370,10 +262,9 @@ credentials: 'include',
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
           ...(actionName ? { 'X-Action-Name': actionName } : {}),
-          ...(getEntityForHeaders() ? { 'X-Entity': String(getEntityForHeaders()) } : {}),
           ...(getRangeToken() ? { 'X-Range': String(getRangeToken()) } : {}),
           ...(getBlockFromMessage() ? { 'X-Block': String(getBlockFromMessage()) } : {}),
-          ...(getEntityType() ? { 'X-Entity-Type': String(getEntityType()) } : {}),
+          ...(extraHeaders || {}),
         },
         body: JSON.stringify({ message: text, conversation_id: activeConversationId })
       })
@@ -480,9 +371,7 @@ credentials: 'include',
             byDate.get(d)!.push({ name, sets, reps, weight })
           }
           const orderedDates = Array.from(byDate.keys()).sort((a, b) => (a < b ? 1 : -1))
-          const entity = getEntityFromLastUserMessage()
-          const entityLabel = getEntityLabelForUI()
-          const labelSuffix = entityLabel ? ` (${entityLabel})` : ''
+          const labelSuffix = ''
           return (
             <div className="text-sm">
               {orderedDates.map(date => (
@@ -501,47 +390,21 @@ credentials: 'include',
                   </ul>
                 </div>
               ))}
-              {/* Refinement-only chips */}
+              {/* Refinement-only chips (mode only, no entity suffix) */}
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `By block for ${entity}` : 'By block'), 'chip_individual_blocks')}>Individual Blocks{labelSuffix}</button>
-                <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `Total reps for ${entity}` : 'Total reps'), 'chip_total_reps')}>Total Reps{labelSuffix}</button>
-                <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `Avg RPE for ${entity}` : 'Avg RPE'), 'chip_avg_rpe')}>Avg RPE{labelSuffix}</button>
+                <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' })}>Individual Blocks</button>
+                <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' })}>Total Reps</button>
+                <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' })}>Avg RPE</button>
               </div>
             </div>
           )
         }
         const renderActionBar = () => {
-          const entity = getEntityFromLastUserMessage()
-          const entityLabel = getEntityLabelForUI()
-          const labelSuffix = entityLabel ? ` (${entityLabel})` : ''
-          if (!entity) {
-            // Disambiguation: propose top matching exercises from message tokens
-            const lastUser = [...messages].reverse().find(m => m.role === 'user')
-            const text = (lastUser?.content || '').toLowerCase()
-            const tokens = (text.match(/[a-z][a-z\-']{3,}/g) || [])
-            const suggestions: string[] = []
-            for (const en of exerciseNames) {
-              const el = en.toLowerCase()
-              if (tokens.some(t => el.includes(t))) suggestions.push(en)
-              if (suggestions.length >= 6) break
-            }
-            if (!suggestions.length) return null
-            return (
-              <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                {suggestions.map(s => (
-                  <button key={s} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => setLastEntity(s)}>
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )
-          }
           return (
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `By block for ${entity}` : 'By block'), 'chip_individual_blocks')}>Individual Blocks{labelSuffix}</button>
-            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `Total reps for ${entity}` : 'Total reps'), 'chip_total_reps')}>Total Reps{labelSuffix}</button>
-            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `Avg RPE for ${entity}` : 'Avg RPE'), 'chip_avg_rpe')}>Avg RPE{labelSuffix}</button>
-            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange(entity ? `Show exercises list by block for ${entity}` : 'Show exercises list by block'), 'chip_show_exercises')}>Show Exercises List</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' })}>Individual Blocks</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' })}>Total Reps</button>
+            <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' })}>Avg RPE</button>
           </div>
           )
         }
