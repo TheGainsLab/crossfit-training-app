@@ -8,15 +8,37 @@ export async function GET(
 ) {
   try {
     const { userId } = await params;
-
     const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
-    
+
+    // Require Authorization and map to numeric users.id, then enforce it matches the path userId
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const supabaseAuthed = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
+    const { data: authData } = await supabaseAuthed.auth.getUser();
+    const authId = authData?.user?.id;
+    if (!authId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Service client for secure server-side lookups (RLS bypass)
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_id', authId)
+      .single();
+    const authedUserId = userRow?.id as number | undefined;
+    if (!authedUserId || authedUserId !== parseInt(userId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     // Verify user has active subscription
     const { data: subscription, error: subError } = await supabase
@@ -30,7 +52,7 @@ export async function GET(
       return NextResponse.json({ error: 'Active subscription required' }, { status: 403 });
     }
 
-    // Get user's conversations
+    // Get user's conversations (validated against authed user)
     const { data: conversations, error } = await supabase
       .from('chat_conversations')
       .select(`
