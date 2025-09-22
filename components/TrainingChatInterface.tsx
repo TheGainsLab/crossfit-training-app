@@ -443,6 +443,15 @@ credentials: 'include',
                 <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`} onClick={() => sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' })}>Avg RPE</button>
                 <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`} onClick={() => sendQuickQuery(withRange('Sessions'), 'chip_sessions', { 'X-Mode': 'sessions' })}>Sessions</button>
               </div>
+              {/* Persistent Range chips */}
+              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                <span className="text-gray-500">Range:</span>
+                {['Last 7 days', 'Last 14 days', 'Last 30 days', 'This week', 'All time'].map(label => (
+                  <button key={label} onClick={() => { setLastRangeLabel(label); sendQuickQuery(label, 'range_chip') }} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border">
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           )
         }
