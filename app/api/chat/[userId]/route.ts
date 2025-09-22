@@ -234,7 +234,7 @@ ORDER BY entries_with_block DESC
 LIMIT ${lim}`
   }
   if (m === 'sessions') {
-    return `SELECT DISTINCT DATE(logged_at) AS training_date, exercise_name
+    return `SELECT DATE(logged_at) AS training_date, exercise_name, sets, reps, weight_time, result
 FROM performance_logs
 ${whereSql}
 ORDER BY training_date ${order}
