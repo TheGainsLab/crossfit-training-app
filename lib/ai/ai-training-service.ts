@@ -234,8 +234,16 @@ export class AITrainingAssistant {
     const qualToken = (req.filterQuality || '').toLowerCase()
     const qualWhere = qualToken === 'gte:3' ? 'AND completion_quality >= 3' : qualToken === 'lte:2' ? 'AND completion_quality <= 2' : ''
 
-    const nameLike = (req.pattern || '').trim()
-    const nameWhere = nameLike ? `AND exercise_name ILIKE '${nameLike.replace(/'/g, "''")}'` : ''
+    // Support comma-separated patterns -> OR ILIKE
+    const rawPattern = (req.pattern || '').trim()
+    let nameWhere = ''
+    if (rawPattern) {
+      const terms = rawPattern.split(',').map(t => t.trim()).filter(Boolean)
+      if (terms.length > 0) {
+        const ors = terms.map(t => `exercise_name ILIKE '${t.replace(/'/g, "''")}'`).join(' OR ')
+        nameWhere = `AND (${ors})`
+      }
+    }
 
     const sortOrder = (req.sort || '').toLowerCase() === 'oldest' ? 'ASC' : 'DESC'
     const limitNum = Math.min(Math.max(parseInt(String(req.limit || ''), 10) || 30, 10), 50)
@@ -290,8 +298,8 @@ MODE SELECTION (if provided):
   ORDER BY training_date ${sortOrder}
   ${explicitLimit}
 
-- If mode = 'by_block':
-  SELECT block, COUNT(DISTINCT DATE(logged_at)) AS days_with_block
+-- If mode = 'by_block':
+  SELECT block, COUNT(*) AS entries_with_block
   FROM performance_logs
   WHERE user_id = ${req.userId}
     ${timeFilter}
@@ -300,7 +308,7 @@ MODE SELECTION (if provided):
     ${qualWhere}
     ${nameWhere}
   GROUP BY block
-  ORDER BY days_with_block DESC
+  ORDER BY entries_with_block DESC
   ${explicitLimit}
 
 - If mode = 'total_reps':

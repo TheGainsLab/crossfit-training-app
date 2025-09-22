@@ -30,6 +30,9 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   const [showConversations, setShowConversations] = useState(false)
   const [expandedMessages, setExpandedMessages] = useState<Record<number, boolean>>({})
   const [lastRangeLabel, setLastRangeLabel] = useState<string | null>(null)
+  // Persistent, explicit chat context (patternTerms are comma-separated OR terms)
+  const [patternTerms, setPatternTerms] = useState<string[]>([])
+  const [contextBlock, setContextBlock] = useState<string | null>(null)
   // Removed exercises/variant-family inference
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
@@ -151,15 +154,18 @@ credentials: 'include',
     setMessages(prev => [...prev, tempUserMessage])
 
     try {
+      // Update persistent context pattern from this free-text, if any
+      const derived = derivePatternFromLastUserMessage()
+      if (derived) setPatternTerms([derived])
       const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
   credentials: 'include',      
   headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`, // <-- ADDED
-          ...(getPatternFromLastUserMessage() ? { 'X-Pattern': String(getPatternFromLastUserMessage()) } : {}),
+          ...(patternTerms.length ? { 'X-Pattern': patternTerms.join(',') } : {}),
           ...(getRangeToken() ? { 'X-Range': String(getRangeToken()) } : {}),
-          ...(getBlockFromMessage() ? { 'X-Block': String(getBlockFromMessage()) } : {}),
+          ...(contextBlock ? { 'X-Block': String(contextBlock) } : {}),
           // Optional filters/modes can be attached by quick chips below
         },
         body: JSON.stringify({
@@ -247,8 +253,8 @@ credentials: 'include',
     const lastUser = [...messages].reverse().find(m => m.role === 'user')
     return (lastUser?.content || '').toLowerCase()
   }
-  // Build a simple pattern from the user's last message (logs-only, deterministic)
-  const getPatternFromLastUserMessage = (): string | null => {
+  // Build pattern terms from the user's last free-text message (explicitly applied)
+  const derivePatternFromLastUserMessage = (): string | null => {
     const text = getLastUserText()
     if (!text) return null
     const stop: Record<string, true> = {
@@ -280,9 +286,9 @@ credentials: 'include',
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
           ...(actionName ? { 'X-Action-Name': actionName } : {}),
-          ...(getPatternFromLastUserMessage() ? { 'X-Pattern': String(getPatternFromLastUserMessage()) } : {}),
+          ...(patternTerms.length ? { 'X-Pattern': patternTerms.join(',') } : {}),
           ...(getRangeToken() ? { 'X-Range': String(getRangeToken()) } : {}),
-          ...(getBlockFromMessage() ? { 'X-Block': String(getBlockFromMessage()) } : {}),
+          ...(contextBlock ? { 'X-Block': String(contextBlock) } : {}),
           ...(extraHeaders || {}),
         },
         body: JSON.stringify({ message: text, conversation_id: activeConversationId })
@@ -409,7 +415,7 @@ credentials: 'include',
                   </ul>
                 </div>
               ))}
-              {/* Refinement-only chips (mode only, no entity suffix) */}
+              {/* Refinement-only chips (mode only, context persists) */}
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
                 <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' })}>Individual Blocks</button>
                 <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' })}>Total Reps</button>
