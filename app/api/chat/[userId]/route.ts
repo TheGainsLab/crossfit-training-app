@@ -163,6 +163,119 @@ export async function POST(
     }, { status: 500 });
   }
 }
+// --- Deterministic chip SQL builder ---
+function sanitizeLimit(raw: string | null): number {
+  const n = Math.max(10, Math.min(50, parseInt(String(raw || ''), 10) || 30))
+  return n
+}
+
+function buildChipSql(args: {
+  userId: number,
+  mode: string | null,
+  range: string | null,
+  block: string | null,
+  filterRpe: string | null,
+  filterQuality: string | null,
+  sort: string | null,
+  limit: string | null,
+  pattern: string | null,
+}): string {
+  const {
+    userId, mode, range, block, filterRpe, filterQuality, sort, limit, pattern
+  } = args
+
+  const where: string[] = [`user_id = ${userId}`]
+  // Name patterns: comma-separated -> OR ILIKE
+  const patt = (pattern || '').trim()
+  if (patt) {
+    const terms = patt.split(',').map(t => t.trim()).filter(Boolean)
+    if (terms.length) {
+      const ors = terms.map(t => `exercise_name ILIKE '${t.replace(/'/g, "''")}'`).join(' OR ')
+      where.push(`(${ors})`)
+    }
+  }
+  // Range
+  if (range === 'last_7_days') where.push(`logged_at >= now() - interval '7 days'`)
+  else if (range === 'last_14_days') where.push(`logged_at >= now() - interval '14 days'`)
+  else if (range === 'last_30_days') where.push(`logged_at >= now() - interval '30 days'`)
+  else if (range === 'this_week') where.push(`logged_at >= date_trunc('week', current_date)`)
+
+  // Block
+  const blockUp = (block || '').toUpperCase()
+  if (['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS'].includes(blockUp)) {
+    where.push(`block = '${blockUp}'`)
+  }
+
+  // RPE / Quality
+  const rpe = (filterRpe || '').toLowerCase()
+  if (rpe === 'gte:8') where.push('rpe >= 8')
+  else if (rpe === 'lte:5') where.push('rpe <= 5')
+
+  const qual = (filterQuality || '').toLowerCase()
+  if (qual === 'gte:3') where.push('completion_quality >= 3')
+  else if (qual === 'lte:2') where.push('completion_quality <= 2')
+
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : ''
+  const order = (sort || '').toLowerCase() === 'oldest' ? 'ASC' : 'DESC'
+  const lim = sanitizeLimit(limit)
+
+  const m = (mode || '').toLowerCase()
+  if (m === 'by_block') {
+    return `SELECT block, COUNT(*) AS entries_with_block
+FROM performance_logs
+${whereSql}
+GROUP BY block
+ORDER BY entries_with_block DESC
+LIMIT ${lim}`
+  }
+  if (m === 'sessions') {
+    return `SELECT DISTINCT DATE(logged_at) AS training_date, exercise_name
+FROM performance_logs
+${whereSql}
+ORDER BY training_date ${order}
+LIMIT ${lim}`
+  }
+  if (m === 'total_reps') {
+    return `SELECT exercise_name, SUM(NULLIF(regexp_replace(reps, '[^0-9]', '', 'g'), '')::int) AS total_reps
+FROM performance_logs
+${whereSql}
+GROUP BY exercise_name
+ORDER BY total_reps DESC
+LIMIT ${lim}`
+  }
+  if (m === 'avg_rpe') {
+    return `SELECT exercise_name, ROUND(AVG(rpe), 2) AS avg_rpe
+FROM performance_logs
+${whereSql}${whereSql ? ' AND' : ' WHERE'} rpe IS NOT NULL
+GROUP BY exercise_name
+ORDER BY avg_rpe DESC
+LIMIT ${lim}`
+  }
+  if (m === 'table' || m === 'list') {
+    return `SELECT DATE(logged_at) AS training_date, exercise_name, sets, reps, weight_time, result, rpe, completion_quality
+FROM performance_logs
+${whereSql}
+ORDER BY logged_at ${order}
+LIMIT ${lim}`
+  }
+  // Default: count entries
+  return `SELECT COUNT(*) AS count
+FROM performance_logs
+${whereSql}`
+}
+
+function describePurpose(mode: string | null, pattern: string | null, block: string | null): string {
+  const patt = (pattern || '').trim()
+  const b = (block || '').trim()
+  const m = (mode || '').toLowerCase()
+  const scope = [patt ? `pattern=${patt}` : null, b ? `block=${b}` : null].filter(Boolean).join(', ')
+  if (m === 'by_block') return `Entries by block ${scope ? '(' + scope + ')' : ''}`
+  if (m === 'sessions') return `Sessions (distinct days) ${scope ? '(' + scope + ')' : ''}`
+  if (m === 'total_reps') return `Total reps per exercise ${scope ? '(' + scope + ')' : ''}`
+  if (m === 'avg_rpe') return `Average RPE per exercise ${scope ? '(' + scope + ')' : ''}`
+  if (m === 'table' || m === 'list') return `Entries list ${scope ? '(' + scope + ')' : ''}`
+  return `Count entries ${scope ? '(' + scope + ')' : ''}`
+}
 
 export async function GET(
   _request: NextRequest,
