@@ -240,12 +240,22 @@ export class AITrainingAssistant {
     // Family vs variant filtering rule text
     const entityType = (req.entityType || '').toLowerCase()
     let entityRule = ''
+    let familyVariantsText = ''
     if (entityFilter) {
       if (entityType === 'family') {
-        // Ask planner to expand family to variants via a helper CTE-style guidance
-        entityRule = `10) ENTITY provided as FAMILY ('${entityFilter}'): filter using WHERE exercise_name IN (all canonical variants containing '${entityFilter}' from EXERCISE_NAMES). Do NOT invent names.`
+        const ef = entityFilter.toLowerCase()
+        const famVariants = extras.exerciseNames
+          .filter((n: string) => typeof n === 'string' && n.toLowerCase().includes(ef))
+          .slice(0, 100)
+        if (famVariants.length) {
+          const inList = famVariants.map(v => `'${String(v).replace(/'/g, "''")}'`).join(', ')
+          entityRule = `10) ENTITY provided as FAMILY ('${entityFilter}'): include WHERE exercise_name IN (${inList}) in every query`
+          familyVariantsText = `FAMILY_VARIANTS: ${famVariants.join(', ')}`
+        } else {
+          entityRule = `10) ENTITY provided as FAMILY ('${entityFilter}'): filter using WHERE exercise_name ILIKE '%${entityFilter.replace(/\"/g, '')}%'`
+        }
       } else {
-        entityRule = `10) ENTITY provided as VARIANT ('${entityFilter}'): filter using WHERE exercise_name ILIKE '%${entityFilter.replace(/"/g, '')}%'`
+        entityRule = `10) ENTITY provided as VARIANT ('${entityFilter}'): filter using WHERE exercise_name ILIKE '%${entityFilter.replace(/\"/g, '')}%'`
       }
     }
 
@@ -306,6 +316,7 @@ USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level ||
 
 EXERCISE_NAMES (canonical): ${extras.exerciseNames.length ? extras.exerciseNames.join(', ') : '(none)'}
 EQUIPMENT_AVAILABLE: ${extras.equipment.length ? extras.equipment.join(', ') : '(unknown)'}
+${familyVariantsText ? familyVariantsText + '\n' : ''}
 
 GLOSSARY (shorthand → canonical):
 ${glossary}
