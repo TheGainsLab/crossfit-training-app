@@ -15,6 +15,7 @@ export interface TrainingAssistantRequest {
   // Optional context from UI chips
   entity?: string | null
   range?: string | null
+  block?: string | null
 }
 
 export interface QueryExecution {
@@ -232,6 +233,8 @@ export class AITrainingAssistant {
       : rangeToken === 'last_30_days' ? "AND logged_at >= now() - interval '30 days'"
       : rangeToken === 'this_week' ? "AND logged_at >= date_trunc('week', current_date)"
       : ''
+    const blockFilter = (req.block || '').toUpperCase()
+    const blockWhere = ['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS'].includes(blockFilter) ? `AND block = '${blockFilter}'` : ''
 
     return `You are a database query specialist for a fitness application. Generate the MINIMAL set of SQL queries (1-3) to retrieve data needed to answer the user's question.
 
@@ -265,6 +268,7 @@ HARD RULES:
 ${blockRule ? blockRule + '\n' : ''}
       ${entityFilter ? `10) ENTITY provided: include WHERE exercise_name ILIKE '%${entityFilter.replace(/"/g, '')}%' in every query` : ''}
       ${timeFilter ? `11) TIME RANGE provided: include "${timeFilter}" in every query` : ''}
+      ${blockWhere ? `12) BLOCK provided: include "${blockWhere}" and only if the exercise supports this block (can_be_* must be true)` : ''}
 
 AMBIGUOUS TERMS & DEFAULTS:
 - Terms like "workout", "session", "training" can mean different things.
@@ -317,7 +321,7 @@ COMMON PATTERNS (examples):
   SELECT exercise_name, SUM(reps::int) AS total_reps
   FROM performance_logs
   WHERE user_id = ${req.userId}
-    AND block = 'SKILLS'
+          AND block = 'SKILLS'
     AND reps IS NOT NULL
     AND translate(reps, '0123456789', '') = ''
   GROUP BY exercise_name
@@ -330,6 +334,7 @@ COMMON PATTERNS (examples):
         WHERE user_id = ${req.userId}
         ${entityFilter ? `AND exercise_name ILIKE '%${entityFilter.replace(/"/g, '')}%'` : ''}
         ${timeFilter}
+        ${blockWhere}
         GROUP BY block
         ORDER BY days_with_block DESC
         LIMIT 10

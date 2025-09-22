@@ -242,6 +242,14 @@ credentials: 'include',
     return null
   }
 
+  const getBlockFromMessage = (): string | null => {
+    const lastUser = [...messages].reverse().find(m => m.role === 'user')
+    const t = (lastUser?.content || '').toUpperCase()
+    const blocks = ['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS']
+    for (const b of blocks) { if (t.includes(b)) return b }
+    return null
+  }
+
   // Heuristic entity detection from last user message
   const getEntityFromLastUserMessage = (): string | null => {
     if (lastEntity && exerciseNames.includes(lastEntity)) return lastEntity
@@ -295,6 +303,7 @@ credentials: 'include',
           ...(actionName ? { 'X-Action-Name': actionName } : {}),
           ...(getEntityFromLastUserMessage() ? { 'X-Entity': String(getEntityFromLastUserMessage()) } : {}),
           ...(getRangeToken() ? { 'X-Range': String(getRangeToken()) } : {}),
+          ...(getBlockFromMessage() ? { 'X-Block': String(getBlockFromMessage()) } : {}),
         },
         body: JSON.stringify({ message: text, conversation_id: activeConversationId })
       })
