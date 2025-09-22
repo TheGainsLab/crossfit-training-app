@@ -459,7 +459,7 @@ credentials: 'include',
           const candidate = derivePatternFromLastUserMessage()
           const disabled = !patternTerms.length
           return (
-          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+          <div className="mt-3 flex flex-col gap-2 text-xs">
             {disabled && candidate && (
               <button
                 className="px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 text-blue-700"
@@ -468,9 +468,20 @@ credentials: 'include',
                 Use '{candidate.replace(/%/g, '')}' as filter
               </button>
             )}
-            <button disabled={disabled} className={`px-2 py-1 rounded border ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' })}>Individual Blocks</button>
-            <button disabled={disabled} className={`px-2 py-1 rounded border ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' })}>Total Reps</button>
-            <button disabled={disabled} className={`px-2 py-1 rounded border ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' })}>Avg RPE</button>
+            <div className="flex flex-wrap gap-2">
+              <button disabled={disabled} className={`px-2 py-1 rounded border ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' })}>Individual Blocks</button>
+              <button disabled={disabled} className={`px-2 py-1 rounded border ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' })}>Total Reps</button>
+              <button disabled={disabled} className={`px-2 py-1 rounded border ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' })}>Avg RPE</button>
+              <button disabled={disabled} className={`px-2 py-1 rounded border ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => sendQuickQuery(withRange('Sessions'), 'chip_sessions', { 'X-Mode': 'sessions' })}>Sessions</button>
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-gray-500">Range:</span>
+              {['Last 7 days', 'Last 14 days', 'Last 30 days', 'This week', 'All time'].map(label => (
+                <button key={label} onClick={() => { setLastRangeLabel(label); sendQuickQuery(label, 'range_chip') }} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border">
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
           )
         }
