@@ -33,6 +33,7 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   // Persistent, explicit chat context (patternTerms are comma-separated OR terms)
   const [patternTerms, setPatternTerms] = useState<string[]>([])
   const [contextBlock, setContextBlock] = useState<string | null>(null)
+  const [currentMode, setCurrentMode] = useState<'count'|'by_block'|'total_reps'|'avg_rpe'|'sessions'>('count')
   // Removed exercises/variant-family inference
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
@@ -158,6 +159,7 @@ credentials: 'include',
       setPatternTerms([])
       setContextBlock(null)
       setLastRangeLabel(null)
+      setCurrentMode('count')
 
       const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
@@ -281,6 +283,8 @@ credentials: 'include',
     const tempUserMessage: Message = { role: 'user', content: text, timestamp: new Date().toISOString() }
     setMessages(prev => [...prev, tempUserMessage])
     try {
+      // Ensure mode persists across chips unless explicitly overridden
+      const headersWithMode = { 'X-Mode': currentMode, ...(extraHeaders || {}) }
       const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
         credentials: 'include',
@@ -291,7 +295,7 @@ credentials: 'include',
           ...(patternTerms.length ? { 'X-Pattern': patternTerms.join(',') } : {}),
           ...(getRangeToken() ? { 'X-Range': String(getRangeToken()) } : {}),
           ...(contextBlock ? { 'X-Block': String(contextBlock) } : {}),
-          ...(extraHeaders || {}),
+          ...headersWithMode,
         },
         body: JSON.stringify({ message: text, conversation_id: activeConversationId })
       })
@@ -300,7 +304,7 @@ credentials: 'include',
         if (!activeConversationId) setActiveConversationId(data.conversation_id)
         const assistantMessage: Message = { role: 'assistant', content: data.response, timestamp: new Date().toISOString(), responseType: data.responseType }
         setMessages(prev => [...prev, assistantMessage])
-        if (data.responseType !== 'domain_guard') fetchConversations()
+        // Do not reload conversations after chips; keep current messages
       } else {
         throw new Error(data?.error || 'Failed')
       }
@@ -459,8 +463,8 @@ credentials: 'include',
                   <button
                     key={b}
                     disabled={!patternTerms.length}
-                    className={`px-2 py-1 rounded border ${patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`}
-                    onClick={() => { setContextBlock(b); sendQuickQuery(`Block ${b}`, 'block_chip', { 'X-Mode': 'by_block', 'X-Block': b }) }}
+                    className={`px-2 py-1 rounded border ${contextBlock===b ? 'bg-blue-100 border-blue-300' : (patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed')}`}
+                    onClick={() => { setContextBlock(b); sendQuickQuery(`Block ${b}`, 'block_chip', { 'X-Block': b }) }}
                   >
                     {b}
                   </button>
@@ -468,7 +472,7 @@ credentials: 'include',
                 {contextBlock && (
                   <button
                     className="px-2 py-1 rounded border bg-gray-100 hover:bg-gray-200"
-                    onClick={() => { setContextBlock(null); sendQuickQuery('Clear block', 'block_clear', { 'X-Mode': 'by_block' }) }}
+                    onClick={() => { setContextBlock(null); sendQuickQuery('Clear block', 'block_clear', {}) }}
                   >
                     Clear Block
                   </button>
@@ -491,10 +495,10 @@ credentials: 'include',
               </button>
             )}
             <div className="flex flex-wrap gap-2">
-              <button disabled={disabled} className={`px-2 py-1 rounded border ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' })}>Individual Blocks</button>
-              <button disabled={disabled} className={`px-2 py-1 rounded border ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' })}>Total Reps</button>
-              <button disabled={disabled} className={`px-2 py-1 rounded border ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' })}>Avg RPE</button>
-              <button disabled={disabled} className={`px-2 py-1 rounded border ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => sendQuickQuery(withRange('Sessions'), 'chip_sessions', { 'X-Mode': 'sessions' })}>Sessions</button>
+              <button disabled={disabled} className={`px-2 py-1 rounded border ${currentMode==='by_block' ? 'bg-blue-100 border-blue-300' : (disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('by_block'); sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' }) }}>Individual Blocks</button>
+              <button disabled={disabled} className={`px-2 py-1 rounded border ${currentMode==='total_reps' ? 'bg-blue-100 border-blue-300' : (disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('total_reps'); sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' }) }}>Total Reps</button>
+              <button disabled={disabled} className={`px-2 py-1 rounded border ${currentMode==='avg_rpe' ? 'bg-blue-100 border-blue-300' : (disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('avg_rpe'); sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' }) }}>Avg RPE</button>
+              <button disabled={disabled} className={`px-2 py-1 rounded border ${currentMode==='sessions' ? 'bg-blue-100 border-blue-300' : (disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('sessions'); sendQuickQuery(withRange('Sessions'), 'chip_sessions', { 'X-Mode': 'sessions' }) }}>Sessions</button>
             </div>
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-gray-500">Range:</span>
