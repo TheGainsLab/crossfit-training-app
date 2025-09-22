@@ -154,6 +154,11 @@ credentials: 'include',
     setMessages(prev => [...prev, tempUserMessage])
 
     try {
+      // New typed query: reset entire context; chips will re-enable after explicit filter confirm
+      setPatternTerms([])
+      setContextBlock(null)
+      setLastRangeLabel(null)
+
       const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
   credentials: 'include',      
