@@ -86,6 +86,11 @@ export async function POST(
     // Deterministic chip handling: if mode present, build SQL directly and bypass LLM
     let assistantData: { response: string }
     if (mode) {
+      // Guard: require pattern for modes that need a name filter
+      const needsPattern = ['by_block','total_reps','avg_rpe','sessions','table','list'].includes((mode || '').toLowerCase())
+      if (needsPattern && (!pattern || !pattern.trim())) {
+        return NextResponse.json({ success: false, error: 'Missing filter: set a pattern (e.g., Use “squat” as filter) before using this chip.' }, { status: 400 })
+      }
       const sql = buildChipSql({
         userId: parseInt(userId),
         mode,

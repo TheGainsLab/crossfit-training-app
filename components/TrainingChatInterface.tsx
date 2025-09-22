@@ -154,9 +154,6 @@ credentials: 'include',
     setMessages(prev => [...prev, tempUserMessage])
 
     try {
-      // Update persistent context pattern from this free-text, if any
-      const derived = derivePatternFromLastUserMessage()
-      if (derived) setPatternTerms([derived])
       const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
   credentials: 'include',      
@@ -377,6 +374,25 @@ credentials: 'include',
                   </button>
                 ))}
               </div>
+              {/* Offer explicit filter confirmation if not set */}
+              {!patternTerms.length && (
+                <div className="mt-3">
+                  <div className="text-gray-500 mb-1">Set a filter:</div>
+                  {(() => {
+                    const candidate = derivePatternFromLastUserMessage()
+                    if (!candidate) return null
+                    const label = candidate.replace(/%/g, '')
+                    return (
+                      <button
+                        className="px-2 py-1 text-xs bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 text-blue-700"
+                        onClick={() => setPatternTerms([candidate])}
+                      >
+                        Use '{label}' as filter
+                      </button>
+                    )
+                  })()}
+                </div>
+              )}
             </div>
           )
         }
@@ -415,11 +431,11 @@ credentials: 'include',
                   </ul>
                 </div>
               ))}
-              {/* Refinement-only chips (mode only, context persists) */}
+              {/* Refinement-only chips (mode only, context persists). Disable if filter not confirmed */}
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' })}>Individual Blocks</button>
-                <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' })}>Total Reps</button>
-                <button className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border" onClick={() => sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' })}>Avg RPE</button>
+                <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`} onClick={() => sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' })}>Individual Blocks</button>
+                <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`} onClick={() => sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' })}>Total Reps</button>
+                <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`} onClick={() => sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' })}>Avg RPE</button>
               </div>
             </div>
           )
