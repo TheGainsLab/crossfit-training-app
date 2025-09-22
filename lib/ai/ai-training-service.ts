@@ -10,11 +10,14 @@ export interface TrainingAssistantRequest {
   userId: number
   conversationHistory?: Array<{ role: string; content: string }>
   userContext?: { name?: string; ability_level?: string; units?: string; current_program_id?: number }
-  // Optional context from UI chips
-  entity?: string | null
+  // Optional context from UI chips (logs-only)
   range?: string | null
   block?: string | null
-  entityType?: 'family' | 'variant' | null
+  filterRpe?: string | null // 'gte:8' | 'lte:5'
+  filterQuality?: string | null // 'gte:3' | 'lte:2'
+  mode?: 'sessions' | 'by_block' | 'total_reps' | 'avg_rpe' | 'table' | null
+  limit?: string | number | null // 10 | 20 | 50
+  sort?: 'newest' | 'oldest' | null
 }
 
 export interface QueryExecution {
@@ -209,51 +212,32 @@ export class AITrainingAssistant {
 
   private buildQueryPrompt(
     req: TrainingAssistantRequest,
-    extras: { exerciseNames: string[]; equipment: string[] },
+    _extras: { exerciseNames: string[]; equipment: string[] },
     validatorFeedback?: string
   ): string {
     const schemaGuidance = this.buildSchemaGuidance(req.userQuestion)
-    const glossary = this.buildShorthandGlossary()
-    const intentLower = (req.userQuestion || '').toLowerCase()
-    const wantsSkills = /(\bskill\b|\bskills\b)/.test(intentLower)
-    const wantsAccessories = /(\baccessory\b|\baccessories\b)/.test(intentLower)
-    const wantsSessions = /(session|sessions|workout|workouts|training|days)/.test(intentLower)
-    const blockRule = wantsSkills
-      ? "10) For skills-related requests, add AND block = 'SKILLS' to the WHERE clause"
-      : wantsAccessories
-      ? "10) For accessories-related requests, add AND block = 'ACCESSORIES' to the WHERE clause"
-      : ''
-    const entityFilter = (req.entity || '').trim()
+
     const rangeToken = (req.range || '').trim()
     const timeFilter = rangeToken === 'last_7_days' ? "AND logged_at >= now() - interval '7 days'"
       : rangeToken === 'last_14_days' ? "AND logged_at >= now() - interval '14 days'"
       : rangeToken === 'last_30_days' ? "AND logged_at >= now() - interval '30 days'"
       : rangeToken === 'this_week' ? "AND logged_at >= date_trunc('week', current_date)"
       : ''
+
     const blockFilter = (req.block || '').toUpperCase()
     const blockWhere = ['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS'].includes(blockFilter) ? `AND block = '${blockFilter}'` : ''
 
-    // Family vs variant filtering rule text
-    const entityType = (req.entityType || '').toLowerCase()
-    let entityRule = ''
-    let familyVariantsText = ''
-    if (entityFilter) {
-      if (entityType === 'family') {
-        const ef = entityFilter.toLowerCase()
-        const famVariants = extras.exerciseNames
-          .filter((n: string) => typeof n === 'string' && n.toLowerCase().includes(ef))
-          .slice(0, 100)
-        if (famVariants.length) {
-          const inList = famVariants.map(v => `'${String(v).replace(/'/g, "''")}'`).join(', ')
-          entityRule = `10) ENTITY provided as FAMILY ('${entityFilter}'): include WHERE exercise_name IN (${inList}) in every query`
-          familyVariantsText = `FAMILY_VARIANTS: ${famVariants.join(', ')}`
-        } else {
-          entityRule = `10) ENTITY provided as FAMILY ('${entityFilter}'): filter using WHERE exercise_name ILIKE '%${entityFilter.replace(/\"/g, '')}%'`
-        }
-      } else {
-        entityRule = `10) ENTITY provided as VARIANT ('${entityFilter}'): filter using WHERE exercise_name ILIKE '%${entityFilter.replace(/\"/g, '')}%'`
-      }
-    }
+    const rpeToken = (req.filterRpe || '').toLowerCase()
+    const rpeWhere = rpeToken === 'gte:8' ? 'AND rpe >= 8' : rpeToken === 'lte:5' ? 'AND rpe <= 5' : ''
+
+    const qualToken = (req.filterQuality || '').toLowerCase()
+    const qualWhere = qualToken === 'gte:3' ? 'AND completion_quality >= 3' : qualToken === 'lte:2' ? 'AND completion_quality <= 2' : ''
+
+    const sortOrder = (req.sort || '').toLowerCase() === 'oldest' ? 'ASC' : 'DESC'
+    const limitNum = Math.min(Math.max(parseInt(String(req.limit || ''), 10) || 30, 10), 50)
+    const explicitLimit = `LIMIT ${limitNum}`
+
+    const mode = (req.mode || '').toLowerCase()
 
     return `You are a database query specialist for a fitness application. Generate the MINIMAL set of SQL queries (1-3) to retrieve data needed to answer the user's question.
 
@@ -269,53 +253,71 @@ STRICT OUTPUT CONTRACT:
 HARD RULES:
 1) Use ONLY table performance_logs and ONLY the columns listed in SUBSET_SCHEMA below.
 2) Every query MUST include: WHERE user_id = ${req.userId}
-3) Time column is logged_at; for recent queries, ORDER BY logged_at DESC
+3) Time column is logged_at
 4) LIMIT 10-50 rows; single SELECT per query; no multi-statement SQL
-      5) Column typing rules (use exact types; avoid unnecessary casting/regex):
-         - rpe (integer): use rpe directly (AVG(rpe)), filter rpe IS NOT NULL. Do NOT regex/translate rpe
-         - completion_quality (integer 1-4): use as numeric, filter IS NOT NULL when aggregating
-         - week/day/set_number (integer): use directly
-         - reps (text): may be '', NULL, or mixed; guard before cast
-           • Prefer: translate(reps, '0123456789', '') = '' THEN reps::int
-           • Or: NULLIF(regexp_replace(reps, '[^0-9]', '', 'g'), '')::int
-         - weight_time/result (text): polymorphic; only extract numerics if explicitly needed; otherwise treat as text
-         - quality_grade (text): not numeric. Prefer completion_quality when a numeric grade is needed
+5) Column typing rules (use exact types; avoid unnecessary casting/regex):
+   - rpe (integer): use rpe directly (AVG(rpe)), filter rpe IS NOT NULL when aggregating
+   - completion_quality (integer 1-4): filter IS NOT NULL when aggregating
+   - week/day/set_number (integer): use directly
+   - reps (text): guard before cast (NULLIF(regexp_replace(reps, '[^0-9]', '', 'g'), '')::int)
+   - weight_time/result (text): polymorphic; treat as text unless needed
 6) Do NOT reference any table/column not listed in SUBSET_SCHEMA
-7) Use ONLY exercise_name values from EXERCISE_NAMES below. Do NOT invent or alias names
-8) One-way normalization: Map user shorthand to canonical names using GLOSSARY below. NEVER turn canonical names into abbreviations. NEVER use abbreviations in SQL
-      9) Do not use or join on program_workout_id; it is often NULL and non-authoritative
-${blockRule ? blockRule + '\n' : ''}
-      ${entityRule}
-      ${timeFilter ? `11) TIME RANGE provided: include "${timeFilter}" in every query` : ''}
-      ${blockWhere ? `12) BLOCK provided: include "${blockWhere}"` : ''}
+7) Do NOT use IN (...) on exercise_name. Do NOT invent names. Avoid LIKE unless user typed a literal pattern (not provided here)
+8) Do NOT use or join on program_workout_id
+${timeFilter ? `11) TIME RANGE provided: include "${timeFilter}" in every query` : ''}
+${blockWhere ? `12) BLOCK provided: include "${blockWhere}" in every query` : ''}
+${rpeWhere ? `13) RPE filter provided: include "${rpeWhere}" in every query` : ''}
+${qualWhere ? `14) Quality filter provided: include "${qualWhere}" in every query` : ''}
+${sortOrder ? `15) SORT provided: ORDER BY logged_at ${sortOrder}` : ''}
+${explicitLimit ? `16) LIMIT provided: use "${explicitLimit}" (cap at 50)` : ''}
 
-AMBIGUOUS TERMS & DEFAULTS:
-- Terms like "workout", "session", "training" can mean different things.
-- DEFAULT when ambiguous: interpret as training day counts (COUNT DISTINCT DATE(logged_at)). If the user specifically asks to list sessions, return DISTINCT DATE(logged_at) AS training_date (plus exercise_name if relevant) ordered by date DESC.
-- "exercise" refers to movement name (group by exercise_name), not individual entries.
-- When a user explicitly says "Individual Blocks", switch to block-based counts for the same window.
-- Preserve any time filters in the user's question (e.g., "this week", "last 30 days").
+MODE SELECTION (if provided):
+- If mode = 'sessions':
+  SELECT DISTINCT DATE(logged_at) AS training_date, exercise_name
+  FROM performance_logs
+  WHERE user_id = ${req.userId}
+    ${timeFilter}
+    ${blockWhere}
+    ${rpeWhere}
+    ${qualWhere}
+  ORDER BY training_date ${sortOrder}
+  ${explicitLimit}
 
-ALTERNATIVE SWITCH (if user follows up with "Individual Blocks"):
-- Compute block-based counts for the same time window.
-- Example pattern:
+- If mode = 'by_block':
   SELECT block, COUNT(DISTINCT DATE(logged_at)) AS days_with_block
   FROM performance_logs
   WHERE user_id = ${req.userId}
-  /* and any previously inferred time filter */
+    ${timeFilter}
+    ${blockWhere}
+    ${rpeWhere}
+    ${qualWhere}
   GROUP BY block
   ORDER BY days_with_block DESC
-  LIMIT 10
+  ${explicitLimit}
+
+- If mode = 'total_reps':
+  SELECT exercise_name, SUM(NULLIF(regexp_replace(reps, '[^0-9]', '', 'g'), '')::int) AS total_reps
+  FROM performance_logs
+  WHERE user_id = ${req.userId}
+    ${timeFilter}
+    ${blockWhere}
+  GROUP BY exercise_name
+  ORDER BY total_reps DESC
+  ${explicitLimit}
+
+- If mode = 'avg_rpe':
+  SELECT exercise_name, ROUND(AVG(rpe), 2) AS avg_rpe
+  FROM performance_logs
+  WHERE user_id = ${req.userId}
+    AND rpe IS NOT NULL
+    ${timeFilter}
+    ${blockWhere}
+  GROUP BY exercise_name
+  ORDER BY avg_rpe DESC
+  ${explicitLimit}
 
 USER QUESTION: "${req.userQuestion}"
 USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'}, ${req.userContext?.units || 'Unknown'})
-
-EXERCISE_NAMES (canonical): ${extras.exerciseNames.length ? extras.exerciseNames.join(', ') : '(none)'}
-EQUIPMENT_AVAILABLE: ${extras.equipment.length ? extras.equipment.join(', ') : '(unknown)'}
-${familyVariantsText ? familyVariantsText + '\n' : ''}
-
-GLOSSARY (shorthand → canonical):
-${glossary}
 
 SUBSET_SCHEMA (the ONLY allowed source for this query):
 - Table: performance_logs
@@ -330,107 +332,48 @@ ${schemaGuidance}
 ${validatorFeedback ? `VALIDATION FEEDBACK (fix these issues exactly):\n${validatorFeedback}\n` : ''}
 
 COMMON PATTERNS (examples):
-      - Days with training (default for ambiguous "workouts/sessions") →
-        SELECT COUNT(DISTINCT DATE(logged_at)) AS total_days
-        FROM performance_logs
-        WHERE user_id = ${req.userId}
-        ${entityFilter ? `AND exercise_name ILIKE '%${entityFilter.replace(/"/g, '')}%'` : ''}
-        ${timeFilter}
+  - Days with training →
+    SELECT COUNT(DISTINCT DATE(logged_at)) AS total_days
+    FROM performance_logs
+    WHERE user_id = ${req.userId}
+    ${timeFilter}
 
-        - Top skills by total reps →
-  SELECT exercise_name, SUM(reps::int) AS total_reps
-  FROM performance_logs
-  WHERE user_id = ${req.userId}
-          AND block = 'SKILLS'
-    AND reps IS NOT NULL
-    AND translate(reps, '0123456789', '') = ''
-  GROUP BY exercise_name
-  ORDER BY total_reps DESC
-  LIMIT 10
+  - Individual Blocks (drill-down) →
+    SELECT block, COUNT(DISTINCT DATE(logged_at)) AS days_with_block
+    FROM performance_logs
+    WHERE user_id = ${req.userId}
+    ${timeFilter}
+    ${blockWhere}
+    GROUP BY block
+    ORDER BY days_with_block DESC
+    LIMIT 10
 
-      - Individual Blocks (drill-down) →
-        SELECT block, COUNT(DISTINCT DATE(logged_at)) AS days_with_block
-        FROM performance_logs
-        WHERE user_id = ${req.userId}
-        ${entityFilter ? `AND exercise_name ILIKE '%${entityFilter.replace(/"/g, '')}%'` : ''}
-        ${timeFilter}
-        ${blockWhere}
-        GROUP BY block
-        ORDER BY days_with_block DESC
-        LIMIT 10
+  - Average RPE by exercise →
+    SELECT exercise_name, ROUND(AVG(rpe), 2) AS avg_rpe
+    FROM performance_logs
+    WHERE user_id = ${req.userId}
+      AND rpe IS NOT NULL
+    GROUP BY exercise_name
+    ORDER BY avg_rpe DESC
+    LIMIT 10
 
-      - Average RPE by exercise (rpe is integer) →
-        SELECT exercise_name, ROUND(AVG(rpe), 2) AS avg_rpe
-        FROM performance_logs
-        WHERE user_id = ${req.userId}
-          AND rpe IS NOT NULL
-        GROUP BY exercise_name
-        ORDER BY avg_rpe DESC
-        LIMIT 10
-
-        - List all accessories completed (unique names) →
-          SELECT DISTINCT exercise_name
-          FROM performance_logs
-          WHERE user_id = ${req.userId}
-            AND block = 'ACCESSORIES'
-          ORDER BY exercise_name ASC
-          LIMIT 50
-
-      - List training sessions by date for an entity →
-        SELECT DISTINCT DATE(logged_at) AS training_date, exercise_name
-        FROM performance_logs
-        WHERE user_id = ${req.userId}
-        ${entityFilter ? (entityType === 'family' && familyVariantsText ? `AND exercise_name IN (${familyVariantsText.replace('FAMILY_VARIANTS: ', '').split(', ').map(v => `'${v.replace(/'/g, "''")}'`).join(', ')})` : `AND exercise_name ILIKE '%${entityFilter.replace(/"/g, '')}%'`) : ''}
-        ${timeFilter}
-        ORDER BY training_date DESC
-        LIMIT 50
+  - List training sessions by date →
+    SELECT DISTINCT DATE(logged_at) AS training_date, exercise_name
+    FROM performance_logs
+    WHERE user_id = ${req.userId}
+    ${timeFilter}
+    ORDER BY training_date ${sortOrder}
+    ${explicitLimit}
 
 Generate only the JSON object described above.`
   }
 
   // Fetch canonical exercise names and user's equipment to reduce query guessing
   private async buildPlannerExtras(
-    req: TrainingAssistantRequest
+    _req: TrainingAssistantRequest
   ): Promise<{ exerciseNames: string[]; equipment: string[] }> {
-    try {
-      const intent = (req.userQuestion || '').toLowerCase()
-      let exerciseQuery = this.supabase
-        .from('exercises')
-        .select('name, can_be_skills, can_be_strength, can_be_metcons, can_be_accessories, sport_id')
-        .eq('sport_id', 1)
-        .limit(2000)
-
-      const { data: exRows } = await exerciseQuery
-      let names = Array.isArray(exRows) ? exRows.map((r: any) => r.name).filter(Boolean) : []
-
-      // Narrow list by simple intent heuristics to keep tokens small
-      if (Array.isArray(exRows)) {
-        const skills = exRows.filter((r: any) => r?.can_be_skills)
-        const strength = exRows.filter((r: any) => r?.can_be_strength)
-        const metcons = exRows.filter((r: any) => r?.can_be_metcons)
-        const accessories = exRows.filter((r: any) => r?.can_be_accessories)
-        if (/(skill|skills)/.test(intent) && skills.length) names = skills.map((r: any) => r.name)
-        else if (/(metcon|conditioning)/.test(intent) && metcons.length) names = metcons.map((r: any) => r.name)
-        else if (/(strength|1rm|max|pr)/.test(intent) && strength.length) names = strength.map((r: any) => r.name)
-        else if (/(accessory|accessories)/.test(intent) && accessories.length) names = accessories.map((r: any) => r.name)
-      }
-
-      const { data: eqRows } = await this.supabase
-        .from('user_equipment')
-        .select('equipment_name')
-        .eq('user_id', req.userId)
-      const equipmentRows: any[] = (eqRows as any[]) || []
-      const equipment = equipmentRows
-        .map((r: any) => r?.equipment_name)
-        .filter((n: any) => typeof n === 'string' && !!n)
-
-      // De-duplicate and limit to keep prompt size reasonable
-      const uniqNames = Array.from(new Set(names)).slice(0, 500)
-      const uniqEquip = Array.from(new Set(equipment)).slice(0, 200)
-      return { exerciseNames: uniqNames, equipment: uniqEquip }
-    } catch {
-      return { exerciseNames: [], equipment: [] }
-    }
+    // Logs-only phase: no extras needed
+    return { exerciseNames: [], equipment: [] }
   }
 
   private buildCoachingPrompt(req: TrainingAssistantRequest, results: QueryExecution[]): string {
