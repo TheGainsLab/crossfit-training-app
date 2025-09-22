@@ -294,6 +294,18 @@ credentials: 'include',
     return getEntityFromLastUserMessage()
   }
 
+  const getEntityLabelForUI = (): string | null => {
+    const type = getEntityType()
+    if (type === 'family') {
+      const fam = getFamilyRootFromMessage()
+      if (!fam) return null
+      // Show pluralized family label for readability (squat -> squats)
+      return fam.endsWith('s') ? fam : `${fam}s`
+    }
+    const canonical = getEntityFromLastUserMessage()
+    return canonical || null
+  }
+
   // Heuristic entity detection from last user message
   const getEntityFromLastUserMessage = (): string | null => {
     if (lastEntity && exerciseNames.includes(lastEntity)) return lastEntity
@@ -456,7 +468,8 @@ credentials: 'include',
           }
           const orderedDates = Array.from(byDate.keys()).sort((a, b) => (a < b ? 1 : -1))
           const entity = getEntityFromLastUserMessage()
-          const labelSuffix = entity ? ` (${entity})` : ''
+          const entityLabel = getEntityLabelForUI()
+          const labelSuffix = entityLabel ? ` (${entityLabel})` : ''
           return (
             <div className="text-sm">
               {orderedDates.map(date => (
@@ -486,7 +499,8 @@ credentials: 'include',
         }
         const renderActionBar = () => {
           const entity = getEntityFromLastUserMessage()
-          const labelSuffix = entity ? ` (${entity})` : ''
+          const entityLabel = getEntityLabelForUI()
+          const labelSuffix = entityLabel ? ` (${entityLabel})` : ''
           if (!entity) {
             // Disambiguation: propose top matching exercises from message tokens
             const lastUser = [...messages].reverse().find(m => m.role === 'user')
