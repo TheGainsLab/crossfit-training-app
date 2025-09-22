@@ -1,11 +1,9 @@
 // lib/ai/ai-training-service.ts
 // Single-LLM flow: generate SQL → fetch via RPC with user JWT → synthesize response
 
-import { SupabaseClient, createClient } from '@supabase/supabase-js'
-import conceptualSchema from '@/lib/ai/schema/conceptual-schema.json'
+import { SupabaseClient } from '@supabase/supabase-js'
 import databaseSchema from '@/lib/ai/schema/database-schema.json'
 import crypto from 'crypto'
-import { Parser } from 'node-sql-parser'
 
 export interface TrainingAssistantRequest {
   userQuestion: string
@@ -98,9 +96,6 @@ function normalizeSql(sql: string): string {
   let timeCol: string | null = null
   if (/from\s+performance_logs\b/i.test(s)) {
     timeCol = 'logged_at'
-  } else if (/from\s+program_metcons\b/i.test(s) || /\bpm\./i.test(s)) {
-    // Prefer aliased pm.completed_at if alias is used
-    timeCol = /\bpm\./i.test(s) ? 'pm.completed_at' : 'completed_at'
   }
 
   if (timeCol && !/\border\s+by\b/i.test(s) && !hasGroupBy) {
@@ -292,7 +287,7 @@ HARD RULES:
 ${blockRule ? blockRule + '\n' : ''}
       ${entityRule}
       ${timeFilter ? `11) TIME RANGE provided: include "${timeFilter}" in every query` : ''}
-      ${blockWhere ? `12) BLOCK provided: include "${blockWhere}" and only if the exercise supports this block (can_be_* must be true)` : ''}
+      ${blockWhere ? `12) BLOCK provided: include "${blockWhere}"` : ''}
 
 AMBIGUOUS TERMS & DEFAULTS:
 - Terms like "workout", "session", "training" can mean different things.
@@ -351,7 +346,7 @@ COMMON PATTERNS (examples):
     AND translate(reps, '0123456789', '') = ''
   GROUP BY exercise_name
   ORDER BY total_reps DESC
-  LIMIT 2
+  LIMIT 10
 
       - Individual Blocks (drill-down) →
         SELECT block, COUNT(DISTINCT DATE(logged_at)) AS days_with_block
@@ -379,6 +374,7 @@ COMMON PATTERNS (examples):
           WHERE user_id = ${req.userId}
             AND block = 'ACCESSORIES'
           ORDER BY exercise_name ASC
+          LIMIT 50
 
       - List training sessions by date for an entity →
         SELECT DISTINCT DATE(logged_at) AS training_date, exercise_name
@@ -423,7 +419,8 @@ Generate only the JSON object described above.`
         .from('user_equipment')
         .select('equipment_name')
         .eq('user_id', req.userId)
-      const equipment = (eqRows || [])
+      const equipmentRows: any[] = (eqRows as any[]) || []
+      const equipment = equipmentRows
         .map((r: any) => r?.equipment_name)
         .filter((n: any) => typeof n === 'string' && !!n)
 
@@ -627,28 +624,13 @@ RESPONSE STRUCTURE (no invented examples):
   }
 
   private buildSchemaGuidance(userQuestion: string): string {
-    const lower = (userQuestion || '').toLowerCase()
-    let targeted = ''
-    if (/(performance|workout|exercise)/.test(lower)) {
-      targeted += `\n**performance_logs**: block, exercise_name, rpe, completion_quality, logged_at (use WHERE user_id, ORDER BY logged_at DESC)`
-    }
-    if (/(metcon|metcons|conditioning)/.test(lower)) {
-      targeted += `\n**program_metcons** (PRIMARY): metcon completions and percentiles; join programs to filter by user_id; use completed_at DESC`
-      targeted += `\n**performance_logs** (SECONDARY tasks): block task entries; not authoritative for metcon summary`
-      targeted += `\n**user_metcon_summary**: total_metcons_completed, recent_metcons JSON summary`
-    }
-    if (/(strength|1rm|max|pr)/.test(lower)) {
-      targeted += `\n**user_latest_one_rms**: latest one_rm values by exercise (use WHERE user_id)`
-    }
-    if (/(tired|recovery|rest|overtraining)/.test(lower)) {
-      targeted += `\n**user_recent_performance**: avg_rpe, avg_quality, sessions, trends (use WHERE user_id)`
-    }
-    if (/(program|plan|schedule|today)/.test(lower)) {
-      targeted += `\n**program_workouts**: week, day, main_lift, is_deload (filter by current program if applicable)`
-    }
-    const concept = this.truncateForPrompt(JSON.stringify(conceptualSchema))
-    const full = this.truncateForPrompt(JSON.stringify(databaseSchema))
-    return `${targeted || '\n(Use recent, relevant tables)'}\n\nCONCEPTUAL SCHEMA (summary):\n${concept}\n\nDATABASE SCHEMA (summary):\n${full}`
+    // Logs-only guidance
+    const summary = [
+      'Use ONLY performance_logs with these columns:',
+      'id, program_id, user_id, week, day, block, exercise_name, sets, reps, weight_time, result, rpe, completion_quality, flags, analysis, logged_at, quality_grade, set_number.',
+      'Always include WHERE user_id = <userId>. When recency matters, ORDER BY logged_at DESC. LIMIT 10-50.'
+    ].join(' ')
+    return summary
   }
 
   // Build a compact shorthand → canonical glossary for the planner
