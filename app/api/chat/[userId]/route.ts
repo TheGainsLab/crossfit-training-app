@@ -72,6 +72,7 @@ export async function POST(
 
     // In-route AI assistant bound to the user's Supabase client
     const actionName = request.headers.get('x-action-name') || null
+    const pattern = request.headers.get('x-pattern') || null
     const range = request.headers.get('x-range') || null
     const block = request.headers.get('x-block') || null
     const filterRpe = request.headers.get('x-filter-rpe') || null // e.g., gte:8 | lte:5
@@ -80,7 +81,7 @@ export async function POST(
     const limit = request.headers.get('x-limit') || null // 10 | 20 | 50
     const sort = request.headers.get('x-sort') || null // newest | oldest
     if (actionName) {
-      console.log('[CHAT][action]', { userId: parseInt(userId), actionName, range, block, filterRpe, filterQuality, mode, limit, sort })
+      console.log('[CHAT][action]', { userId: parseInt(userId), actionName, range, block, filterRpe, filterQuality, mode, limit, sort, pattern })
     }
     const ai = createAITrainingAssistantForUser(supabase as any)
     const assistantData = await ai.generateResponse({
@@ -88,6 +89,8 @@ export async function POST(
       userId: parseInt(userId),
       conversationHistory: conversationHistory || [],
       userContext: await getBasicUserContextInternal(supabase as any, parseInt(userId)),
+      // @ts-ignore pass context
+      pattern,
       // @ts-ignore pass context
       range,
       // @ts-ignore

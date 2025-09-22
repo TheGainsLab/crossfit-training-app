@@ -157,6 +157,7 @@ credentials: 'include',
   headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`, // <-- ADDED
+          ...(getPatternFromLastUserMessage() ? { 'X-Pattern': String(getPatternFromLastUserMessage()) } : {}),
           ...(getRangeToken() ? { 'X-Range': String(getRangeToken()) } : {}),
           ...(getBlockFromMessage() ? { 'X-Block': String(getBlockFromMessage()) } : {}),
           // Optional filters/modes can be attached by quick chips below
@@ -246,6 +247,23 @@ credentials: 'include',
     const lastUser = [...messages].reverse().find(m => m.role === 'user')
     return (lastUser?.content || '').toLowerCase()
   }
+  // Build a simple pattern from the user's last message (logs-only, deterministic)
+  const getPatternFromLastUserMessage = (): string | null => {
+    const text = getLastUserText()
+    if (!text) return null
+    const stop: Record<string, true> = {
+      how: true, many: true, times: true, have: true, done: true, do: true, did: true, the: true, and: true, or: true, for: true, my: true, so: true, far: true,
+      of: true, to: true, in: true, on: true, by: true, with: true, this: true, that: true, these: true, those: true, what: true, why: true, when: true, where: true,
+      is: true, are: true, was: true, were: true, been: true, be: true, i: true, me: true, you: true, we: true, they: true
+    }
+    const tokens = (text.match(/[a-z][a-z\-']{4,}/g) || []).filter(t => !stop[t as keyof typeof stop])
+    if (!tokens.length) return null
+    let candidate = tokens[tokens.length - 1]
+    if (candidate.endsWith('s') && candidate.length > 4) {
+      candidate = candidate.slice(0, -1)
+    }
+    return `%${candidate}%`
+  }
   // Removed variant/family detection and suggestions
 
   const sendQuickQuery = async (text: string, actionName?: string, extraHeaders?: Record<string, string>) => {
@@ -262,6 +280,7 @@ credentials: 'include',
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
           ...(actionName ? { 'X-Action-Name': actionName } : {}),
+          ...(getPatternFromLastUserMessage() ? { 'X-Pattern': String(getPatternFromLastUserMessage()) } : {}),
           ...(getRangeToken() ? { 'X-Range': String(getRangeToken()) } : {}),
           ...(getBlockFromMessage() ? { 'X-Block': String(getBlockFromMessage()) } : {}),
           ...(extraHeaders || {}),

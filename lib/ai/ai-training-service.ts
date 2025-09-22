@@ -18,6 +18,7 @@ export interface TrainingAssistantRequest {
   mode?: 'sessions' | 'by_block' | 'total_reps' | 'avg_rpe' | 'table' | null
   limit?: string | number | null // 10 | 20 | 50
   sort?: 'newest' | 'oldest' | null
+  pattern?: string | null // e.g., '%squat%'
 }
 
 export interface QueryExecution {
@@ -233,6 +234,9 @@ export class AITrainingAssistant {
     const qualToken = (req.filterQuality || '').toLowerCase()
     const qualWhere = qualToken === 'gte:3' ? 'AND completion_quality >= 3' : qualToken === 'lte:2' ? 'AND completion_quality <= 2' : ''
 
+    const nameLike = (req.pattern || '').trim()
+    const nameWhere = nameLike ? `AND exercise_name ILIKE '${nameLike.replace(/'/g, "''")}'` : ''
+
     const sortOrder = (req.sort || '').toLowerCase() === 'oldest' ? 'ASC' : 'DESC'
     const limitNum = Math.min(Math.max(parseInt(String(req.limit || ''), 10) || 30, 10), 50)
     const explicitLimit = `LIMIT ${limitNum}`
@@ -269,8 +273,9 @@ ${timeFilter ? `11) TIME RANGE provided: include "${timeFilter}" in every query`
 ${blockWhere ? `12) BLOCK provided: include "${blockWhere}" in every query` : ''}
 ${rpeWhere ? `13) RPE filter provided: include "${rpeWhere}" in every query` : ''}
 ${qualWhere ? `14) Quality filter provided: include "${qualWhere}" in every query` : ''}
-${sortOrder ? `15) SORT provided: ORDER BY logged_at ${sortOrder}` : ''}
-${explicitLimit ? `16) LIMIT provided: use "${explicitLimit}" (cap at 50)` : ''}
+${nameWhere ? `15) NAME pattern provided: include "${nameWhere}" in every query` : ''}
+${sortOrder ? `16) SORT provided: ORDER BY logged_at ${sortOrder}` : ''}
+${explicitLimit ? `17) LIMIT provided: use "${explicitLimit}" (cap at 50)` : ''}
 
 MODE SELECTION (if provided):
 - If mode = 'sessions':
@@ -281,6 +286,7 @@ MODE SELECTION (if provided):
     ${blockWhere}
     ${rpeWhere}
     ${qualWhere}
+    ${nameWhere}
   ORDER BY training_date ${sortOrder}
   ${explicitLimit}
 
@@ -292,6 +298,7 @@ MODE SELECTION (if provided):
     ${blockWhere}
     ${rpeWhere}
     ${qualWhere}
+    ${nameWhere}
   GROUP BY block
   ORDER BY days_with_block DESC
   ${explicitLimit}
@@ -302,6 +309,7 @@ MODE SELECTION (if provided):
   WHERE user_id = ${req.userId}
     ${timeFilter}
     ${blockWhere}
+    ${nameWhere}
   GROUP BY exercise_name
   ORDER BY total_reps DESC
   ${explicitLimit}
@@ -313,6 +321,7 @@ MODE SELECTION (if provided):
     AND rpe IS NOT NULL
     ${timeFilter}
     ${blockWhere}
+    ${nameWhere}
   GROUP BY exercise_name
   ORDER BY avg_rpe DESC
   ${explicitLimit}
