@@ -16,6 +16,7 @@ export interface TrainingAssistantRequest {
   entity?: string | null
   range?: string | null
   block?: string | null
+  entityType?: 'family' | 'variant' | null
 }
 
 export interface QueryExecution {
@@ -236,6 +237,18 @@ export class AITrainingAssistant {
     const blockFilter = (req.block || '').toUpperCase()
     const blockWhere = ['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS'].includes(blockFilter) ? `AND block = '${blockFilter}'` : ''
 
+    // Family vs variant filtering rule text
+    const entityType = (req.entityType || '').toLowerCase()
+    let entityRule = ''
+    if (entityFilter) {
+      if (entityType === 'family') {
+        // Ask planner to expand family to variants via a helper CTE-style guidance
+        entityRule = `10) ENTITY provided as FAMILY ('${entityFilter}'): filter using WHERE exercise_name IN (all canonical variants containing '${entityFilter}' from EXERCISE_NAMES). Do NOT invent names.`
+      } else {
+        entityRule = `10) ENTITY provided as VARIANT ('${entityFilter}'): filter using WHERE exercise_name ILIKE '%${entityFilter.replace(/"/g, '')}%'`
+      }
+    }
+
     return `You are a database query specialist for a fitness application. Generate the MINIMAL set of SQL queries (1-3) to retrieve data needed to answer the user's question.
 
 STRICT OUTPUT CONTRACT:
@@ -266,7 +279,7 @@ HARD RULES:
 8) One-way normalization: Map user shorthand to canonical names using GLOSSARY below. NEVER turn canonical names into abbreviations. NEVER use abbreviations in SQL
       9) Do not use or join on program_workout_id; it is often NULL and non-authoritative
 ${blockRule ? blockRule + '\n' : ''}
-      ${entityFilter ? `10) ENTITY provided: include WHERE exercise_name ILIKE '%${entityFilter.replace(/"/g, '')}%' in every query` : ''}
+      ${entityRule}
       ${timeFilter ? `11) TIME RANGE provided: include "${timeFilter}" in every query` : ''}
       ${blockWhere ? `12) BLOCK provided: include "${blockWhere}" and only if the exercise supports this block (can_be_* must be true)` : ''}
 

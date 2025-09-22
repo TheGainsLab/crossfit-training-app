@@ -168,6 +168,10 @@ credentials: 'include',
   headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`, // <-- ADDED
+          ...(getEntityForHeaders() ? { 'X-Entity': String(getEntityForHeaders()) } : {}),
+          ...(getRangeToken() ? { 'X-Range': String(getRangeToken()) } : {}),
+          ...(getBlockFromMessage() ? { 'X-Block': String(getBlockFromMessage()) } : {}),
+          ...(getEntityType() ? { 'X-Entity-Type': String(getEntityType()) } : {}),
         },
         body: JSON.stringify({
           message: userMessage,
@@ -250,6 +254,46 @@ credentials: 'include',
     return null
   }
 
+  // Determine entity type for planner (family vs specific variant)
+  const getLastUserText = (): string => {
+    const lastUser = [...messages].reverse().find(m => m.role === 'user')
+    return (lastUser?.content || '').toLowerCase()
+  }
+
+  const getFamilyRootFromMessage = (): string | null => {
+    const text = getLastUserText()
+    if (!text) return null
+    const tokens = (text.match(/[a-z][a-z\-']{3,}/g) || []).map(t => t.toLowerCase())
+    let bestToken: string | null = null
+    let bestCount = 0
+    for (const tok of tokens) {
+      let count = 0
+      for (const name of exerciseNames) {
+        if (name.toLowerCase().includes(tok)) count++
+      }
+      if (count >= 2 && count > bestCount) {
+        bestCount = count
+        bestToken = tok
+      }
+    }
+    return bestToken
+  }
+
+  const getEntityType = (): 'family' | 'variant' | null => {
+    const canonical = getEntityFromLastUserMessage()
+    if (canonical && exerciseNames.includes(canonical)) return 'variant'
+    const family = getFamilyRootFromMessage()
+    if (family) return 'family'
+    return null
+  }
+
+  const getEntityForHeaders = (): string | null => {
+    const type = getEntityType()
+    if (type === 'variant') return getEntityFromLastUserMessage()
+    if (type === 'family') return getFamilyRootFromMessage()
+    return getEntityFromLastUserMessage()
+  }
+
   // Heuristic entity detection from last user message
   const getEntityFromLastUserMessage = (): string | null => {
     if (lastEntity && exerciseNames.includes(lastEntity)) return lastEntity
@@ -301,9 +345,10 @@ credentials: 'include',
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
           ...(actionName ? { 'X-Action-Name': actionName } : {}),
-          ...(getEntityFromLastUserMessage() ? { 'X-Entity': String(getEntityFromLastUserMessage()) } : {}),
+          ...(getEntityForHeaders() ? { 'X-Entity': String(getEntityForHeaders()) } : {}),
           ...(getRangeToken() ? { 'X-Range': String(getRangeToken()) } : {}),
           ...(getBlockFromMessage() ? { 'X-Block': String(getBlockFromMessage()) } : {}),
+          ...(getEntityType() ? { 'X-Entity-Type': String(getEntityType()) } : {}),
         },
         body: JSON.stringify({ message: text, conversation_id: activeConversationId })
       })

@@ -75,8 +75,9 @@ export async function POST(
     const entity = request.headers.get('x-entity') || null
     const range = request.headers.get('x-range') || null
     const block = request.headers.get('x-block') || null
+    const entityType = request.headers.get('x-entity-type') || null
     if (actionName) {
-      console.log('[CHAT][action]', { userId: parseInt(userId), actionName, entity, range, block })
+      console.log('[CHAT][action]', { userId: parseInt(userId), actionName, entity, range, block, entityType })
     }
     const ai = createAITrainingAssistantForUser(supabase as any)
     const assistantData = await ai.generateResponse({
@@ -88,7 +89,9 @@ export async function POST(
       entity,
       range,
       // @ts-ignore
-      block
+      block,
+      // @ts-ignore
+      entityType
     })
 
     // Store assistant message and update conversation timestamp
