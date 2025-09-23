@@ -426,66 +426,37 @@ credentials: 'include',
           )
         }
 
-        // If rows include training_date, render date-grouped sessions
-        if (rows.length > 0 && rows.some((r: any) => 'training_date' in r)) {
-          // Group by date (string or Date)
-          const byDate = new Map<string, Array<{ name: string; sets?: any; reps?: any; weight?: any }>>()
-          for (const r of rows) {
-            const dRaw = r.training_date
-            const d = typeof dRaw === 'string' ? dRaw : (dRaw?.toString?.() || '')
-            const name = String(r.exercise_name ?? '')
-            const sets = r.sets
-            const reps = r.reps
-            const weight = r.weight_time
-            if (!byDate.has(d)) byDate.set(d, [])
-            byDate.get(d)!.push({ name, sets, reps, weight })
-          }
-          const orderedDates = Array.from(byDate.keys()).sort((a, b) => (a < b ? 1 : -1))
-          const labelSuffix = ''
+        // Domain-aware toolbar (single source of truth)
+        const renderDomainToolbar = () => {
+          const logsDisabled = !patternTerms.length
           return (
-            <div className="text-sm">
-              {orderedDates.map(date => (
-                <div key={date} className="mb-3">
-                  <div className="font-semibold">{date}</div>
-                  <ul className="list-disc list-inside">
-                    {(byDate.get(date) || []).map((it, i) => (
-                      <li key={`${date}-${i}`}>
-                        {it.name}
-                        {/* Optionally show details if present */}
-                        {it.reps ? ` — ${it.reps}` : ''}
-                        {it.sets ? ` ${it.sets}` : ''}
-                        {it.weight ? ` ${it.weight}` : ''}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-              {/* Refinement-only chips (mode only, context persists). Disable if filter not confirmed */}
-              <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                {/* Domain selector */}
+            <div className="mt-3 flex flex-col gap-2 text-xs">
+              {/* Domain selector */}
+              <div className="flex flex-wrap gap-2 items-center">
                 <span className="text-gray-500">Domain:</span>
                 <button className={`px-2 py-1 rounded border ${domain==='logs' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setDomain('logs'); setCurrentMode('count'); setTimeDomains([]); setEquipments([]); setContextBlock(null); }}>Logs</button>
                 <button className={`px-2 py-1 rounded border ${domain==='metcons' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setDomain('metcons'); setCurrentMode('sessions'); setContextBlock(null); }}>Metcons</button>
-
-                {/* Mode chips (domain-aware) */}
-                {domain === 'logs' ? (
-                  <>
-                    <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${currentMode==='by_block' ? 'bg-blue-100 border-blue-300' : (patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed')}`} onClick={() => { setCurrentMode('by_block'); sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' }) }}>Individual Blocks</button>
-                    <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${currentMode==='total_reps' ? 'bg-blue-100 border-blue-300' : (patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed')}`} onClick={() => { setCurrentMode('total_reps'); sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' }) }}>Total Reps</button>
-                    <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${currentMode==='avg_rpe' ? 'bg-blue-100 border-blue-300' : (patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed')}`} onClick={() => { setCurrentMode('avg_rpe'); sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' }) }}>Avg RPE</button>
-                    <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${currentMode==='sessions' ? 'bg-blue-100 border-blue-300' : (patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed')}`} onClick={() => { setCurrentMode('sessions'); sendQuickQuery(withRange('Sessions'), 'chip_sessions', { 'X-Mode': 'sessions' }) }}>Sessions</button>
-                  </>
-                ) : (
-                  <>
-                    <button className={`px-2 py-1 rounded border ${currentMode==='sessions' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('sessions'); sendQuickQuery('Metcons: Completions', 'metcon_mode', { 'X-Mode': 'sessions' }) }}>Completions</button>
-                    <button className={`px-2 py-1 rounded border ${currentMode==='by_block' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('by_block'); sendQuickQuery('Metcons: By time domain', 'metcon_mode', { 'X-Mode': 'by_time_domain' }) }}>By time domain</button>
-                    <button className={`px-2 py-1 rounded border ${currentMode==='avg_rpe' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('avg_rpe'); sendQuickQuery('Metcons: Avg percentile', 'metcon_mode', { 'X-Mode': 'avg_percentile' }) }}>Avg percentile</button>
-                    <button className={`px-2 py-1 rounded border bg-gray-100 hover:bg-gray-200`} onClick={() => { sendQuickQuery('Metcons: Best scores', 'metcon_mode', { 'X-Mode': 'best_scores' }) }}>Best scores</button>
-                  </>
-                )}
               </div>
+
+              {/* Mode chips (domain-aware) */}
+              {domain === 'logs' ? (
+                <div className="flex flex-wrap gap-2">
+                  <button disabled={logsDisabled} className={`px-2 py-1 rounded border ${currentMode==='by_block' ? 'bg-blue-100 border-blue-300' : (logsDisabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('by_block'); sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' }) }}>Individual Blocks</button>
+                  <button disabled={logsDisabled} className={`px-2 py-1 rounded border ${currentMode==='total_reps' ? 'bg-blue-100 border-blue-300' : (logsDisabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('total_reps'); sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' }) }}>Total Reps</button>
+                  <button disabled={logsDisabled} className={`px-2 py-1 rounded border ${currentMode==='avg_rpe' ? 'bg-blue-100 border-blue-300' : (logsDisabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('avg_rpe'); sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' }) }}>Avg RPE</button>
+                  <button disabled={logsDisabled} className={`px-2 py-1 rounded border ${currentMode==='sessions' ? 'bg-blue-100 border-blue-300' : (logsDisabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('sessions'); sendQuickQuery(withRange('Sessions'), 'chip_sessions', { 'X-Mode': 'sessions' }) }}>Sessions</button>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  <button className={`px-2 py-1 rounded border ${currentMode==='sessions' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('sessions'); sendQuickQuery('Metcons: Completions', 'metcon_mode', { 'X-Mode': 'sessions' }) }}>Completions</button>
+                  <button className={`px-2 py-1 rounded border ${currentMode==='by_block' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('by_block'); sendQuickQuery('Metcons: By time domain', 'metcon_mode', { 'X-Mode': 'by_time_domain' }) }}>By time domain</button>
+                  <button className={`px-2 py-1 rounded border ${currentMode==='avg_rpe' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('avg_rpe'); sendQuickQuery('Metcons: Avg percentile', 'metcon_mode', { 'X-Mode': 'avg_percentile' }) }}>Avg percentile</button>
+                  <button className={`px-2 py-1 rounded border bg-gray-100 hover:bg-gray-200`} onClick={() => { sendQuickQuery('Metcons: Best scores', 'metcon_mode', { 'X-Mode': 'best_scores' }) }}>Best scores</button>
+                </div>
+              )}
+
               {/* Persistent Range chips */}
-              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              <div className="flex flex-wrap gap-2 items-center">
                 <span className="text-gray-500">Range:</span>
                 {['Last 7 days', 'Last 14 days', 'Last 30 days', 'This week', 'All time'].map(label => (
                   <button key={label} onClick={() => { setLastRangeLabel(label); sendQuickQuery(label, 'range_chip') }} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border">
@@ -493,9 +464,10 @@ credentials: 'include',
                   </button>
                 ))}
               </div>
-              {/* Domain-specific chips */}
+
+              {/* Domain-specific filters */}
               {domain === 'logs' ? (
-                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                <div className="flex flex-wrap gap-2 items-center">
                   <span className="text-gray-500">Block:</span>
                   {['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS'].map(b => (
                     <button
@@ -517,7 +489,7 @@ credentials: 'include',
                   )}
                 </div>
               ) : (
-                <div className="mt-2 flex flex-col gap-2 text-xs">
+                <div className="flex flex-col gap-2 text-xs">
                   <div className="flex flex-wrap gap-2 items-center">
                     <span className="text-gray-500">Time domain:</span>
                     {['1-5','5-10','10-15','15-20','20+'].map(td => (
@@ -553,28 +525,46 @@ credentials: 'include',
             </div>
           )
         }
-        const renderActionBar = () => {
-          const disabled = !patternTerms.length
+
+        // If rows include training_date, render date-grouped sessions
+        if (rows.length > 0 && rows.some((r: any) => 'training_date' in r)) {
+          // Group by date (string or Date)
+          const byDate = new Map<string, Array<{ name: string; sets?: any; reps?: any; weight?: any }>>()
+          for (const r of rows) {
+            const dRaw = r.training_date
+            const d = typeof dRaw === 'string' ? dRaw : (dRaw?.toString?.() || '')
+            const name = String(r.exercise_name ?? '')
+            const sets = r.sets
+            const reps = r.reps
+            const weight = r.weight_time
+            if (!byDate.has(d)) byDate.set(d, [])
+            byDate.get(d)!.push({ name, sets, reps, weight })
+          }
+          const orderedDates = Array.from(byDate.keys()).sort((a, b) => (a < b ? 1 : -1))
+          const labelSuffix = ''
           return (
-          <div className="mt-3 flex flex-col gap-2 text-xs">
-            {/* Removed heuristic filter suggestion; rely on AI context or manual confirmation elsewhere */}
-            <div className="flex flex-wrap gap-2">
-              <button disabled={disabled} className={`px-2 py-1 rounded border ${currentMode==='by_block' ? 'bg-blue-100 border-blue-300' : (disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('by_block'); sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' }) }}>Individual Blocks</button>
-              <button disabled={disabled} className={`px-2 py-1 rounded border ${currentMode==='total_reps' ? 'bg-blue-100 border-blue-300' : (disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('total_reps'); sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' }) }}>Total Reps</button>
-              <button disabled={disabled} className={`px-2 py-1 rounded border ${currentMode==='avg_rpe' ? 'bg-blue-100 border-blue-300' : (disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('avg_rpe'); sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' }) }}>Avg RPE</button>
-              <button disabled={disabled} className={`px-2 py-1 rounded border ${currentMode==='sessions' ? 'bg-blue-100 border-blue-300' : (disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('sessions'); sendQuickQuery(withRange('Sessions'), 'chip_sessions', { 'X-Mode': 'sessions' }) }}>Sessions</button>
-            </div>
-            <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-gray-500">Range:</span>
-              {['Last 7 days', 'Last 14 days', 'Last 30 days', 'This week', 'All time'].map(label => (
-                <button key={label} onClick={() => { setLastRangeLabel(label); sendQuickQuery(label, 'range_chip') }} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border">
-                  {label}
-                </button>
+            <div className="text-sm">
+              {orderedDates.map(date => (
+                <div key={date} className="mb-3">
+                  <div className="font-semibold">{date}</div>
+                  <ul className="list-disc list-inside">
+                    {(byDate.get(date) || []).map((it, i) => (
+                      <li key={`${date}-${i}`}>
+                        {it.name}
+                        {/* Optionally show details if present */}
+                        {it.reps ? ` — ${it.reps}` : ''}
+                        {it.sets ? ` ${it.sets}` : ''}
+                        {it.weight ? ` ${it.weight}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
+              {renderDomainToolbar()}
             </div>
-          </div>
           )
         }
+        const renderActionBar = () => renderDomainToolbar()
 
         // If it's a list with exercise_name plus aggregates (avg_rpe, total_reps)
         if (rows.length > 0 && rows.every((r: any) => r && typeof r === 'object' && 'exercise_name' in r)) {
@@ -658,7 +648,7 @@ credentials: 'include',
           const keys = Object.keys(rows[0] || {})
           if (keys.length === 1 && rows.length <= 3) {
             return (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {rows.map((r: any, i: number) => {
                   const k = Object.keys(r)[0]
                   const v = r[k]
@@ -704,6 +694,7 @@ credentials: 'include',
                   {expanded ? 'Show less' : `Show all (${rows.length})`}
                 </button>
               )}
+              <div className="mt-2">{renderActionBar()}</div>
             </div>
           )
         }
