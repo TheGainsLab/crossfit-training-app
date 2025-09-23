@@ -37,6 +37,7 @@ export interface TrainingAssistantResponse {
   queriesExecuted: QueryExecution[]
   performance: { totalTime: number; queryTime: number; responseTime: number; totalTokens: number; cacheHitRate: number }
   metadata: { queriesMade: number; totalRows: number; hasErrors: boolean; errorClasses: string[] }
+  context?: { domain?: 'logs' | 'metcons'; mode?: string; range?: string; patternTerms?: string[]; timeDomain?: string; equipment?: string[] }
 }
 
 type CacheEntry = { data: any[]; timestamp: number; ttl: number; sql: string }
@@ -157,8 +158,11 @@ export class AITrainingAssistant {
       }
       console.debug('[AI][queryPlan]', queryPlan?.slice(0, 800))
       let queries: string[] = []
+      let ctx: any = undefined
       try {
-        queries = this.extractQueries(queryPlan)
+        const parsed = this.parsePlannerOutputWithContext(queryPlan)
+        ctx = parsed.context
+        queries = parsed.queries
       } catch (e) {
         const msg = String((e as Error)?.message || '')
         // Retry once with specific validator feedback for ANY validation failure
@@ -174,7 +178,9 @@ export class AITrainingAssistant {
           queryPlan = await this.callClaudeWithModel(fallbackModel, queryPrompt, 0.1)
         }
         console.debug('[AI][queryPlan][retry]', queryPlan?.slice(0, 800))
-        queries = this.extractQueries(queryPlan)
+        const parsed2 = this.parsePlannerOutputWithContext(queryPlan)
+        ctx = parsed2.context
+        queries = parsed2.queries
       }
       console.debug('[AI][queries]', queries)
       const executions = await this.executeQueries(req.userId, queries)
@@ -199,7 +205,8 @@ export class AITrainingAssistant {
         response: withSources,
         queriesExecuted: executions,
         performance: { totalTime, queryTime, responseTime, totalTokens: this.estimateTokens(queryPrompt + queryPlan + rawResponse), cacheHitRate },
-        metadata: { queriesMade: executions.length, totalRows: executions.reduce((s, e) => s + e.rowCount, 0), hasErrors: executions.some(e => !!e.error), errorClasses }
+        metadata: { queriesMade: executions.length, totalRows: executions.reduce((s, e) => s + e.rowCount, 0), hasErrors: executions.some(e => !!e.error), errorClasses },
+        context: ctx
       }
     } catch (err) {
       return {
@@ -251,16 +258,27 @@ export class AITrainingAssistant {
 
     const mode = (req.mode || '').toLowerCase()
 
-    return `You are a database query specialist for a fitness application. Generate the MINIMAL set of SQL queries (1-3) to retrieve data needed to answer the user's question.
+    return `You are a database query specialist for a fitness application. Generate:
+1) A minimal CONTEXT object (domain/mode/filters) so the UI can pick the correct chips, and
+2) The MINIMAL set of SQL queries (1-3) needed for the first answer.
 
 STRICT OUTPUT CONTRACT:
 - OUTPUT JSON ONLY (no prose, no code fences)
 - EXACT SHAPE:
 {
+  "context": { "domain": "logs" | "metcons", "mode": string, "range"?: string, "patternTerms"?: string[], "timeDomain"?: string, "equipment"?: string[] },
   "queries": [
     { "purpose": "...", "sql": "SELECT ... WHERE user_id = ${req.userId} ... LIMIT X" }
   ]
 }
+DOMAIN SELECTION & METCONS RULES (CRITICAL):
+- If the question mentions MetCons/WOD/time domain/percentile/format/equipment, set context.domain = "metcons".
+- For metcons:
+  • Use tables: program_metcons pm JOIN programs p ON pm.program_id = p.id AND p.user_id = ${req.userId}
+    LEFT JOIN metcons m ON m.id = pm.metcon_id
+  • Completed = pm.completed_at IS NOT NULL
+  • Movement filters apply to m.tasks (ILIKE), not exercise_name
+  • Set a reasonable context.mode (e.g., "sessions" or "by_time_domain") and carry any filters in context.
 
 HARD RULES:
 1) Use ONLY table performance_logs and ONLY the columns listed in SUBSET_SCHEMA below.
@@ -485,9 +503,39 @@ RESPONSE STRUCTURE (no invented examples):
     return out
   }
 
+  private parsePlannerOutputWithContext(responseText: string): { context?: any; queries: string[] } {
+    // Strip common wrappers
+    let text = (responseText || '').replace(/```json\s*|```/g, '').trim()
+    let parsed: any = null
+    try {
+      parsed = JSON.parse(text)
+    } catch {
+      const match = text.match(/\{[\s\S]*\}/)
+      if (match) {
+        try { parsed = JSON.parse(match[0]) } catch {}
+      }
+    }
+    const ctx = parsed?.context && typeof parsed.context === 'object' ? parsed.context : undefined
+    if (!parsed || !Array.isArray(parsed.queries)) {
+      throw new Error('No valid queries')
+    }
+    const out: string[] = []
+    const errors: string[] = []
+    for (const q of parsed.queries.slice(0, 5)) {
+      if (!q?.sql || typeof q.sql !== 'string') continue
+      const sql = q.sql.trim()
+      const validation = this.validateSqlAgainstSchema(sql)
+      if (!validation.ok) { if (validation.error) errors.push(validation.error) ; continue }
+      const purpose = (q?.purpose && typeof q.purpose === 'string') ? q.purpose : 'Database query'
+      out.push(`-- Purpose: ${purpose}\n${sql}`)
+    }
+    if (!out.length) throw new Error(errors.length ? errors.join('; ') : 'No valid queries')
+    return { context: ctx, queries: out }
+  }
+
   // AST-based schema validation: tables, columns, ORDER BY
   private validateSqlAgainstSchema(sql: string): { ok: boolean; error?: string } {
-    // Minimal restrictions per request: single SELECT, from performance_logs, has WHERE user_id
+    // Minimal restrictions per request: single SELECT, from performance_logs OR program_metcons JOIN programs (and optional metcons), has user scope
     try {
       const s = (sql || '').trim().replace(/^--\s*Purpose:.*$/mi, '')
       const lower = s.toLowerCase()
@@ -499,9 +547,17 @@ RESPONSE STRUCTURE (no invented examples):
       if (lower.includes(';')) return { ok: false, error: 'Multiple statements not allowed' }
       const banned = [' with ', ' insert ', ' update ', ' delete ', ' alter ', ' create ', ' drop ', ' grant ', ' revoke ']
       if (banned.some(k => lower.includes(k))) return { ok: false, error: 'Statement contains disallowed keywords' }
-      if (!/\bfrom\s+performance_logs\b/.test(lower)) return { ok: false, error: 'Only performance_logs allowed' }
-      if (!/\bwhere\b/.test(lower) || !/\buser_id\b/.test(lower)) return { ok: false, error: 'WHERE user_id predicate required' }
-      return { ok: true }
+      // Allow logs path
+      if (/\bfrom\s+performance_logs\b/.test(lower)) {
+        if (!/\bwhere\b/.test(lower) || !/\buser_id\b/.test(lower)) return { ok: false, error: 'WHERE user_id predicate required' }
+        return { ok: true }
+      }
+      // Allow metcons path
+      if (/\bfrom\s+program_metcons\b/.test(lower) && /\bjoin\s+programs\b/.test(lower)) {
+        if (!/\bprograms\.[a-z_]*user_id\b/.test(lower) && !/\bp\.user_id\b/.test(lower)) return { ok: false, error: 'programs.user_id scope required' }
+        return { ok: true }
+      }
+      return { ok: false, error: 'Unsupported FROM clause' }
     } catch (e) {
       return { ok: false, error: String((e as Error).message || e) }
     }
@@ -589,13 +645,14 @@ RESPONSE STRUCTURE (no invented examples):
   }
 
   private buildSchemaGuidance(userQuestion: string): string {
-    // Logs-only guidance
-    const summary = [
-      'Use ONLY performance_logs with these columns:',
-      'id, program_id, user_id, week, day, block, exercise_name, sets, reps, weight_time, result, rpe, completion_quality, flags, analysis, logged_at, quality_grade, set_number.',
-      'Always include WHERE user_id = <userId>. When recency matters, ORDER BY logged_at DESC. LIMIT 10-50.'
+    const logs = [
+      'performance_logs: id, user_id, logged_at, block, exercise_name, sets, reps, weight_time, result, rpe, completion_quality'
     ].join(' ')
-    return summary
+    const programs = 'programs: id, user_id, generated_at'
+    const pm = 'program_metcons (pm): program_id, week, day, metcon_id, user_score, percentile, completed_at'
+    const m = 'metcons (m): id, workout_id, format, time_range, required_equipment[], tasks (jsonb), male_p90/p50/std_dev, female_p90/p50/std_dev'
+    const joins = 'Joins: pm.program_id → programs.id (scope by programs.user_id); pm.metcon_id → metcons.id'
+    return [logs, programs, pm, m, joins].join('\n')
   }
 
   // Build a compact shorthand → canonical glossary for the planner
