@@ -234,12 +234,16 @@ credentials: 'include',
               .filter((t: string) => t && !/^metcon(s)?$/i.test(t) && !/^completed$/i.test(t))
             if (sanitized.length) setPatternTerms(sanitized.map((t: string) => `%${t.toLowerCase()}%`))
           }
-          // TimeDomain / Equipment (metcons)
-          if (typeof ctx.timeDomain === 'string' && ctx.timeDomain.trim()) {
-            setTimeDomains(ctx.timeDomain.split(',').map((t: string) => t.trim()).filter(Boolean))
+          // TimeDomain / Equipment (metcons) — sanitize to allowed enums only
+          const allowedTD = new Set(['1-5','5-10','10-15','15-20','20+'])
+          if (typeof ctx.timeDomain === 'string') {
+            const tds = ctx.timeDomain.split(',').map((t: string) => t.trim()).filter((t: string) => allowedTD.has(t))
+            setTimeDomains(tds)
           }
-          if (Array.isArray(ctx.equipment) && ctx.equipment.length) {
-            setEquipments(ctx.equipment.map((e: string) => String(e)))
+          const allowedEq = new Set(['Barbell','Dumbbells'])
+          if (Array.isArray(ctx.equipment)) {
+            const eqs = ctx.equipment.map((e: string) => String(e)).filter((e: string) => allowedEq.has(e))
+            setEquipments(eqs)
           }
         }
 
