@@ -37,6 +37,7 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   const [domain, setDomain] = useState<'logs'|'metcons'>('logs')
   const [timeDomains, setTimeDomains] = useState<string[]>([])
   const [equipments, setEquipments] = useState<string[]>([])
+  const [level, setLevel] = useState<string | null>(null)
   // Removed exercises/variant-family inference
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
@@ -163,6 +164,9 @@ credentials: 'include',
       setContextBlock(null)
       setLastRangeLabel(null)
       setCurrentMode('count')
+      setTimeDomains([])
+      setEquipments([])
+      setLevel(null)
 
       const response = await fetch(`/api/chat/${userId}`, {
         method: 'POST',
@@ -225,6 +229,7 @@ credentials: 'include',
             } else {
               setTimeDomains([])
               setEquipments([])
+              setLevel(null)
             }
           }
           // Pattern terms (sanitize: drop generic ones)
@@ -244,6 +249,10 @@ credentials: 'include',
           if (Array.isArray(ctx.equipment)) {
             const eqs = ctx.equipment.map((e: string) => String(e)).filter((e: string) => allowedEq.has(e))
             setEquipments(eqs)
+          }
+          const allowedLevel = new Set(['Open','Quarterfinals','Regionals','Games'])
+          if (typeof ctx.level === 'string' && allowedLevel.has(ctx.level)) {
+            setLevel(ctx.level)
           }
         }
 
@@ -523,6 +532,31 @@ credentials: 'include',
                         {eq}
                       </button>
                     ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-gray-500">Level:</span>
+                    {['Open','Quarterfinals','Regionals','Games'].map(lv => (
+                      <button
+                        key={lv}
+                        className={`px-2 py-1 rounded border ${level===lv ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`}
+                        onClick={() => {
+                          const next = level===lv ? null : lv
+                          setLevel(next)
+                          const header = next ? { 'X-Level': next } : {}
+                          sendQuickQuery(`Level ${next || 'clear'}`, 'level_chip', header as Record<string,string>)
+                        }}
+                      >
+                        {lv}
+                      </button>
+                    ))}
+                    {level && (
+                      <button
+                        className="px-2 py-1 rounded border bg-gray-100 hover:bg-gray-200"
+                        onClick={() => { setLevel(null); sendQuickQuery('Level clear', 'level_chip_clear', {}) }}
+                      >
+                        Clear Level
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
