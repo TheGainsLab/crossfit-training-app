@@ -232,8 +232,8 @@ credentials: 'include',
               setLevel(null)
             }
           }
-          // Pattern terms (sanitize: drop generic ones)
-          if (Array.isArray(ctx.patternTerms) && ctx.patternTerms.length) {
+          // Pattern terms: only seed from AI for logs domain; metcons must be explicit
+          if (ctx.domain === 'logs' && Array.isArray(ctx.patternTerms) && ctx.patternTerms.length) {
             const sanitized = ctx.patternTerms
               .map((t: string) => String(t || '').trim())
               .filter((t: string) => t && !/^metcon(s)?$/i.test(t) && !/^completed$/i.test(t))
