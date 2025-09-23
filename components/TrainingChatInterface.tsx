@@ -38,6 +38,7 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   const [timeDomains, setTimeDomains] = useState<string[]>([])
   const [equipments, setEquipments] = useState<string[]>([])
   const [level, setLevel] = useState<string | null>(null)
+  const [showFilters, setShowFilters] = useState<boolean>(false)
   // Removed exercises/variant-family inference
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
@@ -413,6 +414,13 @@ credentials: 'include',
 
   // Render assistant content with basic JSON-aware formatting for raw query results
   const renderAssistantContent = (message: Message, idx: number) => {
+    // Latest assistant index to limit toolbar to the newest result
+    const lastAssistantIndex = (() => {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i]?.role === 'assistant') return i
+      }
+      return -1
+    })()
     if (message.role !== 'assistant') {
       return <div className="whitespace-pre-wrap">{message.content}</div>
     }
@@ -444,12 +452,6 @@ credentials: 'include',
           const logsDisabled = !patternTerms.length
           return (
             <div className="mt-3 flex flex-col gap-2 text-xs">
-              {/* Domain selector */}
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-gray-500">Domain:</span>
-                <button className={`px-2 py-1 rounded border ${domain==='logs' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setDomain('logs'); setCurrentMode('count'); setTimeDomains([]); setEquipments([]); setContextBlock(null); }}>Logs</button>
-                <button className={`px-2 py-1 rounded border ${domain==='metcons' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setDomain('metcons'); setCurrentMode('sessions'); setContextBlock(null); }}>Metcons</button>
-              </div>
 
               {/* Mode chips (domain-aware) */}
               {domain === 'logs' ? (
@@ -471,16 +473,29 @@ credentials: 'include',
               {/* Persistent Range chips */}
               <div className="flex flex-wrap gap-2 items-center">
                 <span className="text-gray-500">Range:</span>
-                {['Last 7 days', 'Last 14 days', 'Last 30 days', 'This week', 'All time'].map(label => (
-                  <button key={label} onClick={() => { setLastRangeLabel(label); sendQuickQuery(label, 'range_chip') }} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded border">
-                    {label}
-                  </button>
-                ))}
+                {['Last 7 days', 'Last 14 days', 'Last 30 days', 'This week', 'All time'].map(label => {
+                  const selected = lastRangeLabel === label
+                  return (
+                    <button key={label} onClick={() => { setLastRangeLabel(label); sendQuickQuery(label, 'range_chip') }} className={`px-2 py-1 rounded border ${selected ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Filters toggle */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <button className="px-2 py-1 rounded border bg-gray-100 hover:bg-gray-200" onClick={() => setShowFilters(v => !v)}>
+                  {showFilters ? 'Hide Filters' : 'Show Filters'}
+                </button>
               </div>
 
               {/* Domain-specific filters */}
-              {domain === 'logs' ? (
+              {showFilters && (domain === 'logs' ? (
                 <div className="flex flex-wrap gap-2 items-center">
+                  <span className="text-gray-500">Domain:</span>
+                  <button className={`px-2 py-1 rounded border ${domain==='logs' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setDomain('logs'); setCurrentMode('count'); setTimeDomains([]); setEquipments([]); setContextBlock(null); setLevel(null) }}>Logs</button>
+                  <button className={`px-2 py-1 rounded border ${domain==='metcons' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setDomain('metcons'); setCurrentMode('sessions'); setContextBlock(null); }}>Metcons</button>
                   <span className="text-gray-500">Block:</span>
                   {['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS'].map(b => (
                     <button
@@ -503,6 +518,11 @@ credentials: 'include',
                 </div>
               ) : (
                 <div className="flex flex-col gap-2 text-xs">
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-gray-500">Domain:</span>
+                    <button className={`px-2 py-1 rounded border ${domain==='logs' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-blue-100 border-blue-300'}`} onClick={() => { setDomain('logs'); setCurrentMode('count'); setTimeDomains([]); setEquipments([]); setContextBlock(null); setLevel(null) }}>Logs</button>
+                    <button className={`px-2 py-1 rounded border ${domain==='metcons' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setDomain('metcons'); setCurrentMode('sessions'); setContextBlock(null); }}>Metcons</button>
+                  </div>
                   <div className="flex flex-wrap gap-2 items-center">
                     <span className="text-gray-500">Time domain:</span>
                     {['1-5','5-10','10-15','15-20','20+'].map(td => (
@@ -559,7 +579,7 @@ credentials: 'include',
                     )}
                   </div>
                 </div>
-              )}
+              ))}
             </div>
           )
         }
@@ -686,6 +706,19 @@ credentials: 'include',
           const keys = Object.keys(rows[0] || {})
           if (keys.length === 1 && rows.length <= 3) {
             return (
+                {/* Active filters summary (latest result only) */}
+                {idx === lastAssistantIndex && (
+                  <div className="mb-2 text-xs text-gray-600 flex flex-wrap gap-2">
+                    <span className="px-2 py-1 rounded border bg-gray-50">Domain: {domain}</span>
+                    <span className="px-2 py-1 rounded border bg-gray-50">Mode: {currentMode}</span>
+                    {lastRangeLabel && <span className="px-2 py-1 rounded border bg-gray-50">Range: {lastRangeLabel}</span>}
+                    {domain==='logs' && patternTerms.length>0 && <span className="px-2 py-1 rounded border bg-gray-50">Pattern: {patternTerms.join(', ').replace(/%/g,'')}</span>}
+                    {domain==='logs' && contextBlock && <span className="px-2 py-1 rounded border bg-gray-50">Block: {contextBlock}</span>}
+                    {domain==='metcons' && timeDomains.length>0 && <span className="px-2 py-1 rounded border bg-gray-50">Time: {timeDomains.join(', ')}</span>}
+                    {domain==='metcons' && equipments.length>0 && <span className="px-2 py-1 rounded border bg-gray-50">Equip: {equipments.join(', ')}</span>}
+                    {domain==='metcons' && level && <span className="px-2 py-1 rounded border bg-gray-50">Level: {level}</span>}
+                  </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {rows.map((r: any, i: number) => {
                   const k = Object.keys(r)[0]
@@ -698,7 +731,7 @@ credentials: 'include',
                     </div>
                   )
                 })}
-                <div className="col-span-full">{renderActionBar()}</div>
+                <div className="col-span-full">{idx === lastAssistantIndex && renderActionBar()}</div>
               </div>
             )
           }
@@ -732,7 +765,7 @@ credentials: 'include',
                   {expanded ? 'Show less' : `Show all (${rows.length})`}
                 </button>
               )}
-              <div className="mt-2">{renderActionBar()}</div>
+              <div className="mt-2">{idx === lastAssistantIndex && renderActionBar()}</div>
             </div>
           )
         }
