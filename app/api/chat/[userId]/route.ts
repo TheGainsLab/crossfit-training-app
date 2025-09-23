@@ -72,6 +72,7 @@ export async function POST(
 
     // In-route AI assistant bound to the user's Supabase client
     const actionName = request.headers.get('x-action-name') || null
+    const domain = (request.headers.get('x-domain') || '').toLowerCase() || null
     const pattern = request.headers.get('x-pattern') || null
     const range = request.headers.get('x-range') || null
     const block = request.headers.get('x-block') || null
@@ -80,19 +81,26 @@ export async function POST(
     const mode = request.headers.get('x-mode') || null // sessions | by_block | total_reps | avg_rpe | table
     const limit = request.headers.get('x-limit') || null // 10 | 20 | 50
     const sort = request.headers.get('x-sort') || null // newest | oldest
+    // Metcons-specific filters
+    const timeDomain = request.headers.get('x-timedomain') || request.headers.get('x-time-domain') || null
+    const equipment = request.headers.get('x-equipment') || null
+    const level = request.headers.get('x-level') || null
     if (actionName) {
-      console.log('[CHAT][action]', { userId: parseInt(userId), actionName, range, block, filterRpe, filterQuality, mode, limit, sort, pattern })
+      console.log('[CHAT][action]', { userId: parseInt(userId), actionName, domain, range, block, filterRpe, filterQuality, mode, limit, sort, pattern, timeDomain, equipment, level })
     }
     // Deterministic chip handling: if mode present, build SQL directly and bypass LLM
     let assistantData: { response: string }
     if (mode) {
-      // Guard: require pattern for modes that need a name filter
+      // Guard: for logs domain, some modes require a name filter
       const needsPattern = ['by_block','total_reps','avg_rpe','sessions','table','list'].includes((mode || '').toLowerCase())
-      if (needsPattern && (!pattern || !pattern.trim())) {
-        return NextResponse.json({ success: false, error: 'Missing filter: set a pattern (e.g., Use “squat” as filter) before using this chip.' }, { status: 400 })
+      if (!domain || domain === 'logs') {
+        if (needsPattern && (!pattern || !pattern.trim())) {
+          return NextResponse.json({ success: false, error: 'Missing filter: set a pattern (e.g., Use “squat” as filter) before using this chip.' }, { status: 400 })
+        }
       }
       const sql = buildChipSql({
         userId: parseInt(userId),
+        domain,
         mode,
         range,
         block,
@@ -101,6 +109,9 @@ export async function POST(
         sort,
         limit,
         pattern,
+        timeDomain,
+        equipment,
+        level,
       })
       const t0 = Date.now()
       const { data, error } = await supabase.rpc('execute_user_query', { query_sql: sql, requesting_user_id: parseInt(userId) })
@@ -176,6 +187,7 @@ function sanitizeLimit(raw: string | null): number {
 
 function buildChipSql(args: {
   userId: number,
+  domain: string | null,
   mode: string | null,
   range: string | null,
   block: string | null,
@@ -184,11 +196,92 @@ function buildChipSql(args: {
   sort: string | null,
   limit: string | null,
   pattern: string | null,
+  timeDomain?: string | null,
+  equipment?: string | null,
+  level?: string | null,
 }): string {
   const {
-    userId, mode, range, block, filterRpe, filterQuality, sort, limit, pattern
+    userId, domain, mode, range, block, filterRpe, filterQuality, sort, limit, pattern, timeDomain, equipment, level
   } = args
+  const d = (domain || 'logs').toLowerCase()
+  if (d === 'metcons') {
+    const where: string[] = [`p.user_id = ${userId}`, `pm.completed_at IS NOT NULL`]
+    if (range === 'last_7_days') where.push(`pm.completed_at >= now() - interval '7 days'`)
+    else if (range === 'last_14_days') where.push(`pm.completed_at >= now() - interval '14 days'`)
+    else if (range === 'last_30_days') where.push(`pm.completed_at >= now() - interval '30 days'`)
+    else if (range === 'this_week') where.push(`pm.completed_at >= date_trunc('week', current_date)`)
+    // Pattern on tasks
+    const patt = (pattern || '').trim()
+    if (patt) {
+      const terms = patt.split(',').map(t => t.trim()).filter(Boolean)
+      if (terms.length) {
+        const ors = terms.map(t => `m.tasks::text ILIKE '${t.replace(/'/g, "''")}'`).join(' OR ')
+        where.push(`(${ors})`)
+      }
+    }
+    // Time domain mapping
+    const tdRaw = (timeDomain || '').trim()
+    if (tdRaw) {
+      const tds = tdRaw.split(',').map(t => t.trim()).filter(Boolean)
+      const mapped: string[] = []
+      tds.forEach(t => {
+        if (t === '20+') { mapped.push(`'20-30'`, `'30+'`) } else { mapped.push(`'${t.replace(/'/g, "''")}'`) }
+      })
+      if (mapped.length) where.push(`m.time_range IN (${mapped.join(', ')})`)
+    }
+    // Equipment (ANY(required_equipment))
+    const eqRaw = (equipment || '').trim()
+    if (eqRaw) {
+      const eqs = eqRaw.split(',').map(e => e.trim()).filter(Boolean)
+      if (eqs.length) {
+        const ors = eqs.map(e => `'${e.replace(/'/g, "''")}' = ANY(m.required_equipment)`).join(' OR ')
+        where.push(`(${ors})`)
+      }
+    }
+    // Level
+    const lvl = (level || '').trim()
+    if (lvl) where.push(`m.level = '${lvl.replace(/'/g, "''")}'`)
+    const whereSql = `WHERE ${where.join(' AND ')}`
+    const order = (sort || '').toLowerCase() === 'oldest' ? 'ASC' : 'DESC'
+    const lim = sanitizeLimit(limit)
+    const m = (mode || 'completions').toLowerCase()
+    if (m === 'by_time_domain') {
+      return `SELECT COALESCE(m.time_range,'Unknown') AS time_range, COUNT(*) AS count
+FROM program_metcons pm
+JOIN programs p ON pm.program_id = p.id
+LEFT JOIN metcons m ON m.id = pm.metcon_id
+${whereSql}
+GROUP BY 1
+ORDER BY count DESC
+LIMIT ${lim}`
+    }
+    if (m === 'avg_percentile') {
+      return `SELECT ROUND(AVG(pm.percentile), 2) AS avg_percentile
+FROM program_metcons pm
+JOIN programs p ON pm.program_id = p.id
+LEFT JOIN metcons m ON m.id = pm.metcon_id
+${whereSql} AND pm.percentile IS NOT NULL`
+    }
+    if (m === 'best_scores') {
+      return `SELECT DATE(pm.completed_at) AS completed_date, m.format, m.time_range, pm.user_score, pm.percentile
+FROM program_metcons pm
+JOIN programs p ON pm.program_id = p.id
+LEFT JOIN metcons m ON m.id = pm.metcon_id
+${whereSql} AND pm.percentile IS NOT NULL
+ORDER BY pm.percentile DESC NULLS LAST
+LIMIT ${lim}`
+    }
+    // completions/sessions
+    return `SELECT DATE(pm.completed_at) AS completed_date, pm.week, pm.day, m.format, m.time_range, pm.user_score, pm.percentile, m.tasks
+FROM program_metcons pm
+JOIN programs p ON pm.program_id = p.id
+LEFT JOIN metcons m ON m.id = pm.metcon_id
+${whereSql}
+ORDER BY completed_date ${order}
+LIMIT ${lim}`
+  }
 
+  // Logs domain
   const where: string[] = [`user_id = ${userId}`]
   // Name patterns: comma-separated -> OR ILIKE
   const patt = (pattern || '').trim()
