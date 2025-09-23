@@ -33,7 +33,7 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   // Persistent, explicit chat context (patternTerms are comma-separated OR terms)
   const [patternTerms, setPatternTerms] = useState<string[]>([])
   const [contextBlock, setContextBlock] = useState<string | null>(null)
-  const [currentMode, setCurrentMode] = useState<'count'|'by_block'|'total_reps'|'avg_rpe'|'sessions'>('count')
+  const [currentMode, setCurrentMode] = useState<'count'|'by_block'|'total_reps'|'avg_rpe'|'sessions'|'by_time_domain'|'avg_percentile'|'best_scores'>('count')
   const [domain, setDomain] = useState<'logs'|'metcons'>('logs')
   const [timeDomains, setTimeDomains] = useState<string[]>([])
   const [equipments, setEquipments] = useState<string[]>([])
