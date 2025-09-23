@@ -89,7 +89,7 @@ export async function POST(
       console.log('[CHAT][action]', { userId: parseInt(userId), actionName, domain, range, block, filterRpe, filterQuality, mode, limit, sort, pattern, timeDomain, equipment, level })
     }
     // Deterministic chip handling: if mode present, build SQL directly and bypass LLM
-    let assistantData: { response: string }
+    let assistantData: { response: string, context?: any }
     if (mode) {
       // Guard: for logs domain, some modes require a name filter
       const needsPattern = ['by_block','total_reps','avg_rpe','sessions','table','list'].includes((mode || '').toLowerCase())
@@ -144,7 +144,7 @@ export async function POST(
         // @ts-ignore
         sort
       })
-      assistantData = { response: aiResp.response }
+      assistantData = { response: aiResp.response, context: aiResp.context }
     }
 
     // Store assistant message and update conversation timestamp
@@ -168,7 +168,8 @@ export async function POST(
       response: assistantData.response,
       conversation_id: conversationId,
       responseType: 'program_guidance',
-      coachAlertGenerated: false
+      coachAlertGenerated: false,
+      context: assistantData.context || null
     });
 
   } catch (error) {

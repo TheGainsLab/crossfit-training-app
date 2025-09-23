@@ -224,6 +224,8 @@ export class AITrainingAssistant {
     validatorFeedback?: string
   ): string {
     const schemaGuidance = this.buildSchemaGuidance(req.userQuestion)
+    const intentLower = (req.userQuestion || '').toLowerCase()
+    const isMetconIntent = /(metcon|wod|time\s*domain|percentile|format|equipment|tasks)/.test(intentLower)
 
     const rangeToken = (req.range || '').trim()
     const timeFilter = rangeToken === 'last_7_days' ? "AND logged_at >= now() - interval '7 days'"
@@ -258,6 +260,47 @@ export class AITrainingAssistant {
 
     const mode = (req.mode || '').toLowerCase()
 
+    // Domain-conditional hard rules and subset schema
+    const hardRules = isMetconIntent
+      ? `HARD RULES (metcons domain):
+1) Use ONLY tables: program_metcons pm JOIN programs p ON pm.program_id = p.id AND p.user_id = ${req.userId} LEFT JOIN metcons m ON m.id = pm.metcon_id
+2) Completed definition: pm.completed_at IS NOT NULL (include this WHERE predicate)
+3) Movement/name filters apply to m.tasks::text using ILIKE (never LIKE)
+4) Time column is pm.completed_at; use ORDER BY pm.completed_at ${sortOrder} for recency
+5) LIMIT 10-50 rows; single SELECT per query; no multi-statement SQL
+6) Do NOT reference performance_logs in metcons domain
+7) Do NOT use or join on program_workout_id
+8) Never use case-sensitive LIKE anywhere; only ILIKE when needed`
+      : `HARD RULES (logs domain):
+1) Use ONLY table performance_logs and ONLY the columns listed in SUBSET_SCHEMA below.
+2) Every query MUST include: WHERE user_id = ${req.userId}
+3) Time column is logged_at; use ORDER BY logged_at ${sortOrder} for recency
+4) LIMIT 10-50 rows; single SELECT per query; no multi-statement SQL
+5) Column typing rules (use exact types; avoid unnecessary casting/regex):
+   - rpe (integer): use rpe directly (AVG(rpe)), filter rpe IS NOT NULL when aggregating
+   - completion_quality (integer 1-4): filter IS NOT NULL when aggregating
+   - week/day/set_number (integer): use directly
+   - reps (text): guard before cast (NULLIF(regexp_replace(reps, '[^0-9]', '', 'g'), '')::int)
+   - weight_time/result (text): polymorphic; treat as text unless needed
+6) Do NOT reference any table/column not listed in SUBSET_SCHEMA
+7) Do NOT use IN (...) on exercise_name. Do NOT invent names.
+8) Never use case-sensitive LIKE for exercise_name. If filtering by name, use ILIKE (case-insensitive) only`
+
+    const subsetSchema = isMetconIntent
+      ? `SUBSET_SCHEMA (metcons domain):
+- Tables:
+    - programs p: id, user_id, generated_at
+    - program_metcons pm: program_id, week, day, metcon_id, user_score, percentile, performance_tier, completed_at
+    - metcons m: id, workout_id, format, time_range, required_equipment (text[]), tasks (jsonb), level
+- Joins:
+    pm.program_id = p.id AND p.user_id = ${req.userId}; pm.metcon_id = m.id`
+      : `SUBSET_SCHEMA (logs domain):
+- Table: performance_logs
+      - Columns: id, program_id, user_id, week, day, block, exercise_name,
+  sets, reps, weight_time, result, rpe, completion_quality, flags, analysis,
+  logged_at, quality_grade, set_number
+      - Notes: block common values = 'SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS'`
+
     return `You are a database query specialist for a fitness application. Generate:
 1) A minimal CONTEXT object (domain/mode/filters) so the UI can pick the correct chips, and
 2) The MINIMAL set of SQL queries (1-3) needed for the first answer.
@@ -280,27 +323,13 @@ DOMAIN SELECTION & METCONS RULES (CRITICAL):
   • Movement filters apply to m.tasks (ILIKE), not exercise_name
   • Set a reasonable context.mode (e.g., "sessions" or "by_time_domain") and carry any filters in context.
 
-HARD RULES:
-1) Use ONLY table performance_logs and ONLY the columns listed in SUBSET_SCHEMA below.
-2) Every query MUST include: WHERE user_id = ${req.userId}
-3) Time column is logged_at
-4) LIMIT 10-50 rows; single SELECT per query; no multi-statement SQL
-5) Column typing rules (use exact types; avoid unnecessary casting/regex):
-   - rpe (integer): use rpe directly (AVG(rpe)), filter rpe IS NOT NULL when aggregating
-   - completion_quality (integer 1-4): filter IS NOT NULL when aggregating
-   - week/day/set_number (integer): use directly
-   - reps (text): guard before cast (NULLIF(regexp_replace(reps, '[^0-9]', '', 'g'), '')::int)
-   - weight_time/result (text): polymorphic; treat as text unless needed
-6) Do NOT reference any table/column not listed in SUBSET_SCHEMA
-7) Do NOT use IN (...) on exercise_name. Do NOT invent names. Avoid LIKE unless user typed a literal pattern (not provided here)
-8) Do NOT use or join on program_workout_id
-9) Never use case-sensitive LIKE for exercise_name. If filtering by name, use ILIKE (case-insensitive) only
+${hardRules}
 ${timeFilter ? `11) TIME RANGE provided: include "${timeFilter}" in every query` : ''}
 ${blockWhere ? `12) BLOCK provided: include "${blockWhere}" in every query` : ''}
 ${rpeWhere ? `13) RPE filter provided: include "${rpeWhere}" in every query` : ''}
 ${qualWhere ? `14) Quality filter provided: include "${qualWhere}" in every query` : ''}
 ${nameWhere ? `15) NAME pattern provided: include "${nameWhere}" in every query` : ''}
-${sortOrder ? `16) SORT provided: ORDER BY logged_at ${sortOrder}` : ''}
+${sortOrder ? (isMetconIntent ? `16) SORT provided: ORDER BY pm.completed_at ${sortOrder}` : `16) SORT provided: ORDER BY logged_at ${sortOrder}`) : ''}
 ${explicitLimit ? `17) LIMIT provided: use "${explicitLimit}" (cap at 50)` : ''}
 
 MODE SELECTION (if provided):
@@ -355,12 +384,7 @@ MODE SELECTION (if provided):
 USER QUESTION: "${req.userQuestion}"
 USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'}, ${req.userContext?.units || 'Unknown'})
 
-SUBSET_SCHEMA (the ONLY allowed source for this query):
-- Table: performance_logs
-      - Columns: id, program_id, user_id, week, day, block, exercise_name,
-  sets, reps, weight_time, result, rpe, completion_quality, flags, analysis,
-  logged_at, quality_grade, set_number
-      - Notes: block common values = 'SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS'
+${subsetSchema}
 
 SCHEMA GUIDANCE:
 ${schemaGuidance}

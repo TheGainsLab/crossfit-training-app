@@ -212,6 +212,37 @@ credentials: 'include',
         }
         setMessages(prev => [...prev, assistantMessage])
 
+        // Apply AI-returned context to drive chips deterministically
+        if (data?.context && typeof data.context === 'object') {
+          const ctx = data.context as any
+          // Domain
+          if (ctx.domain === 'metcons' || ctx.domain === 'logs') {
+            setDomain(ctx.domain)
+            setCurrentMode(ctx.domain === 'metcons' ? 'sessions' : 'count')
+            // Clear incompatible filters when switching domain
+            if (ctx.domain === 'metcons') {
+              setContextBlock(null)
+            } else {
+              setTimeDomains([])
+              setEquipments([])
+            }
+          }
+          // Pattern terms (sanitize: drop generic ones)
+          if (Array.isArray(ctx.patternTerms) && ctx.patternTerms.length) {
+            const sanitized = ctx.patternTerms
+              .map((t: string) => String(t || '').trim())
+              .filter((t: string) => t && !/^metcon(s)?$/i.test(t) && !/^completed$/i.test(t))
+            if (sanitized.length) setPatternTerms(sanitized.map((t: string) => `%${t.toLowerCase()}%`))
+          }
+          // TimeDomain / Equipment (metcons)
+          if (typeof ctx.timeDomain === 'string' && ctx.timeDomain.trim()) {
+            setTimeDomains(ctx.timeDomain.split(',').map((t: string) => t.trim()).filter(Boolean))
+          }
+          if (Array.isArray(ctx.equipment) && ctx.equipment.length) {
+            setEquipments(ctx.equipment.map((e: string) => String(e)))
+          }
+        }
+
         if (data.responseType !== 'domain_guard') {
           if (data.coachAlertGenerated) {
             // optional toast/notification
@@ -390,25 +421,7 @@ credentials: 'include',
                   </button>
                 ))}
               </div>
-              {/* Offer explicit filter confirmation if not set */}
-              {!patternTerms.length && (
-                <div className="mt-3">
-                  <div className="text-gray-500 mb-1">Set a filter:</div>
-                  {(() => {
-                    const candidate = derivePatternFromLastUserMessage()
-                    if (!candidate) return null
-                    const label = candidate.replace(/%/g, '')
-                    return (
-                      <button
-                        className="px-2 py-1 text-xs bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 text-blue-700"
-                        onClick={() => setPatternTerms([candidate])}
-                      >
-                        Use '{label}' as filter
-                      </button>
-                    )
-                  })()}
-                </div>
-              )}
+              {/* Removed heuristic filter prompt; X-Pattern comes from AI context or explicit UI */}
             </div>
           )
         }
@@ -541,18 +554,10 @@ credentials: 'include',
           )
         }
         const renderActionBar = () => {
-          const candidate = derivePatternFromLastUserMessage()
           const disabled = !patternTerms.length
           return (
           <div className="mt-3 flex flex-col gap-2 text-xs">
-            {disabled && candidate && (
-              <button
-                className="px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 text-blue-700"
-                onClick={() => setPatternTerms([candidate])}
-              >
-                Use '{candidate.replace(/%/g, '')}' as filter
-              </button>
-            )}
+            {/* Removed heuristic filter suggestion; rely on AI context or manual confirmation elsewhere */}
             <div className="flex flex-wrap gap-2">
               <button disabled={disabled} className={`px-2 py-1 rounded border ${currentMode==='by_block' ? 'bg-blue-100 border-blue-300' : (disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('by_block'); sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' }) }}>Individual Blocks</button>
               <button disabled={disabled} className={`px-2 py-1 rounded border ${currentMode==='total_reps' ? 'bg-blue-100 border-blue-300' : (disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200')}`} onClick={() => { setCurrentMode('total_reps'); sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' }) }}>Total Reps</button>
