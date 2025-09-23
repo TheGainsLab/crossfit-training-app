@@ -34,6 +34,9 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   const [patternTerms, setPatternTerms] = useState<string[]>([])
   const [contextBlock, setContextBlock] = useState<string | null>(null)
   const [currentMode, setCurrentMode] = useState<'count'|'by_block'|'total_reps'|'avg_rpe'|'sessions'>('count')
+  const [domain, setDomain] = useState<'logs'|'metcons'>('logs')
+  const [timeDomains, setTimeDomains] = useState<string[]>([])
+  const [equipments, setEquipments] = useState<string[]>([])
   // Removed exercises/variant-family inference
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
@@ -170,6 +173,7 @@ credentials: 'include',
           ...(patternTerms.length ? { 'X-Pattern': patternTerms.join(',') } : {}),
           ...(getRangeToken() ? { 'X-Range': String(getRangeToken()) } : {}),
           ...(contextBlock ? { 'X-Block': String(contextBlock) } : {}),
+          'X-Domain': domain,
           // Optional filters/modes can be attached by quick chips below
         },
         body: JSON.stringify({
@@ -295,6 +299,9 @@ credentials: 'include',
           ...(patternTerms.length ? { 'X-Pattern': patternTerms.join(',') } : {}),
           ...(getRangeToken() ? { 'X-Range': String(getRangeToken()) } : {}),
           ...(contextBlock ? { 'X-Block': String(contextBlock) } : {}),
+          'X-Domain': domain,
+          ...(timeDomains.length ? { 'X-TimeDomain': timeDomains.join(',') } : {}),
+          ...(equipments.length ? { 'X-Equipment': equipments.join(',') } : {}),
           ...headersWithMode,
         },
         body: JSON.stringify({ message: text, conversation_id: activeConversationId })
@@ -442,10 +449,27 @@ credentials: 'include',
               ))}
               {/* Refinement-only chips (mode only, context persists). Disable if filter not confirmed */}
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`} onClick={() => sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' })}>Individual Blocks</button>
-                <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`} onClick={() => sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' })}>Total Reps</button>
-                <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`} onClick={() => sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' })}>Avg RPE</button>
-                <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed'}`} onClick={() => sendQuickQuery(withRange('Sessions'), 'chip_sessions', { 'X-Mode': 'sessions' })}>Sessions</button>
+                {/* Domain selector */}
+                <span className="text-gray-500">Domain:</span>
+                <button className={`px-2 py-1 rounded border ${domain==='logs' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setDomain('logs'); setCurrentMode('count'); setTimeDomains([]); setEquipments([]); setContextBlock(null); }}>Logs</button>
+                <button className={`px-2 py-1 rounded border ${domain==='metcons' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setDomain('metcons'); setCurrentMode('sessions'); setContextBlock(null); }}>Metcons</button>
+
+                {/* Mode chips (domain-aware) */}
+                {domain === 'logs' ? (
+                  <>
+                    <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${currentMode==='by_block' ? 'bg-blue-100 border-blue-300' : (patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed')}`} onClick={() => { setCurrentMode('by_block'); sendQuickQuery(withRange('By block'), 'chip_individual_blocks', { 'X-Mode': 'by_block' }) }}>Individual Blocks</button>
+                    <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${currentMode==='total_reps' ? 'bg-blue-100 border-blue-300' : (patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed')}`} onClick={() => { setCurrentMode('total_reps'); sendQuickQuery(withRange('Total reps'), 'chip_total_reps', { 'X-Mode': 'total_reps' }) }}>Total Reps</button>
+                    <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${currentMode==='avg_rpe' ? 'bg-blue-100 border-blue-300' : (patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed')}`} onClick={() => { setCurrentMode('avg_rpe'); sendQuickQuery(withRange('Avg RPE'), 'chip_avg_rpe', { 'X-Mode': 'avg_rpe' }) }}>Avg RPE</button>
+                    <button disabled={!patternTerms.length} className={`px-2 py-1 rounded border ${currentMode==='sessions' ? 'bg-blue-100 border-blue-300' : (patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed')}`} onClick={() => { setCurrentMode('sessions'); sendQuickQuery(withRange('Sessions'), 'chip_sessions', { 'X-Mode': 'sessions' }) }}>Sessions</button>
+                  </>
+                ) : (
+                  <>
+                    <button className={`px-2 py-1 rounded border ${currentMode==='sessions' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('sessions'); sendQuickQuery('Metcons: Completions', 'metcon_mode', { 'X-Mode': 'sessions' }) }}>Completions</button>
+                    <button className={`px-2 py-1 rounded border ${currentMode==='by_block' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('by_block'); sendQuickQuery('Metcons: By time domain', 'metcon_mode', { 'X-Mode': 'by_time_domain' }) }}>By time domain</button>
+                    <button className={`px-2 py-1 rounded border ${currentMode==='avg_rpe' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('avg_rpe'); sendQuickQuery('Metcons: Avg percentile', 'metcon_mode', { 'X-Mode': 'avg_percentile' }) }}>Avg percentile</button>
+                    <button className={`px-2 py-1 rounded border bg-gray-100 hover:bg-gray-200`} onClick={() => { sendQuickQuery('Metcons: Best scores', 'metcon_mode', { 'X-Mode': 'best_scores' }) }}>Best scores</button>
+                  </>
+                )}
               </div>
               {/* Persistent Range chips */}
               <div className="mt-2 flex flex-wrap gap-2 text-xs">
@@ -456,28 +480,63 @@ credentials: 'include',
                   </button>
                 ))}
               </div>
-              {/* Block chips */}
-              <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                <span className="text-gray-500">Block:</span>
-                {['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS'].map(b => (
-                  <button
-                    key={b}
-                    disabled={!patternTerms.length}
-                    className={`px-2 py-1 rounded border ${contextBlock===b ? 'bg-blue-100 border-blue-300' : (patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed')}`}
-                    onClick={() => { setContextBlock(b); sendQuickQuery(`Block ${b}`, 'block_chip', { 'X-Block': b }) }}
-                  >
-                    {b}
-                  </button>
-                ))}
-                {contextBlock && (
-                  <button
-                    className="px-2 py-1 rounded border bg-gray-100 hover:bg-gray-200"
-                    onClick={() => { setContextBlock(null); sendQuickQuery('Clear block', 'block_clear', {}) }}
-                  >
-                    Clear Block
-                  </button>
-                )}
-              </div>
+              {/* Domain-specific chips */}
+              {domain === 'logs' ? (
+                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                  <span className="text-gray-500">Block:</span>
+                  {['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS'].map(b => (
+                    <button
+                      key={b}
+                      disabled={!patternTerms.length}
+                      className={`px-2 py-1 rounded border ${contextBlock===b ? 'bg-blue-100 border-blue-300' : (patternTerms.length ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-50 text-gray-400 cursor-not-allowed')}`}
+                      onClick={() => { setContextBlock(b); sendQuickQuery(`Block ${b}`, 'block_chip', { 'X-Block': b }) }}
+                    >
+                      {b}
+                    </button>
+                  ))}
+                  {contextBlock && (
+                    <button
+                      className="px-2 py-1 rounded border bg-gray-100 hover:bg-gray-200"
+                      onClick={() => { setContextBlock(null); sendQuickQuery('Clear block', 'block_clear', {}) }}
+                    >
+                      Clear Block
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-2 flex flex-col gap-2 text-xs">
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-gray-500">Time domain:</span>
+                    {['1-5','5-10','10-15','15-20','20+'].map(td => (
+                      <button
+                        key={td}
+                        className={`px-2 py-1 rounded border ${timeDomains.includes(td) ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`}
+                        onClick={() => {
+                          setTimeDomains(prev => prev.includes(td) ? prev.filter(x => x!==td) : [...prev, td]);
+                          sendQuickQuery(`Time domain ${td}`, 'timedomain_chip', { 'X-TimeDomain': timeDomains.includes(td) ? timeDomains.filter(x=>x!==td).join(',') : [...timeDomains, td].join(',') })
+                        }}
+                      >
+                        {td}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-gray-500">Equipment:</span>
+                    {['Barbell','Dumbbells'].map(eq => (
+                      <button
+                        key={eq}
+                        className={`px-2 py-1 rounded border ${equipments.includes(eq) ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`}
+                        onClick={() => {
+                          setEquipments(prev => prev.includes(eq) ? prev.filter(x => x!==eq) : [...prev, eq]);
+                          sendQuickQuery(`Equipment ${eq}`, 'equipment_chip', { 'X-Equipment': equipments.includes(eq) ? equipments.filter(x=>x!==eq).join(',') : [...equipments, eq].join(',') })
+                        }}
+                      >
+                        {eq}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )
         }
