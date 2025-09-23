@@ -449,9 +449,9 @@ credentials: 'include',
               ) : (
                 <div className="flex flex-wrap gap-2">
                   <button className={`px-2 py-1 rounded border ${currentMode==='sessions' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('sessions'); sendQuickQuery('Metcons: Completions', 'metcon_mode', { 'X-Mode': 'sessions' }) }}>Completions</button>
-                  <button className={`px-2 py-1 rounded border ${currentMode==='by_block' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('by_block'); sendQuickQuery('Metcons: By time domain', 'metcon_mode', { 'X-Mode': 'by_time_domain' }) }}>By time domain</button>
-                  <button className={`px-2 py-1 rounded border ${currentMode==='avg_rpe' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('avg_rpe'); sendQuickQuery('Metcons: Avg percentile', 'metcon_mode', { 'X-Mode': 'avg_percentile' }) }}>Avg percentile</button>
-                  <button className={`px-2 py-1 rounded border bg-gray-100 hover:bg-gray-200`} onClick={() => { sendQuickQuery('Metcons: Best scores', 'metcon_mode', { 'X-Mode': 'best_scores' }) }}>Best scores</button>
+                  <button className={`px-2 py-1 rounded border ${currentMode==='by_time_domain' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('by_time_domain'); sendQuickQuery('Metcons: By time domain', 'metcon_mode', { 'X-Mode': 'by_time_domain' }) }}>By time domain</button>
+                  <button className={`px-2 py-1 rounded border ${currentMode==='avg_percentile' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('avg_percentile'); sendQuickQuery('Metcons: Avg percentile', 'metcon_mode', { 'X-Mode': 'avg_percentile' }) }}>Avg percentile</button>
+                  <button className={`px-2 py-1 rounded border ${currentMode==='best_scores' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setCurrentMode('best_scores'); sendQuickQuery('Metcons: Best scores', 'metcon_mode', { 'X-Mode': 'best_scores' }) }}>Best scores</button>
                 </div>
               )}
 
