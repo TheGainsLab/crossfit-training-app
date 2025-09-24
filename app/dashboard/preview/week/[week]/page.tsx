@@ -16,6 +16,7 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
   const [proposeMsg, setProposeMsg] = useState('')
   const [proposeLoading, setProposeLoading] = useState(false)
   const [planDiff, setPlanDiff] = useState<any>(null)
+  const [showDiffJson, setShowDiffJson] = useState(false)
   // No jwt state; we resolve a fresh token before each API call to avoid races
 
   useEffect(() => {
@@ -281,7 +282,69 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
                     </button>
                   </div>
                   {planDiff && (
-                    <div className="mt-3 text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap">{JSON.stringify(planDiff, null, 2)}</div>
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-semibold text-sm">Proposed changes</div>
+                        <button className="text-xs px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100" onClick={() => setShowDiffJson(v => !v)}>{showDiffJson ? 'Hide JSON' : 'View JSON'}</button>
+                      </div>
+                      {showDiffJson && (
+                        <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap">{JSON.stringify(planDiff, null, 2)}</pre>
+                      )}
+                      <div className="space-y-2 text-sm">
+                        {Array.isArray(planDiff?.changes) && planDiff.changes.length > 0 ? (
+                          planDiff.changes.map((c: any, idx: number) => {
+                            const t = c?.type || 'unknown'
+                            const tgt = c?.target || {}
+                            const wk = tgt.week ?? '—'
+                            const dy = tgt.day ?? '—'
+                            const blk = tgt.block ?? '—'
+                            const sub = tgt.subOrder ? ` (${tgt.subOrder})` : ''
+                            const rationale = c?.rationale ? String(c.rationale) : ''
+                            let line = ''
+                            if (t === 'remove_exercise_in_block') {
+                              const name = tgt.name || c?.name || '—'
+                              line = `Remove "${name}" from Week ${wk}, Day ${dy}, ${blk}${sub}`
+                            } else if (t === 'replace_exercise') {
+                              line = `Replace "${c?.old_name || '—'}" → "${c?.new_name || '—'}" in Week ${wk}, Day ${dy}, ${blk}${sub}`
+                            } else if (t === 'add_exercise_in_block') {
+                              const p = c?.new || {}
+                              const parts: string[] = []
+                              if (p.sets) parts.push(`${p.sets} sets`)
+                              if (p.reps) parts.push(`${Array.isArray(p.reps) ? p.reps.join('/') : p.reps} reps`)
+                              if (p.intensity?.rpe) parts.push(`RPE ${p.intensity.rpe}`)
+                              if (p.intensity?.percent_1rm) parts.push(`${Math.round(p.intensity.percent_1rm * 100)}% 1RM`)
+                              if (p.rest_sec) parts.push(`${p.rest_sec}s rest`)
+                              line = `Add "${p.name || 'Exercise'}" to Week ${wk}, Day ${dy}, ${blk}${sub}${parts.length ? ' — ' + parts.join(', ') : ''}`
+                            } else if (t === 'adjust_exercise_prescription') {
+                              const parts: string[] = []
+                              if (c.sets) parts.push(`sets ${Array.isArray(c.sets) ? c.sets.join('/') : c.sets}`)
+                              if (c.reps) parts.push(`reps ${Array.isArray(c.reps) ? c.reps.join('/') : c.reps}`)
+                              if (c.intensity?.rpe) parts.push(`RPE ${c.intensity.rpe}`)
+                              if (c.intensity?.percent_1rm) parts.push(`${Math.round(c.intensity.percent_1rm * 100)}% 1RM`)
+                              if (c.rest_sec) parts.push(`${c.rest_sec}s rest`)
+                              line = `Adjust "${tgt.name || 'Exercise'}" in Week ${wk}, Day ${dy}, ${blk}${sub}${parts.length ? ' — ' + parts.join(', ') : ''}`
+                            } else if (t === 'swap_metcon') {
+                              const sel = c?.select || {}
+                              const td = sel.time_domain ? `time ${sel.time_domain}` : ''
+                              const eq = Array.isArray(sel.equipment) && sel.equipment.length ? `equipment ${sel.equipment.join('/')}` : ''
+                              const lvl = sel.level ? `level ${sel.level}` : ''
+                              const filters = [td, eq, lvl].filter(Boolean).join(', ')
+                              line = `Swap MetCon in Week ${wk}, Day ${dy}${filters ? ' — ' + filters : ''}`
+                            } else {
+                              line = `(${t}) Week ${wk}, Day ${dy}, ${blk}${sub}`
+                            }
+                            return (
+                              <div key={idx} className="bg-white border rounded p-2">
+                                <div className="font-medium">{line}</div>
+                                {rationale && <div className="text-xs text-gray-600 mt-1">{rationale}</div>}
+                              </div>
+                            )
+                          })
+                        ) : (
+                          <div className="text-xs text-gray-600">No changes returned.</div>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </section>
               </div>
