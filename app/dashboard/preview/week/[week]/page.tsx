@@ -12,6 +12,7 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
   const [showCoach, setShowCoach] = useState(false)
   const [coachLoading, setCoachLoading] = useState(false)
   const [coachBrief, setCoachBrief] = useState<any>(null)
+  const [showBriefJson, setShowBriefJson] = useState(false)
   // No jwt state; we resolve a fresh token before each API call to avoid races
 
   useEffect(() => {
@@ -145,7 +146,99 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
             ) : coachBrief?.error ? (
               <div className="text-red-600 text-sm">{coachBrief.error}</div>
             ) : (
-              <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap">{JSON.stringify(coachBrief, null, 2)}</pre>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">Coaching Brief</div>
+                  <button className="text-xs px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100" onClick={() => setShowBriefJson(v => !v)}>{showBriefJson ? 'Hide JSON' : 'View JSON'}</button>
+                </div>
+                {showBriefJson && (
+                  <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap">{JSON.stringify(coachBrief, null, 2)}</pre>
+                )}
+
+                <section>
+                  <div className="font-semibold mb-1">Profile</div>
+                  <div className="text-sm text-gray-700">Ability: {coachBrief?.profile?.ability || '—'}</div>
+                  <div className="text-sm text-gray-700">Units: {coachBrief?.metadata?.units || '—'}</div>
+                  <div className="text-sm text-gray-700">Equipment: {(coachBrief?.profile?.equipment || []).join(', ') || '—'}</div>
+                </section>
+
+                <section>
+                  <div className="font-semibold mb-1">Strength Benchmarks (1RM)</div>
+                  {(() => {
+                    const names = ['Snatch','Power Snatch','Clean and Jerk','Power Clean','Clean (Only)','Jerk (Only)','Back Squat','Front Squat','Overhead Squat','Deadlift','Bench Press','Push Press','Strict Press','Weighted Pullup']
+                    const vals = coachBrief?.intake?.oneRMs || []
+                    return (
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {names.map((n, i) => (
+                          <div key={n} className="flex items-center justify-between bg-gray-50 border rounded px-2 py-1"><span className="text-gray-700">{n}</span><span className="font-medium">{vals[i] || 0}</span></div>
+                        ))}
+                      </div>
+                    )
+                  })()}
+                  <div className="mt-3 font-semibold mb-1">Conditioning Benchmarks</div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {Object.entries(coachBrief?.intake?.conditioning_benchmarks || {}).map(([k, v]: any) => (
+                      <div key={k} className="flex items-center justify-between bg-gray-50 border rounded px-2 py-1"><span className="text-gray-700">{k}</span><span className="font-medium">{String(v)}</span></div>
+                    ))}
+                  </div>
+                </section>
+
+                <section>
+                  <div className="font-semibold mb-1">Recent Training (by week)</div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm border">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="text-left p-2 border-b">Week</th>
+                          <th className="text-left p-2 border-b">Sessions</th>
+                          <th className="text-left p-2 border-b">Avg RPE</th>
+                          <th className="text-left p-2 border-b">Entries</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(coachBrief?.logs_summary || []).slice(0, 6).map((w: any) => (
+                          <tr key={w.weekISO} className="odd:bg-white even:bg-gray-50">
+                            <td className="p-2 border-b">{w.weekISO}</td>
+                            <td className="p-2 border-b">{w.sessions}</td>
+                            <td className="p-2 border-b">{w.avg_rpe}</td>
+                            <td className="p-2 border-b">{w.volume}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section>
+                  <div className="font-semibold mb-1">MetCons</div>
+                  <div className="text-sm text-gray-700">Completions: {coachBrief?.metcons_summary?.completions || 0}</div>
+                  <div className="text-sm text-gray-700">Avg Percentile: {coachBrief?.metcons_summary?.avg_percentile ?? '—'}</div>
+                  <div className="mt-2 text-sm">
+                    <div className="text-gray-600 mb-1">Time domains</div>
+                    <div className="flex flex-wrap gap-2">
+                      {(coachBrief?.metcons_summary?.time_domain_mix || []).map((td: any) => (
+                        <span key={td.range} className="px-2 py-1 rounded border bg-gray-50">{td.range}: {td.count}</span>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <div className="font-semibold mb-1">Upcoming Program (next days)</div>
+                  <div className="space-y-2 text-sm">
+                    {(coachBrief?.upcoming_program || []).slice(0, 7).map((d: any, i: number) => (
+                      <div key={i} className="bg-gray-50 border rounded p-2">
+                        <div className="font-medium">Week {d.week}, Day {d.day}</div>
+                        <ul className="list-disc list-inside">
+                          {(d.blocks || []).map((b: any, j: number) => (
+                            <li key={`${i}-${j}`}>{b.subOrder ? `${b.block} (${b.subOrder})` : b.block}: {(b.exercises || []).map((e: any) => e.name).filter(Boolean).join(', ')}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
             )}
           </div>
         </div>
