@@ -705,35 +705,36 @@ credentials: 'include',
         if (rows.length && rows.every((r: any) => r && typeof r === 'object')) {
           const keys = Object.keys(rows[0] || {})
           if (keys.length === 1 && rows.length <= 3) {
-            return (
-                {/* Active filters summary (latest result only) */}
-                {idx === lastAssistantIndex && (
-                  <div className="mb-2 text-xs text-gray-600 flex flex-wrap gap-2">
-                    <span className="px-2 py-1 rounded border bg-gray-50">Domain: {domain}</span>
-                    <span className="px-2 py-1 rounded border bg-gray-50">Mode: {currentMode}</span>
-                    {lastRangeLabel && <span className="px-2 py-1 rounded border bg-gray-50">Range: {lastRangeLabel}</span>}
-                    {domain==='logs' && patternTerms.length>0 && <span className="px-2 py-1 rounded border bg-gray-50">Pattern: {patternTerms.join(', ').replace(/%/g,'')}</span>}
-                    {domain==='logs' && contextBlock && <span className="px-2 py-1 rounded border bg-gray-50">Block: {contextBlock}</span>}
-                    {domain==='metcons' && timeDomains.length>0 && <span className="px-2 py-1 rounded border bg-gray-50">Time: {timeDomains.join(', ')}</span>}
-                    {domain==='metcons' && equipments.length>0 && <span className="px-2 py-1 rounded border bg-gray-50">Equip: {equipments.join(', ')}</span>}
-                    {domain==='metcons' && level && <span className="px-2 py-1 rounded border bg-gray-50">Level: {level}</span>}
-                  </div>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {rows.map((r: any, i: number) => {
-                  const k = Object.keys(r)[0]
-                  const v = r[k]
-                  const label = k.replace(/_/g, ' ')
-                  return (
-                    <div key={i} className="p-3 border rounded bg-white">
-                      <div className="text-xs text-gray-500">{label}</div>
-                      <div className="text-lg font-semibold">{formatNumber(v)}</div>
-                    </div>
-                  )
-                })}
-                <div className="col-span-full">{idx === lastAssistantIndex && renderActionBar()}</div>
-              </div>
-            )
+				return (
+					<>
+						{/* Active filters summary (latest result only) */}
+						{idx === lastAssistantIndex && (
+							<div className="mb-2 text-xs text-gray-600 flex flex-wrap gap-2">
+								<span className="px-2 py-1 rounded border bg-gray-50">Domain: {domain}</span>
+								<span className="px-2 py-1 rounded border bg-gray-50">Mode: {currentMode}</span>
+								{lastRangeLabel && <span className="px-2 py-1 rounded border bg-gray-50">Range: {lastRangeLabel}</span>}
+								{domain==='logs' && patternTerms.length>0 && <span className="px-2 py-1 rounded border bg-gray-50">Pattern: {patternTerms.join(', ').replace(/%/g,'')}</span>}
+								{domain==='logs' && contextBlock && <span className="px-2 py-1 rounded border bg-gray-50">Block: {contextBlock}</span>}
+								{domain==='metcons' && timeDomains.length>0 && <span className="px-2 py-1 rounded border bg-gray-50">Time: {timeDomains.join(', ')}</span>}
+								{domain==='metcons' && equipments.length>0 && <span className="px-2 py-1 rounded border bg-gray-50">Equip: {equipments.join(', ')}</span>}
+							</div>
+						)}
+						<div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+							{rows.map((r: any, i: number) => {
+								const k = Object.keys(r)[0]
+								const v = r[k]
+								const label = k.replace(/_/g, ' ')
+								return (
+									<div key={i} className="p-3 border rounded bg-white">
+										<div className="text-xs text-gray-500">{label}</div>
+										<div className="text-lg font-semibold">{formatNumber(v)}</div>
+									</div>
+								)
+							})}
+							<div className="col-span-full">{idx === lastAssistantIndex && renderActionBar()}</div>
+						</div>
+					</>
+				)
           }
           // Generic table fallback
           const columns: string[] = Array.from(new Set(rows.flatMap((r: any) => Object.keys(r)))) as string[]
