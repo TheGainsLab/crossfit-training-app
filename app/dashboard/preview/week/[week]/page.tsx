@@ -9,6 +9,9 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
   const [error, setError] = useState<string|null>(null)
   const [data, setData] = useState<any>(null)
   const [blockFilter, setBlockFilter] = useState<string>('All')
+  const [showCoach, setShowCoach] = useState(false)
+  const [coachLoading, setCoachLoading] = useState(false)
+  const [coachBrief, setCoachBrief] = useState<any>(null)
   // No jwt state; we resolve a fresh token before each API call to avoid races
 
   useEffect(() => {
@@ -44,7 +47,29 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
       <div className="max-w-4xl mx-auto px-4">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Week {week} Preview</h1>
-          <Link href="/dashboard" className="text-blue-600 hover:text-blue-700">Back to Dashboard</Link>
+          <div className="flex items-center gap-3">
+            <button onClick={async () => {
+              try {
+                setShowCoach(true)
+                setCoachLoading(true)
+                const { createClient } = await import('@/lib/supabase/client')
+                const sb = createClient()
+                const { data: { session } } = await sb.auth.getSession()
+                const token = session?.access_token || ''
+                const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+                if (token) headers['Authorization'] = `Bearer ${token}`
+                const res = await fetch('/api/coach/brief', { method: 'POST', headers, body: JSON.stringify({}) })
+                const json = await res.json()
+                if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load coach brief')
+                setCoachBrief(json.brief)
+              } catch (e: any) {
+                setCoachBrief({ error: e?.message || 'Failed to load coach brief' })
+              } finally {
+                setCoachLoading(false)
+              }
+            }} className="px-3 py-1.5 rounded-md border text-gray-700 hover:bg-gray-50">Coach</button>
+            <Link href="/dashboard" className="text-blue-600 hover:text-blue-700">Back to Dashboard</Link>
+          </div>
         </div>
 
         {/* Block Filter */}
@@ -106,6 +131,25 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
           ))}
         </div>
       </div>
+
+      {/* Coach slide-over (simple panel) */}
+      {showCoach && (
+        <div className="fixed inset-0 bg-black/30 flex justify-end">
+          <div className="w-full max-w-md h-full bg-white shadow-xl p-4 overflow-y-auto">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-lg font-semibold">Coach</div>
+              <button onClick={() => setShowCoach(false)} className="text-gray-600 hover:text-gray-900">✕</button>
+            </div>
+            {coachLoading ? (
+              <div className="text-gray-600">Loading brief…</div>
+            ) : coachBrief?.error ? (
+              <div className="text-red-600 text-sm">{coachBrief.error}</div>
+            ) : (
+              <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap">{JSON.stringify(coachBrief, null, 2)}</pre>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
