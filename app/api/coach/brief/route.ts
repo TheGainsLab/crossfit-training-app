@@ -126,42 +126,51 @@ export async function POST(req: Request) {
     // Upcoming program (first 14 day entries from program_data)
     let upcoming_program: CoachingBriefV1['upcoming_program'] = []
     if (programId) {
-      const { data: prog } = await supabase.from('programs').select('program_data, generated_at').eq('id', programId).single()
+      const { data: prog } = await supabase.from('programs').select('program_data').eq('id', programId).single()
       const programData: any = prog?.program_data || {}
       const weeksArr: any[] = Array.isArray(programData.weeks) ? programData.weeks : []
+
+      // Build completed (week:day) set from program-bound sources
+      const completedDayKeys = new Set<string>()
+      try {
+        const { data: plogs } = await supabase
+          .from('performance_logs')
+          .select('week, day')
+          .eq('user_id', userId)
+          .eq('program_id', programId)
+        ;(plogs || []).forEach((r: any) => {
+          if (Number.isInteger(r.week) && Number.isInteger(r.day)) completedDayKeys.add(`${r.week}:${r.day}`)
+        })
+      } catch {}
+      try {
+        const { data: pm } = await supabase
+          .from('program_metcons')
+          .select('week, day, completed_at')
+          .eq('program_id', programId)
+          .not('completed_at', 'is', null)
+        ;(pm || []).forEach((r: any) => {
+          if (Number.isInteger(r.week) && Number.isInteger(r.day)) completedDayKeys.add(`${r.week}:${r.day}`)
+        })
+      } catch {}
+
+      // Flatten in program order and take first N uncompleted upcoming days
       const daysOut: any[] = []
-      const baseDate = prog?.generated_at ? new Date(prog.generated_at) : new Date()
-      // Normalize to midnight UTC for stable comparisons
-      const baseUTC = new Date(Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), baseDate.getUTCDate()))
-      const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
-
-      // Build a set of completed date strings (YYYY-MM-DD) from logs
-      const completedDates = new Set<string>((logs || []).map((r: any) => String(r.logged_at).slice(0, 10)))
-
       for (const w of weeksArr) {
         const days = Array.isArray(w?.days) ? w.days : []
         for (const d of days) {
           const weekNum = Number(w?.week) || 0
           const dayNum = Number(d?.day) || 0
-          // Map week/day to date by simple offset: base + (week-1)*7 + (day-1)
-          const offsetDays = Math.max(0, (weekNum - 1) * 7 + (dayNum - 1))
-          const dateMs = baseUTC.getTime() + offsetDays * 24 * 60 * 60 * 1000
-          const dateISOshort = new Date(dateMs).toISOString().slice(0, 10)
-          const dateObj = new Date(dateMs)
-          const isPast = dateObj < todayUTC
-          const isCompleted = completedDates.has(dateISOshort)
-          // Only keep upcoming uncompleted days (today or future) with no logged session
-          if (!isCompleted && !isPast) {
-            daysOut.push({ week: weekNum, day: dayNum, dateISO: dateISOshort, dayData: d })
+          const key = `${weekNum}:${dayNum}`
+          if (!completedDayKeys.has(key)) {
+            daysOut.push({ week: weekNum, day: dayNum, dayData: d })
           }
-          if (daysOut.length >= 14) break
+          if (daysOut.length >= 7) break
         }
-        if (daysOut.length >= 14) break
+        if (daysOut.length >= 7) break
       }
-      // Sort by date ascending and take top 7 for brief
-      daysOut.sort((a: any, b: any) => (a.dateISO < b.dateISO ? -1 : 1))
-      upcoming_program = daysOut.slice(0, 7).map((x: any) => ({
-        dateISO: x.dateISO,
+
+      upcoming_program = daysOut.map((x: any) => ({
+        dateISO: '',
         week: x.week,
         day: x.day,
         blocks: (Array.isArray(x.dayData?.blocks) ? x.dayData.blocks : []).map((b: any) => ({
