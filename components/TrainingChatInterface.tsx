@@ -495,7 +495,7 @@ credentials: 'include',
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="text-gray-500">Domain:</span>
                   <button className={`px-2 py-1 rounded border ${domain==='logs' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setDomain('logs'); setCurrentMode('count'); setTimeDomains([]); setEquipments([]); setContextBlock(null); setLevel(null) }}>Logs</button>
-                  <button className={`px-2 py-1 rounded border ${domain==='metcons' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setDomain('metcons'); setCurrentMode('sessions'); setContextBlock(null); }}>Metcons</button>
+                  <button className={`px-2 py-1 rounded border bg-gray-100 hover:bg-gray-200`} onClick={() => { setDomain('metcons'); setCurrentMode('sessions'); setContextBlock(null); }}>Metcons</button>
                   <span className="text-gray-500">Block:</span>
                   {['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS'].map(b => (
                     <button
@@ -520,8 +520,8 @@ credentials: 'include',
                 <div className="flex flex-col gap-2 text-xs">
                   <div className="flex flex-wrap gap-2 items-center">
                     <span className="text-gray-500">Domain:</span>
-                    <button className={`px-2 py-1 rounded border ${domain==='logs' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-blue-100 border-blue-300'}`} onClick={() => { setDomain('logs'); setCurrentMode('count'); setTimeDomains([]); setEquipments([]); setContextBlock(null); setLevel(null) }}>Logs</button>
-                    <button className={`px-2 py-1 rounded border ${domain==='metcons' ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`} onClick={() => { setDomain('metcons'); setCurrentMode('sessions'); setContextBlock(null); }}>Metcons</button>
+                    <button className={`px-2 py-1 rounded border bg-gray-100 hover:bg-gray-200`} onClick={() => { setDomain('logs'); setCurrentMode('count'); setTimeDomains([]); setEquipments([]); setContextBlock(null); setLevel(null) }}>Logs</button>
+                    <button className={`px-2 py-1 rounded border bg-blue-100 border-blue-300`} onClick={() => { setDomain('metcons'); setCurrentMode('sessions'); setContextBlock(null); }}>Metcons</button>
                   </div>
                   <div className="flex flex-wrap gap-2 items-center">
                     <span className="text-gray-500">Time domain:</span>
