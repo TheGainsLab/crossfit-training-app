@@ -126,20 +126,42 @@ export async function POST(req: Request) {
     // Upcoming program (first 14 day entries from program_data)
     let upcoming_program: CoachingBriefV1['upcoming_program'] = []
     if (programId) {
-      const { data: prog } = await supabase.from('programs').select('program_data').eq('id', programId).single()
+      const { data: prog } = await supabase.from('programs').select('program_data, generated_at').eq('id', programId).single()
       const programData: any = prog?.program_data || {}
       const weeksArr: any[] = Array.isArray(programData.weeks) ? programData.weeks : []
       const daysOut: any[] = []
+      const baseDate = prog?.generated_at ? new Date(prog.generated_at) : new Date()
+      // Normalize to midnight UTC for stable comparisons
+      const baseUTC = new Date(Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), baseDate.getUTCDate()))
+      const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+
+      // Build a set of completed date strings (YYYY-MM-DD) from logs
+      const completedDates = new Set<string>((logs || []).map((r: any) => String(r.logged_at).slice(0, 10)))
+
       for (const w of weeksArr) {
         const days = Array.isArray(w?.days) ? w.days : []
         for (const d of days) {
-          daysOut.push({ week: Number(w?.week) || 0, day: Number(d?.day) || 0, dayData: d })
+          const weekNum = Number(w?.week) || 0
+          const dayNum = Number(d?.day) || 0
+          // Map week/day to date by simple offset: base + (week-1)*7 + (day-1)
+          const offsetDays = Math.max(0, (weekNum - 1) * 7 + (dayNum - 1))
+          const dateMs = baseUTC.getTime() + offsetDays * 24 * 60 * 60 * 1000
+          const dateISOshort = new Date(dateMs).toISOString().slice(0, 10)
+          const dateObj = new Date(dateMs)
+          const isPast = dateObj < todayUTC
+          const isCompleted = completedDates.has(dateISOshort)
+          // Only keep upcoming uncompleted days (today or future) with no logged session
+          if (!isCompleted && !isPast) {
+            daysOut.push({ week: weekNum, day: dayNum, dateISO: dateISOshort, dayData: d })
+          }
           if (daysOut.length >= 14) break
         }
         if (daysOut.length >= 14) break
       }
-      upcoming_program = daysOut.map((x: any) => ({
-        dateISO: '',
+      // Sort by date ascending and take top 7 for brief
+      daysOut.sort((a: any, b: any) => (a.dateISO < b.dateISO ? -1 : 1))
+      upcoming_program = daysOut.slice(0, 7).map((x: any) => ({
+        dateISO: x.dateISO,
         week: x.week,
         day: x.day,
         blocks: (Array.isArray(x.dayData?.blocks) ? x.dayData.blocks : []).map((b: any) => ({
