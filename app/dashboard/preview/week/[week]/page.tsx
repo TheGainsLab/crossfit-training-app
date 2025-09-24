@@ -13,6 +13,9 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
   const [coachLoading, setCoachLoading] = useState(false)
   const [coachBrief, setCoachBrief] = useState<any>(null)
   const [showBriefJson, setShowBriefJson] = useState(false)
+  const [proposeMsg, setProposeMsg] = useState('')
+  const [proposeLoading, setProposeLoading] = useState(false)
+  const [planDiff, setPlanDiff] = useState<any>(null)
   // No jwt state; we resolve a fresh token before each API call to avoid races
 
   useEffect(() => {
@@ -237,6 +240,49 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
                       </div>
                     ))}
                   </div>
+                </section>
+
+                {/* Propose updates */}
+                <section>
+                  <div className="font-semibold mb-2">Propose updates</div>
+                  <div className="flex gap-2">
+                    <input
+                      className="flex-1 border rounded px-2 py-1 text-sm"
+                      value={proposeMsg}
+                      onChange={(e) => setProposeMsg(e.target.value)}
+                      placeholder="e.g., Increase pull-ups to 2x/week and add a 10–15 min metcon on Friday"
+                    />
+                    <button
+                      disabled={!proposeMsg || proposeLoading}
+                      onClick={async () => {
+                        if (!coachBrief) return
+                        try {
+                          setProposeLoading(true)
+                          setPlanDiff(null)
+                          const { createClient } = await import('@/lib/supabase/client')
+                          const sb = createClient()
+                          const { data: { session } } = await sb.auth.getSession()
+                          const token = session?.access_token || ''
+                          const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+                          if (token) headers['Authorization'] = `Bearer ${token}`
+                          const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: coachBrief, message: proposeMsg }) })
+                          const json = await res.json()
+                          if (!res.ok || !json.success) throw new Error(json.error || 'Failed to propose')
+                          setPlanDiff(json.diff)
+                        } catch (e: any) {
+                          setPlanDiff({ error: e?.message || 'Propose failed' })
+                        } finally {
+                          setProposeLoading(false)
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded border text-sm ${proposeMsg && !proposeLoading ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed'}`}
+                    >
+                      {proposeLoading ? 'Proposing…' : 'Propose'}
+                    </button>
+                  </div>
+                  {planDiff && (
+                    <div className="mt-3 text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap">{JSON.stringify(planDiff, null, 2)}</div>
+                  )}
                 </section>
               </div>
             )}
