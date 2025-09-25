@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       const compute = unstable_cache(async () => {
         const { data: logs } = await supabase
           .from('performance_logs')
-          .select('exercise_name, rpe, quality, logged_at')
+          .select('exercise_name, rpe, completion_quality, logged_at, block')
           .eq('user_id', userId)
           .eq('block', 'SKILLS')
           .gte('logged_at', since)
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         for (const row of logs || []) {
           const name = (row as any).exercise_name || 'Unknown'
           const rpe = Number((row as any).rpe) || 0
-          const q = Number((row as any).quality) || 0
+          const q = Number((row as any).completion_quality ?? (row as any).quality) || 0
           if (!bySkill[name]) bySkill[name] = { count: 0, avgRPE: 0, avgQuality: 0 }
           const s = bySkill[name]
           s.avgRPE = (s.avgRPE * s.count + rpe) / (s.count + 1)
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     const computeDetail = unstable_cache(async () => {
       const { data: recent } = await supabase
         .from('performance_logs')
-        .select('exercise_name, rpe, quality, sets, reps, notes, logged_at')
+        .select('exercise_name, rpe, completion_quality, sets, reps, notes, logged_at, block')
         .eq('user_id', userId)
         .eq('block', 'SKILLS')
         .gte('logged_at', since)

@@ -66,9 +66,10 @@ export default function AnalyticsSkillsPage() {
             <div className="p-3 border rounded bg-white">
               <div className="text-xs text-gray-600">Avg RPE (skills)</div>
               <div className="text-2xl font-semibold">{(() => {
-                const n = sessions.length || 1
-                const s = sessions.reduce((acc: number, r: any) => acc + (Number(r.rpe) || 0), 0)
-                return Math.round((s / n) * 10) / 10
+                const list = sessions.filter((r: any) => typeof r.rpe === 'number')
+                if (!list.length) return 0
+                const s = list.reduce((acc: number, r: any) => acc + Number(r.rpe || 0), 0)
+                return Math.round((s / list.length) * 10) / 10
               })()}</div>
             </div>
           </div>
