@@ -2042,40 +2042,7 @@ const MetConAnalyticsView = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow p-6 border">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Analytics has moved</h2>
-          <p className="text-gray-700 mb-4">We split the heavy analytics into focused pages for faster load and a clearer experience.</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link href="/dashboard/analytics" className="block p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
-              <div className="text-lg font-medium text-gray-900 mb-1">Overview</div>
-              <div className="text-sm text-gray-600">Headline stats and quick links</div>
-            </Link>
-            <Link href="/dashboard/analytics/strength" className="block p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
-              <div className="text-lg font-medium text-gray-900 mb-1">Strength</div>
-              <div className="text-sm text-gray-600">Movement frequency, avg RPE, trends</div>
-            </Link>
-            <Link href="/dashboard/analytics/skills" className="block p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
-              <div className="text-lg font-medium text-gray-900 mb-1">Skills</div>
-              <div className="text-sm text-gray-600">Practice volume, quality, RPE</div>
-            </Link>
-            <Link href="/dashboard/analytics/technical" className="block p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
-              <div className="text-lg font-medium text-gray-900 mb-1">Technical Work</div>
-              <div className="text-sm text-gray-600">Olympic lift technique and progress</div>
-            </Link>
-            <Link href="/dashboard/analytics/accessories" className="block p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
-              <div className="text-lg font-medium text-gray-900 mb-1">Accessories</div>
-              <div className="text-sm text-gray-600">Support movements: volume and load</div>
-            </Link>
-            <Link href="/dashboard/analytics/metcons" className="block p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
-              <div className="text-lg font-medium text-gray-900 mb-1">Metcons</div>
-              <div className="text-sm text-gray-600">Interactive heat map and filters</div>
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <RecentActivityOverview userId={userId} />
-        </div>
+        <RecentActivityOverview userId={userId} />
       </main>
     </div>
   );
