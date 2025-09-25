@@ -59,7 +59,9 @@ export default function AnalyticsLayout({ children }: { children: React.ReactNod
         </div>
         <AnalyticsSubnav />
         <div className="bg-white border rounded p-4">
-          {children}
+          <Suspense fallback={<div className="text-sm text-gray-500">Loading analytics...</div>}>
+            {children}
+          </Suspense>
         </div>
       </div>
     </div>
