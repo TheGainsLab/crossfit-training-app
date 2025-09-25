@@ -45,6 +45,36 @@ export default function AnalyticsMetconsPage() {
           <button key={td} onClick={() => toggle(td)} className={`px-2 py-1 rounded border ${selection.includes(td) ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`}>{td}</button>
         ))}
       </div>
+      <div className="flex items-center gap-2 text-xs">
+        <button className="px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100" onClick={async () => {
+          try {
+            const { createClient } = await import('@/lib/supabase/client')
+            const sb = createClient()
+            const { data: { session } } = await sb.auth.getSession()
+            const token = session?.access_token || ''
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+            if (token) headers['Authorization'] = `Bearer ${token}`
+            const coachBriefRes = await fetch('/api/coach/brief', { method: 'POST', headers, body: JSON.stringify({}) })
+            const briefJson = await coachBriefRes.json()
+            if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
+            await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: `Explain and recommend adjustments for metcons (time domains: ${selection.join(', ') || 'all'})` }) })
+          } catch {}
+        }}>Explain</button>
+        <button className="px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100" onClick={async () => {
+          try {
+            const { createClient } = await import('@/lib/supabase/client')
+            const sb = createClient()
+            const { data: { session } } = await sb.auth.getSession()
+            const token = session?.access_token || ''
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+            if (token) headers['Authorization'] = `Bearer ${token}`
+            const coachBriefRes = await fetch('/api/coach/brief', { method: 'POST', headers, body: JSON.stringify({}) })
+            const briefJson = await coachBriefRes.json()
+            if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
+            await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: `Recommend metcon plan adjustments focusing on time domains: ${selection.join(', ') || 'all'}` }) })
+          } catch {}
+        }}>Recommend</button>
+      </div>
       {loading ? (
         <div className="text-sm text-gray-500">Loading…</div>
       ) : (
