@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useSearchParams, useRouter } from 'next/navigation'
-import { useMemo } from 'react'
+import { useMemo, Suspense } from 'react'
 
 function RangeChips() {
   const router = useRouter()
@@ -42,7 +42,9 @@ function AnalyticsSubnav() {
           )
         })}
       </div>
-      <RangeChips />
+      <Suspense fallback={<div className="text-xs text-gray-400">Loading filters…</div>}>
+        <RangeChips />
+      </Suspense>
     </div>
   )
 }
