@@ -76,7 +76,6 @@ export async function GET(req: NextRequest) {
     }
 
     type MovementAgg = {
-      sessionCount: number
       rpeSum: number
       rpeN: number
       maxWeight: number
@@ -93,7 +92,6 @@ export async function GET(req: NextRequest) {
       const name = r.exercise_name || 'Unknown'
       if (!agg[name]) {
         agg[name] = {
-          sessionCount: 0,
           rpeSum: 0,
           rpeN: 0,
           maxWeight: 0,
@@ -106,7 +104,6 @@ export async function GET(req: NextRequest) {
         }
       }
       const a = agg[name]
-      a.sessionCount += 1
       if (typeof r.rpe === 'number') { a.rpeSum += r.rpe; a.rpeN += 1 }
       const weight = toNumber(r.weight_time)
       const setsNum = parseIntSafe(r.sets) || 1
@@ -135,7 +132,7 @@ export async function GET(req: NextRequest) {
         : 0
       return {
         exercise_name,
-        session_count: v.sessionCount,
+        session_count: dates.length,
         avg_rpe: v.rpeN ? Math.round((v.rpeSum / v.rpeN) * 100) / 100 : null,
         max_weight: v.maxWeight,
         avg_top_set_weight: avgTopSetWeight,
