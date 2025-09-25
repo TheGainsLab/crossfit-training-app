@@ -28,7 +28,6 @@ function RangeChips() {
 function AnalyticsSubnav() {
   const pathname = usePathname()
   const tabs = useMemo(() => ([
-    { href: '/dashboard/analytics', label: 'Overview' },
     { href: '/dashboard/analytics/skills', label: 'Skills' },
     { href: '/dashboard/analytics/strength', label: 'Strength' },
     { href: '/dashboard/analytics/technical', label: 'Technical Work' },
