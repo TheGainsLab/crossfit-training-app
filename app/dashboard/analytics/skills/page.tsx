@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import CoachDrawer from '@/components/CoachDrawer'
 
 export default function AnalyticsSkillsPage() {
   const searchParams = useSearchParams()
@@ -16,6 +17,8 @@ export default function AnalyticsSkillsPage() {
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<any>(null)
   const [sessions, setSessions] = useState<any[]>([])
+  const [openCoach, setOpenCoach] = useState(false)
+  const [coachContent, setCoachContent] = useState<React.ReactNode>(null)
 
   useEffect(() => {
     const run = async () => {
@@ -101,8 +104,59 @@ export default function AnalyticsSkillsPage() {
               ))}
             </ul>
           </div>
+          <div className="flex gap-3">
+            <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700" onClick={async () => {
+              try {
+                const { createClient } = await import('@/lib/supabase/client')
+                const sb = createClient()
+                const { data: { session } } = await sb.auth.getSession()
+                const token = session?.access_token || ''
+                const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+                if (token) headers['Authorization'] = `Bearer ${token}`
+                const coachBriefRes = await fetch('/api/coach/brief', { method: 'POST', headers, body: JSON.stringify({}) })
+                const briefJson = await coachBriefRes.json()
+                if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
+                const msg = `Explain skills for range=${range} (block=SKILLS).`
+                const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: msg }) })
+                const json = await res.json().catch(() => ({}))
+                setCoachContent(
+                  <div className="space-y-3 text-sm">
+                    <div className="text-gray-800">Coach explanation for Skills ({range}).</div>
+                    <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(json, null, 2)}</pre>
+                  </div>
+                )
+                setOpenCoach(true)
+              } catch {}
+            }}>Explain</button>
+            <button className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700" onClick={async () => {
+              try {
+                const { createClient } = await import('@/lib/supabase/client')
+                const sb = createClient()
+                const { data: { session } } = await sb.auth.getSession()
+                const token = session?.access_token || ''
+                const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+                if (token) headers['Authorization'] = `Bearer ${token}`
+                const coachBriefRes = await fetch('/api/coach/brief', { method: 'POST', headers, body: JSON.stringify({}) })
+                const briefJson = await coachBriefRes.json()
+                if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
+                const msg = `Recommend skill plan tweaks for range=${range} (block=SKILLS).`
+                const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: msg }) })
+                const json = await res.json().catch(() => ({}))
+                setCoachContent(
+                  <div className="space-y-3 text-sm">
+                    <div className="text-gray-800">Coach recommendations for Skills ({range}).</div>
+                    <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(json, null, 2)}</pre>
+                  </div>
+                )
+                setOpenCoach(true)
+              } catch {}
+            }}>Recommend</button>
+          </div>
         </>
       )}
+      <CoachDrawer open={openCoach} title="Coach" onClose={() => setOpenCoach(false)}>
+        {coachContent}
+      </CoachDrawer>
     </div>
   )
 }

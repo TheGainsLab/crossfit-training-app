@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import MetconHeatmap from '@/components/MetconHeatmap'
+import CoachDrawer from '@/components/CoachDrawer'
 
 export default function AnalyticsMetconsPage() {
   const [selection, setSelection] = useState<string[]>([])
@@ -9,6 +10,8 @@ export default function AnalyticsMetconsPage() {
   const [summary, setSummary] = useState<any>(null)
   const [heatmapData, setHeatmapData] = useState<any | null>(null)
   const [userId, setUserId] = useState<number | null>(null)
+  const [openCoach, setOpenCoach] = useState(false)
+  const [coachContent, setCoachContent] = useState<React.ReactNode>(null)
   const timeDomains = ['1-5','5-10','10-15','15-20','20+']
   const toggle = (td: string) => setSelection(prev => prev.includes(td) ? prev.filter(x => x!==td) : [...prev, td])
 
@@ -77,7 +80,16 @@ export default function AnalyticsMetconsPage() {
             const coachBriefRes = await fetch('/api/coach/brief', { method: 'POST', headers, body: JSON.stringify({}) })
             const briefJson = await coachBriefRes.json()
             if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
-            await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: `Explain and recommend adjustments for metcons (time domains: ${selection.join(', ') || 'all'})` }) })
+            const msg = `Explain metcons for current filters: timeDomains=${selection.join(',') || 'all'}.`
+            const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: msg }) })
+            const json = await res.json().catch(() => ({}))
+            setCoachContent(
+              <div className="space-y-3 text-sm">
+                <div className="text-gray-800">Coach explanation for Metcons.</div>
+                <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(json, null, 2)}</pre>
+              </div>
+            )
+            setOpenCoach(true)
           } catch {}
         }}>Explain</button>
         <button className="px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100" onClick={async () => {
@@ -91,7 +103,16 @@ export default function AnalyticsMetconsPage() {
             const coachBriefRes = await fetch('/api/coach/brief', { method: 'POST', headers, body: JSON.stringify({}) })
             const briefJson = await coachBriefRes.json()
             if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
-            await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: `Recommend metcon plan adjustments focusing on time domains: ${selection.join(', ') || 'all'}` }) })
+            const msg = `Recommend metcon plan tweaks for current filters: timeDomains=${selection.join(',') || 'all'}.`
+            const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: msg }) })
+            const json = await res.json().catch(() => ({}))
+            setCoachContent(
+              <div className="space-y-3 text-sm">
+                <div className="text-gray-800">Coach recommendations for Metcons.</div>
+                <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(json, null, 2)}</pre>
+              </div>
+            )
+            setOpenCoach(true)
           } catch {}
         }}>Recommend</button>
       </div>
@@ -116,6 +137,9 @@ export default function AnalyticsMetconsPage() {
           </div>
         </>
       )}
+      <CoachDrawer open={openCoach} title="Coach" onClose={() => setOpenCoach(false)}>
+        {coachContent}
+      </CoachDrawer>
     </div>
   )
 }
