@@ -2042,27 +2042,27 @@ const MetConAnalyticsView = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="bg-white rounded-lg shadow p-6 border">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Analytics has moved</h2>
+          <p className="text-gray-700 mb-4">We split the heavy analytics into focused pages for faster load and a clearer experience.</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link href="/dashboard/analytics" className="block p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
+              <div className="text-lg font-medium text-gray-900 mb-1">Overview</div>
+              <div className="text-sm text-gray-600">Headline stats and quick links</div>
+            </Link>
+            <Link href="/dashboard/analytics/strength" className="block p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
+              <div className="text-lg font-medium text-gray-900 mb-1">Strength</div>
+              <div className="text-sm text-gray-600">Movement frequency, avg RPE, trends</div>
+            </Link>
+            <Link href="/dashboard/analytics/metcons" className="block p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
+              <div className="text-lg font-medium text-gray-900 mb-1">Metcons</div>
+              <div className="text-sm text-gray-600">Interactive heat map and filters</div>
+            </Link>
+          </div>
+        </div>
 
-{/* Overview cards moved to dashboard */}
-        {/* Enhanced Tab Navigation */}
-        <TabNavigation />
-
-        {/* Tab Content */}
-        <div className="min-h-[400px]">
-          {analyticsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
-              <p className="text-gray-600">Loading analytics data...</p>
-            </div>
-          ) : (
-            <>
-{activeTab === 'overview' && <RecentActivityOverview userId={userId} />}              
-{activeTab === 'skills' && <SkillsAnalyticsView />}
-{activeTab === 'insights' && <PredictiveInsightsView predictiveData={predictiveData} />}
-              {activeTab === 'strength' && <StrengthAnalyticsView />}
-              {activeTab === 'metcons' && <MetConAnalyticsView />}
-            </>
-          )}
+        <div className="mt-6">
+          <RecentActivityOverview userId={userId} />
         </div>
       </main>
     </div>
