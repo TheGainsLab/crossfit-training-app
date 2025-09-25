@@ -2042,6 +2042,18 @@ const MetConAnalyticsView = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Analytics shortcuts */}
+        <div className="bg-white rounded-lg shadow p-4 border mb-6">
+          <div className="text-sm font-medium text-gray-900 mb-2">Analytics shortcuts</div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+            <Link href="/dashboard/analytics" className="block p-3 rounded border bg-gray-50 hover:bg-gray-100">Overview</Link>
+            <Link href="/dashboard/analytics/skills" className="block p-3 rounded border bg-gray-50 hover:bg-gray-100">Skills</Link>
+            <Link href="/dashboard/analytics/strength" className="block p-3 rounded border bg-gray-50 hover:bg-gray-100">Strength</Link>
+            <Link href="/dashboard/analytics/technical" className="block p-3 rounded border bg-gray-50 hover:bg-gray-100">Technical Work</Link>
+            <Link href="/dashboard/analytics/accessories" className="block p-3 rounded border bg-gray-50 hover:bg-gray-100">Accessories</Link>
+            <Link href="/dashboard/analytics/metcons" className="block p-3 rounded border bg-gray-50 hover:bg-gray-100">Metcons</Link>
+          </div>
+        </div>
         <RecentActivityOverview userId={userId} />
       </main>
     </div>
