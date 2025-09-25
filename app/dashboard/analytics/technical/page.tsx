@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 
 export default function AnalyticsTechnicalPage() {
   const searchParams = useSearchParams()
-  const range = searchParams.get('range') || 'last_30_days'
+  const range = searchParams.get('range') || 'all_time'
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<any>(null)
 

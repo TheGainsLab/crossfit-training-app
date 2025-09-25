@@ -5,12 +5,12 @@ import { useSearchParams } from 'next/navigation'
 
 export default function AnalyticsSkillsPage() {
   const searchParams = useSearchParams()
-  const range = searchParams.get('range') || 'last_30_days'
+  const range = searchParams.get('range') || 'all_time'
   const daysMap: Record<string, number> = {
+    all_time: 3650,
     last_30_days: 30,
     last_60_days: 60,
-    last_90_days: 90,
-    all_time: 3650
+    last_90_days: 90
   }
   const days = daysMap[range] || 30
   const [loading, setLoading] = useState(true)

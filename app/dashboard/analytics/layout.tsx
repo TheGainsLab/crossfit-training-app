@@ -8,13 +8,13 @@ function RangeChips() {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
-  const range = (params.get('range') || 'last_30_days').toLowerCase()
+  const range = (params.get('range') || 'all_time').toLowerCase()
   const setRange = (r: string) => {
     const q = new URLSearchParams(params as any)
     q.set('range', r)
     router.replace(`${pathname}?${q.toString()}`)
   }
-  const ranges = ['last_30_days','last_60_days','last_90_days','all_time']
+  const ranges = ['all_time','last_30_days','last_60_days','last_90_days']
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-gray-500">Range:</span>
