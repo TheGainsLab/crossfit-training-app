@@ -61,15 +61,19 @@ export default function AnalyticsSkillsPage() {
             </div>
             <div className="p-3 border rounded bg-white">
               <div className="text-xs text-gray-600">Total sessions</div>
-              <div className="text-2xl font-semibold">{sessions.length}</div>
+              <div className="text-2xl font-semibold">{(() => {
+                const list = (summary?.summary || []) as Array<{ name: string; count: number; avgRPE: number; avgQuality: number }>
+                return list.reduce((acc, s) => acc + (s.count || 0), 0)
+              })()}</div>
             </div>
             <div className="p-3 border rounded bg-white">
               <div className="text-xs text-gray-600">Avg RPE (skills)</div>
               <div className="text-2xl font-semibold">{(() => {
-                const list = sessions.filter((r: any) => typeof r.rpe === 'number')
-                if (!list.length) return 0
-                const s = list.reduce((acc: number, r: any) => acc + Number(r.rpe || 0), 0)
-                return Math.round((s / list.length) * 10) / 10
+                const list = (summary?.summary || []) as Array<{ count: number; avgRPE: number }>
+                const total = list.reduce((acc, s) => acc + (s.count || 0), 0)
+                if (!total) return 0
+                const weighted = list.reduce((acc, s) => acc + (s.avgRPE || 0) * (s.count || 0), 0)
+                return Math.round((weighted / total) * 10) / 10
               })()}</div>
             </div>
           </div>
