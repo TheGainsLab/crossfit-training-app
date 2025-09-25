@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import MetconHeatmap from '@/components/MetconHeatmap'
 import CoachDrawer from '@/components/CoachDrawer'
+import PlanDiffViewer from '@/components/PlanDiffViewer'
 
 export default function AnalyticsMetconsPage() {
   const [selection, setSelection] = useState<string[]>([])
@@ -83,12 +84,7 @@ export default function AnalyticsMetconsPage() {
             const msg = `Explain metcons for current filters: timeDomains=${selection.join(',') || 'all'}.`
             const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: msg }) })
             const json = await res.json().catch(() => ({}))
-            setCoachContent(
-              <div className="space-y-3 text-sm">
-                <div className="text-gray-800">Coach explanation for Metcons.</div>
-                <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(json, null, 2)}</pre>
-              </div>
-            )
+            setCoachContent(<PlanDiffViewer data={json} />)
             setOpenCoach(true)
           } catch {}
         }}>Explain</button>
@@ -106,12 +102,7 @@ export default function AnalyticsMetconsPage() {
             const msg = `Recommend metcon plan tweaks for current filters: timeDomains=${selection.join(',') || 'all'}.`
             const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: msg }) })
             const json = await res.json().catch(() => ({}))
-            setCoachContent(
-              <div className="space-y-3 text-sm">
-                <div className="text-gray-800">Coach recommendations for Metcons.</div>
-                <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(json, null, 2)}</pre>
-              </div>
-            )
+            setCoachContent(<PlanDiffViewer data={json} />)
             setOpenCoach(true)
           } catch {}
         }}>Recommend</button>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import CoachDrawer from '@/components/CoachDrawer'
+import PlanDiffViewer from '@/components/PlanDiffViewer'
 
 export default function AnalyticsStrengthPage() {
   const searchParams = useSearchParams()
@@ -53,12 +54,7 @@ export default function AnalyticsStrengthPage() {
             if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
             const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: `Explain strength patterns for range=${range} (block=STRENGTH AND POWER).` }) })
             const json = await res.json().catch(() => ({}))
-            setCoachContent(
-              <div className="space-y-3 text-sm">
-                <div className="text-gray-800">Coach explanation requested for Strength ({range}).</div>
-                <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(json, null, 2)}</pre>
-              </div>
-            )
+            setCoachContent(<PlanDiffViewer data={json} />)
             setOpenCoach(true)
           } catch {}
         }}>Explain</button>
@@ -75,12 +71,7 @@ export default function AnalyticsStrengthPage() {
             if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
             const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: `Recommend safe strength tweaks for range=${range} (block=STRENGTH AND POWER).` }) })
             const json = await res.json().catch(() => ({}))
-            setCoachContent(
-              <div className="space-y-3 text-sm">
-                <div className="text-gray-800">Coach recommendations for Strength ({range}).</div>
-                <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(json, null, 2)}</pre>
-              </div>
-            )
+            setCoachContent(<PlanDiffViewer data={json} />)
             setOpenCoach(true)
           } catch {}
         }}>Recommend</button>
