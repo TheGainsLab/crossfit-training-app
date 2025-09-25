@@ -57,7 +57,7 @@ export default function AnalyticsMetconsPage() {
         })
       } catch (e) {
         setSummary({ error: 'Failed to load' })
-        setHeatmap([])
+        setHeatmapData(null)
       } finally {
         setLoading(false)
       }
