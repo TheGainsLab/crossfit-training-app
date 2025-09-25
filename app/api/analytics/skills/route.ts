@@ -34,18 +34,22 @@ export async function GET(request: NextRequest) {
           .eq('block', 'SKILLS')
           .gte('logged_at', since)
 
-        const bySkill: Record<string, { count: number; avgRPE: number; avgQuality: number }> = {}
+        const bySkill: Record<string, { daySet: Set<string>; entryCount: number; avgRPE: number; avgQuality: number }> = {}
         for (const row of logs || []) {
           const name = (row as any).exercise_name || 'Unknown'
           const rpe = Number((row as any).rpe) || 0
           const q = Number((row as any).completion_quality ?? (row as any).quality) || 0
-          if (!bySkill[name]) bySkill[name] = { count: 0, avgRPE: 0, avgQuality: 0 }
+          const d = (row as any).logged_at ? new Date((row as any).logged_at).toISOString().slice(0,10) : 'unknown'
+          if (!bySkill[name]) bySkill[name] = { daySet: new Set<string>(), entryCount: 0, avgRPE: 0, avgQuality: 0 }
           const s = bySkill[name]
-          s.avgRPE = (s.avgRPE * s.count + rpe) / (s.count + 1)
-          s.avgQuality = (s.avgQuality * s.count + q) / (s.count + 1)
-          s.count += 1
+          // running averages by entries
+          s.avgRPE = (s.avgRPE * s.entryCount + rpe) / (s.entryCount + 1)
+          s.avgQuality = (s.avgQuality * s.entryCount + q) / (s.entryCount + 1)
+          s.entryCount += 1
+          // distinct day tracking
+          if (d !== 'unknown') s.daySet.add(d)
         }
-        return Object.keys(bySkill).map(n => ({ name: n, ...bySkill[n] }))
+        return Object.keys(bySkill).map(n => ({ name: n, count: bySkill[n].daySet.size || 0, avgRPE: bySkill[n].avgRPE, avgQuality: bySkill[n].avgQuality }))
       }, [`skills-analytics:${userId}:${days}:summary`], { revalidate: 120, tags: [`skills-analytics:${userId}`] })
 
       const summary = await compute()

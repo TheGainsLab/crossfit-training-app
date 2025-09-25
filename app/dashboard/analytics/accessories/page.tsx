@@ -75,7 +75,7 @@ export default function AnalyticsAccessoriesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {(summary?.movements || []).map((m: any) => (
               <div key={m.exercise_name} className="p-3 border rounded bg-white">
-                <div className="font-medium text-gray-900 mb-1">{m.exercise_name}</div>
+                <div className="font-medium text-gray-900 mb-1 text-center">{m.exercise_name}</div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="flex justify-between"><span className="text-gray-600">Sessions</span><span className="font-medium">{m.session_count}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600">Avg RPE</span><span className="font-medium">{m.avg_rpe ?? '—'}</span></div>
