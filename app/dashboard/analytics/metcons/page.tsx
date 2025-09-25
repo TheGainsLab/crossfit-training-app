@@ -8,11 +8,29 @@ export default function AnalyticsMetconsPage() {
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<any>(null)
   const [heatmapData, setHeatmapData] = useState<any | null>(null)
+  const [userId, setUserId] = useState<number | null>(null)
   const timeDomains = ['1-5','5-10','10-15','15-20','20+']
   const toggle = (td: string) => setSelection(prev => prev.includes(td) ? prev.filter(x => x!==td) : [...prev, td])
 
+  // Resolve internal userId once
+  useEffect(() => {
+    const resolveUser = async () => {
+      try {
+        const { createClient } = await import('@/lib/supabase/client')
+        const sb = createClient()
+        const { data: { user } } = await sb.auth.getUser()
+        if (!user) return
+        const { data, error } = await sb.from('users').select('id').eq('auth_id', user.id).single()
+        if (!error && data?.id) setUserId(data.id)
+      } catch {}
+    }
+    resolveUser()
+  }, [])
+
+  // Load legacy heatmap directly (simple, proven), filters later
   useEffect(() => {
     const run = async () => {
+      if (!userId) return
       setLoading(true)
       try {
         const { createClient } = await import('@/lib/supabase/client')
@@ -21,40 +39,14 @@ export default function AnalyticsMetconsPage() {
         const token = session?.access_token || ''
         const headers: Record<string, string> = {}
         if (token) headers['Authorization'] = `Bearer ${token}`
-        const q = new URLSearchParams()
-        if (selection.length) q.set('timeDomain', selection.join(','))
-        const res = await fetch(`/api/analytics/metcons?${q.toString()}`, { headers })
-        const json = await res.json()
-        if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load metcons analytics')
-        // Fallback to old heatmap if new endpoint returns nothing
-        if (!json.summary && !json.heatmap) {
-          const { data: { session } } = await sb.auth.getSession()
-          const token2 = session?.access_token || ''
-          const headers2: Record<string, string> = {}
-          if (token2) headers2['Authorization'] = `Bearer ${token2}`
-          const userRes = await fetch('/api/auth/get-user-id', { headers: headers2 }).catch(() => null)
-          const userJson = userRes && (await userRes.json().catch(() => null))
-          const userId = userJson?.userId || null
-          if (userId) {
-            const oldRes = await fetch(`/api/analytics/${userId}/exercise-heatmap`, { headers: headers2 })
-            const oldJson = await oldRes.json()
-            if (oldRes.ok && oldJson.success) {
-              setHeatmapData(oldJson.data)
-              setSummary({ completions: oldJson.data.totalCompletedWorkouts, avg_percentile: oldJson.data.globalFitnessScore, time_domain_mix: [] })
-              return
-            }
-          }
+        const oldRes = await fetch(`/api/analytics/${userId}/exercise-heatmap`, { headers })
+        const oldJson = await oldRes.json()
+        if (oldRes.ok && oldJson.success) {
+          setHeatmapData(oldJson.data)
+          setSummary({ completions: oldJson.data.totalCompletedWorkouts, avg_percentile: oldJson.data.globalFitnessScore, time_domain_mix: [] })
+        } else {
+          throw new Error(oldJson.error || 'Failed to load')
         }
-        setSummary(json.summary)
-        setHeatmapData({
-          // Normalize to MetconHeatmap component shape if possible
-          exercises: [],
-          timeDomains: Array.from(new Set((json.heatmap || []).map((h: any) => h.time_range))).sort(),
-          heatmapCells: [],
-          exerciseAverages: [],
-          globalFitnessScore: json.summary?.avg_percentile || 0,
-          totalCompletedWorkouts: json.summary?.completions || 0
-        })
       } catch (e) {
         setSummary({ error: 'Failed to load' })
         setHeatmapData(null)
@@ -63,7 +55,7 @@ export default function AnalyticsMetconsPage() {
       }
     }
     run()
-  }, [selection])
+  }, [userId])
 
   return (
     <div className="space-y-4">
