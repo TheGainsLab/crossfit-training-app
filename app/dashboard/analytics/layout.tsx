@@ -31,6 +31,8 @@ function AnalyticsSubnav() {
     { href: '/dashboard/analytics', label: 'Overview' },
     { href: '/dashboard/analytics/skills', label: 'Skills' },
     { href: '/dashboard/analytics/strength', label: 'Strength' },
+    { href: '/dashboard/analytics/technical', label: 'Technical Work' },
+    { href: '/dashboard/analytics/accessories', label: 'Accessories' },
     { href: '/dashboard/analytics/metcons', label: 'Metcons' }
   ]), [])
   return (
