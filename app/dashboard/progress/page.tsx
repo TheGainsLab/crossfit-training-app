@@ -2054,6 +2054,18 @@ const MetConAnalyticsView = () => {
               <div className="text-lg font-medium text-gray-900 mb-1">Strength</div>
               <div className="text-sm text-gray-600">Movement frequency, avg RPE, trends</div>
             </Link>
+            <Link href="/dashboard/analytics/skills" className="block p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
+              <div className="text-lg font-medium text-gray-900 mb-1">Skills</div>
+              <div className="text-sm text-gray-600">Practice volume, quality, RPE</div>
+            </Link>
+            <Link href="/dashboard/analytics/technical" className="block p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
+              <div className="text-lg font-medium text-gray-900 mb-1">Technical Work</div>
+              <div className="text-sm text-gray-600">Olympic lift technique and progress</div>
+            </Link>
+            <Link href="/dashboard/analytics/accessories" className="block p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
+              <div className="text-lg font-medium text-gray-900 mb-1">Accessories</div>
+              <div className="text-sm text-gray-600">Support movements: volume and load</div>
+            </Link>
             <Link href="/dashboard/analytics/metcons" className="block p-4 border rounded-lg hover:shadow-md transition bg-gray-50">
               <div className="text-lg font-medium text-gray-900 mb-1">Metcons</div>
               <div className="text-sm text-gray-600">Interactive heat map and filters</div>
