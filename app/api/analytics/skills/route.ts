@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
           .from('performance_logs')
           .select('exercise_name, rpe, quality, logged_at')
           .eq('user_id', userId)
-          .eq('block_name', 'SKILLS')
+          .eq('block', 'SKILLS')
           .gte('logged_at', since)
 
         const bySkill: Record<string, { count: number; avgRPE: number; avgQuality: number }> = {}
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         .from('performance_logs')
         .select('exercise_name, rpe, quality, sets, reps, notes, logged_at')
         .eq('user_id', userId)
-        .eq('block_name', 'SKILLS')
+        .eq('block', 'SKILLS')
         .gte('logged_at', since)
         .order('logged_at', { ascending: false })
         .limit(300)
