@@ -39,39 +39,125 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const range = searchParams.get('range')
-    const block = searchParams.get('block') // optional filter
+    const block = searchParams.get('block') || 'STRENGTH AND POWER'
     const { sinceISO } = mapRange(range)
 
-    // Fetch logs
+    // Fetch logs with strength fields
     let q = supabase
       .from('performance_logs')
-      .select('exercise_name, rpe, logged_at, block')
+      .select('exercise_name, rpe, logged_at, block, sets, reps, weight_time')
       .eq('user_id', userId)
     if (sinceISO) q = q.gte('logged_at', sinceISO) as any
     if (block) q = q.eq('block', block) as any
     const { data: rows, error } = await q
     if (error) throw error
 
-    // Aggregate by exercise_name
-    const agg: Record<string, { count: number; rpeSum: number; rpeN: number; blockSet: Set<string> }> = {}
+    // Deterministic parsers
+    const toNumber = (s: any): number => {
+      if (s === null || s === undefined) return 0
+      const str = String(s).trim()
+      if (!str) return 0
+      const kg = /kg/i.test(str)
+      if (/\d+:\d{2}/.test(str)) return 0 // looks like time, not weight
+      const match = str.match(/([0-9]+(?:\.[0-9]+)?)/)
+      if (!match) return 0
+      const val = parseFloat(match[1])
+      return kg ? Math.round(val * 2.20462) : val
+    }
+    const parseIntSafe = (s: any): number => {
+      if (s === null || s === undefined) return 0
+      const str = String(s).trim()
+      if (!str) return 0
+      // handle ranges like 8-10: take higher deterministically
+      const range = str.match(/(\d+)\s*[-–]\s*(\d+)/)
+      if (range) return parseInt(range[2], 10)
+      const single = str.match(/(\d{1,3})/)
+      return single ? parseInt(single[1], 10) : 0
+    }
+
+    type MovementAgg = {
+      sessionCount: number
+      rpeSum: number
+      rpeN: number
+      maxWeight: number
+      totalReps: number
+      totalVolume: number
+      byDateTopWeight: Record<string, number>
+      lastDate: string | null
+      lastWeight: number
+      lastReps: number
+    }
+
+    const agg: Record<string, MovementAgg> = {}
     ;(rows || []).forEach((r: any) => {
       const name = r.exercise_name || 'Unknown'
-      if (!agg[name]) agg[name] = { count: 0, rpeSum: 0, rpeN: 0, blockSet: new Set<string>() }
-      agg[name].count += 1
-      if (typeof r.rpe === 'number') { agg[name].rpeSum += r.rpe; agg[name].rpeN += 1 }
-      if (r.block) agg[name].blockSet.add(r.block)
+      if (!agg[name]) {
+        agg[name] = {
+          sessionCount: 0,
+          rpeSum: 0,
+          rpeN: 0,
+          maxWeight: 0,
+          totalReps: 0,
+          totalVolume: 0,
+          byDateTopWeight: {},
+          lastDate: null,
+          lastWeight: 0,
+          lastReps: 0,
+        }
+      }
+      const a = agg[name]
+      a.sessionCount += 1
+      if (typeof r.rpe === 'number') { a.rpeSum += r.rpe; a.rpeN += 1 }
+      const weight = toNumber(r.weight_time)
+      const setsNum = parseIntSafe(r.sets) || 1
+      const repsNum = parseIntSafe(r.reps)
+      a.maxWeight = Math.max(a.maxWeight, weight)
+      a.totalReps += (setsNum * repsNum)
+      if (weight > 0 && repsNum > 0 && setsNum > 0) {
+        a.totalVolume += weight * repsNum * setsNum
+      }
+      const d = r.logged_at ? new Date(r.logged_at) : null
+      if (d) {
+        const key = d.toISOString().slice(0,10)
+        a.byDateTopWeight[key] = Math.max(a.byDateTopWeight[key] || 0, weight)
+        if (!a.lastDate || d > new Date(a.lastDate)) {
+          a.lastDate = d.toISOString()
+          a.lastWeight = weight
+          a.lastReps = repsNum
+        }
+      }
     })
-    const movements = Object.entries(agg)
-      .map(([exercise_name, v]) => ({ exercise_name, count: v.count, avg_rpe: v.rpeN ? Math.round((v.rpeSum / v.rpeN) * 100) / 100 : null }))
-      .sort((a, b) => b.count - a.count)
 
-    // Block mix
-    const blockMix: Record<string, number> = {}
-    ;(rows || []).forEach((r: any) => {
-      const b = r.block || 'Unknown'; blockMix[b] = (blockMix[b] || 0) + 1
+    const movements = Object.entries(agg).map(([exercise_name, v]) => {
+      const dates = Object.keys(v.byDateTopWeight)
+      const avgTopSetWeight = dates.length
+        ? Math.round((dates.reduce((s, k) => s + v.byDateTopWeight[k], 0) / dates.length) * 100) / 100
+        : 0
+      return {
+        exercise_name,
+        session_count: v.sessionCount,
+        avg_rpe: v.rpeN ? Math.round((v.rpeSum / v.rpeN) * 100) / 100 : null,
+        max_weight: v.maxWeight,
+        avg_top_set_weight: avgTopSetWeight,
+        total_reps: v.totalReps,
+        total_volume: Math.round(v.totalVolume),
+        last_session: v.lastDate ? { logged_at: v.lastDate, weight: v.lastWeight, reps: v.lastReps } : null
+      }
     })
 
-    return NextResponse.json({ success: true, summary: { movements: movements.slice(0, 20), block_mix: blockMix } })
+    // Optional sort and limit
+    const sort = (searchParams.get('sort') || 'total_volume').toLowerCase()
+    const limit = Math.max(1, Math.min(50, parseInt(searchParams.get('limit') || '20', 10)))
+    const sorters: Record<string, (a: any, b: any) => number> = {
+      total_volume: (a, b) => (b.total_volume || 0) - (a.total_volume || 0),
+      max_weight: (a, b) => (b.max_weight || 0) - (a.max_weight || 0),
+      sessions: (a, b) => (b.session_count || 0) - (a.session_count || 0),
+      avg_rpe: (a, b) => (b.avg_rpe || 0) - (a.avg_rpe || 0),
+    }
+    const sorter = sorters[sort] || sorters.total_volume
+    movements.sort(sorter)
+
+    return NextResponse.json({ success: true, summary: { block, movements: movements.slice(0, limit) } })
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e?.message || 'Failed' }, { status: 500 })
   }
