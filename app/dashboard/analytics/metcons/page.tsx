@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import MetconHeatmap from '@/components/MetconHeatmap'
 
 export default function AnalyticsMetconsPage() {
   const [selection, setSelection] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<any>(null)
-  const [heatmap, setHeatmap] = useState<any[]>([])
+  const [heatmapData, setHeatmapData] = useState<any | null>(null)
   const timeDomains = ['1-5','5-10','10-15','15-20','20+']
   const toggle = (td: string) => setSelection(prev => prev.includes(td) ? prev.filter(x => x!==td) : [...prev, td])
 
@@ -25,8 +26,35 @@ export default function AnalyticsMetconsPage() {
         const res = await fetch(`/api/analytics/metcons?${q.toString()}`, { headers })
         const json = await res.json()
         if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load metcons analytics')
+        // Fallback to old heatmap if new endpoint returns nothing
+        if (!json.summary && !json.heatmap) {
+          const { data: { session } } = await sb.auth.getSession()
+          const token2 = session?.access_token || ''
+          const headers2: Record<string, string> = {}
+          if (token2) headers2['Authorization'] = `Bearer ${token2}`
+          const userRes = await fetch('/api/auth/get-user-id', { headers: headers2 }).catch(() => null)
+          const userJson = userRes && (await userRes.json().catch(() => null))
+          const userId = userJson?.userId || null
+          if (userId) {
+            const oldRes = await fetch(`/api/analytics/${userId}/exercise-heatmap`, { headers: headers2 })
+            const oldJson = await oldRes.json()
+            if (oldRes.ok && oldJson.success) {
+              setHeatmapData(oldJson.data)
+              setSummary({ completions: oldJson.data.totalCompletedWorkouts, avg_percentile: oldJson.data.globalFitnessScore, time_domain_mix: [] })
+              return
+            }
+          }
+        }
         setSummary(json.summary)
-        setHeatmap(json.heatmap)
+        setHeatmapData({
+          // Normalize to MetconHeatmap component shape if possible
+          exercises: [],
+          timeDomains: Array.from(new Set((json.heatmap || []).map((h: any) => h.time_range))).sort(),
+          heatmapCells: [],
+          exerciseAverages: [],
+          globalFitnessScore: json.summary?.avg_percentile || 0,
+          totalCompletedWorkouts: json.summary?.completions || 0
+        })
       } catch (e) {
         setSummary({ error: 'Failed to load' })
         setHeatmap([])
@@ -79,18 +107,7 @@ export default function AnalyticsMetconsPage() {
         <div className="text-sm text-gray-500">Loading…</div>
       ) : (
         <>
-          <div className="text-sm text-gray-700">Metcon performance heat map</div>
-          <div className="grid grid-cols-5 gap-1">
-            {timeDomains.map(td => {
-              const cells = heatmap.filter(h => h.time_range === td)
-              const total = cells.reduce((s, c) => s + c.count, 0)
-              return (
-                <div key={td} onClick={() => toggle(td)} className={`h-16 cursor-pointer flex items-center justify-center text-xs border ${selection.includes(td) ? 'bg-blue-200' : 'bg-gray-100 hover:bg-gray-200'}`} title={`${td}: ${total} sessions`}>
-                  {td}
-                </div>
-              )
-            })}
-          </div>
+          {heatmapData ? <MetconHeatmap data={heatmapData} /> : <div className="text-sm text-gray-500">No heat map data</div>}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
             <div className="p-3 border rounded bg-gray-50">
               <div className="text-xs text-gray-600">Completions</div>
