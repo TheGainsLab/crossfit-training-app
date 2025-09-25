@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import CoachDrawer from '@/components/CoachDrawer'
 
 export default function AnalyticsStrengthPage() {
   const searchParams = useSearchParams()
   const range = searchParams.get('range') || 'all_time'
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<any>(null)
+  const [openCoach, setOpenCoach] = useState(false)
+  const [coachContent, setCoachContent] = useState<React.ReactNode>(null)
 
   useEffect(() => {
     const run = async () => {
@@ -48,7 +51,15 @@ export default function AnalyticsStrengthPage() {
             const coachBriefRes = await fetch('/api/coach/brief', { method: 'POST', headers, body: JSON.stringify({}) })
             const briefJson = await coachBriefRes.json()
             if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
-            await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: 'Explain strength patterns and recommend safe adjustments.' }) })
+            const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: `Explain strength patterns for range=${range} (block=STRENGTH AND POWER).` }) })
+            const json = await res.json().catch(() => ({}))
+            setCoachContent(
+              <div className="space-y-3 text-sm">
+                <div className="text-gray-800">Coach explanation requested for Strength ({range}).</div>
+                <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(json, null, 2)}</pre>
+              </div>
+            )
+            setOpenCoach(true)
           } catch {}
         }}>Explain</button>
         <button className="px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100" onClick={async () => {
@@ -62,7 +73,15 @@ export default function AnalyticsStrengthPage() {
             const coachBriefRes = await fetch('/api/coach/brief', { method: 'POST', headers, body: JSON.stringify({}) })
             const briefJson = await coachBriefRes.json()
             if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
-            await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: 'Propose incremental strength changes (sets/reps) without moving blocks.' }) })
+            const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: `Recommend safe strength tweaks for range=${range} (block=STRENGTH AND POWER).` }) })
+            const json = await res.json().catch(() => ({}))
+            setCoachContent(
+              <div className="space-y-3 text-sm">
+                <div className="text-gray-800">Coach recommendations for Strength ({range}).</div>
+                <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(json, null, 2)}</pre>
+              </div>
+            )
+            setOpenCoach(true)
           } catch {}
         }}>Recommend</button>
       </div>
@@ -91,6 +110,9 @@ export default function AnalyticsStrengthPage() {
           </div>
         </>
       )}
+      <CoachDrawer open={openCoach} title="Coach" onClose={() => setOpenCoach(false)}>
+        {coachContent}
+      </CoachDrawer>
     </div>
   )
 }
