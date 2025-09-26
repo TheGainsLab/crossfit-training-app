@@ -22,6 +22,14 @@ async function handle(req: Request) {
           if (cv) token = cv
         } catch {}
       }
+      if (!token) {
+        // Last resort: token query param (for manual testing)
+        try {
+          const url = new URL(req.url)
+          const qp = url.searchParams.get('token')
+          if (qp) token = qp
+        } catch {}
+      }
       if (token) {
         const { data: authUser } = await createClient(supabaseUrl, serviceKey).auth.getUser(token)
         const auth_id = authUser?.user?.id
