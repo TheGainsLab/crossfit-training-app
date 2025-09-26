@@ -57,52 +57,25 @@ export default function AnalyticsSkillsPage() {
         <div className="text-sm text-gray-500">Loading…</div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="p-3 border rounded bg-white">
-              <div className="text-xs text-gray-600">Skills practiced</div>
-              <div className="text-2xl font-semibold">{(summary?.summary || []).length}</div>
-            </div>
-            <div className="p-3 border rounded bg-white">
-              <div className="text-xs text-gray-600">Total sessions</div>
-              <div className="text-2xl font-semibold">{(() => {
-                const list = (summary?.summary || []) as Array<{ name: string; count: number; avgRPE: number; avgQuality: number }>
-                return list.reduce((acc, s) => acc + (s.count || 0), 0)
-              })()}</div>
-            </div>
-            <div className="p-3 border rounded bg-white">
-              <div className="text-xs text-gray-600">Avg RPE (skills)</div>
-              <div className="text-2xl font-semibold">{(() => {
-                const list = (summary?.summary || []) as Array<{ count: number; avgRPE: number }>
-                const total = list.reduce((acc, s) => acc + (s.count || 0), 0)
-                if (!total) return 0
-                const weighted = list.reduce((acc, s) => acc + (s.avgRPE || 0) * (s.count || 0), 0)
-                return Math.round((weighted / total) * 10) / 10
-              })()}</div>
-            </div>
-          </div>
-
-          <div className="p-4 border rounded bg-white">
-            <div className="text-sm text-gray-700 mb-2">Top skills (by sessions)</div>
-            <ul className="text-sm list-disc list-inside">
-              {[...(summary?.summary || [])]
-                .sort((a: any, b: any) => (b.count || 0) - (a.count || 0))
-                .slice(0, 15)
-                .map((sk: any) => (
-                  <li key={sk.name}>{sk.name} — {sk.count} sessions, RPE {Math.round((sk.avgRPE || 0) * 10) / 10}, Quality {Math.round((sk.avgQuality || 0) * 10) / 10}</li>
-                ))}
-            </ul>
-          </div>
-
-          <div className="p-4 border rounded bg-white">
-            <div className="text-sm text-gray-700 mb-2">Recent sessions</div>
-            <ul className="divide-y">
-              {sessions.slice(0, 30).map((s: any, i: number) => (
-                <li key={i} className="py-2 text-sm flex items-center justify-between">
-                  <span className="text-gray-800">{s.exercise_name}</span>
-                  <span className="text-gray-600">{new Date(s.logged_at).toLocaleDateString()} • {s.sets || 1} × {s.reps || 0} • RPE {s.rpe ?? '—'} • Q {s.quality ?? '—'}</span>
-                </li>
-              ))}
-            </ul>
+          <div className="text-sm text-gray-700">Skills movements (block: SKILLS)</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[...(summary?.summary || [])]
+              .sort((a: any, b: any) => (b.count || 0) - (a.count || 0))
+              .map((sk: any) => {
+                const last = sessions.find((s: any) => s.exercise_name === sk.name)
+                const lastDate = last ? new Date(last.logged_at).toLocaleDateString() : null
+                return (
+                  <div key={sk.name} className="p-3 border rounded bg-white">
+                    <div className="font-medium text-gray-900 mb-1 text-center">{sk.name}</div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex justify-between"><span className="text-gray-600">Sessions</span><span className="font-medium">{sk.count || 0}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Avg RPE</span><span className="font-medium">{Math.round((sk.avgRPE || 0) * 10) / 10}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Avg Quality</span><span className="font-medium">{Math.round((sk.avgQuality || 0) * 10) / 10}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Last</span><span className="font-medium">{lastDate || '—'}</span></div>
+                    </div>
+                  </div>
+                )
+              })}
           </div>
           <div className="flex gap-3">
             <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700" onClick={async () => {
