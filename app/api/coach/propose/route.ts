@@ -21,6 +21,24 @@ export async function POST(req: Request) {
 
     const userContent = `USER REQUEST:\n${String(message || '').slice(0, 600)}\n\nCOACHING BRIEF (JSON):\n${JSON.stringify(brief).slice(0, 14000)}\n\nReturn ONLY valid Plan Diff v1 JSON.`
 
+    // Once-per-week enforcement (soft): if locked, return empty diff
+    try {
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+      if (supabaseUrl && serviceKey) {
+        const { createClient } = await import('@supabase/supabase-js')
+        const admin = createClient(supabaseUrl, serviceKey)
+        const userId = (brief as any)?.profile?.user_id || (brief as any)?.userId || null
+        const currentWeek = Array.isArray((brief as any)?.upcomingProgram) ? (brief as any).upcomingProgram[0]?.week : null
+        if (userId && currentWeek) {
+          const { data } = await admin.from('coach_decision_locks').select('id, locked').eq('user_id', userId).eq('week', currentWeek).maybeSingle()
+          if (data?.locked) {
+            return NextResponse.json({ success: true, diff: { version: 'v1', changes: [] }, rationale: 'locked_this_week' })
+          }
+        }
+      }
+    } catch {}
+
     // Call Claude (Messages API)
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

@@ -24,10 +24,17 @@ function formatTarget(target: any, change: any): string {
   return parts ? `${parts}${name}` : name.replace(/^ \u2022\s?/, '')
 }
 
-export default function PlanDiffViewer({ data }: { data: any }) {
+export default function PlanDiffViewer({ data, week }: { data: any; week?: number }) {
   const [showJson, setShowJson] = useState(false)
   const diff = data?.diff || data
   const changes: PlanChange[] = diff?.changes || []
+  const [decisions, setDecisions] = useState<Record<number, 'accepted' | 'rejected' | undefined>>(() => {
+    if (!week) return {}
+    try {
+      const raw = localStorage.getItem(`coach:decisions:${week}`)
+      return raw ? JSON.parse(raw) : {}
+    } catch { return {} }
+  })
 
   if (!changes.length) {
     return <div className="text-sm text-gray-600">No proposed changes.</div>
@@ -70,9 +77,26 @@ export default function PlanDiffViewer({ data }: { data: any }) {
               {c.rationale && (
                 <div className="text-xs text-gray-600 italic mt-1">Rationale: {c.rationale}</div>
               )}
+              {week && (
+                <div className="mt-2 flex items-center gap-2">
+                  <button className={`px-2 py-1 rounded text-xs border ${decisions[idx] === 'accepted' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-700'}`} onClick={() => setDecisions(prev => ({ ...prev, [idx]: 'accepted' }))}>Accept</button>
+                  <button className={`px-2 py-1 rounded text-xs border ${decisions[idx] === 'rejected' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700'}`} onClick={() => setDecisions(prev => ({ ...prev, [idx]: 'rejected' }))}>Reject</button>
+                  {decisions[idx] && <span className="text-xs text-gray-500">Marked {decisions[idx]}</span>}
+                </div>
+              )}
             </li>
           ))}
         </ul>
+      )}
+      {week && (
+        <div className="pt-2 flex items-center justify-end">
+          <button className="px-3 py-1.5 rounded text-xs bg-blue-600 text-white" onClick={() => {
+            try {
+              localStorage.setItem(`coach:decisions:${week}`, JSON.stringify(decisions))
+              localStorage.setItem(`coach:lock:${week}`, 'locked')
+            } catch {}
+          }}>Save decisions</button>
+        </div>
       )}
     </div>
   )
