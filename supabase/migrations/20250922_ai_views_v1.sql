@@ -151,3 +151,89 @@ from (
 ) t
 where value > 0;
 
+-- ai_strength_summary_v1 (last 56 days)
+-- Aggregated per user and exercise within a rolling window
+-- Columns: user_id, exercise_name, distinct_days_in_range, avg_rpe, max_weight_lbs,
+--          avg_top_set_weight_lbs, total_sets, total_reps, total_volume_lbs, last_session_at
+
+create or replace view public.ai_strength_summary_v1
+with (security_invoker=true) as
+with base as (
+  select
+    pl.user_id,
+    pl.exercise_name,
+    pl.logged_at::date as d,
+    pl.logged_at,
+    pl.rpe,
+    -- parse sets
+    coalesce(nullif(regexp_replace(coalesce(pl.sets::text, ''), '[^0-9]', '', 'g'), '')::int, 1) as sets_n,
+    -- parse reps (prefer high end of ranges like 8-10)
+    coalesce((regexp_match(coalesce(pl.reps::text,''), '(\d+)\s*[-–]\s*(\d+)'))[2]::int,
+             nullif(regexp_replace(coalesce(pl.reps::text,''), '[^0-9]', '', 'g'), '')::int, 0) as reps_n,
+    -- parse weight/time as weight, skip if looks like time (contains ':')
+    case when coalesce(pl.weight_time::text,'') like '%:%' then 0
+         else coalesce(nullif(regexp_replace(coalesce(pl.weight_time::text,''), '[^0-9\.]', '', 'g'), '')::numeric, 0)
+    end as raw_weight,
+    u.units
+  from public.performance_logs pl
+  join public.users u on u.id = pl.user_id
+  where pl.block = 'STRENGTH AND POWER'
+    and pl.logged_at >= now() - interval '56 days'
+), base2 as (
+  select *,
+    case when coalesce(units,'') ilike '%kg%'
+         then round((raw_weight * 2.20462)::numeric, 2)
+         else raw_weight end as weight_lbs
+  from base
+), day_max as (
+  select user_id, exercise_name, d, max(weight_lbs) as day_max_weight
+  from base2
+  group by user_id, exercise_name, d
+)
+select
+  b.user_id,
+  b.exercise_name,
+  count(distinct b.d) as distinct_days_in_range,
+  round(avg(nullif(b.rpe,0))::numeric, 2) as avg_rpe,
+  max(b.weight_lbs) as max_weight_lbs,
+  round(avg(dm.day_max_weight)::numeric, 2) as avg_top_set_weight_lbs,
+  sum(b.sets_n) as total_sets,
+  sum(b.sets_n * b.reps_n) as total_reps,
+  sum((b.sets_n * b.reps_n) * b.weight_lbs) as total_volume_lbs,
+  max(b.logged_at) as last_session_at
+from base2 b
+left join day_max dm on dm.user_id = b.user_id and dm.exercise_name = b.exercise_name and dm.d = b.d
+group by b.user_id, b.exercise_name;
+
+-- ai_skills_summary_v1 (last 56 days)
+-- Columns: user_id, skill_name, distinct_days_in_range, avg_rpe, avg_quality, total_sets, total_reps, last_date
+
+create or replace view public.ai_skills_summary_v1
+with (security_invoker=true) as
+with base as (
+  select
+    pl.user_id,
+    pl.exercise_name as skill_name,
+    pl.logged_at::date as d,
+    pl.rpe,
+    pl.completion_quality,
+    coalesce(nullif(regexp_replace(coalesce(pl.sets::text, ''), '[^0-9]', '', 'g'), '')::int, 1) as sets_n,
+    coalesce((regexp_match(coalesce(pl.reps::text,''), '(\d+)\s*[-–]\s*(\d+)'))[2]::int,
+             nullif(regexp_replace(coalesce(pl.reps::text,''), '[^0-9]', '', 'g'), '')::int, 0) as reps_n,
+    pl.logged_at
+  from public.performance_logs pl
+  where pl.block = 'SKILLS'
+    and pl.logged_at >= now() - interval '56 days'
+)
+select
+  user_id,
+  skill_name,
+  count(distinct d) as distinct_days_in_range,
+  round(avg(nullif(rpe,0))::numeric, 2) as avg_rpe,
+  round(avg(nullif(completion_quality,0))::numeric, 2) as avg_quality,
+  sum(sets_n) as total_sets,
+  sum(sets_n * reps_n) as total_reps,
+  max(logged_at)::timestamp as last_date
+from base
+group by user_id, skill_name;
+
