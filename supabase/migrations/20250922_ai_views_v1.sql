@@ -277,3 +277,60 @@ left join public.metcons m on m.id = pm.metcon_id
 where pm.completed_at is not null
   and pm.completed_at >= now() - interval '56 days';
 
+-- ai_upcoming_program_v1 (uncompleted days from latest program)
+-- Columns: user_id, program_id, week, day, block, exercises jsonb, metcon jsonb
+
+create or replace view public.ai_upcoming_program_v1
+with (security_invoker=true) as
+with latest as (
+  select distinct on (p.user_id) p.user_id, p.id as program_id, p.program_data
+  from public.programs p
+  order by p.user_id, p.id desc
+),
+weeks as (
+  select l.user_id, l.program_id, w as week_json
+  from latest l,
+  jsonb_array_elements((l.program_data::jsonb)->'weeks') as w
+),
+days as (
+  select user_id, program_id, (week_json->>'week')::int as week, d as day_json
+  from weeks,
+  jsonb_array_elements(week_json->'days') as d
+),
+completed as (
+  select pl.user_id, pl.program_id, pl.week, pl.day
+  from public.performance_logs pl
+  where pl.program_id is not null
+  union
+  select p.user_id, pm.program_id, pm.week, pm.day
+  from public.program_metcons pm
+  join public.programs p on p.id = pm.program_id
+  where pm.completed_at is not null
+),
+upcoming as (
+  select d.user_id, d.program_id, d.week, (d.day_json->>'day')::int as day, d.day_json
+  from days d
+  left join completed c on c.user_id = d.user_id and c.program_id = d.program_id and c.week = (d.week) and c.day = (d.day_json->>'day')::int
+  where c.user_id is null
+),
+blocks as (
+  select user_id, program_id, week, day,
+         jsonb_array_elements(day_json->'blocks') as block_json
+  from upcoming
+)
+select
+  user_id,
+  program_id,
+  week,
+  day,
+  coalesce(block_json->>'blockName', block_json->>'block') as block,
+  (block_json->'exercises') as exercises,
+  case when block_json ? 'metconData' then jsonb_build_object(
+    'workout_id', (block_json->'metconData'->>'workoutId'),
+    'format', (block_json->'metconData'->>'workoutFormat'),
+    'time_range', (block_json->'metconData'->>'timeRange'),
+    'level', (block_json->'metconData'->>'level'),
+    'required_equipment', (block_json->'metconData'->'requiredEquipment')
+  ) else null end as metcon
+from blocks;
+
