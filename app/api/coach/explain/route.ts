@@ -22,17 +22,18 @@ Global rules (Explain only):
 - Reference next week's plan (upcoming 7 uncompleted days in the brief): highlight 1–2 opportunities or risks (coverage vs goals, overloads, missing skills).
 - Do NOT propose specific plan changes; no Plan Diff here.
 
-Domain-specific guidance (choose based on context message):
-- If SKILLS: focus on distinct days per skill, avg RPE/quality, recency, and next-week skills coverage vs. goals (e.g., strict pulling).
-- If STRENGTH AND POWER or TECHNICAL WORK: use total sessions/volume trend (if available), top movements, avg RPE; check next-week lift/technique coverage vs. recent trend and goals.
-- If ACCESSORIES: highlight support movement balance and exposure; check next-week accessory coverage for weak links.
-- If METCONS: highlight completions, time-domain/equipment/level mix, avg percentile; check next-week alignment to desired time-domains/equipment/level.
+Domain-specific guidance (choose based on CONTEXT):
+- If SKILLS: ONLY reference SKILLS block movements from the brief. Focus on distinct days per skill, avg RPE/quality, recency, and next-week SKILLS coverage vs. goals (e.g., strict pulling). Do NOT mention movements that appear only under TECHNICAL WORK or ACCESSORIES.
+- If STRENGTH AND POWER: ONLY reference STRENGTH AND POWER block movements; discuss sessions/volume trend (if available), top lifts, avg RPE; check next-week coverage vs. goals.
+- If TECHNICAL WORK: ONLY reference TECHNICAL WORK movements; emphasize technique exposures and recency; check next-week coverage.
+- If ACCESSORIES: ONLY reference ACCESSORIES; highlight balance and exposures; check next-week coverage.
+- If METCONS: ONLY reference metcon data; highlight completions, time-domain/equipment/level mix, avg percentile; check next-week alignment.
 
 Output JSON ONLY with:
 { "summary": string, "bullets": string[], "focus_next_week": string[] }
 Where focus_next_week are 1–3 narrative pointers (not plan changes) that link history to the upcoming week.`;
 
-    const userContent = `CONTEXT (include domain and range):\n${String(message || '').slice(0, 600)}\n\nCOACHING BRIEF (JSON):\n${JSON.stringify(brief).slice(0, 14000)}\n\nReturn ONLY JSON with keys: summary (string), bullets (string[]), focus_next_week (string[]).`;
+    const userContent = `CONTEXT (must include domain and range; limit insights to that domain ONLY):\n${String(message || '').slice(0, 600)}\n\nCOACHING BRIEF (JSON):\n${JSON.stringify(brief).slice(0, 14000)}\n\nReturn ONLY JSON with keys: summary (string), bullets (string[]), focus_next_week (string[]).`;
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
