@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
 
 async function handle(req: Request) {
@@ -14,13 +15,12 @@ async function handle(req: Request) {
       const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
       let token = authHeader?.replace('Bearer ', '') || ''
       if (!token) {
-        // Fallback: Supabase Auth cookie (sb-access-token)
-        const cookie = req.headers.get('cookie') || ''
-        const parts = cookie.split(/;\s*/)
-        for (const p of parts) {
-          const [k, v] = p.split('=')
-          if (k === 'sb-access-token' && v) { token = decodeURIComponent(v); break }
-        }
+        // Fallback: Supabase cookie via next/headers
+        try {
+          const c = cookies()
+          const cv = c.get('sb-access-token')?.value
+          if (cv) token = cv
+        } catch {}
       }
       if (token) {
         const { data: authUser } = await createClient(supabaseUrl, serviceKey).auth.getUser(token)
