@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
     // Profile & intake
     const [{ data: userRow }, { data: equipmentRows }, { data: oneRmsRows }] = await Promise.all([
-      supabase.from('users').select('ability_level, units, conditioning_benchmarks').eq('id', userId).single(),
+      supabase.from('users').select('ability_level, units, conditioning_benchmarks, body_weight').eq('id', userId).single(),
       supabase.from('user_equipment').select('equipment_name').eq('user_id', userId),
       supabase.from('latest_user_one_rms').select('one_rm_index, one_rm').eq('user_id', userId).order('one_rm_index')
     ])
@@ -46,6 +46,42 @@ export async function POST(req: Request) {
       ;(oneRmsRows || []).forEach((r: any) => { if (r.one_rm_index >= 0 && r.one_rm_index < 14) arr[r.one_rm_index] = r.one_rm })
       return arr
     })()
+
+    // Named 1RMs mapping
+    const oneRMNames = ['snatch','clean_and_jerk','back_squat','front_squat','deadlift','bench_press','strict_press','push_press','weighted_pullup','jerk_only','clean_only','power_clean','power_snatch','overhead_squat']
+    const oneRMsNamed: Record<string, number> = {}
+    oneRMNames.forEach((name, idx) => { oneRMsNamed[name] = oneRMs[idx] || 0 })
+
+    // Strength ratios with targets and flags
+    const bw = Number(userRow?.body_weight || 0)
+    function ratio(a?: number, b?: number): number { const x = Number(a||0), y = Number(b||0); return y ? Math.round((x / y) * 1000) / 1000 : 0 }
+    const ratioTargets: Record<string, number> = {
+      front_squat_over_back_squat: 0.85,
+      snatch_over_back_squat: 0.62,
+      cj_over_back_squat: 0.74,
+      bench_over_bodyweight: 0.9,
+      deadlift_over_bodyweight: 2.0,
+      push_press_over_strict_press: 1.2,
+      power_clean_over_clean_only: 0.88,
+      power_snatch_over_snatch: 0.88,
+      jerk_only_over_clean_only: 0.9
+    }
+    const strength_ratios = {
+      front_squat_over_back_squat: ratio(oneRMsNamed.front_squat, oneRMsNamed.back_squat),
+      snatch_over_back_squat: ratio(oneRMsNamed.snatch, oneRMsNamed.back_squat),
+      cj_over_back_squat: ratio(oneRMsNamed.clean_and_jerk, oneRMsNamed.back_squat),
+      bench_over_bodyweight: bw ? ratio(oneRMsNamed.bench_press, bw) : 0,
+      deadlift_over_bodyweight: bw ? ratio(oneRMsNamed.deadlift, bw) : 0,
+      push_press_over_strict_press: ratio(oneRMsNamed.push_press, oneRMsNamed.strict_press),
+      power_clean_over_clean_only: ratio(oneRMsNamed.power_clean, oneRMsNamed.clean_only),
+      power_snatch_over_snatch: ratio(oneRMsNamed.power_snatch, oneRMsNamed.snatch),
+      jerk_only_over_clean_only: ratio(oneRMsNamed.jerk_only, oneRMsNamed.clean_only)
+    }
+    const strength_ratio_flags = Object.fromEntries(Object.entries(strength_ratios).map(([k,v]) => {
+      const t = ratioTargets[k] || 0
+      const flag = v < t ? 'below_target' : (Math.abs(v - t) <= 0.02 ? 'at_target' : 'above_target')
+      return [k, { value: v, target: t, flag }]
+    }))
 
     // Performance logs (last 56 days)
     const { data: logs } = await supabase
@@ -194,7 +230,7 @@ export async function POST(req: Request) {
       version: 'v1',
       metadata: { userId, window: { startISO, endISO }, units },
       profile: { ability, goals: [], constraints: [], equipment },
-      intake: { skills: [], oneRMs, conditioning_benchmarks: userRow?.conditioning_benchmarks || {} },
+      intake: { skills: [], oneRMs, oneRMsNamed, strength_ratios: strength_ratio_flags, conditioning_benchmarks: userRow?.conditioning_benchmarks || {} },
       logs_summary,
       metcons_summary,
       upcoming_program,
