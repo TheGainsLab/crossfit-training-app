@@ -5,8 +5,20 @@ import { createClient } from '@supabase/supabase-js'
 async function handle(req: Request) {
   try {
     const isJson = (req.headers.get('content-type')||'').includes('application/json')
-    const body = isJson ? await req.json() : {}
-    const { message, domain, range } = body
+    let message = '' as any
+    let domain = '' as any
+    let range = '' as any
+    if (isJson) {
+      const body = await req.json()
+      message = body?.message
+      domain = body?.domain
+      range = body?.range
+    } else {
+      const url = new URL(req.url)
+      message = url.searchParams.get('message') || ''
+      domain = url.searchParams.get('domain') || ''
+      range = url.searchParams.get('range') || ''
+    }
 
     // Resolve auth and userId and fetch master brief from view
     const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL as string
@@ -20,7 +32,7 @@ async function handle(req: Request) {
       let token = authHeader?.replace('Bearer ', '') || ''
       if (!token) {
         try {
-          const c = cookies()
+          const c = await cookies()
           const cv = c.get('sb-access-token')?.value
           if (cv) token = cv
         } catch {}

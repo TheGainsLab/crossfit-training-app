@@ -17,7 +17,7 @@ async function handle(req: Request) {
       if (!token) {
         // Fallback: Supabase cookie via next/headers
         try {
-          const c = cookies()
+          const c = await cookies()
           const cv = c.get('sb-access-token')?.value
           if (cv) token = cv
         } catch {}
