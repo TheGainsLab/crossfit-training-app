@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import CoachDrawer from '@/components/CoachDrawer'
+import PlanDiffViewer from '@/components/PlanDiffViewer'
 
 export default function AnalyticsSkillsPage() {
   const searchParams = useSearchParams()
@@ -96,13 +97,8 @@ export default function AnalyticsSkillsPage() {
                 if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
                 const msg = `Recommend skill plan tweaks for range=${range} (block=SKILLS).`
                 const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: msg }) })
-                const json = await res.json().catch(() => ({}))
-                setCoachContent(
-                  <div className="space-y-3 text-sm">
-                    <div className="text-gray-800">Coach recommendations for Skills ({range}).</div>
-                    <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(json, null, 2)}</pre>
-                  </div>
-                )
+                const json = await res.json().catch(() => ({ success: false, diff: { version: 'v1', changes: [] } }))
+                setCoachContent(<PlanDiffViewer data={json} />)
                 setOpenCoach(true)
               } catch {}
             }}>Recommend</button>
