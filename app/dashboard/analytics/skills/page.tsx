@@ -70,12 +70,14 @@ export default function AnalyticsSkillsPage() {
                 const briefJson = await coachBriefRes.json()
                 if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
                 const msg = `Explain skills for range=${range} (block=SKILLS).`
-                const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: msg }) })
-                const json = await res.json().catch(() => ({}))
+                const res = await fetch('/api/coach/explain', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: msg }) })
+                const json = await res.json().catch(() => ({ success: false }))
                 setCoachContent(
-                  <div className="space-y-3 text-sm">
-                    <div className="text-gray-800">Coach explanation for Skills ({range}).</div>
-                    <pre className="text-xs bg-gray-50 border rounded p-2 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(json, null, 2)}</pre>
+                  <div className="space-y-2 text-sm">
+                    {json?.summary && <div className="text-gray-800 font-medium">{json.summary}</div>}
+                    <ul className="list-disc list-inside text-gray-800">
+                      {(json?.bullets || []).map((b: string, i: number) => (<li key={i}>{b}</li>))}
+                    </ul>
                   </div>
                 )
                 setOpenCoach(true)
