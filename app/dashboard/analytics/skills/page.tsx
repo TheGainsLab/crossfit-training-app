@@ -70,7 +70,7 @@ export default function AnalyticsSkillsPage() {
                 const briefJson = await coachBriefRes.json()
                 if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
                 const msg = `Explain skills for range=${range} (block=SKILLS).`
-                const res = await fetch('/api/coach/explain', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: msg }) })
+                const res = await fetch('/api/coach/explain', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: msg, domain: 'skills' }) })
                 const json = await res.json().catch(() => ({ success: false }))
                 setCoachContent(
                   <div className="space-y-2 text-sm">

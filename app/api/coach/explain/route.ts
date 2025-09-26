@@ -2,8 +2,51 @@ import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   try {
-    const { brief, message } = await req.json()
+    const { brief, message, domain } = await req.json()
     if (!brief) return NextResponse.json({ success: false, error: 'Invalid brief' }, { status: 400 })
+
+    // Filter brief to domain-specific data (best-effort)
+    const d = String(domain || '').toLowerCase()
+    const filtered = JSON.parse(JSON.stringify(brief))
+    try {
+      // Upcoming program: keep only blocks for the domain
+      const blockMap: Record<string, string> = {
+        skills: 'SKILLS',
+        strength: 'STRENGTH AND POWER',
+        technical: 'TECHNICAL WORK',
+        accessories: 'ACCESSORIES',
+        metcons: 'METCONS'
+      }
+      const wantBlock = blockMap[d]
+      if (wantBlock && Array.isArray(filtered?.upcomingProgram)) {
+        filtered.upcomingProgram = filtered.upcomingProgram.map((day: any) => ({
+          ...day,
+          blocks: Array.isArray(day?.blocks) ? day.blocks.filter((b: any) => {
+            const name = String(b?.block || b?.blockName || '')
+            if (d === 'metcons') return name === 'METCONS'
+            return name === wantBlock
+          }) : []
+        }))
+      }
+      // Remove cross-domain summaries (best-effort based on key names)
+      const top = filtered || {}
+      const removeIf = (key: string, patterns: string[]) => patterns.some(p => key.toLowerCase().includes(p))
+      const domainKeep: Record<string, string[]> = {
+        skills: ['skill'],
+        strength: ['strength'],
+        technical: ['technical'],
+        accessories: ['accessor'],
+        metcons: ['metcon']
+      }
+      const keepPats = domainKeep[d] || []
+      Object.keys(top).forEach((k) => {
+        const kl = k.toLowerCase()
+        if (['profile','upcomingprogram','goals','preferences','adherence','trends'].includes(kl)) return
+        // if key clearly belongs to another domain, drop it
+        const otherPats = ['skill','strength','technical','accessor','metcon'].filter(p => !keepPats.includes(p))
+        if (removeIf(k, otherPats)) delete top[k]
+      })
+    } catch {}
 
     const apiKey = process.env.CLAUDE_API_KEY
     if (!apiKey) {
@@ -33,7 +76,7 @@ Output JSON ONLY with:
 { "summary": string, "bullets": string[], "focus_next_week": string[] }
 Where focus_next_week are 1–3 narrative pointers (not plan changes) that link history to the upcoming week.`;
 
-    const userContent = `CONTEXT (must include domain and range; limit insights to that domain ONLY):\n${String(message || '').slice(0, 600)}\n\nCOACHING BRIEF (JSON):\n${JSON.stringify(brief).slice(0, 14000)}\n\nReturn ONLY JSON with keys: summary (string), bullets (string[]), focus_next_week (string[]).`;
+    const userContent = `CONTEXT (must include domain and range; limit insights to that domain ONLY):\n${String(message || '').slice(0, 600)}\n\nCOACHING BRIEF (JSON, domain-filtered):\n${JSON.stringify(filtered).slice(0, 14000)}\n\nReturn ONLY JSON with keys: summary (string), bullets (string[]), focus_next_week (string[]).`;
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
