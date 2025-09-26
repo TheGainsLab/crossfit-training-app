@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-export async function POST(req: Request) {
+async function handle(req: Request) {
   try {
     const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL as string
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
@@ -12,7 +12,16 @@ export async function POST(req: Request) {
     let userId: number | null = null
     try {
       const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
-      const token = authHeader?.replace('Bearer ', '') || ''
+      let token = authHeader?.replace('Bearer ', '') || ''
+      if (!token) {
+        // Fallback: Supabase Auth cookie (sb-access-token)
+        const cookie = req.headers.get('cookie') || ''
+        const parts = cookie.split(/;\s*/)
+        for (const p of parts) {
+          const [k, v] = p.split('=')
+          if (k === 'sb-access-token' && v) { token = decodeURIComponent(v); break }
+        }
+      }
       if (token) {
         const { data: authUser } = await createClient(supabaseUrl, serviceKey).auth.getUser(token)
         const auth_id = authUser?.user?.id
@@ -54,4 +63,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: e?.message || 'Failed' }, { status: 500 })
   }
 }
+
+export async function POST(req: Request) { return handle(req) }
+export async function GET(req: Request) { return handle(req) }
 

@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-export async function POST(req: Request) {
+async function handle(req: Request) {
   try {
-    const { message, domain, range } = await req.json()
+    const isJson = (req.headers.get('content-type')||'').includes('application/json')
+    const body = isJson ? await req.json() : {}
+    const { message, domain, range } = body
 
     // Resolve auth and userId and fetch master brief from view
     const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL as string
@@ -14,7 +16,15 @@ export async function POST(req: Request) {
     let userId: number | null = null
     try {
       const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
-      const token = authHeader?.replace('Bearer ', '') || ''
+      let token = authHeader?.replace('Bearer ', '') || ''
+      if (!token) {
+        const cookie = req.headers.get('cookie') || ''
+        const parts = cookie.split(/;\s*/)
+        for (const p of parts) {
+          const [k, v] = p.split('=')
+          if (k === 'sb-access-token' && v) { token = decodeURIComponent(v); break }
+        }
+      }
       if (token) {
         const { data: authUser } = await createClient(supabaseUrl, serviceKey).auth.getUser(token)
         const auth_id = authUser?.user?.id
@@ -271,4 +281,7 @@ Where focus_next_week are 1–3 narrative pointers (not plan changes) that link 
     return NextResponse.json({ success: false, error: e?.message || 'Failed' }, { status: 400 })
   }
 }
+
+export async function POST(req: Request) { return handle(req) }
+export async function GET(req: Request) { return handle(req) }
 
