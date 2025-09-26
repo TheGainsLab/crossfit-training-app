@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import type { CoachingBriefV1, Units, Ability, BlockName, TimeDomain, MetconLevel } from '@/lib/coach/schemas'
 
 export async function POST(req: Request) {
   try {
@@ -25,231 +24,31 @@ export async function POST(req: Request) {
     } catch {}
     if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
 
-    // Window: last 56 days
-    const now = new Date()
-    const startWindow = new Date(now.getTime() - 56 * 24 * 60 * 60 * 1000)
-    const startISO = startWindow.toISOString()
-    const endISO = now.toISOString()
-
-    // Profile & intake
-    const [{ data: userRow }, { data: equipmentRows }, { data: oneRmsRows }] = await Promise.all([
-      supabase.from('users').select('ability_level, units, conditioning_benchmarks, body_weight').eq('id', userId).single(),
-      supabase.from('user_equipment').select('equipment_name').eq('user_id', userId),
-      supabase.from('latest_user_one_rms').select('one_rm_index, one_rm').eq('user_id', userId).order('one_rm_index')
-    ])
-
-    const units: Units = (userRow?.units && userRow.units.includes('kg')) ? 'Metric (kg)' : 'Imperial (lbs)'
-    const ability: Ability = (['Beginner','Intermediate','Advanced'].includes(userRow?.ability_level)) ? userRow?.ability_level as Ability : 'Intermediate'
-    const equipment = (equipmentRows || []).map((e: any) => e.equipment_name)
-    const oneRMs: number[] = (() => {
-      const arr = Array(14).fill(0)
-      ;(oneRmsRows || []).forEach((r: any) => { if (r.one_rm_index >= 0 && r.one_rm_index < 14) arr[r.one_rm_index] = r.one_rm })
-      return arr
-    })()
-
-    // Named 1RMs mapping
-    const oneRMNames = ['snatch','clean_and_jerk','back_squat','front_squat','deadlift','bench_press','strict_press','push_press','weighted_pullup','jerk_only','clean_only','power_clean','power_snatch','overhead_squat']
-    const oneRMsNamed: Record<string, number> = {}
-    oneRMNames.forEach((name, idx) => { oneRMsNamed[name] = oneRMs[idx] || 0 })
-
-    // Strength ratios with targets and flags
-    const bw = Number(userRow?.body_weight || 0)
-    function ratio(a?: number, b?: number): number { const x = Number(a||0), y = Number(b||0); return y ? Math.round((x / y) * 1000) / 1000 : 0 }
-    const ratioTargets: Record<string, number> = {
-      front_squat_over_back_squat: 0.85,
-      snatch_over_back_squat: 0.62,
-      cj_over_back_squat: 0.74,
-      bench_over_bodyweight: 0.9,
-      deadlift_over_bodyweight: 2.0,
-      push_press_over_strict_press: 1.2,
-      power_clean_over_clean_only: 0.88,
-      power_snatch_over_snatch: 0.88,
-      jerk_only_over_clean_only: 0.9
-    }
-    const strength_ratios = {
-      front_squat_over_back_squat: ratio(oneRMsNamed.front_squat, oneRMsNamed.back_squat),
-      snatch_over_back_squat: ratio(oneRMsNamed.snatch, oneRMsNamed.back_squat),
-      cj_over_back_squat: ratio(oneRMsNamed.clean_and_jerk, oneRMsNamed.back_squat),
-      bench_over_bodyweight: bw ? ratio(oneRMsNamed.bench_press, bw) : 0,
-      deadlift_over_bodyweight: bw ? ratio(oneRMsNamed.deadlift, bw) : 0,
-      push_press_over_strict_press: ratio(oneRMsNamed.push_press, oneRMsNamed.strict_press),
-      power_clean_over_clean_only: ratio(oneRMsNamed.power_clean, oneRMsNamed.clean_only),
-      power_snatch_over_snatch: ratio(oneRMsNamed.power_snatch, oneRMsNamed.snatch),
-      jerk_only_over_clean_only: ratio(oneRMsNamed.jerk_only, oneRMsNamed.clean_only)
-    }
-    type RatioFlag = 'below_target' | 'above_target'
-    const toFlag = (v: number, t: number): RatioFlag => (v < t ? 'below_target' : 'above_target')
-    const strength_ratio_flags = Object.fromEntries(
-      Object.entries(strength_ratios).map(([k, v]) => {
-        const t = ratioTargets[k] || 0
-        const flag: RatioFlag = toFlag(v, t)
-        return [k, { value: v, target: t, flag }]
-      })
-    ) as NonNullable<CoachingBriefV1['intake']['strength_ratios']>
-
-    // Performance logs (last 56 days)
-    const { data: logs } = await supabase
-      .from('performance_logs')
-      .select('logged_at, block, exercise_name, rpe, completion_quality')
+    // Fast path: select brief JSON from ai_master_brief_v1
+    const { data: row, error } = await supabase
+      .from('ai_master_brief_v1')
+      .select('brief')
       .eq('user_id', userId)
-      .gte('logged_at', startISO)
-      .lte('logged_at', endISO)
-      .order('logged_at', { ascending: false })
+      .single()
 
-    // Group logs by weekISO
-    function weekStartISO(d: Date) {
-      const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-      const day = dt.getUTCDay() || 7
-      if (day !== 1) dt.setUTCDate(dt.getUTCDate() - (day - 1))
-      return dt.toISOString().slice(0, 10)
-    }
-    const logsByWeek = new Map<string, any[]>()
-    ;(logs || []).forEach((row: any) => {
-      const dt = new Date(row.logged_at)
-      const wk = weekStartISO(dt)
-      if (!logsByWeek.has(wk)) logsByWeek.set(wk, [])
-      logsByWeek.get(wk)!.push(row)
-    })
-    const logs_summary = Array.from(logsByWeek.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 8).map(([weekISO, rows]) => {
-      const block_mix: Record<BlockName, number> = {
-        'SKILLS': 0, 'TECHNICAL WORK': 0, 'STRENGTH AND POWER': 0, 'ACCESSORIES': 0, 'METCONS': 0
+    if (error) {
+      // Fallback to an empty shell to keep the client functional
+      const fallback = {
+        version: 'v1',
+        metadata: { userId, window: { startISO: new Date(Date.now() - 56*24*3600*1000).toISOString(), endISO: new Date().toISOString() }, units: 'Imperial (lbs)' },
+        profile: { ability: 'Intermediate', goals: [], constraints: [], equipment: [] },
+        intake: { skills: [], oneRMs: [], oneRMsNamed: {}, strength_ratios: {}, conditioning_benchmarks: {} },
+        metcons_summary: {},
+        upcoming_program: [],
+        adherence: { planned_sessions: 0, completed_sessions: 0, pct: 0, by_week: [] },
+        trends: { volume_by_week: [], avg_rpe_by_week: [], quality_by_week: [] },
+        allowed_entities: { blocks: ['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS'], movements: [], time_domains: ['1-5','5-10','10-15','15-20','20+'], equipment: ['Barbell','Dumbbells'], levels: ['Open','Quarterfinals','Regionals','Games'] },
+        citations: []
       }
-      const rpeVals: number[] = []
-      const qualityVals: number[] = []
-      const freq: Record<string, number> = {}
-      const dateSet = new Set<string>()
-      rows.forEach((r: any) => {
-        const blk = (r.block || '').toUpperCase()
-        if (block_mix[blk as BlockName] !== undefined) block_mix[blk as BlockName]++
-        if (typeof r.rpe === 'number') rpeVals.push(r.rpe)
-        if (typeof r.completion_quality === 'number') qualityVals.push(r.completion_quality)
-        if (r.exercise_name) freq[r.exercise_name] = (freq[r.exercise_name] || 0) + 1
-        if (r.logged_at) dateSet.add(String(r.logged_at).slice(0, 10))
-      })
-      const top_movements = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, n]) => ({ name, freq: n as number, avg_rpe: Math.round((rpeVals.reduce((s, v) => s + v, 0) / Math.max(1, rpeVals.length)) * 10) / 10 }))
-      const sessions = dateSet.size
-      const avg_rpe = Math.round((rpeVals.reduce((s, v) => s + v, 0) / Math.max(1, rpeVals.length)) * 10) / 10
-      const volume = rows.length
-      return { weekISO, sessions, block_mix, top_movements, avg_rpe, volume }
-    })
-
-    // Metcons summary (completed)
-    const { data: programRows } = await supabase.from('programs').select('id').eq('user_id', userId).order('id', { ascending: false }).limit(1)
-    const programId = programRows?.[0]?.id || null
-    let metcons_summary = { completions: 0, time_domain_mix: [] as Array<{ range: TimeDomain; count: number }>, avg_percentile: null as number | null, best_scores: [] as Array<{ workout_id: string; percentile: number | null }>, equipment_mix: [] as Array<{ equipment: string; count: number }> }
-    if (programId) {
-      const { data: pm } = await supabase.from('program_metcons').select('metcon_id, percentile, completed_at').eq('program_id', programId).not('completed_at', 'is', null)
-      const metconIds = Array.from(new Set((pm || []).map((r: any) => r.metcon_id).filter(Boolean)))
-      const { data: mets } = metconIds.length ? await supabase.from('metcons').select('id, workout_id, time_range, required_equipment, level').in('id', metconIds) : { data: [] }
-      const idToMet = new Map<number, any>()
-      ;(mets || []).forEach((m: any) => idToMet.set(m.id, m))
-      const tdFreq: Record<string, number> = {}
-      const equipFreq: Record<string, number> = {}
-      const best: Array<{ workout_id: string; percentile: number | null }> = []
-      let pctSum = 0, pctN = 0
-      ;(pm || []).forEach((r: any) => {
-        const m = idToMet.get(r.metcon_id)
-        if (m?.time_range) tdFreq[m.time_range] = (tdFreq[m.time_range] || 0) + 1
-        if (Array.isArray(m?.required_equipment)) {
-          m.required_equipment.forEach((eq: string) => { if (eq) equipFreq[eq] = (equipFreq[eq] || 0) + 1 })
-        }
-        if (typeof r.percentile === 'number') { pctSum += r.percentile; pctN++ }
-        if (m?.workout_id) best.push({ workout_id: m.workout_id, percentile: r.percentile ?? null })
-      })
-      metcons_summary.completions = (pm || []).length
-      metcons_summary.time_domain_mix = Object.entries(tdFreq).map(([range, count]) => ({ range: (range as TimeDomain), count: count as number }))
-      metcons_summary.avg_percentile = pctN ? Math.round((pctSum / pctN) * 100) / 100 : null
-      metcons_summary.best_scores = best.sort((a, b) => (b.percentile || 0) - (a.percentile || 0)).slice(0, 10)
-      metcons_summary.equipment_mix = Object.entries(equipFreq).map(([equipment, count]) => ({ equipment, count: count as number }))
+      return NextResponse.json({ success: true, brief: fallback })
     }
 
-    // Upcoming program (first 14 day entries from program_data)
-    let upcoming_program: CoachingBriefV1['upcoming_program'] = []
-    if (programId) {
-      const { data: prog } = await supabase.from('programs').select('program_data').eq('id', programId).single()
-      const programData: any = prog?.program_data || {}
-      const weeksArr: any[] = Array.isArray(programData.weeks) ? programData.weeks : []
-
-      // Build completed (week:day) set from program-bound sources
-      const completedDayKeys = new Set<string>()
-      try {
-        const { data: plogs } = await supabase
-          .from('performance_logs')
-          .select('week, day')
-          .eq('user_id', userId)
-          .eq('program_id', programId)
-        ;(plogs || []).forEach((r: any) => {
-          if (Number.isInteger(r.week) && Number.isInteger(r.day)) completedDayKeys.add(`${r.week}:${r.day}`)
-        })
-      } catch {}
-      try {
-        const { data: pm } = await supabase
-          .from('program_metcons')
-          .select('week, day, completed_at')
-          .eq('program_id', programId)
-          .not('completed_at', 'is', null)
-        ;(pm || []).forEach((r: any) => {
-          if (Number.isInteger(r.week) && Number.isInteger(r.day)) completedDayKeys.add(`${r.week}:${r.day}`)
-        })
-      } catch {}
-
-      // Flatten in program order and take first N uncompleted upcoming days
-      const daysOut: any[] = []
-      for (const w of weeksArr) {
-        const days = Array.isArray(w?.days) ? w.days : []
-        for (const d of days) {
-          const weekNum = Number(w?.week) || 0
-          const dayNum = Number(d?.day) || 0
-          const key = `${weekNum}:${dayNum}`
-          if (!completedDayKeys.has(key)) {
-            daysOut.push({ week: weekNum, day: dayNum, dayData: d })
-          }
-          if (daysOut.length >= 7) break
-        }
-        if (daysOut.length >= 7) break
-      }
-
-      upcoming_program = daysOut.map((x: any) => ({
-        dateISO: '',
-        week: x.week,
-        day: x.day,
-        blocks: (Array.isArray(x.dayData?.blocks) ? x.dayData.blocks : []).map((b: any) => ({
-          block: (b?.blockName || b?.block || 'SKILLS') as BlockName,
-          subOrder: typeof b?.subOrder === 'number' ? b.subOrder : undefined,
-          exercises: (Array.isArray(b?.exercises) ? b.exercises : []).map((ex: any) => ({ name: ex?.name || '', sets: ex?.sets, reps: ex?.reps, weightTime: ex?.weightTime, notes: ex?.notes })),
-          metcon: b?.metconData ? { workout_id: b.metconData.workoutId, format: b.metconData.workoutFormat, time_range: b.metconData.timeRange, level: (b.metconData.level || undefined) } : undefined
-        }))
-      }))
-    }
-
-    // Adherence & trends (simple series from logs)
-    const volume_by_week = logs_summary.map(l => ({ weekISO: l.weekISO, volume: l.volume }))
-    const avg_rpe_by_week = logs_summary.map(l => ({ weekISO: l.weekISO, avg_rpe: l.avg_rpe }))
-    const quality_by_week = Array.from(logsByWeek.entries()).map(([wk, rows]) => ({ weekISO: wk, avg_quality: Math.round(((rows as any[]).reduce((s, r) => s + (r.completion_quality || 0), 0) / Math.max(1, (rows as any[]).length)) * 100) / 100 }))
-    const planned_sessions = upcoming_program.length // days as sessions
-    const completed_sessions = Array.from(new Set((logs || []).map((r: any) => String(r.logged_at).slice(0, 10)))).length
-    const pct = planned_sessions ? Math.round((Math.min(completed_sessions, planned_sessions) / planned_sessions) * 100) : 0
-
-    const brief: CoachingBriefV1 = {
-      version: 'v1',
-      metadata: { userId, window: { startISO, endISO }, units },
-      profile: { ability, goals: [], constraints: [], equipment },
-      intake: { skills: [], oneRMs, oneRMsNamed, strength_ratios: strength_ratio_flags, conditioning_benchmarks: userRow?.conditioning_benchmarks || {} },
-      logs_summary,
-      metcons_summary,
-      upcoming_program,
-      adherence: { planned_sessions, completed_sessions, pct, by_week: [] },
-      trends: { volume_by_week, avg_rpe_by_week, quality_by_week },
-      allowed_entities: {
-        blocks: ['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS'],
-        movements: Array.from(new Set((logs || []).map((r: any) => r.exercise_name).filter(Boolean))).slice(0, 50),
-        time_domains: ['1-5','5-10','10-15','15-20','20+'],
-        equipment: ['Barbell','Dumbbells'],
-        levels: ['Open','Quarterfinals','Regionals','Games']
-      },
-      citations: ['profile','logs_summary','metcons_summary','upcoming_program','adherence','trends']
-    }
-
+    const brief = (row as any)?.brief || null
     return NextResponse.json({ success: true, brief })
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e?.message || 'Failed' }, { status: 500 })

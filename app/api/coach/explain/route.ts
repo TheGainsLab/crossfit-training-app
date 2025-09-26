@@ -1,13 +1,37 @@
 import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(req: Request) {
   try {
-    const { brief, message, domain } = await req.json()
-    if (!brief) return NextResponse.json({ success: false, error: 'Invalid brief' }, { status: 400 })
+    const { message, domain, range } = await req.json()
+
+    // Resolve auth and userId and fetch master brief from view
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL as string
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
+    if (!supabaseUrl || !serviceKey) return NextResponse.json({ success: false, error: 'Server not configured' }, { status: 500 })
+    const supabase = createClient(supabaseUrl, serviceKey)
+
+    let userId: number | null = null
+    try {
+      const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
+      const token = authHeader?.replace('Bearer ', '') || ''
+      if (token) {
+        const { data: authUser } = await createClient(supabaseUrl, serviceKey).auth.getUser(token)
+        const auth_id = authUser?.user?.id
+        if (auth_id) {
+          const { data: u } = await supabase.from('users').select('id').eq('auth_id', auth_id).single()
+          if (u?.id) userId = u.id
+        }
+      }
+    } catch {}
+    if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+
+    const { data: row } = await supabase.from('ai_master_brief_v1').select('brief').eq('user_id', userId).single()
+    const masterBrief = (row as any)?.brief || {}
 
     // Filter brief to domain-specific data (best-effort)
     const d = String(domain || '').toLowerCase()
-    const filtered = JSON.parse(JSON.stringify(brief))
+    const filtered = JSON.parse(JSON.stringify(masterBrief))
     try {
       // Upcoming program: keep only blocks for the domain
       const blockMap: Record<string, string> = {
@@ -18,8 +42,8 @@ export async function POST(req: Request) {
         metcons: 'METCONS'
       }
       const wantBlock = blockMap[d]
-      if (wantBlock && Array.isArray(filtered?.upcomingProgram)) {
-        filtered.upcomingProgram = filtered.upcomingProgram.map((day: any) => ({
+      if (wantBlock && Array.isArray(filtered?.upcoming_program)) {
+        filtered.upcoming_program = filtered.upcoming_program.map((day: any) => ({
           ...day,
           blocks: Array.isArray(day?.blocks) ? day.blocks.filter((b: any) => {
             const name = String(b?.block || b?.blockName || '')
@@ -41,12 +65,145 @@ export async function POST(req: Request) {
       const keepPats = domainKeep[d] || []
       Object.keys(top).forEach((k) => {
         const kl = k.toLowerCase()
-        if (['profile','upcomingprogram','goals','preferences','adherence','trends'].includes(kl)) return
+        if (['profile','upcoming_program','goals','preferences','adherence','trends','metadata','intake','allowed_entities','citations'].includes(kl)) return
         // if key clearly belongs to another domain, drop it
         const otherPats = ['skill','strength','technical','accessor','metcon'].filter(p => !keepPats.includes(p))
         if (removeIf(k, otherPats)) delete top[k]
       })
     } catch {}
+
+    // Optional range re-assembly for the active domain (dynamic recompute)
+    const r = String(range || '').toLowerCase()
+    const now = Date.now()
+    const daysMap: Record<string, number> = {
+      'last_7_days': 7,
+      'last_14_days': 14,
+      'last_30_days': 30,
+      'last_60_days': 60,
+      'last_90_days': 90
+    }
+    const sinceDays = daysMap[r]
+    const sinceISO = sinceDays ? new Date(now - sinceDays * 24 * 60 * 60 * 1000).toISOString() : null
+    if (sinceISO) {
+      try {
+        if (d === 'skills') {
+          const { data: rows } = await supabase
+            .from('performance_logs')
+            .select('logged_at, exercise_name, rpe, completion_quality, sets, reps')
+            .eq('user_id', userId)
+            .eq('block', 'SKILLS')
+            .gte('logged_at', sinceISO)
+          const bySkill: Record<string, any[]> = {}
+          ;(rows || []).forEach((r: any) => {
+            const k = r.exercise_name || 'Unknown'
+            if (!bySkill[k]) bySkill[k] = []
+            bySkill[k].push(r)
+          })
+          const out = Object.entries(bySkill).map(([skill_name, arr]) => {
+            const daySet = new Set<string>()
+            let rpeSum = 0, rpeN = 0, qSum = 0, qN = 0, setsSum = 0, repsSum = 0
+            let lastDate = ''
+            arr.forEach((x: any) => {
+              const dstr = String(x.logged_at).slice(0,10)
+              daySet.add(dstr)
+              if (typeof x.rpe === 'number') { rpeSum += x.rpe; rpeN++ }
+              if (typeof x.completion_quality === 'number') { qSum += x.completion_quality; qN++ }
+              const setsN = Number(String(x.sets||'').replace(/[^0-9]/g,'')) || 1
+              const m = String(x.reps||'').match(/(\d+)\s*[-–]\s*(\d+)/)
+              const repsN = m ? Number(m[2]) : (Number(String(x.reps||'').replace(/[^0-9]/g,'')) || 0)
+              setsSum += setsN
+              repsSum += setsN * repsN
+              if (!lastDate || String(x.logged_at) > lastDate) lastDate = String(x.logged_at)
+            })
+            return {
+              user_id: userId,
+              skill_name,
+              distinct_days_in_range: daySet.size,
+              avg_rpe: rpeN ? Math.round((rpeSum/rpeN)*100)/100 : 0,
+              avg_quality: qN ? Math.round((qSum/qN)*100)/100 : 0,
+              total_sets: setsSum,
+              total_reps: repsSum,
+              last_date: lastDate ? new Date(lastDate).toISOString() : null
+            }
+          })
+          ;(filtered as any).skills_summary = out
+        } else if (d === 'strength' || d === 'technical' || d === 'accessories') {
+          const blockName = d === 'strength' ? 'STRENGTH AND POWER' : (d === 'technical' ? 'TECHNICAL WORK' : 'ACCESSORIES')
+          const [{ data: userRow }, { data: rows }] = await Promise.all([
+            supabase.from('users').select('units').eq('id', userId).single(),
+            supabase
+              .from('performance_logs')
+              .select('logged_at, exercise_name, rpe, completion_quality, sets, reps, weight_time')
+              .eq('user_id', userId)
+              .eq('block', blockName)
+              .gte('logged_at', sinceISO)
+          ])
+          const metricUnits = (userRow?.units||'').toLowerCase().includes('kg')
+          const byEx: Record<string, any[]> = {}
+          ;(rows || []).forEach((r: any) => {
+            const k = r.exercise_name || 'Unknown'
+            if (!byEx[k]) byEx[k] = []
+            byEx[k].push(r)
+          })
+          const out = Object.entries(byEx).map(([exercise_name, arr]) => {
+            const daySet = new Set<string>()
+            let rpeSum = 0, rpeN = 0, qSum = 0, qN = 0, setsSum = 0, repsSum = 0
+            let lastAt = ''
+            const dayMax: Record<string, number> = {}
+            let maxWeight = 0, volume = 0
+            arr.forEach((x: any) => {
+              const dstr = String(x.logged_at).slice(0,10)
+              daySet.add(dstr)
+              if (typeof x.rpe === 'number') { rpeSum += x.rpe; rpeN++ }
+              if (typeof x.completion_quality === 'number') { qSum += x.completion_quality; qN++ }
+              const setsN = Number(String(x.sets||'').replace(/[^0-9]/g,'')) || 1
+              const m = String(x.reps||'').match(/(\d+)\s*[-–]\s*(\d+)/)
+              const repsN = m ? Number(m[2]) : (Number(String(x.reps||'').replace(/[^0-9]/g,'')) || 0)
+              const rawW = (() => { const s = String(x.weight_time||''); if (s.includes(':')) return 0; const num = Number(s.replace(/[^0-9\.]/g,'')) || 0; return num })()
+              const wLbs = metricUnits ? Math.round(rawW * 2.20462 * 100)/100 : rawW
+              if (wLbs > maxWeight) maxWeight = wLbs
+              dayMax[dstr] = Math.max(dayMax[dstr]||0, wLbs)
+              setsSum += setsN
+              repsSum += setsN * repsN
+              volume += (setsN * repsN) * wLbs
+              if (!lastAt || String(x.logged_at) > lastAt) lastAt = String(x.logged_at)
+            })
+            const avgTop = (() => { const arr = Object.values(dayMax); if (!arr.length) return 0; const s = arr.reduce((a,b)=>a+b,0); return Math.round((s/arr.length)*100)/100 })()
+            return {
+              user_id: userId,
+              exercise_name,
+              distinct_days_in_range: daySet.size,
+              avg_rpe: rpeN ? Math.round((rpeSum/rpeN)*100)/100 : 0,
+              avg_quality: qN ? Math.round((qSum/qN)*100)/100 : 0,
+              max_weight_lbs: maxWeight,
+              avg_top_set_weight_lbs: avgTop,
+              total_sets: setsSum,
+              total_reps: repsSum,
+              total_volume_lbs: Math.round(volume*100)/100,
+              last_session_at: lastAt || null
+            }
+          })
+          if (d === 'strength') (filtered as any).strength_summary = out
+          else if (d === 'technical') (filtered as any).technical_summary = out
+          else (filtered as any).accessories_summary = out
+        } else if (d === 'metcons') {
+          const { data: pm } = await supabase
+            .from('program_metcons')
+            .select('percentile, completed_at, programs!inner(user_id)')
+            .gte('completed_at', sinceISO)
+            .eq('programs.user_id', userId)
+          let completions = 0, pctSum = 0, pctN = 0
+          ;(pm || []).forEach((r: any) => {
+            if (r.completed_at) completions++
+            if (typeof r.percentile === 'number') { pctSum += r.percentile; pctN++ }
+          })
+          ;(filtered as any).metcons_summary = {
+            completions,
+            avg_percentile: pctN ? Math.round((pctSum/pctN)*100)/100 : null
+          }
+        }
+      } catch {}
+    }
 
     const apiKey = process.env.CLAUDE_API_KEY
     if (!apiKey) {
