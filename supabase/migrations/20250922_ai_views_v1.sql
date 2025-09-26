@@ -207,6 +207,104 @@ from base2 b
 left join day_max dm on dm.user_id = b.user_id and dm.exercise_name = b.exercise_name and dm.d = b.d
 group by b.user_id, b.exercise_name;
 
+-- ai_technical_summary_v1 (last 56 days) - mirrors strength schema but for TECHNICAL WORK
+create or replace view public.ai_technical_summary_v1
+with (security_invoker=true) as
+with base as (
+  select
+    pl.user_id,
+    pl.exercise_name,
+    pl.logged_at::date as d,
+    pl.logged_at,
+    pl.rpe,
+    pl.completion_quality,
+    coalesce(nullif(regexp_replace(coalesce(pl.sets::text, ''), '[^0-9]', '', 'g'), '')::int, 1) as sets_n,
+    coalesce((regexp_match(coalesce(pl.reps::text,''), '(\d+)\s*[-–]\s*(\d+)'))[2]::int,
+             nullif(regexp_replace(coalesce(pl.reps::text,''), '[^0-9]', '', 'g'), '')::int, 0) as reps_n,
+    case when coalesce(pl.weight_time::text,'') like '%:%' then 0
+         else coalesce(nullif(regexp_replace(coalesce(pl.weight_time::text,''), '[^0-9\.]', '', 'g'), '')::numeric, 0)
+    end as raw_weight,
+    u.units
+  from public.performance_logs pl
+  join public.users u on u.id = pl.user_id
+  where pl.block = 'TECHNICAL WORK'
+    and pl.logged_at >= now() - interval '56 days'
+), base2 as (
+  select *,
+    case when coalesce(units,'') ilike '%kg%'
+         then round((raw_weight * 2.20462)::numeric, 2)
+         else raw_weight end as weight_lbs
+  from base
+), day_max as (
+  select user_id, exercise_name, d, max(weight_lbs) as day_max_weight
+  from base2
+  group by user_id, exercise_name, d
+)
+select
+  b.user_id,
+  b.exercise_name,
+  count(distinct b.d) as distinct_days_in_range,
+  round(avg(nullif(b.rpe,0))::numeric, 2) as avg_rpe,
+  round(avg(nullif(b.completion_quality,0))::numeric, 2) as avg_quality,
+  max(b.weight_lbs) as max_weight_lbs,
+  round(avg(dm.day_max_weight)::numeric, 2) as avg_top_set_weight_lbs,
+  sum(b.sets_n) as total_sets,
+  sum(b.sets_n * b.reps_n) as total_reps,
+  sum((b.sets_n * b.reps_n) * b.weight_lbs) as total_volume_lbs,
+  max(b.logged_at) as last_session_at
+from base2 b
+left join day_max dm on dm.user_id = b.user_id and dm.exercise_name = b.exercise_name and dm.d = b.d
+group by b.user_id, b.exercise_name;
+
+-- ai_accessories_summary_v1 (last 56 days) - mirrors strength schema but for ACCESSORIES
+create or replace view public.ai_accessories_summary_v1
+with (security_invoker=true) as
+with base as (
+  select
+    pl.user_id,
+    pl.exercise_name,
+    pl.logged_at::date as d,
+    pl.logged_at,
+    pl.rpe,
+    pl.completion_quality,
+    coalesce(nullif(regexp_replace(coalesce(pl.sets::text, ''), '[^0-9]', '', 'g'), '')::int, 1) as sets_n,
+    coalesce((regexp_match(coalesce(pl.reps::text,''), '(\d+)\s*[-–]\s*(\d+)'))[2]::int,
+             nullif(regexp_replace(coalesce(pl.reps::text,''), '[^0-9]', '', 'g'), '')::int, 0) as reps_n,
+    case when coalesce(pl.weight_time::text,'') like '%:%' then 0
+         else coalesce(nullif(regexp_replace(coalesce(pl.weight_time::text,''), '[^0-9\.]', '', 'g'), '')::numeric, 0)
+    end as raw_weight,
+    u.units
+  from public.performance_logs pl
+  join public.users u on u.id = pl.user_id
+  where pl.block = 'ACCESSORIES'
+    and pl.logged_at >= now() - interval '56 days'
+), base2 as (
+  select *,
+    case when coalesce(units,'') ilike '%kg%'
+         then round((raw_weight * 2.20462)::numeric, 2)
+         else raw_weight end as weight_lbs
+  from base
+), day_max as (
+  select user_id, exercise_name, d, max(weight_lbs) as day_max_weight
+  from base2
+  group by user_id, exercise_name, d
+)
+select
+  b.user_id,
+  b.exercise_name,
+  count(distinct b.d) as distinct_days_in_range,
+  round(avg(nullif(b.rpe,0))::numeric, 2) as avg_rpe,
+  round(avg(nullif(b.completion_quality,0))::numeric, 2) as avg_quality,
+  max(b.weight_lbs) as max_weight_lbs,
+  round(avg(dm.day_max_weight)::numeric, 2) as avg_top_set_weight_lbs,
+  sum(b.sets_n) as total_sets,
+  sum(b.sets_n * b.reps_n) as total_reps,
+  sum((b.sets_n * b.reps_n) * b.weight_lbs) as total_volume_lbs,
+  max(b.logged_at) as last_session_at
+from base2 b
+left join day_max dm on dm.user_id = b.user_id and dm.exercise_name = b.exercise_name and dm.d = b.d
+group by b.user_id, b.exercise_name;
+
 -- ai_skills_summary_v1 (last 56 days)
 -- Columns: user_id, skill_name, distinct_days_in_range, avg_rpe, avg_quality, total_sets, total_reps, last_date
 
