@@ -57,27 +57,8 @@ export default function AnalyticsSkillsPage() {
         <div className="text-sm text-gray-500">Loading…</div>
       ) : (
         <>
-          <div className="text-sm text-gray-700">Skills movements (block: SKILLS)</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {[...(summary?.summary || [])]
-              .sort((a: any, b: any) => (b.count || 0) - (a.count || 0))
-              .map((sk: any) => {
-                const lastDate = sk.lastDate ? new Date(sk.lastDate).toLocaleDateString() : null
-                return (
-                  <div key={sk.name} className="p-3 border rounded bg-white">
-                    <div className="font-medium text-gray-900 mb-1 text-center">{sk.name}</div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="flex justify-between"><span className="text-gray-600">Sessions</span><span className="font-medium">{sk.count || 0}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-600">Avg RPE</span><span className="font-medium">{Math.round((sk.avgRPE || 0) * 10) / 10}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-600">Avg Quality</span><span className="font-medium">{Math.round((sk.avgQuality || 0) * 10) / 10}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-600">Last</span><span className="font-medium">{lastDate || '—'}</span></div>
-                    </div>
-                  </div>
-                )
-              })}
-          </div>
-          <div className="flex gap-3">
-            <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700" onClick={async () => {
+          <div className="flex items-center gap-2 text-xs mb-2">
+            <button className="px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100" onClick={async () => {
               try {
                 const { createClient } = await import('@/lib/supabase/client')
                 const sb = createClient()
@@ -100,7 +81,7 @@ export default function AnalyticsSkillsPage() {
                 setOpenCoach(true)
               } catch {}
             }}>Explain</button>
-            <button className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700" onClick={async () => {
+            <button className="px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100" onClick={async () => {
               try {
                 const { createClient } = await import('@/lib/supabase/client')
                 const sb = createClient()
@@ -124,6 +105,26 @@ export default function AnalyticsSkillsPage() {
               } catch {}
             }}>Recommend</button>
           </div>
+          <div className="text-sm text-gray-700">Skills movements (block: SKILLS)</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[...(summary?.summary || [])]
+              .sort((a: any, b: any) => (b.count || 0) - (a.count || 0))
+              .map((sk: any) => {
+                const lastDate = sk.lastDate ? new Date(sk.lastDate).toLocaleDateString() : null
+                return (
+                  <div key={sk.name} className="p-3 border rounded bg-white">
+                    <div className="font-medium text-gray-900 mb-1 text-center">{sk.name}</div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex justify-between"><span className="text-gray-600">Sessions</span><span className="font-medium">{sk.count || 0}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Avg RPE</span><span className="font-medium">{Math.round((sk.avgRPE || 0) * 10) / 10}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Avg Quality</span><span className="font-medium">{Math.round((sk.avgQuality || 0) * 10) / 10}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Last</span><span className="font-medium">{lastDate || '—'}</span></div>
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
+          
         </>
       )}
       <CoachDrawer open={openCoach} title="Coach" onClose={() => setOpenCoach(false)}>
