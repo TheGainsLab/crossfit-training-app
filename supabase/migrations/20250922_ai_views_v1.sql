@@ -239,3 +239,41 @@ select
 from base
 group by user_id, skill_name;
 
+-- ai_metcons_summary_v1 (last 56 days)
+-- Columns: user_id, completions, avg_percentile
+
+create or replace view public.ai_metcons_summary_v1
+with (security_invoker=true) as
+select
+  p.user_id,
+  count(*)::int as completions,
+  case when count(*) > 0 then round(avg(pm.percentile)::numeric, 2) else null end as avg_percentile
+from public.program_metcons pm
+join public.programs p on p.id = pm.program_id
+where pm.completed_at is not null
+  and pm.completed_at >= now() - interval '56 days'
+group by p.user_id;
+
+-- ai_metcon_heatmap_v1 (last 56 days) - detailed per completion rows
+-- Columns: user_id, week, completed_at, time_range, percentile, level, required_equipment, workout_id, format, workout_notes, tasks
+
+create or replace view public.ai_metcon_heatmap_v1
+with (security_invoker=true) as
+select
+  p.user_id,
+  pm.week,
+  pm.completed_at,
+  m.time_range,
+  pm.percentile,
+  m.level,
+  m.required_equipment,
+  m.workout_id,
+  m.format,
+  m.workout_notes,
+  m.tasks
+from public.program_metcons pm
+join public.programs p on p.id = pm.program_id
+left join public.metcons m on m.id = pm.metcon_id
+where pm.completed_at is not null
+  and pm.completed_at >= now() - interval '56 days';
+
