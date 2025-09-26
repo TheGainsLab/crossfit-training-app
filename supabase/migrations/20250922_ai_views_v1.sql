@@ -432,3 +432,93 @@ select
   ) else null end as metcon
 from blocks;
 
+-- ai_master_brief_v1: single JSON brief per user (last 56 days window)
+-- Columns: user_id, brief jsonb
+
+create or replace view public.ai_master_brief_v1
+with (security_invoker=true) as
+with prof as (
+  select user_id, units, ability_level, body_weight_lbs, equipment from public.ai_user_profile_v1
+),
+rms as (
+  select user_id, jsonb_object_agg(lift_name, to_jsonb(one_rm_lbs)) as one_rms_named
+  from public.ai_one_rms_v1
+  group by user_id
+),
+rat as (
+  select user_id, jsonb_object_agg(ratio_key,
+           jsonb_build_object('value', value, 'target', target, 'flag', flag)) as strength_ratios
+  from public.ai_strength_ratios_v1
+  group by user_id
+),
+met as (
+  select user_id,
+         jsonb_build_object('completions', completions,
+                            'avg_percentile', avg_percentile) as metcons_summary
+  from public.ai_metcons_summary_v1
+),
+up_days as (
+  select user_id, week, day,
+         jsonb_agg(
+           jsonb_build_object(
+             'block', block,
+             'exercises', coalesce(exercises, '[]'::jsonb),
+             'metcon', metcon
+           ) order by block
+         ) as blocks_json
+  from public.ai_upcoming_program_v1
+  group by user_id, week, day
+),
+up as (
+  select user_id,
+         jsonb_agg(
+           jsonb_build_object('week', week, 'day', day, 'blocks', blocks_json)
+           order by week, day
+         ) as upcoming_program
+  from up_days
+  group by user_id
+)
+select
+  p.user_id,
+  jsonb_build_object(
+    'version', 'v1',
+    'metadata', jsonb_build_object(
+      'userId', p.user_id,
+      'window', jsonb_build_object(
+        'startISO', to_char(now() - interval '56 days', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+        'endISO', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+      ),
+      'units', p.units
+    ),
+    'profile', jsonb_build_object(
+      'ability', coalesce(p.ability_level, 'Intermediate'),
+      'goals', jsonb_build_array(),
+      'constraints', jsonb_build_array(),
+      'equipment', to_jsonb(p.equipment)
+    ),
+    'intake', jsonb_build_object(
+      'skills', jsonb_build_array(),
+      'oneRMs', jsonb_build_array(),
+      'oneRMsNamed', coalesce(r.one_rms_named, '{}'::jsonb),
+      'strength_ratios', coalesce(sr.strength_ratios, '{}'::jsonb),
+      'conditioning_benchmarks', '{}'::jsonb
+    ),
+    'metcons_summary', coalesce(m.metcons_summary, '{}'::jsonb),
+    'upcoming_program', coalesce(u.upcoming_program, '[]'::jsonb),
+    'adherence', jsonb_build_object('planned_sessions', 0, 'completed_sessions', 0, 'pct', 0, 'by_week', jsonb_build_array()),
+    'trends', jsonb_build_object('volume_by_week', jsonb_build_array(), 'avg_rpe_by_week', jsonb_build_array(), 'quality_by_week', jsonb_build_array()),
+    'allowed_entities', jsonb_build_object(
+      'blocks', to_jsonb(array['SKILLS','TECHNICAL WORK','STRENGTH AND POWER','ACCESSORIES','METCONS']::text[]),
+      'movements', jsonb_build_array(),
+      'time_domains', to_jsonb(array['1-5','5-10','10-15','15-20','20-30','30+']::text[]),
+      'equipment', to_jsonb(array['Barbell','Dumbbells']::text[]),
+      'levels', to_jsonb(array['Open','Quarterfinals','Regionals','Games']::text[])
+    ),
+    'citations', to_jsonb(array['profile','intake','metcons_summary','upcoming_program']::text[])
+  ) as brief
+from prof p
+left join rms r on r.user_id = p.user_id
+left join rat sr on sr.user_id = p.user_id
+left join met m on m.user_id = p.user_id
+left join up u on u.user_id = p.user_id;
+
