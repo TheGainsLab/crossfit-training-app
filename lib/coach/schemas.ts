@@ -11,7 +11,13 @@ export interface CoachingBriefV1 {
   version: 'v1'
   metadata: { userId: number; window: { startISO: string; endISO: string }; units: Units }
   profile: { ability: Ability; goals: string[]; constraints: string[]; equipment: string[] }
-  intake: { skills: string[]; oneRMs: number[]; conditioning_benchmarks: Record<string, unknown> }
+  intake: {
+    skills: string[]
+    oneRMs: number[]
+    oneRMsNamed?: Record<string, number>
+    strength_ratios?: Record<string, { value: number; target: number; flag: 'below_target' | 'at_target' | 'above_target' }>
+    conditioning_benchmarks: Record<string, unknown>
+  }
   logs_summary: Array<{
     weekISO: string
     sessions: number
