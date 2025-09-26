@@ -70,3 +70,86 @@ join public.users u on u.id = l.user_id
 join mapping m on m.idx = l.one_rm_index
 where coalesce(l.one_rm, 0) > 0;
 
+-- ai_strength_ratios_v1
+-- Columns:
+--   user_id     integer
+--   ratio_key   text   -- e.g., 'front_squat_over_back_squat'
+--   value       numeric
+--   target      numeric
+--   flag        text   -- 'below_target' | 'at_target' | 'above_target'
+
+create or replace view public.ai_strength_ratios_v1
+with (security_invoker=true) as
+with bw as (
+  select user_id, body_weight_lbs from public.ai_user_profile_v1
+),
+rm as (
+  select user_id,
+    max(one_rm_lbs) filter (where lift_name='back_squat')     as back_squat,
+    max(one_rm_lbs) filter (where lift_name='front_squat')    as front_squat,
+    max(one_rm_lbs) filter (where lift_name='snatch')         as snatch,
+    max(one_rm_lbs) filter (where lift_name='clean_and_jerk') as clean_and_jerk,
+    max(one_rm_lbs) filter (where lift_name='bench_press')    as bench_press,
+    max(one_rm_lbs) filter (where lift_name='deadlift')       as deadlift,
+    max(one_rm_lbs) filter (where lift_name='strict_press')   as strict_press,
+    max(one_rm_lbs) filter (where lift_name='push_press')     as push_press,
+    max(one_rm_lbs) filter (where lift_name='power_clean')    as power_clean,
+    max(one_rm_lbs) filter (where lift_name='clean_only')     as clean_only,
+    max(one_rm_lbs) filter (where lift_name='power_snatch')   as power_snatch,
+    max(one_rm_lbs) filter (where lift_name='jerk_only')      as jerk_only
+  from public.ai_one_rms_v1
+  group by user_id
+),
+ratios as (
+  select
+    rm.user_id,
+    bw.body_weight_lbs,
+    rm.back_squat, rm.front_squat, rm.snatch, rm.clean_and_jerk,
+    rm.bench_press, rm.deadlift, rm.strict_press, rm.push_press,
+    rm.power_clean, rm.clean_only, rm.power_snatch, rm.jerk_only
+  from rm
+  left join bw on bw.user_id = rm.user_id
+)
+select user_id, ratio_key, value, target,
+  case when value < target then 'below_target'
+       when abs(value - target) <= 0.02 then 'at_target'
+       else 'above_target' end as flag
+from (
+  select user_id, 'front_squat_over_back_squat'::text as ratio_key,
+         case when back_squat > 0 then round((front_squat / back_squat)::numeric, 3) else 0 end as value,
+         0.85::numeric as target from ratios
+  union all
+  select user_id, 'snatch_over_back_squat',
+         case when back_squat > 0 then round((snatch / back_squat)::numeric, 3) else 0 end,
+         0.62 from ratios
+  union all
+  select user_id, 'cj_over_back_squat',
+         case when back_squat > 0 then round((clean_and_jerk / back_squat)::numeric, 3) else 0 end,
+         0.74 from ratios
+  union all
+  select user_id, 'bench_over_bodyweight',
+         case when body_weight_lbs > 0 then round((bench_press / body_weight_lbs)::numeric, 3) else 0 end,
+         0.90 from ratios
+  union all
+  select user_id, 'deadlift_over_bodyweight',
+         case when body_weight_lbs > 0 then round((deadlift / body_weight_lbs)::numeric, 3) else 0 end,
+         2.00 from ratios
+  union all
+  select user_id, 'push_press_over_strict_press',
+         case when strict_press > 0 then round((push_press / strict_press)::numeric, 3) else 0 end,
+         1.20 from ratios
+  union all
+  select user_id, 'power_clean_over_clean_only',
+         case when clean_only > 0 then round((power_clean / clean_only)::numeric, 3) else 0 end,
+         0.88 from ratios
+  union all
+  select user_id, 'power_snatch_over_snatch',
+         case when snatch > 0 then round((power_snatch / snatch)::numeric, 3) else 0 end,
+         0.88 from ratios
+  union all
+  select user_id, 'jerk_only_over_clean_only',
+         case when clean_only > 0 then round((jerk_only / clean_only)::numeric, 3) else 0 end,
+         0.90 from ratios
+) t
+where value > 0;
+
