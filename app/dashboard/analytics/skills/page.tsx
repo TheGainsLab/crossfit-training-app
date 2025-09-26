@@ -98,7 +98,14 @@ export default function AnalyticsSkillsPage() {
                 const msg = `Recommend skill plan tweaks for range=${range} (block=SKILLS).`
                 const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: msg }) })
                 const json = await res.json().catch(() => ({ success: false, diff: { version: 'v1', changes: [] } }))
-                setCoachContent(<PlanDiffViewer data={json} />)
+                setCoachContent(
+                  <div className="space-y-2 text-sm">
+                    {json?.rationale && (
+                      <div className="px-2 py-1 rounded border bg-yellow-50 text-yellow-800 text-xs">{json.rationale === 'no_upcoming_days_or_week1' ? 'No uncompleted days in current week (or week 1).' : json.rationale === 'guardrail_filtered' ? 'All proposals were filtered by safety caps.' : json.rationale === 'model_empty' ? 'No changes suggested by the model.' : json.rationale}</div>
+                    )}
+                    <PlanDiffViewer data={json} />
+                  </div>
+                )
                 setOpenCoach(true)
               } catch {}
             }}>Recommend</button>

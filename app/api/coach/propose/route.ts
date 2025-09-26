@@ -87,12 +87,16 @@ export async function POST(req: Request) {
       // Determine current week from upcoming program (first uncompleted day)
       const firstUpcoming = Array.isArray(briefObj?.upcomingProgram) ? briefObj.upcomingProgram[0] : null
       const currentWeek: number | null = firstUpcoming?.week ?? null
+      if (!currentWeek || currentWeek === 1) {
+        return NextResponse.json({ success: true, diff: { version: 'v1', changes: [] }, rationale: 'no_upcoming_days_or_week1' })
+      }
 
+      const origCount = Array.isArray(diff.changes) ? diff.changes.length : 0
       const filtered = (diff.changes || []).filter((c: any) => {
         const blk = String(c?.target?.block || '')
         const week = Number(c?.target?.week ?? currentWeek ?? 0)
         // time scope
-        if (!currentWeek || week !== currentWeek || week === 1) return false
+        if (week !== currentWeek) return false
         return true
       }).map((c: any) => {
         // Strip disallowed fields
@@ -153,6 +157,10 @@ export async function POST(req: Request) {
       }
 
       diff.changes = enforced
+      if ((diff.changes || []).length === 0) {
+        const rationale = origCount > 0 ? 'guardrail_filtered' : 'model_empty'
+        return NextResponse.json({ success: true, diff, rationale })
+      }
     } catch {}
 
     return NextResponse.json({ success: true, diff })
