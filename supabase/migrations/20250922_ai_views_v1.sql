@@ -165,6 +165,7 @@ with base as (
     pl.logged_at::date as d,
     pl.logged_at,
     pl.rpe,
+    pl.completion_quality,
     -- parse sets
     coalesce(nullif(regexp_replace(coalesce(pl.sets::text, ''), '[^0-9]', '', 'g'), '')::int, 1) as sets_n,
     -- parse reps (prefer high end of ranges like 8-10)
@@ -195,6 +196,7 @@ select
   b.exercise_name,
   count(distinct b.d) as distinct_days_in_range,
   round(avg(nullif(b.rpe,0))::numeric, 2) as avg_rpe,
+  round(avg(nullif(b.completion_quality,0))::numeric, 2) as avg_quality,
   max(b.weight_lbs) as max_weight_lbs,
   round(avg(dm.day_max_weight)::numeric, 2) as avg_top_set_weight_lbs,
   sum(b.sets_n) as total_sets,
