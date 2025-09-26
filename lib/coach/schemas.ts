@@ -15,7 +15,7 @@ export interface CoachingBriefV1 {
     skills: string[]
     oneRMs: number[]
     oneRMsNamed?: Record<string, number>
-    strength_ratios?: Record<string, { value: number; target: number; flag: 'below_target' | 'at_target' | 'above_target' }>
+    strength_ratios?: Record<string, { value: number; target: number; flag: 'below_target' | 'above_target' }>
     conditioning_benchmarks: Record<string, unknown>
   }
   logs_summary: Array<{

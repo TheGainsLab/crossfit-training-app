@@ -111,9 +111,7 @@ ratios as (
   left join bw on bw.user_id = rm.user_id
 )
 select user_id, ratio_key, value, target,
-  case when value < target then 'below_target'
-       when abs(value - target) <= 0.02 then 'at_target'
-       else 'above_target' end as flag
+  case when value < target then 'below_target' else 'above_target' end as flag
 from (
   select user_id, 'front_squat_over_back_squat'::text as ratio_key,
          case when back_squat > 0 then round((front_squat / back_squat)::numeric, 3) else 0 end as value,

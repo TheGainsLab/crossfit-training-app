@@ -77,8 +77,8 @@ export async function POST(req: Request) {
       power_snatch_over_snatch: ratio(oneRMsNamed.power_snatch, oneRMsNamed.snatch),
       jerk_only_over_clean_only: ratio(oneRMsNamed.jerk_only, oneRMsNamed.clean_only)
     }
-    type RatioFlag = 'below_target' | 'at_target' | 'above_target'
-    const toFlag = (v: number, t: number): RatioFlag => (v < t ? 'below_target' : (Math.abs(v - t) <= 0.02 ? 'at_target' : 'above_target'))
+    type RatioFlag = 'below_target' | 'above_target'
+    const toFlag = (v: number, t: number): RatioFlag => (v < t ? 'below_target' : 'above_target')
     const strength_ratio_flags = Object.fromEntries(
       Object.entries(strength_ratios).map(([k, v]) => {
         const t = ratioTargets[k] || 0
