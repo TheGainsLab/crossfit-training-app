@@ -62,8 +62,7 @@ export default function AnalyticsSkillsPage() {
             {[...(summary?.summary || [])]
               .sort((a: any, b: any) => (b.count || 0) - (a.count || 0))
               .map((sk: any) => {
-                const last = sessions.find((s: any) => s.exercise_name === sk.name)
-                const lastDate = last ? new Date(last.logged_at).toLocaleDateString() : null
+                const lastDate = sk.lastDate ? new Date(sk.lastDate).toLocaleDateString() : null
                 return (
                   <div key={sk.name} className="p-3 border rounded bg-white">
                     <div className="font-medium text-gray-900 mb-1 text-center">{sk.name}</div>

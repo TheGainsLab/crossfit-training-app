@@ -34,13 +34,13 @@ export async function GET(request: NextRequest) {
           .eq('block', 'SKILLS')
           .gte('logged_at', since)
 
-        const bySkill: Record<string, { daySet: Set<string>; entryCount: number; avgRPE: number; avgQuality: number }> = {}
+        const bySkill: Record<string, { daySet: Set<string>; entryCount: number; avgRPE: number; avgQuality: number; lastTs: number }> = {}
         for (const row of logs || []) {
           const name = (row as any).exercise_name || 'Unknown'
           const rpe = Number((row as any).rpe) || 0
           const q = Number((row as any).completion_quality ?? (row as any).quality) || 0
           const d = (row as any).logged_at ? new Date((row as any).logged_at).toISOString().slice(0,10) : 'unknown'
-          if (!bySkill[name]) bySkill[name] = { daySet: new Set<string>(), entryCount: 0, avgRPE: 0, avgQuality: 0 }
+          if (!bySkill[name]) bySkill[name] = { daySet: new Set<string>(), entryCount: 0, avgRPE: 0, avgQuality: 0, lastTs: 0 }
           const s = bySkill[name]
           // running averages by entries
           s.avgRPE = (s.avgRPE * s.entryCount + rpe) / (s.entryCount + 1)
@@ -48,8 +48,16 @@ export async function GET(request: NextRequest) {
           s.entryCount += 1
           // distinct day tracking
           if (d !== 'unknown') s.daySet.add(d)
+          const ts = (row as any).logged_at ? Date.parse((row as any).logged_at) : 0
+          if (ts && ts > s.lastTs) s.lastTs = ts
         }
-        return Object.keys(bySkill).map(n => ({ name: n, count: bySkill[n].daySet.size || 0, avgRPE: bySkill[n].avgRPE, avgQuality: bySkill[n].avgQuality }))
+        return Object.keys(bySkill).map(n => ({
+          name: n,
+          count: bySkill[n].daySet.size || 0,
+          avgRPE: Math.round(bySkill[n].avgRPE * 100) / 100,
+          avgQuality: Math.round(bySkill[n].avgQuality * 100) / 100,
+          lastDate: bySkill[n].lastTs ? new Date(bySkill[n].lastTs).toISOString() : null
+        }))
       }, [`skills-analytics:${userId}:${days}:summary`], { revalidate: 120, tags: [`skills-analytics:${userId}`] })
 
       const summary = await compute()
