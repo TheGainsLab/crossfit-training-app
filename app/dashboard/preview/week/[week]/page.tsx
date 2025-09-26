@@ -94,7 +94,10 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
           {(data?.days || []).map((d: any) => (
             <div key={d.day} className="bg-slate-blue rounded-lg border p-4">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-lg font-semibold text-coral">Day {d.day}</div>
+                <div className="text-lg font-semibold text-coral flex items-center gap-2">
+                  <span>Day {d.day}</span>
+                  {d.completed && (<span className="inline-flex items-center text-coral text-sm" title="Completed">✓</span>)}
+                </div>
               </div>
 
               {/* Original blocks preview with filter */}
