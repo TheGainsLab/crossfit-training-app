@@ -52,9 +52,24 @@ export default function AnalyticsStrengthPage() {
             const coachBriefRes = await fetch('/api/coach/brief', { method: 'POST', headers, body: JSON.stringify({}) })
             const briefJson = await coachBriefRes.json()
             if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
-            const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: `Explain strength patterns for range=${range} (block=STRENGTH AND POWER).` }) })
-            const json = await res.json().catch(() => ({}))
-            setCoachContent(<PlanDiffViewer data={json} />)
+            const res = await fetch('/api/coach/explain', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: `Explain strength for range=${range} (block=STRENGTH AND POWER).`, domain: 'strength' }) })
+            const json = await res.json().catch(() => ({ success: false }))
+            setCoachContent(
+              <div className="space-y-2 text-sm">
+                {json?.summary && <div className="text-gray-800 font-medium">{json.summary}</div>}
+                <ul className="list-disc list-inside text-gray-800">
+                  {(json?.bullets || []).map((b: string, i: number) => (<li key={i}>{b}</li>))}
+                </ul>
+                {Array.isArray(json?.focus_next_week) && json.focus_next_week.length > 0 && (
+                  <div className="pt-1">
+                    <div className="text-xs text-gray-600 font-medium">Focus next week</div>
+                    <ul className="list-disc list-inside text-gray-700">
+                      {json.focus_next_week.map((b: string, i: number) => (<li key={i} className="text-xs">{b}</li>))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )
             setOpenCoach(true)
           } catch {}
         }}>Explain</button>
