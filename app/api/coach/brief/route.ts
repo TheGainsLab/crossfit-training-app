@@ -77,11 +77,15 @@ export async function POST(req: Request) {
       power_snatch_over_snatch: ratio(oneRMsNamed.power_snatch, oneRMsNamed.snatch),
       jerk_only_over_clean_only: ratio(oneRMsNamed.jerk_only, oneRMsNamed.clean_only)
     }
-    const strength_ratio_flags = Object.fromEntries(Object.entries(strength_ratios).map(([k,v]) => {
-      const t = ratioTargets[k] || 0
-      const flag = v < t ? 'below_target' : (Math.abs(v - t) <= 0.02 ? 'at_target' : 'above_target')
-      return [k, { value: v, target: t, flag }]
-    }))
+    type RatioFlag = 'below_target' | 'at_target' | 'above_target'
+    const toFlag = (v: number, t: number): RatioFlag => (v < t ? 'below_target' : (Math.abs(v - t) <= 0.02 ? 'at_target' : 'above_target'))
+    const strength_ratio_flags = Object.fromEntries(
+      Object.entries(strength_ratios).map(([k, v]) => {
+        const t = ratioTargets[k] || 0
+        const flag: RatioFlag = toFlag(v, t)
+        return [k, { value: v, target: t, flag }]
+      })
+    ) as NonNullable<CoachingBriefV1['intake']['strength_ratios']>
 
     // Performance logs (last 56 days)
     const { data: logs } = await supabase
