@@ -217,45 +217,7 @@ credentials: 'include',
         }
         setMessages(prev => [...prev, assistantMessage])
 
-        // Apply AI-returned context to drive chips deterministically
-        if (data?.context && typeof data.context === 'object') {
-          const ctx = data.context as any
-          // Domain
-          if (ctx.domain === 'metcons' || ctx.domain === 'logs') {
-            setDomain(ctx.domain)
-            setCurrentMode(ctx.domain === 'metcons' ? 'sessions' : 'count')
-            // Clear incompatible filters when switching domain
-            if (ctx.domain === 'metcons') {
-              setContextBlock(null)
-            } else {
-              setTimeDomains([])
-              setEquipments([])
-              setLevel(null)
-            }
-          }
-          // Pattern terms: only seed from AI for logs domain; metcons must be explicit
-          if (ctx.domain === 'logs' && Array.isArray(ctx.patternTerms) && ctx.patternTerms.length) {
-            const sanitized = ctx.patternTerms
-              .map((t: string) => String(t || '').trim())
-              .filter((t: string) => t && !/^metcon(s)?$/i.test(t) && !/^completed$/i.test(t))
-            if (sanitized.length) setPatternTerms(sanitized.map((t: string) => `%${t.toLowerCase()}%`))
-          }
-          // TimeDomain / Equipment (metcons) — sanitize to allowed enums only
-          const allowedTD = new Set(['1-5','5-10','10-15','15-20','20+'])
-          if (typeof ctx.timeDomain === 'string') {
-            const tds = ctx.timeDomain.split(',').map((t: string) => t.trim()).filter((t: string) => allowedTD.has(t))
-            setTimeDomains(tds)
-          }
-          const allowedEq = new Set(['Barbell','Dumbbells'])
-          if (Array.isArray(ctx.equipment)) {
-            const eqs = ctx.equipment.map((e: string) => String(e)).filter((e: string) => allowedEq.has(e))
-            setEquipments(eqs)
-          }
-          const allowedLevel = new Set(['Open','Quarterfinals','Regionals','Games'])
-          if (typeof ctx.level === 'string' && allowedLevel.has(ctx.level)) {
-            setLevel(ctx.level)
-          }
-        }
+        // No AI context consumption; assistant answers are view-backed and self-contained
 
         if (data.responseType !== 'domain_guard') {
           if (data.coachAlertGenerated) {
@@ -618,11 +580,11 @@ credentials: 'include',
                   </ul>
                 </div>
               ))}
-              {renderDomainToolbar()}
+              {/* Removed assistant chip toolbar */}
             </div>
           )
         }
-        const renderActionBar = () => renderDomainToolbar()
+        const renderActionBar = () => null
 
         // If it's a list with exercise_name plus aggregates (avg_rpe, total_reps)
         if (rows.length > 0 && rows.every((r: any) => r && typeof r === 'object' && 'exercise_name' in r)) {
@@ -655,7 +617,7 @@ credentials: 'include',
                     {expanded ? 'Show less' : `Show all (${rows.length})`}
                   </button>
                 )}
-                {renderActionBar()}
+                {/* toolbar removed */}
               </div>
             )
           }
@@ -684,7 +646,7 @@ credentials: 'include',
                     </ul>
                   </div>
                 ))}
-                {renderActionBar()}
+                {/* toolbar removed */}
               </div>
             )
           } else {
@@ -696,7 +658,7 @@ credentials: 'include',
                     <li key={n}>{n}</li>
                   ))}
                 </ul>
-                {renderActionBar()}
+                {/* toolbar removed */}
               </div>
             )
           }
@@ -766,7 +728,7 @@ credentials: 'include',
                   {expanded ? 'Show less' : `Show all (${rows.length})`}
                 </button>
               )}
-              <div className="mt-2">{idx === lastAssistantIndex && renderActionBar()}</div>
+              {/* toolbar removed */}
             </div>
           )
         }

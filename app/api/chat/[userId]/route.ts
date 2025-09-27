@@ -88,64 +88,49 @@ export async function POST(
     if (actionName) {
       console.log('[CHAT][action]', { userId: parseInt(userId), actionName, domain, range, block, filterRpe, filterQuality, mode, limit, sort, pattern, timeDomain, equipment, level })
     }
-    // Deterministic chip handling: if mode present, build SQL directly and bypass LLM
+    // Deterministic, view-backed answers only (no LLM SQL; no chips path)
     let assistantData: { response: string, context?: any }
-    if (mode) {
-      // Guard: for logs domain, some modes require a name filter
-      const needsPattern = ['by_block','total_reps','avg_rpe','sessions','table','list'].includes((mode || '').toLowerCase())
-      if (!domain || domain === 'logs') {
-        if (needsPattern && (!pattern || !pattern.trim())) {
-          return NextResponse.json({ success: false, error: 'Missing filter: set a pattern (e.g., Use “squat” as filter) before using this chip.' }, { status: 400 })
+    const lowerMsg = String(message || '').toLowerCase()
+    const isMetconIntent = /(metcon|wod|percentile|time\s*domain|workout id|equipment|level)/.test(lowerMsg)
+    const isStrengthIntent = /(strength|squat|deadlift|bench|press|snatch|clean|jerk|lift|max|weight)/.test(lowerMsg)
+    const isSkillsIntent = /(skill|skills|handstand|pull[- ]?up|muscle\s*up|double unders|du|pistol)/.test(lowerMsg)
+    const intentDomain = isMetconIntent ? 'metcons' : (isSkillsIntent ? 'skills' : (isStrengthIntent ? 'strength' : 'overview'))
+
+    async function answerFromViews() {
+      const blocks: Array<{ purpose: string; data: any[] }> = []
+      if (intentDomain === 'metcons') {
+        // Summary
+        const { data: ms } = await supabase.from('ai_metcons_summary_v1').select('completions, avg_percentile').single()
+        if (ms) blocks.push({ purpose: 'Metcons summary', data: [ms] })
+        // By time domain (aggregate client-side from heatmap rows)
+        const { data: hm } = await supabase.from('ai_metcon_heatmap_v1').select('time_range')
+        if (Array.isArray(hm)) {
+          const freq: Record<string, number> = {}
+          hm.forEach((r: any) => { const key = r?.time_range || 'Unknown'; freq[key] = (freq[key]||0)+1 })
+          const rows = Object.entries(freq).map(([time_range, count]) => ({ time_range, count }))
+          blocks.push({ purpose: 'Completions by time range (last 56 days)', data: rows })
         }
+      } else if (intentDomain === 'skills') {
+        const { data } = await supabase.from('ai_skills_summary_v1').select('skill_name, distinct_days_in_range, avg_rpe, avg_quality, total_sets, total_reps, last_date').order('distinct_days_in_range', { ascending: false }).limit(20)
+        blocks.push({ purpose: 'Skills exposures (last 56 days)', data: Array.isArray(data) ? data : [] })
+      } else if (intentDomain === 'strength') {
+        const { data } = await supabase.from('ai_strength_summary_v1').select('exercise_name, distinct_days_in_range, avg_rpe, avg_quality, max_weight_lbs, avg_top_set_weight_lbs, total_sets, total_reps, total_volume_lbs, last_session_at').order('distinct_days_in_range', { ascending: false }).limit(20)
+        blocks.push({ purpose: 'Strength exposures (last 56 days)', data: Array.isArray(data) ? data : [] })
+      } else {
+        // Overview: small headline summaries and quick pointers
+        const [{ data: ms }, { data: ss }, { data: ks }] = await Promise.all([
+          supabase.from('ai_metcons_summary_v1').select('completions, avg_percentile').single(),
+          supabase.from('ai_strength_summary_v1').select('exercise_name, distinct_days_in_range').order('distinct_days_in_range', { ascending: false }).limit(5),
+          supabase.from('ai_skills_summary_v1').select('skill_name, distinct_days_in_range').order('distinct_days_in_range', { ascending: false }).limit(5),
+        ])
+        if (ms) blocks.push({ purpose: 'Metcons summary', data: [ms] })
+        blocks.push({ purpose: 'Top strength movements (last 56 days)', data: Array.isArray(ss) ? ss : [] })
+        blocks.push({ purpose: 'Top skills (last 56 days)', data: Array.isArray(ks) ? ks : [] })
       }
-      const sql = buildChipSql({
-        userId: parseInt(userId),
-        domain,
-        mode,
-        range,
-        block,
-        filterRpe,
-        filterQuality,
-        sort,
-        limit,
-        pattern,
-        timeDomain,
-        equipment,
-        level,
-      })
-      const t0 = Date.now()
-      const { data, error } = await supabase.rpc('execute_user_query', { query_sql: sql, requesting_user_id: parseInt(userId) })
-      if (error) throw error
-      const rows = Array.isArray(data) ? data : []
-      const purpose = describePurpose(mode, pattern, block)
-      const responsePayload = [{ purpose, rows: rows.length, data: rows }]
-      assistantData = { response: JSON.stringify(responsePayload) }
-    } else {
-      const ai = createAITrainingAssistantForUser(supabase as any)
-      const aiResp = await ai.generateResponse({
-        userQuestion: message,
-        userId: parseInt(userId),
-        conversationHistory: conversationHistory || [],
-        userContext: await getBasicUserContextInternal(supabase as any, parseInt(userId)),
-        // @ts-ignore pass context
-        pattern,
-        // @ts-ignore pass context
-        range,
-        // @ts-ignore
-        block,
-        // @ts-ignore
-        filterRpe,
-        // @ts-ignore
-        filterQuality,
-        // @ts-ignore
-        mode,
-        // @ts-ignore
-        limit,
-        // @ts-ignore
-        sort
-      })
-      assistantData = { response: aiResp.response, context: aiResp.context }
+      return { response: JSON.stringify(blocks) }
     }
+
+    assistantData = await answerFromViews()
 
     // Store assistant message and update conversation timestamp
     if (conversationId) {
