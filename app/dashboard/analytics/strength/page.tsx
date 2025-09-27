@@ -12,6 +12,9 @@ export default function AnalyticsStrengthPage() {
   const [summary, setSummary] = useState<any>(null)
   const [openCoach, setOpenCoach] = useState(false)
   const [coachContent, setCoachContent] = useState<React.ReactNode>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [detailTitle, setDetailTitle] = useState<string>('')
+  const [detailRows, setDetailRows] = useState<any[]>([])
 
   useEffect(() => {
     const run = async () => {
@@ -105,7 +108,30 @@ export default function AnalyticsStrengthPage() {
           <div className="text-sm text-gray-700">Strength movements (block: {summary?.block || 'STRENGTH AND POWER'})</div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {(summary?.movements || []).map((m: any) => (
-              <div key={m.exercise_name} className="p-3 border rounded bg-white">
+              <button
+                key={m.exercise_name}
+                className="p-3 border rounded bg-white text-left hover:bg-gray-50"
+                onClick={async () => {
+                  try {
+                    const { createClient } = await import('@/lib/supabase/client')
+                    const sb = createClient()
+                    const { data: { session } } = await sb.auth.getSession()
+                    const token = session?.access_token || ''
+                    const headers: Record<string, string> = {}
+                    if (token) headers['Authorization'] = `Bearer ${token}`
+                    const qs = new URLSearchParams()
+                    qs.set('exercise', m.exercise_name)
+                    qs.set('block', summary?.block || 'STRENGTH AND POWER')
+                    qs.set('range', range)
+                    const res = await fetch(`/api/analytics/strength/detail?${qs.toString()}`, { headers })
+                    const json = await res.json()
+                    if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load detail')
+                    setDetailTitle(m.exercise_name)
+                    setDetailRows(json.rows || [])
+                    setDetailOpen(true)
+                  } catch {}
+                }}
+              >
                 <div className="font-medium text-gray-900 mb-1 text-center">{m.exercise_name}</div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="flex justify-between"><span className="text-gray-600">Sessions</span><span className="font-medium">{m.session_count}</span></div>
@@ -118,13 +144,48 @@ export default function AnalyticsStrengthPage() {
                 {m.last_session && (
                   <div className="mt-2 text-xs text-gray-600">Last: {new Date(m.last_session.logged_at).toLocaleDateString()} — {m.last_session.weight || 0} lbs × {m.last_session.reps || 0}</div>
                 )}
-              </div>
+              </button>
             ))}
           </div>
         </>
       )}
       <CoachDrawer open={openCoach} title="Coach" onClose={() => setOpenCoach(false)}>
         {coachContent}
+      </CoachDrawer>
+      <CoachDrawer open={detailOpen} title={`Session history: ${detailTitle}`} onClose={() => setDetailOpen(false)}>
+        <div className="text-sm space-y-3">
+          {detailRows.length === 0 ? (
+            <div className="text-gray-500">No entries for this range.</div>
+          ) : (
+            (() => {
+              const byDate = new Map<string, any[]>()
+              for (const r of detailRows) {
+                const d = r.training_date
+                if (!byDate.has(d)) byDate.set(d, [])
+                byDate.get(d)!.push(r)
+              }
+              const dates = Array.from(byDate.keys()).sort((a,b)=> (a<b?1:-1))
+              return (
+                <div>
+                  {dates.map(date => (
+                    <div key={date} className="mb-2">
+                      <div className="font-medium">{date}</div>
+                      <ul className="list-disc list-inside">
+                        {(byDate.get(date) || []).map((r, idx) => (
+                          <li key={idx}>
+                            {r.exercise_name} — {r.reps || ''} {r.sets || ''} {r.weight_time || ''}
+                            {r.rpe !== null && r.rpe !== undefined ? ` — RPE ${r.rpe}` : ''}
+                            {r.completion_quality !== null && r.completion_quality !== undefined ? ` — Q ${r.completion_quality}` : ''}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()
+          )}
+        </div>
       </CoachDrawer>
     </div>
   )
