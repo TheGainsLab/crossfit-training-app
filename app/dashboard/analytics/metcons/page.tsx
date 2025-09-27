@@ -18,10 +18,14 @@ export default function AnalyticsMetconsPage() {
   const [openCoach, setOpenCoach] = useState(false)
   const [coachContent, setCoachContent] = useState<React.ReactNode>(null)
   const timeDomains = ['1-5','5-10','10-15','15-20','20+']
+  const sortByOrder = (arr: string[]) => {
+    const order: Record<string, number> = { '1-5': 1, '5-10': 2, '10-15': 3, '15-20': 4, '20+': 5 }
+    return [...arr].sort((a, b) => (order[a] || 99) - (order[b] || 99))
+  }
   const toggle = (td: string) => setSelection(prev => {
     if (prev.includes(td)) return prev.filter(x => x !== td)
-    if (prev.length >= 2) return [prev[1], td] // keep last + new
-    return [...prev, td]
+    if (prev.length >= 2) return sortByOrder([prev[1], td]) // keep last + new, then sort
+    return sortByOrder([...prev, td])
   })
 
   // Sync selection to URL (?time=a,b)
@@ -146,7 +150,7 @@ export default function AnalyticsMetconsPage() {
           {heatmapData ? <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} /> : <div className="text-sm text-gray-500">No heat map data</div>}
           {selection.length === 2 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-              {selection.map((td) => {
+              {sortByOrder(selection).map((td) => {
                 // compute domain summary from legacy heatmap cells
                 const cells = (heatmapData?.heatmapCells || []).filter((c: any) => {
                   if (td === '20+') return c.time_range === '20:00–30:00' || c.time_range === '30:00+'
