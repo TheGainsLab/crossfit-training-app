@@ -154,37 +154,40 @@ export default function AnalyticsAccessoriesPage() {
         {coachContent}
       </CoachDrawer>
       <CoachDrawer open={detailOpen} title={`Session history: ${detailTitle}`} onClose={() => setDetailOpen(false)}>
-        <div className="text-sm space-y-3">
+        <div className="text-sm">
           {detailRows.length === 0 ? (
             <div className="text-gray-500">No entries for this range.</div>
           ) : (
-            (() => {
-              const byDate = new Map<string, any[]>()
-              for (const r of detailRows) {
-                const d = r.training_date
-                if (!byDate.has(d)) byDate.set(d, [])
-                byDate.get(d)!.push(r)
-              }
-              const dates = Array.from(byDate.keys()).sort((a,b)=> (a<b?1:-1))
-              return (
-                <div>
-                  {dates.map(date => (
-                    <div key={date} className="mb-2">
-                      <div className="font-medium">{date}</div>
-                      <ul className="list-disc list-inside">
-                        {(byDate.get(date) || []).map((r, idx) => (
-                          <li key={idx}>
-                            {r.exercise_name} — {r.reps || ''} {r.sets || ''} {r.weight_time || ''}
-                            {r.rpe !== null && r.rpe !== undefined ? ` — RPE ${r.rpe}` : ''}
-                            {r.completion_quality !== null && r.completion_quality !== undefined ? ` — Q ${r.completion_quality}` : ''}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              )
-            })()
+            <div className="overflow-x-auto">
+              <table className="min-w-full border">
+                <thead>
+                  <tr className="bg-gray-50 text-left">
+                    <th className="p-2 border-b">Date</th>
+                    <th className="p-2 border-b">Exercise</th>
+                    <th className="p-2 border-b">Sets</th>
+                    <th className="p-2 border-b">Reps</th>
+                    <th className="p-2 border-b">Weight/Time</th>
+                    <th className="p-2 border-b">RPE</th>
+                    <th className="p-2 border-b">Quality</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...detailRows]
+                    .sort((a: any, b: any) => (a.training_date < b.training_date ? 1 : -1))
+                    .map((r: any, i: number) => (
+                      <tr key={i} className="odd:bg-white even:bg-gray-50">
+                        <td className="p-2 border-b whitespace-nowrap">{r.training_date}</td>
+                        <td className="p-2 border-b">{r.exercise_name}</td>
+                        <td className="p-2 border-b">{r.sets ?? ''}</td>
+                        <td className="p-2 border-b">{r.reps ?? ''}</td>
+                        <td className="p-2 border-b">{r.weight_time ?? ''}</td>
+                        <td className="p-2 border-b">{r.rpe ?? ''}</td>
+                        <td className="p-2 border-b">{r.completion_quality ?? ''}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </CoachDrawer>
