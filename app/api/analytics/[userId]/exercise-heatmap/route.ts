@@ -158,12 +158,17 @@ export async function GET(
     const filteredRaw = (() => {
       if (!equip) return rawData
       if (equip === 'barbell') {
-        return rawData.filter(r => Array.isArray(r.metcons?.required_equipment) && r.metcons.required_equipment.includes('Barbell'))
+        return rawData.filter(r => {
+          const m: any = (r as any).metcons
+          const req = Array.isArray(m) ? (m?.[0]?.required_equipment || []) : (m?.required_equipment || [])
+          return Array.isArray(req) && req.includes('Barbell')
+        })
       }
       if (equip === 'gymnastics') {
         return rawData.filter(r => {
-          const req = Array.isArray(r.metcons?.required_equipment) ? r.metcons.required_equipment : []
-          return req.includes('Pullup Bar or Rig') || req.includes('High Rings')
+          const m: any = (r as any).metcons
+          const req = Array.isArray(m) ? (m?.[0]?.required_equipment || []) : (m?.required_equipment || [])
+          return Array.isArray(req) && (req.includes('Pullup Bar or Rig') || req.includes('High Rings'))
         })
       }
       return rawData
