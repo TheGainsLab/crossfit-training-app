@@ -95,6 +95,9 @@ export async function GET(
 
     console.log(`🔥 Generating exercise heat map for User ${userIdNum} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
 
+    // Optional equipment filter
+    const equip = new URL(request.url).searchParams.get('equip') || ''
+
     // Step 1: Get completed MetCons with exercise data
     // FIXED: Use same approach as metcon-analyzer
     const { data: rawData, error: dataError } = await supabase
@@ -107,7 +110,8 @@ export async function GET(
         metcons!inner(
           time_range,
           workout_id,
-          tasks
+          tasks,
+          required_equipment
         ),
         programs!inner(
           user_id
@@ -150,18 +154,33 @@ export async function GET(
 
     console.log(`📊 Processing ${rawData.length} completed MetCons`)
 
-    // Step 2: Process raw data into heat map structure
-    const heatmapData = processRawDataToHeatmap(rawData)
+    // Step 2: Apply optional equipment filter
+    const filteredRaw = (() => {
+      if (!equip) return rawData
+      if (equip === 'barbell') {
+        return rawData.filter(r => Array.isArray(r.metcons?.required_equipment) && r.metcons.required_equipment.includes('Barbell'))
+      }
+      if (equip === 'gymnastics') {
+        return rawData.filter(r => {
+          const req = Array.isArray(r.metcons?.required_equipment) ? r.metcons.required_equipment : []
+          return req.includes('Pullup Bar or Rig') || req.includes('High Rings')
+        })
+      }
+      return rawData
+    })()
 
-    // Step 3: Calculate global fitness score
-    const globalFitnessScore = rawData.length > 0
+    // Step 3: Process raw data into heat map structure
+    const heatmapData = processRawDataToHeatmap(filteredRaw)
+
+    // Step 4: Calculate global fitness score
+    const globalFitnessScore = filteredRaw.length > 0
       ? Math.round(
-          rawData.reduce((sum, row) => sum + parseFloat(row.percentile), 0) / 
-          rawData.length
+          filteredRaw.reduce((sum, row) => sum + parseFloat(row.percentile), 0) / 
+          filteredRaw.length
         )
       : 0
 
-    // Step 4: Structure the response data
+    // Step 5: Structure the response data
     const exercises = [...new Set(heatmapData.map(row => row.exercise_name))].sort()
     const timeDomains = [...new Set(heatmapData.map(row => row.time_range).filter(Boolean))]
       .sort((a, b) => {
@@ -188,7 +207,7 @@ export async function GET(
       heatmapCells: heatmapData.filter(row => row.time_range !== null),
       exerciseAverages,
       globalFitnessScore,
-      totalCompletedWorkouts: rawData.length
+      totalCompletedWorkouts: filteredRaw.length
     }
 
     console.log(`✅ Heat map generated: ${exercises.length} exercises, ${timeDomains.length} time domains, ${responseData.heatmapCells.length} cells`)

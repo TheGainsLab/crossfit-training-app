@@ -14,6 +14,7 @@ export default function AnalyticsMetconsPage() {
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<any>(null)
   const [heatmapData, setHeatmapData] = useState<any | null>(null)
+  const [baselineHeatmap, setBaselineHeatmap] = useState<any | null>(null)
   const [userId, setUserId] = useState<number | null>(null)
   const [openCoach, setOpenCoach] = useState(false)
   const [coachContent, setCoachContent] = useState<React.ReactNode>(null)
@@ -52,7 +53,7 @@ export default function AnalyticsMetconsPage() {
     resolveUser()
   }, [])
 
-  // Load legacy heatmap directly (simple, proven), filters later
+  // Load legacy heatmap directly (simple, proven), with optional equipment filter
   useEffect(() => {
     const run = async () => {
       if (!userId) return
@@ -67,20 +68,35 @@ export default function AnalyticsMetconsPage() {
         const oldRes = await fetch(`/api/analytics/${userId}/exercise-heatmap`, { headers })
         const oldJson = await oldRes.json()
         if (oldRes.ok && oldJson.success) {
-          setHeatmapData(oldJson.data)
-          setSummary({ completions: oldJson.data.totalCompletedWorkouts, avg_percentile: oldJson.data.globalFitnessScore, time_domain_mix: [] })
+          setBaselineHeatmap(oldJson.data)
+          const equip = (searchParams.get('equip') || '').toLowerCase()
+          if (equip && (equip === 'barbell' || equip === 'gymnastics')) {
+            const res2 = await fetch(`/api/analytics/${userId}/exercise-heatmap?equip=${equip}`, { headers })
+            const js2 = await res2.json()
+            if (res2.ok && js2.success) {
+              setHeatmapData(js2.data)
+              setSummary({ completions: js2.data.totalCompletedWorkouts, avg_percentile: js2.data.globalFitnessScore, time_domain_mix: [] })
+            } else {
+              setHeatmapData(oldJson.data)
+              setSummary({ completions: oldJson.data.totalCompletedWorkouts, avg_percentile: oldJson.data.globalFitnessScore, time_domain_mix: [] })
+            }
+          } else {
+            setHeatmapData(oldJson.data)
+            setSummary({ completions: oldJson.data.totalCompletedWorkouts, avg_percentile: oldJson.data.globalFitnessScore, time_domain_mix: [] })
+          }
         } else {
           throw new Error(oldJson.error || 'Failed to load')
         }
       } catch (e) {
         setSummary({ error: 'Failed to load' })
         setHeatmapData(null)
+        setBaselineHeatmap(null)
       } finally {
         setLoading(false)
       }
     }
     run()
-  }, [userId])
+  }, [userId, searchParams])
 
   return (
     <div className="space-y-4">
@@ -147,7 +163,24 @@ export default function AnalyticsMetconsPage() {
         <div className="text-sm text-gray-500">Loading…</div>
       ) : (
         <>
-          {heatmapData ? <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} /> : <div className="text-sm text-gray-500">No heat map data</div>}
+          {(() => {
+            const equip = (searchParams.get('equip') || '').toLowerCase()
+            if (equip && baselineHeatmap) {
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Filtered ({equip})</div>
+                    <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} />
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">All equipment</div>
+                    <MetconHeatmap data={baselineHeatmap} visibleTimeDomains={selection} />
+                  </div>
+                </div>
+              )
+            }
+            return heatmapData ? <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} /> : <div className="text-sm text-gray-500">No heat map data</div>
+          })()}
           {selection.length === 2 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
               {sortByOrder(selection).map((td) => {
