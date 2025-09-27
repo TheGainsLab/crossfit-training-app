@@ -2,7 +2,7 @@
 
 import React from 'react'
 
-export default function MetconHeatmap({ data }: { data: any }) {
+export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any, visibleTimeDomains?: string[] }) {
   const getHeatMapColor = (percentile: number | null) => {
     if (percentile === null) return 'bg-gray-100 text-gray-400'
     if (percentile >= 80) return 'bg-green-600 text-white'
@@ -67,6 +67,9 @@ export default function MetconHeatmap({ data }: { data: any }) {
   }
 
   const { exercises, timeDomains, globalFitnessScore } = data
+  const shownDomains = Array.isArray(visibleTimeDomains) && visibleTimeDomains.length > 0
+    ? timeDomains.filter((d: string) => visibleTimeDomains.includes(d))
+    : timeDomains
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -77,7 +80,7 @@ export default function MetconHeatmap({ data }: { data: any }) {
           <thead>
             <tr>
               <th className="text-left p-3 font-medium text-gray-900">Exercise</th>
-              {timeDomains.map((domain: string) => (
+              {shownDomains.map((domain: string) => (
                 <th key={domain} className="text-center p-3 font-medium text-gray-900 min-w-[100px]">{domain}</th>
               ))}
               <th className="text-center p-3 font-bold text-gray-900 min-w-[100px] bg-blue-50 border-l-2 border-blue-200">Exercise Avg</th>
@@ -87,7 +90,7 @@ export default function MetconHeatmap({ data }: { data: any }) {
             {exercises.map((exercise: string) => (
               <tr key={exercise} className="border-t">
                 <td className="p-3 font-medium text-gray-900 bg-gray-50">{exercise}</td>
-                {timeDomains.map((domain: string) => {
+                {shownDomains.map((domain: string) => {
                   const percentile = getPercentile(exercise, domain)
                   const sessions = getSessionCount(exercise, domain)
                   const colorClass = getHeatMapColor(percentile)
@@ -130,7 +133,7 @@ export default function MetconHeatmap({ data }: { data: any }) {
             ))}
             <tr className="border-t-2 border-blue-200 bg-blue-50">
               <td className="p-3 font-bold text-gray-900 bg-blue-100 border-r-2 border-blue-200">Time Domain Avg</td>
-              {timeDomains.map((domain: string) => {
+              {shownDomains.map((domain: string) => {
                 const avgPercentile = calculateTimeDomainAverage(domain)
                 const colorClass = getHeatMapColor(avgPercentile)
                 return (
