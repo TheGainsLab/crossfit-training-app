@@ -148,7 +148,10 @@ export default function AnalyticsMetconsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
               {selection.map((td) => {
                 // compute domain summary from legacy heatmap cells
-                const cells = (heatmapData?.heatmapCells || []).filter((c: any) => c.time_range === td)
+                const cells = (heatmapData?.heatmapCells || []).filter((c: any) => {
+                  if (td === '20+') return c.time_range === '20:00–30:00' || c.time_range === '30:00+'
+                  return c.time_range?.startsWith(td.replace('-', ':00–'))
+                })
                 const completions = cells.reduce((s: number, c: any) => s + (c.session_count || 0), 0)
                 const avg = (() => {
                   const totalSessions = completions

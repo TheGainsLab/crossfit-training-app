@@ -67,8 +67,18 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
   }
 
   const { exercises, timeDomains, globalFitnessScore } = data
+  const mapChipToDomains = (chip: string, all: string[]): string[] => {
+    switch (chip) {
+      case '1-5': return all.filter(d => /(^|\s)1:00–5:00$/.test(d))
+      case '5-10': return all.filter(d => /(^|\s)5:00–10:00$/.test(d))
+      case '10-15': return all.filter(d => /(^|\s)10:00–15:00$/.test(d))
+      case '15-20': return all.filter(d => /(^|\s)15:00–20:00$/.test(d))
+      case '20+': return all.filter(d => /(^|\s)20:00–30:00$/.test(d) || /(^|\s)30:00\+$/.test(d))
+      default: return []
+    }
+  }
   const shownDomains = Array.isArray(visibleTimeDomains) && visibleTimeDomains.length > 0
-    ? timeDomains.filter((d: string) => visibleTimeDomains.includes(d))
+    ? Array.from(new Set(visibleTimeDomains.flatMap(c => mapChipToDomains(c, timeDomains))))
     : timeDomains
 
   return (
