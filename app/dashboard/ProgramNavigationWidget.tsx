@@ -66,8 +66,8 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
     const days = Array.from({ length: 20 }, (_, i) => `Day ${20 - i}`)
     const bins = ['1:00–5:00','5:00–10:00','10:00–15:00','15:00–20:00','20:00+']
     // Map heatmap entries (time_range, week) to an approximate day index 1..20 (week 1 days 1..5, week 2 6..10, week 3 11..15, week 4 16..20)
-    const dayIndexFor = (week: number) => {
-      if (week <= 0) return 0
+    const dayIndexFor = (week: number): { start: number; end: number } => {
+      if (week <= 0) return { start: 0, end: -1 }
       if (week === 1) return { start: 16, end: 20 }
       if (week === 2) return { start: 11, end: 15 }
       if (week === 3) return { start: 6, end: 10 }
