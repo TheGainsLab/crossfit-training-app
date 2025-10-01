@@ -139,8 +139,8 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
       const d = Number(r.day || 0)
       const tr = String(r.time_range || '')
       if (w < startWeek || w > endWeek || d < 1 || d > 5) return
-      const absoluteDay = (endWeek - w) * 5 + d // map endWeek..startWeek to 0..19
-      const dayIdx = 20 - absoluteDay
+      // Correct mapping: week=endWeek,day=1 -> idx 0 (Day 20); week=startWeek,day=5 -> idx 19 (Day 1)
+      const dayIdx = (endWeek - w) * 5 + (d - 1)
       const bin = toBinIndex(tr)
       if (dayIdx >= 0 && dayIdx < 20) binByDay[dayIdx] = bin
     })
