@@ -63,42 +63,79 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
 
   const metconChart = useMemo(() => {
     // Build exact days 1..20 from exact plan rows (week, day)
-    const days = Array.from({ length: 20 }, (_, i) => `Day ${20 - i}`)
-    const bins = ['1:00–5:00','5:00–10:00','10:00–15:00','15:00–20:00','20:00+']
-    const counts = bins.map(() => Array(20).fill(0))
+    const labelsY = Array.from({ length: 20 }, (_, i) => `Day ${20 - i}`)
+    // Map time_range -> numeric bin index 1..5
+    const toBinIndex = (tr: string): number => {
+      const s = (tr || '').replace(/\s/g, '')
+      if (!s) return 0
+      if (s.includes('1:00–5:00') || s.includes('1:00-5:00')) return 1
+      if (s.includes('5:00–10:00') || s.includes('5:00-10:00')) return 2
+      if (s.includes('10:00–15:00') || s.includes('10:00-15:00')) return 3
+      if (s.includes('15:00–20:00') || s.includes('15:00-20:00')) return 4
+      if (s.includes('20:00+') || s.includes('20:00–30:00') || s.includes('20:00-30:00') || s.includes('30:00+')) return 5
+      return 0
+    }
+    const binByDay: number[] = Array(20).fill(0)
     ;(metconRows || []).forEach((r: any) => {
-      const tr = String(r.time_range || '')
       const w = Number(r.week || 0)
       const d = Number(r.day || 0)
+      const tr = String(r.time_range || '')
       if (w < 1 || w > 4 || d < 1 || d > 5) return
-      const absoluteDay = (4 - w) * 5 + d // week1->days16-20 ... week4->days1-5
+      const absoluteDay = (4 - w) * 5 + d // week1->16..20
       const dayIdx = 20 - absoluteDay
-      const idx = bins.findIndex(b => tr.includes(b))
-      if (idx >= 0 && dayIdx >= 0 && dayIdx < 20) counts[idx][dayIdx] += 1
+      const bin = toBinIndex(tr)
+      if (dayIdx >= 0 && dayIdx < 20) binByDay[dayIdx] = bin
     })
-    const colors = ['#93C5FD','#60A5FA','#3B82F6','#2563EB','#1D4ED8']
+    // Single dataset with numeric value 0..5; X is linear, ticks mapped to labels
+    const xTickLabels: Record<number, string> = {
+      1: '1:00 - 5:00',
+      2: '5:00 - 10:00',
+      3: '10:00 - 15:00',
+      4: '15:00 - 20:00',
+      5: '20:00+',
+    }
     return {
       data: {
-        labels: days,
-        datasets: bins.map((b, i) => ({
-          label: b,
-          data: counts[i],
-          backgroundColor: colors[i],
-          borderWidth: 0,
-          barThickness: 10,
-        }))
+        labels: labelsY,
+        datasets: [
+          {
+            label: 'MetCon Time Domain',
+            data: binByDay,
+            backgroundColor: '#3B82F6',
+            borderWidth: 0,
+            barThickness: 12,
+          }
+        ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         indexAxis: 'y' as const,
         plugins: {
-          legend: { display: true, position: 'bottom' as const },
-          title: { display: false }
+          legend: { display: false },
+          title: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx: any) => {
+                const v = Number(ctx.parsed.x || 0)
+                const label = xTickLabels[v as 1|2|3|4|5] || 'No MetCon'
+                return label
+              }
+            }
+          }
         },
         scales: {
-          x: { stacked: true, ticks: { display: false }, grid: { display: false } },
-          y: { stacked: true, grid: { display: false } }
+          x: {
+            min: 0,
+            max: 5,
+            type: 'linear' as const,
+            grid: { display: true },
+            ticks: {
+              stepSize: 1,
+              callback: (value: any) => xTickLabels[Number(value)] || '',
+            }
+          },
+          y: { grid: { display: false } }
         }
       }
     }
