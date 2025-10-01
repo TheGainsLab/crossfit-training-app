@@ -122,7 +122,7 @@ export default function AnalyticsSkillsPage() {
                 return (
                   <button
                     key={sk.name}
-                    className="p-3 border rounded bg-white text-left hover:bg-gray-50"
+                    className="p-3 border rounded bg-slate-blue text-left hover:opacity-90"
                     onClick={async () => {
                       try {
                         const { createClient } = await import('@/lib/supabase/client')

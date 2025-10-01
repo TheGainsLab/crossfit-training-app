@@ -111,7 +111,7 @@ export default function AnalyticsAccessoriesPage() {
             {(summary?.movements || []).map((m: any) => (
               <button
                 key={m.exercise_name}
-                className="p-3 border rounded bg-white text-left hover:bg-gray-50"
+                className="p-3 border rounded bg-slate-blue text-left hover:opacity-90"
                 onClick={async () => {
                   try {
                     const { createClient } = await import('@/lib/supabase/client')
