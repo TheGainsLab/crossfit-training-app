@@ -44,12 +44,12 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         const sb = createClient()
         const { data: { session } } = await sb.auth.getSession()
         const token = session?.access_token
-        const res = await fetch('/api/analytics/metcons', {
+        const res = await fetch('/api/analytics/metcons?mode=plan', {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined
         })
         const j = await res.json()
-        if (j?.success) {
-          setMetconRows(j.heatmap || [])
+        if (j?.success && Array.isArray(j.plan)) {
+          setMetconRows(j.plan)
         } else {
           setMetconRows([])
         }
@@ -62,29 +62,19 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
   }, [metconOpen])
 
   const metconChart = useMemo(() => {
-    // Build day 1..20 from currentWeek and week+day mapping; approximate by using days 1..20
+    // Build exact days 1..20 from exact plan rows (week, day)
     const days = Array.from({ length: 20 }, (_, i) => `Day ${20 - i}`)
     const bins = ['1:00–5:00','5:00–10:00','10:00–15:00','15:00–20:00','20:00+']
-    // Map heatmap entries (time_range, week) to an approximate day index 1..20 (week 1 days 1..5, week 2 6..10, week 3 11..15, week 4 16..20)
-    const dayIndexFor = (week: number): { start: number; end: number } => {
-      if (week <= 0) return { start: 0, end: -1 }
-      if (week === 1) return { start: 16, end: 20 }
-      if (week === 2) return { start: 11, end: 15 }
-      if (week === 3) return { start: 6, end: 10 }
-      return { start: 1, end: 5 }
-    }
     const counts = bins.map(() => Array(20).fill(0))
     ;(metconRows || []).forEach((r: any) => {
       const tr = String(r.time_range || '')
       const w = Number(r.week || 0)
+      const d = Number(r.day || 0)
+      if (w < 1 || w > 4 || d < 1 || d > 5) return
+      const absoluteDay = (4 - w) * 5 + d // week1->days16-20 ... week4->days1-5
+      const dayIdx = 20 - absoluteDay
       const idx = bins.findIndex(b => tr.includes(b))
-      if (idx < 0) return
-      const range = dayIndexFor(w)
-      // Spread counts across that week's 5 days
-      const perDay = Math.max(1, Math.round((Number(r.count || 0)) / 5))
-      for (let d = range.start; d <= range.end; d++) {
-        counts[idx][20 - d] += perDay
-      }
+      if (idx >= 0 && dayIdx >= 0 && dayIdx < 20) counts[idx][dayIdx] += 1
     })
     const colors = ['#93C5FD','#60A5FA','#3B82F6','#2563EB','#1D4ED8']
     return {
