@@ -53,19 +53,30 @@ export async function GET(req: NextRequest) {
     if (mode === 'plan') {
       const startWeek = startWeekParam ? parseInt(startWeekParam) : 1
       const endWeek = endWeekParam ? parseInt(endWeekParam) : (startWeek + 3)
-      const { data: planRows, error: planErr } = await supabase
-        .from('program_metcons as pm')
-        .select('week, day, metcons!inner(id, time_range)')
+      // Step 1: get program metcon rows for the window
+      const { data: pmRows, error: pmErr } = await supabase
+        .from('program_metcons')
+        .select('week, day, metcon_id')
         .eq('program_id', programId)
         .gte('week', startWeek)
         .lte('week', endWeek)
         .order('week', { ascending: true })
         .order('day', { ascending: true })
-      if (planErr) throw planErr
-      const rows = (planRows || []).map((r: any) => ({
+      if (pmErr) throw pmErr
+      const metconIds = Array.from(new Set((pmRows || []).map((r: any) => r.metcon_id).filter(Boolean)))
+      let idToTimeRange: Record<string, string | null> = {}
+      if (metconIds.length > 0) {
+        const { data: mRows, error: mErr } = await supabase
+          .from('metcons')
+          .select('id, time_range')
+          .in('id', metconIds as any)
+        if (mErr) throw mErr
+        idToTimeRange = Object.fromEntries((mRows || []).map((m: any) => [String(m.id), m.time_range || null]))
+      }
+      const rows = (pmRows || []).map((r: any) => ({
         week: r.week,
         day: r.day,
-        time_range: r.metcons?.time_range || null,
+        time_range: idToTimeRange[String(r.metcon_id)] || null,
       }))
       return NextResponse.json({ success: true, plan: rows, window: { startWeek, endWeek } })
     }
