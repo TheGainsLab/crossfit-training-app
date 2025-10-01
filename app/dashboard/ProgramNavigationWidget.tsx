@@ -34,6 +34,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
 }) => {
   const [metconOpen, setMetconOpen] = useState(false)
   const [metconRows, setMetconRows] = useState<any[]>([])
+  const [metconDebug, setMetconDebug] = useState<Array<{ dayLabel: string; week: number; day: number; timeRange: string | null }>>([])
   const [loadingMetcons, setLoadingMetcons] = useState(false)
 
   useEffect(() => {
@@ -52,11 +53,26 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         const j = await res.json()
         if (j?.success && Array.isArray(j.plan)) {
           setMetconRows(j.plan)
+          // Build debug map of all 20 days -> (week, day, time_range)
+          const dbg: Array<{ dayLabel: string; week: number; day: number; timeRange: string | null }> = []
+          for (let absoluteDay = 1; absoluteDay <= 20; absoluteDay++) {
+            const week = endWeek - Math.floor((absoluteDay - 1) / 5)
+            const day = ((absoluteDay - 1) % 5) + 1
+            const label = `Day ${21 - absoluteDay}`
+            const row = (j.plan as any[]).find(r => Number(r.week) === week && Number(r.day) === day)
+            dbg.push({ dayLabel: label, week, day, timeRange: row?.time_range ?? null })
+          }
+          setMetconDebug(dbg)
+          const missing = dbg.filter(x => !x.timeRange).map(x => x.dayLabel)
+          // eslint-disable-next-line no-console
+          console.log('[MetCon Preview] Missing days:', missing)
         } else {
           setMetconRows([])
+          setMetconDebug([])
         }
       } catch {
         setMetconRows([])
+        setMetconDebug([])
       } finally {
         setLoadingMetcons(false)
       }
@@ -356,6 +372,16 @@ export function MetconPreviewModal({ open, onClose, chart }: { open: boolean; on
         <p className="text-xs text-gray-600 mb-3">Time domains across days 20 → 1 for the current program month.</p>
         <div className="h-[420px] sm:h-[480px]">
           <Bar data={chart.data} options={chart.options} />
+        </div>
+        {/* Debug list for quick verification on mobile */}
+        <div className="mt-3">
+          <details>
+            <summary className="text-xs text-gray-700 cursor-pointer">Debug: Show day→(week,day,time) mapping</summary>
+            <div className="mt-2 text-xs text-gray-600 space-y-1">
+              {/* @ts-ignore access from outer component via window console output */}
+              <p>Open console for missing days log.</p>
+            </div>
+          </details>
         </div>
       </div>
     </div>
