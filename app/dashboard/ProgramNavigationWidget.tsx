@@ -76,12 +76,15 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
       return 0
     }
     const binByDay: number[] = Array(20).fill(0)
+    // Determine current 4-week window based on currentWeek
+    const startWeek = Math.max(1, currentWeek - ((currentWeek - 1) % 4))
+    const endWeek = Math.min(13, startWeek + 3)
     ;(metconRows || []).forEach((r: any) => {
       const w = Number(r.week || 0)
       const d = Number(r.day || 0)
       const tr = String(r.time_range || '')
-      if (w < 1 || w > 4 || d < 1 || d > 5) return
-      const absoluteDay = (4 - w) * 5 + d // week1->16..20
+      if (w < startWeek || w > endWeek || d < 1 || d > 5) return
+      const absoluteDay = (endWeek - w) * 5 + d // map endWeek..startWeek to 0..19
       const dayIdx = 20 - absoluteDay
       const bin = toBinIndex(tr)
       if (dayIdx >= 0 && dayIdx < 20) binByDay[dayIdx] = bin
@@ -135,7 +138,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
               callback: (value: any) => xTickLabels[Number(value)] || '',
             }
           },
-          y: { grid: { display: false } }
+          y: { grid: { display: false }, ticks: { autoSkip: false } }
         }
       }
     }
