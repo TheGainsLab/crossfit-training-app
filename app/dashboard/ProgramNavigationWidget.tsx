@@ -1,7 +1,20 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js'
+import { Bar } from 'react-chartjs-2'
+import { createClient } from '@/lib/supabase/client'
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 // Program Navigation Widget Component
 interface NavigationProps {
@@ -19,6 +32,87 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
   onNavigate,
   updatedDays = []
 }) => {
+  const [metconOpen, setMetconOpen] = useState(false)
+  const [metconRows, setMetconRows] = useState<any[]>([])
+  const [loadingMetcons, setLoadingMetcons] = useState(false)
+
+  useEffect(() => {
+    if (!metconOpen) return
+    ;(async () => {
+      try {
+        setLoadingMetcons(true)
+        const sb = createClient()
+        const { data: { session } } = await sb.auth.getSession()
+        const token = session?.access_token
+        const res = await fetch('/api/analytics/metcons', {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined
+        })
+        const j = await res.json()
+        if (j?.success) {
+          setMetconRows(j.heatmap || [])
+        } else {
+          setMetconRows([])
+        }
+      } catch {
+        setMetconRows([])
+      } finally {
+        setLoadingMetcons(false)
+      }
+    })()
+  }, [metconOpen])
+
+  const metconChart = useMemo(() => {
+    // Build day 1..20 from currentWeek and week+day mapping; approximate by using days 1..20
+    const days = Array.from({ length: 20 }, (_, i) => `Day ${20 - i}`)
+    const bins = ['1:00–5:00','5:00–10:00','10:00–15:00','15:00–20:00','20:00+']
+    // Map heatmap entries (time_range, week) to an approximate day index 1..20 (week 1 days 1..5, week 2 6..10, week 3 11..15, week 4 16..20)
+    const dayIndexFor = (week: number) => {
+      if (week <= 0) return 0
+      if (week === 1) return { start: 16, end: 20 }
+      if (week === 2) return { start: 11, end: 15 }
+      if (week === 3) return { start: 6, end: 10 }
+      return { start: 1, end: 5 }
+    }
+    const counts = bins.map(() => Array(20).fill(0))
+    ;(metconRows || []).forEach((r: any) => {
+      const tr = String(r.time_range || '')
+      const w = Number(r.week || 0)
+      const idx = bins.findIndex(b => tr.includes(b))
+      if (idx < 0) return
+      const range = dayIndexFor(w)
+      // Spread counts across that week's 5 days
+      const perDay = Math.max(1, Math.round((Number(r.count || 0)) / 5))
+      for (let d = range.start; d <= range.end; d++) {
+        counts[idx][20 - d] += perDay
+      }
+    })
+    const colors = ['#93C5FD','#60A5FA','#3B82F6','#2563EB','#1D4ED8']
+    return {
+      data: {
+        labels: days,
+        datasets: bins.map((b, i) => ({
+          label: b,
+          data: counts[i],
+          backgroundColor: colors[i],
+          borderWidth: 0,
+          barThickness: 10,
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y' as const,
+        plugins: {
+          legend: { display: true, position: 'bottom' as const },
+          title: { display: false }
+        },
+        scales: {
+          x: { stacked: true, ticks: { display: false }, grid: { display: false } },
+          y: { stacked: true, grid: { display: false } }
+        }
+      }
+    }
+  }, [metconRows])
   // Helper functions for navigation
   const getPreviousDay = () => {
     if (currentDay === 1) {
@@ -198,9 +292,40 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
           <span>🔎</span>
           <span>Week Preview</span>
         </Link>
+        <button
+          onClick={() => setMetconOpen(true)}
+          className="text-sm text-blue-600 hover:text-blue-700 inline-flex items-center space-x-1 transition-colors"
+          aria-haspopup="dialog"
+          aria-expanded={metconOpen}
+        >
+          <span>🔥</span>
+          <span>MetCon Preview</span>
+        </button>
       </div>
+      {/* Modal mount */}
+      <MetconPreviewModal open={metconOpen} onClose={() => setMetconOpen(false)} chart={metconChart} />
     </div>
   );
 };
 
 export default ProgramNavigationWidget;
+
+// Lightweight modal for mobile
+export function MetconPreviewModal({ open, onClose, chart }: { open: boolean; onClose: () => void; chart: { data: any; options: any } }) {
+  if (!open) return null
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white w-full sm:max-w-md rounded-t-xl sm:rounded-xl shadow-lg p-4 max-h-[85vh] overflow-auto mx-auto">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-base font-semibold text-gray-900">MetCon Preview</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+        <p className="text-xs text-gray-600 mb-3">Time domains across days 20 → 1 for the current program month.</p>
+        <div className="h-[420px] sm:h-[480px]">
+          <Bar data={chart.data} options={chart.options} />
+        </div>
+      </div>
+    </div>
+  )
+}
