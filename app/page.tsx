@@ -23,7 +23,7 @@ export default function LandingPage() {
     if (user) {
       router.push('/dashboard')
     } else {
-      router.push('/auth/signup')
+      router.push('/start')
     }
   }
 
@@ -33,39 +33,7 @@ export default function LandingPage() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">The Gains Apps</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              {loading ? (
-                <div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
-              ) : user ? (
-                <div className="flex items-center space-x-4">
-                  <span className="text-gray-700">Welcome back!</span>
-                  <button
-                    onClick={() => router.push('/dashboard')}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium"
-                  >
-                    Dashboard
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={handleSignIn}
-                  className="text-white px-4 py-2 rounded-md font-medium"
-                  style={{ backgroundColor: '#FE5858' }}
-                >
-                  Sign In
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* Global Navigation is rendered via app/layout.tsx */}
 
       {/* Hero Section */}
       <section className="py-20" style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}>
@@ -116,7 +84,7 @@ export default function LandingPage() {
               <p className="text-center text-gray-900 font-semibold mt-6">Stop following generic plans. Be the main character in your training.</p>
               <div className="text-center mt-6">
                 <a
-                  href="https://www.thegainsapps.com/start"
+                  href="/start"
                   className="inline-block text-white px-6 py-3 rounded-lg"
                   style={{ backgroundColor: '#FE5858' }}
                 >
@@ -238,7 +206,7 @@ export default function LandingPage() {
           <h2 className="text-3xl font-bold mb-4">Ready to Train Smarter?</h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto">Stop following generic programs. Start training with GainsAI™—the only platform that combines personalized CrossFit programming with advanced AI coaching.</p>
           <a
-            href="https://www.thegainsapps.com/start"
+            href="/start"
             className="inline-block bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
           >
             Start Your GainsAI™ Journey
