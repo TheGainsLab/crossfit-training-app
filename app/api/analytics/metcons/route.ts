@@ -73,12 +73,16 @@ export async function GET(req: NextRequest) {
         if (mErr) throw mErr
         idToTimeRange = Object.fromEntries((mRows || []).map((m: any) => [String(m.id), m.time_range || null]))
       }
-      const rows = (pmRows || []).map((r: any) => ({
-        week: r.week,
-        day: r.day,
-        time_range: idToTimeRange[String(r.metcon_id)] || null,
-      }))
-      return NextResponse.json({ success: true, plan: rows, window: { startWeek, endWeek } })
+      // Build a complete 20-day window (weeks startWeek..endWeek, days 1..5)
+      const windowRows: Array<{ week: number; day: number; time_range: string | null }> = []
+      for (let w = endWeek; w >= startWeek; w--) {
+        for (let d = 1; d <= 5; d++) {
+          const r = (pmRows || []).find((x: any) => Number(x.week) === w && Number(x.day) === d)
+          const tr = r ? (idToTimeRange[String(r.metcon_id)] || null) : null
+          windowRows.push({ week: w, day: d, time_range: tr })
+        }
+      }
+      return NextResponse.json({ success: true, plan: windowRows, window: { startWeek, endWeek } })
     }
 
     // Build filter SQL fragments
