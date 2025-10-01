@@ -174,6 +174,15 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
                   {(() => {
                     const names = ['Snatch','Power Snatch','Clean and Jerk','Power Clean','Clean (Only)','Jerk (Only)','Back Squat','Front Squat','Overhead Squat','Deadlift','Bench Press','Push Press','Strict Press','Weighted Pullup']
                     const named = coachBrief?.intake?.oneRMsNamed || {}
+                    const units = String(coachBrief?.metadata?.units || 'Imperial (lbs)')
+                    const toDisplay = (lbs: number | null | undefined) => {
+                      const n = typeof lbs === 'number' ? lbs : 0
+                      if (units.toLowerCase().includes('kg')) {
+                        const kg = Math.round((n / 2.20462) * 100) / 100
+                        return `${kg} kg`
+                      }
+                      return `${n} lbs`
+                    }
                     const nameToKey: Record<string, string> = {
                       'Snatch': 'snatch',
                       'Power Snatch': 'power_snatch',
@@ -198,7 +207,7 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
                           return (
                             <div key={n} className="flex items-center justify-between bg-gray-50 border rounded px-2 py-1">
                               <span className="text-gray-700">{n}</span>
-                              <span className="font-medium">{v || 0}</span>
+                              <span className="font-medium">{toDisplay(v)}</span>
                             </div>
                           )
                         })}
