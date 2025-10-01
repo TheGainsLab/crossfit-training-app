@@ -45,8 +45,11 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         const sb = createClient()
         const { data: { session } } = await sb.auth.getSession()
         const token = session?.access_token
-        const startWeek = Math.max(1, currentWeek - ((currentWeek - 1) % 4))
-        const endWeek = Math.min(13, startWeek + 3)
+        // Month window: weeks 1-4, 5-8, 9-12. Map week 13 into 9-12.
+        const weekForMonth = Math.min(currentWeek || 1, 12)
+        const monthIndex = Math.ceil(weekForMonth / 4)
+        const startWeek = (monthIndex - 1) * 4 + 1
+        const endWeek = Math.min(12, startWeek + 3)
         const res = await fetch(`/api/analytics/metcons?mode=plan&startWeek=${startWeek}&endWeek=${endWeek}` , {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined
         })
@@ -94,9 +97,11 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
       return 0
     }
     const binByDay: number[] = Array(20).fill(0)
-    // Determine current 4-week window based on currentWeek
-    const startWeek = Math.max(1, currentWeek - ((currentWeek - 1) % 4))
-    const endWeek = Math.min(13, startWeek + 3)
+    // Determine current program month window based on currentWeek
+    const weekForMonth = Math.min(currentWeek || 1, 12)
+    const monthIndex = Math.ceil(weekForMonth / 4)
+    const startWeek = (monthIndex - 1) * 4 + 1
+    const endWeek = Math.min(12, startWeek + 3)
     ;(metconRows || []).forEach((r: any) => {
       const w = Number(r.week || 0)
       const d = Number(r.day || 0)
