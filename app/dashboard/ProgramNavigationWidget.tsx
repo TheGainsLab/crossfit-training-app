@@ -189,7 +189,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
           className="text-sm text-blue-600 hover:text-blue-700 inline-flex items-center space-x-1 transition-colors"
         >
           <span>📋</span>
-          <span>Browse Full Program</span>
+          <span>Program Navigator</span>
         </Link>
         <Link
           href={`/dashboard/preview/week/${currentWeek + (currentDay >= 5 ? 1 : 0)}`}
