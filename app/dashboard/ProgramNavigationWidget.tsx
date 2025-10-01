@@ -44,7 +44,9 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         const sb = createClient()
         const { data: { session } } = await sb.auth.getSession()
         const token = session?.access_token
-        const res = await fetch('/api/analytics/metcons?mode=plan', {
+        const startWeek = Math.max(1, currentWeek - ((currentWeek - 1) % 4))
+        const endWeek = Math.min(13, startWeek + 3)
+        const res = await fetch(`/api/analytics/metcons?mode=plan&startWeek=${startWeek}&endWeek=${endWeek}` , {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined
         })
         const j = await res.json()

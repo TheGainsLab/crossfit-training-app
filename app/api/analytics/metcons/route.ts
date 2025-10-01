@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
     const equipment = searchParams.get('equipment') // csv
     const level = searchParams.get('level')
     const mode = (searchParams.get('mode') || '').toLowerCase()
+    const startWeekParam = searchParams.get('startWeek')
+    const endWeekParam = searchParams.get('endWeek')
 
     // Get latest program for user
     const { data: prog } = await supabase.from('programs').select('id').eq('user_id', userId).order('id', { ascending: false }).limit(1)
@@ -49,10 +51,14 @@ export async function GET(req: NextRequest) {
 
     // New: exact plan rows for latest program (week/day/time_range)
     if (mode === 'plan') {
+      const startWeek = startWeekParam ? parseInt(startWeekParam) : 1
+      const endWeek = endWeekParam ? parseInt(endWeekParam) : (startWeek + 3)
       const { data: planRows, error: planErr } = await supabase
-        .from('program_metcons')
-        .select('week, day, metcons!inner(time_range)')
+        .from('program_metcons as pm')
+        .select('week, day, metcons!inner(id, time_range)')
         .eq('program_id', programId)
+        .gte('week', startWeek)
+        .lte('week', endWeek)
         .order('week', { ascending: true })
         .order('day', { ascending: true })
       if (planErr) throw planErr
@@ -61,7 +67,7 @@ export async function GET(req: NextRequest) {
         day: r.day,
         time_range: r.metcons?.time_range || null,
       }))
-      return NextResponse.json({ success: true, plan: rows })
+      return NextResponse.json({ success: true, plan: rows, window: { startWeek, endWeek } })
     }
 
     // Build filter SQL fragments
