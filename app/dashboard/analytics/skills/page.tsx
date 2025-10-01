@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import CoachDrawer from '@/components/CoachDrawer'
 import PlanDiffViewer from '@/components/PlanDiffViewer'
@@ -54,6 +54,20 @@ export default function AnalyticsSkillsPage() {
     }
     run()
   }, [days])
+
+  const metricsBySkill = useMemo(() => {
+    const map: Record<string, { totalReps: number; last?: any }> = {}
+    for (const row of sessions) {
+      const name = (row as any)?.exercise_name || 'Unknown'
+      if (!map[name]) map[name] = { totalReps: 0 }
+      const repsNum = Number((row as any)?.reps) || 0
+      map[name].totalReps += repsNum
+      const ts = (row as any)?.logged_at ? Date.parse((row as any).logged_at) : 0
+      const lastTs = map[name].last?.logged_at ? Date.parse(map[name].last.logged_at) : 0
+      if (ts && ts > lastTs) map[name].last = row
+    }
+    return map
+  }, [sessions])
 
   return (
     <div className="space-y-6">
@@ -119,6 +133,7 @@ export default function AnalyticsSkillsPage() {
               .sort((a: any, b: any) => (b.count || 0) - (a.count || 0))
               .map((sk: any) => {
                 const lastDate = sk.lastDate ? new Date(sk.lastDate).toLocaleDateString() : null
+                const metrics = metricsBySkill[sk.name] || { totalReps: 0 }
                 return (
                   <button
                     key={sk.name}
@@ -149,8 +164,12 @@ export default function AnalyticsSkillsPage() {
                       <div className="flex justify-between"><span className="text-gray-600">Sessions</span><span className="font-medium">{sk.count || 0}</span></div>
                       <div className="flex justify-between"><span className="text-gray-600">Avg RPE</span><span className="font-medium">{Math.round((sk.avgRPE || 0) * 10) / 10}</span></div>
                       <div className="flex justify-between"><span className="text-gray-600">Avg Quality</span><span className="font-medium">{Math.round((sk.avgQuality || 0) * 10) / 10}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Total reps</span><span className="font-medium">{metrics.totalReps || 0}</span></div>
                       <div className="flex justify-between"><span className="text-gray-600">Last</span><span className="font-medium">{lastDate || '—'}</span></div>
                     </div>
+                    {metrics.last && (
+                      <div className="mt-2 text-xs text-gray-600">Last: {new Date(metrics.last.logged_at).toLocaleDateString()} — {(metrics.last.sets || 0)} × {(metrics.last.reps || 0)}</div>
+                    )}
                   </button>
                 )
               })}
