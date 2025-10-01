@@ -87,13 +87,45 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
     const labelsY = Array.from({ length: 20 }, (_, i) => `Day ${20 - i}`)
     // Map time_range -> numeric bin index 1..5
     const toBinIndex = (tr: string): number => {
-      const s = (tr || '').replace(/\s/g, '')
-      if (!s) return 0
-      if (s.includes('1:00–5:00') || s.includes('1:00-5:00')) return 1
-      if (s.includes('5:00–10:00') || s.includes('5:00-10:00')) return 2
-      if (s.includes('10:00–15:00') || s.includes('10:00-15:00')) return 3
-      if (s.includes('15:00–20:00') || s.includes('15:00-20:00')) return 4
-      if (s.includes('20:00+') || s.includes('20:00–30:00') || s.includes('20:00-30:00') || s.includes('30:00+')) return 5
+      const raw = String(tr || '')
+      if (!raw) return 0
+      const s = raw.trim()
+      // Direct domain string checks
+      const noSpace = s.replace(/\s/g, '')
+      if (noSpace.includes('1:00–5:00') || noSpace.includes('1:00-5:00')) return 1
+      if (noSpace.includes('5:00–10:00') || noSpace.includes('5:00-10:00')) return 2
+      if (noSpace.includes('10:00–15:00') || noSpace.includes('10:00-15:00')) return 3
+      if (noSpace.includes('15:00–20:00') || noSpace.includes('15:00-20:00')) return 4
+      if (noSpace.includes('20:00+') || noSpace.includes('20:00–30:00') || noSpace.includes('20:00-30:00') || noSpace.includes('30:00+')) return 5
+
+      // Parse generic minute ranges like "8-12 min", "12–18 minutes"
+      const minutePairs = s.match(/(\d+)(?:\s*(?:-|–|to)\s*)(\d+)\s*(?:min|mins|minute|minutes)?/i)
+      if (minutePairs) {
+        const hi = Number(minutePairs[2])
+        if (hi <= 5) return 1
+        if (hi <= 10) return 2
+        if (hi <= 15) return 3
+        if (hi <= 20) return 4
+        return 5
+      }
+
+      // Parse mm:ss single or range
+      const timeMatches = s.match(/(\d{1,2}):(\d{2})/g)
+      if (timeMatches && timeMatches.length > 0) {
+        const last = timeMatches[timeMatches.length - 1]
+        const [mm, ss] = last.split(':').map(Number)
+        const totalMin = mm + (ss / 60)
+        if (totalMin <= 5) return 1
+        if (totalMin <= 10) return 2
+        if (totalMin <= 15) return 3
+        if (totalMin <= 20) return 4
+        return 5
+      }
+
+      // Single number with plus, e.g., "20+ min"
+      const plus = s.match(/(\d+)\s*\+\s*(?:min|mins|minute|minutes)?/i)
+      if (plus) return 5
+
       return 0
     }
     const binByDay: number[] = Array(20).fill(0)
