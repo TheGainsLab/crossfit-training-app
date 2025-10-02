@@ -135,6 +135,49 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, plan: windowRows, window: { startWeek, endWeek } })
     }
 
+    // Debug: return only program_metcons -> metcons.time_range mapping for the window
+    if (mode === 'plan_pm') {
+      const startWeek = startWeekParam ? parseInt(startWeekParam) : 1
+      const endWeek = endWeekParam ? parseInt(endWeekParam) : (startWeek + 3)
+
+      const { data: pmRows, error: pmErr } = await supabase
+        .from('program_metcons')
+        .select('week, day, metcon_id')
+        .eq('program_id', programId)
+        .gte('week', startWeek)
+        .lte('week', endWeek)
+        .order('week', { ascending: true })
+        .order('day', { ascending: true })
+      if (pmErr) throw pmErr
+
+      const metconIds = Array.from(new Set((pmRows || []).map((r: any) => r.metcon_id).filter(Boolean)))
+      let idToTimeRange: Record<string, string | null> = {}
+      if (metconIds.length > 0) {
+        const { data: mRows, error: mErr } = await supabase
+          .from('metcons')
+          .select('id, time_range')
+          .in('id', metconIds as any)
+        if (mErr) throw mErr
+        idToTimeRange = Object.fromEntries((mRows || []).map((m: any) => [String(m.id), m.time_range || null]))
+      }
+
+      const pmKeyToTR: Record<string, string | null> = {}
+      ;(pmRows || []).forEach((r: any) => {
+        const key = `${r.week}-${r.day}`
+        pmKeyToTR[key] = idToTimeRange[String(r.metcon_id)] || null
+      })
+
+      const daily: Array<{ week: number; day: number; from_pm: boolean; time_range: string | null }> = []
+      for (let w = startWeek; w <= endWeek; w++) {
+        for (let d = 1; d <= 5; d++) {
+          const tr = pmKeyToTR[`${w}-${d}`] ?? null
+          daily.push({ week: w, day: d, from_pm: tr !== null, time_range: tr })
+        }
+      }
+
+      return NextResponse.json({ success: true, window: { startWeek, endWeek }, pm_count: (pmRows || []).length, daily })
+    }
+
     // Build filter SQL fragments
     const tdList = (timeDomain || '').split(',').map(s => s.trim()).filter(Boolean)
     const eqList = (equipment || '').split(',').map(s => s.trim()).filter(Boolean)
