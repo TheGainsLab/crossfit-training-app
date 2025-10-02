@@ -110,15 +110,25 @@ export async function GET(req: NextRequest) {
             const blocks: any[] = Array.isArray(dObj?.blocks) ? dObj.blocks : []
             let tr: string | null = null
             let wid: string | null = null
-            for (const b of blocks) {
-              // Only read explicit metcon data; do not guess by block name
-              const candidateTR = (b?.metconData?.timeRange || b?.metcon?.time_range || null) as string | null
-              const candidateWID = (b?.metconData?.workoutId || b?.metcon?.workout_id || null) as string | null
-              if (!wid && candidateWID) {
-                wid = String(candidateWID)
-                jsonWorkoutIds.add(wid)
+            // 1) Prefer day-level metconData to match day page source
+            const dayMetcon = (dObj?.metconData || dObj?.metcon || null) as any
+            if (dayMetcon) {
+              const dWid = (dayMetcon?.workoutId || dayMetcon?.workout_id || null) as string | null
+              const dTR  = (dayMetcon?.timeRange || dayMetcon?.time_range || null) as string | null
+              if (dWid) { wid = String(dWid); jsonWorkoutIds.add(wid) }
+              if (dTR)  { tr = dTR }
+            }
+            // 2) Fallback to blocks-level metconData if day-level missing
+            if (!tr || !wid) {
+              for (const b of blocks) {
+                const candidateTR = (b?.metconData?.timeRange || b?.metcon?.time_range || null) as string | null
+                const candidateWID = (b?.metconData?.workoutId || b?.metcon?.workout_id || null) as string | null
+                if (!wid && candidateWID) {
+                  wid = String(candidateWID)
+                  jsonWorkoutIds.add(wid)
+                }
+                if (!tr && candidateTR) { tr = candidateTR }
               }
-              if (candidateTR) { tr = candidateTR; }
             }
             if (wk >= startWeek && wk <= endWeek && dy >= 1 && dy <= 5) {
               jsonKeyToTR[`${wk}-${dy}`] = tr || null
