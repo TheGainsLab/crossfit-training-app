@@ -73,12 +73,31 @@ export async function GET(req: NextRequest) {
         if (mErr) throw mErr
         idToTimeRange = Object.fromEntries((mRows || []).map((m: any) => [String(m.id), m.time_range || null]))
       }
+      // Step 2: fallback plan view for any missing week/day
+      let upRows: any[] | null = null
+      try {
+        const { data: up } = await supabase
+          .from('ai_upcoming_program_v1')
+          .select('week, day, metcon')
+          .eq('program_id', programId)
+          .gte('week', startWeek)
+          .lte('week', endWeek)
+        upRows = up || []
+      } catch {}
+      const upKeyToTR: Record<string, string | null> = {}
+      ;(upRows || []).forEach((r: any) => {
+        const key = `${r.week}-${r.day}`
+        const tr = r?.metcon?.time_range ?? r?.metcon?.timeRange ?? null
+        upKeyToTR[key] = tr || null
+      })
       // Build a complete 20-day window (weeks startWeek..endWeek, days 1..5)
       const windowRows: Array<{ week: number; day: number; time_range: string | null }> = []
       for (let w = endWeek; w >= startWeek; w--) {
         for (let d = 1; d <= 5; d++) {
           const r = (pmRows || []).find((x: any) => Number(x.week) === w && Number(x.day) === d)
-          const tr = r ? (idToTimeRange[String(r.metcon_id)] || null) : null
+          const trFromPM = r ? (idToTimeRange[String(r.metcon_id)] || null) : null
+          const trFromUP = upKeyToTR[`${w}-${d}`] ?? null
+          const tr = trFromPM ?? trFromUP
           windowRows.push({ week: w, day: d, time_range: tr })
         }
       }
