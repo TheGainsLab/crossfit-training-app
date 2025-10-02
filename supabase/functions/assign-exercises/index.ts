@@ -451,14 +451,9 @@ async function assignExercises(
     }
 
 
-    // SKILLS block specific filtering (exact logic from Google Script)
+    // SKILLS block specific filtering (keep no-consecutive-days; remove weekly cap)
     if (block === 'SKILLS') {
       const exerciseName = exercise.name
-
-      // Check frequency limits: max 2x/week
-      if (weeklySkills[exerciseName] && weeklySkills[exerciseName] >= 2) {
-        return false
-      }
 
       // Check consecutive day restriction for skills
       if (previousDaySkills.includes(exerciseName)) {
