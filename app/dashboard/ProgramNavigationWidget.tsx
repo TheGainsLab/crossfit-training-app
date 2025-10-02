@@ -388,7 +388,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         </button>
       </div>
       {/* Modal mount */}
-      <MetconPreviewModal open={metconOpen} onClose={() => setMetconOpen(false)} chart={metconChart} />
+      <MetconPreviewModal open={metconOpen} onClose={() => setMetconOpen(false)} chart={metconChart} debug={metconDebug} />
     </div>
   );
 };
@@ -396,7 +396,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
 export default ProgramNavigationWidget;
 
 // Lightweight modal for mobile
-export function MetconPreviewModal({ open, onClose, chart }: { open: boolean; onClose: () => void; chart: { data: any; options: any } }) {
+export function MetconPreviewModal({ open, onClose, chart, debug }: { open: boolean; onClose: () => void; chart: { data: any; options: any }; debug?: Array<{ dayLabel: string; week: number; day: number; timeRange: string | null }> }) {
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -411,15 +411,19 @@ export function MetconPreviewModal({ open, onClose, chart }: { open: boolean; on
           <Bar data={chart.data} options={chart.options} />
         </div>
         {/* Debug list for quick verification on mobile */}
-        <div className="mt-3">
-          <details>
-            <summary className="text-xs text-gray-700 cursor-pointer">Debug: Show day→(week,day,time) mapping</summary>
-            <div className="mt-2 text-xs text-gray-600 space-y-1">
-              {/* @ts-ignore access from outer component via window console output */}
-              <p>Open console for missing days log.</p>
-            </div>
-          </details>
-        </div>
+        {Array.isArray(debug) && debug.length === 20 && (
+          <div className="mt-4 border-t pt-3">
+            <h4 className="text-xs font-semibold text-gray-800 mb-2">Plan (Day → Week,Day → Time Range)</h4>
+            <ul className="grid grid-cols-2 gap-1 text-xs text-gray-700">
+              {debug.map((row, idx) => (
+                <li key={idx} className="flex items-center justify-between">
+                  <span>{row.dayLabel} → W{row.week},D{row.day}</span>
+                  <span className="ml-2 font-medium">{row.timeRange || 'No MetCon'}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   )
