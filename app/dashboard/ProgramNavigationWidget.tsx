@@ -58,10 +58,10 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
           setMetconRows(j.plan)
           // Build debug map of all 20 days -> (week, day, time_range)
           const dbg: Array<{ dayLabel: string; week: number; day: number; timeRange: string | null }> = []
-          for (let absoluteDay = 1; absoluteDay <= 20; absoluteDay++) {
-            const week = endWeek - Math.floor((absoluteDay - 1) / 5)
-            const day = ((absoluteDay - 1) % 5) + 1
-            const label = `Day ${21 - absoluteDay}`
+          for (let k = 1; k <= 20; k++) {
+            const week = startWeek + Math.floor((k - 1) / 5)
+            const day = ((k - 1) % 5) + 1
+            const label = `Day ${k}`
             const row = (j.plan as any[]).find(r => Number(r.week) === week && Number(r.day) === day)
             dbg.push({ dayLabel: label, week, day, timeRange: row?.time_range ?? null })
           }
@@ -84,7 +84,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
 
   const metconChart = useMemo(() => {
     // Build exact days 1..20 from exact plan rows (week, day)
-    const labelsY = Array.from({ length: 20 }, (_, i) => `Day ${20 - i}`)
+    const labelsY = Array.from({ length: 20 }, (_, i) => `Day ${i + 1}`)
     // Map time_range -> numeric bin index 1..5
     const toBinIndex = (tr: string): number => {
       const raw = String(tr || '')
@@ -139,8 +139,8 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
       const d = Number(r.day || 0)
       const tr = String(r.time_range || '')
       if (w < startWeek || w > endWeek || d < 1 || d > 5) return
-      // Correct mapping: week=endWeek,day=1 -> idx 0 (Day 20); week=startWeek,day=5 -> idx 19 (Day 1)
-      const dayIdx = (endWeek - w) * 5 + (d - 1)
+      // Day index: Day 1 = week=startWeek, day=1 => idx 0; Day 20 = week=endWeek, day=5 => idx 19
+      const dayIdx = (w - startWeek) * 5 + (d - 1)
       const bin = toBinIndex(tr)
       if (dayIdx >= 0 && dayIdx < 20) binByDay[dayIdx] = bin
     })
