@@ -44,9 +44,21 @@ export async function GET(req: NextRequest) {
     const startWeekParam = searchParams.get('startWeek')
     const endWeekParam = searchParams.get('endWeek')
 
-    // Get latest program for user
-    const { data: prog } = await supabase.from('programs').select('id').eq('user_id', userId).order('id', { ascending: false }).limit(1)
-    const programId = prog?.[0]?.id
+    // Determine program to use
+    const programIdParam = searchParams.get('programId')
+    let programId: number | null = null
+    if (programIdParam && !isNaN(parseInt(programIdParam))) {
+      programId = parseInt(programIdParam)
+    } else {
+      // Fallback to latest program for user
+      const { data: prog } = await supabase
+        .from('programs')
+        .select('id')
+        .eq('user_id', userId)
+        .order('id', { ascending: false })
+        .limit(1)
+      programId = prog?.[0]?.id ?? null
+    }
     if (!programId) return NextResponse.json({ success: true, summary: { completions: 0, time_domain_mix: [], avg_percentile: null, best_scores: [], equipment_mix: [] }, heatmap: [], plan: [] })
 
     // New: exact plan rows for latest program (week/day/time_range)
