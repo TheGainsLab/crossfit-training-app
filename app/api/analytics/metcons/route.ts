@@ -108,15 +108,9 @@ export async function GET(req: NextRequest) {
             const blocks: any[] = Array.isArray(dObj?.blocks) ? dObj.blocks : []
             let tr: string | null = null
             for (const b of blocks) {
-              // First, prefer explicit metconData regardless of block name
+              // Only read explicit metcon data; do not guess by block name
               const candidate = (b?.metconData?.timeRange || b?.metcon?.time_range || null) as string | null
               if (candidate) { tr = candidate; break }
-              // Fallback to block name checks if metconData is absent but naming indicates a metcon
-              const name = String(b?.blockName || b?.block || '').toUpperCase()
-              if (name.includes('METCON') || name.includes('CONDITIONING')) {
-                tr = (b?.metconData?.timeRange || b?.metcon?.time_range || null) as string | null
-                if (tr) break
-              }
             }
             if (wk >= startWeek && wk <= endWeek && dy >= 1 && dy <= 5) {
               jsonKeyToTR[`${wk}-${dy}`] = tr || null
