@@ -92,6 +92,8 @@ export async function GET(req: NextRequest) {
       })
       // Step 3: fallback to program JSON (programs.program_data)
       let jsonKeyToTR: Record<string, string | null> = {}
+      let jsonKeyToWorkoutId: Record<string, string | null> = {}
+      const jsonWorkoutIds: Set<string> = new Set()
       try {
         const { data: progRow } = await supabase
           .from('programs')
@@ -107,17 +109,38 @@ export async function GET(req: NextRequest) {
             const dy = Number(dObj?.day) || 0
             const blocks: any[] = Array.isArray(dObj?.blocks) ? dObj.blocks : []
             let tr: string | null = null
+            let wid: string | null = null
             for (const b of blocks) {
               // Only read explicit metcon data; do not guess by block name
-              const candidate = (b?.metconData?.timeRange || b?.metcon?.time_range || null) as string | null
-              if (candidate) { tr = candidate; break }
+              const candidateTR = (b?.metconData?.timeRange || b?.metcon?.time_range || null) as string | null
+              const candidateWID = (b?.metconData?.workoutId || b?.metcon?.workout_id || null) as string | null
+              if (!wid && candidateWID) {
+                wid = String(candidateWID)
+                jsonWorkoutIds.add(wid)
+              }
+              if (candidateTR) { tr = candidateTR; }
             }
             if (wk >= startWeek && wk <= endWeek && dy >= 1 && dy <= 5) {
               jsonKeyToTR[`${wk}-${dy}`] = tr || null
+              jsonKeyToWorkoutId[`${wk}-${dy}`] = wid || null
             }
           })
         })
       } catch {}
+
+      // Resolve missing time ranges via metcons lookup by workout_id from JSON
+      let workoutIdToTR: Record<string, string | null> = {}
+      if (jsonWorkoutIds.size > 0) {
+        try {
+          const { data: mByWid } = await supabase
+            .from('metcons')
+            .select('workout_id, time_range')
+            .in('workout_id', Array.from(jsonWorkoutIds))
+          if (Array.isArray(mByWid)) {
+            workoutIdToTR = Object.fromEntries(mByWid.map((m: any) => [String(m.workout_id), m.time_range || null]))
+          }
+        } catch {}
+      }
       // Build a complete 20-day window (weeks startWeek..endWeek, days 1..5)
       const windowRows: Array<{ week: number; day: number; time_range: string | null }> = []
       for (let w = endWeek; w >= startWeek; w--) {
@@ -126,7 +149,9 @@ export async function GET(req: NextRequest) {
           const trFromPM = r ? (idToTimeRange[String(r.metcon_id)] || null) : null
           const trFromUP = upKeyToTR[`${w}-${d}`] ?? null
           const trFromJSON = jsonKeyToTR[`${w}-${d}`] ?? null
-          const tr = trFromPM ?? trFromUP ?? trFromJSON
+          const wid = jsonKeyToWorkoutId[`${w}-${d}`] || null
+          const trFromWID = wid ? (workoutIdToTR[wid] || null) : null
+          const tr = trFromPM ?? trFromUP ?? trFromJSON ?? trFromWID
           windowRows.push({ week: w, day: d, time_range: tr })
         }
       }
