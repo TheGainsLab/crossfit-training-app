@@ -90,6 +90,36 @@ export async function GET(req: NextRequest) {
         const tr = r?.metcon?.time_range ?? r?.metcon?.timeRange ?? null
         upKeyToTR[key] = tr || null
       })
+      // Step 3: fallback to program JSON (programs.program_data)
+      let jsonKeyToTR: Record<string, string | null> = {}
+      try {
+        const { data: progRow } = await supabase
+          .from('programs')
+          .select('program_data')
+          .eq('id', programId)
+          .single()
+        const pd: any = progRow?.program_data
+        const weeks: any[] = Array.isArray(pd?.weeks) ? pd.weeks : []
+        weeks.forEach((wObj: any) => {
+          const wk = Number(wObj?.week) || 0
+          const days: any[] = Array.isArray(wObj?.days) ? wObj.days : []
+          days.forEach((dObj: any) => {
+            const dy = Number(dObj?.day) || 0
+            const blocks: any[] = Array.isArray(dObj?.blocks) ? dObj.blocks : []
+            let tr: string | null = null
+            for (const b of blocks) {
+              const name = String(b?.blockName || b?.block || '').toUpperCase()
+              if (name === 'METCONS') {
+                tr = (b?.metconData?.timeRange || b?.metcon?.time_range || null) as string | null
+                break
+              }
+            }
+            if (wk >= startWeek && wk <= endWeek && dy >= 1 && dy <= 5) {
+              jsonKeyToTR[`${wk}-${dy}`] = tr || null
+            }
+          })
+        })
+      } catch {}
       // Build a complete 20-day window (weeks startWeek..endWeek, days 1..5)
       const windowRows: Array<{ week: number; day: number; time_range: string | null }> = []
       for (let w = endWeek; w >= startWeek; w--) {
@@ -97,7 +127,8 @@ export async function GET(req: NextRequest) {
           const r = (pmRows || []).find((x: any) => Number(x.week) === w && Number(x.day) === d)
           const trFromPM = r ? (idToTimeRange[String(r.metcon_id)] || null) : null
           const trFromUP = upKeyToTR[`${w}-${d}`] ?? null
-          const tr = trFromPM ?? trFromUP
+          const trFromJSON = jsonKeyToTR[`${w}-${d}`] ?? null
+          const tr = trFromPM ?? trFromUP ?? trFromJSON
           windowRows.push({ week: w, day: d, time_range: tr })
         }
       }
