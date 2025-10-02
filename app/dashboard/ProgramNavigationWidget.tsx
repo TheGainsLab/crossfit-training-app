@@ -198,6 +198,49 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
       }
     }
   }, [metconRows])
+
+  const domainSummary = useMemo(() => {
+    const summary: Record<string, number> = {
+      '1:00 - 5:00': 0,
+      '5:00 - 10:00': 0,
+      '10:00 - 15:00': 0,
+      '15:00 - 20:00': 0,
+      '20:00+': 0,
+    }
+    // Reuse the same mapping as chart
+    const weekForMonth = Math.min(currentWeek || 1, 12)
+    const monthIndex = Math.ceil(weekForMonth / 4)
+    const startWeek = (monthIndex - 1) * 4 + 1
+    const endWeek = Math.min(12, startWeek + 3)
+    const toBinIndex = (tr: string): number => {
+      const raw = String(tr || '')
+      if (!raw) return 0
+      const s = raw.trim()
+      const noSpace = s.replace(/\s/g, '')
+      if (noSpace.includes('1:00–5:00') || noSpace.includes('1:00-5:00')) return 1
+      if (noSpace.includes('5:00–10:00') || noSpace.includes('5:00-10:00')) return 2
+      if (noSpace.includes('10:00–15:00') || noSpace.includes('10:00-15:00')) return 3
+      if (noSpace.includes('15:00–20:00') || noSpace.includes('15:00-20:00')) return 4
+      if (noSpace.includes('20:00+') || noSpace.includes('20:00–30:00') || noSpace.includes('20:00-30:00') || noSpace.includes('30:00+')) return 5
+      return 0
+    }
+    ;(metconRows || []).forEach((r: any) => {
+      const w = Number(r.week || 0)
+      const d = Number(r.day || 0)
+      const tr = String(r.time_range || '')
+      if (w < startWeek || w > endWeek || d < 1 || d > 5) return
+      const bin = toBinIndex(tr)
+      switch (bin) {
+        case 1: summary['1:00 - 5:00'] += 1; break
+        case 2: summary['5:00 - 10:00'] += 1; break
+        case 3: summary['10:00 - 15:00'] += 1; break
+        case 4: summary['15:00 - 20:00'] += 1; break
+        case 5: summary['20:00+'] += 1; break
+        default: break
+      }
+    })
+    return summary
+  }, [metconRows, currentWeek])
   // Helper functions for navigation
   const getPreviousDay = () => {
     if (currentDay === 1) {
@@ -388,7 +431,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         </button>
       </div>
       {/* Modal mount */}
-      <MetconPreviewModal open={metconOpen} onClose={() => setMetconOpen(false)} chart={metconChart} debug={metconDebug} />
+      <MetconPreviewModal open={metconOpen} onClose={() => setMetconOpen(false)} chart={metconChart} summary={domainSummary} />
     </div>
   );
 };
@@ -396,7 +439,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
 export default ProgramNavigationWidget;
 
 // Lightweight modal for mobile
-export function MetconPreviewModal({ open, onClose, chart, debug }: { open: boolean; onClose: () => void; chart: { data: any; options: any }; debug?: Array<{ dayLabel: string; week: number; day: number; timeRange: string | null }> }) {
+export function MetconPreviewModal({ open, onClose, chart, summary }: { open: boolean; onClose: () => void; chart: { data: any; options: any }; summary?: Record<string, number> }) {
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -410,17 +453,16 @@ export function MetconPreviewModal({ open, onClose, chart, debug }: { open: bool
         <div className="h-[420px] sm:h-[480px]">
           <Bar data={chart.data} options={chart.options} />
         </div>
-        {/* Debug list for quick verification on mobile */}
-        {Array.isArray(debug) && debug.length === 20 && (
+        {/* Summary by time domain */}
+        {summary && (
           <div className="mt-4 border-t pt-3">
-            <h4 className="text-xs font-semibold text-gray-800 mb-2">Plan (Day → Week,Day → Time Range)</h4>
+            <h4 className="text-xs font-semibold text-gray-800 mb-2">Time Domain Summary (20 days)</h4>
             <ul className="grid grid-cols-2 gap-1 text-xs text-gray-700">
-              {debug.map((row, idx) => (
-                <li key={idx} className="flex items-center justify-between">
-                  <span>{row.dayLabel} → W{row.week},D{row.day}</span>
-                  <span className="ml-2 font-medium">{row.timeRange || 'No MetCon'}</span>
-                </li>
-              ))}
+              <li className="flex items-center justify-between"><span>1:00 - 5:00</span><span className="ml-2 font-medium">{summary['1:00 - 5:00']}</span></li>
+              <li className="flex items-center justify-between"><span>5:00 - 10:00</span><span className="ml-2 font-medium">{summary['5:00 - 10:00']}</span></li>
+              <li className="flex items-center justify-between"><span>10:00 - 15:00</span><span className="ml-2 font-medium">{summary['10:00 - 15:00']}</span></li>
+              <li className="flex items-center justify-between"><span>15:00 - 20:00</span><span className="ml-2 font-medium">{summary['15:00 - 20:00']}</span></li>
+              <li className="flex items-center justify-between"><span>20:00+</span><span className="ml-2 font-medium">{summary['20:00+']}</span></li>
             </ul>
           </div>
         )}
