@@ -481,15 +481,7 @@ async function assignExercises(
         return false
       }
 
-      // Elite access requires BOTH: 10+ advanced skills overall AND Advanced in this specific skill (when available)
-      const advancedSkillCount = user.skills.filter((s: string) => s.includes('Advanced')).length
-      const isEliteEligible = advancedSkillCount >= 10
-      if (exerciseLevel === 4) {
-        const hasAdvancedForThisSkill = (skillIndex !== null && skillIndex !== undefined && skillIndex >= 0 && skillIndex <= 25) ? user.skills[skillIndex].includes('Advanced') : (abilityLevel >= 3)
-        if (!isEliteEligible || !hasAdvancedForThisSkill) {
-          return false
-        }
-      }
+      // Elite exercises are no longer hard-gated; rely on level gating and other guards
 
       // Handle Novice skills - only show as scaling when user lacks the base skill
       if (exerciseLevel === 0) { // Novice level
