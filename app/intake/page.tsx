@@ -1497,25 +1497,7 @@ const saveUserData = async (userId: number) => {
       </div>
 
       <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700 mb-2">MetCon time range you’d like to target more</label>
-        <div className="flex flex-wrap gap-2">
-          {['1:00 - 5:00','5:00 - 10:00','10:00 - 15:00','15:00 - 20:00','20:00 - 30:00','Over 30:00'].map(opt => {
-            const selected = !!formData.preferences?.metconTimeFocus?.includes(opt)
-            return (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => {
-                  const current = formData.preferences?.metconTimeFocus || []
-                  updatePreferences('metconTimeFocus', selected ? current.filter(o => o !== opt) : [...current, opt])
-                }}
-                className={`px-3 py-1 rounded-full border text-sm ${selected ? 'bg-[#FE5858] text-white border-[#FE5858]' : 'bg-white text-gray-800 border-gray-300'}`}
-              >
-                {opt}
-              </button>
-            )
-          })}
-        </div>
+        {/* MetCon time range focus removed for new users to avoid early bias */}
       </div>
 
       {/* Lift focus/emphasis removed per request (handled via weekly preview later) */}
