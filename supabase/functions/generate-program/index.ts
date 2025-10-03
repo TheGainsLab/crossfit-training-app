@@ -293,6 +293,8 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
     }
     
     let previousDayAccessories: string[] = []
+    let weeklyAccessoryCategories: Record<string, number> = {}
+    let previousAccessoryCategoryDays: string[][] = []
     let previousDaySkills: string[] = []
     
     // Track used strength exercise names within the week to prevent repeats
@@ -450,9 +452,11 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
               numExercises: numExercises,
               weeklySkills: weeklySkills,
               weeklyAccessories: weeklyAccessories,
+              weeklyAccessoryCategories: weeklyAccessoryCategories,
               previousDayAccessories: previousDayAccessories,
               previousDaySkills: previousDaySkills,
-              dailyStrengthExercises: dailyStrengthExercises
+              dailyStrengthExercises: dailyStrengthExercises,
+              previousAccessoryCategoryDays: previousAccessoryCategoryDays
             })
           })
           
@@ -460,6 +464,12 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
             try {
               const exerciseResult = await exerciseResponse.json()
               blockExercises = Array.isArray(exerciseResult.exercises) ? exerciseResult.exercises : []
+              // Track accessory categories used for policy caps
+              if (block === 'ACCESSORIES' && Array.isArray(exerciseResult.usedAccessoryCategories)) {
+                const cats: string[] = exerciseResult.usedAccessoryCategories
+                cats.forEach((c) => { if (c) weeklyAccessoryCategories[c] = (weeklyAccessoryCategories[c] || 0) + 1 })
+                previousAccessoryCategoryDays.push(cats)
+              }
             } catch (e) {
               console.error('    ↳ assign-exercises JSON parse error:', e)
             }
