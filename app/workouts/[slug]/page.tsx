@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 
 type Stats = {
   gender: 'male'|'female'
@@ -10,19 +11,22 @@ type Stats = {
   attempts_count: number
 }
 
-export default function WorkoutDetailPage({ params }: { params: { slug: string } }) {
+export default function WorkoutDetailPage() {
+  const params = useParams() as { slug?: string }
+  const slug = String(params?.slug || '')
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    fetch(`/api/comp-workouts/${encodeURIComponent(params.slug)}`)
+    if (!slug) return
+    fetch(`/api/comp-workouts/${encodeURIComponent(slug)}`)
       .then(r => r.json())
       .then(res => { if (!cancelled) setData(res?.workout || null) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [params.slug])
+  }, [slug])
 
   if (loading) return <div className="p-4">Loading…</div>
   if (!data) return <div className="p-4">Not found</div>
