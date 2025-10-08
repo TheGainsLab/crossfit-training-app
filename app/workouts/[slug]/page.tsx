@@ -17,7 +17,7 @@ export default function WorkoutDetailPage({ params }: { params: { slug: string }
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    fetch(`/api/workouts/${encodeURIComponent(params.slug)}`)
+    fetch(`/api/comp-workouts/${encodeURIComponent(params.slug)}`)
       .then(r => r.json())
       .then(res => { if (!cancelled) setData(res?.workout || null) })
       .finally(() => { if (!cancelled) setLoading(false) })
