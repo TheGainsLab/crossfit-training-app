@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
   const level = url.searchParams.get('level') || undefined
   const format = url.searchParams.get('format') || undefined
   const timeDomain = url.searchParams.get('timeDomain') || undefined
+  const timeRange = url.searchParams.get('timeRange') || undefined
   const equipmentCsv = url.searchParams.get('equipment') || ''
   const equipment = equipmentCsv ? equipmentCsv.split(',').map(s => s.trim()).filter(Boolean) : []
   const minTimeCap = url.searchParams.get('minTimeCap')
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest) {
   if (level) query = query.eq('event_level', level)
   if (format) query = query.eq('format', format)
   if (timeDomain) query = query.eq('time_domain', timeDomain)
+  if (timeRange) query = query.eq('time_range', timeRange)
   if (equipment.length) query = query.overlaps('equipment', equipment)
   if (minTimeCap) query = query.gte('time_cap_seconds', Number(minTimeCap))
   if (maxTimeCap) query = query.lte('time_cap_seconds', Number(maxTimeCap))

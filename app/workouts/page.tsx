@@ -28,6 +28,7 @@ export default function WorkoutsPage() {
   const [level, setLevel] = useState<string>('')
   const [format, setFormat] = useState<string>('')
   const [timeDomain, setTimeDomain] = useState<string>('')
+  const [timeRange, setTimeRange] = useState<string>('')
   const [equipment, setEquipment] = useState<string[]>([])
   const [gender, setGender] = useState<'male' | 'female'>('male')
   const [sort, setSort] = useState<'newest' | 'popularity' | 'name'>('newest')
@@ -38,6 +39,7 @@ export default function WorkoutsPage() {
     if (level) usp.set('level', level)
     if (format) usp.set('format', format)
     if (timeDomain) usp.set('timeDomain', timeDomain)
+    if (timeRange) usp.set('timeRange', timeRange)
     if (equipment.length) usp.set('equipment', equipment.join(','))
     if (gender) usp.set('gender', gender)
     if (sort) usp.set('sort', sort)
@@ -85,13 +87,13 @@ export default function WorkoutsPage() {
           <option>For Time</option>
           <option>Ladder</option>
         </select>
-        <select className="border p-2 rounded" value={timeDomain} onChange={e => setTimeDomain(e.target.value)}>
-          <option value="">Time Domain</option>
-          <option>sprint</option>
-          <option>short</option>
-          <option>medium</option>
-          <option>long</option>
-          <option>ultra</option>
+        <select className="border p-2 rounded" value={timeRange} onChange={e => setTimeRange(e.target.value)}>
+          <option value="">Time Range</option>
+          <option>1:00–5:00</option>
+          <option>5:00–10:00</option>
+          <option>10:00–15:00</option>
+          <option>15:00–20:00</option>
+          <option>20:00+</option>
         </select>
         <select className="border p-2 rounded" value={gender} onChange={e => setGender(e.target.value as 'male' | 'female')}>
           <option value="male">Male</option>
