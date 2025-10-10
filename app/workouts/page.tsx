@@ -122,7 +122,7 @@ export default function WorkoutsPage() {
             <div key={w.workout_id} className="border rounded p-3 flex items-center justify-between">
               <div>
                 <div className="font-medium">{w.name}</div>
-                <div className="text-sm text-gray-500">{w.event_year} • {w.event_level} • {w.format}{w.time_domain ? ` • ${w.time_domain}` : ''}</div>
+                <div className="text-sm text-gray-500">{w.event_year} • {w.event_level} • {w.format}{(w as any).time_range ? ` • ${(w as any).time_range}` : ''}</div>
                 <div className="text-sm">
                   {gender === 'female' ? (
                     <>Top {w.display_top_female} • P90 {w.display_p90_female} • P50 {w.display_median_female}</>

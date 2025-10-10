@@ -34,7 +34,34 @@ export async function GET(req: NextRequest) {
   if (level) query = query.eq('event_level', level)
   if (format) query = query.eq('format', format)
   if (timeDomain) query = query.eq('time_domain', timeDomain)
-  if (timeRange) query = query.eq('time_range', timeRange)
+  if (timeRange) {
+    // Filter by stored enum when present
+    query = query.eq('time_range', timeRange)
+    // Also apply numeric fallback on time_cap_seconds to include rows with null time_range
+    const applyBounds = (min?: number, max?: number) => {
+      if (typeof min === 'number') query = query.gt('time_cap_seconds', min)
+      if (typeof max === 'number') query = query.lte('time_cap_seconds', max)
+    }
+    switch (timeRange) {
+      case '1:00–5:00':
+        applyBounds(undefined, 300)
+        break
+      case '5:00–10:00':
+        applyBounds(300, 600)
+        break
+      case '10:00–15:00':
+        applyBounds(600, 900)
+        break
+      case '15:00–20:00':
+        applyBounds(900, 1200)
+        break
+      case '20:00+':
+        applyBounds(1200, undefined)
+        break
+      default:
+        break
+    }
+  }
   if (equipment.length) query = query.overlaps('equipment', equipment)
   if (minTimeCap) query = query.gte('time_cap_seconds', Number(minTimeCap))
   if (maxTimeCap) query = query.lte('time_cap_seconds', Number(maxTimeCap))
