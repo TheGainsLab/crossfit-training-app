@@ -1,0 +1,2 @@
+slug,event_year,event_name,event_level,name,format,time_domain,time_cap_seconds,score_metric,tasks_json,notes,max_weight_male_lbs,max_weight_female_lbs,max_weight_male_kg,max_weight_female_kg,equipment_csv
+open-2011-11-1,2011,CrossFit Open,Open,Open 11.1,AMRAP,10:00–15:00,600,reps,"[{""reps"":""30"",""exercise"":""Double-under""},{""reps"":""15"",""exercise"":""Power snatch"",""weight_male_lbs"":""75"",""weight_female_lbs"":""55""}]","AMRAP 10: 30 Double-unders + 15 Power snatches (75/55)",75,55,,,"Jump Rope, Barbell"
