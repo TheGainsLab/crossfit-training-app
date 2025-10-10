@@ -88,10 +88,21 @@ export async function GET(req: NextRequest) {
   const { data, error, count } = await query.range(offset, offset + limit - 1)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const items = (data || []).map(row => {
+  const deriveRange = (sec: any): string | null => {
+    const n = typeof sec === 'number' ? sec : Number(sec)
+    if (!Number.isFinite(n) || n <= 0) return null
+    if (n <= 300) return '1:00–5:00'
+    if (n <= 600) return '5:00–10:00'
+    if (n <= 900) return '10:00–15:00'
+    if (n <= 1200) return '15:00–20:00'
+    return '20:00+'
+  }
+
+  let items = (data || []).map(row => {
     if (gender === 'female') {
       return {
         ...row,
+        time_range: (row as any).time_range || deriveRange((row as any).time_cap_seconds),
         top: (row as any).top_female,
         p90: (row as any).p90_female,
         median: (row as any).median_female,
@@ -104,6 +115,7 @@ export async function GET(req: NextRequest) {
     if (gender === 'male') {
       return {
         ...row,
+        time_range: (row as any).time_range || deriveRange((row as any).time_cap_seconds),
         top: (row as any).top_male,
         p90: (row as any).p90_male,
         median: (row as any).median_male,
@@ -113,9 +125,15 @@ export async function GET(req: NextRequest) {
         display_median: (row as any).display_median_male,
       }
     }
-    return row
+    return {
+      ...row,
+      time_range: (row as any).time_range || deriveRange((row as any).time_cap_seconds),
+    }
   })
+  if (timeRange) {
+    items = items.filter((r: any) => r.time_range === timeRange)
+  }
 
-  return NextResponse.json({ items, count, limit, offset })
+  return NextResponse.json({ items, count: items.length, limit, offset })
 }
 
