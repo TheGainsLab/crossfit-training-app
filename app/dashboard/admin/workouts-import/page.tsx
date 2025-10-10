@@ -101,6 +101,7 @@ export default function AdminWorkoutsImportPage() {
         Expected headers:
         <div className="mt-1">workouts.csv: slug,event_year,event_name,event_level,name,format,time_domain,time_range?,time_cap_seconds,score_metric,tasks_json,notes,max_weight_male_lbs,max_weight_female_lbs,max_weight_male_kg,max_weight_female_kg,equipment_csv</div>
         <div>stats.csv: workout_slug,gender,top_value,p90_value,median_value,attempts_count,pct_time_capped,display_top,display_p90,display_median</div>
+        <div className="mt-1">Allowed equipment names: Barbell, Dumbbells, Pullup Bar or Rig, Wall Ball, Kettlebell, Row Erg, Bike Erg, Ski Erg, Jump Rope, Plyo Box, Rings, Sandbag, Sled, Other</div>
       </div>
     </div>
   )
