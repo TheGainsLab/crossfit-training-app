@@ -29,7 +29,6 @@ export default function WorkoutsPage() {
   const [level, setLevel] = useState<string>('')
   const [format, setFormat] = useState<string>('')
   const [timeDomain, setTimeDomain] = useState<string>('')
-  const [timeRange, setTimeRange] = useState<string>('')
   const [equipment, setEquipment] = useState<string[]>([])
   const [gender, setGender] = useState<'male' | 'female'>('male')
   const [sort, setSort] = useState<'newest' | 'popularity' | 'name'>('newest')
@@ -40,7 +39,6 @@ export default function WorkoutsPage() {
     if (level) usp.set('level', level)
     if (format) usp.set('format', format)
     if (timeDomain) usp.set('timeDomain', timeDomain)
-    if (timeRange) usp.set('timeRange', timeRange)
     if (equipment.length) usp.set('equipment', equipment.join(','))
     if (gender) usp.set('gender', gender)
     if (sort) usp.set('sort', sort)
@@ -88,7 +86,7 @@ export default function WorkoutsPage() {
           <option>For Time</option>
           <option>Ladder</option>
         </select>
-        <select className="border p-2 rounded" value={timeRange} onChange={e => setTimeRange(e.target.value)}>
+        <select className="border p-2 rounded" value={timeDomain} onChange={e => setTimeDomain(e.target.value)}>
           <option value="">Time Range</option>
           <option>1:00–5:00</option>
           <option>5:00–10:00</option>
@@ -123,7 +121,7 @@ export default function WorkoutsPage() {
             <div key={w.workout_id} className="border rounded p-3 flex items-center justify-between">
               <div>
                 <div className="font-medium">{w.name}</div>
-                <div className="text-sm text-gray-500">{w.event_year} • {w.event_level} • {w.format}{(w as any).time_range ? ` • ${(w as any).time_range}` : ''}</div>
+                <div className="text-sm text-gray-500">{w.event_year} • {w.event_level} • {w.format}{w.time_domain ? ` • ${w.time_domain}` : ''}</div>
                 <div className="text-sm">
                   {gender === 'female' ? (
                     <>Top {w.display_top_female} • P90 {w.display_p90_female} • P50 {w.display_median_female}</>

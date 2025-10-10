@@ -14,7 +14,6 @@ export async function GET(req: NextRequest) {
   const level = url.searchParams.get('level') || undefined
   const format = url.searchParams.get('format') || undefined
   const timeDomain = url.searchParams.get('timeDomain') || undefined
-  const timeRange = url.searchParams.get('timeRange') || undefined
   const equipmentCsv = url.searchParams.get('equipment') || ''
   const equipment = equipmentCsv ? equipmentCsv.split(',').map(s => s.trim()).filter(Boolean) : []
   const minTimeCap = url.searchParams.get('minTimeCap')
@@ -34,32 +33,6 @@ export async function GET(req: NextRequest) {
   if (level) query = query.eq('event_level', level)
   if (format) query = query.eq('format', format)
   if (timeDomain) query = query.eq('time_domain', timeDomain)
-  if (timeRange) {
-    // Apply numeric bounds to include rows regardless of time_range null/populated
-    const applyBounds = (min?: number, max?: number) => {
-      if (typeof min === 'number') query = query.gt('time_cap_seconds', min)
-      if (typeof max === 'number') query = query.lte('time_cap_seconds', max)
-    }
-    switch (timeRange) {
-      case '1:00–5:00':
-        applyBounds(undefined, 300)
-        break
-      case '5:00–10:00':
-        applyBounds(300, 600)
-        break
-      case '10:00–15:00':
-        applyBounds(600, 900)
-        break
-      case '15:00–20:00':
-        applyBounds(900, 1200)
-        break
-      case '20:00+':
-        applyBounds(1200, undefined)
-        break
-      default:
-        break
-    }
-  }
   if (equipment.length) query = query.overlaps('equipment', equipment)
   if (minTimeCap) query = query.gte('time_cap_seconds', Number(minTimeCap))
   if (maxTimeCap) query = query.lte('time_cap_seconds', Number(maxTimeCap))
@@ -88,21 +61,10 @@ export async function GET(req: NextRequest) {
   const { data, error, count } = await query.range(offset, offset + limit - 1)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const deriveRange = (sec: any): string | null => {
-    const n = typeof sec === 'number' ? sec : Number(sec)
-    if (!Number.isFinite(n) || n <= 0) return null
-    if (n <= 300) return '1:00–5:00'
-    if (n <= 600) return '5:00–10:00'
-    if (n <= 900) return '10:00–15:00'
-    if (n <= 1200) return '15:00–20:00'
-    return '20:00+'
-  }
-
-  let items = (data || []).map(row => {
+  const items = (data || []).map(row => {
     if (gender === 'female') {
       return {
         ...row,
-        time_range: (row as any).time_range || deriveRange((row as any).time_cap_seconds),
         top: (row as any).top_female,
         p90: (row as any).p90_female,
         median: (row as any).median_female,
@@ -115,7 +77,6 @@ export async function GET(req: NextRequest) {
     if (gender === 'male') {
       return {
         ...row,
-        time_range: (row as any).time_range || deriveRange((row as any).time_cap_seconds),
         top: (row as any).top_male,
         p90: (row as any).p90_male,
         median: (row as any).median_male,
@@ -125,15 +86,8 @@ export async function GET(req: NextRequest) {
         display_median: (row as any).display_median_male,
       }
     }
-    return {
-      ...row,
-      time_range: (row as any).time_range || deriveRange((row as any).time_cap_seconds),
-    }
+    return row
   })
-  if (timeRange) {
-    items = items.filter((r: any) => r.time_range === timeRange)
-  }
-
-  return NextResponse.json({ items, count: items.length, limit, offset })
+  return NextResponse.json({ items, count, limit, offset })
 }
 
