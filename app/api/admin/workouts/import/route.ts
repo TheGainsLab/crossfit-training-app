@@ -39,17 +39,17 @@ export async function POST(req: NextRequest) {
     // Insert staging.workouts
     if (workouts.length) {
       const { error } = await sb.from('staging.workouts').insert(workouts)
-      if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+      if (error) return NextResponse.json({ error: error.message, stage: 'insert_workouts' }, { status: 400 })
     }
     // Insert staging.stats
     if (stats.length) {
       const { error } = await sb.from('staging.stats').insert(stats)
-      if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+      if (error) return NextResponse.json({ error: error.message, stage: 'insert_stats' }, { status: 400 })
     }
 
     // Run importer
     const { error: ierr } = await sb.rpc('import_workouts_from_staging')
-    if (ierr) return NextResponse.json({ error: ierr.message }, { status: 400 })
+    if (ierr) return NextResponse.json({ error: ierr.message, stage: 'run_importer' }, { status: 400 })
 
     return NextResponse.json({ success: true, inserted_workouts: workouts.length, inserted_stats: stats.length })
   } catch (e: any) {

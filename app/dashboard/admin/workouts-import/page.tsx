@@ -55,7 +55,6 @@ export default function AdminWorkoutsImportPage() {
     setLoading(true)
     setMessage('')
     try {
-      const token = (await (await fetch('/api/version')).json()).token || ''
       const res = await fetch('/api/admin/workouts/import', {
         method: 'POST',
         headers: {
@@ -64,8 +63,9 @@ export default function AdminWorkoutsImportPage() {
         },
         body: JSON.stringify({ workouts: workoutsRows, stats: statsRows, truncate })
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'Import failed')
+      let data: any = null
+      try { data = await res.json() } catch {}
+      if (!res.ok) throw new Error((data && (data.error || data.message)) || 'Import failed')
       setMessage(`Imported: workouts=${data.inserted_workouts}, stats=${data.inserted_stats}`)
     } catch (e: any) {
       setMessage(e?.message || 'Failed')
