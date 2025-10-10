@@ -35,9 +35,7 @@ export async function GET(req: NextRequest) {
   if (format) query = query.eq('format', format)
   if (timeDomain) query = query.eq('time_domain', timeDomain)
   if (timeRange) {
-    // Filter by stored enum when present
-    query = query.eq('time_range', timeRange)
-    // Also apply numeric fallback on time_cap_seconds to include rows with null time_range
+    // Apply numeric bounds to include rows regardless of time_range null/populated
     const applyBounds = (min?: number, max?: number) => {
       if (typeof min === 'number') query = query.gt('time_cap_seconds', min)
       if (typeof max === 'number') query = query.lte('time_cap_seconds', max)

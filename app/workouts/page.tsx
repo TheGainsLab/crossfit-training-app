@@ -10,6 +10,7 @@ type WorkoutItem = {
   event_level: 'Open' | 'Quarterfinal' | 'Semifinal' | 'Games'
   format: 'AMRAP' | 'For Time' | 'Ladder'
   time_domain: 'sprint' | 'short' | 'medium' | 'long' | 'ultra' | null
+  time_range?: '1:00–5:00' | '5:00–10:00' | '10:00–15:00' | '15:00–20:00' | '20:00+'
   equipment: string[]
   display_top_male?: string
   display_p90_male?: string
