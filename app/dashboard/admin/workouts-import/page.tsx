@@ -7,7 +7,7 @@ function parseCSV(text: string): Record<string, any>[] {
   const rows: Record<string, any>[] = []
   const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim().length)
   if (!lines.length) return rows
-  const header = lines[0].split(',')
+  const header = lines[0].split(',').map(h => h.replace(/^\uFEFF/, '').trim())
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i]
     // Handle quoted fields that may contain commas
@@ -28,7 +28,10 @@ function parseCSV(text: string): Record<string, any>[] {
     }
     fields.push(cur)
     const row: Record<string, any> = {}
-    header.forEach((h, idx) => { row[h] = fields[idx] === '' ? null : fields[idx] })
+    header.forEach((h, idx) => {
+      const v = fields[idx] ?? ''
+      row[h] = v === '' ? null : v.trim()
+    })
     rows.push(row)
   }
   return rows
@@ -65,7 +68,7 @@ export default function AdminWorkoutsImportPage() {
       })
       let data: any = null
       try { data = await res.json() } catch {}
-      if (!res.ok) throw new Error((data && (data.error || data.message)) || 'Import failed')
+      if (!res.ok) throw new Error((data && ((data.stage ? `[${data.stage}] ` : '') + (data.error || data.message))) || 'Import failed')
       setMessage(`Imported: workouts=${data.inserted_workouts}, stats=${data.inserted_stats}`)
     } catch (e: any) {
       setMessage(e?.message || 'Failed')
