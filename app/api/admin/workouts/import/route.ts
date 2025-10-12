@@ -35,11 +35,13 @@ export async function POST(req: NextRequest) {
     const fmtFormat = (s: any) => String(s||'').trim()
     const fmtMetric = (s: any) => String(s||'').trim().toLowerCase()
     const toInt = (v: any) => {
-      const n = Number(v)
+      const s = typeof v === 'string' ? v.replace(/,/g, '') : v
+      const n = Number(s)
       return Number.isFinite(n) ? Math.trunc(n) : null
     }
     const toNum = (v: any) => {
-      const n = Number(v)
+      const s = typeof v === 'string' ? v.replace(/,/g, '') : v
+      const n = Number(s)
       return Number.isFinite(n) ? n : null
     }
     const deriveRange = (sec: number | null): string | null => {
@@ -163,6 +165,9 @@ export async function POST(req: NextRequest) {
       const p90_value = toNum(s.p90_value)
       const median_value = toNum(s.median_value)
       const attempts_count = toInt(s.attempts_count)
+      if (!attempts_count || attempts_count <= 0) {
+        return NextResponse.json({ error: 'attempts_count must be a positive integer', stage: 'validate_stats', slug, gender, value: s.attempts_count }, { status: 400 })
+      }
       const pct_time_capped = toNum(s.pct_time_capped)
       const display_top = s.display_top ?? null
       const display_p90 = s.display_p90 ?? null
