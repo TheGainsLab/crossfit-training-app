@@ -107,7 +107,7 @@ export default function WorkoutsPage() {
 
       {/* Equipment quick toggles */}
       <div className="flex flex-wrap gap-2 text-sm">
-        {['Barbell','Dumbbells','Pullup Bar or Rig','Wall Ball','Kettlebell','Row Erg','Bike Erg','Ski Erg','Jump Rope','Plyo Box','Rings','Sandbag','Sled'].map(e => (
+        {['Barbell','Dumbbells','Pullup Bar or Rig','Wall Ball','Kettlebell','Row Erg','Bike Erg','Ski Erg','Jump Rope','Climbing Rope','Plyo Box','Axle Bar','GHD','Rings','Sandbag','Sled'].map(e => (
           <button key={e} onClick={() => toggleEquipment(e)} className={`px-2 py-1 rounded border ${equipment.includes(e) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white'}`}>{e}</button>
         ))}
       </div>

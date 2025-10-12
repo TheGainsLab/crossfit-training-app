@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
       const s = raw.toLowerCase()
       if (s.includes('pull') && (s.includes('bar') || s.includes('rig'))) return 'Pullup Bar or Rig'
       if (s.includes('barbell')) return 'Barbell'
+      if (s.includes('axle')) return 'Axle Bar'
       if (s.includes('dumbbell')) return 'Dumbbells'
       if (s.includes('wall ball') || s.includes('med ball')) return 'Wall Ball'
       if (s.includes('kettlebell')) return 'Kettlebell'
@@ -63,7 +64,9 @@ export async function POST(req: NextRequest) {
       if (s.includes('bike')) return 'Bike Erg'
       if (s.includes('ski')) return 'Ski Erg'
       if (s.includes('jump rope') || s.includes('double')) return 'Jump Rope'
+      if (s.includes('rope climb') || (s.includes('rope') && s.includes('climb'))) return 'Climbing Rope'
       if (s.includes('box')) return 'Plyo Box'
+      if (s.includes('ghd') || s.includes('glute-ham') || s.includes('glute ham')) return 'GHD'
       if (s.includes('ring')) return 'Rings'
       if (s.includes('sandbag')) return 'Sandbag'
       if (s.includes('sled')) return 'Sled'
