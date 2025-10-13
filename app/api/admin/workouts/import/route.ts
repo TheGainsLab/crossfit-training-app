@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
 
     // Upsert events and workouts
     const slugToWorkoutId: Record<string, string> = {}
+    const slugToMetric: Record<string, string> = {}
     for (const w of workouts) {
       const slug = String(w.slug || '').trim()
       if (!slug) return NextResponse.json({ error: 'Missing slug', stage: 'validate' }, { status: 400 })
@@ -134,15 +135,17 @@ export async function POST(req: NextRequest) {
         max_weight_male_lbs: male_lbs,
         max_weight_female_lbs: female_lbs
       } as any
-      const { data: wsel } = await sb.from('comp_workouts').select('id').eq('slug', slug).maybeSingle()
+      const { data: wsel } = await sb.from('comp_workouts').select('id, score_metric').eq('slug', slug).maybeSingle()
       let workout_id = wsel?.id as string | undefined
       if (!workout_id) {
-        const { data: insW, error: werr } = await sb.from('comp_workouts').insert(base).select('id').single()
+        const { data: insW, error: werr } = await sb.from('comp_workouts').insert(base).select('id, score_metric').single()
         if (werr) return NextResponse.json({ error: werr.message, stage: 'insert_workout', slug }, { status: 400 })
         workout_id = insW.id
+        slugToMetric[slug] = String(insW.score_metric || score_metric)
       } else {
         const { error: uerr } = await sb.from('comp_workouts').update(base).eq('id', workout_id)
         if (uerr) return NextResponse.json({ error: uerr.message, stage: 'update_workout', slug }, { status: 400 })
+        slugToMetric[slug] = String(wsel?.score_metric || score_metric)
       }
       slugToWorkoutId[slug] = workout_id!
 
@@ -159,22 +162,39 @@ export async function POST(req: NextRequest) {
     }
 
     // Upsert stats
+    const parseTimeToSeconds = (val: any): number | null => {
+      if (val == null) return null
+      if (typeof val === 'number') return val
+      const str = String(val).trim()
+      if (!str) return null
+      if (/^\d+(\.\d+)?$/.test(str)) return Number(str)
+      const parts = str.split(':').map(p => p.trim())
+      if (parts.length < 2 || parts.some(p => p === '')) return null
+      const nums = parts.map(p => Number(p))
+      if (nums.some(n => !Number.isFinite(n))) return null
+      let seconds = 0
+      if (nums.length === 2) seconds = nums[0] * 60 + nums[1]
+      else if (nums.length === 3) seconds = nums[0] * 3600 + nums[1] * 60 + nums[2]
+      else return null
+      return seconds
+    }
     for (const s of stats) {
       const slug = String(s.workout_slug || '').trim()
       const workout_id = slugToWorkoutId[slug]
       if (!workout_id) return NextResponse.json({ error: `Unknown workout_slug ${slug}`, stage: 'stats_lookup' }, { status: 400 })
       const gender = String(s.gender || '').toLowerCase() as 'male'|'female'
-      const top_value = toNum(s.top_value)
-      const p90_value = toNum(s.p90_value)
-      const median_value = toNum(s.median_value)
+      const metric = slugToMetric[slug]
+      const top_value = metric === 'time' ? (parseTimeToSeconds(s.top_value) ?? toNum(s.top_value)) : toNum(s.top_value)
+      const p90_value = metric === 'time' ? (parseTimeToSeconds(s.p90_value) ?? toNum(s.p90_value)) : toNum(s.p90_value)
+      const median_value = metric === 'time' ? (parseTimeToSeconds(s.median_value) ?? toNum(s.median_value)) : toNum(s.median_value)
       const attempts_count = toInt(s.attempts_count)
       if (!attempts_count || attempts_count <= 0) {
         return NextResponse.json({ error: 'attempts_count must be a positive integer', stage: 'validate_stats', slug, gender, value: s.attempts_count }, { status: 400 })
       }
       const pct_time_capped = toNum(s.pct_time_capped)
-      const display_top = s.display_top ?? null
-      const display_p90 = s.display_p90 ?? null
-      const display_median = s.display_median ?? null
+      const display_top = s.display_top ?? (metric === 'time' && typeof s.top_value === 'string' && s.top_value.includes(':') ? s.top_value : null)
+      const display_p90 = s.display_p90 ?? (metric === 'time' && typeof s.p90_value === 'string' && s.p90_value.includes(':') ? s.p90_value : null)
+      const display_median = s.display_median ?? (metric === 'time' && typeof s.median_value === 'string' && s.median_value.includes(':') ? s.median_value : null)
 
       const row = { workout_id, gender, top_value, p90_value, median_value, attempts_count, pct_time_capped, display_top, display_p90, display_median } as any
       const { error: serr } = await sb.from('workout_stats').upsert(row, { onConflict: 'workout_id,gender' })
