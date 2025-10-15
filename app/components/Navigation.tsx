@@ -180,6 +180,7 @@ export default function Navigation() {
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard' },
     { href: todaysHref, label: 'Today\'s Workout' },
+    { href: '/workouts', label: 'Workouts' },
     { href: '/profile', label: 'Profile' },
   ]
 

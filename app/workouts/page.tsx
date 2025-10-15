@@ -28,7 +28,9 @@ export default function WorkoutsPage() {
   const [q, setQ] = useState('')
   const [level, setLevel] = useState<string>('')
   const [format, setFormat] = useState<string>('')
-  const [timeDomain, setTimeDomain] = useState<string>('')
+  const [timeRange, setTimeRange] = useState<string>('')
+  const [page, setPage] = useState<number>(1)
+  const pageSize = 20
   const [equipment, setEquipment] = useState<string[]>([])
   const [gender, setGender] = useState<'male' | 'female'>('male')
   const [sort, setSort] = useState<'newest' | 'popularity' | 'name'>('newest')
@@ -38,14 +40,14 @@ export default function WorkoutsPage() {
     if (q) usp.set('q', q)
     if (level) usp.set('level', level)
     if (format) usp.set('format', format)
-    if (timeDomain) usp.set('timeDomain', timeDomain)
+    if (timeRange) usp.set('timeRange', timeRange)
     if (equipment.length) usp.set('equipment', equipment.join(','))
     if (gender) usp.set('gender', gender)
     if (sort) usp.set('sort', sort)
-    usp.set('limit', '20')
-    usp.set('offset', '0')
+    usp.set('limit', String(pageSize))
+    usp.set('offset', String((page - 1) * pageSize))
     return usp.toString()
-  }, [q, level, format, timeDomain, equipment, gender, sort])
+  }, [q, level, format, timeRange, equipment, gender, sort, page])
 
   useEffect(() => {
     let cancelled = false
@@ -86,7 +88,7 @@ export default function WorkoutsPage() {
           <option>For Time</option>
           <option>Ladder</option>
         </select>
-        <select className="border p-2 rounded" value={timeDomain} onChange={e => setTimeDomain(e.target.value)}>
+        <select className="border p-2 rounded" value={timeRange} onChange={e => { setPage(1); setTimeRange(e.target.value) }}>
           <option value="">Time Range</option>
           <option>1:00–5:00</option>
           <option>5:00–10:00</option>
@@ -116,7 +118,12 @@ export default function WorkoutsPage() {
         <div>Loading…</div>
       ) : (
         <div className="space-y-3">
-          <div className="text-sm text-gray-500">Results: {count}</div>
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <div>Results: {count}</div>
+            <div>
+              Page {page} of {Math.max(1, Math.ceil(count / pageSize))}
+            </div>
+          </div>
           {items.map(w => (
             <div key={w.workout_id} className="border rounded p-3 flex items-center justify-between">
               <div>
@@ -133,6 +140,20 @@ export default function WorkoutsPage() {
               <a href={`/workouts/${encodeURIComponent((w as any).slug || '')}`} className="text-blue-600 underline">Info</a>
             </div>
           ))}
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between pt-2">
+            <button
+              className="px-3 py-1 border rounded disabled:opacity-50"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >Previous</button>
+            <div className="text-sm">Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, count)} of {count}</div>
+            <button
+              className="px-3 py-1 border rounded disabled:opacity-50"
+              onClick={() => setPage(p => (p * pageSize < count ? p + 1 : p))}
+              disabled={page * pageSize >= count}
+            >Next</button>
+          </div>
         </div>
       )}
     </div>
