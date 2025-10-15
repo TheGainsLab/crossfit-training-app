@@ -13,7 +13,9 @@ export async function GET(req: NextRequest) {
   const q = url.searchParams.get('q') || ''
   const level = url.searchParams.get('level') || undefined
   const format = url.searchParams.get('format') || undefined
-  const timeDomain = url.searchParams.get('timeDomain') || undefined
+  // Support both categorical time domain (sprint/short/...) and human-readable time range (1:00–5:00, ...)
+  const timeDomainParam = url.searchParams.get('timeDomain') || ''
+  const timeRangeParam = url.searchParams.get('timeRange') || ''
   const equipmentCsv = url.searchParams.get('equipment') || ''
   const equipment = equipmentCsv ? equipmentCsv.split(',').map(s => s.trim()).filter(Boolean) : []
   const minTimeCap = url.searchParams.get('minTimeCap')
@@ -32,7 +34,17 @@ export async function GET(req: NextRequest) {
   if (q) query = query.ilike('name', `%${q}%`)
   if (level) query = query.eq('event_level', level)
   if (format) query = query.eq('format', format)
-  if (timeDomain) query = query.eq('time_domain', timeDomain)
+  // Determine whether to filter by time_range or time_domain
+  const isTimeRangeValue = (val: string) => /\d\d?:\d\d|\+|–/.test(val)
+  if (timeRangeParam) {
+    query = query.eq('time_range', timeRangeParam)
+  } else if (timeDomainParam) {
+    if (isTimeRangeValue(timeDomainParam)) {
+      query = query.eq('time_range', timeDomainParam)
+    } else {
+      query = query.eq('time_domain', timeDomainParam)
+    }
+  }
   if (equipment.length) query = query.overlaps('equipment', equipment)
   if (minTimeCap) query = query.gte('time_cap_seconds', Number(minTimeCap))
   if (maxTimeCap) query = query.lte('time_cap_seconds', Number(maxTimeCap))
