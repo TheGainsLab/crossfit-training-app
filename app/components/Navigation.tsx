@@ -158,12 +158,18 @@ export default function Navigation() {
     }
   }
 
+  const handleSignIn = async () => {
+    try {
+      window.location.href = '/auth/signin'
+    } catch {}
+  }
+
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
   }
 
-  // Don't show navigation on auth pages or if user is not logged in
-  if (pathname?.startsWith('/auth') || (!user && !isLoading)) {
+  // Don't show navigation on auth pages
+  if (pathname?.startsWith('/auth')) {
     return null
   }
 
@@ -209,9 +215,9 @@ export default function Navigation() {
               </div>
             </div>
 
-            {/* Right side - User info and logout (Desktop) */}
+            {/* Right side - Auth actions (Desktop) */}
             <div className="hidden sm:flex items-center">
-              {user && (
+              {user ? (
                 <>
                   <div className="mr-4">
                     <p className="text-sm text-gray-700">
@@ -225,6 +231,13 @@ export default function Navigation() {
                     Logout
                   </button>
                 </>
+              ) : (
+                <button
+                  onClick={handleSignIn}
+                  className="px-4 py-2 text-sm font-medium text-white bg-coral hover:opacity-90 rounded-md transition-colors"
+                >
+                  Sign in
+                </button>
               )}
             </div>
 
@@ -280,23 +293,35 @@ export default function Navigation() {
                 </Link>
               ))}
               
-              {/* Mobile user info and logout */}
-              {user && (
-                <div className="border-t border-gray-200 pt-3 mt-3">
-                  <div className="px-3 py-2 text-sm text-gray-600">
-                    Signed in as {userName || user.email}
-                  </div>
+              {/* Mobile auth actions */}
+              <div className="border-t border-gray-200 pt-3 mt-3">
+                {user ? (
+                  <>
+                    <div className="px-3 py-2 text-sm text-gray-600">
+                      Signed in as {userName || user.email}
+                    </div>
+                    <button
+                      onClick={() => {
+                        handleLogout()
+                        setIsMobileMenuOpen(false)
+                      }}
+                      className="block w-full text-left px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                    >
+                      Sign out
+                    </button>
+                  </>
+                ) : (
                   <button
                     onClick={() => {
-                      handleLogout()
+                      handleSignIn()
                       setIsMobileMenuOpen(false)
                     }}
                     className="block w-full text-left px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
                   >
-                    Sign out
+                    Sign in
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </>
