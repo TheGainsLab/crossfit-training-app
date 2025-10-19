@@ -48,14 +48,10 @@ export default function BTNPage() {
   }
 
   const handleSubscribe = async () => {
-    if (!user) {
-      // Redirect to sign in if not logged in
-      window.location.href = '/auth/signin?redirect=/btn'
-      return
-    }
-
     try {
       setCheckingOut(true)
+      
+      // Create checkout session (works for both logged in and logged out users)
       const response = await fetch('/api/btn/create-checkout', {
         method: 'POST',
       })
@@ -86,7 +82,7 @@ export default function BTNPage() {
     )
   }
 
-  // User is not logged in
+  // User is not logged in - show them the paywall so they can subscribe
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -102,9 +98,14 @@ export default function BTNPage() {
 
           <div className="bg-white rounded-xl shadow-lg p-12">
             <div className="text-center mb-8">
+              <div className="mb-6">
+                <svg className="w-20 h-20 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
               <h1 className="text-4xl font-bold text-gray-900 mb-4">BTN Workout Generator</h1>
-              <p className="text-xl text-gray-600">
-                Premium AI-powered workout generation
+              <p className="text-xl text-gray-600 mb-8">
+                Premium workout generation requires a subscription
               </p>
             </div>
 
@@ -138,15 +139,26 @@ export default function BTNPage() {
               </ul>
             </div>
 
-            <div className="text-center space-y-4">
-              <Link
-                href="/auth/signin?redirect=/btn"
-                className="inline-block px-8 py-4 bg-[#FE5858] text-white rounded-lg text-lg font-semibold hover:bg-[#ff6b6b] transition-colors"
+            <div className="text-center">
+              <button
+                onClick={handleSubscribe}
+                disabled={checkingOut}
+                className="inline-block px-8 py-4 bg-[#FE5858] text-white rounded-lg text-lg font-semibold hover:bg-[#ff6b6b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign In to Subscribe
-              </Link>
-              <p className="text-sm text-gray-500">
-                New here? Sign in to view subscription options
+                {checkingOut ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </span>
+                ) : (
+                  'Subscribe Now'
+                )}
+              </button>
+              <p className="text-sm text-gray-500 mt-4">
+                Secure payment powered by Stripe • Create account during checkout
               </p>
             </div>
           </div>

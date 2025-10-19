@@ -11,48 +11,47 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-    }
+    // Try to get current user (optional - they might not be logged in)
+    const { data: { user } } = await supabase.auth.getUser()
 
-    // Get user details from database
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id, email, name, stripe_customer_id')
-      .eq('email', user.email)
-      .single()
+    let stripeCustomerId: string | undefined
+    let userId: string | undefined
 
-    if (userError || !userData) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    // Get or create Stripe customer
-    let stripeCustomerId = userData.stripe_customer_id
-
-    if (!stripeCustomerId) {
-      const customer = await stripe.customers.create({
-        email: userData.email,
-        name: userData.name,
-        metadata: {
-          user_id: userData.id.toString(),
-          product: 'btn'
-        }
-      })
-      stripeCustomerId = customer.id
-
-      // Update user with stripe_customer_id
-      await supabase
+    // If user is logged in, try to get their existing customer ID
+    if (user) {
+      const { data: userData } = await supabase
         .from('users')
-        .update({ stripe_customer_id: stripeCustomerId })
-        .eq('id', userData.id)
+        .select('id, email, name, stripe_customer_id')
+        .eq('email', user.email)
+        .single()
+
+      if (userData) {
+        userId = userData.id.toString()
+        stripeCustomerId = userData.stripe_customer_id
+
+        // If they don't have a stripe customer yet, create one
+        if (!stripeCustomerId) {
+          const customer = await stripe.customers.create({
+            email: userData.email,
+            name: userData.name,
+            metadata: {
+              user_id: userData.id.toString(),
+              product: 'btn'
+            }
+          })
+          stripeCustomerId = customer.id
+
+          // Update user with stripe_customer_id
+          await supabase
+            .from('users')
+            .update({ stripe_customer_id: stripeCustomerId })
+            .eq('id', userData.id)
+        }
+      }
     }
 
     // Create Stripe Checkout session
-    const session = await stripe.checkout.sessions.create({
-      customer: stripeCustomerId,
+    const sessionConfig: any = {
       payment_method_types: ['card'],
       line_items: [
         {
@@ -64,17 +63,27 @@ export async function POST(request: NextRequest) {
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/btn?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/btn?canceled=true`,
       metadata: {
-        user_id: userData.id.toString(),
         product: 'btn'
       },
       subscription_data: {
         metadata: {
-          user_id: userData.id.toString(),
           product: 'btn'
         }
       },
       allow_promotion_codes: true
-    })
+    }
+
+    // If user is logged in and has a customer ID, use it
+    if (stripeCustomerId) {
+      sessionConfig.customer = stripeCustomerId
+      sessionConfig.metadata.user_id = userId
+      sessionConfig.subscription_data.metadata.user_id = userId
+    } else {
+      // If not logged in, let Stripe collect email
+      sessionConfig.customer_email = undefined // Stripe will ask for email
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig)
 
     return NextResponse.json({ 
       sessionId: session.id, 
