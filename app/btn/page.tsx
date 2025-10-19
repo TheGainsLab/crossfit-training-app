@@ -100,21 +100,54 @@ export default function BTNPage() {
             </Link>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-            <div className="mb-8">
+          <div className="bg-white rounded-xl shadow-lg p-12">
+            <div className="text-center mb-8">
               <h1 className="text-4xl font-bold text-gray-900 mb-4">BTN Workout Generator</h1>
               <p className="text-xl text-gray-600">
-                Sign in to access premium workout generation
+                Premium AI-powered workout generation
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="bg-gray-50 rounded-lg p-8 mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">What You&apos;ll Get</h2>
+              <ul className="space-y-4 max-w-md mx-auto">
+                <li className="flex items-start">
+                  <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">AI-powered workout generation tailored to your goals</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Customized programming based on your equipment and preferences</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Unlimited workout generation and modifications</span>
+                </li>
+                <li className="flex items-start">
+                  <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Access to premium training algorithms and insights</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="text-center space-y-4">
               <Link
                 href="/auth/signin?redirect=/btn"
                 className="inline-block px-8 py-4 bg-[#FE5858] text-white rounded-lg text-lg font-semibold hover:bg-[#ff6b6b] transition-colors"
               >
-                Sign In
+                Sign In to Subscribe
               </Link>
+              <p className="text-sm text-gray-500">
+                New here? Sign in to view subscription options
+              </p>
             </div>
           </div>
         </div>
