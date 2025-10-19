@@ -289,6 +289,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   try {
+    // Get the subscription to determine plan type
+    let planType = 'PREMIUM' // Default
+    if (session.subscription) {
+      const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+      const priceId = (subscription as any).items.data[0].price.id
+      planType = getPlanFromPriceId(priceId).toUpperCase() // 'btn' -> 'BTN', 'premium' -> 'PREMIUM'
+    }
+
     // Check if user exists
     const { data: existingUsers, error: userCheckError } = await supabase
       .from('users')
@@ -311,7 +319,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         .from('users')
         .update({
           subscription_status: 'ACTIVE',
-          subscription_tier: 'PREMIUM',
+          subscription_tier: planType,
           stripe_customer_id: stripeCustomerId,
           updated_at: new Date().toISOString()
         })
@@ -322,7 +330,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         throw updateError
       }
       
-      console.log('Updated existing user subscription')
+      console.log(`Updated existing user subscription to ${planType}`)
     } else {
       // Create new user
       console.log('Creating new user')
@@ -333,7 +341,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
           email: customerEmail,
           name: customerName || customerEmail.split('@')[0],
           subscription_status: 'ACTIVE',
-          subscription_tier: 'PREMIUM',
+          subscription_tier: planType,
           stripe_customer_id: stripeCustomerId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -347,7 +355,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
       if (newUsers && newUsers.length > 0) {
         userId = newUsers[0].id
-        console.log(`Created new user: ${userId}`)
+        console.log(`Created new user: ${userId} with ${planType} subscription`)
       } else {
         throw new Error('Failed to get new user ID')
       }
