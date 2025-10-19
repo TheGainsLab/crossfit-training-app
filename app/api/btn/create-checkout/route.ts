@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'subscription',
-      success_url: `${origin}/btn/intake?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${origin}/intake?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/btn?canceled=true`,
       metadata: {
         product: 'btn'

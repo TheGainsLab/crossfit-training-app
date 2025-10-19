@@ -714,9 +714,31 @@ setSubscriptionStatus(subscription.status)
       }
     } catch (_) {}
 
-    // Redirect to dashboard after successful submission
-    setTimeout(() => {
-      router.push('/dashboard')
+    // Redirect based on subscription type
+    setTimeout(async () => {
+      try {
+        // Check user's subscription tier
+        const { data: authInfo } = await supabase.auth.getUser()
+        const authId = authInfo?.user?.id
+        if (authId) {
+          const { data: userInfo } = await supabase
+            .from('users')
+            .select('subscription_tier')
+            .eq('auth_id', authId)
+            .single()
+          
+          // Redirect to BTN if they have BTN subscription, otherwise dashboard
+          if (userInfo?.subscription_tier === 'BTN') {
+            router.push('/btn')
+          } else {
+            router.push('/dashboard')
+          }
+        } else {
+          router.push('/dashboard')
+        }
+      } catch (_) {
+        router.push('/dashboard')
+      }
     }, 2000)
   }
 
@@ -751,8 +773,25 @@ setSubscriptionStatus(subscription.status)
 
     setSubmitMessage('✅ Assessment completed successfully! Your personalized program will be generated shortly.')
     
-    setTimeout(() => {
-      router.push('/dashboard')
+    // Redirect based on subscription type
+    setTimeout(async () => {
+      try {
+        // Check user's subscription tier
+        const { data: userInfo } = await supabase
+          .from('users')
+          .select('subscription_tier')
+          .eq('id', user.id)
+          .single()
+        
+        // Redirect to BTN if they have BTN subscription, otherwise dashboard
+        if (userInfo?.subscription_tier === 'BTN') {
+          router.push('/btn')
+        } else {
+          router.push('/dashboard')
+        }
+      } catch (_) {
+        router.push('/dashboard')
+      }
     }, 2000)
   }
 
