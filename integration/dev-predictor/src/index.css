@@ -1,0 +1,660 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8fafc;
+  color: #282B34;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #FE5858;
+  margin-bottom: 10px;
+}
+
+.header p {
+  font-size: 1.1rem;
+  color: #282B34;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.card h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #FE5858;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #282B34;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #FE5858;
+}
+
+.form-help {
+  font-size: 0.875rem;
+  color: #666;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+.btn {
+  background-color: #FE5858;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn:hover {
+  background-color: #e04a4a;
+}
+
+.btn-secondary {
+  background-color: #6b7280;
+}
+
+.btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.exercise-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.exercise-item input {
+  flex: 1;
+  margin: 0;
+}
+
+.exercise-item button {
+  background-color: #FE5858;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.exercise-item button:hover {
+  background-color: #e04a4a;
+}
+
+.predictions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.prediction-card {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #FE5858;
+}
+
+.prediction-card h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #282B34;
+}
+
+.prediction-card p {
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: #282B34;
+}
+
+.workout-examples {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.example-btn {
+  background-color: #f1f5f9;
+  border: 2px solid #e2e8f0;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.example-btn:hover {
+  background-color: #e2e8f0;
+  border-color: #FE5858;
+}
+
+.example-btn h4 {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #282B34;
+}
+
+.example-btn p {
+  font-size: 14px;
+  color: #282B34;
+}
+
+.generated-workouts {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.generated-workout {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.generated-workout h4 {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #282B34;
+}
+
+.generated-workout .workout-meta {
+  font-size: 14px;
+  color: #282B34;
+  margin-bottom: 12px;
+}
+
+.generated-workout .exercises {
+  margin-bottom: 12px;
+}
+
+.generated-workout .exercise {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.test-btn {
+  background-color: #FE5858;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.test-btn:hover {
+  background-color: #e04a4a;
+}
+
+.max-lifts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.strength-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.olympic-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.squat-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.squat-analysis-info {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #f0f9ff;
+  border-radius: 8px;
+  border-left: 4px solid #0ea5e9;
+}
+
+.squat-analysis-info p {
+  margin: 0;
+  font-weight: 500;
+  color: #282B34;
+}
+
+.pressing-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.pressing-analysis-info {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #DAE2EA;
+  border-radius: 8px;
+  border-left: 4px solid #FE5858;
+}
+
+.pressing-analysis-info p {
+  margin: 0;
+  font-weight: 500;
+  color: #282B34;
+}
+
+.bar-charts-container {
+  display: grid;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bar-chart-label {
+  font-weight: 600;
+  color: #282B34;
+  font-size: 14px;
+}
+
+.bar-chart-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bar-chart-bar {
+  position: relative;
+  flex: 1;
+  height: 24px;
+  background-color: #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 12px;
+  transition: width 0.3s ease;
+}
+
+.bar-fill.balanced {
+  background-color: #10b981;
+}
+
+.bar-fill.needs-improvement {
+  background-color: #f59e0b;
+}
+
+.target-marker {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background-color: #FE5858;
+  z-index: 2;
+}
+
+.bar-chart-value {
+  font-weight: 600;
+  font-size: 14px;
+  color: #282B34;
+  min-width: 50px;
+  text-align: right;
+}
+
+.bar-chart-feedback {
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  color: #282B34;
+}
+
+/* Olympic Lift Analysis specific styles */
+.bar-chart-bar.olympic-bar {
+  background-color: #ffffff;
+  border: 1px solid #DAE2EA;
+}
+
+.bar-fill.olympic-fill {
+  background-color: #DAE2EA;
+}
+
+.bar-target-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  font-weight: 600;
+  color: #282B34;
+  z-index: 3;
+}
+
+/* Assessment Results Styling */
+.assessment-overview {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #f0f9ff;
+  border-radius: 8px;
+  border-left: 4px solid #0ea5e9;
+}
+
+.assessment-overview h4 {
+  color: #FE5858;
+  margin-bottom: 8px;
+}
+
+.strengths-section,
+.weaknesses-section,
+.recommendations-section {
+  margin-bottom: 20px;
+}
+
+.strengths-section h4 {
+  color: #059669;
+  margin-bottom: 8px;
+}
+
+.weaknesses-section h4 {
+  color: #dc2626;
+  margin-bottom: 8px;
+}
+
+.recommendations-section h4 {
+  color: #7c3aed;
+  margin-bottom: 8px;
+}
+
+.strengths-section ul,
+.weaknesses-section ul,
+.recommendations-section ul {
+  margin-left: 20px;
+}
+
+.strengths-section li {
+  color: #065f46;
+  margin-bottom: 4px;
+}
+
+.weaknesses-section li {
+  color: #991b1b;
+  margin-bottom: 4px;
+}
+
+.recommendations-section li {
+  color: #5b21b6;
+  margin-bottom: 4px;
+}
+
+.ratios-section {
+  margin-top: 24px;
+}
+
+.ratios-section h4 {
+  color: #FE5858;
+  margin-bottom: 16px;
+}
+
+/* Gender Toggle Styling */
+.gender-toggle {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.toggle-btn {
+  padding: 8px 16px;
+  border: 2px solid #e5e7eb;
+  background-color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.toggle-btn.active {
+  background-color: #FE5858;
+  color: white;
+  border-color: #FE5858;
+}
+
+.toggle-btn:hover:not(.active) {
+  border-color: #FE5858;
+  color: #FE5858;
+}
+
+/* Strength Category Styling */
+.strength-category {
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.strength-category.elite {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.strength-category.advanced {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.strength-category.intermediate {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.strength-category.beginner {
+  background-color: #f3e8ff;
+  color: #7c2d12;
+}
+
+.strength-category.below-beginner {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.ratio-item {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background-color: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  gap: 8px;
+}
+
+.ratio-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.next-level-target {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f8fafc;
+  border-radius: 4px;
+  border-left: 3px solid #FE5858;
+  font-size: 14px;
+}
+
+.next-level-label {
+  font-weight: 500;
+  color: #282B34;
+}
+
+.next-level-weight {
+  font-weight: 600;
+  color: #FE5858;
+}
+
+.bar-chart-weight-target {
+  font-size: 12px;
+  font-weight: 500;
+  color: #282B34;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.olympic-target-info {
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #6366f1;
+}
+
+.olympic-target-info p {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #282B34;
+}
+
+.analysis-results {
+  margin-top: 24px;
+  padding: 16px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #FE5858;
+}
+
+.analysis-results h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #282B34;
+}
+
+.ratio-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.ratio-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.ratio-label {
+  font-weight: 500;
+  color: #282B34;
+}
+
+.ratio-value {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #FE5858;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+  
+  .header h1 {
+    font-size: 2rem;
+  }
+  
+  .predictions {
+    grid-template-columns: 1fr;
+  }
+  
+  .workout-examples {
+    grid-template-columns: 1fr;
+  }
+}
