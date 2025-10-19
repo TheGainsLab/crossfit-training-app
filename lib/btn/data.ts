@@ -115,7 +115,6 @@ export const exerciseEquipment: { [key: string]: string[] } = {
   'V-ups': [],
   'Walking Lunges': [],
   'Weighted Walking Lunges': ['Dumbbells'],
-  'Deficit Handstand Push-ups': ['Wall Space'],
   'Handstand Walk': ['Open Space'],
   'Rest': [],
   'Lateral Burpee Box Jump Overs': ['Plyo Box']
