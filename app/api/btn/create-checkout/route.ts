@@ -9,8 +9,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// BTN Stripe Price ID
-const BTN_PRICE_ID = process.env.BTN_STRIPE_PRICE_ID || 'price_1SJwvaLEmGVLIgpHmbsh1cu8'
+// BTN Stripe Price ID (TEST MODE)
+const BTN_PRICE_ID = process.env.BTN_STRIPE_PRICE_ID || 'price_1SK2r2LEmGVLIgpHjn1dF2EU'
 
 export async function POST(request: NextRequest) {
   try {
