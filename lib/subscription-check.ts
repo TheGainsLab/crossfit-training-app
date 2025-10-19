@@ -15,16 +15,29 @@ export interface SubscriptionStatus {
 }
 
 /**
- * Check if a user has an active BTN subscription
+ * Generic function to check if a user has access to a specific plan
+ * @param userId - The user's ID
+ * @param plan - The plan to check for ('btn', 'premium', etc.) or null for any active subscription
  */
-export async function checkBTNAccess(userId: number): Promise<SubscriptionStatus> {
+export async function checkSubscriptionAccess(
+  userId: number, 
+  plan?: string | null
+): Promise<SubscriptionStatus> {
   try {
-    const { data: subscription, error } = await supabase
+    let query = supabase
       .from('subscriptions')
       .select('status, plan, current_period_end')
       .eq('user_id', userId)
-      .eq('plan', 'btn') // BTN-specific plan
       .in('status', ['active', 'trialing'])
+
+    // If a specific plan is requested, filter by it
+    if (plan) {
+      query = query.eq('plan', plan)
+    }
+
+    const { data: subscription, error } = await query
+      .order('created_at', { ascending: false })
+      .limit(1)
       .single()
 
     if (error || !subscription) {
@@ -44,35 +57,28 @@ export async function checkBTNAccess(userId: number): Promise<SubscriptionStatus
       subscriptionData: subscription
     }
   } catch (error) {
-    console.error('Error checking BTN access:', error)
+    console.error('Error checking subscription access:', error)
     return { hasAccess: false }
   }
 }
 
 /**
- * Check if a user has any active subscription (for general premium features)
+ * Convenience function: Check if a user has an active BTN subscription
  */
-export async function checkActiveSubscription(userId: number): Promise<SubscriptionStatus> {
-  try {
-    const { data: subscription, error } = await supabase
-      .from('subscriptions')
-      .select('status, plan, current_period_end')
-      .eq('user_id', userId)
-      .in('status', ['active', 'trialing'])
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
+export async function checkBTNAccess(userId: number): Promise<SubscriptionStatus> {
+  return checkSubscriptionAccess(userId, 'btn')
+}
 
-    if (error || !subscription) {
-      return { hasAccess: false }
-    }
+/**
+ * Convenience function: Check if a user has an active Premium subscription
+ */
+export async function checkPremiumAccess(userId: number): Promise<SubscriptionStatus> {
+  return checkSubscriptionAccess(userId, 'premium')
+}
 
-    return {
-      hasAccess: true,
-      subscriptionData: subscription
-    }
-  } catch (error) {
-    console.error('Error checking subscription:', error)
-    return { hasAccess: false }
-  }
+/**
+ * Convenience function: Check if a user has ANY active subscription
+ */
+export async function checkAnyActiveSubscription(userId: number): Promise<SubscriptionStatus> {
+  return checkSubscriptionAccess(userId, null)
 }
