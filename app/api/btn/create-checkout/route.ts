@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 // BTN Stripe Price ID
 const BTN_PRICE_ID = process.env.BTN_STRIPE_PRICE_ID || 'price_1SJwvaLEmGVLIgpHmbsh1cu8'
@@ -11,48 +16,61 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🚀 BTN checkout: Starting checkout session creation')
     
-    const supabase = await createClient()
+    // Get authorization header for authenticated requests
+    const authHeader = request.headers.get('authorization')
+    let user = null
     
-    // Try to get current user (optional - they might not be logged in)
-    const { data: { user } } = await supabase.auth.getUser()
+    // Try to get current user if they're authenticated (optional - they might not be logged in)
+    if (authHeader) {
+      const { data: { user: authUser } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+      user = authUser
+    }
     console.log('👤 User logged in:', !!user, user?.email)
 
     let stripeCustomerId: string | undefined
     let userId: string | undefined
 
     // If user is logged in, try to get their existing customer ID
-    if (user) {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('id, email, name, stripe_customer_id')
-        .eq('email', user.email)
-        .single()
+    if (user?.email) {
+      try {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id, email, name, stripe_customer_id')
+          .eq('email', user.email)
+          .single()
 
-      if (userData) {
-        userId = userData.id.toString()
-        stripeCustomerId = userData.stripe_customer_id
-        console.log('📊 User data found:', { userId, hasStripeCustomer: !!stripeCustomerId })
-
-        // If they don't have a stripe customer yet, create one
-        if (!stripeCustomerId) {
-          console.log('🔨 Creating new Stripe customer')
-          const customer = await stripe.customers.create({
-            email: userData.email,
-            name: userData.name,
-            metadata: {
-              user_id: userData.id.toString(),
-              product: 'btn'
-            }
-          })
-          stripeCustomerId = customer.id
-          console.log('✅ Stripe customer created:', stripeCustomerId)
-
-          // Update user with stripe_customer_id
-          await supabase
-            .from('users')
-            .update({ stripe_customer_id: stripeCustomerId })
-            .eq('id', userData.id)
+        if (userError) {
+          console.log('⚠️ User lookup error (not fatal):', userError.message)
         }
+
+        if (userData) {
+          userId = userData.id.toString()
+          stripeCustomerId = userData.stripe_customer_id
+          console.log('📊 User data found:', { userId, hasStripeCustomer: !!stripeCustomerId })
+
+          // If they don't have a stripe customer yet, create one
+          if (!stripeCustomerId) {
+            console.log('🔨 Creating new Stripe customer')
+            const customer = await stripe.customers.create({
+              email: userData.email,
+              name: userData.name,
+              metadata: {
+                user_id: userData.id.toString(),
+                product: 'btn'
+              }
+            })
+            stripeCustomerId = customer.id
+            console.log('✅ Stripe customer created:', stripeCustomerId)
+
+            // Update user with stripe_customer_id
+            await supabase
+              .from('users')
+              .update({ stripe_customer_id: stripeCustomerId })
+              .eq('id', userData.id)
+          }
+        }
+      } catch (err) {
+        console.log('⚠️ User lookup error (continuing):', err)
       }
     }
 
