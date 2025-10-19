@@ -82,3 +82,10 @@ export async function checkPremiumAccess(userId: number): Promise<SubscriptionSt
 export async function checkAnyActiveSubscription(userId: number): Promise<SubscriptionStatus> {
   return checkSubscriptionAccess(userId, null)
 }
+
+/**
+ * Convenience function: Check if a user has an active Applied Power subscription
+ */
+export async function checkAppliedPowerAccess(userId: number): Promise<SubscriptionStatus> {
+  return checkSubscriptionAccess(userId, 'applied_power')
+}

@@ -727,9 +727,11 @@ setSubscriptionStatus(subscription.status)
             .eq('auth_id', authId)
             .single()
           
-          // Redirect to BTN if they have BTN subscription, otherwise dashboard
+          // Redirect based on subscription tier
           if (userInfo?.subscription_tier === 'BTN') {
             router.push('/btn')
+          } else if (userInfo?.subscription_tier === 'APPLIED_POWER') {
+            router.push('/dashboard')
           } else {
             router.push('/dashboard')
           }
@@ -783,9 +785,11 @@ setSubscriptionStatus(subscription.status)
           .eq('id', user.id)
           .single()
         
-        // Redirect to BTN if they have BTN subscription, otherwise dashboard
+        // Redirect based on subscription tier
         if (userInfo?.subscription_tier === 'BTN') {
           router.push('/btn')
+        } else if (userInfo?.subscription_tier === 'APPLIED_POWER') {
+          router.push('/dashboard')
         } else {
           router.push('/dashboard')
         }

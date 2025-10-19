@@ -257,13 +257,20 @@ if (skills && skills.length > 0) {
 
     console.log('🎉 All intake data saved successfully')
 
-    // Check user's subscription to determine weeks to generate
+    // Check user's subscription to determine weeks to generate and program type
     console.log('📅 Checking subscription...')
     const { data: subscription, error: subError } = await supabaseAdmin
       .from('subscriptions')
-      .select('billing_interval, status')
+      .select('billing_interval, status, plan')
       .eq('user_id', effectiveUserId)
       .in('status', ['active', 'trialing'])
+      .single()
+
+    // Get user's subscription tier from users table
+    const { data: userTier } = await supabaseAdmin
+      .from('users')
+      .select('subscription_tier')
+      .eq('id', effectiveUserId)
       .single()
 
     // If no active subscription, proceed with default monthly generation (4 weeks)
@@ -274,9 +281,11 @@ if (skills && skills.length > 0) {
       ? Array.from({length: 13}, (_, i) => i + 1)  // Weeks 1-13
       : [1, 2, 3, 4]  // Weeks 1-4 for monthly or no subscription
 
-    console.log(`🏋️ Generating program for ${weeksToGenerate.length} weeks...`)
+    // Determine program type based on subscription tier
+    const isAppliedPower = userTier?.subscription_tier === 'APPLIED_POWER'
+    console.log(`🏋️ Generating ${isAppliedPower ? 'Applied Power' : 'Full'} program for ${weeksToGenerate.length} weeks...`)
 
-    // Call generate-program edge function
+    // Call generate-program edge function with program type flag
     const programResponse = await fetch(
       `${supabaseUrl}/functions/v1/generate-program`,
       {
@@ -287,7 +296,8 @@ if (skills && skills.length > 0) {
         },
         body: JSON.stringify({ 
           user_id: effectiveUserId, 
-          weeksToGenerate 
+          weeksToGenerate,
+          programType: isAppliedPower ? 'applied_power' : 'full' // NEW: Pass program type
         })
       }
     )
