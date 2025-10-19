@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { GeneratedWorkout } from '@/lib/btn/types';
+import { generateTestWorkouts } from '@/lib/btn/utils';
 
 interface SubscriptionStatus {
   hasAccess: boolean
@@ -11,6 +13,112 @@ interface SubscriptionStatus {
     plan: string
     current_period_end: string
   }
+}
+
+function BTNWorkoutGenerator() {
+  const [generatedWorkouts, setGeneratedWorkouts] = useState<GeneratedWorkout[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const generateWorkouts = () => {
+    setIsGenerating(true);
+    try {
+      const workouts = generateTestWorkouts();
+      setGeneratedWorkouts(workouts);
+    } catch (error) {
+      console.error('Generation failed:', error);
+      alert('Failed to generate workouts. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto p-5">
+        <div className="mb-6">
+          <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors">
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Home
+          </Link>
+        </div>
+
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold mb-2">BTN Workout Generator</h1>
+          <p className="text-gray-600">Generate realistic CrossFit workouts with proper exercise selection and rep schemes</p>
+          <div className="mt-4 inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            Active Subscription
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-8 mb-8">
+          <h2 className="text-2xl font-bold mb-4">Workout Generator</h2>
+          <p className="text-gray-600 mb-6">
+            Generate 10 realistic CrossFit workouts (2 per time domain) with proper exercise selection, rep schemes, and equipment consistency
+          </p>
+          
+          <button 
+            className="w-full py-3 px-6 bg-[#FE5858] text-white rounded-lg text-lg font-semibold hover:bg-[#ff6b6b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={generateWorkouts}
+            disabled={isGenerating}
+          >
+            {isGenerating ? 'Generating Workouts...' : 'Generate 10 Workouts'}
+          </button>
+
+          {generatedWorkouts.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-xl font-bold mb-4">Generated Workouts ({generatedWorkouts.length})</h3>
+              <div className="space-y-6">
+                {generatedWorkouts.map((workout, index) => (
+                  <div key={index} className="border rounded-lg p-6 bg-gray-50">
+                    <h4 className="text-lg font-bold mb-2">{workout.name}</h4>
+                    <div className="flex gap-4 mb-4 text-sm text-gray-600">
+                      <div>
+                        <span className="font-semibold">Time Domain:</span> {workout.timeDomain}
+                      </div>
+                      <div>
+                        <span className="font-semibold">Format:</span>{' '}
+                        {workout.format === 'Rounds For Time' && workout.rounds
+                          ? `${workout.rounds} Rounds For Time`
+                          : workout.format === 'AMRAP' && workout.amrapTime
+                          ? `AMRAP ${workout.amrapTime} minutes`
+                          : `${workout.format}${workout.pattern ? `: ${workout.pattern}` : ''}`}
+                      </div>
+                    </div>
+                    <div className="bg-white rounded p-4 mb-4">
+                      <p className="font-semibold mb-2">Exercises:</p>
+                      {workout.exercises.map((exercise, exIndex) => (
+                        <div key={exIndex} className="flex justify-between py-1">
+                          <span>
+                            {workout.format === 'For Time' && workout.pattern
+                              ? exercise.name
+                              : `${exercise.reps} ${exercise.name}`}
+                          </span>
+                          {exercise.weight && <span className="text-[#FE5858] font-medium">{exercise.weight}</span>}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      <span className="font-semibold">Estimated completion time:</span>{' '}
+                      {workout.format === 'AMRAP'
+                        ? `${workout.amrapTime} minutes`
+                        : `${Math.floor(workout.duration)}:${Math.floor((workout.duration % 1) * 60)
+                            .toString()
+                            .padStart(2, '0')}`}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function BTNPage() {
@@ -176,50 +284,7 @@ export default function BTNPage() {
 
   // User has access - show the BTN generator
   if (subscriptionStatus.hasAccess) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-6xl mx-auto p-8">
-          <div className="mb-6">
-            <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Home
-            </Link>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-12">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">BTN Workout Generator</h1>
-              <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                Active Subscription
-              </div>
-            </div>
-
-            {/* TODO: Add your BTN workout generator content here */}
-            <div className="bg-gray-50 rounded-lg p-12 text-center">
-              <div className="max-w-2xl mx-auto">
-                <div className="mb-6">
-                  <svg className="w-20 h-20 mx-auto text-[#FE5858]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Workout Generator Coming Soon</h2>
-                <p className="text-gray-600 text-lg mb-6">
-                  You have access! The BTN workout generator will be available here.
-                </p>
-                <p className="text-sm text-gray-500">
-                  Your subscription is active and you&apos;re ready to start generating workouts.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return <BTNWorkoutGenerator />
   }
 
   // User does not have access - show paywall
