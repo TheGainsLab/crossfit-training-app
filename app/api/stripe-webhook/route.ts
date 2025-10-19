@@ -10,6 +10,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// BTN Stripe Price ID
+const BTN_PRICE_ID = process.env.BTN_STRIPE_PRICE_ID || 'price_1SJwvaLEmGVLIgpHmbsh1cu8'
+
+// Helper: Determine plan type from Stripe price ID
+function getPlanFromPriceId(priceId: string): string {
+  if (priceId === BTN_PRICE_ID) {
+    return 'btn'
+  }
+  // Default to premium for other price IDs
+  return 'premium'
+}
+
 // Helper: normalize Stripe timestamps (seconds, milliseconds, ISO) -> ISO date string or null
 function toIsoDate(value: any, { dateOnly = true }: { dateOnly?: boolean } = {}): string | null {
   if (value === null || value === undefined) return null
@@ -358,12 +370,16 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         throw new Error('Failed to check subscription')
       }
 
+      // Determine plan type from price ID
+      const priceId = (subscription as any).items.data[0].price.id
+      const planType = getPlanFromPriceId(priceId)
+
       const subscriptionData = {
         user_id: userId,
         stripe_customer_id: stripeCustomerId,
         stripe_subscription_id: subscription.id,
         status: subscription.status,
-        plan: 'premium',
+        plan: planType,
         amount_cents: amountTotal,
         billing_interval: (subscription as any).items.data[0].price.recurring?.interval || 'month',
         subscription_start: toIsoDate((subscription as any).created),
@@ -436,13 +452,17 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     return
   }
 
+  // Determine plan type from price ID
+  const priceId = (subscription as any).items.data[0].price.id
+  const planType = getPlanFromPriceId(priceId)
+
   // Use existing subscriptions table structure
   const subscriptionData = {
     user_id: parseInt(userId),
     stripe_customer_id: subscription.customer as string,
     stripe_subscription_id: subscription.id,
     status: subscription.status,
-    plan: 'premium',
+    plan: planType,
     billing_interval: (subscription as any).items.data[0].price.recurring?.interval || 'month',
     subscription_start: toIsoDate((subscription as any).created),
     current_period_start: toIsoDate((subscription as any).current_period_start),

@@ -4,8 +4,8 @@ import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
-// TODO: Replace with your actual BTN Stripe Price ID from Stripe Dashboard
-const BTN_PRICE_ID = process.env.BTN_STRIPE_PRICE_ID || 'price_PLACEHOLDER'
+// BTN Stripe Price ID
+const BTN_PRICE_ID = process.env.BTN_STRIPE_PRICE_ID || 'price_1SJwvaLEmGVLIgpHmbsh1cu8'
 
 export async function POST(request: NextRequest) {
   try {
