@@ -51,22 +51,29 @@ export default function BTNPage() {
     try {
       setCheckingOut(true)
       
+      console.log('🔄 Creating checkout session...')
+      
       // Create checkout session (works for both logged in and logged out users)
       const response = await fetch('/api/btn/create-checkout', {
         method: 'POST',
       })
 
       const data = await response.json()
+      
+      console.log('📦 Checkout response:', data)
 
       if (data.url) {
+        console.log('✅ Redirecting to checkout:', data.url)
         window.location.href = data.url
       } else {
-        alert('Error creating checkout session. Please try again.')
+        const errorMsg = data.error || 'Error creating checkout session. Please try again.'
+        console.error('❌ Checkout error:', errorMsg, data)
+        alert(errorMsg)
         setCheckingOut(false)
       }
     } catch (error) {
-      console.error('Error creating checkout:', error)
-      alert('Error creating checkout session. Please try again.')
+      console.error('❌ Error creating checkout:', error)
+      alert('Error creating checkout session. Please check the console and try again.')
       setCheckingOut(false)
     }
   }
