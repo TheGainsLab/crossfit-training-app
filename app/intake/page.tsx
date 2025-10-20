@@ -826,7 +826,7 @@ const saveUserData = async (userId: number) => {
 }
 
 
-  const nextSection = () => setCurrentSection(prev => Math.min(prev + 1, 6))
+  const nextSection = () => setCurrentSection(prev => Math.min(prev + 1, 5))
   const prevSection = () => setCurrentSection(prev => Math.max(prev - 1, 1))
 
   const isValidSection = (section: number) => {
@@ -847,9 +847,6 @@ const saveUserData = async (userId: number) => {
      case 4:
         return true // 1RMs are optional - just data collection
       case 5:
-        // Preferences step is optional; allow Next
-        return true
-      case 6:
         if (isNewPaidUser) {
           // For new users, validate password requirements
           const passwordValidation = validatePassword(formData.password)
