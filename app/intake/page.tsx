@@ -56,6 +56,7 @@ interface StripeSessionData {
   name: string
   sessionId: string
   isValid: boolean
+  productType?: 'premium' | 'applied_power' | 'btn'
 }
 
 const equipmentOptions = [
@@ -234,10 +235,17 @@ const [currentSection, setCurrentSection] = useState<number>(1)
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>('')
   const [stripeSession, setStripeSession] = useState<StripeSessionData | null>(null)
   const [isNewPaidUser, setIsNewPaidUser] = useState(false)
+  const [productType, setProductType] = useState<'premium' | 'applied_power'>('premium')
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const sectionTitles = ['Personal Info', 'Skills', 'Conditioning', '1RM Lifts', 'Generate']
+  
+  // Define which sections are active based on product type
+  // Applied Power: Skip Skills (2) and Conditioning (3)
+  const activeSections = productType === 'applied_power' 
+    ? [true, false, false, true, true]  // Sections 1, 4, 5 only
+    : [true, true, true, true, true]     // All sections
   const primaryBtn = 'px-6 py-2 bg-[#FE5858] text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed'
   const secondaryBtn = 'px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed'
 
@@ -370,11 +378,27 @@ const [currentSection, setCurrentSection] = useState<number>(1)
       const sessionData = await response.json()
       console.log('✅ Stripe session verified:', sessionData)
       
+      // Determine product type from price ID
+      const APPLIED_POWER_PRICE_ID = 'price_1SK4BSLEmGVLIgpHrS1cfLrH'
+      const BTN_PRICE_ID = 'price_1SK2r2LEmGVLIgpHjn1dF2EU'
+      
+      const priceId = sessionData.line_items?.data?.[0]?.price?.id
+      let productType: 'premium' | 'applied_power' | 'btn' = 'premium'
+      
+      if (priceId === APPLIED_POWER_PRICE_ID) {
+        productType = 'applied_power'
+      } else if (priceId === BTN_PRICE_ID) {
+        productType = 'btn'
+      }
+      
+      console.log('📦 Product type detected:', productType, 'from price:', priceId)
+      
       return {
         email: sessionData.customer_details?.email || '',
         name: sessionData.customer_details?.name || '',
         sessionId: sessionId,
-        isValid: true
+        isValid: true,
+        productType: productType
       }
     } catch (error) {
       console.error('❌ Error verifying Stripe session:', error)
@@ -397,6 +421,10 @@ const [currentSection, setCurrentSection] = useState<number>(1)
           if (sessionData) {
             setStripeSession(sessionData)
             setIsNewPaidUser(true)
+            if (sessionData.productType) {
+              setProductType(sessionData.productType)
+              console.log('🎯 Product type set to:', sessionData.productType)
+            }
             setFormData(prev => ({
               ...prev,
               email: sessionData.email,
@@ -826,8 +854,27 @@ const saveUserData = async (userId: number) => {
 }
 
 
-  const nextSection = () => setCurrentSection(prev => Math.min(prev + 1, 5))
-  const prevSection = () => setCurrentSection(prev => Math.max(prev - 1, 1))
+  const nextSection = () => {
+    setCurrentSection(prev => {
+      let next = prev + 1
+      // Skip inactive sections
+      while (next <= 5 && !activeSections[next - 1]) {
+        next++
+      }
+      return Math.min(next, 5)
+    })
+  }
+  
+  const prevSection = () => {
+    setCurrentSection(prev => {
+      let next = prev - 1
+      // Skip inactive sections
+      while (next >= 1 && !activeSections[next - 1]) {
+        next--
+      }
+      return Math.max(next, 1)
+    })
+  }
 
   const isValidSection = (section: number) => {
     switch (section) {
@@ -940,11 +987,15 @@ const saveUserData = async (userId: number) => {
                   const stepNumber = index + 1
                   const isCompleted = stepNumber < currentSection
                   const isActive = stepNumber === currentSection
+                  const isSectionActive = activeSections[index]
+                  
                   return (
                     <li
                       key={title}
                       className={`text-center px-3 py-1 rounded-full border ${
-                        isActive
+                        !isSectionActive
+                          ? 'text-gray-300 border-gray-200 line-through opacity-50'  // Grayed out for inactive
+                          : isActive
                           ? 'bg-[#FE5858]/10 text-[#FE5858] border-[#FE5858]/30 font-medium'
                           : isCompleted
                             ? 'bg-[#DAE2EA] text-gray-700 border-[#DAE2EA]'

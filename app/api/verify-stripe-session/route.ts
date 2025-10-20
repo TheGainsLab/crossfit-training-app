@@ -8,39 +8,44 @@ export async function POST(request: NextRequest) {
     const { sessionId } = await request.json()
 
     if (!sessionId) {
-      return NextResponse.json({ error: 'Session ID required' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Missing sessionId' },
+        { status: 400 }
+      )
     }
 
     console.log('🔍 Verifying Stripe session:', sessionId)
 
-    // Retrieve the session from Stripe
-    const session = await stripe.checkout.sessions.retrieve(sessionId)
+    // Retrieve the session with line items to get price ID
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['line_items', 'line_items.data.price']
+    })
 
-    console.log('✅ Session retrieved:', session.id, session.payment_status)
-
-    // Verify the session is valid and paid
-    if (session.payment_status !== 'paid') {
-      return NextResponse.json({ error: 'Session not paid' }, { status: 400 })
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Session not found' },
+        { status: 404 }
+      )
     }
 
-    // Return session data
+    console.log('✅ Stripe session retrieved:', {
+      id: session.id,
+      email: session.customer_details?.email,
+      priceId: session.line_items?.data?.[0]?.price?.id
+    })
+
     return NextResponse.json({
       id: session.id,
       customer_details: session.customer_details,
-      payment_status: session.payment_status,
-      amount_total: session.amount_total,
-      currency: session.currency
+      line_items: {
+        data: session.line_items?.data || []
+      }
     })
-
-  } catch (error) {
-    console.error('❌ Error verifying session:', error)
+  } catch (error: any) {
+    console.error('❌ Error verifying Stripe session:', error)
     return NextResponse.json(
-      { error: 'Failed to verify session' },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
     )
   }
-}
-
-export async function GET() {
-  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 })
 }
