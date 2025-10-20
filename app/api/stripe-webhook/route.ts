@@ -89,7 +89,7 @@ async function getCurrentUserData(userId: number, supabase: any) {
 
   return {
     userData,
-    equipment: equipmentData?.map(eq => eq.equipment_name) || [],
+    equipment: equipmentData?.map((eq: any) => eq.equipment_name) || [],
     skills: skillsData || [],
     oneRMs: oneRMData || []
   }
