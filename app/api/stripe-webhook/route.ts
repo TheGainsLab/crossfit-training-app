@@ -3,12 +3,16 @@ import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+function getStripeClient() {
+  return new Stripe(process.env.STRIPE_SECRET_KEY!)
+}
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 // Stripe Price IDs (TEST MODE)
 const BTN_PRICE_ID = process.env.BTN_STRIPE_PRICE_ID || 'price_1SK2r2LEmGVLIgpHjn1dF2EU'

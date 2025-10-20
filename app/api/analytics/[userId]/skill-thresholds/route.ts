@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(
   request: NextRequest,
   context: any
 ) {
   try {
+    const supabase = getSupabaseClient()
     const { userId } = (context?.params || {}) as { userId?: string }
     const body = await request.json()
     const { skillName, scheduleForMonth } = body as { skillName: string; scheduleForMonth?: string }
@@ -90,6 +93,7 @@ export async function GET(
   context: any
 ) {
   try {
+    const supabase = getSupabaseClient()
     const { userId } = (context?.params || {}) as { userId?: string }
     if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
 

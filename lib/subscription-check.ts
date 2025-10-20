@@ -1,9 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export interface SubscriptionStatus {
   hasAccess: boolean
@@ -24,6 +26,7 @@ export async function checkSubscriptionAccess(
   plan?: string | null
 ): Promise<SubscriptionStatus> {
   try {
+    const supabase = getSupabaseClient()
     let query = supabase
       .from('subscriptions')
       .select('status, plan, current_period_end')
