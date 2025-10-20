@@ -51,7 +51,7 @@ function toIsoDate(value: any, { dateOnly = true }: { dateOnly?: boolean } = {})
 }
 
 // MOVED OUTSIDE - Now accessible to all handler functions
-async function getCurrentUserData(userId: number) {
+async function getCurrentUserData(userId: number, supabase: any) {
   // Get basic user info
   const { data: userData, error: userError } = await supabase
     .from('users')
@@ -96,7 +96,7 @@ async function getCurrentUserData(userId: number) {
 }
 
 // MOVED OUTSIDE - Now accessible to all handler functions
-async function generateRenewalProgram(stripeSubscriptionId: string) {
+async function generateRenewalProgram(stripeSubscriptionId: string, supabase: any) {
   try {
     // Get subscription and user info
     const { data: subscription, error: subError } = await supabase
@@ -127,7 +127,7 @@ async function generateRenewalProgram(stripeSubscriptionId: string) {
     console.log(`Generating program #${nextProgramNumber} for user ${subscription.user_id}`)
 
     // Get current user data from settings
-    const currentUserData = await getCurrentUserData(subscription.user_id)
+    const currentUserData = await getCurrentUserData(subscription.user_id, supabase)
 
     // Always generate 4-week programs regardless of billing interval
     const weeksToGenerate = Array.from({length: 4}, (_, i) => i + 1 + (4 * (nextProgramNumber - 1)))
@@ -203,6 +203,9 @@ async function generateRenewalProgram(stripeSubscriptionId: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const stripe = getStripeClient()
+  const supabase = getSupabaseClient()
+  
   // ADD THE DEBUG CODE HERE - FIRST THING INSIDE THE POST FUNCTION
   console.log('=== WEBHOOK DEBUG START ===')
   console.log('Content-Type:', request.headers.get('content-type'))
@@ -242,27 +245,27 @@ export async function POST(request: NextRequest) {
     // Handle the event
     switch (event.type) {
       case 'checkout.session.completed':
-        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)
+        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session, stripe, supabase)
         break
       
       case 'customer.subscription.created':
-        await handleSubscriptionCreated(event.data.object as Stripe.Subscription)
+        await handleSubscriptionCreated(event.data.object as Stripe.Subscription, stripe, supabase)
         break
       
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription)
+        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription, supabase)
         break
       
       case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
+        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription, supabase)
         break
       
       case 'invoice.payment_succeeded':
-        await handlePaymentSucceeded(event.data.object as Stripe.Invoice)
+        await handlePaymentSucceeded(event.data.object as Stripe.Invoice, supabase)
         break
       
       case 'invoice.payment_failed':
-        await handlePaymentFailed(event.data.object as Stripe.Invoice)
+        await handlePaymentFailed(event.data.object as Stripe.Invoice, supabase)
         break
       
       case 'customer.created':
@@ -280,7 +283,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session, stripe: Stripe, supabase: any) {
   console.log('Processing checkout session completed:', session.id)
   
   const customerEmail = session.customer_details?.email
@@ -443,7 +446,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 }
 
-async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
+async function handleSubscriptionCreated(subscription: Stripe.Subscription, stripe: Stripe, supabase: any) {
   console.log('Creating subscription:', subscription.id)
   
   // Try to get user from customer metadata first
@@ -498,7 +501,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   }
 }
 
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription, supabase: any) {
   console.log('Updating subscription:', subscription.id)
   
   const { error } = await supabase
@@ -519,7 +522,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }
 }
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription, supabase: any) {
   console.log('Deleting subscription:', subscription.id)
   
   const { error } = await supabase
@@ -538,7 +541,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   }
 }
 
-async function handlePaymentSucceeded(invoice: any) {
+async function handlePaymentSucceeded(invoice: any, supabase: any) {
   console.log('Payment succeeded for invoice:', invoice.id)
   
   if (invoice.subscription) {
@@ -559,12 +562,12 @@ async function handlePaymentSucceeded(invoice: any) {
     // NEW: Check if this is a renewal payment (not initial signup)
     if (invoice.billing_reason === 'subscription_cycle') {
       console.log('Renewal payment detected - generating next program')
-      await generateRenewalProgram(invoice.subscription as string)
+      await generateRenewalProgram(invoice.subscription as string, supabase)
     }
   }
 }
 
-async function handlePaymentFailed(invoice: Stripe.Invoice) {
+async function handlePaymentFailed(invoice: Stripe.Invoice, supabase: any) {
   console.log('Payment failed for invoice:', invoice.id)
   
   if ((invoice as any).subscription) {
