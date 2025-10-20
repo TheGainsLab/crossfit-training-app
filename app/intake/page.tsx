@@ -235,7 +235,7 @@ const [currentSection, setCurrentSection] = useState<number>(1)
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>('')
   const [stripeSession, setStripeSession] = useState<StripeSessionData | null>(null)
   const [isNewPaidUser, setIsNewPaidUser] = useState(false)
-  const [productType, setProductType] = useState<'premium' | 'applied_power'>('premium')
+  const [productType, setProductType] = useState<'premium' | 'applied_power' | 'btn'>('premium')
   const router = useRouter()
   const searchParams = useSearchParams()
 
