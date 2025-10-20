@@ -1615,8 +1615,8 @@ const saveUserData = async (userId: number) => {
   </div>
 )}
 
-{/* Section 6: Program Generation & Account Setup */}
-{currentSection === 6 && (
+{/* Section 5: Program Generation & Account Setup */}
+{currentSection === 5 && (
   <div className="space-y-8">
     {/* Intro copy (no header) */}
     <div className="text-center">
