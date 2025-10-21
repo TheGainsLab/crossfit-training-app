@@ -861,7 +861,7 @@ const saveUserData = async (userId: number) => {
       while (next <= 5 && !activeSections[next - 1]) {
         next++
       }
-      return Math.min(next, 5)
+      return Math.min(next, 6)
     })
   }
   
