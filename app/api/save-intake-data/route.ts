@@ -286,12 +286,46 @@ if (skills && skills.length > 0) {
     const isBTN = userTier?.subscription_tier === 'BTN'
     
     // BTN users don't need program generation - they use the workout generator
+    // But they DO need a user profile generated for /profile page access
     if (isBTN) {
-      console.log('🎯 BTN user - skipping program generation')
+      console.log('🎯 BTN user - skipping program generation, generating profile only')
+      
+      // Generate user profile (needed for /profile page)
+      console.log(`📊 Generating user profile...`)
+      const profileResponse = await fetch(
+        `${supabaseUrl}/functions/v1/generate-user-profile`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            user_id: effectiveUserId,
+            sport_id: 1,
+            force_regenerate: false
+          })
+        }
+      )
+
+      if (!profileResponse.ok) {
+        const errorText = await profileResponse.text()
+        console.error('❌ Profile generation failed:', errorText)
+        return NextResponse.json({ 
+          error: 'Profile generation failed',
+          details: errorText,
+          success: false,
+          intakeSaved: true
+        }, { status: 500 })
+      }
+
+      console.log(`✅ BTN user profile generated successfully!`)
+      
       return NextResponse.json({ 
         success: true,
-        message: 'Intake data saved successfully for BTN user',
+        message: 'Intake data saved and profile generated for BTN user',
         intakeSaved: true,
+        profileGenerated: true,
         programGenerated: false
       })
     }
