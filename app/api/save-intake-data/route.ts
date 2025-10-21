@@ -283,6 +283,19 @@ if (skills && skills.length > 0) {
 
     // Determine program type based on subscription tier
     const isAppliedPower = userTier?.subscription_tier === 'APPLIED_POWER'
+    const isBTN = userTier?.subscription_tier === 'BTN'
+    
+    // BTN users don't need program generation - they use the workout generator
+    if (isBTN) {
+      console.log('🎯 BTN user - skipping program generation')
+      return NextResponse.json({ 
+        success: true,
+        message: 'Intake data saved successfully for BTN user',
+        intakeSaved: true,
+        programGenerated: false
+      })
+    }
+    
     console.log(`🏋️ Generating ${isAppliedPower ? 'Applied Power' : 'Full'} program for ${weeksToGenerate.length} weeks...`)
 
     // Call generate-program edge function with program type flag
