@@ -943,6 +943,16 @@ const saveUserData = async (userId: number) => {
     )
   }
 
+  // Debug: Log current state
+  console.log('🔍 RENDER STATE:', { 
+    currentSection, 
+    isNewPaidUser, 
+    productType, 
+    activeSections,
+    user: !!user,
+    loading 
+  })
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-5xl mx-auto px-4">
@@ -1025,6 +1035,7 @@ const saveUserData = async (userId: number) => {
           )}
 
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
+            {console.log('🔍 INSIDE FORM, currentSection:', currentSection)}
 
             {/* Section 1: Personal Information */}
             {currentSection === 1 && (
@@ -1617,8 +1628,10 @@ const saveUserData = async (userId: number) => {
 )}
 
 {/* Section 5: Program Generation & Account Setup */}
-{currentSection === 5 && (
+{console.log('🔍 CHECK Section 5:', { currentSection, equals5: currentSection === 5, type: typeof currentSection })}
+{currentSection === 5 ? (
   <div className="space-y-8">
+    {console.log('✅ Section 5 IS RENDERING!')}
     {/* Intro copy (no header) */}
     <div className="text-center">
       <p className="text-lg text-gray-900 font-medium">
@@ -1801,7 +1814,13 @@ const saveUserData = async (userId: number) => {
       </button>
     </div>
   </div>
-)}
+) : currentSection === 5 ? (
+  <div className="bg-red-100 border-2 border-red-500 p-8 text-center">
+    <h2 className="text-2xl font-bold text-red-800">Section 5 Conditional Failed!</h2>
+    <p>CurrentSection: {currentSection} (type: {typeof currentSection})</p>
+    <p>Equals 5: {String(currentSection === 5)}</p>
+  </div>
+) : null}
 
           </form>
         </div>
