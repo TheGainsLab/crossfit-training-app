@@ -1035,7 +1035,6 @@ const saveUserData = async (userId: number) => {
           )}
 
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
-            {console.log('🔍 INSIDE FORM, currentSection:', currentSection)}
 
             {/* Section 1: Personal Information */}
             {currentSection === 1 && (
@@ -1628,10 +1627,12 @@ const saveUserData = async (userId: number) => {
 )}
 
 {/* Section 5: Program Generation & Account Setup */}
-{console.log('🔍 CHECK Section 5:', { currentSection, equals5: currentSection === 5, type: typeof currentSection })}
+{(() => {
+  console.log('🔍 CHECK Section 5:', { currentSection, equals5: currentSection === 5, type: typeof currentSection })
+  return null
+})()}
 {currentSection === 5 ? (
   <div className="space-y-8">
-    {console.log('✅ Section 5 IS RENDERING!')}
     {/* Intro copy (no header) */}
     <div className="text-center">
       <p className="text-lg text-gray-900 font-medium">
