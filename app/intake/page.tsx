@@ -243,9 +243,10 @@ const [currentSection, setCurrentSection] = useState<number>(1)
   
   // Define which sections are active based on product type
   // Applied Power: Skip Skills (2) and Conditioning (3)
+  // Note: Section 5 (Preferences) was removed, so Generate is Section 6
   const activeSections = productType === 'applied_power' 
-    ? [true, false, false, true, true]  // Sections 1, 4, 5 only
-    : [true, true, true, true, true]     // All sections
+    ? [true, false, false, true, false, true]  // Sections 1, 4, 6 only (skip 2, 3, 5)
+    : [true, true, true, true, false, true]     // Sections 1-4, 6 (skip 5)
   const primaryBtn = 'px-6 py-2 bg-[#FE5858] text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed'
   const secondaryBtn = 'px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed'
 
@@ -858,7 +859,7 @@ const saveUserData = async (userId: number) => {
     setCurrentSection(prev => {
       let next = prev + 1
       // Skip inactive sections
-      while (next <= 5 && !activeSections[next - 1]) {
+      while (next <= 6 && !activeSections[next - 1]) {
         next++
       }
       return Math.min(next, 6)
