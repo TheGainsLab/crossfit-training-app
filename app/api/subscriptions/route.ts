@@ -3,15 +3,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+function getStripeClient() {
+  return new Stripe(process.env.STRIPE_SECRET_KEY!)
+}
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 // GET - Get user's current subscription
 export async function GET(request: NextRequest) {
+  const supabase = getSupabaseClient()
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
@@ -63,6 +68,8 @@ export async function GET(request: NextRequest) {
 
 // POST - Create new subscription checkout session
 export async function POST(request: NextRequest) {
+  const stripe = getStripeClient()
+  const supabase = getSupabaseClient()
   try {
     const { userId, tierId, billingPeriod, successUrl, cancelUrl } = await request.json()
 

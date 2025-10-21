@@ -2,17 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 // Applied Power Stripe Price ID (TEST MODE)
 const APPLIED_POWER_PRICE_ID = process.env.APPLIED_POWER_STRIPE_PRICE_ID || 'price_1SK4BSLEmGVLIgpHrS1cfLrH'
 
 export async function POST(request: NextRequest) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
   try {
     console.log('🚀 Applied Power checkout: Starting checkout session creation')
     

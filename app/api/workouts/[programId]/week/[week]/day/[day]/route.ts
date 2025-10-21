@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 // Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 // ADD THE ENHANCED FUNCTION HERE (after supabase setup, before the GET function)
-async function enhanceMetconData(metconData: any) {
+async function enhanceMetconData(metconData: any, supabase: any) {
   try {
     // Look up the complete metcon data by matching workout_id
     const { data: metcon, error } = await supabase
@@ -72,6 +74,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ programId: string; week: string; day: string }> }
 ) {
+  const supabase = getSupabaseClient()
   try {
     const { programId, week, day } = await params
 
@@ -245,7 +248,7 @@ blocks: targetDay.blocks.map((block: any) => ({
 
 
       // Include MetCon metadata if available
-metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData) : null,
+metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData, supabase) : null,
       // Summary information
       totalExercises: targetDay.blocks.reduce((sum: number, block: any) => sum + (block.exercises?.length || 0), 0),
       totalBlocks: targetDay.blocks.length

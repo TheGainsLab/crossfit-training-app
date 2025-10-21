@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function GET() {
   try {
+    const supabase = getSupabaseClient()
     console.log('Running scheduled program generation check...')
     
     // Get all subscribers (active or trialing) with their programs
@@ -62,6 +65,7 @@ export async function GET() {
 
 async function generateScheduledProgram(userId: number, billingInterval: string) {
   try {
+    const supabase = getSupabaseClient()
     // Determine next program number for dedupe key only
     const { data: progCount } = await supabase
       .from('programs')

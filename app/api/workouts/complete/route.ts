@@ -3,10 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidateTag } from 'next/cache'
 
 // Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 interface CompletionData {
   programId: number
@@ -41,18 +43,18 @@ async function updateWeeklySummary(data: {
   userId: number;
   programId: number;
   week: number;
-}) {
+}, supabase: any) {
   try {
     console.log(`📊 Updating weekly summary for User ${data.userId}, Week ${data.week}`);
     
     // Step 1: Aggregate data by training block
-    const blockAggregations = await aggregateByTrainingBlock(data);
+    const blockAggregations = await aggregateByTrainingBlock(data, supabase);
     
     // Step 2: Get MetCon percentile data
-    const metconData = await getMetconAggregation(data);
+    const metconData = await getMetconAggregation(data, supabase);
     
     // Step 3: Calculate overall totals
-    const overallTotals = await calculateOverallTotals(data);
+    const overallTotals = await calculateOverallTotals(data, supabase);
     
     // Step 4: Upsert into weekly_summaries
     const summaryData = {
@@ -111,7 +113,7 @@ async function updateWeeklySummary(data: {
 /**
  * Aggregate performance data by training block
  */
-async function aggregateByTrainingBlock(data: { userId: number; week: number }) {
+async function aggregateByTrainingBlock(data: { userId: number; week: number }, supabase: any) {
   const { data: performanceData, error } = await supabase
     .from('performance_logs')
     .select('block, rpe, completion_quality')
@@ -159,7 +161,7 @@ async function aggregateByTrainingBlock(data: { userId: number; week: number }) 
  * Get MetCon aggregation data - FIXED VERSION
  * Counts actual MetCon completions, not just program_metcons entries
  */
-async function getMetconAggregation(data: { programId: number; week: number }) {
+async function getMetconAggregation(data: { programId: number; week: number }, supabase: any) {
   // First, try to get from program_metcons (new method with actual scores)
   const { data: metconData, error } = await supabase
     .from('program_metcons')
@@ -170,9 +172,9 @@ async function getMetconAggregation(data: { programId: number; week: number }) {
     
   // If we have data from program_metcons, use it
   if (!error && metconData && metconData.length > 0) {
-    const percentiles = metconData.map((m: any) => parseFloat(m.percentile)).filter(p => !isNaN(p));
+    const percentiles = metconData.map((m: any) => parseFloat(m.percentile)).filter((p: number) => !isNaN(p));
     const avgPercentile = percentiles.length > 0 
-      ? Math.round((percentiles.reduce((sum, p) => sum + p, 0) / percentiles.length) * 100) / 100
+      ? Math.round((percentiles.reduce((sum: number, p: number) => sum + p, 0) / percentiles.length) * 100) / 100
       : null;
       
     return {
@@ -197,7 +199,7 @@ async function getMetconAggregation(data: { programId: number; week: number }) {
   }
   
   // Count unique days with MetCon exercises
-  const uniqueDays = new Set(performanceData.map(p => p.day));
+  const uniqueDays = new Set(performanceData.map((p: any) => p.day));
   const sessionCount = uniqueDays.size;
   
   console.log(`📊 Found ${sessionCount} MetCon sessions (days: ${Array.from(uniqueDays).join(', ')}) for program ${data.programId}, week ${data.week}`);
@@ -213,7 +215,7 @@ async function getMetconAggregation(data: { programId: number; week: number }) {
 /**
  * Calculate overall totals across all blocks
  */
-async function calculateOverallTotals(data: { userId: number; week: number }) {
+async function calculateOverallTotals(data: { userId: number; week: number }, supabase: any) {
   const { data: performanceData, error } = await supabase
     .from('performance_logs')
     .select('rpe, completion_quality')
@@ -244,6 +246,7 @@ async function calculateOverallTotals(data: { userId: number; week: number }) {
 // =============================================================================
 
 export async function POST(request: NextRequest) {
+  const supabase = getSupabaseClient()
   try {
     console.log('📝 Exercise completion logging called')
     
@@ -445,7 +448,7 @@ export async function POST(request: NextRequest) {
         userId: completionData.userId,
         programId: completionData.programId,
         week: completionData.week
-      });
+      }, supabase);
     } catch (summaryError) {
       console.error('❌ Error updating weekly summary (non-blocking):', summaryError);
       // Don't fail the entire request if weekly summary update fails
@@ -488,6 +491,7 @@ export async function POST(request: NextRequest) {
 
 // GET endpoint to retrieve completions for a specific workout day
 export async function GET(request: NextRequest) {
+  const supabase = getSupabaseClient()
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')

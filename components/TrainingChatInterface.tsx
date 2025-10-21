@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 
 interface Message {
   id?: number
@@ -49,6 +49,7 @@ const TrainingChatInterface = ({ userId }: { userId: number }) => {
   useEffect(() => {
     let isMounted = true
 
+    const supabase = createClient()
     supabase.auth.getSession().then(({ data }: { data: { session: { access_token?: string } | null } }) => {
       if (!isMounted) return
       setToken(data.session?.access_token ?? null)
