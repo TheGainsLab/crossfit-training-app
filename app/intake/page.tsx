@@ -1627,11 +1627,7 @@ const saveUserData = async (userId: number) => {
 )}
 
 {/* Section 5: Program Generation & Account Setup */}
-{(() => {
-  console.log('🔍 CHECK Section 5:', { currentSection, equals5: currentSection === 5, type: typeof currentSection })
-  return null
-})()}
-{currentSection === 5 ? (
+{currentSection === 5 && (
   <div className="space-y-8">
     {/* Intro copy (no header) */}
     <div className="text-center">
@@ -1815,13 +1811,7 @@ const saveUserData = async (userId: number) => {
       </button>
     </div>
   </div>
-) : currentSection === 5 ? (
-  <div className="bg-red-100 border-2 border-red-500 p-8 text-center">
-    <h2 className="text-2xl font-bold text-red-800">Section 5 Conditional Failed!</h2>
-    <p>CurrentSection: {currentSection} (type: {typeof currentSection})</p>
-    <p>Equals 5: {String(currentSection === 5)}</p>
-  </div>
-) : null}
+)}
 
           </form>
         </div>
