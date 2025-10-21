@@ -861,6 +861,7 @@ const saveUserData = async (userId: number) => {
       while (next <= 5 && !activeSections[next - 1]) {
         next++
       }
+      console.log('🔍 DEBUG: Moving to section', Math.min(next, 5), 'from', prev)
       return Math.min(next, 5)
     })
   }
