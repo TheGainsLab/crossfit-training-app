@@ -13,19 +13,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ hasAccess: false, error: 'Not authenticated' }, { status: 401 })
     }
 
-    // Get user ID from database
+    // Get user ID from database using auth_id (more reliable than email)
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('id')
-      .eq('email', user.email)
+      .select('id, subscription_tier, subscription_status')
+      .eq('auth_id', user.id)
       .single()
 
     if (userError || !userData) {
+      console.error('User not found:', userError)
       return NextResponse.json({ hasAccess: false, error: 'User not found' }, { status: 404 })
     }
 
+    console.log(`Checking BTN access for user ${userData.id}, tier: ${userData.subscription_tier}, status: ${userData.subscription_status}`)
+
     // Check BTN subscription access
     const accessStatus = await checkBTNAccess(userData.id)
+
+    console.log(`Access check result:`, accessStatus)
 
     return NextResponse.json(accessStatus)
   } catch (error) {

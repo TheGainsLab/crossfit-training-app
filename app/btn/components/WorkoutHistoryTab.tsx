@@ -163,16 +163,16 @@ export default function WorkoutHistoryTab() {
             {filter === 'all' && 'No workouts yet!'}
           </h3>
           <p className="text-gray-600 mb-6">
-            {filter === 'completed' && 'Complete a workout and log your result to start tracking your progress.'}
+            {filter === 'completed' && 'When you complete workouts, you\'ll see them here with your results and stats.'}
             {filter === 'incomplete' && 'All caught up! Generate more workouts to keep training.'}
-            {filter === 'all' && 'Generate your first batch of workouts to start tracking your training.'}
+            {filter === 'all' && 'When you complete workouts, you\'ll see them here. Start by generating your first batch!'}
           </p>
-          <button
-            onClick={() => filter !== 'all' ? setFilter('all') : window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="px-6 py-3 bg-[#FE5858] text-white rounded-lg font-semibold hover:bg-[#ff6b6b] transition-colors"
+          <a
+            href="/btn"
+            className="inline-block px-6 py-3 bg-[#FE5858] text-white rounded-lg font-semibold hover:bg-[#ff6b6b] transition-colors"
           >
-            {filter === 'all' ? 'Scroll to Generator' : 'Show All Workouts'}
-          </button>
+            {filter === 'all' ? 'Go to Generator' : 'Generate More Workouts'}
+          </a>
         </div>
       ) : (
         <div className="space-y-4">
