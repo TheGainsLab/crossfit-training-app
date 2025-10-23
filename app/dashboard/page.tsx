@@ -857,6 +857,7 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
   }
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -1017,10 +1018,10 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       }
       setUser(user)
 
-      // Get user ID from users table
+      // Get user ID and subscription tier from users table
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id')
+        .select('id, subscription_tier')
         .eq('auth_id', user.id)
         .single()
 
@@ -1030,6 +1031,13 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         return
       }
       setUserId(userData.id)
+
+      // BTN users should use the workout generator, not the program dashboard
+      if (userData.subscription_tier === 'BTN') {
+        console.log('🎯 BTN user detected - redirecting to generator')
+        router.push('/btn')
+        return
+      }
 
       // Get latest program for this user
       const { data: programData, error: programError } = await supabase
