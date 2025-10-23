@@ -71,7 +71,7 @@ function BTNWorkoutGenerator() {
           </Link>
         </div>
 
-        <div className="text-center mb-10">
+        <div className="text-center mb-6">
           <h1 className="text-4xl font-bold mb-2">BTN Workout Generator</h1>
           <p className="text-gray-600">Generate realistic CrossFit workouts with proper exercise selection and rep schemes</p>
           <div className="mt-4 inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
@@ -82,6 +82,32 @@ function BTNWorkoutGenerator() {
           </div>
         </div>
 
+        {/* Tab Navigation */}
+        <div className="flex gap-3 mb-8">
+          <button
+            onClick={() => setActiveTab('generator')}
+            className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
+              activeTab === 'generator'
+                ? 'bg-[#FE5858] text-white shadow-md'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            🎲 Generator
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
+              activeTab === 'history'
+                ? 'bg-[#FE5858] text-white shadow-md'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            📖 History
+          </button>
+        </div>
+
+        {/* Generator Tab */}
+        {activeTab === 'generator' && (
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold mb-4">Workout Generator</h2>
           <p className="text-gray-600 mb-6">
@@ -142,7 +168,7 @@ function BTNWorkoutGenerator() {
               </div>
             </div>
           )}
-          </div>
+        </div>
         )}
 
         {/* History Tab */}
