@@ -130,22 +130,30 @@ export default function Navigation() {
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
+      console.log('loadUser - auth user:', user?.email)
+      
       if (user) {
         setUser(user)
         
         // Get user's name and subscription tier from the database
-        const { data: userData } = await supabase
+        const { data: userData, error } = await supabase
           .from('users')
           .select('name, subscription_tier')
           .eq('auth_id', user.id)
           .single()
         
+        console.log('loadUser - fetched user data:', userData, 'error:', error)
+        
         if (userData?.name) {
+          console.log('loadUser - setting userName to:', userData.name)
           setUserName(userData.name)
         }
         
         if (userData?.subscription_tier) {
+          console.log('loadUser - setting subscriptionTier to:', userData.subscription_tier)
           setSubscriptionTier(userData.subscription_tier)
+        } else {
+          console.warn('loadUser - NO subscription_tier found in user data!')
         }
       }
       setIsLoading(false)
@@ -188,7 +196,8 @@ export default function Navigation() {
   console.log('Navigation rendering with subscriptionTier:', subscriptionTier, 'type:', typeof subscriptionTier)
 
   // Conditional navigation based on subscription tier (case-insensitive)
-  const isBTNUser = subscriptionTier?.toUpperCase() === 'BTN'
+  // Also check if user is on BTN pages as fallback
+  const isBTNUser = subscriptionTier?.toUpperCase() === 'BTN' || pathname?.startsWith('/btn')
   
   const navLinks = isBTNUser
     ? [
