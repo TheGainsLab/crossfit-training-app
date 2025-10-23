@@ -111,6 +111,11 @@ export default function WorkoutHistoryTab() {
         </div>
       </div>
 
+      {/* Exercise Distribution Heat Map */}
+      <div className="mb-6">
+        <BTNExerciseHeatMap />
+      </div>
+
       {/* Filter Buttons */}
       <div className="flex gap-3 mb-6">
         <button
