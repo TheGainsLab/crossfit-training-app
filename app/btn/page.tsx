@@ -19,13 +19,37 @@ function BTNWorkoutGenerator() {
   const [generatedWorkouts, setGeneratedWorkouts] = useState<GeneratedWorkout[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generateWorkouts = () => {
+  const generateWorkouts = async () => {
     setIsGenerating(true);
     try {
+      // 1. Generate workouts client-side
+      console.log('🎲 Generating workouts...');
       const workouts = generateTestWorkouts();
+      
+      // 2. Display workouts immediately
       setGeneratedWorkouts(workouts);
+      console.log(`✅ Generated ${workouts.length} workouts`);
+      
+      // 3. Save to database in background
+      console.log('💾 Saving workouts to database...');
+      const response = await fetch('/api/btn/save-workouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workouts })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('⚠️ Failed to save workouts:', errorData);
+        // Show warning but don't block UI - workouts still displayed
+        alert('Workouts generated but not saved to history. You can still use them!');
+      } else {
+        const data = await response.json();
+        console.log(`✅ Saved ${data.savedCount} workouts to database`);
+        // Optional: Show subtle success indicator
+      }
     } catch (error) {
-      console.error('Generation failed:', error);
+      console.error('❌ Generation failed:', error);
       alert('Failed to generate workouts. Please try again.');
     } finally {
       setIsGenerating(false);
