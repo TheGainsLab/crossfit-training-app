@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
 
     // Get unique exercises and time domains
     const exercises = [...new Set(heatmapData.map(row => row.exercise_name))].sort()
-    const timeDomains = [...new Set(heatmapData.map(row => row.time_range).filter(Boolean))]
+    const timeDomains = [...new Set(heatmapData.map(row => row.time_range).filter((d): d is string => d !== null))]
       .sort((a, b) => {
         const order: { [key: string]: number } = {
           '1:00–5:00': 1, '5:00–10:00': 2, '10:00–15:00': 3, 
