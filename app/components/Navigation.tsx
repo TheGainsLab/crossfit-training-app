@@ -22,17 +22,19 @@ export default function Navigation() {
       const authedUser = (session?.user as User) || null
       setUser(authedUser)
       if (authedUser) {
-        // Refresh name on auth change
+        // Refresh name and subscription tier on auth change
         supabase
           .from('users')
-          .select('name')
+          .select('name, subscription_tier')
           .eq('auth_id', authedUser.id)
           .single()
-          .then(({ data }: { data?: { name?: string } | null }) => {
+          .then(({ data }: { data?: { name?: string, subscription_tier?: string } | null }) => {
             if (data?.name) setUserName(data.name)
+            if (data?.subscription_tier) setSubscriptionTier(data.subscription_tier)
           })
       } else {
         setUserName('')
+        setSubscriptionTier(null)
       }
       setIsLoading(false)
     })
@@ -182,8 +184,13 @@ export default function Navigation() {
     return pathname === path || pathname?.startsWith(path + '/')
   }
 
-  // Conditional navigation based on subscription tier
-  const navLinks = subscriptionTier === 'BTN'
+  // Debug: Log subscription tier
+  console.log('Navigation rendering with subscriptionTier:', subscriptionTier, 'type:', typeof subscriptionTier)
+
+  // Conditional navigation based on subscription tier (case-insensitive)
+  const isBTNUser = subscriptionTier?.toUpperCase() === 'BTN'
+  
+  const navLinks = isBTNUser
     ? [
         { href: '/btn', label: 'Generator' },
         { href: '/btn/history', label: 'History' },
@@ -196,6 +203,8 @@ export default function Navigation() {
         { href: '/profile', label: 'Profile' },
       ]
 
+  console.log('Is BTN user:', isBTNUser, 'Links:', navLinks.map(l => l.label))
+
   return (
     <>
 			<nav className="supports-[backdrop-filter]:bg-white/80 bg-white/95 backdrop-blur border-b shadow-sm sticky top-0 z-50">
@@ -206,7 +215,7 @@ export default function Navigation() {
               {/* Logo */}
               <div className="flex-shrink-0 flex items-center">
 								<Link 
-                  href={subscriptionTier === 'BTN' ? '/btn' : '/dashboard'} 
+                  href={isBTNUser ? '/btn' : '/dashboard'} 
                   className="text-xl font-bold text-gray-900 hover:text-coral transition-colors"
                 >
                   The Gains Apps
