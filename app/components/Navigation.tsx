@@ -12,6 +12,7 @@ export default function Navigation() {
   const [isLoading, setIsLoading] = useState(true)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [todaysHref, setTodaysHref] = useState<string>('/dashboard')
+  const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null)
   const pathname = usePathname()
 
   useEffect(() => {
@@ -130,15 +131,19 @@ export default function Navigation() {
       if (user) {
         setUser(user)
         
-        // Get user's name from the database
+        // Get user's name and subscription tier from the database
         const { data: userData } = await supabase
           .from('users')
-          .select('name')
+          .select('name, subscription_tier')
           .eq('auth_id', user.id)
           .single()
         
         if (userData?.name) {
           setUserName(userData.name)
+        }
+        
+        if (userData?.subscription_tier) {
+          setSubscriptionTier(userData.subscription_tier)
         }
       }
       setIsLoading(false)
@@ -177,12 +182,19 @@ export default function Navigation() {
     return pathname === path || pathname?.startsWith(path + '/')
   }
 
-  const navLinks = [
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: todaysHref, label: 'Today\'s Workout' },
-    { href: '/workouts', label: 'Workouts' },
-    { href: '/profile', label: 'Profile' },
-  ]
+  // Conditional navigation based on subscription tier
+  const navLinks = subscriptionTier === 'BTN'
+    ? [
+        { href: '/btn', label: 'Generator' },
+        { href: '/btn/history', label: 'History' },
+        { href: '/profile', label: 'Profile' },
+      ]
+    : [
+        { href: '/dashboard', label: 'Dashboard' },
+        { href: todaysHref, label: 'Today\'s Workout' },
+        { href: '/workouts', label: 'Workouts' },
+        { href: '/profile', label: 'Profile' },
+      ]
 
   return (
     <>
@@ -193,7 +205,10 @@ export default function Navigation() {
             <div className="flex">
               {/* Logo */}
               <div className="flex-shrink-0 flex items-center">
-								<Link href="/dashboard" className="text-xl font-bold text-gray-900 hover:text-coral transition-colors">
+								<Link 
+                  href={subscriptionTier === 'BTN' ? '/btn' : '/dashboard'} 
+                  className="text-xl font-bold text-gray-900 hover:text-coral transition-colors"
+                >
                   The Gains Apps
                 </Link>
               </div>
