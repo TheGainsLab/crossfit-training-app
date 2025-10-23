@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import WorkoutCard from './WorkoutCard'
+import BTNExerciseHeatMap from './BTNExerciseHeatMap'
 
 interface WorkoutHistoryStats {
   total: number
