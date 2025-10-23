@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -30,6 +30,7 @@ export async function PATCH(
       )
     }
 
+    const params = await context.params
     const workoutId = parseInt(params.id)
     if (isNaN(workoutId)) {
       return NextResponse.json(
