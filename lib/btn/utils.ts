@@ -755,32 +755,29 @@ function calculateWorkoutDuration(exercises: Exercise[], format: string, rounds?
     const totalRepsPerRound = patternReps.reduce((sum, reps) => sum + reps, 0);
     const totalReps = totalRepsPerRound * exercises.length;
     
-    let limitingRate = Infinity;
+    // Calculate each exercise separately at its own rate
+    let totalTime = 0;
     exercises.forEach(exercise => {
       const rate = exerciseRates[exercise.name] || 10.0;
-      if (rate < limitingRate) {
-        limitingRate = rate;
-      }
+      const timeForThisExercise = exercise.reps / rate;
+      totalTime += timeForThisExercise;
     });
     
-    return totalReps / limitingRate;
+    return totalTime;
   }
   
-  const totalRepsPerRound = exercises.reduce((sum, exercise) => sum + exercise.reps, 0);
-  
-  let limitingRate = Infinity;
+  // Calculate each exercise separately at its own rate
+  let totalTimePerRound = 0;
   exercises.forEach(exercise => {
     const rate = exerciseRates[exercise.name] || 10.0;
-    if (rate < limitingRate) {
-      limitingRate = rate;
-    }
+    const timeForThisExercise = exercise.reps / rate;
+    totalTimePerRound += timeForThisExercise;
   });
   
   if (format === 'Rounds For Time' && rounds) {
-    const totalReps = totalRepsPerRound * rounds;
-    return totalReps / limitingRate;
+    return totalTimePerRound * rounds;
   } else {
-    return totalRepsPerRound / limitingRate;
+    return totalTimePerRound;
   }
 }
 
