@@ -46,7 +46,12 @@ function BTNWorkoutGenerator() {
       } else {
         const data = await response.json();
         console.log(`✅ Saved ${data.savedCount} workouts to database`);
-        // Optional: Show subtle success indicator
+        // Show subtle success indicator
+        const message = document.createElement('div');
+        message.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-6 py-3 rounded-lg shadow-lg z-50';
+        message.innerHTML = `✅ ${data.savedCount} workouts saved! <a href="/btn/history" class="underline font-semibold ml-2">View History →</a>`;
+        document.body.appendChild(message);
+        setTimeout(() => message.remove(), 5000);
       }
     } catch (error) {
       console.error('❌ Generation failed:', error);
@@ -59,13 +64,35 @@ function BTNWorkoutGenerator() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto p-5">
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Home
           </Link>
+          
+          <div className="flex items-center gap-3">
+            <Link 
+              href="/profile" 
+              className="inline-flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Profile
+            </Link>
+            
+            <Link 
+              href="/btn/history" 
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              View History
+            </Link>
+          </div>
         </div>
 
         <div className="text-center mb-10">
