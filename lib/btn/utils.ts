@@ -166,15 +166,15 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
         // Rounds For Time - scale by time domain
         // Sprint workouts should have fewer rounds (higher intensity per round)
         if (domain.range === '1:00 - 5:00') {
-          rounds = Math.floor(Math.random() * 3) + 1;  // 1-3 rounds
+          rounds = Math.floor(Math.random() * 2) + 2;  // 2-3 rounds
         } else if (domain.range === '5:00 - 10:00') {
-          rounds = Math.floor(Math.random() * 3) + 3;  // 3-5 rounds
+          rounds = Math.floor(Math.random() * 2) + 2;  // 2-3 rounds
         } else if (domain.range === '10:00 - 15:00') {
-          rounds = Math.floor(Math.random() * 3) + 5;  // 5-7 rounds
+          rounds = Math.floor(Math.random() * 2) + 3;  // 3-4 rounds
         } else if (domain.range === '15:00 - 20:00') {
-          rounds = Math.floor(Math.random() * 4) + 6;  // 6-9 rounds
+          rounds = Math.floor(Math.random() * 2) + 4;  // 4-5 rounds
         } else {
-          rounds = Math.floor(Math.random() * 5) + 8;  // 8-12 rounds
+          rounds = Math.floor(Math.random() * 2) + 5;  // 5-6 rounds
         }
         amrapTime = undefined;
       }
@@ -187,7 +187,7 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
         pattern = allPatterns[Math.floor(Math.random() * allPatterns.length)];
       }
       
-      const exercises = generateExercisesForTimeDomain(domain.targetDuration, format, rounds, pattern);
+      const exercises = generateExercisesForTimeDomain(domain.targetDuration, format, rounds, pattern, amrapTime);
         
       if (pattern) {
         const patternReps = pattern.split('-').map(Number);
@@ -224,7 +224,7 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
   return workouts;
 }
 
-function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string): Exercise[] {
+function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number): Exercise[] {
   const exercises: Exercise[] = [];
   const rules = formatRules[format as keyof typeof formatRules];
   if (!rules) {
@@ -305,7 +305,7 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
   // Generate exercises with reps
   const exerciseReps: { name: string; reps: number }[] = [];
   filteredExercises.forEach(exerciseName => {
-    const reps = calculateRepsForTimeDomain(exerciseName, targetDuration, format, rounds, filteredExercises.length);
+    const reps = calculateRepsForTimeDomain(exerciseName, targetDuration, format, rounds, filteredExercises.length, amrapTime);
     exerciseReps.push({ name: exerciseName, reps });
   });
   
@@ -333,7 +333,7 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
   return exercises;
 }
 
-function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number, format: string, rounds?: number, numExercises: number = 3): number {
+function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number, format: string, rounds?: number, numExercises: number = 3, amrapTime?: number): number {
   const baseRate = exerciseRates[exerciseName] || 10.0;
   
   // Domain-specific rep factors
@@ -395,17 +395,19 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
   const isStrictPullups = exerciseName === 'Strict Pull-ups';
   
   if (format === 'AMRAP') {
-    const totalTargetReps = Math.floor(baseRate * targetDuration * repFactor);
+    // Use actual AMRAP time for calculations, not targetDuration
+    const actualAmrapTime = amrapTime || targetDuration;
+    const totalTargetReps = Math.floor(baseRate * actualAmrapTime * repFactor);
     
     let estimatedRounds: number;
-    if (targetDuration <= 5) {
-      estimatedRounds = Math.max(Math.floor(targetDuration / 1.5), 2);
-    } else if (targetDuration <= 10) {
-      estimatedRounds = Math.max(Math.floor(targetDuration / 1.8), 3);
-    } else if (targetDuration <= 15) {
-      estimatedRounds = Math.max(Math.floor(targetDuration / 2.0), 4);
+    if (actualAmrapTime <= 5) {
+      estimatedRounds = Math.max(Math.floor(actualAmrapTime / 1.5), 2);
+    } else if (actualAmrapTime <= 10) {
+      estimatedRounds = Math.max(Math.floor(actualAmrapTime / 1.8), 3);
+    } else if (actualAmrapTime <= 15) {
+      estimatedRounds = Math.max(Math.floor(actualAmrapTime / 2.0), 4);
     } else {
-      estimatedRounds = Math.max(Math.floor(targetDuration / 2.2), 5);
+      estimatedRounds = Math.max(Math.floor(actualAmrapTime / 2.2), 5);
     }
     
     const repsPerRound = Math.floor(totalTargetReps / estimatedRounds);
