@@ -352,24 +352,24 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     repFactor = 0.55;  // Extended: 55% (grind pace)
   }
   
-  const barbellRepOptions = [3, 5, 6, 10, 12, 15, 18, 20, 25, 30];
+  const barbellRepOptions = [3, 5, 6, 10, 12, 15, 20, 25, 30];
   const doubleUndersRepOptions = [15, 20, 25, 30, 35, 40, 50, 60, 75, 100];
-  const wallBallsRepOptions = [10, 12, 15, 18, 20, 24, 25, 30, 35, 36, 40, 50, 60, 75];
-  const boxRepOptions = [3, 5, 10, 12, 15, 18, 20, 24, 25, 30];
-  const toesToBarRepOptions = [5, 9, 10, 12, 15, 18, 20, 24, 25, 30];
-  const rowingCaloriesRepOptions = [10, 12, 15, 18, 21, 24, 25, 30, 35, 40, 50, 60, 75, 100];
-  const pullupsRepOptions = [5, 9, 10, 12, 15, 18, 20, 24, 25, 30];
-  const alternatingDumbbellSnatchesRepOptions = [10, 12, 15, 18, 20, 25, 30, 40, 50, 60];
-  const handstandPushupsRepOptions = [3, 5, 9, 10, 12, 15, 18, 20, 24, 25, 30];
-  const burpeesRepOptions = [5, 9, 10, 12, 15, 18, 20, 24, 25, 30];
-  const ringMuscleUpsRepOptions = [3, 5, 9, 10, 12, 15, 18, 20, 24, 25, 30];
+  const wallBallsRepOptions = [10, 12, 15, 20, 24, 25, 30, 35, 36, 40, 50, 60, 75];
+  const boxRepOptions = [3, 5, 10, 12, 15, 20, 24, 25, 30];
+  const toesToBarRepOptions = [5, 9, 10, 12, 15, 20, 24, 25, 30];
+  const rowingCaloriesRepOptions = [10, 12, 15, 21, 24, 25, 30, 35, 40, 50, 60, 75, 100];
+  const pullupsRepOptions = [5, 9, 10, 12, 15, 20, 24, 25, 30];
+  const alternatingDumbbellSnatchesRepOptions = [10, 12, 15, 20, 25, 30, 40, 50, 60];
+  const handstandPushupsRepOptions = [3, 5, 9, 10, 12, 15, 20, 24, 25, 30];
+  const burpeesRepOptions = [5, 9, 10, 12, 15, 20, 24, 25, 30];
+  const ringMuscleUpsRepOptions = [3, 5, 9, 10, 12, 15, 20, 24, 25, 30];
   const ropeClimbsRepOptions = [2, 3, 5];
   const leglessRopeClimbsRepOptions = [1, 2, 3];
-  const ghdSitupsRepOptions = [3, 5, 9, 10, 12, 15, 18, 20, 24, 25, 30];
-  const kettlebellSwingsRepOptions = [10, 12, 15, 18, 20, 25, 30, 40, 50, 60];
-  const kettlebellSnatchesRepOptions = [10, 12, 15, 18, 20, 25, 30, 40, 50, 60];
-  const bikeCaloriesRepOptions = [10, 12, 15, 18, 21, 24, 25, 30, 35, 40, 50, 60, 75, 100];
-  const skiCaloriesRepOptions = [10, 12, 15, 18, 21, 24, 25, 30, 35, 40, 50, 60, 75, 100];
+  const ghdSitupsRepOptions = [3, 5, 9, 10, 12, 15, 20, 24, 25, 30];
+  const kettlebellSwingsRepOptions = [10, 12, 15, 20, 25, 30, 40, 50, 60];
+  const kettlebellSnatchesRepOptions = [10, 12, 15, 20, 25, 30, 40, 50, 60];
+  const bikeCaloriesRepOptions = [10, 12, 15, 21, 24, 25, 30, 35, 40, 50, 60, 75, 100];
+  const skiCaloriesRepOptions = [10, 12, 15, 21, 24, 25, 30, 35, 40, 50, 60, 75, 100];
   
   const isBarbellExerciseForReps = ['Snatch', 'Deadlifts', 'Overhead Squats', 'Thrusters', 'Dumbbell Thrusters', 'Power Cleans', 'Clean and Jerks', 'Dumbbell Clean and Jerk', 'Squat Cleans', 'Squat Snatch', 'Power Snatch', 'Dumbbell Box Step-Ups'].includes(exerciseName);
   const isDoubleUnders = exerciseName === 'Double Unders';
