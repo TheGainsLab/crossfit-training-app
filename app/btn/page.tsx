@@ -42,7 +42,7 @@ function BTNWorkoutGenerator() {
         const errorData = await response.json();
         console.error('⚠️ Failed to save workouts:', errorData);
         // Show warning but don't block UI - workouts still displayed
-        alert('Workouts generated but not saved to history. You can still use them!');
+        alert(`Workouts generated but not saved to history!\n\nError: ${errorData.error || 'Unknown error'}\nStatus: ${response.status}`);
       } else {
         const data = await response.json();
         console.log(`✅ Saved ${data.savedCount} workouts to database`);
