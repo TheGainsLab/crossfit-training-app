@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`💾 Saving ${workouts.length} BTN workouts for user ${userData.id}`)
+    console.log('Sample workout to save:', JSON.stringify(workouts[0], null, 2))
 
     // Transform BTN workouts to database format
     const workoutRecords = workouts.map((workout: BTNWorkout) => ({
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`✅ Saved ${data.length} BTN workouts to database`)
+    console.log('First saved workout ID:', data[0]?.id, 'user_id:', data[0]?.user_id, 'workout_type:', data[0]?.workout_type)
 
     return NextResponse.json({ 
       success: true, 

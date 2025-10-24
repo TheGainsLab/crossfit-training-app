@@ -61,6 +61,11 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`✅ Found ${workouts.length} BTN workouts`)
+    if (workouts.length > 0) {
+      console.log('First workout:', { id: workouts[0].id, name: workouts[0].workout_name, user_id: workouts[0].user_id, workout_type: workouts[0].workout_type })
+    } else {
+      console.log('No workouts found. Query was for user_id:', userData.id, 'workout_type: btn')
+    }
 
     // Calculate stats
     const totalWorkouts = workouts.length
