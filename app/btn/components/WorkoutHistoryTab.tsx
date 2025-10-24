@@ -53,10 +53,13 @@ export default function WorkoutHistoryTab() {
         setWorkouts(data.workouts || [])
         setStats(data.stats || { total: 0, completed: 0, incomplete: 0, completionRate: 0 })
       } else {
-        console.error('Failed to load workouts')
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Failed to load workouts. Status:', response.status, 'Error:', errorData)
+        alert(`Failed to load workouts!\n\nError: ${errorData.error || 'Unknown error'}\nStatus: ${response.status}`)
       }
     } catch (error) {
       console.error('Error loading workouts:', error)
+      alert(`Error loading workouts: ${error}`)
     } finally {
       setLoading(false)
     }
