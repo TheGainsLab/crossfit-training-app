@@ -1,6 +1,37 @@
 import { Workout, PerformancePrediction, GeneratedWorkout, Exercise } from './types';
 import { exerciseDatabase } from './data';
 
+// Format-specific rule sets
+const formatRules = {
+  'For Time': {
+    maxExercises: 3,
+    minExercises: 2,
+    patternRestrictions: true,
+    cardioRequired: false, // Can't have 4 exercises, so this rule doesn't apply
+    equipmentConsistency: true,
+    forbiddenPairs: true,
+    clustering: false
+  },
+  'AMRAP': {
+    maxExercises: 4,
+    minExercises: 2,
+    patternRestrictions: false,
+    cardioRequired: true, // If 4 exercises, force cardio inclusion
+    equipmentConsistency: true,
+    forbiddenPairs: true,
+    clustering: true
+  },
+  'Rounds For Time': {
+    maxExercises: 4,
+    minExercises: 2,
+    patternRestrictions: false,
+    cardioRequired: true, // If 4 exercises, force cardio inclusion
+    equipmentConsistency: true,
+    forbiddenPairs: true,
+    clustering: true
+  }
+};
+
 // Exercise difficulty tiers for pattern compatibility
 const exerciseDifficultyTiers = {
   highSkill: ['Snatch', 'Ring Muscle Ups', 'Handstand Push-ups', 'Rope Climbs', 'Legless Rope Climbs', 'Squat Snatch', 'Bar Muscle Ups'],
@@ -152,23 +183,8 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
       if (format === 'For Time') {
         const allPatterns = ['21-15-9', '15-12-9', '12-9-6', '10-8-6-4-2', '15-12-9-6-3', '27-21-15-9', '33-27-21-15-9', '50-40-30-20-10', '40-30-20-10'];
         
-        let numExercises: number;
-        if (domain.targetDuration <= 10) {
-          numExercises = Math.floor(Math.random() * 2) + 2;
-        } else {
-          numExercises = Math.floor(Math.random() * 3) + 2;
-        }
-        numExercises = Math.max(numExercises, 2);
-        numExercises = Math.min(numExercises, 4);
-        
-        if (numExercises === 2) {
-          pattern = allPatterns[Math.floor(Math.random() * allPatterns.length)];
-        } else {
-          const shorterPatterns = allPatterns.filter(p => 
-            !['50-40-30-20-10', '40-30-20-10', '33-27-21-15-9', '27-21-15-9'].includes(p)
-          );
-          pattern = shorterPatterns[Math.floor(Math.random() * shorterPatterns.length)];
-        }
+        // For Time uses 2-3 exercises, so we can use any pattern
+        pattern = allPatterns[Math.floor(Math.random() * allPatterns.length)];
       }
       
       const exercises = generateExercisesForTimeDomain(domain.targetDuration, format, rounds, pattern);
@@ -210,94 +226,46 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
 
 function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string): Exercise[] {
   const exercises: Exercise[] = [];
-  
+  const rules = formatRules[format as keyof typeof formatRules];
+  if (!rules) {
+    throw new Error(`Unknown format: ${format}`);
+  }
+
+  // Determine number of exercises based on format rules
+  let numExercises: number;
   if (format === 'For Time') {
-    const numExercises = Math.floor(Math.random() * 2) + 2;
-    
-    const patternCompatibleExercises = exerciseDatabase.filter(exercise => {
+    numExercises = Math.floor(Math.random() * (rules.maxExercises - rules.minExercises + 1)) + rules.minExercises;
+  } else {
+    // AMRAP and Rounds For Time: based on time domain
+    if (targetDuration <= 10) {
+      numExercises = Math.floor(Math.random() * 2) + 2; // 2-3 exercises
+    } else {
+      numExercises = Math.floor(Math.random() * (rules.maxExercises - rules.minExercises + 1)) + rules.minExercises; // 2-4 exercises
+    }
+  }
+
+  // Filter exercises based on format rules
+  let candidateExercises = [...exerciseDatabase];
+  
+  // Apply pattern restrictions for For Time format
+  if (rules.patternRestrictions && pattern) {
+    candidateExercises = candidateExercises.filter(exercise => {
       if (exercise === 'Legless Rope Climbs') return false;
-      if (!pattern) return true;
-      
       const allowedPatterns = getAllowedPatternsForExercises([exercise]);
       return allowedPatterns.includes(pattern);
     });
-    
-    const shuffledExercises = [...patternCompatibleExercises].sort(() => Math.random() - 0.5);
-    const filteredExercises: string[] = [];
-    
-    for (const candidate of shuffledExercises) {
-      if (filteredExercises.length >= numExercises) break;
-      
-      const testExercises = [...filteredExercises, candidate];
-      const testFiltered = filterExercisesForConsistency(testExercises);
-      const testFinal = filterForbiddenPairs(testFiltered);
-      
-      if (testFinal.length === testExercises.length && testFinal.includes(candidate)) {
-        filteredExercises.push(candidate);
-      }
-    }
-    
-    if (filteredExercises.length === 4) {
-      const cardioExercises = ['Rowing Calories', 'Bike Calories', 'Ski Calories'];
-      const hasCardio = filteredExercises.some(ex => cardioExercises.includes(ex));
-      
-      if (!hasCardio) {
-        filteredExercises.pop();
-        
-        const cardioCandidates = cardioExercises.filter(cardio => {
-          const testExercises = [...filteredExercises, cardio];
-          const testFiltered = filterExercisesForConsistency(testExercises);
-          const testFinal = filterForbiddenPairs(testFiltered);
-          return testFinal.length === testExercises.length && testFinal.includes(cardio);
-        });
-        
-        if (cardioCandidates.length > 0) {
-          filteredExercises.push(cardioCandidates[0]);
-        }
-      }
-    }
-    
-    const barbellExercises = filteredExercises.filter(ex => isBarbellExercise(ex));
-    const dumbbellExercises = filteredExercises.filter(ex => ex.includes('Dumbbell'));
-    
-    const barbellWeight = barbellExercises.length > 0 ? generateWeightForExercise(barbellExercises[0]) : undefined;
-    const dumbbellWeight = dumbbellExercises.length > 0 ? generateWeightForExercise(dumbbellExercises[0]) : undefined;
-    
-    filteredExercises.forEach(exerciseName => {
-      let weight: string | undefined;
-      if (exerciseName.includes('Dumbbell')) {
-        weight = dumbbellWeight;
-      } else if (isBarbellExercise(exerciseName)) {
-        weight = barbellWeight;
-      }
-      
-      exercises.push({
-        name: exerciseName,
-        reps: 0,
-        weight
-      });
-    });
-    
-    return exercises;
   }
-  
-  let numExercises: number;
-  if (targetDuration <= 10) {
-    numExercises = Math.floor(Math.random() * 2) + 2;
-  } else {
-    numExercises = Math.floor(Math.random() * 3) + 2;
-  }
-  
-  numExercises = Math.max(numExercises, 2);
-  numExercises = Math.min(numExercises, 4);
-  
-  const shuffledExercises = [...exerciseDatabase].sort(() => Math.random() - 0.5);
+
+  // Shuffle and select exercises
+  const shuffledExercises = candidateExercises.sort(() => Math.random() - 0.5);
   const filteredExercises: string[] = [];
   
   for (const candidate of shuffledExercises) {
     if (filteredExercises.length >= numExercises) break;
     
     const testExercises = [...filteredExercises, candidate];
+    
+    // Apply global rules (equipment consistency and forbidden pairs)
     const testFiltered = filterExercisesForConsistency(testExercises);
     const testFinal = filterForbiddenPairs(testFiltered);
     
@@ -306,7 +274,8 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
     }
   }
   
-  if (filteredExercises.length === 4) {
+  // Apply cardio requirement for formats that support it
+  if (rules.cardioRequired && filteredExercises.length === 4) {
     const cardioExercises = ['Rowing Calories', 'Bike Calories', 'Ski Calories'];
     const hasCardio = filteredExercises.some(ex => cardioExercises.includes(ex));
     
@@ -326,22 +295,26 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
     }
   }
   
+  // Generate weights
   const barbellExercises = filteredExercises.filter(ex => isBarbellExercise(ex));
   const dumbbellExercises = filteredExercises.filter(ex => ex.includes('Dumbbell'));
   
   const barbellWeight = barbellExercises.length > 0 ? generateWeightForExercise(barbellExercises[0]) : undefined;
   const dumbbellWeight = dumbbellExercises.length > 0 ? generateWeightForExercise(dumbbellExercises[0]) : undefined;
   
+  // Generate exercises with reps
   const exerciseReps: { name: string; reps: number }[] = [];
   filteredExercises.forEach(exerciseName => {
     const reps = calculateRepsForTimeDomain(exerciseName, targetDuration, format, rounds, filteredExercises.length);
     exerciseReps.push({ name: exerciseName, reps });
   });
   
-  if (format === 'AMRAP' || format === 'Rounds For Time') {
+  // Apply clustering for formats that support it
+  if (rules.clustering) {
     clusterReps(exerciseReps);
   }
   
+  // Create final exercise objects
   exerciseReps.forEach(({ name, reps }) => {
     let weight: string | undefined;
     if (name.includes('Dumbbell')) {
