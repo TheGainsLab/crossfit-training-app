@@ -132,7 +132,19 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
         amrapTime = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
         rounds = undefined;
       } else {
-        rounds = Math.floor(Math.random() * 7) + 2;
+        // Rounds For Time - scale by time domain
+        // Sprint workouts should have fewer rounds (higher intensity per round)
+        if (domain.range === '1:00 - 5:00') {
+          rounds = Math.floor(Math.random() * 3) + 1;  // 1-3 rounds
+        } else if (domain.range === '5:00 - 10:00') {
+          rounds = Math.floor(Math.random() * 3) + 3;  // 3-5 rounds
+        } else if (domain.range === '10:00 - 15:00') {
+          rounds = Math.floor(Math.random() * 3) + 5;  // 5-7 rounds
+        } else if (domain.range === '15:00 - 20:00') {
+          rounds = Math.floor(Math.random() * 4) + 6;  // 6-9 rounds
+        } else {
+          rounds = Math.floor(Math.random() * 5) + 8;  // 8-12 rounds
+        }
         amrapTime = undefined;
       }
       
@@ -351,6 +363,22 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
 function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number, format: string, rounds?: number, numExercises: number = 3): number {
   const baseRate = exerciseRates[exerciseName] || 10.0;
   
+  // Domain-specific rep factors
+  // Note: Exercise rates are already realistic sustainable rates from actual workout data
+  // These factors account for pacing strategy by workout length
+  let repFactor;
+  if (targetDuration <= 5) {
+    repFactor = 1.0;   // Sprint: Full sustainable rate (all-out effort)
+  } else if (targetDuration <= 10) {
+    repFactor = 0.85;  // Short: 85% (some pacing needed)
+  } else if (targetDuration <= 15) {
+    repFactor = 0.75;  // Medium: 75% (steady pace)
+  } else if (targetDuration <= 20) {
+    repFactor = 0.65;  // Long: 65% (conservative pacing)
+  } else {
+    repFactor = 0.55;  // Extended: 55% (grind pace)
+  }
+  
   const barbellRepOptions = [3, 5, 6, 10, 12, 15, 18, 20, 25, 30];
   const doubleUndersRepOptions = [15, 20, 25, 30, 35, 40, 50, 60, 75, 100];
   const wallBallsRepOptions = [10, 12, 15, 18, 20, 24, 25, 30, 35, 36, 40, 50, 60, 75];
@@ -394,7 +422,7 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
   const isStrictPullups = exerciseName === 'Strict Pull-ups';
   
   if (format === 'AMRAP') {
-    const totalTargetReps = Math.floor(baseRate * targetDuration * 0.3);
+    const totalTargetReps = Math.floor(baseRate * targetDuration * repFactor);
     
     let estimatedRounds: number;
     if (targetDuration <= 5) {
@@ -501,7 +529,7 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     
     return Math.max(repsPerRound, 1);
   } else if (format === 'Rounds For Time' && rounds) {
-    const totalTargetReps = Math.floor(baseRate * targetDuration * 0.3);
+    const totalTargetReps = Math.floor(baseRate * targetDuration * repFactor);
     const repsPerRound = Math.floor(totalTargetReps / rounds);
     
     if (isBarbellExerciseForReps) {
