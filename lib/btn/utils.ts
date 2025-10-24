@@ -300,10 +300,96 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
   
   // Generate exercises with reps
   const exerciseReps: { name: string; reps: number }[] = [];
-  filteredExercises.forEach(exerciseName => {
-    const reps = calculateRepsForTimeDomain(exerciseName, targetDuration, format, rounds, filteredExercises.length, amrapTime);
-    exerciseReps.push({ name: exerciseName, reps });
-  });
+  
+  if (format === 'AMRAP') {
+    // AMRAP: Calculate each exercise individually with dynamic divisor
+    const actualAmrapTime = amrapTime || targetDuration;
+    
+    // Calculate rep factor based on time domain
+    let repFactor;
+    if (actualAmrapTime <= 5) {
+      repFactor = 1.0;
+    } else if (actualAmrapTime <= 10) {
+      repFactor = 0.85;
+    } else if (actualAmrapTime <= 15) {
+      repFactor = 0.75;
+    } else if (actualAmrapTime <= 20) {
+      repFactor = 0.65;
+    } else {
+      repFactor = 0.55;
+    }
+    
+    // Calculate dynamic divisor based on actual exercises
+    let totalTimePerRound = 0;
+    filteredExercises.forEach(exerciseName => {
+      const rate = exerciseRates[exerciseName] || 10.0;
+      const degradedRate = rate * repFactor;
+      const estimatedRepsPerExercise = Math.floor(rate * actualAmrapTime * repFactor / filteredExercises.length);
+      const timeForThisExercise = estimatedRepsPerExercise / degradedRate;
+      totalTimePerRound += timeForThisExercise;
+    });
+    
+    const dynamicDivisor = totalTimePerRound;
+    const estimatedRounds = Math.max(Math.floor(actualAmrapTime / dynamicDivisor), 2);
+    
+    // Calculate reps for each exercise individually
+    filteredExercises.forEach(exerciseName => {
+      const exerciseRate = exerciseRates[exerciseName] || 10.0;
+      const exerciseTotalReps = Math.floor(exerciseRate * actualAmrapTime * repFactor);
+      const exerciseRepsPerRound = Math.floor(exerciseTotalReps / estimatedRounds);
+      const exerciseRepsPerExercise = Math.floor(exerciseRepsPerRound / filteredExercises.length);
+      
+      // Find closest match from rep options
+      const reps = calculateRepsForTimeDomain(exerciseName, exerciseRepsPerExercise, format, rounds, filteredExercises.length, amrapTime);
+      exerciseReps.push({ name: exerciseName, reps });
+    });
+  } else if (format === 'Rounds For Time' && rounds) {
+    // Rounds For Time: Calculate each exercise individually with dynamic divisor
+    // Calculate rep factor based on time domain
+    let repFactor;
+    if (targetDuration <= 5) {
+      repFactor = 1.0;
+    } else if (targetDuration <= 10) {
+      repFactor = 0.85;
+    } else if (targetDuration <= 15) {
+      repFactor = 0.75;
+    } else if (targetDuration <= 20) {
+      repFactor = 0.65;
+    } else {
+      repFactor = 0.55;
+    }
+    
+    // Calculate dynamic divisor based on actual exercises
+    let totalTimePerRound = 0;
+    filteredExercises.forEach(exerciseName => {
+      const rate = exerciseRates[exerciseName] || 10.0;
+      const degradedRate = rate * repFactor;
+      const estimatedRepsPerExercise = Math.floor(rate * targetDuration * repFactor / filteredExercises.length);
+      const timeForThisExercise = estimatedRepsPerExercise / degradedRate;
+      totalTimePerRound += timeForThisExercise;
+    });
+    
+    const dynamicDivisor = totalTimePerRound;
+    const estimatedRounds = Math.max(Math.floor(targetDuration / dynamicDivisor), 2);
+    
+    // Calculate reps for each exercise individually
+    filteredExercises.forEach(exerciseName => {
+      const exerciseRate = exerciseRates[exerciseName] || 10.0;
+      const exerciseTotalReps = Math.floor(exerciseRate * targetDuration * repFactor);
+      const exerciseRepsPerRound = Math.floor(exerciseTotalReps / estimatedRounds);
+      const exerciseRepsPerExercise = Math.floor(exerciseRepsPerRound / filteredExercises.length);
+      
+      // Find closest match from rep options
+      const reps = calculateRepsForTimeDomain(exerciseName, exerciseRepsPerExercise, format, rounds, filteredExercises.length, amrapTime);
+      exerciseReps.push({ name: exerciseName, reps });
+    });
+  } else {
+    // Other formats: use existing logic
+    filteredExercises.forEach(exerciseName => {
+      const reps = calculateRepsForTimeDomain(exerciseName, targetDuration, format, rounds, filteredExercises.length, amrapTime);
+      exerciseReps.push({ name: exerciseName, reps });
+    });
+  }
   
   // Apply clustering for formats that support it
   if (rules.clustering) {
