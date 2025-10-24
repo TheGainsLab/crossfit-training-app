@@ -517,6 +517,82 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
       return wallBallsRepOptions.reduce((prev, curr) => 
         Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
       );
+    } else if (isBoxExercise) {
+      return boxRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isToesToBar) {
+      return toesToBarRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isRowingCalories) {
+      return rowingCaloriesRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isPullups) {
+      return pullupsRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isAlternatingDumbbellSnatches) {
+      return alternatingDumbbellSnatchesRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isHandstandPushups) {
+      return handstandPushupsRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isBurpees) {
+      return burpeesRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isRingMuscleUps) {
+      return ringMuscleUpsRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isRopeClimbs) {
+      return ropeClimbsRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isLeglessRopeClimbs) {
+      return leglessRopeClimbsRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isGhdSitups) {
+      return ghdSitupsRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isKettlebellSwings) {
+      return kettlebellSwingsRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isKettlebellSnatches) {
+      return kettlebellSnatchesRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isBikeCalories) {
+      return bikeCaloriesRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isSkiCalories) {
+      return skiCaloriesRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isBarMuscleUps) {
+      return ringMuscleUpsRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isDumbbellBoxStepUps) {
+      return barbellRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isPushups) {
+      return handstandPushupsRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
+    } else if (isStrictPullups) {
+      return ringMuscleUpsRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerRound) < Math.abs(prev - repsPerRound) ? curr : prev
+      );
     }
     
     return Math.max(repsPerRound, 1);
