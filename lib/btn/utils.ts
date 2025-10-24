@@ -191,13 +191,9 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
         
       if (pattern) {
         const patternReps = pattern.split('-').map(Number);
+        const totalPatternReps = patternReps.reduce((sum, reps) => sum + reps, 0);
         exercises.forEach((exercise) => {
-          const targetReps = patternReps[0];
-          const baseReps = calculateRepsForTimeDomain(exercise.name, 5, 'AMRAP', 1, 1);
-          const scaleFactor = targetReps / baseReps;
-          const scaledReps = Math.round(baseReps * scaleFactor);
-          const finalReps = calculateRepsForTimeDomain(exercise.name, Math.max(scaledReps, 1), 'AMRAP', 1, 1);
-          exercise.reps = finalReps;
+          exercise.reps = totalPatternReps;
         });
       }
       
