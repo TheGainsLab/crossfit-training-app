@@ -231,6 +231,7 @@ const [currentSection, setCurrentSection] = useState<number>(1)
   const [confirmSubmission, setConfirmSubmission] = useState(false)
   const [submitMessage, setSubmitMessage] = useState('')
   const [loading, setLoading] = useState(true)
+  const [dataLoaded, setDataLoaded] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>('')
   const [stripeSession, setStripeSession] = useState<StripeSessionData | null>(null)
@@ -637,11 +638,14 @@ setSubscriptionStatus(subscription.status)
             }
             console.log('✅ Form data updated! New state:', {
               equipment: updated.equipment?.length,
-              skills: updated.skills?.filter(s => s !== "Don't have it").length,
-              oneRMs: updated.oneRMs?.filter(rm => rm !== '').length
+              skills: updated.skills?.filter((s: string) => s !== "Don't have it").length,
+              oneRMs: updated.oneRMs?.filter((rm: string) => rm !== '').length
             })
             return updated
           })
+          
+          // Mark data as loaded so form can render with values
+          setDataLoaded(true)
         }
 
         setLoading(false)
