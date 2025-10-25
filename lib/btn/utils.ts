@@ -1,5 +1,5 @@
-import { Workout, PerformancePrediction, GeneratedWorkout, Exercise } from './types';
-import { exerciseDatabase } from './data';
+import { Workout, PerformancePrediction, GeneratedWorkout, Exercise, UserProfile } from './types';
+import { exerciseDatabase, exerciseEquipment } from './data';
 
 // Format-specific rule sets
 const formatRules = {
@@ -124,7 +124,7 @@ function getAllowedPatternsForExercises(exercises: string[]): string[] {
   return allowedPatterns;
 }
 
-export function generateTestWorkouts(selectedDomainRanges?: string[]): GeneratedWorkout[] {
+export function generateTestWorkouts(selectedDomainRanges?: string[], userProfile?: UserProfile): GeneratedWorkout[] {
   const workouts: GeneratedWorkout[] = [];
   
   const allTimeDomains = [
@@ -141,6 +141,50 @@ export function generateTestWorkouts(selectedDomainRanges?: string[]): Generated
   const timeDomains = selectedDomainRanges && selectedDomainRanges.length > 0
     ? allTimeDomains.filter(td => selectedDomainRanges.includes(td.range))
     : allTimeDomains;
+  
+  // Filter available exercises based on user profile
+  let availableExercises = [...exerciseDatabase];
+  
+  if (userProfile) {
+    console.log('🔍 Filtering exercises by user profile...');
+    
+    // Filter by equipment
+    availableExercises = availableExercises.filter(exercise => {
+      const required = exerciseEquipment[exercise] || [];
+      if (required.length === 0) return true; // Bodyweight exercises
+      
+      // User must have ALL required equipment
+      const hasAll = required.every(eq => userProfile.equipment.includes(eq));
+      if (!hasAll) {
+        console.log(`❌ ${exercise} excluded (missing equipment: ${required.filter(eq => !userProfile.equipment.includes(eq)).join(', ')})`);
+      }
+      return hasAll;
+    });
+    
+    // Filter by skills
+    availableExercises = availableExercises.filter(exercise => {
+      const skillLevel = userProfile.skills[exercise];
+      
+      // If skill not tracked, include it (e.g., barbell movements)
+      if (!skillLevel) return true;
+      
+      // Exclude if "Don't have it"
+      if (skillLevel === "Don't have it") {
+        console.log(`❌ ${exercise} excluded (skill marked as "Don't have it")`);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    console.log(`✅ Available exercises after filtering: ${availableExercises.length}/${exerciseDatabase.length}`);
+    
+    // Ensure we have minimum exercises for generation
+    if (availableExercises.length < 10) {
+      console.warn('⚠️ Too few exercises available after filtering, using all exercises');
+      availableExercises = [...exerciseDatabase];
+    }
+  }
   
   // Generate 5 workouts with domain selection logic:
   // 1. Generate at least 1 from each selected domain
@@ -199,7 +243,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[]): Generated
       }
       
       // Generate exercises (targetDurationHint is only used for Rounds For Time round calculation)
-      const result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime);
+      const result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile);
       const exercises = result.exercises;
       
       // Update rounds if calculated dynamically
@@ -288,7 +332,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[]): Generated
         pattern = undefined;
       }
       
-      const result = generateExercisesForTimeDomain(targetDurationHint || targetDomain.minDuration, format, rounds, pattern, amrapTime);
+      const result = generateExercisesForTimeDomain(targetDurationHint || targetDomain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile);
       const exercises = result.exercises;
       
       if (result.rounds !== undefined) {
@@ -329,7 +373,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[]): Generated
   return workouts;
 }
 
-function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number): { exercises: Exercise[], rounds?: number } {
+function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number, availableExercises?: string[], userProfile?: UserProfile): { exercises: Exercise[], rounds?: number } {
   const exercises: Exercise[] = [];
   const rules = formatRules[format as keyof typeof formatRules];
   if (!rules) {
@@ -349,8 +393,8 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
     }
   }
 
-  // Filter exercises based on format rules
-  let candidateExercises = [...exerciseDatabase];
+  // Use provided available exercises or default to all exercises
+  let candidateExercises = availableExercises ? [...availableExercises] : [...exerciseDatabase];
   
   // Apply pattern restrictions for For Time format
   if (rules.patternRestrictions && pattern) {
@@ -403,8 +447,8 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
   const barbellExercises = filteredExercises.filter(ex => isBarbellExercise(ex));
   const dumbbellExercises = filteredExercises.filter(ex => ex.includes('Dumbbell'));
   
-  const barbellWeight = barbellExercises.length > 0 ? generateWeightForExercise(barbellExercises[0]) : undefined;
-  const dumbbellWeight = dumbbellExercises.length > 0 ? generateWeightForExercise(dumbbellExercises[0]) : undefined;
+  const barbellWeight = barbellExercises.length > 0 ? generateWeightForExercise(barbellExercises[0], userProfile) : undefined;
+  const dumbbellWeight = dumbbellExercises.length > 0 ? generateWeightForExercise(dumbbellExercises[0], userProfile) : undefined;
   
   // For Rounds For Time: Calculate rounds based on actual exercises and their work rates
   if (format === 'Rounds For Time' && !rounds) {
@@ -1019,30 +1063,129 @@ function calculateWorkoutDuration(exercises: Exercise[], format: string, rounds?
   }
 }
 
-function generateWeightForExercise(exerciseName: string): string {
+function generateWeightForExercise(exerciseName: string, userProfile?: UserProfile): string {
+  // Get standard weight options for this exercise
+  let weightPairs: string[] = [];
+  
   if (exerciseName.includes('Dumbbell')) {
-    return '50/35';
-  }
-  
-  if (['Deadlifts'].includes(exerciseName)) {
-    const weightPairs = ['135/95', '185/135', '225/155', '275/185', '315/205'];
-    return weightPairs[Math.floor(Math.random() * weightPairs.length)];
-  }
-  
-  if ((exerciseName.includes('Clean') || exerciseName.includes('Jerk') || exerciseName === 'Clean and Jerks') && !exerciseName.includes('Dumbbell')) {
-    const weightPairs = ['75/55', '95/65', '115/75', '135/95', '165/115', '185/135', '225/155', '275/185', '315/205'];
-    return weightPairs[Math.floor(Math.random() * weightPairs.length)];
-  }
-  
-  if (exerciseName.includes('Snatch') && !exerciseName.includes('Dumbbell')) {
-    const weightPairs = ['75/55', '95/65', '115/75', '135/95', '165/115', '185/135', '225/155'];
-    return weightPairs[Math.floor(Math.random() * weightPairs.length)];
-  }
-  
-  if (['Thrusters', 'Overhead Squats'].includes(exerciseName)) {
-    const weightPairs = ['75/55', '95/65', '115/75', '135/95', '165/115', '185/135', '225/155'];
-    return weightPairs[Math.floor(Math.random() * weightPairs.length)];
-  }
-  
+    weightPairs = ['50/35'];
+  } else if (['Deadlifts'].includes(exerciseName)) {
+    weightPairs = ['135/95', '185/135', '225/155', '275/185', '315/205'];
+  } else if ((exerciseName.includes('Clean') || exerciseName.includes('Jerk') || exerciseName === 'Clean and Jerks') && !exerciseName.includes('Dumbbell')) {
+    weightPairs = ['75/55', '95/65', '115/75', '135/95', '165/115', '185/135', '225/155', '275/185', '315/205'];
+  } else if (exerciseName.includes('Snatch') && !exerciseName.includes('Dumbbell')) {
+    weightPairs = ['75/55', '95/65', '115/75', '135/95', '165/115', '185/135', '225/155'];
+  } else if (['Thrusters', 'Overhead Squats'].includes(exerciseName)) {
+    weightPairs = ['75/55', '95/65', '115/75', '135/95', '165/115', '185/135', '225/155'];
+  } else {  
   return '';
+}
+
+// Helper: Get relevant 1RM for an exercise
+function getRelevantOneRM(exerciseName: string, oneRMs: { [key: string]: number }): number | null {
+  // Snatch family
+  if (['Snatch', 'Power Snatch', 'Squat Snatch'].includes(exerciseName)) {
+    return oneRMs['Snatch'] || null;
+  }
+  
+  // Clean family (use Clean and Jerk 1RM)
+  if (['Power Clean', 'Squat Clean', 'Clean and Jerks', 'Squat Cleans', 'Power Cleans'].includes(exerciseName)) {
+    return oneRMs['Clean and Jerk'] || null;
+  }
+  
+  // Thrusters (70% of Clean & Jerk as baseline)
+  if (exerciseName === 'Thrusters') {
+    const cleanAndJerk = oneRMs['Clean and Jerk'];
+    return cleanAndJerk ? cleanAndJerk * 0.7 : null;
+  }
+  
+  // Overhead Squat
+  if (['Overhead Squats', 'Overhead Squat'].includes(exerciseName)) {
+    return oneRMs['Overhead Squat'] || null;
+  }
+  
+  // Deadlift
+  if (exerciseName === 'Deadlifts') {
+    return oneRMs['Deadlift'] || null;
+  }
+  
+  return null;
+}
+  
+  // If user profile provided, apply personalization
+  if (userProfile && weightPairs.length > 0) {
+    // Get relevant 1RM for this exercise
+    const oneRM = getRelevantOneRM(exerciseName, userProfile.oneRMs);
+    
+    if (oneRM) {
+      // Calculate 80% cap
+      const cap = oneRM * 0.8;
+      
+      // Filter weight pairs to those within cap
+      const validPairs = weightPairs.filter(pair => {
+        const [male, female] = pair.split('/').map(Number);
+        const userWeight = userProfile.gender === 'Female' ? female : male;
+        return userWeight <= cap;
+      });
+      
+      // If we have valid options, pick random from them
+      if (validPairs.length > 0) {
+        const selectedPair = validPairs[Math.floor(Math.random() * validPairs.length)];
+        
+        // Return gender-specific weight (single value, not pair)
+        const [male, female] = selectedPair.split('/').map(Number);
+        const weight = userProfile.gender === 'Female' ? female : male;
+        
+        return `${weight}`;
+      } else {
+        // Cap is below all standard weights - use minimum
+        const minPair = weightPairs[0];
+        const [male, female] = minPair.split('/').map(Number);
+        const weight = userProfile.gender === 'Female' ? female : male;
+        
+        console.warn(`⚠️ ${exerciseName}: 80% of 1RM (${cap}#) is below minimum weight (${weight}#), using minimum`);
+        return `${weight}`;
+      }
+    }
+    
+    // No 1RM available, but still apply gender parsing
+    const randomPair = weightPairs[Math.floor(Math.random() * weightPairs.length)];
+    const [male, female] = randomPair.split('/').map(Number);
+    const weight = userProfile.gender === 'Female' ? female : male;
+    return `${weight}`;
+  }
+  
+  // No user profile - return standard pair format
+  return weightPairs[Math.floor(Math.random() * weightPairs.length)];
+}
+
+// Helper: Get relevant 1RM for an exercise
+function getRelevantOneRM(exerciseName: string, oneRMs: { [key: string]: number }): number | null {
+  // Snatch family
+  if (['Snatch', 'Power Snatch', 'Squat Snatch'].includes(exerciseName)) {
+    return oneRMs['Snatch'] || null;
+  }
+  
+  // Clean family (use Clean and Jerk 1RM)
+  if (['Power Clean', 'Squat Clean', 'Clean and Jerks', 'Squat Cleans', 'Power Cleans'].includes(exerciseName)) {
+    return oneRMs['Clean and Jerk'] || null;
+  }
+  
+  // Thrusters (70% of Clean & Jerk)
+  if (exerciseName === 'Thrusters') {
+    const cleanAndJerk = oneRMs['Clean and Jerk'];
+    return cleanAndJerk ? cleanAndJerk * 0.7 : null;
+  }
+  
+  // Overhead Squat
+  if (['Overhead Squats', 'Overhead Squat'].includes(exerciseName)) {
+    return oneRMs['Overhead Squat'] || null;
+  }
+  
+  // Deadlift
+  if (exerciseName === 'Deadlifts') {
+    return oneRMs['Deadlift'] || null;
+  }
+  
+  return null;
 }

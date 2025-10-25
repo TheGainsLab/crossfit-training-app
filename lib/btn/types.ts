@@ -30,3 +30,11 @@ export interface GeneratedWorkout extends Workout {
   timeDomain: string;
   pattern?: string; // For For Time workouts
 }
+
+export interface UserProfile {
+  equipment: string[];
+  gender: string;
+  units: string;
+  skills: { [exerciseName: string]: string };
+  oneRMs: { [exerciseName: string]: number };
+}

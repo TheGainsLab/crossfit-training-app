@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { GeneratedWorkout } from '@/lib/btn/types';
+import { GeneratedWorkout, UserProfile } from '@/lib/btn/types';
 import { generateTestWorkouts } from '@/lib/btn/utils';
 
 interface SubscriptionStatus {
@@ -21,6 +21,8 @@ function BTNWorkoutGenerator() {
   const [savedWorkouts, setSavedWorkouts] = useState<Set<number>>(new Set());
   const [savingWorkouts, setSavingWorkouts] = useState<Set<number>>(new Set());
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   const timeDomains = [
     '1:00 - 5:00',
@@ -29,6 +31,38 @@ function BTNWorkoutGenerator() {
     '15:00 - 20:00',
     '20:00+'
   ];
+
+  // Fetch user profile on mount
+  useEffect(() => {
+    async function fetchUserProfile() {
+      try {
+        console.log('📊 Fetching user profile...');
+        const response = await fetch('/api/btn/user-profile');
+        
+        if (!response.ok) {
+          console.warn('⚠️ Failed to fetch user profile, using defaults');
+          setProfileLoading(false);
+          return;
+        }
+        
+        const data = await response.json();
+        if (data.success && data.profile) {
+          setUserProfile(data.profile);
+          console.log('✅ User profile loaded:', {
+            equipment: data.profile.equipment.length,
+            skills: Object.keys(data.profile.skills).length,
+            oneRMs: Object.keys(data.profile.oneRMs).length
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error fetching user profile:', error);
+      } finally {
+        setProfileLoading(false);
+      }
+    }
+    
+    fetchUserProfile();
+  }, []);
 
   const toggleDomain = (domain: string) => {
     setSelectedDomains(prev => 
@@ -43,8 +77,12 @@ function BTNWorkoutGenerator() {
     try {
       console.log('🎲 Generating workouts...');
       console.log('Selected domains:', selectedDomains.length > 0 ? selectedDomains : 'all (random)');
+      console.log('Using profile:', userProfile ? 'Yes' : 'No (default generator)');
       
-      const workouts = generateTestWorkouts(selectedDomains.length > 0 ? selectedDomains : undefined);
+      const workouts = generateTestWorkouts(
+        selectedDomains.length > 0 ? selectedDomains : undefined,
+        userProfile || undefined
+      );
       
       // Display workouts immediately (no auto-save)
       setGeneratedWorkouts(workouts);
