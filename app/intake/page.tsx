@@ -641,6 +641,9 @@ setSubscriptionStatus(subscription.status)
               skills: updated.skills?.filter((s: string) => s !== "Don't have it").length,
               oneRMs: updated.oneRMs?.filter((rm: string) => rm !== '').length
             })
+            console.log('🔍 DETAILED equipment:', updated.equipment)
+            console.log('🔍 DETAILED skills (first 5):', updated.skills?.slice(0, 5))
+            console.log('🔍 DETAILED oneRMs (all):', updated.oneRMs)
             return updated
           })
           
