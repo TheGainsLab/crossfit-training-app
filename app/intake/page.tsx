@@ -514,7 +514,7 @@ setSubscriptionStatus(subscription.status)
             .eq('user_id', dbUser.id)
 
           if (equipmentData && equipmentData.length > 0) {
-            loadedData.equipment = equipmentData.map(e => e.equipment_name)
+            loadedData.equipment = equipmentData.map((e: any) => e.equipment_name)
           }
 
           // Load skills
