@@ -141,6 +141,9 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
     for (let i = 0; i < 2; i++) {
       const format = formats[Math.floor(Math.random() * formats.length)] as 'For Time' | 'AMRAP' | 'Rounds For Time';
       
+      // Use actual workout duration consistently throughout
+      const actualDuration = domain.targetDuration;
+      
       let amrapTime: number | undefined;
       let rounds: number | undefined;
       
@@ -148,19 +151,8 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
         amrapTime = undefined;
         rounds = undefined;
       } else if (format === 'AMRAP') {
-        let minTime, maxTime;
-        if (domain.range === '1:00 - 5:00') {
-          minTime = 5; maxTime = 5;
-        } else if (domain.range === '5:00 - 10:00') {
-          minTime = 5; maxTime = 10;
-        } else if (domain.range === '10:00 - 15:00') {
-          minTime = 10; maxTime = 15;
-        } else if (domain.range === '15:00 - 20:00') {
-          minTime = 15; maxTime = 20;
-        } else {
-          minTime = 15; maxTime = 20;
-        }
-        amrapTime = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
+        // Use the target duration as AMRAP time (no randomization)
+        amrapTime = actualDuration;
         rounds = undefined;
       } else {
         // Rounds For Time - scale by time domain
@@ -187,7 +179,8 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
         pattern = allPatterns[Math.floor(Math.random() * allPatterns.length)];
       }
       
-      const exercises = generateExercisesForTimeDomain(domain.targetDuration, format, rounds, pattern, amrapTime);
+      // Pass the actual workout duration for all calculations
+      const exercises = generateExercisesForTimeDomain(actualDuration, format, rounds, pattern, amrapTime);
         
       if (pattern) {
         const patternReps = pattern.split('-').map(Number);
@@ -197,19 +190,14 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
         });
       }
       
-      let calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern);
-      const maxDuration = 25;
-      if (calculatedDuration > maxDuration) {
-        calculatedDuration = maxDuration;
-      }
-      
+      // Use actual duration for the workout (no recalculation/reassignment)
       const workout: GeneratedWorkout = {
         name: `Workout ${domainIndex * 2 + i + 1}`,
-        duration: calculatedDuration,
+        duration: actualDuration,
         format,
         amrapTime,
         rounds,
-        timeDomain: getTimeDomainRange(calculatedDuration),
+        timeDomain: domain.range,  // Keep original time domain
         exercises,
         pattern
       };
