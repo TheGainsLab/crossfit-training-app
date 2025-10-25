@@ -507,6 +507,8 @@ setSubscriptionStatus(subscription.status)
               airBike10MinCalories: '', enteredTimeTrial: '', airBikeType: ''
             }
           }
+          
+          console.log('🏃 Conditioning benchmarks from DB:', userData.conditioning_benchmarks)
 
           // Load equipment
           const { data: equipmentData, error: equipmentError } = await supabase
