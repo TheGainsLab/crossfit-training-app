@@ -474,26 +474,10 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
   const isStrictPullups = exerciseName === 'Strict Pull-ups';
   
   if (format === 'AMRAP') {
-    // Use actual AMRAP time for calculations, not targetDuration
-    const actualAmrapTime = amrapTime || targetDuration;
-    const totalTargetReps = Math.floor(baseRate * actualAmrapTime * repFactor);
-    
-    // Keep the 1.8 divisor - it scales down unrealistic base rates for sustained effort
-    let estimatedRounds: number;
-    if (actualAmrapTime <= 5) {
-      estimatedRounds = Math.max(Math.floor(actualAmrapTime / 1.5), 2);
-    } else if (actualAmrapTime <= 10) {
-      estimatedRounds = Math.max(Math.floor(actualAmrapTime / 1.8), 3);
-    } else if (actualAmrapTime <= 15) {
-      estimatedRounds = Math.max(Math.floor(actualAmrapTime / 2.0), 4);
-    } else {
-      estimatedRounds = Math.max(Math.floor(actualAmrapTime / 2.2), 5);
-    }
-    
-    const repsPerRound = Math.floor(totalTargetReps / estimatedRounds);
-    
-    // NEW LOGIC: Divide by number of exercises for realistic per-exercise reps
-    const repsPerExercise = Math.floor(repsPerRound / numExercises);
+    // AMRAP format: targetDuration is actually the pre-calculated reps per exercise
+    // from the dynamic divisor logic in generateExercisesForTimeDomain
+    // This is just snapping to clean numbers
+    const repsPerExercise = targetDuration;
     
     if (isBarbellExerciseForReps) {
       return barbellRepOptions.reduce((prev, curr) => 
