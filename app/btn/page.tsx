@@ -20,12 +20,31 @@ function BTNWorkoutGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [savedWorkouts, setSavedWorkouts] = useState<Set<number>>(new Set());
   const [savingWorkouts, setSavingWorkouts] = useState<Set<number>>(new Set());
+  const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
+
+  const timeDomains = [
+    '1:00 - 5:00',
+    '5:00 - 10:00',
+    '10:00 - 15:00',
+    '15:00 - 20:00',
+    '20:00+'
+  ];
+
+  const toggleDomain = (domain: string) => {
+    setSelectedDomains(prev => 
+      prev.includes(domain)
+        ? prev.filter(d => d !== domain)
+        : [...prev, domain]
+    );
+  };
 
   const generateWorkouts = async () => {
     setIsGenerating(true);
     try {
       console.log('🎲 Generating workouts...');
-      const workouts = generateTestWorkouts();
+      console.log('Selected domains:', selectedDomains.length > 0 ? selectedDomains : 'all (random)');
+      
+      const workouts = generateTestWorkouts(selectedDomains.length > 0 ? selectedDomains : undefined);
       
       // Display workouts immediately (no auto-save)
       setGeneratedWorkouts(workouts);
