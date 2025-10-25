@@ -155,19 +155,9 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
         amrapTime = actualDuration;
         rounds = undefined;
       } else {
-        // Rounds For Time - scale by time domain
-        // Sprint workouts should have fewer rounds (higher intensity per round)
-        if (domain.range === '1:00 - 5:00') {
-          rounds = Math.floor(Math.random() * 2) + 2;  // 2-3 rounds
-        } else if (domain.range === '5:00 - 10:00') {
-          rounds = Math.floor(Math.random() * 2) + 2;  // 2-3 rounds
-        } else if (domain.range === '10:00 - 15:00') {
-          rounds = Math.floor(Math.random() * 2) + 3;  // 3-4 rounds
-        } else if (domain.range === '15:00 - 20:00') {
-          rounds = Math.floor(Math.random() * 2) + 4;  // 4-5 rounds
-        } else {
-          rounds = Math.floor(Math.random() * 2) + 5;  // 5-6 rounds
-        }
+        // Rounds For Time - rounds will be calculated AFTER exercises are selected
+        // based on duration and actual exercise work rates
+        rounds = undefined;  // Placeholder, will be calculated in generateExercisesForTimeDomain
         amrapTime = undefined;
       }
       
@@ -189,7 +179,13 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
       }
       
       // Pass the actual workout duration for all calculations
-      const exercises = generateExercisesForTimeDomain(actualDuration, format, rounds, pattern, amrapTime);
+      const result = generateExercisesForTimeDomain(actualDuration, format, rounds, pattern, amrapTime);
+      const exercises = result.exercises;
+      
+      // Update rounds if calculated dynamically
+      if (result.rounds !== undefined) {
+        rounds = result.rounds;
+      }
         
       if (pattern) {
         const patternReps = pattern.split('-').map(Number);
@@ -217,7 +213,7 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
   return workouts;
 }
 
-function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number): Exercise[] {
+function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number): { exercises: Exercise[], rounds?: number } {
   const exercises: Exercise[] = [];
   const rules = formatRules[format as keyof typeof formatRules];
   if (!rules) {
@@ -294,6 +290,46 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
   
   const barbellWeight = barbellExercises.length > 0 ? generateWeightForExercise(barbellExercises[0]) : undefined;
   const dumbbellWeight = dumbbellExercises.length > 0 ? generateWeightForExercise(dumbbellExercises[0]) : undefined;
+  
+  // For Rounds For Time: Calculate rounds based on actual exercises and their work rates
+  if (format === 'Rounds For Time' && !rounds) {
+    // Calculate rep factor based on time domain
+    let repFactor;
+    if (targetDuration <= 5) {
+      repFactor = 1.0;
+    } else if (targetDuration <= 10) {
+      repFactor = 0.85;
+    } else if (targetDuration <= 15) {
+      repFactor = 0.75;
+    } else if (targetDuration <= 20) {
+      repFactor = 0.65;
+    } else {
+      repFactor = 0.55;
+    }
+    
+    // Calculate estimated time per round based on actual exercises
+    let estimatedTimePerRound = 0;
+    filteredExercises.forEach(exerciseName => {
+      const rate = exerciseRates[exerciseName] || 10.0;
+      const degradedRate = rate * repFactor;
+      // Estimate reasonable reps per exercise per round
+      const estimatedRepsPerExercise = Math.floor(rate * targetDuration * repFactor / filteredExercises.length / 4); // Divide by 4 as rough round estimate
+      const timeForThisExercise = estimatedRepsPerExercise / degradedRate;
+      estimatedTimePerRound += timeForThisExercise;
+    });
+    
+    // Calculate rounds based on duration and estimated time per round
+    rounds = Math.max(Math.floor(targetDuration / estimatedTimePerRound), 2);
+    
+    // Ensure reasonable round counts by time domain
+    if (targetDuration <= 5) {
+      rounds = Math.max(Math.min(rounds, 3), 2);  // 2-3 rounds for sprint
+    } else if (targetDuration <= 10) {
+      rounds = Math.max(Math.min(rounds, 5), 3);  // 3-5 rounds for short
+    } else {
+      rounds = Math.max(Math.min(rounds, 7), 4);  // 4-7 rounds for medium+
+    }
+  }
   
   // Generate exercises with reps
   const exerciseReps: { name: string; reps: number }[] = [];
@@ -409,7 +445,7 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
     });
   });
   
-  return exercises;
+  return { exercises, rounds };
 }
 
 function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number, format: string, rounds?: number, numExercises: number = 3, amrapTime?: number): number {
