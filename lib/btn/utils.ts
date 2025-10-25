@@ -124,10 +124,10 @@ function getAllowedPatternsForExercises(exercises: string[]): string[] {
   return allowedPatterns;
 }
 
-export function generateTestWorkouts(): GeneratedWorkout[] {
+export function generateTestWorkouts(selectedDomainRanges?: string[]): GeneratedWorkout[] {
   const workouts: GeneratedWorkout[] = [];
   
-  const timeDomains = [
+  const allTimeDomains = [
     { range: '1:00 - 5:00', minDuration: 1, maxDuration: 5 },
     { range: '5:00 - 10:00', minDuration: 5, maxDuration: 10 },
     { range: '10:00 - 15:00', minDuration: 10, maxDuration: 15 },
@@ -137,10 +137,20 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
   
   const allFormats = ['For Time', 'AMRAP', 'Rounds For Time'];
   
-  // Generate 5 workouts with random time domains
-  for (let i = 0; i < 5; i++) {
-    // Pick random time domain
-    const domain = timeDomains[Math.floor(Math.random() * timeDomains.length)];
+  // Filter to selected domains, or use all if none selected
+  const timeDomains = selectedDomainRanges && selectedDomainRanges.length > 0
+    ? allTimeDomains.filter(td => selectedDomainRanges.includes(td.range))
+    : allTimeDomains;
+  
+  // Generate 5 workouts with domain selection logic:
+  // 1. Generate at least 1 from each selected domain
+  // 2. Fill remainder randomly from selected domains
+  const selectedCount = timeDomains.length;
+  const guaranteedWorkouts = Math.min(selectedCount, 5);
+  
+  // First pass: Generate 1 workout from each selected domain (up to 5)
+  for (let i = 0; i < guaranteedWorkouts; i++) {
+    const domain = timeDomains[i];
     
     // For 1-5 min domain: AMRAP not allowed (must be 6+ min)
     const formats = domain.maxDuration < 6 
@@ -219,6 +229,83 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
         amrapTime,
         rounds,
         timeDomain: actualTimeDomain,  // Use actual classification
+        exercises,
+        pattern
+      };
+      workouts.push(workout);
+    }
+  }
+  
+  // Second pass: Fill remainder randomly from selected domains (if < 5 domains selected)
+  const remainingCount = 5 - workouts.length;
+  for (let i = 0; i < remainingCount; i++) {
+    const domain = timeDomains[Math.floor(Math.random() * timeDomains.length)];
+    
+    // For 1-5 min domain: AMRAP not allowed (must be 6+ min)
+    const formats = domain.maxDuration < 6 
+      ? ['For Time', 'Rounds For Time']  // No AMRAP for sprint domain
+      : allFormats;
+    
+    {
+      const format = formats[Math.floor(Math.random() * formats.length)] as 'For Time' | 'AMRAP' | 'Rounds For Time';
+      
+      let amrapTime: number | undefined;
+      let rounds: number | undefined;
+      let pattern: string | undefined;
+      let targetDurationHint: number | undefined;
+      
+      if (format === 'For Time') {
+        const allPatterns = ['21-15-9', '15-12-9', '12-9-6', '10-8-6-4-2', '15-12-9-6-3', '27-21-15-9', '33-27-21-15-9', '50-40-30-20-10', '40-30-20-10'];
+        
+        if (domain.maxDuration <= 10) {
+          const shortPatterns = ['21-15-9', '15-12-9', '12-9-6', '10-8-6-4-2'];
+          pattern = shortPatterns[Math.floor(Math.random() * shortPatterns.length)];
+        } else {
+          const moderatePatterns = allPatterns.filter(p => 
+            !['50-40-30-20-10', '40-30-20-10'].includes(p)
+          );
+          pattern = moderatePatterns[Math.floor(Math.random() * moderatePatterns.length)];
+        }
+        amrapTime = undefined;
+        rounds = undefined;
+        targetDurationHint = undefined;
+      } else if (format === 'AMRAP') {
+        amrapTime = Math.floor(Math.random() * (domain.maxDuration - domain.minDuration + 1)) + domain.minDuration;
+        rounds = undefined;
+        pattern = undefined;
+        targetDurationHint = amrapTime;
+      } else {
+        targetDurationHint = Math.floor(Math.random() * (domain.maxDuration - domain.minDuration + 1)) + domain.minDuration;
+        rounds = undefined;
+        amrapTime = undefined;
+        pattern = undefined;
+      }
+      
+      const result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime);
+      const exercises = result.exercises;
+      
+      if (result.rounds !== undefined) {
+        rounds = result.rounds;
+      }
+        
+      if (pattern) {
+        const patternReps = pattern.split('-').map(Number);
+        const totalPatternReps = patternReps.reduce((sum, reps) => sum + reps, 0);
+        exercises.forEach((exercise) => {
+          exercise.reps = totalPatternReps;
+        });
+      }
+      
+      const calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern);
+      const actualTimeDomain = getTimeDomainRange(calculatedDuration);
+      
+      const workout: GeneratedWorkout = {
+        name: `Workout ${workouts.length + 1}`,
+        duration: calculatedDuration,
+        format,
+        amrapTime,
+        rounds,
+        timeDomain: actualTimeDomain,
         exercises,
         pattern
       };

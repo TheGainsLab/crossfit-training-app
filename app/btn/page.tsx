@@ -127,8 +127,40 @@ function BTNWorkoutGenerator() {
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold mb-4">Workout Generator</h2>
           <p className="text-gray-600 mb-6">
-            Generate 5 realistic CrossFit workouts with random time domains, proper exercise selection, rep schemes, and equipment consistency
+            Generate 5 realistic CrossFit workouts with proper exercise selection, rep schemes, and equipment consistency
           </p>
+          
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-3">Select Time Domains:</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {timeDomains.map((domain) => (
+                <label
+                  key={domain}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all ${
+                    selectedDomains.includes(domain)
+                      ? 'border-[#FE5858] bg-red-50'
+                      : 'border-gray-300 bg-white hover:border-gray-400'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedDomains.includes(domain)}
+                    onChange={() => toggleDomain(domain)}
+                    className="w-4 h-4 text-[#FE5858] rounded focus:ring-[#FE5858]"
+                  />
+                  <span className="text-sm font-medium">{domain}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {selectedDomains.length === 0 
+                ? 'No domains selected - will generate 5 random workouts'
+                : selectedDomains.length >= 5
+                ? `Will generate 1 workout from each selected domain`
+                : `Will generate at least 1 from each selected domain, filling remainder randomly`
+              }
+            </p>
+          </div>
           
           <button 
             className="w-full py-3 px-6 bg-[#FE5858] text-white rounded-lg text-lg font-semibold hover:bg-[#ff6b6b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
