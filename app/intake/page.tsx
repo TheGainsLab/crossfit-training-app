@@ -489,18 +489,122 @@ setSubscriptionStatus(subscription.status)
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', dbUser.id)
           .single()
 
         if (userData && !userError) {
-          setFormData(prev => ({
-            ...prev,
+          // Load basic user info
+          let loadedData: Partial<IntakeFormData> = {
             name: userData.name || '',
             email: userData.email || user.email || '',
             gender: userData.gender || '',
             units: userData.units || '',
             bodyWeight: userData.body_weight?.toString() || '',
-            conditioningBenchmarks: userData.conditioning_benchmarks || prev.conditioningBenchmarks
+            conditioningBenchmarks: userData.conditioning_benchmarks || {
+              mileRun: '', fiveKRun: '', tenKRun: '',
+              oneKRow: '', twoKRow: '', fiveKRow: '',
+              airBike10MinCalories: '', enteredTimeTrial: '', airBikeType: ''
+            }
+          }
+
+          // Load equipment
+          const { data: equipmentData } = await supabase
+            .from('user_equipment')
+            .select('equipment_name')
+            .eq('user_id', dbUser.id)
+
+          if (equipmentData && equipmentData.length > 0) {
+            loadedData.equipment = equipmentData.map(e => e.equipment_name)
+          }
+
+          // Load skills
+          const { data: skillsData } = await supabase
+            .from('user_skills')
+            .select('skill_name, skill_level')
+            .eq('user_id', dbUser.id)
+
+          if (skillsData && skillsData.length > 0) {
+            // Initialize skills array with 26 empty strings
+            const skillsArray = Array(26).fill("Don't have it")
+            
+            // Map skill names to indices and populate
+            skillsData.forEach((skill: any) => {
+              // Find the index for this skill name across all categories
+              for (const category of skillCategories) {
+                const skillDef = category.skills.find((s: any) => s.name === skill.skill_name)
+                if (skillDef) {
+                  skillsArray[skillDef.index] = skill.skill_level
+                  break
+                }
+              }
+            })
+            
+            loadedData.skills = skillsArray
+          }
+
+          // Load 1RMs
+          const { data: oneRMsData } = await supabase
+            .from('user_one_rms')
+            .select('exercise_name, one_rm')
+            .eq('user_id', dbUser.id)
+
+          if (oneRMsData && oneRMsData.length > 0) {
+            // Initialize 1RMs array with 14 empty strings
+            const oneRMsArray = Array(14).fill('')
+            
+            // Map exercise names to indices
+            const oneRMMapping: { [key: string]: number } = {
+              'Snatch': 0,
+              'Power Snatch': 1,
+              'Clean and Jerk': 2,
+              'Power Clean': 3,
+              'Clean (clean only)': 4,
+              'Jerk (from rack or blocks, max Split or Power Jerk)': 5,
+              'Back Squat': 6,
+              'Front Squat': 7,
+              'Overhead Squat': 8,
+              'Deadlift': 9,
+              'Bench Press': 10,
+              'Push Press': 11,
+              'Strict Press': 12,
+              'Weighted Pullup (do not include body weight)': 13
+            }
+            
+            oneRMsData.forEach((rm: any) => {
+              const index = oneRMMapping[rm.exercise_name]
+              if (index !== undefined) {
+                oneRMsArray[index] = rm.one_rm.toString()
+              }
+            })
+            
+            loadedData.oneRMs = oneRMsArray
+          }
+
+          // Load preferences
+          const { data: prefsData } = await supabase
+            .from('user_preferences')
+            .select('*')
+            .eq('user_id', dbUser.id)
+            .single()
+
+          if (prefsData) {
+            loadedData.preferences = {
+              threeMonthGoals: prefsData.three_month_goals || '',
+              monthlyPrimaryGoal: prefsData.monthly_primary_goal || '',
+              preferredMetconExercises: prefsData.preferred_metcon_exercises || [],
+              avoidedExercises: prefsData.avoided_exercises || [],
+              trainingDaysPerWeek: prefsData.training_days_per_week,
+              primaryStrengthLifts: prefsData.primary_strength_lifts || [],
+              emphasizedStrengthLifts: prefsData.emphasized_strength_lifts || [],
+              selectedGoals: prefsData.selected_goals || [],
+              metconTimeFocus: prefsData.metcon_time_focus || []
+            }
+          }
+
+          // Apply all loaded data to form
+          setFormData(prev => ({
+            ...prev,
+            ...loadedData
           }))
         }
 
