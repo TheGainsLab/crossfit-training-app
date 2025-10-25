@@ -1,5 +1,6 @@
 import { Workout, PerformancePrediction, GeneratedWorkout, Exercise, UserProfile } from './types';
 import { exerciseDatabase, exerciseEquipment } from './data';
+import { calculateBenchmarkScores } from './benchmarks';
 
 // Format-specific rule sets
 const formatRules = {
@@ -276,6 +277,12 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
         exercises,
         pattern
       };
+      
+      // Calculate benchmark scores
+      const benchmarks = calculateBenchmarkScores(workout);
+      workout.medianScore = benchmarks.medianScore;
+      workout.excellentScore = benchmarks.excellentScore;
+      
       workouts.push(workout);
     }
   }
@@ -362,6 +369,11 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
           exercises,
           pattern
         };
+        
+        // Calculate benchmark scores
+        const benchmarks = calculateBenchmarkScores(workout);
+        workout.medianScore = benchmarks.medianScore;
+        workout.excellentScore = benchmarks.excellentScore;
       }
     }
     

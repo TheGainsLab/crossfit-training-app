@@ -29,6 +29,8 @@ export interface GeneratedWorkout extends Workout {
   duration: number;
   timeDomain: string;
   pattern?: string; // For For Time workouts
+  medianScore?: string; // 50th percentile benchmark
+  excellentScore?: string; // 90th percentile benchmark
 }
 
 export interface UserProfile {

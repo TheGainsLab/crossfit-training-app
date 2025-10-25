@@ -9,6 +9,8 @@ interface BTNWorkout {
   rounds?: number
   amrapTime?: number
   pattern?: string
+  medianScore?: string
+  excellentScore?: string
 }
 
 export async function POST(request: NextRequest) {
@@ -60,6 +62,10 @@ export async function POST(request: NextRequest) {
       rounds: workout.rounds || null,
       amrap_time: workout.amrapTime || null,
       pattern: workout.pattern || null,
+      
+      // Benchmark scores for percentile calculation
+      median_score: workout.medianScore || null,
+      excellent_score: workout.excellentScore || null,
       
       // Result fields (empty until user logs result)
       user_score: null,

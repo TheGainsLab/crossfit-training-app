@@ -276,6 +276,24 @@ function BTNWorkoutGenerator() {
                           : `${workout.format}${workout.pattern ? `: ${workout.pattern}` : ''}`}
                       </div>
                     </div>
+                    
+                    {/* Benchmark Scores */}
+                    {workout.medianScore && workout.excellentScore && (
+                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="text-sm font-semibold text-blue-900 mb-2">Performance Benchmarks</div>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <span className="text-gray-600">50th Percentile (Median):</span>
+                            <span className="ml-2 font-semibold text-gray-900">{workout.medianScore}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">90th Percentile (Excellent):</span>
+                            <span className="ml-2 font-semibold text-blue-700">{workout.excellentScore}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="bg-white rounded p-4 mb-4">
                       <p className="font-semibold mb-2">Exercises:</p>
                       {workout.exercises.map((exercise, exIndex) => (
