@@ -622,17 +622,26 @@ setSubscriptionStatus(subscription.status)
           // Apply all loaded data to form
           console.log('🔄 Applying loaded data to form:', {
             hasEquipment: !!loadedData.equipment,
+            equipmentCount: loadedData.equipment?.length,
             hasSkills: !!loadedData.skills,
+            skillsCount: loadedData.skills?.length,
             hasOneRMs: !!loadedData.oneRMs,
+            oneRMsCount: loadedData.oneRMs?.length,
             hasPreferences: !!loadedData.preferences
           })
           
-          setFormData(prev => ({
-            ...prev,
-            ...loadedData
-          }))
-          
-          console.log('✅ Form data updated with existing values')
+          setFormData(prev => {
+            const updated = {
+              ...prev,
+              ...loadedData
+            }
+            console.log('✅ Form data updated! New state:', {
+              equipment: updated.equipment?.length,
+              skills: updated.skills?.filter(s => s !== "Don't have it").length,
+              oneRMs: updated.oneRMs?.filter(rm => rm !== '').length
+            })
+            return updated
+          })
         }
 
         setLoading(false)
