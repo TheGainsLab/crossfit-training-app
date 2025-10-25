@@ -352,18 +352,20 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
       repFactor = 0.55;
     }
     
-    // Calculate dynamic divisor based on actual exercises
-    let totalTimePerRound = 0;
-    filteredExercises.forEach(exerciseName => {
-      const rate = exerciseRates[exerciseName] || 10.0;
-      const degradedRate = rate * repFactor;
-      const estimatedRepsPerExercise = Math.floor(rate * actualAmrapTime * repFactor / filteredExercises.length);
-      const timeForThisExercise = estimatedRepsPerExercise / degradedRate;
-      totalTimePerRound += timeForThisExercise;
-    });
+    // Calculate target rounds based on time domain and actual exercise difficulty
+    // These divisors represent target time-per-round for different durations
+    let targetTimePerRound: number;
+    if (actualAmrapTime <= 5) {
+      targetTimePerRound = 1.5;  // Sprint: ~90 seconds per round
+    } else if (actualAmrapTime <= 10) {
+      targetTimePerRound = 1.8;  // Short: ~108 seconds per round
+    } else if (actualAmrapTime <= 15) {
+      targetTimePerRound = 2.0;  // Medium: ~2 minutes per round
+    } else {
+      targetTimePerRound = 2.2;  // Extended: ~132 seconds per round
+    }
     
-    const dynamicDivisor = totalTimePerRound;
-    const estimatedRounds = Math.max(Math.floor(actualAmrapTime / dynamicDivisor), 2);
+    const estimatedRounds = Math.max(Math.floor(actualAmrapTime / targetTimePerRound), 2);
     
     // Calculate reps for each exercise individually
     filteredExercises.forEach(exerciseName => {
