@@ -141,45 +141,46 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
     for (let i = 0; i < 2; i++) {
       const format = formats[Math.floor(Math.random() * formats.length)] as 'For Time' | 'AMRAP' | 'Rounds For Time';
       
-      // Pick actual duration from the domain range (no placeholder)
-      const actualDuration = Math.floor(Math.random() * (domain.maxDuration - domain.minDuration + 1)) + domain.minDuration;
-      
       let amrapTime: number | undefined;
       let rounds: number | undefined;
-      
-      if (format === 'For Time') {
-        amrapTime = undefined;
-        rounds = undefined;
-      } else if (format === 'AMRAP') {
-        // Use the target duration as AMRAP time (no randomization)
-        amrapTime = actualDuration;
-        rounds = undefined;
-      } else {
-        // Rounds For Time - rounds will be calculated AFTER exercises are selected
-        // based on duration and actual exercise work rates
-        rounds = undefined;  // Placeholder, will be calculated in generateExercisesForTimeDomain
-        amrapTime = undefined;
-      }
-      
       let pattern: string | undefined;
+      let targetDurationHint: number | undefined;
+      
       if (format === 'For Time') {
+        // For Time: Pick pattern, then calculate duration from work
         const allPatterns = ['21-15-9', '15-12-9', '12-9-6', '10-8-6-4-2', '15-12-9-6-3', '27-21-15-9', '33-27-21-15-9', '50-40-30-20-10', '40-30-20-10'];
         
-        // For Time: select pattern based on actual duration
-        if (actualDuration <= 10) {
-          // Shorter workouts: use any pattern
-          pattern = allPatterns[Math.floor(Math.random() * allPatterns.length)];
+        // Select pattern based on time domain (for variety)
+        if (domain.maxDuration <= 10) {
+          // Short workouts: lower volume patterns
+          const shortPatterns = ['21-15-9', '15-12-9', '12-9-6', '10-8-6-4-2'];
+          pattern = shortPatterns[Math.floor(Math.random() * shortPatterns.length)];
         } else {
-          // Longer workouts: exclude very high volume patterns
-          const shorterPatterns = allPatterns.filter(p => 
-            !['50-40-30-20-10', '40-30-20-10', '33-27-21-15-9', '27-21-15-9'].includes(p)
+          // Longer workouts: any pattern except the highest volume
+          const moderatePatterns = allPatterns.filter(p => 
+            !['50-40-30-20-10', '40-30-20-10'].includes(p)
           );
-          pattern = shorterPatterns[Math.floor(Math.random() * shorterPatterns.length)];
+          pattern = moderatePatterns[Math.floor(Math.random() * moderatePatterns.length)];
         }
+        amrapTime = undefined;
+        rounds = undefined;
+        targetDurationHint = undefined; // No target for For Time
+      } else if (format === 'AMRAP') {
+        // AMRAP: Pick duration from domain range - this IS the workout duration
+        amrapTime = Math.floor(Math.random() * (domain.maxDuration - domain.minDuration + 1)) + domain.minDuration;
+        rounds = undefined;
+        pattern = undefined;
+        targetDurationHint = amrapTime;
+      } else {
+        // Rounds For Time: Use domain hint for round calculation, then calculate actual duration
+        targetDurationHint = Math.floor(Math.random() * (domain.maxDuration - domain.minDuration + 1)) + domain.minDuration;
+        rounds = undefined;  // Will be calculated based on exercises
+        amrapTime = undefined;
+        pattern = undefined;
       }
       
-      // Pass the actual workout duration for all calculations
-      const result = generateExercisesForTimeDomain(actualDuration, format, rounds, pattern, amrapTime);
+      // Generate exercises (targetDurationHint is only used for Rounds For Time round calculation)
+      const result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime);
       const exercises = result.exercises;
       
       // Update rounds if calculated dynamically
@@ -187,6 +188,7 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
         rounds = result.rounds;
       }
         
+      // For "For Time": set each exercise to the total pattern reps
       if (pattern) {
         const patternReps = pattern.split('-').map(Number);
         const totalPatternReps = patternReps.reduce((sum, reps) => sum + reps, 0);
@@ -195,14 +197,19 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
         });
       }
       
-      // Use actual duration for the workout (no recalculation/reassignment)
+      // Calculate ACTUAL duration from the work
+      const calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern);
+      
+      // Classify into time domain based on CALCULATED duration
+      const actualTimeDomain = getTimeDomainRange(calculatedDuration);
+      
       const workout: GeneratedWorkout = {
         name: `Workout ${domainIndex * 2 + i + 1}`,
-        duration: actualDuration,
+        duration: calculatedDuration,  // Use calculated duration, not random target
         format,
         amrapTime,
         rounds,
-        timeDomain: domain.range,  // Keep original time domain
+        timeDomain: actualTimeDomain,  // Use actual classification
         exercises,
         pattern
       };
