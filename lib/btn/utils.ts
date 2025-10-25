@@ -34,7 +34,7 @@ const formatRules = {
 
 // Exercise difficulty tiers for pattern compatibility
 const exerciseDifficultyTiers = {
-  highSkill: ['Snatch', 'Ring Muscle Ups', 'Handstand Push-ups', 'Rope Climbs', 'Legless Rope Climbs', 'Squat Snatch', 'Bar Muscle Ups'],
+  highSkill: ['Snatch', 'Ring Muscle Ups', 'Handstand Push-ups', 'Rope Climbs', 'Legless Rope Climbs', 'Bar Muscle Ups'],
   highVolume: ['Double Unders', 'Wall Balls'],
   moderate: ['Deadlifts', 'Burpees', 'Pull-ups', 'Chest to Bar Pull-ups', 'Toes to Bar', 'Overhead Squats', 'Thrusters', 'Power Cleans', 'Clean and Jerks', 'GHD Sit-ups', 'Squat Cleans', 'Power Snatch', 'Push-ups', 'Strict Pull-ups'],
   lowSkill: ['Box Jumps', 'Box Jump Overs', 'Burpee Box Jump Overs', 'Alternating Dumbbell Snatches', 'Dumbbell Thrusters', 'Dumbbell Clean and Jerk', 'Rowing Calories', 'Kettlebell Swings', 'Kettlebell Snatches', 'Bike Calories', 'Ski Calories', 'Dumbbell Box Step-Ups']
@@ -246,7 +246,6 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
   // Apply pattern restrictions for For Time format
   if (rules.patternRestrictions && pattern) {
     candidateExercises = candidateExercises.filter(exercise => {
-      if (exercise === 'Legless Rope Climbs') return false;
       const allowedPatterns = getAllowedPatternsForExercises([exercise]);
       return allowedPatterns.includes(pattern);
     });
@@ -748,6 +747,14 @@ function filterExercisesForConsistency(exerciseTypes: string[]): string[] {
     }
   }
   
+  if (hasDumbbell) {
+    const dumbbellExercises = exerciseTypes.filter(exercise => exercise.includes('Dumbbell'));
+    if (dumbbellExercises.length > 1) {
+      const firstDumbbell = dumbbellExercises[0];
+      return exerciseTypes.filter(exercise => !exercise.includes('Dumbbell') || exercise === firstDumbbell);
+    }
+  }
+  
   if (hasBarbell && hasDumbbell) {
     return exerciseTypes.filter(exercise => !exercise.includes('Dumbbell'));
   }
@@ -782,7 +789,12 @@ function filterForbiddenPairs(exerciseTypes: string[]): string[] {
     ['GHD Sit-ups', 'Toes to Bar'],
     ['Rowing Calories', 'Bike Calories'],
     ['Rowing Calories', 'Ski Calories'],
-    ['Bike Calories', 'Ski Calories']
+    ['Bike Calories', 'Ski Calories'],
+    ['Ring Muscle Ups', 'Chest to Bar Pull-ups'],
+    ['Legless Rope Climbs', 'Chest to Bar Pull-ups'],
+    ['Box Jump Overs', 'Dumbbell Box Step-Ups'],
+    ['Ring Muscle Ups', 'Strict Pull-ups'],
+    ['Bar Muscle Ups', 'Chest to Bar Pull-ups']
   ];
   
   let filteredExercises = [...exerciseTypes];
@@ -902,12 +914,12 @@ function generateWeightForExercise(exerciseName: string): string {
     return '50/35';
   }
   
-  if (['Deadlifts', 'Back Squat', 'Front Squat'].includes(exerciseName)) {
+  if (['Deadlifts'].includes(exerciseName)) {
     const weightPairs = ['135/95', '185/135', '225/155', '275/185', '315/205'];
     return weightPairs[Math.floor(Math.random() * weightPairs.length)];
   }
   
-  if ((exerciseName.includes('Clean') || exerciseName.includes('Jerk') || exerciseName === 'Clean & Jerks') && !exerciseName.includes('Dumbbell')) {
+  if ((exerciseName.includes('Clean') || exerciseName.includes('Jerk') || exerciseName === 'Clean and Jerks') && !exerciseName.includes('Dumbbell')) {
     const weightPairs = ['75/55', '95/65', '115/75', '135/95', '165/115', '185/135', '225/155', '275/185', '315/205'];
     return weightPairs[Math.floor(Math.random() * weightPairs.length)];
   }
