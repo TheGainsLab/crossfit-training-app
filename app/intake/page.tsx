@@ -596,11 +596,13 @@ setSubscriptionStatus(subscription.status)
           }
 
           // Load preferences
-          const { data: prefsData } = await supabase
+          const { data: prefsData, error: prefsError } = await supabase
             .from('user_preferences')
             .select('*')
             .eq('user_id', dbUser.id)
             .single()
+
+          console.log('⚙️ Preferences data:', prefsData ? 'found' : 'not found', prefsError ? `Error: ${prefsError.message}` : '')
 
           if (prefsData) {
             loadedData.preferences = {
@@ -614,13 +616,23 @@ setSubscriptionStatus(subscription.status)
               selectedGoals: prefsData.selected_goals || [],
               metconTimeFocus: prefsData.metcon_time_focus || []
             }
+            console.log('✅ Loaded preferences')
           }
 
           // Apply all loaded data to form
+          console.log('🔄 Applying loaded data to form:', {
+            hasEquipment: !!loadedData.equipment,
+            hasSkills: !!loadedData.skills,
+            hasOneRMs: !!loadedData.oneRMs,
+            hasPreferences: !!loadedData.preferences
+          })
+          
           setFormData(prev => ({
             ...prev,
             ...loadedData
           }))
+          
+          console.log('✅ Form data updated with existing values')
         }
 
         setLoading(false)
