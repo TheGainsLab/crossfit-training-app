@@ -135,10 +135,19 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
     { range: '20:00+', minDuration: 20, maxDuration: 25 }
   ];
   
-  const formats = ['For Time', 'AMRAP', 'Rounds For Time'];
+  const allFormats = ['For Time', 'AMRAP', 'Rounds For Time'];
   
-  timeDomains.forEach((domain, domainIndex) => {
-    for (let i = 0; i < 2; i++) {
+  // Generate 5 workouts with random time domains
+  for (let i = 0; i < 5; i++) {
+    // Pick random time domain
+    const domain = timeDomains[Math.floor(Math.random() * timeDomains.length)];
+    
+    // For 1-5 min domain: AMRAP not allowed (must be 6+ min)
+    const formats = domain.maxDuration < 6 
+      ? ['For Time', 'Rounds For Time']  // No AMRAP for sprint domain
+      : allFormats;
+    
+    {
       const format = formats[Math.floor(Math.random() * formats.length)] as 'For Time' | 'AMRAP' | 'Rounds For Time';
       
       let amrapTime: number | undefined;
@@ -204,7 +213,7 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
       const actualTimeDomain = getTimeDomainRange(calculatedDuration);
       
       const workout: GeneratedWorkout = {
-        name: `Workout ${domainIndex * 2 + i + 1}`,
+        name: `Workout ${i + 1}`,
         duration: calculatedDuration,  // Use calculated duration, not random target
         format,
         amrapTime,
@@ -215,7 +224,7 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
       };
       workouts.push(workout);
     }
-  });
+  }
 
   return workouts;
 }
