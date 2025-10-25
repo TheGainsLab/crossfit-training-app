@@ -239,14 +239,21 @@ export function generateTestWorkouts(selectedDomainRanges?: string[]): Generated
   // Second pass: Fill remainder randomly from selected domains (if < 5 domains selected)
   const remainingCount = 5 - workouts.length;
   for (let i = 0; i < remainingCount; i++) {
-    const domain = timeDomains[Math.floor(Math.random() * timeDomains.length)];
+    const targetDomain = timeDomains[Math.floor(Math.random() * timeDomains.length)];
     
-    // For 1-5 min domain: AMRAP not allowed (must be 6+ min)
-    const formats = domain.maxDuration < 6 
-      ? ['For Time', 'Rounds For Time']  // No AMRAP for sprint domain
-      : allFormats;
+    // Retry logic to ensure workout lands in target domain
+    let attempts = 0;
+    const maxAttempts = 10;
+    let workout: GeneratedWorkout | null = null;
     
-    {
+    while (attempts < maxAttempts && !workout) {
+      attempts++;
+      
+      // For 1-5 min domain: AMRAP not allowed (must be 6+ min)
+      const formats = targetDomain.maxDuration < 6 
+        ? ['For Time', 'Rounds For Time']  // No AMRAP for sprint domain
+        : allFormats;
+      
       const format = formats[Math.floor(Math.random() * formats.length)] as 'For Time' | 'AMRAP' | 'Rounds For Time';
       
       let amrapTime: number | undefined;
@@ -257,7 +264,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[]): Generated
       if (format === 'For Time') {
         const allPatterns = ['21-15-9', '15-12-9', '12-9-6', '10-8-6-4-2', '15-12-9-6-3', '27-21-15-9', '33-27-21-15-9', '50-40-30-20-10', '40-30-20-10'];
         
-        if (domain.maxDuration <= 10) {
+        if (targetDomain.maxDuration <= 10) {
           const shortPatterns = ['21-15-9', '15-12-9', '12-9-6', '10-8-6-4-2'];
           pattern = shortPatterns[Math.floor(Math.random() * shortPatterns.length)];
         } else {
@@ -270,18 +277,18 @@ export function generateTestWorkouts(selectedDomainRanges?: string[]): Generated
         rounds = undefined;
         targetDurationHint = undefined;
       } else if (format === 'AMRAP') {
-        amrapTime = Math.floor(Math.random() * (domain.maxDuration - domain.minDuration + 1)) + domain.minDuration;
+        amrapTime = Math.floor(Math.random() * (targetDomain.maxDuration - targetDomain.minDuration + 1)) + targetDomain.minDuration;
         rounds = undefined;
         pattern = undefined;
         targetDurationHint = amrapTime;
       } else {
-        targetDurationHint = Math.floor(Math.random() * (domain.maxDuration - domain.minDuration + 1)) + domain.minDuration;
+        targetDurationHint = Math.floor(Math.random() * (targetDomain.maxDuration - targetDomain.minDuration + 1)) + targetDomain.minDuration;
         rounds = undefined;
         amrapTime = undefined;
         pattern = undefined;
       }
       
-      const result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime);
+      const result = generateExercisesForTimeDomain(targetDurationHint || targetDomain.minDuration, format, rounds, pattern, amrapTime);
       const exercises = result.exercises;
       
       if (result.rounds !== undefined) {
@@ -299,16 +306,22 @@ export function generateTestWorkouts(selectedDomainRanges?: string[]): Generated
       const calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern);
       const actualTimeDomain = getTimeDomainRange(calculatedDuration);
       
-      const workout: GeneratedWorkout = {
-        name: `Workout ${workouts.length + 1}`,
-        duration: calculatedDuration,
-        format,
-        amrapTime,
-        rounds,
-        timeDomain: actualTimeDomain,
-        exercises,
-        pattern
-      };
+      // Check if workout landed in target domain (or accept if max attempts reached)
+      if (actualTimeDomain === targetDomain.range || attempts >= maxAttempts) {
+        workout = {
+          name: `Workout ${workouts.length + 1}`,
+          duration: calculatedDuration,
+          format,
+          amrapTime,
+          rounds,
+          timeDomain: actualTimeDomain,
+          exercises,
+          pattern
+        };
+      }
+    }
+    
+    if (workout) {
       workouts.push(workout);
     }
   }
