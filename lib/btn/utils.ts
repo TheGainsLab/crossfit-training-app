@@ -128,11 +128,11 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
   const workouts: GeneratedWorkout[] = [];
   
   const timeDomains = [
-    { range: '1:00 - 5:00', targetDuration: 3 },
-    { range: '5:00 - 10:00', targetDuration: 7 },
-    { range: '10:00 - 15:00', targetDuration: 12 },
-    { range: '15:00 - 20:00', targetDuration: 17 },
-    { range: '20:00+', targetDuration: 25 }
+    { range: '1:00 - 5:00', minDuration: 1, maxDuration: 5 },
+    { range: '5:00 - 10:00', minDuration: 5, maxDuration: 10 },
+    { range: '10:00 - 15:00', minDuration: 10, maxDuration: 15 },
+    { range: '15:00 - 20:00', minDuration: 15, maxDuration: 20 },
+    { range: '20:00+', minDuration: 20, maxDuration: 25 }
   ];
   
   const formats = ['For Time', 'AMRAP', 'Rounds For Time'];
