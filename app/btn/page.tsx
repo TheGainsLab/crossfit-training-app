@@ -18,47 +18,65 @@ interface SubscriptionStatus {
 function BTNWorkoutGenerator() {
   const [generatedWorkouts, setGeneratedWorkouts] = useState<GeneratedWorkout[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [savedWorkouts, setSavedWorkouts] = useState<Set<number>>(new Set());
+  const [savingWorkouts, setSavingWorkouts] = useState<Set<number>>(new Set());
 
   const generateWorkouts = async () => {
     setIsGenerating(true);
     try {
-      // 1. Generate workouts client-side
       console.log('🎲 Generating workouts...');
       const workouts = generateTestWorkouts();
       
-      // 2. Display workouts immediately
+      // Display workouts immediately (no auto-save)
       setGeneratedWorkouts(workouts);
+      setSavedWorkouts(new Set()); // Clear saved state
       console.log(`✅ Generated ${workouts.length} workouts`);
-      
-      // 3. Save to database in background
-      console.log('💾 Saving workouts to database...');
-      const response = await fetch('/api/btn/save-workouts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workouts })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('⚠️ Failed to save workouts:', errorData);
-        // Show warning but don't block UI - workouts still displayed
-        alert(`Workouts generated but not saved to history!\n\nError: ${errorData.error || 'Unknown error'}\nStatus: ${response.status}`);
-      } else {
-        const data = await response.json();
-        console.log(`✅ Saved ${data.savedCount} workouts to database`);
-        // Show subtle success indicator
-        const message = document.createElement('div');
-        message.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-6 py-3 rounded-lg shadow-lg z-50';
-        message.innerHTML = `✅ ${data.savedCount} workouts saved! <a href="/btn/history" class="underline font-semibold ml-2">View History →</a>`;
-        document.body.appendChild(message);
-        setTimeout(() => message.remove(), 5000);
-      }
     } catch (error) {
       console.error('❌ Generation failed:', error);
       alert('Failed to generate workouts. Please try again.');
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const saveWorkout = async (workout: GeneratedWorkout, index: number) => {
+    setSavingWorkouts(prev => new Set(prev).add(index));
+    
+    try {
+      const response = await fetch('/api/btn/save-workouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workouts: [workout] })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save workout');
+      }
+
+      // Mark as saved
+      setSavedWorkouts(prev => new Set(prev).add(index));
+      
+      // Show success toast
+      const message = document.createElement('div');
+      message.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-6 py-3 rounded-lg shadow-lg z-50';
+      message.innerHTML = `✅ Workout saved to history!`;
+      document.body.appendChild(message);
+      setTimeout(() => message.remove(), 3000);
+    } catch (error: any) {
+      console.error('❌ Save failed:', error);
+      alert(`Failed to save workout: ${error.message}`);
+    } finally {
+      setSavingWorkouts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(index);
+        return newSet;
+      });
+    }
+  };
+
+  const discardWorkout = (index: number) => {
+    setGeneratedWorkouts(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -109,7 +127,7 @@ function BTNWorkoutGenerator() {
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold mb-4">Workout Generator</h2>
           <p className="text-gray-600 mb-6">
-            Generate 10 realistic CrossFit workouts (2 per time domain) with proper exercise selection, rep schemes, and equipment consistency
+            Generate 5 realistic CrossFit workouts with random time domains, proper exercise selection, rep schemes, and equipment consistency
           </p>
           
           <button 
@@ -117,7 +135,7 @@ function BTNWorkoutGenerator() {
             onClick={generateWorkouts}
             disabled={isGenerating}
           >
-            {isGenerating ? 'Generating Workouts...' : 'Generate 10 Workouts'}
+            {isGenerating ? 'Generating Workouts...' : 'Generate 5 Workouts'}
           </button>
 
           {generatedWorkouts.length > 0 && (
@@ -126,7 +144,36 @@ function BTNWorkoutGenerator() {
               <div className="space-y-6">
                 {generatedWorkouts.map((workout, index) => (
                   <div key={index} className="border rounded-lg p-6 bg-gray-50">
-                    <h4 className="text-lg font-bold mb-2">{workout.name}</h4>
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="text-lg font-bold">{workout.name}</h4>
+                      <div className="flex gap-2">
+                        {!savedWorkouts.has(index) ? (
+                          <>
+                            <button
+                              onClick={() => saveWorkout(workout, index)}
+                              disabled={savingWorkouts.has(index)}
+                              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {savingWorkouts.has(index) ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              onClick={() => discardWorkout(index)}
+                              disabled={savingWorkouts.has(index)}
+                              className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Discard
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg text-sm font-medium">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Saved
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <div className="flex gap-4 mb-4 text-sm text-gray-600">
                       <div>
                         <span className="font-semibold">Time Domain:</span> {workout.timeDomain}
