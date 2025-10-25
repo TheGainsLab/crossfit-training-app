@@ -681,6 +681,14 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
       return ringMuscleUpsRepOptions.reduce((prev, curr) => 
         Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
       );
+    } else if (exerciseName === 'Dumbbell Thrusters') {
+      return barbellRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
+      );
+    } else if (exerciseName === 'Dumbbell Clean and Jerk') {
+      return barbellRepOptions.reduce((prev, curr) => 
+        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
+      );
     }
     
     return Math.max(repsPerExercise, 1);
