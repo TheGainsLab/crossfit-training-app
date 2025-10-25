@@ -141,8 +141,8 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
     for (let i = 0; i < 2; i++) {
       const format = formats[Math.floor(Math.random() * formats.length)] as 'For Time' | 'AMRAP' | 'Rounds For Time';
       
-      // Use actual workout duration consistently throughout
-      const actualDuration = domain.targetDuration;
+      // Pick actual duration from the domain range (no placeholder)
+      const actualDuration = Math.floor(Math.random() * (domain.maxDuration - domain.minDuration + 1)) + domain.minDuration;
       
       let amrapTime: number | undefined;
       let rounds: number | undefined;
@@ -175,8 +175,17 @@ export function generateTestWorkouts(): GeneratedWorkout[] {
       if (format === 'For Time') {
         const allPatterns = ['21-15-9', '15-12-9', '12-9-6', '10-8-6-4-2', '15-12-9-6-3', '27-21-15-9', '33-27-21-15-9', '50-40-30-20-10', '40-30-20-10'];
         
-        // For Time uses 2-3 exercises, so we can use any pattern
-        pattern = allPatterns[Math.floor(Math.random() * allPatterns.length)];
+        // For Time: select pattern based on actual duration
+        if (actualDuration <= 10) {
+          // Shorter workouts: use any pattern
+          pattern = allPatterns[Math.floor(Math.random() * allPatterns.length)];
+        } else {
+          // Longer workouts: exclude very high volume patterns
+          const shorterPatterns = allPatterns.filter(p => 
+            !['50-40-30-20-10', '40-30-20-10', '33-27-21-15-9', '27-21-15-9'].includes(p)
+          );
+          pattern = shorterPatterns[Math.floor(Math.random() * shorterPatterns.length)];
+        }
       }
       
       // Pass the actual workout duration for all calculations
