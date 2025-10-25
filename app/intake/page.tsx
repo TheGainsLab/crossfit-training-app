@@ -508,24 +508,32 @@ setSubscriptionStatus(subscription.status)
           }
 
           // Load equipment
-          const { data: equipmentData } = await supabase
+          const { data: equipmentData, error: equipmentError } = await supabase
             .from('user_equipment')
             .select('equipment_name')
             .eq('user_id', dbUser.id)
 
+          console.log('📦 Equipment data:', equipmentData?.length, 'items', equipmentError ? `Error: ${equipmentError.message}` : '')
+          
           if (equipmentData && equipmentData.length > 0) {
             loadedData.equipment = equipmentData.map((e: any) => e.equipment_name)
+            console.log('✅ Loaded equipment:', loadedData.equipment)
           }
 
           // Load skills
-          const { data: skillsData } = await supabase
+          const { data: skillsData, error: skillsError } = await supabase
             .from('user_skills')
             .select('skill_name, skill_level')
             .eq('user_id', dbUser.id)
 
+          console.log('🎯 Skills data:', skillsData?.length, 'items', skillsError ? `Error: ${skillsError.message}` : '')
+
           if (skillsData && skillsData.length > 0) {
-            // Initialize skills array with 26 empty strings
-            const skillsArray = Array(26).fill("Don't have it")
+            // Initialize skills array with 26 individual strings (not using fill)
+            const skillsArray: string[] = []
+            for (let i = 0; i < 26; i++) {
+              skillsArray.push("Don't have it")
+            }
             
             // Map skill names to indices and populate
             skillsData.forEach((skill: any) => {
@@ -540,17 +548,23 @@ setSubscriptionStatus(subscription.status)
             })
             
             loadedData.skills = skillsArray
+            console.log('✅ Loaded skills:', skillsArray.filter(s => s !== "Don't have it").length, 'non-default')
           }
 
           // Load 1RMs
-          const { data: oneRMsData } = await supabase
+          const { data: oneRMsData, error: oneRMsError } = await supabase
             .from('user_one_rms')
             .select('exercise_name, one_rm')
             .eq('user_id', dbUser.id)
 
+          console.log('💪 1RMs data:', oneRMsData?.length, 'items', oneRMsError ? `Error: ${oneRMsError.message}` : '')
+
           if (oneRMsData && oneRMsData.length > 0) {
-            // Initialize 1RMs array with 14 empty strings
-            const oneRMsArray = Array(14).fill('')
+            // Initialize 1RMs array with 14 individual empty strings
+            const oneRMsArray: string[] = []
+            for (let i = 0; i < 14; i++) {
+              oneRMsArray.push('')
+            }
             
             // Map exercise names to indices
             const oneRMMapping: { [key: string]: number } = {
@@ -578,6 +592,7 @@ setSubscriptionStatus(subscription.status)
             })
             
             loadedData.oneRMs = oneRMsArray
+            console.log('✅ Loaded 1RMs:', oneRMsArray.filter(rm => rm !== '').length, 'non-empty')
           }
 
           // Load preferences
