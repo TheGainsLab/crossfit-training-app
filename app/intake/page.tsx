@@ -1412,7 +1412,13 @@ const saveUserData = async (userId: number) => {
                           {category.levels.map((level) => {
                             // Derive a short label (rep range) if present in parentheses
                             const short = level.includes('(') ? level.substring(level.indexOf('(') + 1, level.indexOf(')')) : level
-                            const selected = formData.skills[skill.index] === level
+                            
+                            // Normalize for comparison: extract just the level name (e.g., "Intermediate" from "Intermediate (26-50)")
+                            const levelName = level.split(' (')[0]
+                            const currentValue = formData.skills[skill.index]
+                            const currentValueName = currentValue?.split(' (')[0]
+                            const selected = currentValueName === levelName
+                            
                             return (
                               <button
                                 key={level}
