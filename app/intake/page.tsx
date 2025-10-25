@@ -1051,13 +1051,13 @@ const saveUserData = async (userId: number) => {
   }
 
   // Show loading state
-  if (loading) {
+  if (loading || (!isNewPaidUser && !dataLoaded)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">
-            {searchParams.get('session_id') ? 'Verifying your payment...' : 'Loading...'}
+            {searchParams.get('session_id') ? 'Verifying your payment...' : 'Loading your profile...'}
           </p>
         </div>
       </div>
