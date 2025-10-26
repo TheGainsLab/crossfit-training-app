@@ -307,14 +307,6 @@ function BTNWorkoutGenerator() {
                         </div>
                       ))}
                     </div>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-semibold">Estimated completion time:</span>{' '}
-                      {workout.format === 'AMRAP'
-                        ? `${workout.amrapTime} minutes`
-                        : `${Math.floor(workout.duration)}:${Math.floor((workout.duration % 1) * 60)
-                            .toString()
-                            .padStart(2, '0')}`}
-                    </div>
                   </div>
                 ))}
               </div>
