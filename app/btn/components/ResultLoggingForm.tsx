@@ -18,6 +18,9 @@ export default function ResultLoggingForm({
   const [result, setResult] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showResult, setShowResult] = useState(false)
+  const [percentile, setPercentile] = useState<number | null>(null)
+  const [performanceTier, setPerformanceTier] = useState<string | null>(null)
 
   const isForTime = workoutFormat.toLowerCase().includes('time')
   const isAMRAP = workoutFormat.toLowerCase().includes('amrap')
@@ -32,14 +35,28 @@ export default function ResultLoggingForm({
 
     setSaving(true)
     try {
-      const response = await fetch(`/api/btn/workouts/${workoutId}`, {
-        method: 'PATCH',
+      const response = await fetch('/api/btn/log-result', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ result: result.trim(), notes: notes.trim() })
+        body: JSON.stringify({ 
+          workoutId,
+          userScore: result.trim(),
+          notes: notes.trim() || undefined
+        })
       })
 
       if (response.ok) {
-        onSuccess()
+        const data = await response.json()
+        if (data.success) {
+          setPercentile(data.percentile)
+          setPerformanceTier(data.performanceTier)
+          setShowResult(true)
+          
+          // Show result for 3 seconds then call onSuccess
+          setTimeout(() => {
+            onSuccess()
+          }, 3000)
+        }
       } else {
         const data = await response.json()
         alert(`Failed to save result: ${data.error || 'Unknown error'}`)
@@ -70,6 +87,27 @@ export default function ResultLoggingForm({
     } else {
       setResult(value)
     }
+  }
+
+  // Show success message with percentile
+  if (showResult && percentile !== null) {
+    return (
+      <div className="bg-green-50 rounded-lg p-6 border border-green-200 text-center">
+        <div className="text-5xl mb-3">🎉</div>
+        <h4 className="font-bold text-2xl text-green-900 mb-2">Result Logged!</h4>
+        <div className="text-lg mb-2">
+          <span className="font-semibold text-gray-700">Your Score:</span>{' '}
+          <span className="font-bold text-green-700">{result}</span>
+        </div>
+        <div className="text-3xl font-bold text-green-600 mb-1">
+          {percentile}th Percentile
+        </div>
+        <div className="text-lg font-semibold text-green-700">
+          {performanceTier}
+        </div>
+        <p className="text-sm text-gray-600 mt-4">Updating your stats...</p>
+      </div>
+    )
   }
 
   return (
