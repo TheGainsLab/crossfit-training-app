@@ -21,28 +21,8 @@ export default function BTNExerciseHeatMap() {
         const result = await response.json()
         
         if (result.success && result.data) {
-          // Transform BTN data to match Premium heat map format
-          const transformedData = {
-            exercises: result.data.exercises,
-            timeDomains: result.data.timeDomains,
-            heatmapCells: result.data.heatmapCells.map((cell: any) => ({
-              exercise_name: cell.exercise_name,
-              time_range: cell.time_range,
-              session_count: cell.session_count,
-              avg_percentile: null, // BTN uses counts, not percentiles
-              sort_order: cell.sort_order
-            })),
-            exerciseAverages: result.data.exerciseCounts.map((count: any) => ({
-              exercise_name: count.exercise_name,
-              total_sessions: count.total_sessions,
-              overall_avg_percentile: null // BTN uses counts, not percentiles
-            })),
-            globalFitnessScore: null, // No fitness score for BTN
-            totalCompletedWorkouts: result.data.totalCompletedWorkouts,
-            isBTNMode: true // Flag to tell component to use count mode
-          }
-          
-          setHeatMapData(transformedData)
+          // API now returns data in SAME format as Premium - no transformation needed!
+          setHeatMapData(result.data)
         } else {
           setError('Failed to load heat map data')
         }
@@ -89,27 +69,26 @@ export default function BTNExerciseHeatMap() {
   if (!heatMapData || heatMapData.exercises.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">🔥 Exercise Distribution Heat Map</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">🔥 Exercise Performance Heat Map</h3>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
           <div className="text-4xl mb-3">💪</div>
-          <p className="text-blue-800 font-medium mb-2">No Workout Data Yet</p>
-          <p className="text-blue-600">Generate and complete workouts to see your exercise distribution across time domains!</p>
+          <p className="text-blue-800 font-medium mb-2">No Completed Workouts Yet</p>
+          <p className="text-blue-600">Complete workouts and log your results to see your performance across exercises and time domains!</p>
         </div>
       </div>
     )
   }
 
-  // Use the existing MetconHeatmap component with BTN data
-  return (
-    <div>
-      <BTNHeatMapWrapper data={heatMapData} />
-    </div>
-  )
+  // Use the Premium MetconHeatmap component directly - data format is now identical!
+  return <MetconHeatmap data={heatMapData} />
 }
 
-// Wrapper component that modifies MetconHeatmap for count-based display
+// OLD CODE BELOW - NO LONGER NEEDED, USING PREMIUM COMPONENT NOW
+// (Keeping for reference, but can be deleted)
+
+/*
 function BTNHeatMapWrapper({ data }: { data: any }) {
-  // Custom color scale for counts (not percentiles)
+  // DISABLED - Using Premium component now
   const getCountColor = (count: number | null) => {
     if (count === null || count === 0) return 'bg-gray-100 text-gray-400'
     if (count >= 10) return 'bg-blue-700 text-white'
@@ -260,3 +239,4 @@ function BTNHeatMapWrapper({ data }: { data: any }) {
     </div>
   )
 }
+*/
