@@ -27,6 +27,8 @@ interface SavedWorkout {
   notes: string | null
   completed_at: string | null
   created_at: string
+  percentile: string | null
+  performance_tier: string | null
 }
 
 export default function WorkoutHistoryTab() {
