@@ -60,6 +60,21 @@ export async function GET(request: NextRequest) {
 
     console.log(`🔥 Generating BTN exercise heat map for User ${userData.id}`)
 
+    // First, check ALL BTN workouts (for debugging)
+    const { data: allWorkouts, error: allWorkoutsError } = await supabase
+      .from('program_metcons')
+      .select('id, time_domain, exercises, workout_name, completed_at, percentile')
+      .eq('user_id', userData.id)
+      .eq('workout_type', 'btn')
+    
+    console.log(`🔍 Found ${allWorkouts?.length || 0} total BTN workouts for user ${userData.id}`)
+    
+    if (allWorkouts && allWorkouts.length > 0) {
+      allWorkouts.forEach(w => {
+        console.log(`  - Workout ${w.id}: completed_at=${w.completed_at ? 'YES' : 'NO'}, percentile=${w.percentile || 'NULL'}`)
+      })
+    }
+
     // Fetch all BTN workouts for this user (only completed ones with percentile)
     const { data: workouts, error: workoutsError } = await supabase
       .from('program_metcons')
@@ -68,6 +83,8 @@ export async function GET(request: NextRequest) {
       .eq('workout_type', 'btn')
       .not('percentile', 'is', null)
       .not('completed_at', 'is', null)
+
+    console.log(`✅ Filtered to ${workouts?.length || 0} workouts WITH percentile and completed_at`)
 
     if (workoutsError) {
       console.error('❌ Failed to fetch BTN workouts:', workoutsError)
