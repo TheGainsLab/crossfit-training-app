@@ -24,12 +24,13 @@ interface HeatmapData {
 }
 
 // Map BTN time domains to Premium time ranges
+// BTN stores actual ranges like "10:00 - 15:00", map to Premium format "10:00–15:00"
 const timeDomainMapping: { [key: string]: string } = {
-  'Sprint': '1:00–5:00',
-  'Short': '5:00–10:00',
-  'Medium': '10:00–15:00',
-  'Long': '15:00–20:00',
-  'Extended': '20:00–30:00'
+  '1:00 - 5:00': '1:00–5:00',
+  '5:00 - 10:00': '5:00–10:00',
+  '10:00 - 15:00': '10:00–15:00',
+  '15:00 - 20:00': '15:00–20:00',
+  '20:00+': '20:00–30:00'
 }
 
 export async function GET(request: NextRequest) {
