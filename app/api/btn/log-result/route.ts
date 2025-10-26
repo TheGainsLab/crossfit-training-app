@@ -256,7 +256,7 @@ export async function POST(request: NextRequest) {
       .from('program_metcons')
       .update({
         user_score: userScore,
-        percentile: percentile.toString(),
+        percentile: percentile, // Save as number, not string (DB column is numeric(5,2))
         performance_tier: performanceTier,
         excellent_score: workout.excellent_score, // Keep existing
         median_score: workout.median_score,       // Keep existing
@@ -269,8 +269,9 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('❌ Error updating workout:', updateError)
+      console.error('❌ Update error details:', JSON.stringify(updateError, null, 2))
       return NextResponse.json(
-        { error: 'Failed to save result' },
+        { error: 'Failed to save result', details: updateError.message },
         { status: 500 }
       )
     }
