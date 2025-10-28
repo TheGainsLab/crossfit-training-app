@@ -254,19 +254,35 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
   // Shuffle and select exercises
   const shuffledExercises = candidateExercises.sort(() => Math.random() - 0.5);
   const filteredExercises: string[] = [];
+  const triedExercises = new Set<string>();
   
-  for (const candidate of shuffledExercises) {
-    if (filteredExercises.length >= numExercises) break;
+  // Keep trying until we have the right number of exercises
+  while (filteredExercises.length < numExercises && triedExercises.size < shuffledExercises.length) {
+    const remainingCandidates = shuffledExercises.filter(ex => !triedExercises.has(ex) && !filteredExercises.includes(ex));
     
-    const testExercises = [...filteredExercises, candidate];
+    if (remainingCandidates.length === 0) break; // No more candidates to try
     
-    // Apply global rules (equipment consistency and forbidden pairs)
-    const testFiltered = filterExercisesForConsistency(testExercises);
-    const testFinal = filterForbiddenPairs(testFiltered);
+    let foundExercise = false;
     
-    if (testFinal.length === testExercises.length && testFinal.includes(candidate)) {
-      filteredExercises.push(candidate);
+    for (const candidate of remainingCandidates) {
+      triedExercises.add(candidate);
+      
+      const testExercises = [...filteredExercises, candidate];
+      
+      // Apply global rules (equipment consistency and forbidden pairs)
+      const testFiltered = filterExercisesForConsistency(testExercises);
+      const testFinal = filterForbiddenPairs(testFiltered);
+      
+      // If the candidate passes all checks, add it
+      if (testFinal.length === testExercises.length && testFinal.includes(candidate)) {
+        filteredExercises.push(candidate);
+        foundExercise = true;
+        break; // Found a good exercise, move on to next slot
+      }
     }
+    
+    // If we couldn't find a valid exercise for this slot, we're done
+    if (!foundExercise) break;
   }
   
   // Apply cardio requirement for formats that support it
@@ -795,7 +811,12 @@ function filterForbiddenPairs(exerciseTypes: string[]): string[] {
     ['Box Jump Overs', 'Dumbbell Box Step-Ups'],
     ['Ring Muscle Ups', 'Strict Pull-ups'],
     ['Bar Muscle Ups', 'Chest to Bar Pull-ups'],
-    ['Ring Muscle Ups', 'Bar Muscle Ups']
+    ['Ring Muscle Ups', 'Bar Muscle Ups'],
+    ['Chest to Bar Pull-ups', 'Toes to Bar'],
+    ['Push-ups', 'Burpees'],
+    ['Strict Pull-ups', 'Pull-ups'],
+    ['Strict Pull-ups', 'Chest to Bar Pull-ups'],
+    ['Strict Pull-ups', 'Bar Muscle Ups']
   ];
   
   let filteredExercises = [...exerciseTypes];
