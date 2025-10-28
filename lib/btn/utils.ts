@@ -691,7 +691,7 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     repFactor = 0.55;  // Extended: 55% (grind pace)
   }
   
-  const barbellRepOptions = [3, 5, 6, 10, 12, 15, 20, 25, 30];
+  const barbellRepOptions = [3, 5, 10, 12, 15, 20, 25, 30];
   const doubleUndersRepOptions = [15, 20, 25, 30, 35, 40, 50, 60, 75, 100];
   const wallBallsRepOptions = [10, 12, 15, 20, 25, 30, 35, 36, 40, 50, 60, 75];
   const boxRepOptions = [3, 5, 10, 12, 15, 20, 24, 25, 30];
