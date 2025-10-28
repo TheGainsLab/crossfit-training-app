@@ -29,4 +29,14 @@ export interface GeneratedWorkout extends Workout {
   duration: number;
   timeDomain: string;
   pattern?: string; // For For Time workouts
+  medianScore?: string; // 50th percentile benchmark
+  excellentScore?: string; // 90th percentile benchmark
+}
+
+export interface UserProfile {
+  equipment: string[];
+  gender: string;
+  units: string;
+  skills: { [exerciseName: string]: string };
+  oneRMs: { [exerciseName: string]: number };
 }

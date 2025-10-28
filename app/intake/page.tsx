@@ -231,6 +231,7 @@ const [currentSection, setCurrentSection] = useState<number>(1)
   const [confirmSubmission, setConfirmSubmission] = useState(false)
   const [submitMessage, setSubmitMessage] = useState('')
   const [loading, setLoading] = useState(true)
+  const [dataLoaded, setDataLoaded] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>('')
   const [stripeSession, setStripeSession] = useState<StripeSessionData | null>(null)
@@ -489,19 +490,167 @@ setSubscriptionStatus(subscription.status)
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', dbUser.id)
           .single()
 
         if (userData && !userError) {
-          setFormData(prev => ({
-            ...prev,
+          // Load basic user info
+          let loadedData: Partial<IntakeFormData> = {
             name: userData.name || '',
             email: userData.email || user.email || '',
             gender: userData.gender || '',
             units: userData.units || '',
             bodyWeight: userData.body_weight?.toString() || '',
-            conditioningBenchmarks: userData.conditioning_benchmarks || prev.conditioningBenchmarks
-          }))
+            conditioningBenchmarks: userData.conditioning_benchmarks || {
+              mileRun: '', fiveKRun: '', tenKRun: '',
+              oneKRow: '', twoKRow: '', fiveKRow: '',
+              airBike10MinCalories: '', enteredTimeTrial: '', airBikeType: ''
+            }
+          }
+          
+          console.log('🏃 Conditioning benchmarks from DB:', userData.conditioning_benchmarks)
+
+          // Load equipment
+          const { data: equipmentData, error: equipmentError } = await supabase
+            .from('user_equipment')
+            .select('equipment_name')
+            .eq('user_id', dbUser.id)
+
+          console.log('📦 Equipment data:', equipmentData?.length, 'items', equipmentError ? `Error: ${equipmentError.message}` : '')
+          
+          if (equipmentData && equipmentData.length > 0) {
+            loadedData.equipment = equipmentData.map((e: any) => e.equipment_name)
+            console.log('✅ Loaded equipment:', loadedData.equipment)
+          }
+
+          // Load skills
+          const { data: skillsData, error: skillsError } = await supabase
+            .from('user_skills')
+            .select('skill_name, skill_level')
+            .eq('user_id', dbUser.id)
+
+          console.log('🎯 Skills data:', skillsData?.length, 'items', skillsError ? `Error: ${skillsError.message}` : '')
+
+          if (skillsData && skillsData.length > 0) {
+            // Initialize skills array with 26 individual strings (not using fill)
+            const skillsArray: string[] = []
+            for (let i = 0; i < 26; i++) {
+              skillsArray.push("Don't have it")
+            }
+            
+            // Map skill names to indices and populate
+            skillsData.forEach((skill: any) => {
+              // Find the index for this skill name across all categories
+              for (const category of skillCategories) {
+                const skillDef = category.skills.find((s: any) => s.name === skill.skill_name)
+                if (skillDef) {
+                  skillsArray[skillDef.index] = skill.skill_level
+                  break
+                }
+              }
+            })
+            
+            loadedData.skills = skillsArray
+            console.log('✅ Loaded skills:', skillsArray.filter(s => s !== "Don't have it").length, 'non-default')
+          }
+
+          // Load 1RMs
+          const { data: oneRMsData, error: oneRMsError } = await supabase
+            .from('user_one_rms')
+            .select('exercise_name, one_rm')
+            .eq('user_id', dbUser.id)
+
+          console.log('💪 1RMs data:', oneRMsData?.length, 'items', oneRMsError ? `Error: ${oneRMsError.message}` : '')
+
+          if (oneRMsData && oneRMsData.length > 0) {
+            // Initialize 1RMs array with 14 individual empty strings
+            const oneRMsArray: string[] = []
+            for (let i = 0; i < 14; i++) {
+              oneRMsArray.push('')
+            }
+            
+            // Map exercise names to indices
+            const oneRMMapping: { [key: string]: number } = {
+              'Snatch': 0,
+              'Power Snatch': 1,
+              'Clean and Jerk': 2,
+              'Power Clean': 3,
+              'Clean (clean only)': 4,
+              'Jerk (from rack or blocks, max Split or Power Jerk)': 5,
+              'Back Squat': 6,
+              'Front Squat': 7,
+              'Overhead Squat': 8,
+              'Deadlift': 9,
+              'Bench Press': 10,
+              'Push Press': 11,
+              'Strict Press': 12,
+              'Weighted Pullup (do not include body weight)': 13
+            }
+            
+            oneRMsData.forEach((rm: any) => {
+              const index = oneRMMapping[rm.exercise_name]
+              if (index !== undefined) {
+                oneRMsArray[index] = rm.one_rm.toString()
+              }
+            })
+            
+            loadedData.oneRMs = oneRMsArray
+            console.log('✅ Loaded 1RMs:', oneRMsArray.filter(rm => rm !== '').length, 'non-empty')
+          }
+
+          // Load preferences
+          const { data: prefsData, error: prefsError } = await supabase
+            .from('user_preferences')
+            .select('*')
+            .eq('user_id', dbUser.id)
+            .single()
+
+          console.log('⚙️ Preferences data:', prefsData ? 'found' : 'not found', prefsError ? `Error: ${prefsError.message}` : '')
+
+          if (prefsData) {
+            loadedData.preferences = {
+              threeMonthGoals: prefsData.three_month_goals || '',
+              monthlyPrimaryGoal: prefsData.monthly_primary_goal || '',
+              preferredMetconExercises: prefsData.preferred_metcon_exercises || [],
+              avoidedExercises: prefsData.avoided_exercises || [],
+              trainingDaysPerWeek: prefsData.training_days_per_week,
+              primaryStrengthLifts: prefsData.primary_strength_lifts || [],
+              emphasizedStrengthLifts: prefsData.emphasized_strength_lifts || [],
+              selectedGoals: prefsData.selected_goals || [],
+              metconTimeFocus: prefsData.metcon_time_focus || []
+            }
+            console.log('✅ Loaded preferences')
+          }
+
+          // Apply all loaded data to form
+          console.log('🔄 Applying loaded data to form:', {
+            hasEquipment: !!loadedData.equipment,
+            equipmentCount: loadedData.equipment?.length,
+            hasSkills: !!loadedData.skills,
+            skillsCount: loadedData.skills?.length,
+            hasOneRMs: !!loadedData.oneRMs,
+            oneRMsCount: loadedData.oneRMs?.length,
+            hasPreferences: !!loadedData.preferences
+          })
+          
+          setFormData(prev => {
+            const updated = {
+              ...prev,
+              ...loadedData
+            }
+            console.log('✅ Form data updated! New state:', {
+              equipment: updated.equipment?.length,
+              skills: updated.skills?.filter((s: string) => s !== "Don't have it").length,
+              oneRMs: updated.oneRMs?.filter((rm: string) => rm !== '').length
+            })
+            console.log('🔍 DETAILED equipment:', updated.equipment)
+            console.log('🔍 DETAILED skills (first 5):', updated.skills?.slice(0, 5))
+            console.log('🔍 DETAILED oneRMs (all):', updated.oneRMs)
+            return updated
+          })
+          
+          // Mark data as loaded so form can render with values
+          setDataLoaded(true)
         }
 
         setLoading(false)
@@ -801,30 +950,12 @@ setSubscriptionStatus(subscription.status)
     await saveUserData(user.id)
     setGenProgress(100)
 
-    setSubmitMessage('✅ Assessment completed successfully! Your personalized program will be generated shortly.')
+    setSubmitMessage('✅ Profile updated successfully!')
     
-    // Redirect based on subscription type
-    setTimeout(async () => {
-      try {
-        // Check user's subscription tier
-        const { data: userInfo } = await supabase
-          .from('users')
-          .select('subscription_tier')
-          .eq('id', user.id)
-          .single()
-        
-        // Redirect based on subscription tier
-        if (userInfo?.subscription_tier === 'BTN') {
-          router.push('/btn')
-        } else if (userInfo?.subscription_tier === 'APPLIED_POWER') {
-          router.push('/dashboard')
-        } else {
-          router.push('/dashboard')
-        }
-      } catch (_) {
-        router.push('/dashboard')
-      }
-    }, 2000)
+    // Simple redirect to profile page after saving
+    setTimeout(() => {
+      router.push('/profile')
+    }, 1500)
   }
 
 const saveUserData = async (userId: number) => {
@@ -907,13 +1038,13 @@ const saveUserData = async (userId: number) => {
   }
 
   // Show loading state
-  if (loading) {
+  if (loading || (!isNewPaidUser && !dataLoaded)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">
-            {searchParams.get('session_id') ? 'Verifying your payment...' : 'Loading...'}
+            {searchParams.get('session_id') ? 'Verifying your payment...' : 'Loading your profile...'}
           </p>
         </div>
       </div>
@@ -949,8 +1080,8 @@ const saveUserData = async (userId: number) => {
           {isSubmitting && (
             <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
               <div className="bg-white rounded-xl shadow-lg p-6 w-11/12 max-w-md text-center">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Generating your program…</h3>
-                <p className="text-gray-600 mb-4">This takes about 60 seconds. Hang tight while we personalize everything for you.</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{isNewPaidUser ? 'Generating your program…' : 'Saving changes…'}</h3>
+                <p className="text-gray-600 mb-4">{isNewPaidUser ? 'This takes about 60 seconds. Hang tight while we personalize everything for you.' : 'Updating your profile information...'}</p>
                 <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                   <div
                     className="h-3 rounded-full transition-all duration-300"
@@ -1265,7 +1396,13 @@ const saveUserData = async (userId: number) => {
                           {category.levels.map((level) => {
                             // Derive a short label (rep range) if present in parentheses
                             const short = level.includes('(') ? level.substring(level.indexOf('(') + 1, level.indexOf(')')) : level
-                            const selected = formData.skills[skill.index] === level
+                            
+                            // Normalize for comparison: extract just the level name (e.g., "Intermediate" from "Intermediate (26-50)")
+                            const levelName = level.split(' (')[0]
+                            const currentValue = formData.skills[skill.index]
+                            const currentValueName = currentValue?.split(' (')[0]
+                            const selected = currentValueName === levelName
+                            
                             return (
                               <button
                                 key={level}
@@ -1770,12 +1907,12 @@ const saveUserData = async (userId: number) => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  {isNewPaidUser ? 'Creating Account & Generating Program...' : 'Generating Your Updated Program...'}
+                  {isNewPaidUser ? 'Creating Account & Generating Program...' : 'Saving Changes...'}
                 </span>
               ) 
               : (
                 <span>
-                  {isNewPaidUser ? 'Create Account & Generate My Program' : 'Generate My Updated Program'}
+                  {isNewPaidUser ? 'Create Account & Generate My Program' : 'Save Changes'}
                 </span>
               )
             }

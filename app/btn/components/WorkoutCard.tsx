@@ -20,6 +20,8 @@ interface WorkoutCardProps {
     notes: string | null
     completed_at: string | null
     created_at: string
+    percentile: string | null
+    performance_tier: string | null
   }
   onUpdate: () => void
 }
@@ -136,6 +138,11 @@ export default function WorkoutCard({ workout, onUpdate }: WorkoutCardProps) {
               <div className="mt-3 p-3 bg-green-50 rounded-lg">
                 <p className="text-sm font-semibold text-green-900">
                   Result: {result}
+                  {workout.percentile && (
+                    <span className="ml-3 text-green-700">
+                      ({workout.percentile}th percentile{workout.performance_tier && ` - ${workout.performance_tier}`})
+                    </span>
+                  )}
                 </p>
                 {workout.notes && (
                   <p className="text-sm text-green-700 mt-1">"{workout.notes}"</p>

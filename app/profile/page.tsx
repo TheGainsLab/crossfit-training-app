@@ -590,14 +590,27 @@ const loadProfile = async () => {
       <div className="max-w-6xl mx-auto px-4 space-y-6">
         {/* Consolidated Header */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h1 className="text-3xl font-bold text-charcoal mb-2">
-            Athlete Profile & Analysis
-          </h1>
-<div className="text-lg text-charcoal font-semibold">
-  {profile.user_summary.name}
-</div>         
-          <div className="text-sm text-gray-600 mt-1">
-            Generated: {new Date(profile.generated_at).toLocaleDateString()}
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-charcoal mb-2">
+                Athlete Profile & Analysis
+              </h1>
+              <div className="text-lg text-charcoal font-semibold">
+                {profile.user_summary.name}
+              </div>         
+              <div className="text-sm text-gray-600 mt-1">
+                Generated: {new Date(profile.generated_at).toLocaleDateString()}
+              </div>
+            </div>
+            <a
+              href="/intake"
+              className="flex-shrink-0 ml-4 inline-flex items-center px-4 py-2 bg-coral text-white rounded-lg font-medium hover:opacity-90 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Edit Profile
+            </a>
           </div>
         </div>
 

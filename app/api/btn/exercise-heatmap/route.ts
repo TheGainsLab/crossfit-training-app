@@ -5,12 +5,14 @@ interface ExerciseHeatmapCell {
   exercise_name: string
   time_range: string | null
   session_count: number
+  avg_percentile: number
   sort_order: number
 }
 
 interface ExerciseOverallCount {
   exercise_name: string
   total_sessions: number
+  overall_avg_percentile: number
 }
 
 interface HeatmapData {
@@ -22,12 +24,13 @@ interface HeatmapData {
 }
 
 // Map BTN time domains to Premium time ranges
+// BTN stores actual ranges like "10:00 - 15:00", map to Premium format "10:00–15:00"
 const timeDomainMapping: { [key: string]: string } = {
-  'Sprint': '1:00–5:00',
-  'Short': '5:00–10:00',
-  'Medium': '10:00–15:00',
-  'Long': '15:00–20:00',
-  'Extended': '20:00–30:00'
+  '1:00 - 5:00': '1:00–5:00',
+  '5:00 - 10:00': '5:00–10:00',
+  '10:00 - 15:00': '10:00–15:00',
+  '15:00 - 20:00': '15:00–20:00',
+  '20:00+': '20:00–30:00'
 }
 
 export async function GET(request: NextRequest) {
@@ -58,12 +61,31 @@ export async function GET(request: NextRequest) {
 
     console.log(`🔥 Generating BTN exercise heat map for User ${userData.id}`)
 
-    // Fetch all BTN workouts for this user
-    const { data: workouts, error: workoutsError } = await supabase
+    // First, check ALL BTN workouts (for debugging)
+    const { data: allWorkouts, error: allWorkoutsError } = await supabase
       .from('program_metcons')
-      .select('id, time_domain, exercises, workout_name, completed_at')
+      .select('id, time_domain, exercises, workout_name, completed_at, percentile')
       .eq('user_id', userData.id)
       .eq('workout_type', 'btn')
+    
+    console.log(`🔍 Found ${allWorkouts?.length || 0} total BTN workouts for user ${userData.id}`)
+    
+    if (allWorkouts && allWorkouts.length > 0) {
+      allWorkouts.forEach(w => {
+        console.log(`  - Workout ${w.id}: completed_at=${w.completed_at ? 'YES' : 'NO'}, percentile=${w.percentile || 'NULL'}`)
+      })
+    }
+
+    // Fetch all BTN workouts for this user (only completed ones with percentile)
+    const { data: workouts, error: workoutsError } = await supabase
+      .from('program_metcons')
+      .select('id, time_domain, exercises, workout_name, completed_at, percentile')
+      .eq('user_id', userData.id)
+      .eq('workout_type', 'btn')
+      .not('percentile', 'is', null)
+      .not('completed_at', 'is', null)
+
+    console.log(`✅ Filtered to ${workouts?.length || 0} workouts WITH percentile and completed_at`)
 
     if (workoutsError) {
       console.error('❌ Failed to fetch BTN workouts:', workoutsError)
@@ -109,25 +131,41 @@ export async function GET(request: NextRequest) {
         return (order[a] || 7) - (order[b] || 7)
       })
 
-    // Calculate exercise totals
+    // Calculate exercise totals and overall averages
     const exerciseCounts = exercises.map(exerciseName => {
       const exerciseCells = heatmapData.filter(row => row.exercise_name === exerciseName)
       const totalSessions = exerciseCells.reduce((sum, cell) => sum + cell.session_count, 0)
+      const weightedPercentileSum = exerciseCells.reduce((sum, cell) => 
+        sum + (cell.avg_percentile * cell.session_count), 0)
+      const overallAvgPercentile = totalSessions > 0 
+        ? Math.round(weightedPercentileSum / totalSessions) 
+        : 0
+      
       return {
         exercise_name: exerciseName,
-        total_sessions: totalSessions
+        total_sessions: totalSessions,
+        overall_avg_percentile: overallAvgPercentile
       }
     })
+    
+    // Calculate global fitness score (weighted average of all percentiles)
+    const totalWeightedPercentile = heatmapData.reduce((sum, cell) => 
+      sum + (cell.avg_percentile * cell.session_count), 0)
+    const totalSessions = heatmapData.reduce((sum, cell) => sum + cell.session_count, 0)
+    const globalFitnessScore = totalSessions > 0 
+      ? Math.round(totalWeightedPercentile / totalSessions)
+      : 0
 
-    const responseData: HeatmapData = {
+    const responseData = {
       exercises,
       timeDomains,
       heatmapCells: heatmapData.filter(row => row.time_range !== null),
-      exerciseCounts,
+      exerciseAverages: exerciseCounts, // Renamed to match Premium format
+      globalFitnessScore, // Now calculated!
       totalCompletedWorkouts: workouts.length
     }
 
-    console.log(`✅ Heat map generated: ${exercises.length} exercises, ${timeDomains.length} time domains, ${responseData.heatmapCells.length} cells`)
+    console.log(`✅ Heat map generated: ${exercises.length} exercises, ${timeDomains.length} time domains, ${responseData.heatmapCells.length} cells, global fitness score: ${globalFitnessScore}%`)
 
     return NextResponse.json({
       success: true,
@@ -154,12 +192,21 @@ export async function GET(request: NextRequest) {
 }
 
 function processWorkoutsToHeatmap(workouts: any[]): ExerciseHeatmapCell[] {
-  // Map to count exercise × time domain combinations
-  const exerciseTimeMap = new Map<string, Map<string, number>>()
+  // Map to track exercise × time domain combinations
+  // Now tracking both count AND percentiles (same as Premium!)
+  const exerciseTimeMap = new Map<string, Map<string, { count: number, totalPercentile: number }>>()
+  const exerciseOverallMap = new Map<string, { count: number, totalPercentile: number }>()
 
   console.log('🔍 Processing BTN workouts for heat map...')
 
   workouts.forEach(workout => {
+    const percentile = parseFloat(workout.percentile)
+    
+    if (isNaN(percentile)) {
+      console.log(`⚠️ Workout ${workout.id} has invalid percentile: ${workout.percentile}`)
+      return
+    }
+    
     // Map BTN time domain to Premium time range
     const timeRange = timeDomainMapping[workout.time_domain] || null
     
@@ -176,7 +223,7 @@ function processWorkoutsToHeatmap(workouts: any[]): ExerciseHeatmapCell[] {
       return
     }
 
-    // Count each exercise in this time domain
+    // SAME LOGIC AS PREMIUM: Apply workout percentile to ALL exercises
     exercises.forEach((exercise: any) => {
       const exerciseName = exercise.name
       if (!exerciseName) {
@@ -184,15 +231,26 @@ function processWorkoutsToHeatmap(workouts: any[]): ExerciseHeatmapCell[] {
         return
       }
 
-      // Initialize maps if needed
+      // Track by time domain
       if (!exerciseTimeMap.has(exerciseName)) {
         exerciseTimeMap.set(exerciseName, new Map())
       }
-      const timeMap = exerciseTimeMap.get(exerciseName)!
+      const exerciseMap = exerciseTimeMap.get(exerciseName)!
       
-      // Increment count for this exercise × time domain
-      const currentCount = timeMap.get(timeRange) || 0
-      timeMap.set(timeRange, currentCount + 1)
+      if (!exerciseMap.has(timeRange)) {
+        exerciseMap.set(timeRange, { count: 0, totalPercentile: 0 })
+      }
+      const timeData = exerciseMap.get(timeRange)!
+      timeData.count++
+      timeData.totalPercentile += percentile
+
+      // Track overall averages
+      if (!exerciseOverallMap.has(exerciseName)) {
+        exerciseOverallMap.set(exerciseName, { count: 0, totalPercentile: 0 })
+      }
+      const overallData = exerciseOverallMap.get(exerciseName)!
+      overallData.count++
+      overallData.totalPercentile += percentile
     })
   })
 
@@ -202,7 +260,9 @@ function processWorkoutsToHeatmap(workouts: any[]): ExerciseHeatmapCell[] {
   const result: ExerciseHeatmapCell[] = []
   
   exerciseTimeMap.forEach((timeMap, exerciseName) => {
-    timeMap.forEach((count, timeRange) => {
+    const overallData = exerciseOverallMap.get(exerciseName)!
+    
+    timeMap.forEach((data, timeRange) => {
       const sortOrder = {
         '1:00–5:00': 1, '5:00–10:00': 2, '10:00–15:00': 3,
         '15:00–20:00': 4, '20:00–30:00': 5, '30:00+': 6
@@ -211,13 +271,14 @@ function processWorkoutsToHeatmap(workouts: any[]): ExerciseHeatmapCell[] {
       result.push({
         exercise_name: exerciseName,
         time_range: timeRange,
-        session_count: count,
+        session_count: data.count,
+        avg_percentile: Math.round(data.totalPercentile / data.count),
         sort_order: sortOrder
       })
     })
   })
 
-  console.log(`✅ Generated ${result.length} heat map cells`)
+  console.log(`✅ Generated ${result.length} heat map cells with percentiles`)
 
   return result
 }
