@@ -267,23 +267,26 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       // Classify into time domain based on CALCULATED duration
       const actualTimeDomain = getTimeDomainRange(calculatedDuration);
       
-      const workout: GeneratedWorkout = {
-        name: `Workout ${i + 1}`,
-        duration: calculatedDuration,  // Use calculated duration, not random target
-        format,
-        amrapTime,
-        rounds,
-        timeDomain: actualTimeDomain,  // Use actual classification
-        exercises,
-        pattern
-      };
-      
-      // Calculate benchmark scores
-      const benchmarks = calculateBenchmarkScores(workout);
-      workout.medianScore = benchmarks.medianScore;
-      workout.excellentScore = benchmarks.excellentScore;
-      
-      workouts.push(workout);
+      // Only add workout if it has at least 2 exercises
+      if (exercises.length >= 2) {
+        const workout: GeneratedWorkout = {
+          name: `Workout ${i + 1}`,
+          duration: calculatedDuration,  // Use calculated duration, not random target
+          format,
+          amrapTime,
+          rounds,
+          timeDomain: actualTimeDomain,  // Use actual classification
+          exercises,
+          pattern
+        };
+        
+        // Calculate benchmark scores
+        const benchmarks = calculateBenchmarkScores(workout);
+        workout.medianScore = benchmarks.medianScore;
+        workout.excellentScore = benchmarks.excellentScore;
+        
+        workouts.push(workout);
+      }
     }
   }
   
@@ -357,8 +360,8 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       const calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern);
       const actualTimeDomain = getTimeDomainRange(calculatedDuration);
       
-      // Check if workout landed in target domain (or accept if max attempts reached)
-      if (actualTimeDomain === targetDomain.range || attempts >= maxAttempts) {
+      // Check if workout landed in target domain AND has at least 2 exercises (or accept if max attempts reached)
+      if ((actualTimeDomain === targetDomain.range && exercises.length >= 2) || attempts >= maxAttempts) {
         workout = {
           name: `Workout ${workouts.length + 1}`,
           duration: calculatedDuration,
