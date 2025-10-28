@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { GeneratedWorkout, UserProfile } from '@/lib/btn/types';
 import { generateTestWorkouts } from '@/lib/btn/utils';
@@ -16,6 +17,8 @@ interface SubscriptionStatus {
 }
 
 function BTNWorkoutGenerator() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [generatedWorkouts, setGeneratedWorkouts] = useState<GeneratedWorkout[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [savedWorkouts, setSavedWorkouts] = useState<Set<number>>(new Set());
@@ -32,37 +35,48 @@ function BTNWorkoutGenerator() {
     '20:00+'
   ];
 
-  // Fetch user profile on mount
-  useEffect(() => {
-    async function fetchUserProfile() {
-      try {
-        console.log('📊 Fetching user profile...');
-        const response = await fetch('/api/btn/user-profile');
-        
-        if (!response.ok) {
-          console.warn('⚠️ Failed to fetch user profile, using defaults');
-          setProfileLoading(false);
-          return;
-        }
-        
-        const data = await response.json();
-        if (data.success && data.profile) {
-          setUserProfile(data.profile);
-          console.log('✅ User profile loaded:', {
-            equipment: data.profile.equipment.length,
-            skills: Object.keys(data.profile.skills).length,
-            oneRMs: Object.keys(data.profile.oneRMs).length
-          });
-        }
-      } catch (error) {
-        console.error('❌ Error fetching user profile:', error);
-      } finally {
+  // Fetch user profile
+  const fetchUserProfile = async () => {
+    try {
+      console.log('📊 Fetching user profile...');
+      const response = await fetch('/api/btn/user-profile');
+      
+      if (!response.ok) {
+        console.warn('⚠️ Failed to fetch user profile, using defaults');
         setProfileLoading(false);
+        return;
       }
+      
+      const data = await response.json();
+      if (data.success && data.profile) {
+        setUserProfile(data.profile);
+        console.log('✅ User profile loaded:', {
+          equipment: data.profile.equipment.length,
+          skills: Object.keys(data.profile.skills).length,
+          oneRMs: Object.keys(data.profile.oneRMs).length
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error fetching user profile:', error);
+    } finally {
+      setProfileLoading(false);
     }
-    
+  };
+
+  // Fetch user profile on mount and when URL has refresh parameter
+  useEffect(() => {
     fetchUserProfile();
   }, []);
+
+  // Handle profile refresh from URL parameter
+  useEffect(() => {
+    if (searchParams.get('refreshed') === 'true') {
+      console.log('🔄 Profile was updated, refreshing...');
+      fetchUserProfile();
+      // Clean URL by removing the query parameter
+      router.replace('/btn', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const toggleDomain = (domain: string) => {
     setSelectedDomains(prev => 

@@ -906,7 +906,7 @@ setSubscriptionStatus(subscription.status)
           
           // Redirect based on subscription tier
           if (userInfo?.subscription_tier === 'BTN') {
-            router.push('/btn')
+            router.push('/btn?refreshed=true')
           } else if (userInfo?.subscription_tier === 'APPLIED_POWER') {
             router.push('/dashboard')
           } else {
