@@ -950,30 +950,12 @@ setSubscriptionStatus(subscription.status)
     await saveUserData(user.id)
     setGenProgress(100)
 
-    setSubmitMessage('✅ Assessment completed successfully! Your personalized program will be generated shortly.')
+    setSubmitMessage('✅ Profile updated successfully!')
     
-    // Redirect based on subscription type
-    setTimeout(async () => {
-      try {
-        // Check user's subscription tier
-        const { data: userInfo } = await supabase
-          .from('users')
-          .select('subscription_tier')
-          .eq('id', user.id)
-          .single()
-        
-        // Redirect based on subscription tier
-        if (userInfo?.subscription_tier === 'BTN') {
-          router.push('/btn')
-        } else if (userInfo?.subscription_tier === 'APPLIED_POWER') {
-          router.push('/dashboard')
-        } else {
-          router.push('/dashboard')
-        }
-      } catch (_) {
-        router.push('/dashboard')
-      }
-    }, 2000)
+    // Simple redirect to profile page after saving
+    setTimeout(() => {
+      router.push('/profile')
+    }, 1500)
   }
 
 const saveUserData = async (userId: number) => {
