@@ -928,7 +928,21 @@ setSubscriptionStatus(subscription.status)
 
     const supabase = createClient()
     
-    // Update user record
+    // First, get the numeric user ID from auth_id
+    const { data: dbUser, error: dbUserError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_id', user.id)
+      .single()
+
+    if (dbUserError || !dbUser) {
+      console.error('Error finding database user:', dbUserError)
+      throw new Error('Unable to find user account')
+    }
+
+    console.log(`💾 Saving profile for user ${dbUser.id}`)
+    
+    // Update user record using numeric ID
     const { error: userError } = await supabase
       .from('users')
       .update({
@@ -941,15 +955,18 @@ setSubscriptionStatus(subscription.status)
         conditioning_benchmarks: formData.conditioningBenchmarks,
         updated_at: new Date().toISOString()
       })
-      .eq('id', user.id)
+      .eq('id', dbUser.id)
 
     if (userError) {
+      console.error('User update error:', userError)
       throw new Error(`User update failed: ${userError.message}`)
     }
 
-    await saveUserData(user.id)
+    // Save equipment, skills, 1RMs, preferences using numeric ID
+    await saveUserData(dbUser.id)
     setGenProgress(100)
 
+    console.log('✅ Profile saved successfully!')
     setSubmitMessage('✅ Profile updated successfully!')
     
     // Simple redirect to profile page after saving
@@ -988,11 +1005,15 @@ const saveUserData = async (userId: number) => {
   const nextSection = () => {
     setCurrentSection(prev => {
       let next = prev + 1
+      
+      // For existing users, cap at section 4 (don't show section 5)
+      const maxSection = isNewPaidUser ? 5 : 4
+      
       // Skip inactive sections
-      while (next <= 5 && !activeSections[next - 1]) {
+      while (next <= maxSection && !activeSections[next - 1]) {
         next++
       }
-      return Math.min(next, 5)
+      return Math.min(next, maxSection)
     })
   }
   
@@ -1005,6 +1026,22 @@ const saveUserData = async (userId: number) => {
       }
       return Math.max(next, 1)
     })
+  }
+
+  // Handler for "Save Profile" button (existing users only)
+  const handleQuickSave = async () => {
+    if (!user || isNewPaidUser) return
+    
+    setIsSubmitting(true)
+    setSubmitMessage('')
+
+    try {
+      await handleExistingUserSubmission()
+    } catch (error) {
+      console.error('Quick save error:', error)
+      setSubmitMessage(`❌ Error: ${error instanceof Error ? error.message : 'Something went wrong'}`)
+      setTimeout(() => setIsSubmitting(false), 500)
+    }
   }
 
   const isValidSection = (section: number) => {
@@ -1365,6 +1402,20 @@ const saveUserData = async (userId: number) => {
                   </button>
                 </div>
 
+                {/* Save Profile button for existing users */}
+                {!isNewPaidUser && (
+                  <div className="mt-4 text-center">
+                    <button
+                      type="button"
+                      onClick={handleQuickSave}
+                      disabled={isSubmitting || !isValidSection(currentSection)}
+                      className="px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      💾 Save Profile
+                    </button>
+                    <p className="text-sm text-gray-500 mt-2">Save changes and return to your profile</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1443,6 +1494,21 @@ const saveUserData = async (userId: number) => {
     Next
   </button>
 </div>
+
+                {/* Save Profile button for existing users */}
+                {!isNewPaidUser && (
+                  <div className="mt-4 text-center">
+                    <button
+                      type="button"
+                      onClick={handleQuickSave}
+                      disabled={isSubmitting || !isValidSection(currentSection)}
+                      className="px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      💾 Save Profile
+                    </button>
+                    <p className="text-sm text-gray-500 mt-2">Save changes and return to your profile</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1528,6 +1594,20 @@ const saveUserData = async (userId: number) => {
                   </button>
                 </div>
 
+                {/* Save Profile button for existing users */}
+                {!isNewPaidUser && (
+                  <div className="mt-4 text-center">
+                    <button
+                      type="button"
+                      onClick={handleQuickSave}
+                      disabled={isSubmitting || !isValidSection(currentSection)}
+                      className="px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      💾 Save Profile
+                    </button>
+                    <p className="text-sm text-gray-500 mt-2">Save changes and return to your profile</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1655,10 +1735,25 @@ const saveUserData = async (userId: number) => {
   className="px-6 py-2 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
   style={{ backgroundColor: '#FE5858' }}
 >
-  Next
+  {isNewPaidUser ? 'Next' : 'Done'}
 </button>            
 
             </div>
+
+                {/* Save Profile button for existing users */}
+                {!isNewPaidUser && (
+                  <div className="mt-4 text-center">
+                    <button
+                      type="button"
+                      onClick={handleQuickSave}
+                      disabled={isSubmitting || !isValidSection(currentSection)}
+                      className="px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      💾 Save Profile
+                    </button>
+                    <p className="text-sm text-gray-500 mt-2">Save changes and return to your profile</p>
+                  </div>
+                )}
             </div>
 		)}
 		
@@ -1752,8 +1847,8 @@ const saveUserData = async (userId: number) => {
   </div>
 )}
 
-{/* Section 5: Program Generation & Account Setup */}
-{currentSection === 5 && (
+{/* Section 5: Program Generation & Account Setup - ONLY FOR NEW USERS */}
+{currentSection === 5 && isNewPaidUser && (
   <div className="space-y-8">
     {/* Intro copy (no header) */}
     <div className="text-center">
