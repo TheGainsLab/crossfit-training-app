@@ -648,6 +648,27 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
     });
   });
   
+  // Sort exercises by rep count (ascending), except for 4-exercise workouts with cardio
+  if (format === 'AMRAP' || format === 'Rounds For Time') {
+    const cardioExercises = ['Rowing Calories', 'Bike Calories', 'Ski Calories'];
+    const isCardio = (name: string) => cardioExercises.includes(name);
+    
+    if (exercises.length === 4 && exercises.some(ex => isCardio(ex.name))) {
+      // Separate cardio and non-cardio exercises
+      const nonCardioExercises = exercises.filter(ex => !isCardio(ex.name));
+      const cardioExs = exercises.filter(ex => isCardio(ex.name));
+      
+      // Sort non-cardio by reps (ascending)
+      nonCardioExercises.sort((a, b) => a.reps - b.reps);
+      
+      // Return combined array with cardio at the end
+      return { exercises: [...nonCardioExercises, ...cardioExs], rounds };
+    } else {
+      // Sort all exercises by reps (ascending)
+      exercises.sort((a, b) => a.reps - b.reps);
+    }
+  }
+  
   return { exercises, rounds };
 }
 
