@@ -403,8 +403,11 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
     // AMRAP and Rounds For Time: based on time domain
     if (targetDuration <= 10) {
       numExercises = Math.floor(Math.random() * 2) + 2; // 2-3 exercises
-    } else {
+    } else if (targetDuration <= 15) {
       numExercises = Math.floor(Math.random() * (rules.maxExercises - rules.minExercises + 1)) + rules.minExercises; // 2-4 exercises
+    } else {
+      // 15+ min workouts must have 3-4 exercises
+      numExercises = Math.floor(Math.random() * 2) + 3; // 3-4 exercises
     }
   }
 
