@@ -928,7 +928,21 @@ setSubscriptionStatus(subscription.status)
 
     const supabase = createClient()
     
-    // Update user record
+    // First, get the numeric user ID from auth_id
+    const { data: dbUser, error: dbUserError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_id', user.id)
+      .single()
+
+    if (dbUserError || !dbUser) {
+      console.error('Error finding database user:', dbUserError)
+      throw new Error('Unable to find user account')
+    }
+
+    console.log(`💾 Saving profile for user ${dbUser.id}`)
+    
+    // Update user record using numeric ID
     const { error: userError } = await supabase
       .from('users')
       .update({
@@ -941,15 +955,18 @@ setSubscriptionStatus(subscription.status)
         conditioning_benchmarks: formData.conditioningBenchmarks,
         updated_at: new Date().toISOString()
       })
-      .eq('id', user.id)
+      .eq('id', dbUser.id)
 
     if (userError) {
+      console.error('User update error:', userError)
       throw new Error(`User update failed: ${userError.message}`)
     }
 
-    await saveUserData(user.id)
+    // Save equipment, skills, 1RMs, preferences using numeric ID
+    await saveUserData(dbUser.id)
     setGenProgress(100)
 
+    console.log('✅ Profile saved successfully!')
     setSubmitMessage('✅ Profile updated successfully!')
     
     // Simple redirect to profile page after saving
