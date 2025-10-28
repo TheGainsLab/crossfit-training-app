@@ -267,8 +267,12 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       // Classify into time domain based on CALCULATED duration
       const actualTimeDomain = getTimeDomainRange(calculatedDuration);
       
-      // Only add workout if it has at least 2 exercises
-      if (exercises.length >= 2) {
+      // Only add workout if it has at least 2 exercises AND meets time domain requirements
+      const meetsMinimumExerciseRequirement = exercises.length >= 2 && 
+        !(actualTimeDomain === '15:00 - 20:00' && exercises.length < 3) &&
+        !(actualTimeDomain === '20:00+' && exercises.length < 3);
+      
+      if (meetsMinimumExerciseRequirement) {
         const workout: GeneratedWorkout = {
           name: `Workout ${i + 1}`,
           duration: calculatedDuration,  // Use calculated duration, not random target
@@ -360,8 +364,12 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       const calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern);
       const actualTimeDomain = getTimeDomainRange(calculatedDuration);
       
-      // Check if workout landed in target domain AND has at least 2 exercises (or accept if max attempts reached)
-      if ((actualTimeDomain === targetDomain.range && exercises.length >= 2) || attempts >= maxAttempts) {
+      // Check if workout landed in target domain AND meets exercise requirements (or accept if max attempts reached)
+      const meetsExerciseRequirement = exercises.length >= 2 && 
+        !(actualTimeDomain === '15:00 - 20:00' && exercises.length < 3) &&
+        !(actualTimeDomain === '20:00+' && exercises.length < 3);
+      
+      if ((actualTimeDomain === targetDomain.range && meetsExerciseRequirement) || attempts >= maxAttempts) {
         workout = {
           name: `Workout ${workouts.length + 1}`,
           duration: calculatedDuration,
