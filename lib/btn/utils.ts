@@ -339,7 +339,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
         rounds = undefined;
         pattern = undefined;
         targetDurationHint = amrapTime;
-      } else {
+        } else {
         targetDurationHint = Math.floor(Math.random() * (targetDomain.maxDuration - targetDomain.minDuration + 1)) + targetDomain.minDuration;
         rounds = undefined;
         amrapTime = undefined;
@@ -372,14 +372,14 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       if ((actualTimeDomain === targetDomain.range && meetsExerciseRequirement) || attempts >= maxAttempts) {
         workout = {
           name: `Workout ${workouts.length + 1}`,
-          duration: calculatedDuration,
-          format,
-          amrapTime,
-          rounds,
+        duration: calculatedDuration,
+        format,
+        amrapTime,
+        rounds,
           timeDomain: actualTimeDomain,
-          exercises,
-          pattern
-        };
+        exercises,
+        pattern
+      };
         
         // Calculate benchmark scores
         const benchmarks = calculateBenchmarkScores(workout);
@@ -402,7 +402,7 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
   if (!rules) {
     throw new Error(`Unknown format: ${format}`);
   }
-
+  
   // Determine number of exercises based on format rules
   let numExercises: number;
   if (format === 'For Time') {
@@ -429,10 +429,10 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
       return allowedPatterns.includes(pattern);
     });
   }
-
+    
   // Shuffle and select exercises
   const shuffledExercises = candidateExercises.sort(() => Math.random() - 0.5);
-  const filteredExercises: string[] = [];
+    const filteredExercises: string[] = [];
   const triedExercises = new Set<string>();
   
   // Keep trying until we have the right number of exercises
@@ -466,29 +466,29 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
   
   // Apply cardio requirement for formats that support it
   if (rules.cardioRequired && filteredExercises.length === 4) {
-    const cardioExercises = ['Rowing Calories', 'Bike Calories', 'Ski Calories'];
-    const hasCardio = filteredExercises.some(ex => cardioExercises.includes(ex));
-    
-    if (!hasCardio) {
-      filteredExercises.pop();
+      const cardioExercises = ['Rowing Calories', 'Bike Calories', 'Ski Calories'];
+      const hasCardio = filteredExercises.some(ex => cardioExercises.includes(ex));
       
-      const cardioCandidates = cardioExercises.filter(cardio => {
-        const testExercises = [...filteredExercises, cardio];
-        const testFiltered = filterExercisesForConsistency(testExercises);
-        const testFinal = filterForbiddenPairs(testFiltered);
-        return testFinal.length === testExercises.length && testFinal.includes(cardio);
-      });
-      
-      if (cardioCandidates.length > 0) {
-        filteredExercises.push(cardioCandidates[0]);
+      if (!hasCardio) {
+        filteredExercises.pop();
+        
+        const cardioCandidates = cardioExercises.filter(cardio => {
+          const testExercises = [...filteredExercises, cardio];
+          const testFiltered = filterExercisesForConsistency(testExercises);
+          const testFinal = filterForbiddenPairs(testFiltered);
+          return testFinal.length === testExercises.length && testFinal.includes(cardio);
+        });
+        
+        if (cardioCandidates.length > 0) {
+          filteredExercises.push(cardioCandidates[0]);
+        }
       }
     }
-  }
-  
+    
   // Generate weights
-  const barbellExercises = filteredExercises.filter(ex => isBarbellExercise(ex));
-  const dumbbellExercises = filteredExercises.filter(ex => ex.includes('Dumbbell'));
-  
+    const barbellExercises = filteredExercises.filter(ex => isBarbellExercise(ex));
+    const dumbbellExercises = filteredExercises.filter(ex => ex.includes('Dumbbell'));
+    
   const barbellWeight = barbellExercises.length > 0 ? generateWeightForExercise(barbellExercises[0], userProfile) : undefined;
   const dumbbellWeight = dumbbellExercises.length > 0 ? generateWeightForExercise(dumbbellExercises[0], userProfile) : undefined;
   
@@ -527,7 +527,7 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
       rounds = Math.max(Math.min(rounds, 3), 2);  // 2-3 rounds for sprint
     } else if (targetDuration <= 10) {
       rounds = Math.max(Math.min(rounds, 5), 3);  // 3-5 rounds for short
-    } else {
+  } else {
       rounds = Math.max(Math.min(rounds, 7), 4);  // 4-7 rounds for medium+
     }
   }
@@ -609,7 +609,7 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
     const estimatedRounds = Math.max(Math.floor(targetDuration / dynamicDivisor), 2);
     
     // Calculate reps for each exercise individually
-    filteredExercises.forEach(exerciseName => {
+  filteredExercises.forEach(exerciseName => {
       const exerciseRate = exerciseRates[exerciseName] || 10.0;
       const exerciseTotalReps = Math.floor(exerciseRate * targetDuration * repFactor);
       const exerciseRepsPerRound = Math.floor(exerciseTotalReps / estimatedRounds);
@@ -617,8 +617,8 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
       
       // Find closest match from rep options
       const reps = calculateRepsForTimeDomain(exerciseName, exerciseRepsPerExercise, format, rounds, filteredExercises.length, amrapTime);
-      exerciseReps.push({ name: exerciseName, reps });
-    });
+    exerciseReps.push({ name: exerciseName, reps });
+  });
   } else {
     // Other formats: use existing logic
     filteredExercises.forEach(exerciseName => {
@@ -691,24 +691,173 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     repFactor = 0.55;  // Extended: 55% (grind pace)
   }
   
+  // Barbell exercises keep their existing logic across all time domains
   const barbellRepOptions = [3, 5, 10, 12, 15, 20, 25, 30];
-  const doubleUndersRepOptions = [15, 20, 25, 30, 35, 40, 50, 60, 75, 100];
-  const wallBallsRepOptions = [10, 12, 15, 20, 25, 30, 35, 36, 40, 50, 60, 75];
-  const boxRepOptions = [3, 5, 10, 12, 15, 20, 24, 25, 30];
-  const toesToBarRepOptions = [5, 9, 10, 12, 15, 20, 24, 25, 30];
-  const rowingCaloriesRepOptions = [10, 12, 15, 21, 25, 30, 35, 40, 50, 60, 75];
-  const pullupsRepOptions = [5, 10, 12, 15, 20, 24, 25, 30];
-  const alternatingDumbbellSnatchesRepOptions = [10, 12, 15, 20, 25, 30, 40, 50, 60];
-  const handstandPushupsRepOptions = [5, 10, 12, 15, 20, 24, 25, 30];
-  const burpeesRepOptions = [5, 10, 12, 15, 20, 24, 25, 30];
-  const ringMuscleUpsRepOptions = [3, 5, 9, 10, 12, 15, 20, 24, 25, 30];
-  const ropeClimbsRepOptions = [2, 3, 5];
-  const leglessRopeClimbsRepOptions = [1, 2, 3];
-  const ghdSitupsRepOptions = [5, 10, 12, 15, 20, 24, 25, 30];
-  const kettlebellSwingsRepOptions = [10, 12, 15, 20, 25, 30, 40, 50, 60];
-  const kettlebellSnatchesRepOptions = [10, 12, 15, 20, 25, 30, 40, 50, 60];
-  const bikeCaloriesRepOptions = [10, 12, 15, 21, 25, 30, 35, 40, 50, 60, 75];
-  const skiCaloriesRepOptions = [10, 12, 15, 21, 25, 30, 35, 40, 50, 60, 75];
+  
+  // Time-domain-specific rep options (organized by 1-5, 5-10, 10-15, 15-20, 20+)
+  const timeDomainRepOptions: { [key: string]: { [key: number]: number[] } } = {
+    'Rowing Calories': {
+      5: [10, 12],
+      10: [10, 12, 15, 18],
+      15: [15, 21, 25, 30],
+      20: [20, 24, 30, 35, 40],
+      25: [30, 35, 40, 50],
+    },
+    'Bike Calories': {
+      5: [10, 12],
+      10: [10, 12, 15, 18],
+      15: [15, 21, 25, 30],
+      20: [20, 24, 30, 35, 40],
+      25: [30, 35, 40, 50],
+    },
+    'Ski Calories': {
+      5: [10, 12],
+      10: [10, 12, 15, 18],
+      15: [15, 21, 25, 30],
+      20: [20, 24, 30, 35, 40],
+      25: [30, 35, 40, 50],
+    },
+    'Pull-ups': {
+      5: [5, 7, 9, 10],
+      10: [7, 9, 10, 12, 15],
+      15: [10, 12, 15, 18, 20],
+      20: [12, 15, 18, 20, 24],
+      25: [15, 20, 24, 30],
+    },
+    'Chest to Bar Pull-ups': {
+      5: [5, 7, 9, 10],
+      10: [7, 9, 10, 12, 15],
+      15: [10, 12, 15, 18, 20],
+      20: [12, 15, 18, 20, 24],
+      25: [15, 20, 24, 30],
+    },
+    'Toes to Bar': {
+      5: [5, 7, 9, 10],
+      10: [7, 9, 10, 12, 15],
+      15: [10, 12, 15, 18, 20],
+      20: [12, 15, 18, 20, 24],
+      25: [15, 20, 24, 30],
+    },
+    'Bar Muscle Ups': {
+      5: [3, 5, 7],
+      10: [3, 5, 7],
+      15: [7, 9, 10, 12],
+      20: [7, 9, 10, 12, 15, 18],
+      25: [10, 12, 15, 18, 20],
+    },
+    'Strict Pull-ups': {
+      5: [3, 5],
+      10: [3, 5, 7],
+      15: [5, 7, 9, 10],
+      20: [7, 9, 10, 12],
+      25: [7, 9, 10, 12],
+    },
+    'Ring Muscle Ups': {
+      5: [3, 5, 7],
+      10: [3, 5, 7],
+      15: [7, 9, 10, 12],
+      20: [7, 9, 10, 12, 15, 18],
+      25: [10, 12, 15, 18, 20],
+    },
+    'Handstand Push-ups': {
+      5: [5, 7, 9, 10],
+      10: [7, 9, 10, 12],
+      15: [10, 12, 15, 18],
+      20: [12, 15, 20, 24],
+      25: [15, 18, 20, 24, 25, 30],
+    },
+    'Burpees': {
+      5: [5, 7, 9, 10],
+      10: [7, 9, 10, 12],
+      15: [10, 12, 15, 18],
+      20: [12, 15, 20, 24],
+      25: [15, 18, 20, 24, 25, 30],
+    },
+    'Push-ups': {
+      5: [5, 7, 9, 10],
+      10: [7, 9, 10, 12],
+      15: [10, 12, 15, 18],
+      20: [12, 15, 20, 24],
+      25: [15, 18, 20, 24, 25, 30],
+    },
+    'Double Unders': {
+      5: [15, 20, 25, 30],
+      10: [25, 30, 35],
+      15: [30, 35, 40, 50],
+      20: [35, 40, 50, 60],
+      25: [40, 50, 60, 75, 100],
+    },
+    'GHD Sit-ups': {
+      5: [7, 9, 10],
+      10: [10, 12, 15],
+      15: [10, 15, 18, 25],
+      20: [20, 24, 25, 30],
+      25: [20, 24, 25, 30, 40],
+    },
+    'Rope Climbs': {
+      5: [2, 3],
+      10: [2, 3],
+      15: [2, 3, 5],
+      20: [2, 3, 5],
+      25: [2, 3, 5],
+    },
+    'Legless Rope Climbs': {
+      5: [1],
+      10: [1, 2],
+      15: [1, 2, 3],
+      20: [1, 2, 3],
+      25: [1, 2, 3],
+    },
+    'Wall Balls': {
+      5: [10, 12, 15],
+      10: [10, 12, 15, 18, 20],
+      15: [18, 20, 24, 30],
+      20: [20, 24, 30, 35],
+      25: [20, 30, 35, 40, 50],
+    },
+    'Kettlebell Swings': {
+      5: [10, 12, 15],
+      10: [10, 12, 15, 18, 20],
+      15: [18, 20, 24, 30],
+      20: [20, 24, 30, 35],
+      25: [20, 30, 35, 40, 50],
+    },
+    'Kettlebell Snatches': {
+      5: [10, 12, 15],
+      10: [10, 12, 15, 18, 20],
+      15: [18, 20, 24, 30],
+      20: [20, 24, 30, 35],
+      25: [20, 30, 35, 40, 50],
+    },
+    'Alternating Dumbbell Snatches': {
+      5: [6, 8, 10],
+      10: [10, 12, 18],
+      15: [12, 18, 20, 24, 30],
+      20: [20, 24, 30, 40],
+      25: [24, 30, 36, 40, 50],
+    },
+    'Box Jumps': {
+      5: [5, 7, 9],
+      10: [7, 9, 10, 12],
+      15: [10, 12, 15],
+      20: [12, 15, 18, 20],
+      25: [15, 18, 24, 30],
+    },
+    'Box Jump Overs': {
+      5: [5, 7, 9],
+      10: [7, 9, 10, 12],
+      15: [10, 12, 15],
+      20: [12, 15, 18, 20],
+      25: [15, 18, 24, 30],
+    },
+    'Burpee Box Jump Overs': {
+      5: [5, 7, 9],
+      10: [7, 9, 10, 12],
+      15: [10, 12, 15],
+      20: [12, 15, 18, 20],
+      25: [15, 18, 24, 30],
+    },
+  };
   
   const isBarbellExerciseForReps = ['Snatch', 'Deadlifts', 'Overhead Squats', 'Thrusters', 'Dumbbell Thrusters', 'Power Cleans', 'Clean and Jerks', 'Dumbbell Clean and Jerk', 'Squat Cleans', 'Squat Snatch', 'Power Snatch', 'Dumbbell Box Step-Ups'].includes(exerciseName);
   const isDoubleUnders = exerciseName === 'Double Unders';
@@ -739,96 +888,28 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     // This is just snapping to clean numbers
     const repsPerExercise = targetDuration;
     
+    // Determine time domain key (5=1-5min, 10=5-10min, 15=10-15min, 20=15-20min, 25=20+min)
+    let timeDomainKey = 5;
+    if (amrapTime && amrapTime <= 5) timeDomainKey = 5;
+    else if (amrapTime && amrapTime <= 10) timeDomainKey = 10;
+    else if (amrapTime && amrapTime <= 15) timeDomainKey = 15;
+    else if (amrapTime && amrapTime <= 20) timeDomainKey = 20;
+    else timeDomainKey = 25;
+    
+    // Get time-domain-specific rep options if available
+    const timeDomainOptions = timeDomainRepOptions[exerciseName]?.[timeDomainKey];
+    
     if (isBarbellExerciseForReps) {
       return barbellRepOptions.reduce((prev, curr) => 
         Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
       );
-    } else if (isDoubleUnders) {
-      return doubleUndersRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isWallBalls) {
-      return wallBallsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isBoxExercise) {
-      return boxRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isToesToBar) {
-      return toesToBarRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isRowingCalories) {
-      return rowingCaloriesRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isPullups) {
-      return pullupsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isAlternatingDumbbellSnatches) {
-      return alternatingDumbbellSnatchesRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isHandstandPushups) {
-      return handstandPushupsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isBurpees) {
-      return burpeesRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isRingMuscleUps) {
-      return ringMuscleUpsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isRopeClimbs) {
-      return ropeClimbsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isLeglessRopeClimbs) {
-      return leglessRopeClimbsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isGhdSitups) {
-      return ghdSitupsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isKettlebellSwings) {
-      return kettlebellSwingsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isKettlebellSnatches) {
-      return kettlebellSnatchesRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isBikeCalories) {
-      return bikeCaloriesRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isSkiCalories) {
-      return skiCaloriesRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isBarMuscleUps) {
-      return ringMuscleUpsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isDumbbellBoxStepUps) {
-      return barbellRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isPushups) {
-      return handstandPushupsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isStrictPullups) {
-      return ringMuscleUpsRepOptions.reduce((prev, curr) => 
+    } else if (timeDomainOptions) {
+      return timeDomainOptions.reduce((prev, curr) => 
         Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
       );
     }
     
+    // Fallback for any exercises not in the time-domain table
     return Math.max(repsPerExercise, 1);
   } else if (format === 'Rounds For Time' && rounds) {
     const totalTargetReps = Math.floor(baseRate * targetDuration * repFactor);
@@ -837,104 +918,28 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     // NEW LOGIC: Divide by number of exercises for realistic per-exercise reps
     const repsPerExercise = Math.floor(repsPerRound / numExercises);
     
+    // Determine time domain key (5=1-5min, 10=5-10min, 15=10-15min, 20=15-20min, 25=20+min)
+    let timeDomainKey = 5;
+    if (targetDuration <= 5) timeDomainKey = 5;
+    else if (targetDuration <= 10) timeDomainKey = 10;
+    else if (targetDuration <= 15) timeDomainKey = 15;
+    else if (targetDuration <= 20) timeDomainKey = 20;
+    else timeDomainKey = 25;
+    
+    // Get time-domain-specific rep options if available
+    const timeDomainOptions = timeDomainRepOptions[exerciseName]?.[timeDomainKey];
+    
     if (isBarbellExerciseForReps) {
       return barbellRepOptions.reduce((prev, curr) => 
         Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
       );
-    } else if (isDoubleUnders) {
-      return doubleUndersRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isWallBalls) {
-      return wallBallsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isBoxExercise) {
-      return boxRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isToesToBar) {
-      return toesToBarRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isRowingCalories) {
-      return rowingCaloriesRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isPullups) {
-      return pullupsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isAlternatingDumbbellSnatches) {
-      return alternatingDumbbellSnatchesRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isHandstandPushups) {
-      return handstandPushupsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isBurpees) {
-      return burpeesRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isRingMuscleUps) {
-      return ringMuscleUpsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isRopeClimbs) {
-      return ropeClimbsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isLeglessRopeClimbs) {
-      return leglessRopeClimbsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isGhdSitups) {
-      return ghdSitupsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isKettlebellSwings) {
-      return kettlebellSwingsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isKettlebellSnatches) {
-      return kettlebellSnatchesRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isBikeCalories) {
-      return bikeCaloriesRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isSkiCalories) {
-      return skiCaloriesRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isBarMuscleUps) {
-      return ringMuscleUpsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isDumbbellBoxStepUps) {
-      return barbellRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isPushups) {
-      return handstandPushupsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (isStrictPullups) {
-      return ringMuscleUpsRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (exerciseName === 'Dumbbell Thrusters') {
-      return barbellRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (exerciseName === 'Dumbbell Clean and Jerk') {
-      return barbellRepOptions.reduce((prev, curr) => 
+    } else if (timeDomainOptions) {
+      return timeDomainOptions.reduce((prev, curr) => 
         Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
       );
     }
     
+    // Fallback for any exercises not in the time-domain table
     return Math.max(repsPerExercise, 1);
   } else {
     const targetReps = Math.floor(baseRate * targetDuration / numExercises);
@@ -1224,9 +1229,9 @@ function getRelevantOneRM(exerciseName: string, oneRMs: { [key: string]: number 
   }
   
   // No user profile - return standard pair format
-  return weightPairs[Math.floor(Math.random() * weightPairs.length)];
-}
-
+    return weightPairs[Math.floor(Math.random() * weightPairs.length)];
+  }
+  
 // Helper: Get relevant 1RM for an exercise
 function getRelevantOneRM(exerciseName: string, oneRMs: { [key: string]: number }): number | null {
   // Snatch family
