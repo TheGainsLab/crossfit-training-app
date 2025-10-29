@@ -691,8 +691,15 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     repFactor = 0.55;  // Extended: 55% (grind pace)
   }
   
-  // Barbell exercises keep their existing logic across all time domains
+  // Barbell exercises - same options for all time domains
   const barbellRepOptions = [3, 5, 10, 12, 15, 20, 25, 30];
+  const barbellTimeDomainOptions = {
+    5: barbellRepOptions,
+    10: barbellRepOptions,
+    15: barbellRepOptions,
+    20: barbellRepOptions,
+    25: barbellRepOptions,
+  };
   
   // Time-domain-specific rep options (organized by 1-5, 5-10, 10-15, 15-20, 20+)
   const timeDomainRepOptions: { [key: string]: { [key: number]: number[] } } = {
@@ -857,6 +864,19 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
       20: [12, 15, 18, 20],
       25: [15, 18, 24, 30],
     },
+    // Barbell exercises - same options for all time domains
+    'Snatch': barbellTimeDomainOptions,
+    'Deadlifts': barbellTimeDomainOptions,
+    'Overhead Squats': barbellTimeDomainOptions,
+    'Thrusters': barbellTimeDomainOptions,
+    'Power Cleans': barbellTimeDomainOptions,
+    'Clean and Jerks': barbellTimeDomainOptions,
+    'Squat Cleans': barbellTimeDomainOptions,
+    'Squat Snatch': barbellTimeDomainOptions,
+    'Power Snatch': barbellTimeDomainOptions,
+    'Dumbbell Thrusters': barbellTimeDomainOptions,
+    'Dumbbell Clean and Jerk': barbellTimeDomainOptions,
+    'Dumbbell Box Step-Ups': barbellTimeDomainOptions,
   };
   
   const isBarbellExerciseForReps = ['Snatch', 'Deadlifts', 'Overhead Squats', 'Thrusters', 'Dumbbell Thrusters', 'Power Cleans', 'Clean and Jerks', 'Dumbbell Clean and Jerk', 'Squat Cleans', 'Squat Snatch', 'Power Snatch', 'Dumbbell Box Step-Ups'].includes(exerciseName);
@@ -899,11 +919,7 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     // Get time-domain-specific rep options if available
     const timeDomainOptions = timeDomainRepOptions[exerciseName]?.[timeDomainKey];
     
-    if (isBarbellExerciseForReps) {
-      return barbellRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (timeDomainOptions) {
+    if (timeDomainOptions) {
       return timeDomainOptions.reduce((prev, curr) => 
         Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
       );
@@ -929,11 +945,7 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     // Get time-domain-specific rep options if available
     const timeDomainOptions = timeDomainRepOptions[exerciseName]?.[timeDomainKey];
     
-    if (isBarbellExerciseForReps) {
-      return barbellRepOptions.reduce((prev, curr) => 
-        Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
-      );
-    } else if (timeDomainOptions) {
+    if (timeDomainOptions) {
       return timeDomainOptions.reduce((prev, curr) => 
         Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
       );
