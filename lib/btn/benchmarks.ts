@@ -1,4 +1,5 @@
-import { GeneratedWorkout, Exercise } from './types';
+import { GeneratedWorkout, Exercise, UserProfile } from './types';
+import { getAdjustedWorkRate, getExerciseWeight } from './utils';
 
 // Performance tier multipliers for benchmark calculation
 export const PERFORMANCE_FACTORS = {
@@ -49,30 +50,34 @@ const exerciseRates: { [key: string]: number } = {
  * Calculate benchmark scores (50th and 90th percentile) for a generated workout
  * Uses work rates and performance factors to predict expected performance
  */
-export function calculateBenchmarkScores(workout: GeneratedWorkout): { medianScore: string, excellentScore: string } {
-  const { format, exercises, amrapTime, rounds } = workout;
+export function calculateBenchmarkScores(workout: GeneratedWorkout, userProfile?: UserProfile): { medianScore: string, excellentScore: string } {
+  const { format, exercises, amrapTime, rounds, duration } = workout;
+  
+  // Estimate duration for rep factor calculation
+  const estimatedDuration = duration || amrapTime || (rounds ? 12 : 8);
   
   if (format === 'AMRAP' && amrapTime) {
     // AMRAP: Calculate expected rounds + reps at different paces
-    return calculateAMRAPBenchmarks(exercises, amrapTime);
+    return calculateAMRAPBenchmarks(exercises, amrapTime, userProfile);
   } else if (format === 'For Time' || format === 'Rounds For Time') {
     // For Time / Rounds For Time: Calculate expected completion times
-    return calculateForTimeBenchmarks(exercises, rounds || 1);
+    return calculateForTimeBenchmarks(exercises, rounds || 1, estimatedDuration, userProfile);
   }
   
   // Fallback
   return { medianScore: '--', excellentScore: '--' };
 }
 
-function calculateAMRAPBenchmarks(exercises: Exercise[], duration: number): { medianScore: string, excellentScore: string } {
+function calculateAMRAPBenchmarks(exercises: Exercise[], duration: number, userProfile?: UserProfile): { medianScore: string, excellentScore: string } {
   // Calculate time per round at median pace
   let medianTimePerRound = 0;
   let excellentTimePerRound = 0;
   
   exercises.forEach(exercise => {
-    const baseRate = exerciseRates[exercise.name] || 10.0;
-    const medianRate = baseRate * PERFORMANCE_FACTORS.median;
-    const excellentRate = baseRate * PERFORMANCE_FACTORS.excellent;
+    const weight = getExerciseWeight(exercise);
+    const adjustedBaseRate = getAdjustedWorkRate(exercise.name, weight, duration, userProfile);
+    const medianRate = adjustedBaseRate * PERFORMANCE_FACTORS.median;
+    const excellentRate = adjustedBaseRate * PERFORMANCE_FACTORS.excellent;
     
     // Time to complete this exercise's reps
     medianTimePerRound += exercise.reps / medianRate;
@@ -94,8 +99,9 @@ function calculateAMRAPBenchmarks(exercises: Exercise[], duration: number): { me
   
   // Calculate how many reps into the next round at median pace
   for (const exercise of exercises) {
-    const baseRate = exerciseRates[exercise.name] || 10.0;
-    const medianRate = baseRate * PERFORMANCE_FACTORS.median;
+    const weight = getExerciseWeight(exercise);
+    const adjustedBaseRate = getAdjustedWorkRate(exercise.name, weight, duration, userProfile);
+    const medianRate = adjustedBaseRate * PERFORMANCE_FACTORS.median;
     const timeForExercise = exercise.reps / medianRate;
     
     if (medianRemainingTime >= timeForExercise) {
@@ -109,8 +115,9 @@ function calculateAMRAPBenchmarks(exercises: Exercise[], duration: number): { me
   
   // Calculate how many reps into the next round at excellent pace
   for (const exercise of exercises) {
-    const baseRate = exerciseRates[exercise.name] || 10.0;
-    const excellentRate = baseRate * PERFORMANCE_FACTORS.excellent;
+    const weight = getExerciseWeight(exercise);
+    const adjustedBaseRate = getAdjustedWorkRate(exercise.name, weight, duration, userProfile);
+    const excellentRate = adjustedBaseRate * PERFORMANCE_FACTORS.excellent;
     const timeForExercise = exercise.reps / excellentRate;
     
     if (excellentRemainingTime >= timeForExercise) {
@@ -128,15 +135,16 @@ function calculateAMRAPBenchmarks(exercises: Exercise[], duration: number): { me
   };
 }
 
-function calculateForTimeBenchmarks(exercises: Exercise[], rounds: number): { medianScore: string, excellentScore: string } {
+function calculateForTimeBenchmarks(exercises: Exercise[], rounds: number, estimatedDuration: number, userProfile?: UserProfile): { medianScore: string, excellentScore: string } {
   // Calculate total time at median pace
   let medianTime = 0;
   let excellentTime = 0;
   
   exercises.forEach(exercise => {
-    const baseRate = exerciseRates[exercise.name] || 10.0;
-    const medianRate = baseRate * PERFORMANCE_FACTORS.median;
-    const excellentRate = baseRate * PERFORMANCE_FACTORS.excellent;
+    const weight = getExerciseWeight(exercise);
+    const adjustedBaseRate = getAdjustedWorkRate(exercise.name, weight, estimatedDuration, userProfile);
+    const medianRate = adjustedBaseRate * PERFORMANCE_FACTORS.median;
+    const excellentRate = adjustedBaseRate * PERFORMANCE_FACTORS.excellent;
     
     // Time per round for this exercise
     const medianTimePerRound = exercise.reps / medianRate;

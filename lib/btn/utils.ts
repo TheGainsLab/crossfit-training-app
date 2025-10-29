@@ -285,7 +285,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
         };
         
         // Calculate benchmark scores
-        const benchmarks = calculateBenchmarkScores(workout);
+        const benchmarks = calculateBenchmarkScores(workout, userProfile);
         workout.medianScore = benchmarks.medianScore;
         workout.excellentScore = benchmarks.excellentScore;
         
@@ -382,7 +382,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       };
         
         // Calculate benchmark scores
-        const benchmarks = calculateBenchmarkScores(workout);
+        const benchmarks = calculateBenchmarkScores(workout, userProfile);
         workout.medianScore = benchmarks.medianScore;
         workout.excellentScore = benchmarks.excellentScore;
       }
@@ -1323,7 +1323,7 @@ function getBarbellWeightMultiplier(exerciseName: string, weight: number, userPr
 }
 
 // Get final adjusted work rate (base rate × weight multiplier × time repFactor)
-function getAdjustedWorkRate(
+export function getAdjustedWorkRate(
   exerciseName: string,
   weight: number | undefined,
   targetDuration: number,
@@ -1358,7 +1358,7 @@ function getAdjustedWorkRate(
 }
 
 // Helper: Extract weight number from exercise or weight string
-function getExerciseWeight(exercise: Exercise): number | undefined {
+export function getExerciseWeight(exercise: Exercise): number | undefined {
   if (exercise.weight) {
     const weightNum = parseFloat(exercise.weight);
     return isNaN(weightNum) ? undefined : weightNum;
