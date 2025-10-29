@@ -262,7 +262,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       }
       
       // Calculate ACTUAL duration from the work
-      const calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern);
+      const calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern, userProfile);
       
       // Classify into time domain based on CALCULATED duration
       const actualTimeDomain = getTimeDomainRange(calculatedDuration);
@@ -361,7 +361,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
         });
       }
       
-      const calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern);
+      const calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern, userProfile);
       const actualTimeDomain = getTimeDomainRange(calculatedDuration);
       
       // Check if workout landed in target domain AND meets exercise requirements (or accept if max attempts reached)
@@ -508,14 +508,21 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
       repFactor = 0.55;
     }
     
-    // Calculate estimated time per round based on actual exercises
+    // Calculate estimated time per round based on actual exercises with adjusted rates
     let estimatedTimePerRound = 0;
     filteredExercises.forEach(exerciseName => {
-      const rate = exerciseRates[exerciseName] || 10.0;
-      const degradedRate = rate * repFactor;
+      // Get weight for this exercise (barbell or dumbbell)
+      let weight: number | undefined;
+      if (isBarbellExercise(exerciseName) && barbellWeight) {
+        weight = parseFloat(barbellWeight);
+      } else if (exerciseName.includes('Dumbbell') && dumbbellWeight) {
+        weight = parseFloat(dumbbellWeight);
+      }
+      
+      const adjustedRate = getAdjustedWorkRate(exerciseName, weight, targetDuration, userProfile);
       // Estimate reasonable reps per exercise per round
-      const estimatedRepsPerExercise = Math.floor(rate * targetDuration * repFactor / filteredExercises.length / 4); // Divide by 4 as rough round estimate
-      const timeForThisExercise = estimatedRepsPerExercise / degradedRate;
+      const estimatedRepsPerExercise = Math.floor(adjustedRate * targetDuration / filteredExercises.length / 4); // Divide by 4 as rough round estimate
+      const timeForThisExercise = estimatedRepsPerExercise / adjustedRate;
       estimatedTimePerRound += timeForThisExercise;
     });
     
@@ -568,10 +575,18 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
     
     const estimatedRounds = Math.max(Math.floor(actualAmrapTime / targetTimePerRound), 2);
     
-    // Calculate reps for each exercise individually
+    // Calculate reps for each exercise individually using adjusted rates
     filteredExercises.forEach(exerciseName => {
-      const exerciseRate = exerciseRates[exerciseName] || 10.0;
-      const exerciseTotalReps = Math.floor(exerciseRate * actualAmrapTime * repFactor);
+      // Get weight for this exercise
+      let weight: number | undefined;
+      if (isBarbellExercise(exerciseName) && barbellWeight) {
+        weight = parseFloat(barbellWeight);
+      } else if (exerciseName.includes('Dumbbell') && dumbbellWeight) {
+        weight = parseFloat(dumbbellWeight);
+      }
+      
+      const adjustedRate = getAdjustedWorkRate(exerciseName, weight, actualAmrapTime, userProfile);
+      const exerciseTotalReps = Math.floor(adjustedRate * actualAmrapTime);
       const exerciseRepsPerRound = Math.floor(exerciseTotalReps / estimatedRounds);
       const exerciseRepsPerExercise = Math.floor(exerciseRepsPerRound / filteredExercises.length);
       
@@ -595,23 +610,38 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
       repFactor = 0.55;
     }
     
-    // Calculate dynamic divisor based on actual exercises
+    // Calculate dynamic divisor based on actual exercises with adjusted rates
     let totalTimePerRound = 0;
     filteredExercises.forEach(exerciseName => {
-      const rate = exerciseRates[exerciseName] || 10.0;
-      const degradedRate = rate * repFactor;
-      const estimatedRepsPerExercise = Math.floor(rate * targetDuration * repFactor / filteredExercises.length);
-      const timeForThisExercise = estimatedRepsPerExercise / degradedRate;
+      // Get weight for this exercise
+      let weight: number | undefined;
+      if (isBarbellExercise(exerciseName) && barbellWeight) {
+        weight = parseFloat(barbellWeight);
+      } else if (exerciseName.includes('Dumbbell') && dumbbellWeight) {
+        weight = parseFloat(dumbbellWeight);
+      }
+      
+      const adjustedRate = getAdjustedWorkRate(exerciseName, weight, targetDuration, userProfile);
+      const estimatedRepsPerExercise = Math.floor(adjustedRate * targetDuration / filteredExercises.length);
+      const timeForThisExercise = estimatedRepsPerExercise / adjustedRate;
       totalTimePerRound += timeForThisExercise;
     });
     
     const dynamicDivisor = totalTimePerRound;
     const estimatedRounds = Math.max(Math.floor(targetDuration / dynamicDivisor), 2);
     
-    // Calculate reps for each exercise individually
+    // Calculate reps for each exercise individually using adjusted rates
   filteredExercises.forEach(exerciseName => {
-      const exerciseRate = exerciseRates[exerciseName] || 10.0;
-      const exerciseTotalReps = Math.floor(exerciseRate * targetDuration * repFactor);
+      // Get weight for this exercise
+      let weight: number | undefined;
+      if (isBarbellExercise(exerciseName) && barbellWeight) {
+        weight = parseFloat(barbellWeight);
+      } else if (exerciseName.includes('Dumbbell') && dumbbellWeight) {
+        weight = parseFloat(dumbbellWeight);
+      }
+      
+      const adjustedRate = getAdjustedWorkRate(exerciseName, weight, targetDuration, userProfile);
+      const exerciseTotalReps = Math.floor(adjustedRate * targetDuration);
       const exerciseRepsPerRound = Math.floor(exerciseTotalReps / estimatedRounds);
       const exerciseRepsPerExercise = Math.floor(exerciseRepsPerRound / filteredExercises.length);
       
@@ -1114,32 +1144,39 @@ function isBarbellExercise(exerciseName: string): boolean {
   );
 }
 
-function calculateWorkoutDuration(exercises: Exercise[], format: string, rounds?: number, amrapTime?: number, pattern?: string): number {
+function calculateWorkoutDuration(exercises: Exercise[], format: string, rounds?: number, amrapTime?: number, pattern?: string, userProfile?: UserProfile): number {
   if (format === 'AMRAP' && amrapTime) {
     return amrapTime;
   }
+  
+  // Estimate duration for rep factor calculation (use actual if available, otherwise estimate from exercises)
+  const estimatedDuration = amrapTime || (rounds ? 12 : 8); // Rough estimate if not available
   
   if (format === 'For Time' && pattern) {
     const patternReps = pattern.split('-').map(Number);
     const totalRepsPerRound = patternReps.reduce((sum, reps) => sum + reps, 0);
     const totalReps = totalRepsPerRound * exercises.length;
     
-    // Calculate each exercise separately at its own rate
+    // Calculate each exercise separately at its adjusted rate
     let totalTime = 0;
     exercises.forEach(exercise => {
-      const rate = exerciseRates[exercise.name] || 10.0;
-      const timeForThisExercise = exercise.reps / rate;
+      const weight = getExerciseWeight(exercise);
+      // Use estimated duration for rep factor calculation
+      const adjustedRate = getAdjustedWorkRate(exercise.name, weight, estimatedDuration, userProfile);
+      const timeForThisExercise = exercise.reps / adjustedRate;
       totalTime += timeForThisExercise;
     });
     
     return totalTime;
   }
   
-  // Calculate each exercise separately at its own rate
+  // Calculate each exercise separately at its adjusted rate
   let totalTimePerRound = 0;
   exercises.forEach(exercise => {
-    const rate = exerciseRates[exercise.name] || 10.0;
-    const timeForThisExercise = exercise.reps / rate;
+    const weight = getExerciseWeight(exercise);
+    // Use estimated duration for rep factor calculation
+    const adjustedRate = getAdjustedWorkRate(exercise.name, weight, estimatedDuration, userProfile);
+    const timeForThisExercise = exercise.reps / adjustedRate;
     totalTimePerRound += timeForThisExercise;
   });
   
@@ -1165,40 +1202,9 @@ function generateWeightForExercise(exerciseName: string, userProfile?: UserProfi
   } else if (['Thrusters', 'Overhead Squats'].includes(exerciseName)) {
     weightPairs = ['75/55', '95/65', '115/75', '135/95', '165/115', '185/135', '225/155'];
   } else {  
-  return '';
-}
+    return '';
+  }
 
-// Helper: Get relevant 1RM for an exercise
-function getRelevantOneRM(exerciseName: string, oneRMs: { [key: string]: number }): number | null {
-  // Snatch family
-  if (['Snatch', 'Power Snatch', 'Squat Snatch'].includes(exerciseName)) {
-    return oneRMs['Snatch'] || null;
-  }
-  
-  // Clean family (use Clean and Jerk 1RM)
-  if (['Power Clean', 'Squat Clean', 'Clean and Jerks', 'Squat Cleans', 'Power Cleans'].includes(exerciseName)) {
-    return oneRMs['Clean and Jerk'] || null;
-  }
-  
-  // Thrusters (70% of Clean & Jerk as baseline)
-  if (exerciseName === 'Thrusters') {
-    const cleanAndJerk = oneRMs['Clean and Jerk'];
-    return cleanAndJerk ? cleanAndJerk * 0.7 : null;
-  }
-  
-  // Overhead Squat
-  if (['Overhead Squats', 'Overhead Squat'].includes(exerciseName)) {
-    return oneRMs['Overhead Squat'] || null;
-  }
-  
-  // Deadlift
-  if (exerciseName === 'Deadlifts') {
-    return oneRMs['Deadlift'] || null;
-  }
-  
-  return null;
-}
-  
   // If user profile provided, apply personalization
   if (userProfile && weightPairs.length > 0) {
     // Get relevant 1RM for this exercise
@@ -1243,9 +1249,9 @@ function getRelevantOneRM(exerciseName: string, oneRMs: { [key: string]: number 
   }
   
   // No user profile - return standard pair format
-    return weightPairs[Math.floor(Math.random() * weightPairs.length)];
-  }
-  
+  return weightPairs[Math.floor(Math.random() * weightPairs.length)];
+}
+
 // Helper: Get relevant 1RM for an exercise
 function getRelevantOneRM(exerciseName: string, oneRMs: { [key: string]: number }): number | null {
   // Snatch family
@@ -1275,4 +1281,87 @@ function getRelevantOneRM(exerciseName: string, oneRMs: { [key: string]: number 
   }
   
   return null;
+}
+
+// Get weight-adjusted work rate multiplier for barbell exercises
+function getBarbellWeightMultiplier(exerciseName: string, weight: number, userProfile?: UserProfile): number {
+  if (!userProfile || !isBarbellExercise(exerciseName)) {
+    return 1.0; // No adjustment without profile or for non-barbell exercises
+  }
+  
+  const oneRM = getRelevantOneRM(exerciseName, userProfile.oneRMs);
+  if (!oneRM || oneRM === 0) {
+    return 1.0; // No adjustment without 1RM data
+  }
+  
+  // Max allowed weight (80% cap)
+  const maxWeight = oneRM * 0.8;
+  const effectiveWeight = Math.min(weight, maxWeight);
+  
+  // Intensity as % of max allowed (0.0 to 1.0)
+  const intensity = effectiveWeight / maxWeight;
+  
+  // Get movement-specific degradation rate
+  let degradationRate: number;
+  if (['Deadlifts', 'Power Cleans', 'Power Snatch'].includes(exerciseName)) {
+    degradationRate = 0.7;  // Mild degradation
+  } else if (['Clean and Jerks', 'Snatch', 'Thrusters'].includes(exerciseName)) {
+    degradationRate = 0.8;  // Medium degradation
+  } else if (['Squat Cleans', 'Squat Snatch', 'Overhead Squats'].includes(exerciseName)) {
+    degradationRate = 1.0;  // Highest degradation
+  } else {
+    degradationRate = 0.8;  // Default to medium
+  }
+  
+  // Calculate speed multiplier
+  // At 50% of max: 1.0x, at 100% of max (cap): multiplier based on degradation rate
+  if (intensity <= 0.5) {
+    return 1.0;
+  } else {
+    return 1.0 - ((intensity - 0.5) * degradationRate);
+  }
+}
+
+// Get final adjusted work rate (base rate × weight multiplier × time repFactor)
+function getAdjustedWorkRate(
+  exerciseName: string,
+  weight: number | undefined,
+  targetDuration: number,
+  userProfile?: UserProfile
+): number {
+  const baseRate = exerciseRates[exerciseName] || 10.0;
+  
+  // Apply weight-based multiplier (for barbell exercises)
+  let weightMultiplier = 1.0;
+  if (weight !== undefined && isBarbellExercise(exerciseName)) {
+    const weightNum = typeof weight === 'string' ? parseFloat(weight) : weight;
+    if (!isNaN(weightNum)) {
+      weightMultiplier = getBarbellWeightMultiplier(exerciseName, weightNum, userProfile);
+    }
+  }
+  
+  // Apply time-domain rep factor
+  let repFactor = 1.0;
+  if (targetDuration <= 5) {
+    repFactor = 1.0;
+  } else if (targetDuration <= 10) {
+    repFactor = 0.85;
+  } else if (targetDuration <= 15) {
+    repFactor = 0.75;
+  } else if (targetDuration <= 20) {
+    repFactor = 0.65;
+  } else {
+    repFactor = 0.55;
+  }
+  
+  return baseRate * weightMultiplier * repFactor;
+}
+
+// Helper: Extract weight number from exercise or weight string
+function getExerciseWeight(exercise: Exercise): number | undefined {
+  if (exercise.weight) {
+    const weightNum = parseFloat(exercise.weight);
+    return isNaN(weightNum) ? undefined : weightNum;
+  }
+  return undefined;
 }
