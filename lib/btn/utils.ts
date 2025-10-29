@@ -1033,7 +1033,9 @@ function filterForbiddenPairs(exerciseTypes: string[]): string[] {
     ['Push-ups', 'Burpees'],
     ['Strict Pull-ups', 'Pull-ups'],
     ['Strict Pull-ups', 'Chest to Bar Pull-ups'],
-    ['Strict Pull-ups', 'Bar Muscle Ups']
+    ['Strict Pull-ups', 'Bar Muscle Ups'],
+    ['Strict Pull-ups', 'Rope Climbs'],
+    ['Strict Pull-ups', 'Legless Rope Climbs']
   ];
   
   let filteredExercises = [...exerciseTypes];
