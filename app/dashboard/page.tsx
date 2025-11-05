@@ -1407,11 +1407,13 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       <p className="text-xl sm:text-2xl font-bold text-coral">{dashboardAnalytics.data.dashboard.overallMetrics.totalTrainingDays}</p>
     </div>
 
-    {/* Completed Tasks */}
-    <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
-      <p className="text-xs sm:text-sm text-gray-600">Completed Tasks</p>
-      <p className="text-xl sm:text-2xl font-bold text-coral">{dashboardAnalytics.data.dashboard.overallMetrics.totalExercises}</p>
-    </div>
+    {/* Completed Tasks - highlighted as clickable link */}
+    <Link href="/dashboard/progress" className="block">
+      <div className="rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue hover:shadow-md transition-shadow" style={{ backgroundColor: '#DAE2EA' }}>
+        <p className="text-xs sm:text-sm text-gray-600">Completed Tasks</p>
+        <p className="text-xl sm:text-2xl font-bold text-coral">{dashboardAnalytics.data.dashboard.overallMetrics.totalExercises}</p>
+      </div>
+    </Link>
 
     {/* MetCons Completed */}
     <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
@@ -1419,8 +1421,8 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       <p className="text-xl sm:text-2xl font-bold text-coral">{heatMapData?.totalCompletedWorkouts || 0}</p>
     </div>
 
-    {/* Fitness Score - highlighted as clickable link */}
-    <Link href="/dashboard/progress?tab=metcons#metcons-panel" className="block">
+    {/* Fitness Score - goes directly to MetCon heat map */}
+    <Link href="/dashboard/analytics/metcons" className="block">
       <div className="rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue hover:shadow-md transition-shadow" style={{ backgroundColor: '#DAE2EA' }}>
         <p className="text-xs sm:text-sm text-gray-600">Fitness Score</p>
         <p className="text-xl sm:text-2xl font-bold text-coral">{heatMapData?.globalFitnessScore || 0}%</p>
