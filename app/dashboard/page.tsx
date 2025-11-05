@@ -1403,28 +1403,28 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-6">
     {/* Training Days */}
     <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
-      <p className="text-xs sm:text-sm text-gray-600">Training Days</p>
+      <p className="text-xs sm:text-sm" style={{ color: '#282B34' }}>Training Days</p>
       <p className="text-xl sm:text-2xl font-bold text-coral">{dashboardAnalytics.data.dashboard.overallMetrics.totalTrainingDays}</p>
     </div>
 
     {/* Completed Tasks - highlighted as clickable link */}
     <Link href="/dashboard/progress" className="block">
       <div className="rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue hover:shadow-md transition-shadow" style={{ backgroundColor: '#DAE2EA' }}>
-        <p className="text-xs sm:text-sm text-gray-600">Completed Tasks</p>
+        <p className="text-xs sm:text-sm" style={{ color: '#282B34' }}>Completed Tasks</p>
         <p className="text-xl sm:text-2xl font-bold text-coral">{dashboardAnalytics.data.dashboard.overallMetrics.totalExercises}</p>
       </div>
     </Link>
 
     {/* MetCons Completed */}
     <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
-      <p className="text-xs sm:text-sm text-gray-600">MetCons Completed</p>
+      <p className="text-xs sm:text-sm" style={{ color: '#282B34' }}>MetCons Completed</p>
       <p className="text-xl sm:text-2xl font-bold text-coral">{heatMapData?.totalCompletedWorkouts || 0}</p>
     </div>
 
     {/* Fitness Score - goes directly to MetCon heat map */}
     <Link href="/dashboard/analytics/metcons" className="block">
       <div className="rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue hover:shadow-md transition-shadow" style={{ backgroundColor: '#DAE2EA' }}>
-        <p className="text-xs sm:text-sm text-gray-600">Fitness Score</p>
+        <p className="text-xs sm:text-sm" style={{ color: '#282B34' }}>Fitness Score</p>
         <p className="text-xl sm:text-2xl font-bold text-coral">{heatMapData?.globalFitnessScore || 0}%</p>
       </div>
     </Link>
