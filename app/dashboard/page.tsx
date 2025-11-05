@@ -82,7 +82,7 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
   if (blockSummaries.length === 0) {
     return (
       <div className="bg-ice-blue rounded-lg border border-charcoal p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">🎯 Training Block Overview</h3>
+        <h3 className="font-semibold text-gray-900 mb-4 text-center">🎯 Training Block Overview</h3>
         <p className="text-gray-600">Complete more exercises to see training block analytics!</p>
       </div>
     )
@@ -194,7 +194,7 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
 
   return (
     <div className="bg-ice-blue rounded-lg border border-charcoal p-6">
-<h3 className="font-semibold text-gray-900 mb-6">Training Block Overview</h3>      
+<h3 className="font-semibold text-gray-900 mb-6 text-center">Training Block Overview</h3>      
       {/* Donut Chart */}
       <div className="mb-6">
         <div className="h-44">
