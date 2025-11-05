@@ -16,11 +16,19 @@ function RangeChips() {
   }
   const ranges = ['all_time','last_30_days','last_60_days','last_90_days']
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs text-gray-500">Range:</span>
-      {ranges.map(r => (
-        <button key={r} onClick={() => setRange(r)} className={`px-2 py-1 rounded border text-xs ${range===r ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`}>{r.replace(/_/g,' ')}</button>
-      ))}
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+      <span className="text-xs text-gray-500 whitespace-nowrap">Range:</span>
+      <div className="flex flex-wrap gap-2">
+        {ranges.map(r => (
+          <button 
+            key={r} 
+            onClick={() => setRange(r)} 
+            className={`px-3 py-2 sm:px-2 sm:py-1 rounded border text-xs min-h-[44px] sm:min-h-0 flex items-center justify-center ${range===r ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`}
+          >
+            {r.replace(/_/g,' ')}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -35,29 +43,45 @@ function AnalyticsSubnav() {
     { href: '/dashboard/analytics/metcons', label: 'Metcons' }
   ]), [])
   return (
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex gap-2">
+    <div className="flex flex-col gap-4 mb-4">
+      {/* Category tabs - wrap on mobile with larger tap targets */}
+      <div className="flex flex-wrap gap-2">
         {tabs.map(t => {
           const active = pathname === t.href
           return (
-            <Link key={t.href} href={t.href} className={`px-3 py-1.5 rounded border text-sm ${active ? 'bg-white border-blue-300 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}>{t.label}</Link>
+            <Link 
+              key={t.href} 
+              href={t.href} 
+              className={`px-4 py-3 sm:px-3 sm:py-1.5 rounded border text-sm min-h-[44px] sm:min-h-0 flex items-center justify-center ${active ? 'bg-blue-100 border-blue-300 text-blue-700 font-medium' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+            >
+              {t.label}
+            </Link>
           )
         })}
       </div>
-      <Suspense fallback={<div className="text-xs text-gray-400">Loading filters…</div>}>
-        <RangeChips />
-      </Suspense>
+      {/* Range filters - full width on mobile, inline on desktop */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
+        <Suspense fallback={<div className="text-xs text-gray-400">Loading filters…</div>}>
+          <RangeChips />
+        </Suspense>
+      </div>
     </div>
   )
 }
 
 export default function AnalyticsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-6">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="mb-4 flex items-center justify-between">
+        {/* Header - stack on mobile */}
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
           <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-          <Link href="/dashboard" className="text-blue-600 hover:text-blue-700">Back to Dashboard</Link>
+          <Link 
+            href="/dashboard" 
+            className="text-blue-600 hover:text-blue-700 text-sm sm:text-base self-start sm:self-auto"
+          >
+            ← Back to Dashboard
+          </Link>
         </div>
         <AnalyticsSubnav />
         <div className="bg-white border rounded p-4">
