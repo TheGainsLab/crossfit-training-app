@@ -118,7 +118,7 @@ export default function AnalyticsMetconsPage() {
               key={r} 
               onClick={() => setRange(r)} 
               className={`px-3 py-2 sm:px-2 sm:py-1 rounded border text-xs min-h-[44px] sm:min-h-0 flex items-center justify-center ${range===r ? 'border-coral' : ''}`}
-              style={{ backgroundColor: '#DAE2EA', color: '#FE5858', borderColor: range===r ? '#FE5858' : '#282B34' }}
+              style={{ backgroundColor: '#DAE2EA', color: '#282B34', borderColor: range===r ? '#FE5858' : '#282B34' }}
             >
               {r.replace(/_/g,' ')}
             </button>
@@ -135,7 +135,7 @@ export default function AnalyticsMetconsPage() {
               key={td} 
               onClick={() => toggle(td)} 
               className={`px-2 py-1 rounded border text-xs ${selection.includes(td) ? 'border-coral' : ''}`}
-              style={{ backgroundColor: '#DAE2EA', color: '#FE5858', borderColor: selection.includes(td) ? '#FE5858' : '#282B34' }}
+              style={{ backgroundColor: '#DAE2EA', color: '#282B34', borderColor: selection.includes(td) ? '#FE5858' : '#282B34' }}
             >
               {td}
             </button>
