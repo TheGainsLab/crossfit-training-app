@@ -166,13 +166,16 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
   }
 
   const navigateForBlock = (blockName: string) => {
-    let tab = 'overview'
-    let hash = ''
     const name = (blockName || '').toLowerCase()
-    if (name.includes('skill')) { tab = 'skills'; hash = '#skills-panel' }
-    else if (name.includes('strength')) { tab = 'strength'; hash = '#strength-panel' }
-    else if (name.includes('metcon')) { tab = 'metcons'; hash = '#metcons-panel' }
-    router.push(`/dashboard/progress?tab=${tab}${hash}`)
+    let route = '/dashboard/analytics'
+    
+    if (name.includes('skill')) route = '/dashboard/analytics/skills'
+    else if (name.includes('strength')) route = '/dashboard/analytics/strength'
+    else if (name.includes('metcon')) route = '/dashboard/analytics/metcons'
+    else if (name.includes('technical')) route = '/dashboard/analytics/technical'
+    else if (name.includes('accessories')) route = '/dashboard/analytics/accessories'
+    
+    router.push(route)
   }
 
   // Helper function to format performance metric
@@ -220,11 +223,13 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
       {/* Quick links to detailed analytics */}
       <div className="flex flex-wrap gap-2 mb-2">
         {sortedBlockSummaries.map((block: any) => {
-          let href = '/dashboard/progress?tab=overview'
+          let href = '/dashboard/analytics'
           const name = (block.blockName || '').toLowerCase()
-          if (name.includes('skill')) href = '/dashboard/progress?tab=skills#skills-panel'
-          else if (name.includes('strength')) href = '/dashboard/progress?tab=strength#strength-panel'
-          else if (name.includes('metcon')) href = '/dashboard/progress?tab=metcons#metcons-panel'
+          if (name.includes('skill')) href = '/dashboard/analytics/skills'
+          else if (name.includes('strength')) href = '/dashboard/analytics/strength'
+          else if (name.includes('metcon')) href = '/dashboard/analytics/metcons'
+          else if (name.includes('technical')) href = '/dashboard/analytics/technical'
+          else if (name.includes('accessories')) href = '/dashboard/analytics/accessories'
           return (
             <Link
               key={block.blockName}
