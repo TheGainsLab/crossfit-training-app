@@ -301,7 +301,28 @@ async function assignExercises(
       if (!exercise.can_be_strength) return false
 
       const liftGroups = exercise.lift_groups || []
-      const hasMainLift = liftGroups.includes(mainLift) || liftGroups.includes('All')
+      
+      // Family mapping for lift groups (same as Technical Work)
+      const pressFamily = ['Strict Press', 'Push Press', 'Press', 'Bench Press']
+      const squatFamily = ['Back Squat', 'Front Squat', 'Squat']
+      const olyFamily = ['Snatch', 'Clean and Jerk', 'Clean', 'Jerk']
+      const deadliftFamily = ['Deadlift']
+
+      // Check exact match first
+      let hasMainLift = liftGroups.includes(mainLift) || liftGroups.includes('All')
+
+      // If no exact match, check family matches
+      if (!hasMainLift) {
+        if (pressFamily.includes(mainLift)) {
+          hasMainLift = liftGroups.some((group: string) => pressFamily.includes(group))
+        } else if (squatFamily.includes(mainLift)) {
+          hasMainLift = liftGroups.some((group: string) => squatFamily.includes(group))
+        } else if (olyFamily.includes(mainLift)) {
+          hasMainLift = liftGroups.some((group: string) => olyFamily.includes(group))
+        } else if (deadliftFamily.includes(mainLift)) {
+          hasMainLift = liftGroups.some((group: string) => deadliftFamily.includes(group))
+        }
+      }
 
       if (!hasMainLift) return false
 
@@ -341,7 +362,11 @@ async function assignExercises(
       if (!progression) {
         console.log('❌ No progression data for week in synthetic path:', week)
         // As an absolute last resort, return a single BW placeholder to avoid empty array
-        return [{ name: mainLift, sets: 1, reps: 5, weightTime: '', notes: `${liftLevel} - Synthetic` }]
+        // Try to find exercise in database to get performance cues
+        const syntheticExercise = exerciseData.find(ex => ex.name === mainLift)
+        const syntheticCue = syntheticExercise ? getPerformanceCue(syntheticExercise) : null
+        const syntheticNotes = syntheticCue || `${liftLevel} - Synthetic`
+        return [{ name: mainLift, sets: 1, reps: 5, weightTime: '', notes: syntheticNotes }]
       }
 
       const oneRMIndex = find1RMIndex(mainLift)
@@ -357,12 +382,17 @@ async function assignExercises(
           weightTime = roundedWeight.toString()
           console.log(`💪 (synthetic) Set ${setIndex + 1}: ${progression.reps[setIndex]} reps @ ${weightTime} (${progression.percentages[setIndex]}% of ${oneRM})`)
         }
+        // Try to find exercise in database to get performance cues
+        const syntheticExercise = exerciseData.find(ex => ex.name === mainLift)
+        const performanceCue = syntheticExercise ? getPerformanceCue(syntheticExercise) : null
+        const notesText = performanceCue || liftLevel
+        
         strengthSets.push({
           name: mainLift,
           sets: 1,
           reps: progression.reps[setIndex],
           weightTime: weightTime,
-          notes: `${liftLevel} - Set ${setIndex + 1}`
+          notes: `${notesText} - Set ${setIndex + 1}`
         })
       }
 
