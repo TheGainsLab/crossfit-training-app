@@ -444,9 +444,29 @@ async function assignExercises(
         }
       }
 
+      // Debug: Check if performance_cues exists
+      console.log('🔍 Debug selectedExercise:', {
+        name: selectedExercise.name,
+        hasPerformanceCues: !!selectedExercise.performance_cues,
+        performanceCues: selectedExercise.performance_cues,
+        performanceCuesType: typeof selectedExercise.performance_cues,
+        performanceCuesLength: Array.isArray(selectedExercise.performance_cues) ? selectedExercise.performance_cues.length : 'not array'
+      })
+
       // Get performance cue from database, fallback to liftLevel
-      const performanceCue = getPerformanceCue(selectedExercise)
-      const notesText = performanceCue || liftLevel
+      const enhancedNote = generateEnhancedNotes({
+        exerciseName: selectedExercise.name,
+        effectiveLevel: liftLevel,
+        isDeload: isDeload
+      }, user, week, block, selectedExercise)
+      
+      console.log('🔍 Debug performance cue retrieval:', {
+        enhancedNote,
+        liftLevel,
+        finalNotesText: enhancedNote || liftLevel
+      })
+
+      const notesText = enhancedNote || liftLevel
       
       strengthSets.push({
         name: selectedExercise.name,
