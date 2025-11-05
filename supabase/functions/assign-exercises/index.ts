@@ -414,12 +414,16 @@ async function assignExercises(
         }
       }
 
+      // Get performance cue from database, fallback to liftLevel
+      const performanceCue = getPerformanceCue(selectedExercise)
+      const notesText = performanceCue || liftLevel
+      
       strengthSets.push({
         name: selectedExercise.name,
         sets: 1, // Each row is one set
         reps: progression.reps[setIndex],
         weightTime: weightTime,
-        notes: `${liftLevel} - Set ${setIndex + 1}`
+        notes: `${notesText} - Set ${setIndex + 1}`
       })
     }
 
