@@ -786,7 +786,7 @@ block.blockName === 'METCONS' ? (
                         <td className="px-2 py-1" style={{ border: '1px solid #ddd' }}>{ex.name}</td>
                         <td className="px-2 py-1" style={{ border: '1px solid #ddd' }}>{ex.sets || '-'}</td>
                         <td className="px-2 py-1" style={{ border: '1px solid #ddd' }}>{ex.reps || '-'}</td>
-                        <td className="px-2 py-1" style={{ border: '1px solid #ddd' }}>{ex.weightTime || 'BW'}</td>
+                        <td className="px-2 py-1" style={{ border: '1px solid #ddd' }}>{ex.weightTime && ex.weightTime !== 'BW' ? ex.weightTime : '-'}</td>
                         <td className="px-2 py-1" style={{ border: '1px solid #ddd' }}>&nbsp;</td>
                       </tr>
                     ))}
@@ -1053,7 +1053,7 @@ className="w-6 h-6 bg-coral text-white rounded-full text-xs flex items-center ju
             )}
 
             {/* Exercise Specs - Clean Grid */}
-            <div className="grid grid-cols-3 gap-6 text-sm">
+            <div className={`grid gap-6 text-sm ${exercise.weightTime && exercise.weightTime !== 'BW' ? 'grid-cols-3' : 'grid-cols-2'}`}>
               <div className="flex items-center space-x-2">
                 <span className="text-gray-500 font-medium">Sets:</span>
                 <span className="text-charcoal font-semibold text-base">{exercise.sets || '-'}</span>
@@ -1062,10 +1062,12 @@ className="w-6 h-6 bg-coral text-white rounded-full text-xs flex items-center ju
                 <span className="text-gray-500 font-medium">Reps:</span>
                 <span className="text-charcoal font-semibold text-base">{exercise.reps || '-'}</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-500 font-medium">Weight:</span>
-                <span className="text-charcoal font-semibold text-base">{exercise.weightTime || 'BW'}</span>
-              </div>
+              {exercise.weightTime && exercise.weightTime !== 'BW' && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-500 font-medium">Weight:</span>
+                  <span className="text-charcoal font-semibold text-base">{exercise.weightTime}</span>
+                </div>
+              )}
             </div>
           </div>
           
