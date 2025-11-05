@@ -304,13 +304,14 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
           disabled={!previousDay}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
             previousDay 
-              ? 'text-blue-600 hover:bg-blue-50 border border-blue-200' 
+              ? 'border' 
               : 'text-gray-400 cursor-not-allowed border border-gray-200'
           }`}
+          style={previousDay ? { backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' } : {}}
         >
           <span>⬅️</span>
           <div className="text-left">
-            <div className="text-sm font-medium">Previous</div>
+            <div className="text-sm font-medium" style={previousDay ? { color: '#FE5858' } : {}}>Previous</div>
             {previousDay && (
               <div className="text-xs text-gray-500">
                 {formatWeekLabel(previousDay.week)}, Day {previousDay.day}
@@ -324,7 +325,8 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
           <Link
             prefetch
             href={`/dashboard/workout/${programId}/week/${currentWeek}/day/${currentDay}`}
-            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-6 py-3 rounded-lg font-semibold transition-colors border"
+            style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' }}
           >
             Today's Workout
           </Link>
@@ -339,12 +341,13 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
           disabled={!nextDay}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
             nextDay 
-              ? 'text-blue-600 hover:bg-blue-50 border border-blue-200' 
+              ? 'border' 
               : 'text-gray-400 cursor-not-allowed border border-gray-200'
           }`}
+          style={nextDay ? { backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' } : {}}
         >
           <div className="text-right">
-            <div className="text-sm font-medium">Next</div>
+            <div className="text-sm font-medium" style={nextDay ? { color: '#FE5858' } : {}}>Next</div>
             {nextDay && (
               <div className="text-xs text-gray-500">
                 {formatWeekLabel(nextDay.week)}, Day {nextDay.day}
@@ -365,7 +368,8 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
           <Link
             prefetch
             href={`/dashboard/workout/${programId}/week/${currentWeek}/day/${currentDay}`}
-            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors text-lg w-full justify-center"
+            className="inline-flex items-center px-6 py-3 rounded-lg font-semibold transition-colors text-lg w-full justify-center border"
+            style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' }}
           >
             Today's Workout
           </Link>
@@ -381,12 +385,13 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
             disabled={!previousDay}
             className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-colors ${
               previousDay 
-                ? 'text-blue-600 hover:bg-blue-50 border border-blue-200' 
+                ? 'border' 
                 : 'text-gray-400 cursor-not-allowed border border-gray-200'
             }`}
+            style={previousDay ? { backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' } : {}}
           >
             <span>⬅️</span>
-            <span className="font-medium">Previous</span>
+            <span className="font-medium" style={previousDay ? { color: '#FE5858' } : {}}>Previous</span>
           </button>
 
           <button
@@ -394,11 +399,12 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
             disabled={!nextDay}
             className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-colors ${
               nextDay 
-                ? 'text-blue-600 hover:bg-blue-50 border border-blue-200' 
+                ? 'border' 
                 : 'text-gray-400 cursor-not-allowed border border-gray-200'
             }`}
+            style={nextDay ? { backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' } : {}}
           >
-            <span className="font-medium">Next</span>
+            <span className="font-medium" style={nextDay ? { color: '#FE5858' } : {}}>Next</span>
             <span>➡️</span>
           </button>
         </div>
@@ -408,26 +414,26 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
       <div className="mt-4 flex items-center justify-center gap-6 text-center">
         <Link
           href="/dashboard/program"
-          className="text-sm text-blue-600 hover:text-blue-700 inline-flex items-center space-x-1 transition-colors"
+          className="text-sm transition-colors"
+          style={{ color: '#FE5858' }}
         >
-          <span>📋</span>
-          <span>Program Navigator</span>
+          Program Navigator
         </Link>
         <Link
           href={`/dashboard/preview/week/${currentWeek + (currentDay >= 5 ? 1 : 0)}`}
-          className="text-sm text-blue-600 hover:text-blue-700 inline-flex items-center space-x-1 transition-colors"
+          className="text-sm transition-colors"
+          style={{ color: '#FE5858' }}
         >
-          <span>🔎</span>
-          <span>Week Preview</span>
+          Week Preview
         </Link>
         <button
           onClick={() => setMetconOpen(true)}
-          className="text-sm text-blue-600 hover:text-blue-700 inline-flex items-center space-x-1 transition-colors"
+          className="text-sm transition-colors"
+          style={{ color: '#FE5858' }}
           aria-haspopup="dialog"
           aria-expanded={metconOpen}
         >
-          <span>🔥</span>
-          <span>MetCon Preview</span>
+          MetCon Preview
         </button>
       </div>
       {/* Modal mount */}
