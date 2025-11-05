@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 import { isCoachingBriefV1, isPlanDiffV1, type PlanDiffV1 } from '@/lib/coach/schemas'
 
 export async function POST(req: Request) {
@@ -7,6 +9,54 @@ export async function POST(req: Request) {
     if (!isCoachingBriefV1(brief)) {
       return NextResponse.json({ success: false, error: 'Invalid brief' }, { status: 400 })
     }
+
+    // Auth required: accept Supabase session via Authorization header or sb-access-token cookie
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL as string
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
+    if (!supabaseUrl || !serviceKey) {
+      return NextResponse.json({ success: false, error: 'Server not configured' }, { status: 500 })
+    }
+    const admin = createClient(supabaseUrl, serviceKey)
+
+    let token = ''
+    try {
+      const authHeader = req.headers.get('authorization') || req.headers.get('Authorization')
+      token = authHeader?.replace('Bearer ', '') || ''
+      if (!token) {
+        const c = await cookies()
+        const cv = c.get('sb-access-token')?.value
+        if (cv) token = cv
+      }
+    } catch {}
+    if (!token) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+    const { data: authUser } = await admin.auth.getUser(token)
+    const auth_id = authUser?.user?.id
+    if (!auth_id) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+    const { data: u } = await admin.from('users').select('id').eq('auth_id', auth_id).single()
+    const userId = (u as any)?.id as number | undefined
+    if (!userId) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Optional entitlement check: allow only active/trialing subscribers if table exists
+    try {
+      const { data: sub } = await admin
+        .from('subscriptions')
+        .select('status')
+        .eq('user_id', userId)
+        .in('status', ['active', 'trialing'])
+        .maybeSingle()
+      if (!sub) {
+        return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
+      }
+    } catch {
+      // If the table or policy is missing, proceed without blocking (entitlement optional)
+    }
+
     const apiKey = process.env.CLAUDE_API_KEY
     if (!apiKey) {
       // If no key configured, return empty diff gracefully
@@ -23,18 +73,17 @@ export async function POST(req: Request) {
 
     // Once-per-week enforcement (soft): if locked, return empty diff
     try {
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-      if (supabaseUrl && serviceKey) {
-        const { createClient } = await import('@supabase/supabase-js')
-        const admin = createClient(supabaseUrl, serviceKey)
-        const userId = (brief as any)?.profile?.user_id || (brief as any)?.userId || null
-        const currentWeek = Array.isArray((brief as any)?.upcomingProgram) ? (brief as any).upcomingProgram[0]?.week : null
-        if (userId && currentWeek) {
-          const { data } = await admin.from('coach_decision_locks').select('id, locked').eq('user_id', userId).eq('week', currentWeek).maybeSingle()
-          if (data?.locked) {
-            return NextResponse.json({ success: true, diff: { version: 'v1', changes: [] }, rationale: 'locked_this_week' })
-          }
+      const briefUserId = (brief as any)?.profile?.user_id || (brief as any)?.userId || userId || null
+      const currentWeek = Array.isArray((brief as any)?.upcomingProgram) ? (brief as any).upcomingProgram[0]?.week : null
+      if (briefUserId && currentWeek) {
+        const { data } = await admin
+          .from('coach_decision_locks')
+          .select('id, locked')
+          .eq('user_id', briefUserId)
+          .eq('week', currentWeek)
+          .maybeSingle()
+        if (data?.locked) {
+          return NextResponse.json({ success: true, diff: { version: 'v1', changes: [] }, rationale: 'locked_this_week' })
         }
       }
     } catch {}

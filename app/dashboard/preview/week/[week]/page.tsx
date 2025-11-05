@@ -173,12 +173,44 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
                   <div className="font-semibold mb-1">Strength Benchmarks (1RM)</div>
                   {(() => {
                     const names = ['Snatch','Power Snatch','Clean and Jerk','Power Clean','Clean (Only)','Jerk (Only)','Back Squat','Front Squat','Overhead Squat','Deadlift','Bench Press','Push Press','Strict Press','Weighted Pullup']
-                    const vals = coachBrief?.intake?.oneRMs || []
+                    const named = coachBrief?.intake?.oneRMsNamed || {}
+                    const units = String(coachBrief?.metadata?.units || 'Imperial (lbs)')
+                    const toDisplay = (lbs: number | null | undefined) => {
+                      const n = typeof lbs === 'number' ? lbs : 0
+                      if (units.toLowerCase().includes('kg')) {
+                        const kg = Math.round((n / 2.20462) * 100) / 100
+                        return `${kg} kg`
+                      }
+                      return `${n} lbs`
+                    }
+                    const nameToKey: Record<string, string> = {
+                      'Snatch': 'snatch',
+                      'Power Snatch': 'power_snatch',
+                      'Clean and Jerk': 'clean_and_jerk',
+                      'Power Clean': 'power_clean',
+                      'Clean (Only)': 'clean_only',
+                      'Jerk (Only)': 'jerk_only',
+                      'Back Squat': 'back_squat',
+                      'Front Squat': 'front_squat',
+                      'Overhead Squat': 'overhead_squat',
+                      'Deadlift': 'deadlift',
+                      'Bench Press': 'bench_press',
+                      'Push Press': 'push_press',
+                      'Strict Press': 'strict_press',
+                      'Weighted Pullup': 'weighted_pullup'
+                    }
                     return (
                       <div className="grid grid-cols-2 gap-2 text-sm">
-                        {names.map((n, i) => (
-                          <div key={n} className="flex items-center justify-between bg-gray-50 border rounded px-2 py-1"><span className="text-gray-700">{n}</span><span className="font-medium">{vals[i] || 0}</span></div>
-                        ))}
+                        {names.map((n) => {
+                          const key = nameToKey[n] || ''
+                          const v = (named as any)?.[key] ?? 0
+                          return (
+                            <div key={n} className="flex items-center justify-between bg-gray-50 border rounded px-2 py-1">
+                              <span className="text-gray-700">{n}</span>
+                              <span className="font-medium">{toDisplay(v)}</span>
+                            </div>
+                          )
+                        })}
                       </div>
                     )
                   })()}
