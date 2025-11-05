@@ -1402,12 +1402,10 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
   <>
   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-6">
     {/* Training Days */}
-    <Link href="/dashboard/program" className="block">
-    <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
       <p className="text-xs sm:text-sm text-gray-600">Training Days</p>
       <p className="text-xl sm:text-2xl font-bold text-coral">{dashboardAnalytics.data.dashboard.overallMetrics.totalTrainingDays}</p>
     </div>
-    </Link>
 
     {/* Completed Tasks */}
     <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
@@ -1421,9 +1419,9 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       <p className="text-xl sm:text-2xl font-bold text-coral">{heatMapData?.totalCompletedWorkouts || 0}</p>
     </div>
 
-    {/* Fitness Score - remains a link */}
+    {/* Fitness Score - highlighted as clickable link */}
     <Link href="/dashboard/progress?tab=metcons#metcons-panel" className="block">
-      <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue hover:shadow-md transition-shadow">
+      <div className="rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue hover:shadow-md transition-shadow" style={{ backgroundColor: '#DAE2EA' }}>
         <p className="text-xs sm:text-sm text-gray-600">Fitness Score</p>
         <p className="text-xl sm:text-2xl font-bold text-coral">{heatMapData?.globalFitnessScore || 0}%</p>
       </div>
