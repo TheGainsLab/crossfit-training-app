@@ -295,7 +295,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 mb-6">
+    <div className="bg-ice-blue rounded-lg border border-charcoal p-6 mb-6">
       {/* Navigation Controls - Desktop */}
       <div className="hidden sm:flex items-center justify-between mb-4">
         {/* Previous Workout */}
