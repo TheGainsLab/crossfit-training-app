@@ -9,11 +9,12 @@ const corsHeaders = {
 // Program configuration (exact from Google Script)
 const defaultDays = ['DAY 1', 'DAY 2', 'DAY 3', 'DAY 4', 'DAY 5']
 const defaultMainLifts = ['Snatch', 'Back Squat', 'Press', 'Clean and Jerk', 'Front Squat']
-const blocks = ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS']
+const DEFAULT_BLOCKS = ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS']
 
 interface GenerateProgramRequest {
   user_id: number
   weeksToGenerate?: number[]
+  programType?: 'full' | 'applied_power'
 }
 
 serve(async (req) => {
@@ -39,7 +40,12 @@ serve(async (req) => {
       )
     }
 
-    const { user_id, weeksToGenerate = [1, 2, 3, 4] }: GenerateProgramRequest = parsed || {}
+    const { user_id, weeksToGenerate = [1, 2, 3, 4], programType = 'full' }: GenerateProgramRequest = parsed || {}
+
+    // Determine which blocks to generate based on program type
+    const blocksToUse = programType === 'applied_power'
+      ? ['TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES']
+      : DEFAULT_BLOCKS
 
     if (!user_id || typeof user_id !== 'number' || user_id <= 0) {
       return new Response(
@@ -132,7 +138,15 @@ serve(async (req) => {
     
     // Step 4: Generate program structure
     console.log('🏗️ Step 4: Generating program structure...')
-    const program = await generateProgramStructure(user, ratios, weeksToGenerate, supabase, supabaseUrl, supabaseKey)
+    const program = await generateProgramStructure(
+      user,
+      ratios,
+      weeksToGenerate,
+      blocksToUse,
+      supabase,
+      supabaseUrl,
+      supabaseKey
+    )
     
     const executionTime = Date.now() - startTime
     console.log(`🎉 Program generation complete in ${executionTime}ms`)
@@ -257,7 +271,15 @@ async function fetchCompleteUserData(supabase: any, user_id: number) {
 }
 
 // === PROGRAM STRUCTURE GENERATION (Exact Google Script Logic) ===
-async function generateProgramStructure(user: any, ratios: any, weeksToGenerate: number[], supabase: any, supabaseUrl: string, supabaseKey: string): Promise<any> {
+async function generateProgramStructure(
+  user: any,
+  ratios: any,
+  weeksToGenerate: number[],
+  blocks: string[],
+  supabase: any,
+  supabaseUrl: string,
+  supabaseKey: string
+): Promise<any> {
   console.log('Generating program structure...')
   
   const weeks: any[] = []
