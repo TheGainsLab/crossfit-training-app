@@ -149,8 +149,8 @@ export default function ProgramPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow p-6 mb-6 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Training Overview</h1>
+        <div className="rounded-lg shadow p-6 mb-6 text-center" style={{ backgroundColor: '#DAE2EA' }}>
+          <h1 className="text-3xl font-bold" style={{ color: '#FE5858' }}>Training Overview</h1>
         </div>
 
         <div className="space-y-8">
