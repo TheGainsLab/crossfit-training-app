@@ -66,7 +66,7 @@ function AnalyticsSubnav() {
       </div>
       {/* Range filters - hidden on metcons page, shown on other analytics pages */}
       {!isMetconsPage && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 pt-4" style={{ borderTop: '1px solid #F8FBFE' }}>
           <Suspense fallback={<div className="text-xs text-gray-400">Loading filters…</div>}>
             <RangeChips />
           </Suspense>
