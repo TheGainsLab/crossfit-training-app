@@ -23,7 +23,8 @@ function RangeChips() {
           <button 
             key={r} 
             onClick={() => setRange(r)} 
-            className={`px-3 py-2 sm:px-2 sm:py-1 rounded border text-xs min-h-[44px] sm:min-h-0 flex items-center justify-center ${range===r ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`}
+            className={`px-3 py-2 sm:px-2 sm:py-1 rounded border text-xs min-h-[44px] sm:min-h-0 flex items-center justify-center ${range===r ? 'border-coral' : ''}`}
+            style={{ backgroundColor: '#DAE2EA', color: '#FE5858', borderColor: range===r ? '#FE5858' : '#282B34' }}
           >
             {r.replace(/_/g,' ')}
           </button>
@@ -55,7 +56,8 @@ function AnalyticsSubnav() {
             <Link 
               key={t.href} 
               href={t.href} 
-              className={`px-4 py-3 sm:px-3 sm:py-1.5 rounded border text-sm min-h-[44px] sm:min-h-0 flex items-center justify-center ${active ? 'bg-blue-100 border-blue-300 text-blue-700 font-medium' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+              className={`px-4 py-3 sm:px-3 sm:py-1.5 rounded border text-sm min-h-[44px] sm:min-h-0 flex items-center justify-center ${active ? 'border-coral' : ''}`}
+              style={{ backgroundColor: '#DAE2EA', color: '#FE5858', borderColor: active ? '#FE5858' : '#282B34' }}
             >
               {t.label}
             </Link>

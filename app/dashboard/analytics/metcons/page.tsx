@@ -117,7 +117,8 @@ export default function AnalyticsMetconsPage() {
             <button 
               key={r} 
               onClick={() => setRange(r)} 
-              className={`px-3 py-2 sm:px-2 sm:py-1 rounded border text-xs min-h-[44px] sm:min-h-0 flex items-center justify-center ${range===r ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`}
+              className={`px-3 py-2 sm:px-2 sm:py-1 rounded border text-xs min-h-[44px] sm:min-h-0 flex items-center justify-center ${range===r ? 'border-coral' : ''}`}
+              style={{ backgroundColor: '#DAE2EA', color: '#FE5858', borderColor: range===r ? '#FE5858' : '#282B34' }}
             >
               {r.replace(/_/g,' ')}
             </button>
@@ -130,7 +131,14 @@ export default function AnalyticsMetconsPage() {
         <span className="text-xs whitespace-nowrap" style={{ color: '#282B34' }}>Time Domain:</span>
         <div className="flex flex-wrap gap-2">
           {timeDomains.map(td => (
-            <button key={td} onClick={() => toggle(td)} className={`px-2 py-1 rounded border text-xs ${selection.includes(td) ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`}>{td}</button>
+            <button 
+              key={td} 
+              onClick={() => toggle(td)} 
+              className={`px-2 py-1 rounded border text-xs ${selection.includes(td) ? 'border-coral' : ''}`}
+              style={{ backgroundColor: '#DAE2EA', color: '#FE5858', borderColor: selection.includes(td) ? '#FE5858' : '#282B34' }}
+            >
+              {td}
+            </button>
           ))}
         </div>
       </div>
