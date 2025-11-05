@@ -111,7 +111,7 @@ export default function AnalyticsMetconsPage() {
     <div className="space-y-4">
       {/* Range filter - moved from layout to be with heat map controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pb-3 border-b border-gray-200">
-        <span className="text-xs text-gray-500 whitespace-nowrap">Time Range:</span>
+        <span className="text-xs whitespace-nowrap" style={{ color: '#282B34' }}>Time Range:</span>
         <div className="flex flex-wrap gap-2">
           {ranges.map(r => (
             <button 
@@ -126,11 +126,13 @@ export default function AnalyticsMetconsPage() {
       </div>
       
       {/* Time Domain filter */}
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-gray-600">Time Domain:</span>
-        {timeDomains.map(td => (
-          <button key={td} onClick={() => toggle(td)} className={`px-2 py-1 rounded border ${selection.includes(td) ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`}>{td}</button>
-        ))}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <span className="text-xs whitespace-nowrap" style={{ color: '#282B34' }}>Time Domain:</span>
+        <div className="flex flex-wrap gap-2">
+          {timeDomains.map(td => (
+            <button key={td} onClick={() => toggle(td)} className={`px-2 py-1 rounded border text-xs ${selection.includes(td) ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`}>{td}</button>
+          ))}
+        </div>
       </div>
       <div className="flex items-center gap-2 text-xs">
         <button className="px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100" onClick={async () => {
