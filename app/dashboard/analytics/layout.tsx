@@ -42,6 +42,9 @@ function AnalyticsSubnav() {
     { href: '/dashboard/analytics/accessories', label: 'Accessories' },
     { href: '/dashboard/analytics/metcons', label: 'Metcons' }
   ]), [])
+  // Hide range filters on metcons page - they're moved into the heat map area
+  const isMetconsPage = pathname === '/dashboard/analytics/metcons'
+  
   return (
     <div className="flex flex-col gap-4 mb-4">
       {/* Category tabs - wrap on mobile with larger tap targets */}
@@ -59,12 +62,14 @@ function AnalyticsSubnav() {
           )
         })}
       </div>
-      {/* Range filters - full width on mobile, inline on desktop */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
-        <Suspense fallback={<div className="text-xs text-gray-400">Loading filters…</div>}>
-          <RangeChips />
-        </Suspense>
-      </div>
+      {/* Range filters - hidden on metcons page, shown on other analytics pages */}
+      {!isMetconsPage && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
+          <Suspense fallback={<div className="text-xs text-gray-400">Loading filters…</div>}>
+            <RangeChips />
+          </Suspense>
+        </div>
+      )}
     </div>
   )
 }

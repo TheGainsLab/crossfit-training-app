@@ -19,6 +19,15 @@ export default function AnalyticsMetconsPage() {
   const [openCoach, setOpenCoach] = useState(false)
   const [coachContent, setCoachContent] = useState<React.ReactNode>(null)
   const timeDomains = ['1-5','5-10','10-15','15-20','20+']
+  
+  // Range filter state
+  const range = (searchParams.get('range') || 'all_time').toLowerCase()
+  const setRange = (r: string) => {
+    const q = new URLSearchParams(searchParams as any)
+    q.set('range', r)
+    router.replace(`?${q.toString()}`)
+  }
+  const ranges = ['all_time','last_30_days','last_60_days','last_90_days']
   const sortByOrder = (arr: string[]) => {
     const order: Record<string, number> = { '1-5': 1, '5-10': 2, '10-15': 3, '15-20': 4, '20+': 5 }
     return [...arr].sort((a, b) => (order[a] || 99) - (order[b] || 99))
@@ -100,6 +109,23 @@ export default function AnalyticsMetconsPage() {
 
   return (
     <div className="space-y-4">
+      {/* Range filter - moved from layout to be with heat map controls */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pb-3 border-b border-gray-200">
+        <span className="text-xs text-gray-500 whitespace-nowrap">Time Range:</span>
+        <div className="flex flex-wrap gap-2">
+          {ranges.map(r => (
+            <button 
+              key={r} 
+              onClick={() => setRange(r)} 
+              className={`px-3 py-2 sm:px-2 sm:py-1 rounded border text-xs min-h-[44px] sm:min-h-0 flex items-center justify-center ${range===r ? 'bg-blue-100 border-blue-300' : 'bg-gray-100 hover:bg-gray-200'}`}
+            >
+              {r.replace(/_/g,' ')}
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      {/* Time Domain filter */}
       <div className="flex items-center gap-2 text-sm">
         <span className="text-gray-600">Time Domain:</span>
         {timeDomains.map(td => (
