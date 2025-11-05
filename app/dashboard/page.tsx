@@ -1465,18 +1465,6 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 <div className="mb-8">
 {userId && <TrainingChatInterface userId={userId} />}
 </div>
-
-        {/* Settings Link */}
-        <div className="flex justify-center">
-          <Link
-            href="/dashboard/settings"
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-          >
-            <div className="text-3xl mb-2">⚙️</div>
-            <h3 className="font-semibold text-gray-900 mb-1">Settings</h3>
-            <p className="text-gray-600 text-sm">Update 1RMs and preferences</p>
-          </Link>
-        </div>
           </div>
         )}
       </div>
