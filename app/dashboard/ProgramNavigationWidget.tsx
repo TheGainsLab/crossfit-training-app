@@ -307,11 +307,11 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
               ? 'border' 
               : 'text-gray-400 cursor-not-allowed border border-gray-200'
           }`}
-          style={previousDay ? { backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' } : {}}
+          style={previousDay ? { backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' } : {}}
         >
           <span>⬅️</span>
           <div className="text-left">
-            <div className="text-sm font-medium" style={previousDay ? { color: '#FE5858' } : {}}>Previous</div>
+            <div className="text-sm font-medium" style={previousDay ? { color: '#282B34' } : {}}>Previous</div>
             {previousDay && (
               <div className="text-xs text-gray-500">
                 {formatWeekLabel(previousDay.week)}, Day {previousDay.day}
@@ -326,7 +326,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
             prefetch
             href={`/dashboard/workout/${programId}/week/${currentWeek}/day/${currentDay}`}
             className="inline-flex items-center px-6 py-3 rounded-lg font-semibold transition-colors border"
-            style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' }}
+            style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
           >
             Today's Workout
           </Link>
@@ -344,10 +344,10 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
               ? 'border' 
               : 'text-gray-400 cursor-not-allowed border border-gray-200'
           }`}
-          style={nextDay ? { backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' } : {}}
+          style={nextDay ? { backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' } : {}}
         >
           <div className="text-right">
-            <div className="text-sm font-medium" style={nextDay ? { color: '#FE5858' } : {}}>Next</div>
+            <div className="text-sm font-medium" style={nextDay ? { color: '#282B34' } : {}}>Next</div>
             {nextDay && (
               <div className="text-xs text-gray-500">
                 {formatWeekLabel(nextDay.week)}, Day {nextDay.day}
@@ -369,7 +369,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
             prefetch
             href={`/dashboard/workout/${programId}/week/${currentWeek}/day/${currentDay}`}
             className="inline-flex items-center px-6 py-3 rounded-lg font-semibold transition-colors text-lg w-full justify-center border"
-            style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' }}
+            style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
           >
             Today's Workout
           </Link>
@@ -388,10 +388,10 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
                 ? 'border' 
                 : 'text-gray-400 cursor-not-allowed border border-gray-200'
             }`}
-            style={previousDay ? { backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' } : {}}
+            style={previousDay ? { backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' } : {}}
           >
             <span>⬅️</span>
-            <span className="font-medium" style={previousDay ? { color: '#FE5858' } : {}}>Previous</span>
+            <span className="font-medium" style={previousDay ? { color: '#282B34' } : {}}>Previous</span>
           </button>
 
           <button
@@ -402,9 +402,9 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
                 ? 'border' 
                 : 'text-gray-400 cursor-not-allowed border border-gray-200'
             }`}
-            style={nextDay ? { backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' } : {}}
+            style={nextDay ? { backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' } : {}}
           >
-            <span className="font-medium" style={nextDay ? { color: '#FE5858' } : {}}>Next</span>
+            <span className="font-medium" style={nextDay ? { color: '#282B34' } : {}}>Next</span>
             <span>➡️</span>
           </button>
         </div>
@@ -415,21 +415,21 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         <Link
           href="/dashboard/program"
           className="px-4 py-2 rounded-lg border transition-colors font-bold"
-          style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' }}
+          style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
         >
           Program Navigator
         </Link>
         <Link
           href={`/dashboard/preview/week/${currentWeek + (currentDay >= 5 ? 1 : 0)}`}
           className="px-4 py-2 rounded-lg border transition-colors font-bold"
-          style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' }}
+          style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
         >
           Week Preview
         </Link>
         <button
           onClick={() => setMetconOpen(true)}
           className="px-4 py-2 rounded-lg border transition-colors font-bold"
-          style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#FE5858' }}
+          style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
           aria-haspopup="dialog"
           aria-expanded={metconOpen}
         >
