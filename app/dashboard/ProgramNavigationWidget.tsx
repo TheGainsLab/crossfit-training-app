@@ -414,21 +414,21 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
       <div className="mt-4 flex items-center justify-center gap-6 text-center">
         <Link
           href="/dashboard/program"
-          className="px-4 py-2 rounded-lg border transition-colors font-bold"
+          className="px-4 py-2 rounded-lg border transition-colors"
           style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
         >
           Program Navigator
         </Link>
         <Link
           href={`/dashboard/preview/week/${currentWeek + (currentDay >= 5 ? 1 : 0)}`}
-          className="px-4 py-2 rounded-lg border transition-colors font-bold"
+          className="px-4 py-2 rounded-lg border transition-colors"
           style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
         >
           Week Preview
         </Link>
         <button
           onClick={() => setMetconOpen(true)}
-          className="px-4 py-2 rounded-lg border transition-colors font-bold"
+          className="px-4 py-2 rounded-lg border transition-colors"
           style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
           aria-haspopup="dialog"
           aria-expanded={metconOpen}
