@@ -579,21 +579,46 @@ async function assignExercises(
 
       // Elite exercises are no longer hard-gated; rely on level gating and other guards
 
-      // Handle Novice skills - only show as scaling when user lacks the base skill
+      // Handle Novice skills - filter out if user has the skill
       if (exerciseLevel === 0) { // Novice level
+        // First check: If exercise has a skill_index and user has that skill, filter out
+        if (skillIndex !== null && skillIndex !== undefined && skillIndex >= 0 && skillIndex <= 25) {
+          const userSkillLevel = user.skills[skillIndex]
+          if (userSkillLevel && userSkillLevel !== "Don't have it") {
+            console.log(`     ❌ Filtered out - user has skill at index ${skillIndex} (${userSkillLevel}), Novice scaling not needed`)
+            return false
+          }
+        }
+        
+        // Second check: Check scaling_for (with proper parsing for JSON array format)
         const scalingFor = exercise.scaling_for
         if (scalingFor && scalingFor !== 'None') {
-          const baseSkillIndex = findSkillIndexForScaling(scalingFor)
+          // Parse JSON array format if needed (e.g., "{Push-ups}" or '["Push-ups"]')
+          let cleanScalingFor = scalingFor
+          if (scalingFor.startsWith('{') || scalingFor.startsWith('[')) {
+            try {
+              // Try to parse as JSON array/object
+              const parsed = JSON.parse(scalingFor)
+              cleanScalingFor = Array.isArray(parsed) ? parsed[0] : (typeof parsed === 'string' ? parsed : scalingFor)
+            } catch {
+              // If not valid JSON, try to extract from braces/brackets
+              cleanScalingFor = scalingFor.replace(/[{}[\]"]/g, '').split(',')[0].trim()
+            }
+          }
+          
+          const baseSkillIndex = findSkillIndexForScaling(cleanScalingFor)
           if (baseSkillIndex !== -1) {
             const userBaseSkillLevel = user.skills[baseSkillIndex]
-            console.log(`     - Novice exercise scaling for: ${scalingFor} (skill_index: ${baseSkillIndex})`)
+            console.log(`     - Novice exercise scaling for: ${cleanScalingFor} (skill_index: ${baseSkillIndex})`)
             console.log(`     - User base skill level: ${userBaseSkillLevel}`)
             if (userBaseSkillLevel !== "Don't have it") {
-              console.log(`     ❌ Filtered out - user has base skill (${scalingFor}), so Novice scaling not needed`)
+              console.log(`     ❌ Filtered out - user has base skill (${cleanScalingFor}), so Novice scaling not needed`)
               return false
             } else {
               console.log(`     ✅ Passed - user lacks base skill, Novice scaling is appropriate`)
             }
+          } else {
+            console.log(`     ⚠️ Could not find skill index for scaling_for: ${scalingFor} (cleaned: ${cleanScalingFor})`)
           }
         }
       }
@@ -1200,14 +1225,31 @@ function findSkillIndexForScaling(scalingFor: string): number {
     'Double Unders': 0,
     'Toes to Bar': 2,
     'Handstand Walk (10m or 25")': 22,
+    'Handstand Walk (10m or 25\')': 22, // Handle both quote styles
     'Wall Walks': 14,
     'Push-ups': 6,
     'GHD Sit-ups': 13,
     'Strict Pull-ups': 5,
-    'Wall Balls': 1
+    'Wall Balls': 1,
+    'Alternating Pistols': 12,
+    'Ring Dips': 7,
+    'Strict Ring Dips': 8
   }
 
-  return scalingMap[scalingFor] !== undefined ? scalingMap[scalingFor] : -1
+  // Try exact match first
+  if (scalingMap[scalingFor] !== undefined) {
+    return scalingMap[scalingFor]
+  }
+  
+  // Try case-insensitive match
+  const lowerScalingFor = scalingFor.toLowerCase().trim()
+  for (const [key, value] of Object.entries(scalingMap)) {
+    if (key.toLowerCase() === lowerScalingFor) {
+      return value
+    }
+  }
+  
+  return -1
 }
 
 
