@@ -62,7 +62,7 @@ export async function GET() {
 
 async function generateScheduledProgram(userId: number, billingInterval: string) {
   try {
-    // Determine next program number for dedupe key only
+    // Determine next program number
     const { data: progCount } = await supabase
       .from('programs')
       .select('program_number')
@@ -71,20 +71,20 @@ async function generateScheduledProgram(userId: number, billingInterval: string)
       .limit(1)
     const nextProgramNumber = (progCount?.[0]?.program_number || 0) + 1
 
-    // Enqueue generate_program job; worker will build context (last 40 logs) and call edge function
-    const ym = new Date().toISOString().slice(0,7).replace('-','')
-    const dedupeKey = `generate_program:${userId}:${ym}`
+    // Enqueue to dedicated program generation queue
     const { error: insErr } = await supabase
-      .from('ai_jobs')
+      .from('program_generation_jobs')
       .insert({
         user_id: userId,
-        job_type: 'generate_program',
-        payload: { nextProgramNumber },
-        dedupe_key: dedupeKey,
-        status: 'pending'
+        program_number: nextProgramNumber,
+        status: 'pending',
+        payload: { weeksToGenerate: [1, 2, 3, 4] }
       })
-    if (insErr && (insErr as any).code !== '23505') {
-      console.error('Failed to enqueue generate_program job:', insErr)
+    
+    if (insErr) {
+      console.error('Failed to enqueue program generation job:', insErr)
+    } else {
+      console.log(`✅ Enqueued program #${nextProgramNumber} for user ${userId}`)
     }
   } catch (error) {
     console.error('Error enqueuing scheduled program:', error)
