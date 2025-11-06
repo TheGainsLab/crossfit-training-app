@@ -670,43 +670,26 @@ async function assignExercises(
       return false
     }
 
-    // ACCESSORIES block specific filtering (exact logic from Google Script)
+    // ACCESSORIES block specific filtering (simplified)
     if (block === 'ACCESSORIES') {
+      // 1. Must have accessory_category
       if (!exercise.accessory_category || exercise.accessory_category === 'None') return false
-
-      const exerciseName = exercise.name
-
-      // Check frequency limits: max 2x/week
-      if (weeklyAccessories[exerciseName] && weeklyAccessories[exerciseName] >= 2) {
+      
+      // 2. Equipment check (already handled above)
+      // 3. Prerequisites check (already handled above)
+      
+      // 4. Prevent same accessory_category on consecutive days
+      const previousDayCategories = previousDayAccessories
+        .map((name: string) => {
+          const prevEx = exerciseData.find((e: any) => e.name === name)
+          return prevEx?.accessory_category
+        })
+        .filter((cat: string) => cat && cat !== 'None')
+      
+      if (previousDayCategories.includes(exercise.accessory_category)) {
         return false
       }
-
-      // Check consecutive day restriction
-      if (previousDayAccessories.includes(exerciseName)) {
-        return false
-      }
-
-      // Determine needed accessory categories
-      const neededCategories = []
-      if (user.needs_upper_back) neededCategories.push('Upper Back')
-      if (user.needs_leg_strength) neededCategories.push('Leg Strength')
-      if (user.needs_posterior_chain) neededCategories.push('Posterior Chain')
-      if (user.needs_upper_body_pressing) neededCategories.push('Upper Body Pressing')
-      if (user.needs_upper_body_pulling) neededCategories.push('Upper Body Pulling')
-      if (user.needs_core) neededCategories.push('Core')
-
-      // Level-constrained weakness filtering
-      if (neededCategories.length > 0) {
-        // Must be in a needed category
-        const isWeaknessCategory = neededCategories.includes(exercise.accessory_category)
-        if (!isWeaknessCategory) return false
-
-        // AND must be appropriate level (excludes Novice unless user is Novice)
-        const exerciseLevel = exercise.difficulty_level
-        return checkLevelAppropriate(exerciseLevel, user.ability)
-      }
-
-      // If no specific needs, assign randomly from all categories
+      
       return true
     }
 
@@ -754,138 +737,130 @@ async function assignExercises(
     return defaultBodyweightExercises.slice(0, numExercises)
   }
 
-  // Accessory selection policy: mix general (60–70%) and targeted (30–40%),
-  // cap per-category exposures weekly, and avoid same category 3 days in a row
+  // ACCESSORIES block: Enforce weekly slot allocation (simplified)
   let usedAccessoryCategories: string[] = []
   if (block === 'ACCESSORIES') {
-    const neededCategories: string[] = []
-    if (user.needs_upper_back) neededCategories.push('Upper Back')
-    if (user.needs_leg_strength) neededCategories.push('Leg Strength')
-    if (user.needs_posterior_chain) neededCategories.push('Posterior Chain')
-    if (user.needs_upper_body_pressing) neededCategories.push('Upper Body Pressing')
-    if (user.needs_upper_body_pulling) neededCategories.push('Upper Body Pulling')
-    if (user.needs_core) neededCategories.push('Core')
-
-    const categoryCap = 3 // max exposures/week per need category (2–3)
-    const prevTwoDays = Array.isArray(previousAccessoryCategoryDays) ? previousAccessoryCategoryDays.slice(-2) : []
-    const makesThreeDayStreak = (cat: string): boolean => {
-      if (prevTwoDays.length < 2) return false
-      // Require category present in both previous days
-      const day1Has = Array.isArray(prevTwoDays[0]) && prevTwoDays[0].includes(cat)
-      const day2Has = Array.isArray(prevTwoDays[1]) && prevTwoDays[1].includes(cat)
-      return day1Has && day2Has
+    // Define required weekly allocation (10 slots total: 2 per day × 5 days)
+    const requiredAllocation: Record<string, number> = {
+      'Core': 2,
+      'Upper Back': 2,
+      'Leg Strength': user.needs_leg_strength ? 2 : 0,
+      'Posterior Chain': user.needs_posterior_chain ? 2 : 0,
+      'Upper Body Pressing': 2,
+      'Upper Body Pulling': 2
     }
-
-    const isNeedCat = (cat: string) => neededCategories.includes(cat)
-    const isUnderCap = (cat: string) => (weeklyAccessoryCategories[cat] || 0) < categoryCap
-
-    // Split into targeted/general pools with caps and streak guard
-    const targetedPool = filtered.filter((ex: any) => {
-      const cat = ex.accessory_category || ''
-      if (!cat) return false
-      if (!isNeedCat(cat)) return false
-      if (!isUnderCap(cat)) return false
-      if (makesThreeDayStreak(cat)) return false
-      return true
-    })
-
-    const generalPool = filtered.filter((ex: any) => {
-      const cat = ex.accessory_category || ''
-      if (!cat) return false
-      if (isNeedCat(cat)) return false
-      if (makesThreeDayStreak(cat)) return false
-      return true
-    })
-
-    // Decide slots based on weekly ratio so far
-    const totalCatAssigned = Object.values(weeklyAccessoryCategories || {}).reduce((a: number, b: number) => a + (Number(b) || 0), 0)
-    const targetedAssigned = Object.entries(weeklyAccessoryCategories || {}).reduce((sum: number, [cat, cnt]: any) => sum + (isNeedCat(cat) ? (Number(cnt) || 0) : 0), 0)
-    const currentTargetedRatio = totalCatAssigned > 0 ? targetedAssigned / totalCatAssigned : 0
-    const targetRatio = 0.35
-
-    let targetedSlots = 0
-    if (neededCategories.length > 0) {
-      targetedSlots = currentTargetedRatio < targetRatio ? 1 : 0
-      if (numExercises === 3 && currentTargetedRatio + (1 / (totalCatAssigned + 1 || 1)) < 0.4) {
-        targetedSlots = 1 // keep simple even for 3 slots
+    
+    // Track what's been assigned this week so far
+    const assignedThisWeek = { ...weeklyAccessoryCategories }
+    
+    // Determine which categories we need to fill for this day
+    const categoriesNeeded: string[] = []
+    Object.entries(requiredAllocation).forEach(([cat, required]) => {
+      const assigned = assignedThisWeek[cat] || 0
+      if (assigned < required) {
+        categoriesNeeded.push(cat)
       }
-    }
-    targetedSlots = Math.min(targetedSlots, numExercises)
-    let generalSlots = Math.max(0, numExercises - targetedSlots)
-
-    const pickFromPool = async (pool: any[], count: number): Promise<any[]> => {
-      if (count <= 0) return []
-      if (!pool.length) return []
-      // Try AI contextual selection constrained to this pool
-      try {
-        const resp = await fetch(`${SUPABASE_URL}/functions/v1/contextual-exercise-selection`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            filteredExercises: pool,
-            userContext: { ...user, preferences: userPreferences },
-            block,
-            mainLift,
-            numExercises: count,
-            weeklyFrequencies: weeklyAccessories || {},
-            dailyContext: { week, day, isDeload }
-          })
+    })
+    
+    // Filter exercises to only those in needed categories (if any categories are still needed)
+    // If all categories are filled, allow any category to prevent blocking
+    const categoryFiltered = categoriesNeeded.length > 0
+      ? filtered.filter((ex: any) => {
+          const cat = ex.accessory_category || ''
+          return categoriesNeeded.includes(cat)
         })
-        if (resp.ok) {
-          const data = await resp.json()
-          if (data.success && Array.isArray(data.selectedExercises)) {
-            return data.selectedExercises.slice(0, count)
+      : filtered
+    
+    // Use category-filtered pool if available, otherwise use all filtered
+    const poolToUse = categoryFiltered.length > 0 ? categoryFiltered : filtered
+    
+    // Prevent same category on same day
+    const usedCategoriesToday = new Set<string>()
+    
+    // Simple weighted random selection
+    const abilityIndex = user.ability === 'Advanced' ? 'advanced_weight' : 
+                         user.ability === 'Intermediate' ? 'intermediate_weight' : 
+                         'beginner_weight'
+    
+    const selectedExercises: any[] = []
+    const usedIndices = new Set<number>()
+    
+    for (let i = 0; i < numExercises && selectedExercises.length < numExercises; i++) {
+      // Filter out exercises with categories already used today
+      const available = poolToUse.filter((ex: any, idx: number) => {
+        if (usedIndices.has(idx)) return false
+        const cat = ex.accessory_category || ''
+        if (usedCategoriesToday.has(cat)) return false
+        return true
+      })
+      
+      if (available.length === 0) {
+        // If no available exercises in needed categories, allow any category
+        const fallbackAvailable = poolToUse.filter((ex: any, idx: number) => {
+          if (usedIndices.has(idx)) return false
+          const cat = ex.accessory_category || ''
+          if (usedCategoriesToday.has(cat)) return false
+          return true
+        })
+        if (fallbackAvailable.length === 0) break
+        
+        // Use fallback pool
+        const weights = fallbackAvailable.map(ex => 
+          parseFloat(ex[abilityIndex]) || parseFloat(ex.default_weight) || 5
+        )
+        const totalWeight = weights.reduce((sum, w) => sum + w, 0)
+        if (totalWeight <= 0) break
+        
+        let rand = Math.random() * totalWeight
+        let selectedIdx = -1
+        for (let j = 0; j < fallbackAvailable.length; j++) {
+          rand -= weights[j]
+          if (rand <= 0) {
+            selectedIdx = poolToUse.indexOf(fallbackAvailable[j])
+            break
           }
         }
-      } catch (_) {}
-      // Fallback: simple weighted random by ability weights
-      const abilityIndex = user.ability === 'Advanced' ? 'advanced_weight' : user.ability === 'Intermediate' ? 'intermediate_weight' : 'beginner_weight'
-      const chosen: any[] = []
-      const usedIdx: Set<number> = new Set()
-      for (let i = 0; i < count; i++) {
-        if (!pool.length) break
-        const weights = pool.map(ex => parseFloat(ex[abilityIndex]) || parseFloat(ex.default_weight) || 5)
-        const totalW = weights.reduce((s, v) => s + v, 0)
-        if (totalW <= 0) break
-        let r = Math.random() * totalW
-        let pick = -1
-        for (let j = 0; j < pool.length; j++) {
-          r -= weights[j]
-          if (r <= 0 && !usedIdx.has(j)) { pick = j; break }
+        
+        if (selectedIdx === -1) break
+        
+        const selected = poolToUse[selectedIdx]
+        selectedExercises.push(selected)
+        usedIndices.add(selectedIdx)
+        usedCategoriesToday.add(selected.accessory_category || '')
+      } else {
+        // Weighted random selection from available pool
+        const weights = available.map(ex => 
+          parseFloat(ex[abilityIndex]) || parseFloat(ex.default_weight) || 5
+        )
+        const totalWeight = weights.reduce((sum, w) => sum + w, 0)
+        if (totalWeight <= 0) break
+        
+        let rand = Math.random() * totalWeight
+        let selectedIdx = -1
+        for (let j = 0; j < available.length; j++) {
+          rand -= weights[j]
+          if (rand <= 0) {
+            selectedIdx = poolToUse.indexOf(available[j])
+            break
+          }
         }
-        if (pick === -1) break
-        usedIdx.add(pick)
-        chosen.push(pool[pick])
+        
+        if (selectedIdx === -1) break
+        
+        const selected = poolToUse[selectedIdx]
+        selectedExercises.push(selected)
+        usedIndices.add(selectedIdx)
+        usedCategoriesToday.add(selected.accessory_category || '')
       }
-      return chosen
     }
-
-    // Select targeted then general
-    let selectedRows: any[] = []
-    const targetedRows = await pickFromPool(targetedPool, targetedSlots)
-    selectedRows = selectedRows.concat(targetedRows)
-
-    // Remove already selected from general pool by name
-    const selectedNames = new Set(selectedRows.map(r => r.name))
-    const remainingGeneral = generalPool.filter(r => !selectedNames.has(r.name))
-    const generalRows = await pickFromPool(remainingGeneral, generalSlots)
-    selectedRows = selectedRows.concat(generalRows)
-
-    // If we still need more (e.g., targeted empty), backfill from whichever pool has items
-    if (selectedRows.length < numExercises) {
-      const remaining = numExercises - selectedRows.length
-      const combinedPool = [...targetedPool, ...remainingGeneral].filter(r => !selectedNames.has(r.name))
-      const backfill = await pickFromPool(combinedPool, remaining)
-      selectedRows = selectedRows.concat(backfill)
-    }
-
-    // Build output exercises and track used categories
+    
+    // Track categories used
+    const usedCats = Array.from(usedCategoriesToday)
+    usedAccessoryCategories = usedCats
+    
+    // Build output exercises
     const out: any[] = []
-    const usedCatsSet: Set<string> = new Set()
-    for (const selectedExercise of selectedRows) {
+    for (const selectedExercise of selectedExercises) {
       // Derive effective level for notes parsing
       let effectiveLevel = 'Intermediate'
       const programNotes = parseProgramNotes(selectedExercise.program_notes, effectiveLevel, isDeload, false, week)
@@ -919,8 +894,6 @@ async function assignExercises(
         weightTime: weightTime,
         notes: truncateNotes(generateEnhancedNotes(null, user, week, block, selectedExercise)) || programNotes.notes || effectiveLevel
       })
-      const cat = selectedExercise.accessory_category || ''
-      if (cat) usedCatsSet.add(cat)
     }
 
     return out

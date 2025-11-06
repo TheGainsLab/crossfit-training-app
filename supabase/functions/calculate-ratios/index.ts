@@ -198,13 +198,21 @@ function calculateUserRatios(user: any) {
       parseFloat((user.oneRMs[0] / user.oneRMs[2]).toFixed(3)) : 0
   }
   
-  // Calculate accessory needs (exact same logic as Google Sheets)
-  const needsUpperBack = (ratios.front_squat_back_squat < 0.85)
-  const needsLegStrength = false // Not currently triggered in Google Sheets
-  const needsPosteriorChain = (ratios.deadlift_body_weight < 2.0)
+  // Calculate accessory needs
+  const needsUpperBack = true // Always needed - everyone gets Upper Back
+  
+  // Calculate deadlift/back_squat ratio to determine leg strength vs posterior chain needs
+  const deadliftBackSquatRatio = user.oneRMs[6] && user.oneRMs[9] ? 
+    (user.oneRMs[9] / user.oneRMs[6]) : 0
+  
+  // If deadlift >= 1.15 * back_squat, posterior chain is strong → needs leg strength
+  // Otherwise, posterior chain is weak → needs posterior chain work
+  const needsLegStrength = deadliftBackSquatRatio >= 1.15
+  const needsPosteriorChain = !needsLegStrength // Mutually exclusive
+  
   const needsUpperBodyPressing = (ratios.bench_press_body_weight < 0.9) || (ratios.push_press_strict_press > 1.5)
   const needsUpperBodyPulling = (ratios.weighted_pullup_bench_press < 0.4) || (ratios.weighted_pullup_body_weight < 0.33)
-  const needsCore = false // Not currently triggered in Google Sheets
+  const needsCore = true // Always needed - everyone gets Core
   
   // Evaluate Snatch technical needs (default to failed if missing data)
   const snatchFailedRatios = [
