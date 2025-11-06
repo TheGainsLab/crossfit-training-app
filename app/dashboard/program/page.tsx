@@ -28,10 +28,19 @@ export default function ProgramPage() {
   const [error, setError] = useState<string | null>(null)
   const [userId, setUserId] = useState<number | null>(null)
   const [programs, setPrograms] = useState<ProgramSummary[]>([])
+  const [expandedMonths, setExpandedMonths] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     loadPrograms()
   }, [])
+
+  useEffect(() => {
+    if (programs.length > 0) {
+      // Find the most recent month (highest monthIndex)
+      const mostRecentMonth = Math.max(...programs.map(p => p.monthIndex))
+      setExpandedMonths(new Set([mostRecentMonth]))
+    }
+  }, [programs])
 
   const loadPrograms = async () => {
     try {
@@ -124,6 +133,18 @@ export default function ProgramPage() {
     }
   }
 
+  const toggleMonth = (monthIndex: number) => {
+    setExpandedMonths(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(monthIndex)) {
+        newSet.delete(monthIndex)
+      } else {
+        newSet.add(monthIndex)
+      }
+      return newSet
+    })
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -149,56 +170,76 @@ export default function ProgramPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="rounded-lg shadow p-6 mb-6 text-center" style={{ backgroundColor: '#DAE2EA', border: '1px solid #282B34' }}>
-          <h1 className="text-3xl font-bold" style={{ color: '#FE5858' }}>Training Overview</h1>
+        <div className="rounded-lg shadow p-6 mb-6" style={{ backgroundColor: '#DAE2EA', border: '1px solid #282B34' }}>
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold" style={{ color: '#FE5858' }}>Training Overview</h1>
+            <Link 
+              href="/dashboard"
+              className="px-4 py-2 rounded-lg border transition-colors"
+              style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
+            >
+              ← Back to Dashboard
+            </Link>
+          </div>
         </div>
 
         <div className="space-y-8">
-          {programs.map((program) => (
-            <div key={program.id} className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xl font-bold text-gray-900">Month {program.monthIndex}</h2>
-              </div>
-              <div className="text-sm text-gray-500 mb-4">Generated {new Date(program.generatedAt).toLocaleDateString()}</div>
+          {programs.map((program) => {
+            const isExpanded = expandedMonths.has(program.monthIndex)
+            return (
+              <div key={program.id} className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <button
+                    onClick={() => toggleMonth(program.monthIndex)}
+                    className="flex items-center gap-2 text-xl font-bold text-gray-900 hover:text-gray-700 cursor-pointer"
+                  >
+                    <span>{isExpanded ? '▼' : '▶'}</span>
+                    <span>Month {program.monthIndex}</span>
+                  </button>
+                </div>
+                <div className="text-sm text-gray-500 mb-4">Generated {new Date(program.generatedAt).toLocaleDateString()}</div>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {program.weeks.map((week) => (
-                  <div key={week.week} className="border rounded-lg p-4 bg-slate-blue border-coral">
-                    <div className="flex items-center mb-3">
-                      <h3 className="font-semibold text-coral">Week {week.week}</h3>
-                    </div>
-
-                    <div className="space-y-2">
-                      {week.days.map((day) => (
-                        <div key={day.day} className="relative">
-                          {/* status icon positioned outside top-right */}
-                          {(day.completed > 0 && day.completed < day.totalExercises) && (
-                            <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-coral bg-white" />
-                          )}
-                          {(day.totalExercises > 0 && day.completed >= day.totalExercises) && (
-                            <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-coral text-white flex items-center justify-center shadow">
-                              <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M20 6L9 17l-5-5" />
-                              </svg>
-                            </span>
-                          )}
-                          <Link
-                            href={`/dashboard/workout/${program.id}/week/${week.week}/day/${day.day}`}
-                            className="flex items-center justify-between rounded border px-3 py-2 bg-white"
-                          >
-                            <div className="text-sm text-gray-800">{day.dayName}</div>
-                            <div className="text-sm font-medium">
-                              {day.completed}/{day.totalExercises} complete
-                            </div>
-                          </Link>
+                {isExpanded && (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {program.weeks.map((week) => (
+                      <div key={week.week} className="border rounded-lg p-4 bg-slate-blue border-coral">
+                        <div className="flex items-center mb-3">
+                          <h3 className="font-semibold text-coral">Week {week.week}</h3>
                         </div>
-                      ))}
-                    </div>
+
+                        <div className="space-y-2">
+                          {week.days.map((day) => (
+                            <div key={day.day} className="relative">
+                              {/* status icon positioned outside top-right */}
+                              {(day.completed > 0 && day.completed < day.totalExercises) && (
+                                <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-coral bg-white" />
+                              )}
+                              {(day.totalExercises > 0 && day.completed >= day.totalExercises) && (
+                                <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-coral text-white flex items-center justify-center shadow">
+                                  <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M20 6L9 17l-5-5" />
+                                  </svg>
+                                </span>
+                              )}
+                              <Link
+                                href={`/dashboard/workout/${program.id}/week/${week.week}/day/${day.day}`}
+                                className="flex items-center justify-between rounded border px-3 py-2 bg-white"
+                              >
+                                <div className="text-sm text-gray-800">{day.dayName}</div>
+                                <div className="text-sm font-medium">
+                                  {day.completed}/{day.totalExercises} complete
+                                </div>
+                              </Link>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>
