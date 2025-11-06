@@ -234,7 +234,12 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
             <Link
               key={block.blockName}
               href={href}
-              className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-gray-50 border border-gray-200 text-gray-800 hover:bg-gray-100"
+              className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-colors hover:border-[#FE5858]"
+              style={{ 
+                backgroundColor: '#DAE2EA', 
+                borderColor: '#282B34', 
+                color: '#282B34' 
+              }}
               title={`Go to ${block.blockName} analytics`}
             >
               {block.blockName}: {block.exercisesCompleted} ({block.percentageOfTotal}%)
