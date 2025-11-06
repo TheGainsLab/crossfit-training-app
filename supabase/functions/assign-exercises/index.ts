@@ -502,6 +502,13 @@ async function assignExercises(
   }
 
   // Apply filtering logic (exact from Google Script)
+  if (block === 'SKILLS') {
+    console.log('🎯 Processing SKILLS block...')
+    console.log(`📊 Previous day skills: [${previousDaySkills.join(', ')}]`)
+    console.log(`📊 User ability: ${user.ability}`)
+    console.log(`📊 User skills array length: ${user.skills?.length || 0}`)
+  }
+
   let filtered = exerciseData.filter(exercise => {
     // Check if exercise can be used for this block
     const canBe = block === 'SKILLS' ? exercise.can_be_skills :
@@ -509,7 +516,15 @@ async function assignExercises(
       block === 'STRENGTH AND POWER' ? exercise.can_be_strength :
       block === 'ACCESSORIES' ? exercise.can_be_accessories : false
 
-    if (!canBe) return false
+    if (!canBe) {
+      if (block === 'SKILLS') {
+        // Only log if it's a skills exercise that failed can_be check
+        if (exercise.can_be_skills) {
+          console.log(`  ❌ ${exercise.name}: can_be_skills is false`)
+        }
+      }
+      return false
+    }
 
     // Equipment filtering (exact logic from Google Script)
     const requiredEquipment = exercise.required_equipment || []
@@ -535,6 +550,7 @@ async function assignExercises(
 
       // Check consecutive day restriction for skills
       if (previousDaySkills.includes(exerciseName)) {
+        console.log(`  ❌ ${exerciseName}: Filtered out - appeared on previous day`)
         return false
       }
 
@@ -542,7 +558,7 @@ async function assignExercises(
       const skillIndex = exercise.skill_index
       const abilityLevel = user.ability === 'Advanced' ? 3 : user.ability === 'Intermediate' ? 2 : 1
       const userSkillLevel = (skillIndex !== null && skillIndex !== undefined && skillIndex >= 0 && skillIndex <= 25)
-        ? (user.skills[skillIndex].includes('Advanced') ? 3 : user.skills[skillIndex].includes('Intermediate') ? 2 : user.skills[skillIndex].includes('Beginner') ? 1 : 0)
+        ? (user.skills[skillIndex]?.includes('Advanced') ? 3 : user.skills[skillIndex]?.includes('Intermediate') ? 2 : user.skills[skillIndex]?.includes('Beginner') ? 1 : 0)
         : abilityLevel
 
       const exerciseLevel = exercise.difficulty_level === 'Elite' ? 4 :
@@ -550,8 +566,14 @@ async function assignExercises(
         exercise.difficulty_level === 'Intermediate' ? 2 :
         exercise.difficulty_level === 'Beginner' ? 1 : 0
 
+      console.log(`  🔍 Checking ${exerciseName}:`)
+      console.log(`     - skill_index: ${skillIndex}, difficulty_level: ${exercise.difficulty_level}`)
+      console.log(`     - userSkillLevel: ${userSkillLevel} (from ${skillIndex !== null && skillIndex !== undefined && skillIndex >= 0 && skillIndex <= 25 ? `skills[${skillIndex}]=${user.skills[skillIndex]}` : `ability=${user.ability}`})`)
+      console.log(`     - exerciseLevel: ${exerciseLevel}`)
+
       // Only allow exercises at or below the user's level
       if (exerciseLevel > userSkillLevel) {
+        console.log(`     ❌ Filtered out - exerciseLevel (${exerciseLevel}) > userSkillLevel (${userSkillLevel})`)
         return false
       }
 
@@ -564,12 +586,19 @@ async function assignExercises(
           const baseSkillIndex = findSkillIndexForScaling(scalingFor)
           if (baseSkillIndex !== -1) {
             const userBaseSkillLevel = user.skills[baseSkillIndex]
+            console.log(`     - Novice exercise scaling for: ${scalingFor} (skill_index: ${baseSkillIndex})`)
+            console.log(`     - User base skill level: ${userBaseSkillLevel}`)
             if (userBaseSkillLevel !== "Don't have it") {
+              console.log(`     ❌ Filtered out - user has base skill (${scalingFor}), so Novice scaling not needed`)
               return false
+            } else {
+              console.log(`     ✅ Passed - user lacks base skill, Novice scaling is appropriate`)
             }
           }
         }
       }
+
+      console.log(`     ✅ Passed all SKILLS filters`)
     }
 
     // TECHNICAL WORK block specific filtering (exact logic from Google Script)
@@ -646,6 +675,12 @@ async function assignExercises(
   console.log(`Filtered ${filtered.length} exercises for ${block}`)
   if (block === 'TECHNICAL WORK') {
     console.log('Technical exercises found:', filtered.map(e => e.name))
+  }
+  if (block === 'SKILLS') {
+    console.log(`✅ SKILLS exercises found (${filtered.length}):`, filtered.map(e => e.name))
+    if (filtered.length === 0) {
+      console.log('⚠️ WARNING: No SKILLS exercises passed filtering!')
+    }
   }
 
 
@@ -947,6 +982,9 @@ try {
       }).filter(Boolean);
 
       console.log(`Using AI contextual selection: ${exercises.length} exercises selected`);
+      if (block === 'SKILLS') {
+        console.log(`✅ Final SKILLS selection via AI (${exercises.length} exercises):`, exercises.map(e => e.name))
+      }
     } else {
       throw new Error('AI selection returned no valid exercises');
     }
@@ -977,6 +1015,10 @@ try {
       if (rand <= cumulative && !selectedIndices.includes(j)) {
         const exercise = filtered[j];
         const skillIndex = exercise.skill_index || 99;
+        
+        if (block === 'SKILLS') {
+          console.log(`  🎲 Selected ${exercise.name} (weight: ${filtered[j][abilityIndex] || 'default'}, probability: ${(probabilities[j] * 100).toFixed(2)}%)`)
+        }
         
         let effectiveLevel;
         
@@ -1053,6 +1095,10 @@ try {
         break;
       }
     }
+  }
+
+  if (block === 'SKILLS') {
+    console.log(`✅ Final SKILLS selection (${exercises.length} exercises):`, exercises.map(e => e.name))
   }
 }
 
