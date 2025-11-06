@@ -330,7 +330,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
           >
             Today's Workout
           </Link>
-          <div className="text-xs mt-1 font-bold" style={{ color: '#FE5858' }}>
+          <div className="text-base mt-1 font-bold" style={{ color: '#FE5858' }}>
             {formatWeekLabel(currentWeek)}, Day {currentDay}
           </div>
         </div>
@@ -373,7 +373,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
           >
             Today's Workout
           </Link>
-          <div className="text-sm mt-2 font-bold" style={{ color: '#FE5858' }}>
+          <div className="text-base mt-2 font-bold" style={{ color: '#FE5858' }}>
             {formatWeekLabel(currentWeek)}, Day {currentDay}
           </div>
         </div>
