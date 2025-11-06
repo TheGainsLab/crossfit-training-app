@@ -556,6 +556,24 @@ async function assignExercises(
 
       // Determine user's level for THIS skill; if index invalid, fall back to overall ability
       const skillIndex = exercise.skill_index
+      
+      // NEW: Check if skill_index was used yesterday (prevents related exercises on consecutive days)
+      if (skillIndex !== null && skillIndex !== undefined && skillIndex >= 0 && skillIndex <= 25) {
+        // Get skill_index values from previous day's exercises
+        const previousDaySkillIndices = new Set(
+          previousDaySkills
+            .map(name => {
+              const prevEx = exerciseData.find(e => e.name === name)
+              return prevEx?.skill_index
+            })
+            .filter(idx => idx !== null && idx !== undefined && idx >= 0 && idx <= 25)
+        )
+        
+        if (previousDaySkillIndices.has(skillIndex)) {
+          console.log(`  ❌ ${exerciseName}: Filtered out - skill_index ${skillIndex} was used on previous day`)
+          return false
+        }
+      }
       const abilityLevel = user.ability === 'Advanced' ? 3 : user.ability === 'Intermediate' ? 2 : 1
       const userSkillLevel = (skillIndex !== null && skillIndex !== undefined && skillIndex >= 0 && skillIndex <= 25)
         ? (user.skills[skillIndex]?.includes('Advanced') ? 3 : user.skills[skillIndex]?.includes('Intermediate') ? 2 : user.skills[skillIndex]?.includes('Beginner') ? 1 : 0)
@@ -933,7 +951,25 @@ try {
     const contextualData = await contextualResponse.json();
     if (contextualData.success && contextualData.selectedExercises.length > 0) {
       // Process AI-selected exercises with your existing logic
-      exercises = contextualData.selectedExercises.map((exercise: any) => {
+      // NEW: Track skill_index values to prevent duplicates (for SKILLS block)
+      const usedSkillIndicesToday = new Set<number>();
+      
+      exercises = contextualData.selectedExercises
+        .filter((exercise: any) => {
+          // For SKILLS block, filter out exercises with duplicate skill_index
+          if (block === 'SKILLS') {
+            const skillIndex = exercise.skill_index;
+            if (skillIndex !== null && skillIndex !== undefined && skillIndex >= 0 && skillIndex <= 25) {
+              if (usedSkillIndicesToday.has(skillIndex)) {
+                console.log(`  ⏭️ Skipping ${exercise.name} (AI selection) - skill_index ${skillIndex} already used today`)
+                return false;
+              }
+              usedSkillIndicesToday.add(skillIndex);
+            }
+          }
+          return true;
+        })
+        .map((exercise: any) => {
         const skillIndex = exercise.skill_index || 99;
         let effectiveLevel;
         
@@ -1028,18 +1064,29 @@ try {
   const probabilities = weights.map(w => w / totalWeight);
 
   const selectedIndices: number[] = [];
+  // NEW: Track skill_index values used today (for SKILLS block)
+  const usedSkillIndicesToday = new Set<number>();
 
   for (let i = 0; i < numExercises; i++) {
     if (!filtered.length) break;
 
     const rand = Math.random();
     let cumulative = 0;
+    let selected = false;
 
     for (let j = 0; j < probabilities.length; j++) {
       cumulative += probabilities[j];
       if (rand <= cumulative && !selectedIndices.includes(j)) {
         const exercise = filtered[j];
         const skillIndex = exercise.skill_index || 99;
+        
+        // NEW: Skip if skill_index already used today (for SKILLS block)
+        if (block === 'SKILLS' && skillIndex >= 0 && skillIndex <= 25) {
+          if (usedSkillIndicesToday.has(skillIndex)) {
+            console.log(`  ⏭️ Skipping ${exercise.name} - skill_index ${skillIndex} already used today`)
+            continue; // Try next exercise in probability list
+          }
+        }
         
         if (block === 'SKILLS') {
           console.log(`  🎲 Selected ${exercise.name} (weight: ${filtered[j][abilityIndex] || 'default'}, probability: ${(probabilities[j] * 100).toFixed(2)}%)`)
@@ -1115,10 +1162,22 @@ try {
           notes: truncateNotes(enhancedNote) || programNotes.notes || effectiveLevel
         });
 
+        // NEW: Track skill_index after successful selection
+        if (block === 'SKILLS' && skillIndex >= 0 && skillIndex <= 25) {
+          usedSkillIndicesToday.add(skillIndex)
+        }
+
         selectedIndices.push(j);
         probabilities.splice(j, 1);
+        selected = true;
         break;
       }
+    }
+    
+    // If we couldn't select an exercise (all were filtered), break
+    if (!selected) {
+      console.log(`  ⚠️ Could not select exercise ${i + 1} - all remaining candidates filtered out`)
+      break;
     }
   }
 
