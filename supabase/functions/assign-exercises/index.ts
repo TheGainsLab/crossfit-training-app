@@ -657,15 +657,15 @@ async function assignExercises(
       // Exact dependency match first
       if (dependencies.includes(mainLift)) return true
 
-      // Family fallback: Press/Squat/Oly mapping to tolerate naming variants
+      // Family fallback: Press/Squat mapping to tolerate naming variants
+      // Olympic lifts require exact matches only (Snatch ≠ Clean, etc.)
       const pressFamily = ['Strict Press', 'Push Press', 'Press']
       const squatFamily = ['Back Squat', 'Front Squat', 'Squat']
-      const olyFamily = ['Snatch', 'Clean and Jerk', 'Clean', 'Jerk']
 
       const inFamily = (fam: string[]) => fam.some(n => dependencies.includes(n))
       if (pressFamily.includes(mainLift) && inFamily(pressFamily)) return true
       if (squatFamily.includes(mainLift) && inFamily(squatFamily)) return true
-      if (olyFamily.includes(mainLift) && inFamily(olyFamily)) return true
+      // Olympic lifts: no family matching - exact match only (already checked above)
 
       return false
     }
