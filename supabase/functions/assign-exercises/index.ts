@@ -195,21 +195,24 @@ serve(async (req) => {
       previousDaySkills = [],
       dailyStrengthExercises = [],
       usedStrengths = [],
-      previousAccessoryCategoryDays = []
+      previousAccessoryCategoryDays = [],
+      userPreferences: userPreferencesParam = null
     }: AssignExercisesRequest = await req.json()
 
     console.log(`🏗️ Assigning exercises: ${block} for ${user.name}, Week ${week}, Day ${day}`)
 
-    // Fetch user preferences (optional)
-    let userPreferences: any = null
-    try {
-      const { data: prefs } = await supabase
-        .from('user_preferences')
-        .select('three_month_goals, monthly_primary_goal, preferred_metcon_exercises, avoided_exercises')
-        .eq('user_id', user.id || user.userProfile?.id)
-        .single()
-      userPreferences = prefs || null
-    } catch (_) {}
+    // Use userPreferences from request if provided, otherwise fetch (optional)
+    let userPreferences: any = userPreferencesParam
+    if (!userPreferences) {
+      try {
+        const { data: prefs } = await supabase
+          .from('user_preferences')
+          .select('three_month_goals, monthly_primary_goal, preferred_metcon_exercises, avoided_exercises')
+          .eq('user_id', user.id || user.userProfile?.id)
+          .single()
+        userPreferences = prefs || null
+      } catch (_) {}
+    }
 
     // Get exercises from database
     const { data: exerciseData, error } = await supabase
@@ -245,10 +248,13 @@ serve(async (req) => {
       numExercises,
       weeklySkills,
       weeklyAccessories,
+      weeklyAccessoryCategories,
       previousDayAccessories,
       previousDaySkills,
       dailyStrengthExercises,
       usedStrengths,
+      previousAccessoryCategoryDays,
+      userPreferences,
       supabase
     )
 
@@ -278,10 +284,13 @@ async function assignExercises(
   numExercises: number,
   weeklySkills: Record<string, number>,
   weeklyAccessories: Record<string, number>,
+  weeklyAccessoryCategories: Record<string, number>,
   previousDayAccessories: string[],
   previousDaySkills: string[],
   dailyStrengthExercises: string[],
   usedStrengths: string[],
+  previousAccessoryCategoryDays: string[][],
+  userPreferences: any,
   supabase: any
 ) {
   console.log(`🏗️ Starting exercise assignment for ${block}`)
@@ -311,14 +320,15 @@ async function assignExercises(
       // Check exact match first
       let hasMainLift = liftGroups.includes(mainLift) || liftGroups.includes('All')
 
-      // If no exact match, check family matches
+      // If no exact match, check family matches - but NOT for Olympic lifts (they must be exact)
       if (!hasMainLift) {
-        if (pressFamily.includes(mainLift)) {
+        if (olyFamily.includes(mainLift)) {
+          // Olympic lifts are distinct - don't use family matching
+          // Keep hasMainLift = false (will return false below)
+        } else if (pressFamily.includes(mainLift)) {
           hasMainLift = liftGroups.some((group: string) => pressFamily.includes(group))
         } else if (squatFamily.includes(mainLift)) {
           hasMainLift = liftGroups.some((group: string) => squatFamily.includes(group))
-        } else if (olyFamily.includes(mainLift)) {
-          hasMainLift = liftGroups.some((group: string) => olyFamily.includes(group))
         } else if (deadliftFamily.includes(mainLift)) {
           hasMainLift = liftGroups.some((group: string) => deadliftFamily.includes(group))
         }
@@ -402,7 +412,15 @@ async function assignExercises(
 
     // Filter out weekly-used strength names to avoid repeats
     const usedSet = new Set(Array.isArray(usedStrengths) ? usedStrengths : [])
-    const candidate = strengthExercises.find(ex => !usedSet.has(ex.name)) || strengthExercises[0]
+
+    // Prioritize exact match: find exercises where the name OR lift_groups exactly matches mainLift
+    const exactMatches = strengthExercises.filter(ex => 
+      !usedSet.has(ex.name) && 
+      (ex.name === mainLift || (ex.lift_groups || []).includes(mainLift))
+    )
+
+    // Use exact match if available, otherwise fall back to first available (which might be a family match)
+    const candidate = exactMatches[0] || strengthExercises.find(ex => !usedSet.has(ex.name)) || strengthExercises[0]
     const selectedExercise = candidate
     console.log('✅ Selected strength exercise:', selectedExercise.name)
 
@@ -454,11 +472,13 @@ async function assignExercises(
       })
 
       // Get performance cue from database, fallback to liftLevel
-      const enhancedNote = generateEnhancedNotes({
-        exerciseName: selectedExercise.name,
-        effectiveLevel: liftLevel,
-        isDeload: isDeload
-      }, user, week, block, selectedExercise)
+      const enhancedNote = generateEnhancedNotes(
+        null, // exerciseData not used
+        user,
+        week,
+        block,
+        selectedExercise // exerciseRow - this is what's actually used
+      )
       
       console.log('🔍 Debug performance cue retrieval:', {
         enhancedNote,
@@ -819,16 +839,13 @@ async function assignExercises(
         sets: programNotes.sets || '',
         reps: programNotes.reps || '',
         weightTime: weightTime,
-        notes: truncateNotes(generateEnhancedNotes({ exerciseName: selectedExercise.name, effectiveLevel, isDeload }, user, week, block, selectedExercise)) || programNotes.notes || effectiveLevel
+        notes: truncateNotes(generateEnhancedNotes(null, user, week, block, selectedExercise)) || programNotes.notes || effectiveLevel
       })
       const cat = selectedExercise.accessory_category || ''
       if (cat) usedCatsSet.add(cat)
     }
 
-    return new Response(
-      JSON.stringify({ success: true, exercises: out, usedAccessoryCategories: Array.from(usedCatsSet) }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return out
   }
 
 // Try AI contextual selection first, fallback to probabilistic
@@ -918,11 +935,7 @@ try {
           weightTime = programNotes.weightTime || '';
         }
 
-        const enhancedNote = generateEnhancedNotes({
-          exerciseName: exercise.name,
-          effectiveLevel: effectiveLevel,
-          isDeload: isDeload
-        }, user, week, block, exercise);
+        const enhancedNote = generateEnhancedNotes(null, user, week, block, exercise);
 
         return {
           name: exercise.name,
@@ -1025,11 +1038,7 @@ try {
           weightTime = programNotes.weightTime || '';
         }
 
-        const enhancedNote = generateEnhancedNotes({
-          exerciseName: exercise.name,
-          effectiveLevel: effectiveLevel,
-          isDeload: isDeload
-        }, user, week, block, exercise);
+        const enhancedNote = generateEnhancedNotes(null, user, week, block, exercise);
 
         exercises.push({
           name: exercise.name,
@@ -1047,6 +1056,8 @@ try {
   }
 }
 
+return exercises
+}
 
 // === HELPER FUNCTIONS (Exact Google Script Logic) ===
 
@@ -1291,7 +1302,4 @@ function truncateNotes(notes: string | null): string | null {
 
   // Truncate at 97 characters and add "..."
   return notes.substring(0, 97) + '...'
-}
-
-
 }
