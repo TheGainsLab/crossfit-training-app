@@ -24,6 +24,7 @@ function BTNWorkoutGenerator() {
   const [savedWorkouts, setSavedWorkouts] = useState<Set<number>>(new Set());
   const [savingWorkouts, setSavingWorkouts] = useState<Set<number>>(new Set());
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
+  const [requireBarbell, setRequireBarbell] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
@@ -95,7 +96,8 @@ function BTNWorkoutGenerator() {
       
       const workouts = generateTestWorkouts(
         selectedDomains.length > 0 ? selectedDomains : undefined,
-        userProfile || undefined
+        userProfile || undefined,
+        requireBarbell ? ['Barbell'] : undefined
       );
       
       // Display workouts immediately (no auto-save)
@@ -229,6 +231,37 @@ function BTNWorkoutGenerator() {
                 : selectedDomains.length >= 5
                 ? `Will generate 1 workout from each selected domain`
                 : `Will generate at least 1 from each selected domain, filling remainder randomly`
+              }
+            </p>
+          </div>
+          
+          {/* Dividing line */}
+          <div className="my-6 border-t border-gray-300"></div>
+          
+          {/* Equipment Filter Section */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-3">Select Equipment:</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              <label
+                className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all ${
+                  requireBarbell
+                    ? 'border-[#FE5858] bg-red-50'
+                    : 'border-gray-300 bg-white hover:border-gray-400'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={requireBarbell}
+                  onChange={() => setRequireBarbell(!requireBarbell)}
+                  className="w-4 h-4 text-[#FE5858] rounded focus:ring-[#FE5858]"
+                />
+                <span className="text-sm font-medium">Barbell</span>
+              </label>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {requireBarbell 
+                ? 'All workouts will include at least one barbell exercise'
+                : 'No equipment filter - workouts may include any equipment'
               }
             </p>
           </div>

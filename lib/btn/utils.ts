@@ -125,7 +125,7 @@ function getAllowedPatternsForExercises(exercises: string[]): string[] {
   return allowedPatterns;
 }
 
-export function generateTestWorkouts(selectedDomainRanges?: string[], userProfile?: UserProfile): GeneratedWorkout[] {
+export function generateTestWorkouts(selectedDomainRanges?: string[], userProfile?: UserProfile, requiredEquipment?: string[]): GeneratedWorkout[] {
   const workouts: GeneratedWorkout[] = [];
   
   const allTimeDomains = [
@@ -244,7 +244,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       }
       
       // Generate exercises (targetDurationHint is only used for Rounds For Time round calculation)
-      const result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile);
+      const result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment);
       const exercises = result.exercises;
       
       // Update rounds if calculated dynamically
@@ -346,7 +346,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
         pattern = undefined;
       }
       
-      const result = generateExercisesForTimeDomain(targetDurationHint || targetDomain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile);
+      const result = generateExercisesForTimeDomain(targetDurationHint || targetDomain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment);
       const exercises = result.exercises;
       
       if (result.rounds !== undefined) {
@@ -396,7 +396,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
   return workouts;
 }
 
-function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number, availableExercises?: string[], userProfile?: UserProfile): { exercises: Exercise[], rounds?: number } {
+function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number, availableExercises?: string[], userProfile?: UserProfile, requiredEquipment?: string[]): { exercises: Exercise[], rounds?: number } {
   const exercises: Exercise[] = [];
   const rules = formatRules[format as keyof typeof formatRules];
   if (!rules) {
@@ -484,6 +484,75 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
         }
       }
     }
+  
+  // Apply required equipment filter (e.g., require Barbell in all workouts)
+  if (requiredEquipment && requiredEquipment.length > 0) {
+    const hasRequiredEquipment = requiredEquipment.some(eq => {
+      if (eq === 'Barbell') {
+        return filteredExercises.some(ex => isBarbellExercise(ex));
+      }
+      // For other equipment types, check exerciseEquipment mapping
+      return filteredExercises.some(ex => {
+        const exEquipment = exerciseEquipment[ex] || [];
+        return exEquipment.includes(eq);
+      });
+    });
+    
+    if (!hasRequiredEquipment) {
+      // Need to add an exercise with required equipment
+      // Try to replace the last exercise, or add if we have room
+      let added = false;
+      
+      if (requiredEquipment.includes('Barbell')) {
+        // Get all barbell exercises that are available
+        const barbellCandidates = candidateExercises.filter(ex => isBarbellExercise(ex));
+        
+        // Try to find a barbell exercise that fits
+        for (const barbell of barbellCandidates) {
+          if (filteredExercises.includes(barbell)) continue; // Already in workout
+          
+          // Try replacing the last exercise
+          const testExercises = filteredExercises.length > 0 
+            ? [...filteredExercises.slice(0, -1), barbell]
+            : [barbell];
+          
+          const testFiltered = filterExercisesForConsistency(testExercises);
+          const testFinal = filterForbiddenPairs(testFiltered);
+          
+          if (testFinal.length === testExercises.length && testFinal.includes(barbell)) {
+            if (filteredExercises.length > 0) {
+              filteredExercises.pop();
+            }
+            filteredExercises.push(barbell);
+            added = true;
+            break;
+          }
+        }
+        
+        // If we couldn't replace, try adding (if we have room)
+        if (!added && filteredExercises.length < numExercises) {
+          for (const barbell of barbellCandidates) {
+            if (filteredExercises.includes(barbell)) continue;
+            
+            const testExercises = [...filteredExercises, barbell];
+            const testFiltered = filterExercisesForConsistency(testExercises);
+            const testFinal = filterForbiddenPairs(testFiltered);
+            
+            if (testFinal.length === testExercises.length && testFinal.includes(barbell)) {
+              filteredExercises.push(barbell);
+              added = true;
+              break;
+            }
+          }
+        }
+      }
+      
+      // If still no required equipment, log a warning but continue
+      if (!added) {
+        console.warn(`⚠️ Could not add required equipment (${requiredEquipment.join(', ')}) to workout`);
+      }
+    }
+  }
     
   // Generate weights
     const barbellExercises = filteredExercises.filter(ex => isBarbellExercise(ex));
@@ -1249,9 +1318,9 @@ function generateWeightForExercise(exerciseName: string, userProfile?: UserProfi
   }
   
   // No user profile - return standard pair format
-  return weightPairs[Math.floor(Math.random() * weightPairs.length)];
-}
-
+    return weightPairs[Math.floor(Math.random() * weightPairs.length)];
+  }
+  
 // Helper: Get relevant 1RM for an exercise
 function getRelevantOneRM(exerciseName: string, oneRMs: { [key: string]: number }): number | null {
   // Snatch family
