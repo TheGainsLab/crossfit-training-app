@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -80,19 +80,14 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
   const [activityLoading, setActivityLoading] = useState(false);
   const [filterCount, setFilterCount] = useState<number | null>(5); // Default: Last 5
 
-  useEffect(() => {
-    if (userId) {
-      fetchRecentActivity();
-    }
-  }, [userId]);
-
-  const fetchRecentActivity = async () => {
+  const fetchRecentActivity = useCallback(async () => {
     if (!userId) return;
     
     setActivityLoading(true);
     try {
-      // You'll need to create this API endpoint
-      const response = await fetch(`/api/analytics/${userId}/recent-activity`);
+      // Pass the current filter count as limit, or use 100 for "All Time" to get all sessions
+      const limit = filterCount === null ? 100 : filterCount;
+      const response = await fetch(`/api/analytics/${userId}/recent-activity?limit=${limit}`);
       const data = await response.json();
       
       if (data.success) {
@@ -104,7 +99,13 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
     } finally {
       setActivityLoading(false);
     }
-  };
+  }, [userId, filterCount]); // Include filterCount as dependency
+
+  useEffect(() => {
+    if (userId) {
+      fetchRecentActivity();
+    }
+  }, [userId, fetchRecentActivity]); // fetchRecentActivity is now memoized with useCallback
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

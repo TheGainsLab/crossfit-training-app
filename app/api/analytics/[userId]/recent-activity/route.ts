@@ -102,13 +102,17 @@ export async function GET(
       })
     }
 
-    // Process the data to get last 5 training days with activity
+    // Process the data to get recent training sessions
     const recentSessions = processRecentActivity(performanceData)
+
+    // Get limit from query params, default to 25 (enough for "Last 25" filter)
+    const limitParam = request.nextUrl.searchParams.get('limit')
+    const limit = limitParam ? parseInt(limitParam) : 25
 
     const response = {
       success: true,
       data: {
-        recentSessions: recentSessions.slice(0, 5) // Limit to 5 most recent
+        recentSessions: recentSessions.slice(0, limit)
       },
       metadata: {
         generatedAt: new Date().toISOString(),
