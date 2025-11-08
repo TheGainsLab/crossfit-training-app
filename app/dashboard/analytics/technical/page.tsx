@@ -178,11 +178,11 @@ export default function AnalyticsTechnicalPage() {
                 <thead>
                   <tr className="bg-gray-50 text-left">
                     <th className="p-2 border-b">Date</th>
-                    <th className="p-2 border-b">Sets</th>
-                    <th className="p-2 border-b">Reps</th>
-                    <th className="p-2 border-b">Wt/Time</th>
-                    <th className="p-2 border-b">RPE</th>
-                    <th className="p-2 border-b">Quality</th>
+                    <th className="p-2 border-b text-center">Sets</th>
+                    <th className="p-2 border-b text-center">Reps</th>
+                    <th className="p-2 border-b text-center">Wt/Time</th>
+                    <th className="p-2 border-b text-center">RPE</th>
+                    <th className="p-2 border-b text-center">Quality</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -191,11 +191,11 @@ export default function AnalyticsTechnicalPage() {
                     .map((r: any, i: number) => (
                       <tr key={i} className="odd:bg-white even:bg-gray-50">
                         <td className="p-2 border-b">{formatDateCompact(r.training_date)}</td>
-                        <td className="p-2 border-b">{r.sets ?? ''}</td>
-                        <td className="p-2 border-b">{r.reps ?? ''}</td>
-                        <td className="p-2 border-b">{r.weight_time ?? ''}</td>
-                        <td className="p-2 border-b">{r.rpe ?? ''}</td>
-                        <td className="p-2 border-b">{getQualityGrade(r.completion_quality)}</td>
+                        <td className="p-2 border-b text-center">{r.sets ?? ''}</td>
+                        <td className="p-2 border-b text-center">{r.reps ?? ''}</td>
+                        <td className="p-2 border-b text-center">{r.weight_time ?? ''}</td>
+                        <td className="p-2 border-b text-center">{r.rpe ?? ''}</td>
+                        <td className="p-2 border-b text-center">{getQualityGrade(r.completion_quality)}</td>
                       </tr>
                     ))}
                 </tbody>
