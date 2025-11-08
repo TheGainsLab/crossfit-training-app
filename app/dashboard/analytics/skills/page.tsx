@@ -69,6 +69,19 @@ export default function AnalyticsSkillsPage() {
     return map
   }, [sessions])
 
+  const formatDateCompact = (dateString: string) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const day = date.getDate();
+    return (
+      <div className="flex flex-col">
+        <span className="text-xs">{year}</span>
+        <span className="text-sm font-medium">{month} {day}</span>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {loading ? (
@@ -190,7 +203,6 @@ export default function AnalyticsSkillsPage() {
                 <thead>
                   <tr className="bg-gray-50 text-left">
                     <th className="p-2 border-b">Date</th>
-                    <th className="p-2 border-b">Exercise</th>
                     <th className="p-2 border-b">Sets</th>
                     <th className="p-2 border-b">Reps</th>
                     <th className="p-2 border-b">Weight/Time</th>
@@ -203,8 +215,7 @@ export default function AnalyticsSkillsPage() {
                     .sort((a: any, b: any) => (a.training_date < b.training_date ? 1 : -1))
                     .map((r: any, i: number) => (
                       <tr key={i} className="odd:bg-white even:bg-gray-50">
-                        <td className="p-2 border-b whitespace-nowrap">{r.training_date}</td>
-                        <td className="p-2 border-b">{r.exercise_name}</td>
+                        <td className="p-2 border-b">{formatDateCompact(r.training_date)}</td>
                         <td className="p-2 border-b">{r.sets ?? ''}</td>
                         <td className="p-2 border-b">{r.reps ?? ''}</td>
                         <td className="p-2 border-b">{r.weight_time ?? ''}</td>
