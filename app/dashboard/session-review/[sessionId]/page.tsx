@@ -240,7 +240,6 @@ const renderStandardBlock = (blockName: string, exercises: Exercise[]) => {
             {/* Exercise Breakdown */}
             {metconExercises.length > 0 && (
               <div>
-                <h5 className="text-lg font-semibold text-gray-900 mb-4">Exercise Breakdown</h5>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[600px]">
                     <thead>
