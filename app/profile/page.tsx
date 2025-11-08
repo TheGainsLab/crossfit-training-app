@@ -907,6 +907,7 @@ const loadProfile = async () => {
             <h3 className="font-semibold text-charcoal mb-4">Accessory Needs</h3>
             
             {(() => {
+              if (!profile) return null;
               // Calculate actual accessory needs using real logic
               const needsUpperBack = profile.one_rms.front_squat && profile.one_rms.back_squat ? 
                 (profile.one_rms.front_squat / profile.one_rms.back_squat) < 0.85 : false
@@ -1086,6 +1087,7 @@ const loadProfile = async () => {
             <h3 className="font-semibold text-charcoal mb-4">Technical Focus</h3>
             
             {(() => {
+              if (!profile) return null;
               // Calculate snatch deficits using actual logic
               const snatchStrengthDeficit = profile.one_rms.snatch && profile.one_rms.back_squat ? 
                 (profile.one_rms.snatch / profile.one_rms.back_squat) < 0.62 : true
