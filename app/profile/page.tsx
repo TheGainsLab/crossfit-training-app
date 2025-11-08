@@ -1279,11 +1279,12 @@ const loadProfile = async () => {
                   <div key={levelName} className="border border-slate-blue rounded-lg overflow-hidden">
                     <button
                       onClick={() => toggleCategory(levelName)}
-                      className="w-full px-4 py-3 bg-ice-blue hover:bg-slate-blue/10 transition-colors flex items-center justify-between"
+                      className="w-full px-4 py-3 transition-colors flex items-center justify-between"
+                      style={{ backgroundColor: '#DAE2EA' }}
                     >
                       <div className="flex items-center">
                         <span className="mr-2 text-charcoal">{isExpanded ? '▼' : '▶'}</span>
-                        <h3 className="font-semibold text-charcoal">{displayName.toUpperCase()}</h3>
+                        <h3 className="font-semibold" style={{ color: isExpanded ? '#FFFFFF' : '#282B34' }}>{displayName.toUpperCase()}</h3>
                       </div>
                       <span className="text-sm text-charcoal">({skills.length})</span>
                     </button>
