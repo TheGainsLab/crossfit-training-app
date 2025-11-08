@@ -1293,7 +1293,6 @@ const loadProfile = async () => {
                         {skills.map(skill => (
                           <div key={skill.name} className="flex justify-between items-center py-1">
                             <div className="flex items-center">
-                              <span className={`mr-3 text-lg ${skill.color}`}>{skill.icon}</span>
                               <div>
                                 <span className="text-gray-700">{skill.name}</span>
                                 <span className="text-gray-500 text-sm ml-2">({skill.category})</span>
