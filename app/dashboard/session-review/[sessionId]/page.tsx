@@ -86,8 +86,8 @@ export default function SessionReviewPage() {
 
 
   const getBlockColor = (blockName: string) => {
-    // All blocks use coral background
-    return 'bg-coral';
+    // All blocks use slate-blue background with coral border
+    return '';
   };
 
   const getPerformanceTierColor = (tier: string) => {
@@ -134,10 +134,13 @@ const renderStandardBlock = (blockName: string, exercises: Exercise[]) => {
     return (
       <div key={blockName} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {/* Block Header - ICONS REMOVED */}
-        <div className={`${getBlockColor(blockName)} px-6 py-4`}>
+        <div 
+          className="px-6 py-4 border"
+          style={{ backgroundColor: '#DAE2EA', borderColor: '#FE5858' }}
+        >
           <div className="flex items-center space-x-3">
             <div>
-              <h3 className="text-xl font-bold text-white">{blockName} ({exercises.length})</h3>
+              <h3 className="text-xl font-bold text-charcoal">{blockName} ({exercises.length})</h3>
             </div>
           </div>
         </div>
@@ -179,10 +182,13 @@ const renderStandardBlock = (blockName: string, exercises: Exercise[]) => {
       return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {/* MetCon Header - ICON REMOVED */}
-          <div className={`${getBlockColor('METCONS')} px-6 py-4`}>
+          <div 
+            className="px-6 py-4 border"
+            style={{ backgroundColor: '#DAE2EA', borderColor: '#FE5858' }}
+          >
             <div className="flex items-center space-x-3">
               <div>
-                <h3 className="text-xl font-bold text-white">METCONS ({metconExercises.length})</h3>
+                <h3 className="text-xl font-bold text-charcoal">METCONS ({metconExercises.length})</h3>
               </div>
             </div>
           </div>
