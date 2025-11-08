@@ -317,8 +317,8 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
   }
 
   const getBlockColor = (blockName: string) => {
-    // All blocks use coral background with coral border
-    return 'bg-coral border-coral'
+    // All blocks use slate-blue background with slate-blue border
+    return 'bg-slate-blue border-slate-blue'
   }
 
 
@@ -564,22 +564,17 @@ const calculateProgress = () => {
                     <span className="text-2xl text-coral">{getBlockStatusIcon(block.blockName, block.exercises, completions)}</span>
                   )}
                   <div>
-                    <h2 className="text-xl font-bold text-white">{
+                    <h2 className="text-xl font-bold text-charcoal">{
                       (() => {
-                        const exerciseCount = block.exercises.length;
-                        let blockNameText = '';
                         if (block.blockName === 'STRENGTH AND POWER') {
                           const strengthBlocks = workout.blocks.filter(b => b.blockName === 'STRENGTH AND POWER')
                           if (strengthBlocks.length > 1) {
                             const idx = strengthBlocks.indexOf(block)
-                            blockNameText = `STRENGTH AND POWER (${idx + 1}/${strengthBlocks.length})`
-                          } else {
-                            blockNameText = 'STRENGTH AND POWER'
+                            return `STRENGTH AND POWER (${idx + 1}/${strengthBlocks.length})`
                           }
-                        } else {
-                          blockNameText = (block.blockName || '').toUpperCase()
+                          return 'STRENGTH AND POWER'
                         }
-                        return `${blockNameText} (${exerciseCount})`;
+                        return (block.blockName || '').toUpperCase()
                       })()
                     }</h2>
                   </div>
@@ -774,7 +769,7 @@ block.blockName === 'METCONS' ? (
           <div className="space-y-4">
             {workout.blocks.map((block) => (
               <div key={block.blockName}>
-                <h2 className="font-semibold text-gray-900 mb-2">{block.blockName} ({block.exercises.length})</h2>
+                <h2 className="font-semibold text-gray-900 mb-2">{block.blockName}</h2>
                 <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
