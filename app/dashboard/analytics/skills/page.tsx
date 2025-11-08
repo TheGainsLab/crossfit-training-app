@@ -152,25 +152,25 @@ export default function AnalyticsSkillsPage() {
                   <button
                     key={sk.name}
                     className="p-3 border rounded bg-slate-blue text-left hover:opacity-90"
-                    onClick={() => {
-                      // Filter sessions by exercise name instead of making another API call
-                      // This uses the same data source as metricsBySkill, ensuring consistency
-                      const filteredRows = sessions
-                        .filter((row: any) => (row.exercise_name || '').toLowerCase() === sk.name.toLowerCase())
-                        .map((row: any) => ({
-                          training_date: row.logged_at ? String(row.logged_at).slice(0, 10) : '',
-                          exercise_name: row.exercise_name,
-                          sets: row.sets,
-                          reps: row.reps,
-                          weight_time: row.weight_time || '',
-                          rpe: row.rpe,
-                          completion_quality: row.completion_quality
-                        }))
-                        .sort((a: any, b: any) => new Date(b.training_date).getTime() - new Date(a.training_date).getTime())
-                      
-                      setDetailTitle(sk.name)
-                      setDetailRows(filteredRows)
-                      setDetailOpen(true)
+                    onClick={async () => {
+                      try {
+                        const { createClient } = await import('@/lib/supabase/client')
+                        const sb = createClient()
+                        const { data: { session } } = await sb.auth.getSession()
+                        const token = session?.access_token || ''
+                        const headers: Record<string, string> = {}
+                        if (token) headers['Authorization'] = `Bearer ${token}`
+                        const qs = new URLSearchParams()
+                        qs.set('exercise', sk.name)
+                        qs.set('block', 'SKILLS')
+                        qs.set('range', range)
+                        const res = await fetch(`/api/analytics/strength/detail?${qs.toString()}`, { headers })
+                        const json = await res.json()
+                        if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load detail')
+                        setDetailTitle(sk.name)
+                        setDetailRows(json.rows || [])
+                        setDetailOpen(true)
+                      } catch {}
                     }}
                   >
                     <div className="font-medium text-gray-900 mb-1 text-center">{sk.name}</div>
