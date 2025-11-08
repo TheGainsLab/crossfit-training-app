@@ -26,15 +26,31 @@ export async function GET(req: Request, context: any) {
     } catch {}
     if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
 
-    // Get latest program for user
-    const { data: prog } = await supabase
+    // Find the program that contains this week
+    const { data: allPrograms } = await supabase
       .from('programs')
-      .select('id, program_data')
+      .select('id, program_data, weeks_generated')
       .eq('user_id', userId)
-      .order('id', { ascending: false })
-      .limit(1)
-      .single()
-    const programId = prog?.id
+      .order('generated_at', { ascending: true })
+
+    if (!allPrograms || allPrograms.length === 0) {
+      return NextResponse.json({ success: true, days: [] })
+    }
+
+    // Find the program that contains the requested week
+    const programWithWeek = allPrograms.find(p => 
+      Array.isArray(p.weeks_generated) && p.weeks_generated.includes(week)
+    )
+
+    if (!programWithWeek) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Week ${week} not found in any program` 
+      }, { status: 404 })
+    }
+
+    const programId = programWithWeek.id
+    const prog = programWithWeek
     if (!programId) return NextResponse.json({ success: true, days: [] })
 
     // Build originals directly from programs.program_data JSON (source of truth)

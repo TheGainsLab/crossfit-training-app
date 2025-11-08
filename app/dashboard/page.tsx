@@ -888,6 +888,7 @@ const [heatMapData, setHeatMapData] = useState<any>(null)
   const [invitationsLoading, setInvitationsLoading] = useState(false)
   const [isRefreshingAI, setIsRefreshingAI] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<any>(null)
+  const [allPrograms, setAllPrograms] = useState<Array<{ id: number; weeks_generated: number[] }>>([])
 
   useEffect(() => {
     loadUserAndProgram()
@@ -976,6 +977,53 @@ const checkCoachRole = async () => {
 }
 
 
+  // Find the program that contains a specific week
+  const findProgramForWeek = async (week: number): Promise<number | null> => {
+    // First check if we already have the program cached
+    const cachedProgram = allPrograms.find(p => 
+      Array.isArray(p.weeks_generated) && p.weeks_generated.includes(week)
+    )
+    if (cachedProgram) {
+      return cachedProgram.id
+    }
+
+    // If not cached, query the database
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return null
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (!userData) return null
+
+      // Fetch all programs for this user
+      const { data: programs } = await supabase
+        .from('programs')
+        .select('id, weeks_generated')
+        .eq('user_id', userData.id)
+        .order('generated_at', { ascending: true })
+
+      if (!programs) return null
+
+      // Cache all programs
+      setAllPrograms(programs)
+
+      // Find the program containing this week
+      const program = programs.find(p => 
+        Array.isArray(p.weeks_generated) && p.weeks_generated.includes(week)
+      )
+      return program?.id || null
+    } catch (err) {
+      console.error('Error finding program for week:', err)
+      return null
+    }
+  }
+
   const fetchAnalytics = async () => {
     if (!userId) return
     
@@ -1062,6 +1110,17 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         setError('No program found. Please complete the intake assessment.')
         setLoading(false)
         return
+      }
+
+      // Fetch all programs for this user to enable seamless navigation
+      const { data: allProgramsData } = await supabase
+        .from('programs')
+        .select('id, weeks_generated')
+        .eq('user_id', userData.id)
+        .order('generated_at', { ascending: true })
+
+      if (allProgramsData) {
+        setAllPrograms(allProgramsData)
       }
 
       setCurrentProgram(programData.id)
@@ -1172,7 +1231,14 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 
   const fetchTodaysWorkout = async () => {
     try {
-      const response = await fetch(`/api/workouts/${currentProgram}/week/${currentWeek}/day/${currentDay}`)
+      // Find the correct program for this week
+      const programIdForWeek = await findProgramForWeek(currentWeek)
+      
+      if (!programIdForWeek) {
+        throw new Error(`Week ${currentWeek} not found in any program`)
+      }
+
+      const response = await fetch(`/api/workouts/${programIdForWeek}/week/${currentWeek}/day/${currentDay}`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch today\'s workout')
@@ -1191,6 +1257,11 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
           totalExercises: data.workout.totalExercises,
           totalBlocks: data.workout.totalBlocks
         })
+        
+        // Update currentProgram to the correct one for this week
+        if (currentProgram !== programIdForWeek) {
+          setCurrentProgram(programIdForWeek)
+        }
       }
       setLoading(false)
     } catch (err) {
