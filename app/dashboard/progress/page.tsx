@@ -201,12 +201,6 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
                   Week {session.week}, Day {session.day}
                 </div>
               </div>
-              <div className="text-right">
-               
-<div className="text-sm font-medium text-coral">
-  {session.totalExercises} exercises
-</div>
-              </div>
             </div>
 
             {/* Training Blocks */}
