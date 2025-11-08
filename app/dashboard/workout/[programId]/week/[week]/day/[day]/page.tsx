@@ -317,8 +317,8 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
   }
 
   const getBlockColor = (blockName: string) => {
-    // All blocks use slate-blue background with slate-blue border
-    return 'bg-slate-blue border-slate-blue'
+    // All blocks use slate-blue background with coral border
+    return 'bg-slate-blue border-coral'
   }
 
 
@@ -580,7 +580,7 @@ const calculateProgress = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm" style={{ color: '#FE5858' }}>
                     
 {block.exercises.filter(ex => {
   const setMatch = ex.notes?.match(/Set (\d+)/);
