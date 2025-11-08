@@ -977,14 +977,31 @@ const checkCoachRole = async () => {
 }
 
 
-  // Find the program that contains a specific week
-  const findProgramForWeek = async (week: number): Promise<number | null> => {
-    // First check if we already have the program cached
-    const cachedProgram = allPrograms.find(p => 
-      Array.isArray(p.weeks_generated) && p.weeks_generated.includes(week)
-    )
-    if (cachedProgram) {
-      return cachedProgram.id
+  // Helper functions for global week conversion
+  // Global Week = 4(m-1) + w, where m = program index, w = week within program (1-4)
+  const globalWeekToProgramAndWeek = (globalWeek: number): { programIndex: number; week: number } => {
+    const programIndex = Math.ceil(globalWeek / 4)
+    const week = ((globalWeek - 1) % 4) + 1
+    return { programIndex, week }
+  }
+
+  const programAndWeekToGlobalWeek = (programIndex: number, week: number): number => {
+    return 4 * (programIndex - 1) + week
+  }
+
+  // Find the program and week for a global week number
+  const findProgramAndWeekForGlobalWeek = async (globalWeek: number): Promise<{ programId: number; week: number } | null> => {
+    const { programIndex, week } = globalWeekToProgramAndWeek(globalWeek)
+
+    // If we have programs cached, use them
+    if (allPrograms.length > 0) {
+      const program = allPrograms[programIndex - 1] // programIndex is 1-based, array is 0-based
+      if (program) {
+        // Verify the week exists in this program's weeks_generated
+        if (Array.isArray(program.weeks_generated) && program.weeks_generated.includes(week)) {
+          return { programId: program.id, week }
+        }
+      }
     }
 
     // If not cached, query the database
@@ -1008,20 +1025,31 @@ const checkCoachRole = async () => {
         .eq('user_id', userData.id)
         .order('generated_at', { ascending: true })
 
-      if (!programs) return null
+      if (!programs || programs.length === 0) return null
 
       // Cache all programs
       setAllPrograms(programs)
 
-      // Find the program containing this week
-      const program = programs.find((p: { id: number; weeks_generated: number[] }) => 
-        Array.isArray(p.weeks_generated) && p.weeks_generated.includes(week)
-      )
-      return program?.id || null
+      // Get the program at the calculated index (programIndex is 1-based)
+      const program = programs[programIndex - 1]
+      if (!program) return null
+
+      // Verify the week exists in this program's weeks_generated
+      if (Array.isArray(program.weeks_generated) && program.weeks_generated.includes(week)) {
+        return { programId: program.id, week }
+      }
+
+      return null
     } catch (err) {
-      console.error('Error finding program for week:', err)
+      console.error('Error finding program for global week:', err)
       return null
     }
+  }
+
+  // Legacy function for backward compatibility - now uses global weeks
+  const findProgramForWeek = async (globalWeek: number): Promise<number | null> => {
+    const result = await findProgramAndWeekForGlobalWeek(globalWeek)
+    return result?.programId || null
   }
 
   const fetchAnalytics = async () => {
@@ -1126,54 +1154,68 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       setCurrentProgram(programData.id)
 
       // Determine next incomplete day based on available data
+      // Need to check all programs and convert to global weeks
       try {
-        const { data: workouts } = await supabase
-          .from('program_workouts')
-          .select('week, day')
-          .eq('program_id', programData.id)
-          .order('week', { ascending: true })
-          .order('day', { ascending: true })
+        // Get all programs to find the first incomplete workout across all programs
+        const { data: allProgramsForInit } = await supabase
+          .from('programs')
+          .select('id')
+          .eq('user_id', userData.id)
+          .order('generated_at', { ascending: true })
 
         const { data: logs } = await supabase
           .from('performance_logs')
-          .select('week, day')
+          .select('program_id, week, day')
           .eq('user_id', userData.id)
 
-        const completed = new Set<string>((logs || []).map((l: any) => `${l.week}-${l.day}`))
+        // Build completed set using program_id-week-day
+        const completed = new Set<string>((logs || []).map((l: any) => `${l.program_id}-${l.week}-${l.day}`))
 
-        if (workouts && workouts.length > 0) {
-          // Preferred path: use planned workouts to find first not completed
-          let nextWeek = workouts[0].week
-          let nextDay = workouts[0].day
-          for (const w of workouts) {
-            const key = `${w.week}-${w.day}`
-            if (!completed.has(key)) { nextWeek = w.week; nextDay = w.day; break }
-          }
-          setCurrentWeek(nextWeek)
-          setCurrentDay(nextDay)
-        } else {
-          // Fallback: program_workouts empty. Infer next day from logs only.
-          let set = false
-          for (let wk = 1; wk <= 13; wk++) {
-            for (let dy = 1; dy <= 5; dy++) {
-              const key = `${wk}-${dy}`
-              if (!completed.has(key)) {
-                setCurrentWeek(wk)
-                setCurrentDay(dy)
-                set = true
-                break
+        let foundNext = false
+
+        // Check each program in order
+        if (allProgramsForInit && allProgramsForInit.length > 0) {
+          for (let programIdx = 0; programIdx < allProgramsForInit.length; programIdx++) {
+            const program = allProgramsForInit[programIdx]
+            const programIndex = programIdx + 1 // 1-based index
+
+            // Get workouts for this program
+            const { data: workouts } = await supabase
+              .from('program_workouts')
+              .select('week, day')
+              .eq('program_id', program.id)
+              .order('week', { ascending: true })
+              .order('day', { ascending: true })
+
+            if (workouts && workouts.length > 0) {
+              // Find first incomplete workout in this program
+              for (const w of workouts) {
+                const key = `${program.id}-${w.week}-${w.day}`
+                if (!completed.has(key)) {
+                  // Convert to global week
+                  const globalWeek = programAndWeekToGlobalWeek(programIndex, w.week)
+                  setCurrentWeek(globalWeek)
+                  setCurrentDay(w.day)
+                  setCurrentProgram(program.id)
+                  foundNext = true
+                  break
+                }
               }
+              if (foundNext) break
             }
-            if (set) break
           }
-          if (!set) {
-            // If all within bounds completed, default to last slot
-            setCurrentWeek(13)
-            setCurrentDay(5)
+        }
+
+        // Fallback: if no workouts found, default to first program, week 1, day 1
+        if (!foundNext) {
+          if (allProgramsForInit && allProgramsForInit.length > 0) {
+            setCurrentWeek(1) // Global week 1 = Program 1, Week 1
+            setCurrentDay(1)
+            setCurrentProgram(allProgramsForInit[0].id)
           }
         }
       } catch {
-        // If anything fails, leave currentWeek/currentDay as defaults
+        // If anything fails, leave currentWeek/currentDay as defaults (week 1, day 1)
       }
     } catch (err) {
       console.error('Error loading user program:', err)
@@ -1231,14 +1273,16 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 
   const fetchTodaysWorkout = async () => {
     try {
-      // Find the correct program for this week
-      const programIdForWeek = await findProgramForWeek(currentWeek)
+      // Convert global week to program and week within program
+      const programAndWeek = await findProgramAndWeekForGlobalWeek(currentWeek)
       
-      if (!programIdForWeek) {
+      if (!programAndWeek) {
         throw new Error(`Week ${currentWeek} not found in any program`)
       }
 
-      const response = await fetch(`/api/workouts/${programIdForWeek}/week/${currentWeek}/day/${currentDay}`)
+      const { programId: programIdForWeek, week: weekInProgram } = programAndWeek
+
+      const response = await fetch(`/api/workouts/${programIdForWeek}/week/${weekInProgram}/day/${currentDay}`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch today\'s workout')
