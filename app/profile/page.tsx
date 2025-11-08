@@ -1087,23 +1087,23 @@ const loadProfile = async () => {
             {(() => {
               // Calculate snatch deficits using actual logic
               const snatchStrengthDeficit = profile.one_rms.snatch && profile.one_rms.back_squat ? 
-                (p.one_rms.snatch / p.one_rms.back_squat) < 0.62 : true
+                (profile.one_rms.snatch / profile.one_rms.back_squat) < 0.62 : true
               
-              const snatchReceivingDeficit = p.one_rms.power_snatch && p.one_rms.snatch ?
-                (p.one_rms.power_snatch / p.one_rms.snatch) > 0.88 : true
+              const snatchReceivingDeficit = profile.one_rms.power_snatch && profile.one_rms.snatch ?
+                (profile.one_rms.power_snatch / profile.one_rms.snatch) > 0.88 : true
               
-              const snatchOverheadDeficit = p.one_rms.overhead_squat && p.one_rms.back_squat ?
-                (p.one_rms.overhead_squat / p.one_rms.back_squat) < 0.65 : true
+              const snatchOverheadDeficit = profile.one_rms.overhead_squat && profile.one_rms.back_squat ?
+                (profile.one_rms.overhead_squat / profile.one_rms.back_squat) < 0.65 : true
 
               // Calculate C&J deficits using actual logic
-              const cjStrengthDeficit = p.one_rms.clean_and_jerk && p.one_rms.back_squat ?
-                (p.one_rms.clean_and_jerk / p.one_rms.back_squat) < 0.74 : true
+              const cjStrengthDeficit = profile.one_rms.clean_and_jerk && profile.one_rms.back_squat ?
+                (profile.one_rms.clean_and_jerk / profile.one_rms.back_squat) < 0.74 : true
                 
-              const cjReceivingDeficit = p.one_rms.power_clean && p.one_rms.clean_only ?
-                (p.one_rms.power_clean / p.one_rms.clean_only) > 0.88 : true
+              const cjReceivingDeficit = profile.one_rms.power_clean && profile.one_rms.clean_only ?
+                (profile.one_rms.power_clean / profile.one_rms.clean_only) > 0.88 : true
                 
-              const cjJerkDeficit = p.one_rms.jerk_only && p.one_rms.clean_only ?
-                (p.one_rms.jerk_only / p.one_rms.clean_only) < 0.9 : true
+              const cjJerkDeficit = profile.one_rms.jerk_only && profile.one_rms.clean_only ?
+                (profile.one_rms.jerk_only / profile.one_rms.clean_only) < 0.9 : true
 
               // Count deficits
               const snatchDeficits = [snatchStrengthDeficit, snatchReceivingDeficit, snatchOverheadDeficit].filter(Boolean).length
