@@ -54,6 +54,15 @@ export default function AnalyticsStrengthPage() {
     );
   };
 
+  const getQualityGrade = (quality: number | string | null | undefined): string => {
+    const num = Number(quality)
+    if (num === 4) return 'A'
+    if (num === 3) return 'B'
+    if (num === 2) return 'C'
+    if (num === 1) return 'D'
+    return quality?.toString() || ''
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-xs">
@@ -177,7 +186,7 @@ export default function AnalyticsStrengthPage() {
                     <th className="p-2 border-b">Date</th>
                     <th className="p-2 border-b">Sets</th>
                     <th className="p-2 border-b">Reps</th>
-                    <th className="p-2 border-b">Weight/Time</th>
+                    <th className="p-2 border-b">Wt/Time</th>
                     <th className="p-2 border-b">RPE</th>
                     <th className="p-2 border-b">Quality</th>
                   </tr>
@@ -192,7 +201,7 @@ export default function AnalyticsStrengthPage() {
                         <td className="p-2 border-b">{r.reps ?? ''}</td>
                         <td className="p-2 border-b">{r.weight_time ?? ''}</td>
                         <td className="p-2 border-b">{r.rpe ?? ''}</td>
-                        <td className="p-2 border-b">{r.completion_quality ?? ''}</td>
+                        <td className="p-2 border-b">{getQualityGrade(r.completion_quality)}</td>
                       </tr>
                     ))}
                 </tbody>
