@@ -78,6 +78,7 @@ function formatLastActive(weeksActive: number): string {
 const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId }) => {
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
+  const [filterCount, setFilterCount] = useState<number | null>(5); // Default: Last 5
 
   useEffect(() => {
     if (userId) {
@@ -147,12 +148,40 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
     );
   }
 
+  // Filter the activity based on selected filter
+  const getFilteredActivity = () => {
+    if (filterCount === null) {
+      return recentActivity; // All Time
+    }
+    return recentActivity.slice(0, filterCount);
+  };
+
+  const filteredActivity = getFilteredActivity();
+
   return (
   <div className="bg-white rounded-lg shadow p-6">
       
-<h3 className="text-lg font-semibold text-coral mb-6">Recent Training Activity</h3>
+<h3 className="text-lg font-semibold text-coral mb-4">Recent Training Activity</h3>
+      
+      {/* Filter Buttons */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {[5, 10, 25, null].map((count) => (
+          <button
+            key={count ?? 'all'}
+            onClick={() => setFilterCount(count)}
+            className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+              filterCount === count
+                ? 'bg-coral text-white border-coral'
+                : 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200'
+            }`}
+          >
+            {count === null ? 'All Time' : `Last ${count}`}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-4">
-        {recentActivity.slice(0, 5).map((session, index) => (
+        {filteredActivity.map((session, index) => (
           
 
 <Link 
@@ -203,15 +232,10 @@ const RecentActivityOverview: React.FC<{ userId: number | null }> = ({ userId })
         ))}
       </div>
 
-      {/* Show more link if there are more sessions */}
-      {recentActivity.length > 5 && (
-        <div className="mt-6 text-center">
-          <button 
-            onClick={() => {/* Implement show more */}}
-            className="text-blue-600 hover:text-blue-700 font-medium"
-          >
-            Show more sessions
-          </button>
+      {/* Show message if no sessions match filter */}
+      {filteredActivity.length === 0 && recentActivity.length > 0 && (
+        <div className="text-center py-8 text-gray-500">
+          No sessions found for the selected filter.
         </div>
       )}
     </div>
