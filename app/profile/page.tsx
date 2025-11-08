@@ -896,8 +896,7 @@ const loadProfile = async () => {
           </div>
         </div>
 
-        {/* Programming Focus Areas - Hidden for MVP, keep for future */}
-        {false && (
+        {/* Programming Focus Areas */}
         <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
           <h2 className="text-xl font-bold text-charcoal mb-2">FOCUS AREAS</h2>
           <div className="w-full h-0.5 bg-coral mb-6"></div>
@@ -907,7 +906,6 @@ const loadProfile = async () => {
             <h3 className="font-semibold text-charcoal mb-4">Accessory Needs</h3>
             
             {(() => {
-              if (!profile) return null;
               // Calculate actual accessory needs using real logic
               const needsUpperBack = profile.one_rms.front_squat && profile.one_rms.back_squat ? 
                 (profile.one_rms.front_squat / profile.one_rms.back_squat) < 0.85 : false
@@ -1087,26 +1085,25 @@ const loadProfile = async () => {
             <h3 className="font-semibold text-charcoal mb-4">Technical Focus</h3>
             
             {(() => {
-              if (!profile) return null;
               // Calculate snatch deficits using actual logic
               const snatchStrengthDeficit = profile.one_rms.snatch && profile.one_rms.back_squat ? 
-                (profile.one_rms.snatch / profile.one_rms.back_squat) < 0.62 : true
+                (p.one_rms.snatch / p.one_rms.back_squat) < 0.62 : true
               
-              const snatchReceivingDeficit = profile.one_rms.power_snatch && profile.one_rms.snatch ?
-                (profile.one_rms.power_snatch / profile.one_rms.snatch) > 0.88 : true
+              const snatchReceivingDeficit = p.one_rms.power_snatch && p.one_rms.snatch ?
+                (p.one_rms.power_snatch / p.one_rms.snatch) > 0.88 : true
               
-              const snatchOverheadDeficit = profile.one_rms.overhead_squat && profile.one_rms.back_squat ?
-                (profile.one_rms.overhead_squat / profile.one_rms.back_squat) < 0.65 : true
+              const snatchOverheadDeficit = p.one_rms.overhead_squat && p.one_rms.back_squat ?
+                (p.one_rms.overhead_squat / p.one_rms.back_squat) < 0.65 : true
 
               // Calculate C&J deficits using actual logic
-              const cjStrengthDeficit = profile.one_rms.clean_and_jerk && profile.one_rms.back_squat ?
-                (profile.one_rms.clean_and_jerk / profile.one_rms.back_squat) < 0.74 : true
+              const cjStrengthDeficit = p.one_rms.clean_and_jerk && p.one_rms.back_squat ?
+                (p.one_rms.clean_and_jerk / p.one_rms.back_squat) < 0.74 : true
                 
-              const cjReceivingDeficit = profile.one_rms.power_clean && profile.one_rms.clean_only ?
-                (profile.one_rms.power_clean / profile.one_rms.clean_only) > 0.88 : true
+              const cjReceivingDeficit = p.one_rms.power_clean && p.one_rms.clean_only ?
+                (p.one_rms.power_clean / p.one_rms.clean_only) > 0.88 : true
                 
-              const cjJerkDeficit = profile.one_rms.jerk_only && profile.one_rms.clean_only ?
-                (profile.one_rms.jerk_only / profile.one_rms.clean_only) < 0.9 : true
+              const cjJerkDeficit = p.one_rms.jerk_only && p.one_rms.clean_only ?
+                (p.one_rms.jerk_only / p.one_rms.clean_only) < 0.9 : true
 
               // Count deficits
               const snatchDeficits = [snatchStrengthDeficit, snatchReceivingDeficit, snatchOverheadDeficit].filter(Boolean).length
@@ -1220,7 +1217,6 @@ const loadProfile = async () => {
             })()}
           </div>
         </div>
-        )}
 
         {/* Movement Skills Repository */}
         <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
