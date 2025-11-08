@@ -896,7 +896,8 @@ const loadProfile = async () => {
           </div>
         </div>
 
-        {/* Programming Focus Areas */}
+        {/* Programming Focus Areas - Hidden for MVP, keep for future */}
+        {/* 
         <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
           <h2 className="text-xl font-bold text-charcoal mb-2">FOCUS AREAS</h2>
           <div className="w-full h-0.5 bg-coral mb-6"></div>
@@ -1217,6 +1218,7 @@ const loadProfile = async () => {
             })()}
           </div>
         </div>
+        */}
 
         {/* Movement Skills Repository */}
         <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
