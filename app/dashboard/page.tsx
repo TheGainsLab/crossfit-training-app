@@ -1014,7 +1014,7 @@ const checkCoachRole = async () => {
       setAllPrograms(programs)
 
       // Find the program containing this week
-      const program = programs.find(p => 
+      const program = programs.find((p: { id: number; weeks_generated: number[] }) => 
         Array.isArray(p.weeks_generated) && p.weeks_generated.includes(week)
       )
       return program?.id || null
