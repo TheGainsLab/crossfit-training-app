@@ -86,14 +86,8 @@ export default function SessionReviewPage() {
 
 
   const getBlockColor = (blockName: string) => {
-    const colors: { [key: string]: string } = {
-      'SKILLS': 'from-purple-500 to-purple-600',
-      'TECHNICAL WORK': 'from-blue-500 to-blue-600',
-      'STRENGTH AND POWER': 'from-red-500 to-red-600',
-      'ACCESSORIES': 'from-green-500 to-green-600',
-      'METCONS': 'from-orange-500 to-orange-600'
-    };
-    return colors[blockName] || 'from-gray-500 to-gray-600';
+    // All blocks use coral background
+    return 'bg-coral';
   };
 
   const getPerformanceTierColor = (tier: string) => {
@@ -140,11 +134,10 @@ const renderStandardBlock = (blockName: string, exercises: Exercise[]) => {
     return (
       <div key={blockName} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {/* Block Header - ICONS REMOVED */}
-        <div className={`bg-gradient-to-r ${getBlockColor(blockName)} px-6 py-4`}>
+        <div className={`${getBlockColor(blockName)} px-6 py-4`}>
           <div className="flex items-center space-x-3">
             <div>
-              <h3 className="text-xl font-bold text-white">{blockName}</h3>
-              <p className="text-white/80 text-sm">{exercises.length} exercise{exercises.length !== 1 ? 's' : ''}</p>
+              <h3 className="text-xl font-bold text-white">{blockName} ({exercises.length})</h3>
             </div>
           </div>
         </div>
@@ -186,11 +179,10 @@ const renderStandardBlock = (blockName: string, exercises: Exercise[]) => {
       return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {/* MetCon Header - ICON REMOVED */}
-          <div className={`bg-gradient-to-r ${getBlockColor('METCONS')} px-6 py-4`}>
+          <div className={`${getBlockColor('METCONS')} px-6 py-4`}>
             <div className="flex items-center space-x-3">
               <div>
-                <h3 className="text-xl font-bold text-white">METCONS</h3>
-                <p className="text-white/80 text-sm">Conditioning Workout</p>
+                <h3 className="text-xl font-bold text-white">METCONS ({metconExercises.length})</h3>
               </div>
             </div>
           </div>
