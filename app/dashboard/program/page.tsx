@@ -176,7 +176,7 @@ export default function ProgramPage() {
             <Link 
               href="/dashboard"
               className="px-4 py-2 rounded-lg border transition-colors"
-              style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
+              style={{ backgroundColor: '#FE5858', borderColor: '#FE5858', color: '#FFFFFF' }}
             >
               ← Back to Dashboard
             </Link>
@@ -187,7 +187,7 @@ export default function ProgramPage() {
           {programs.map((program) => {
             const isExpanded = expandedMonths.has(program.monthIndex)
             return (
-              <div key={program.id} className="bg-white rounded-lg shadow p-6">
+              <div key={program.id} className="bg-white rounded-lg shadow p-6" style={{ border: '2px solid #FE5858' }}>
                 <div className="flex items-center justify-between mb-2">
                   <button
                     onClick={() => toggleMonth(program.monthIndex)}
