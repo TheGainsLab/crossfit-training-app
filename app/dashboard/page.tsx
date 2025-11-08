@@ -246,15 +246,15 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
             </Link>
           )
         })}
-        {/* AI Insights pill */}
-        <Link
+        {/* AI Insights pill - Hidden for MVP, keep for future */}
+        {/* <Link
           href="/dashboard/progress?tab=insights#insights-panel"
           className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border hover:opacity-90"
           style={{ backgroundColor: '#509895', color: '#ffffff', borderColor: 'transparent' }}
           title="Open AI Insights"
         >
           AI Insights
-        </Link>
+        </Link> */}
       </div>
 
       
@@ -1434,7 +1434,8 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       </div>
     </Link>
   </div>
-  <div className="flex justify-end mb-4">
+  {/* AI Save button - Hidden for MVP, keep functionality for future */}
+  {/* <div className="flex justify-end mb-4">
     <button
       onClick={handleRefreshAI}
       disabled={isRefreshingAI}
@@ -1443,7 +1444,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
     >
       {isRefreshingAI ? 'Saving…' : 'AI Save'}
     </button>
-  </div>
+  </div> */}
   </>
 )}
 
