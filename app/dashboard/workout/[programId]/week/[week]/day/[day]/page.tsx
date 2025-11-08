@@ -493,14 +493,15 @@ const calculateProgress = () => {
               )}
               {/* Optional: small chip for recent AI Save */}
               {/* <span className="text-xs text-green-700 bg-green-100 border border-green-200 rounded-full px-2 py-0.5">Updated</span> */}
-              <button
+              {/* AI Save button - Hidden for MVP, keep functionality for future */}
+              {/* <button
                 onClick={handleRefreshAI}
                 disabled={isRefreshingAI || Object.keys(completions).length > 0}
                 className="ml-3 px-3 py-1.5 text-sm rounded-md border border-gray-300 hover:opacity-90 disabled:opacity-50"
                 style={{ backgroundColor: '#509895', color: '#ffffff', borderColor: 'transparent' }}
               >
                 {isRefreshingAI ? 'Saving…' : 'AI Save'}
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -523,14 +524,15 @@ const calculateProgress = () => {
                   ></div>
                 </div>
                 <span className="text-sm font-medium text-charcoal">{Math.round(progress)}%</span>
-                <button
+                {/* AI Save button - Hidden for MVP, keep functionality for future */}
+                {/* <button
                   onClick={handleRefreshAI}
                   disabled={isRefreshingAI || Object.keys(completions).length > 0}
                   className="ml-2 px-2 py-1 text-xs rounded-md border hover:opacity-90 disabled:opacity-50"
                   style={{ backgroundColor: '#509895', color: '#ffffff', borderColor: 'transparent' }}
                 >
                   {isRefreshingAI ? 'Saving…' : 'AI Save'}
-                </button>
+                </button> */}
               </div>
             </div>
             
