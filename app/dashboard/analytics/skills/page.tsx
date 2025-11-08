@@ -60,8 +60,9 @@ export default function AnalyticsSkillsPage() {
     for (const row of sessions) {
       const name = (row as any)?.exercise_name || 'Unknown'
       if (!map[name]) map[name] = { totalReps: 0 }
+      const setsNum = Number((row as any)?.sets) || 1
       const repsNum = Number((row as any)?.reps) || 0
-      map[name].totalReps += repsNum
+      map[name].totalReps += setsNum * repsNum
       const ts = (row as any)?.logged_at ? Date.parse((row as any).logged_at) : 0
       const lastTs = map[name].last?.logged_at ? Date.parse(map[name].last.logged_at) : 0
       if (ts && ts > lastTs) map[name].last = row
