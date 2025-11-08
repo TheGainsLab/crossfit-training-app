@@ -580,14 +580,14 @@ const calculateProgress = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm" style={{ color: '#FE5858' }}>
+                  <span className="text-sm" style={{ color: '#282B34' }}>
                     
 {block.exercises.filter(ex => {
   const setMatch = ex.notes?.match(/Set (\d+)/);
   const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
   const exerciseKey = setNumber > 1 ? `${ex.name} - Set ${setNumber}` : ex.name;
   return completions[exerciseKey] !== undefined;
-}).length}/{block.exercises.length} complete
+}).length}/{block.exercises.length} Complete
 
                   </span>
                   <span className="text-gray-400">
