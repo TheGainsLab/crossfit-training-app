@@ -116,13 +116,10 @@ export default function SessionReviewPage() {
         <td className="py-3 px-4 text-center text-gray-700">{weightTime}</td>
         <td className="py-3 px-4 text-center text-gray-700">{rpe}</td>
         <td className="py-3 px-4 text-center">
-          <span className={`inline-block px-2 py-1 rounded text-sm font-semibold ${
-            quality === 'A' ? 'bg-green-100 text-green-800' :
-            quality === 'B' ? 'bg-blue-100 text-blue-800' :
-            quality === 'C' ? 'bg-yellow-100 text-yellow-800' :
-            quality === 'D' ? 'bg-red-100 text-red-800' :
-            'bg-gray-100 text-gray-800'
-          }`}>
+          <span 
+            className="inline-block px-2 py-1 rounded text-sm font-semibold"
+            style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
+          >
             {quality}
           </span>
         </td>
