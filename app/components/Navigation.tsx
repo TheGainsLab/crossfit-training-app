@@ -240,7 +240,7 @@ export default function Navigation() {
             <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center">
 								<Link 
                   href={isBTNUser ? '/btn' : '/dashboard'} 
-                  className="text-5xl md:text-6xl font-bold tracking-tight"
+                  className="text-5xl md:text-6xl font-bold tracking-tight flex items-center space-x-1"
                 >
                   <span style={{ color: '#282B34' }}>G</span>
                   <span style={{ color: '#FE5858' }}>A</span>
