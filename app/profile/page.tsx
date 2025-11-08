@@ -1294,8 +1294,8 @@ const loadProfile = async () => {
                           <div key={skill.name} className="flex justify-between items-center py-1">
                             <div className="flex items-center">
                               <div>
-                                <span className="text-gray-700">{skill.name}</span>
-                                <span className="text-gray-500 text-sm ml-2">({skill.category})</span>
+                                <span className="font-bold" style={{ color: '#282B34' }}>{skill.name}</span>
+                                <span className="text-sm ml-2" style={{ color: '#DAE2EA' }}>({skill.category})</span>
                               </div>
                             </div>
                           </div>
