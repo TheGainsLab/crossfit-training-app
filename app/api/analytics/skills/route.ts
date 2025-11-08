@@ -29,18 +29,18 @@ export async function GET(request: NextRequest) {
       const compute = unstable_cache(async () => {
         const { data: logs } = await supabase
           .from('performance_logs')
-          .select('exercise_name, rpe, completion_quality, logged_at, block')
+          .select('exercise_name, rpe, completion_quality, sets, reps, logged_at, block')
           .eq('user_id', userId)
           .eq('block', 'SKILLS')
           .gte('logged_at', since)
 
-        const bySkill: Record<string, { daySet: Set<string>; entryCount: number; avgRPE: number; avgQuality: number; lastTs: number }> = {}
+        const bySkill: Record<string, { daySet: Set<string>; entryCount: number; avgRPE: number; avgQuality: number; lastTs: number; totalReps: number }> = {}
         for (const row of logs || []) {
           const name = (row as any).exercise_name || 'Unknown'
           const rpe = Number((row as any).rpe) || 0
           const q = Number((row as any).completion_quality ?? (row as any).quality) || 0
           const d = (row as any).logged_at ? new Date((row as any).logged_at).toISOString().slice(0,10) : 'unknown'
-          if (!bySkill[name]) bySkill[name] = { daySet: new Set<string>(), entryCount: 0, avgRPE: 0, avgQuality: 0, lastTs: 0 }
+          if (!bySkill[name]) bySkill[name] = { daySet: new Set<string>(), entryCount: 0, avgRPE: 0, avgQuality: 0, lastTs: 0, totalReps: 0 }
           const s = bySkill[name]
           // running averages by entries
           s.avgRPE = (s.avgRPE * s.entryCount + rpe) / (s.entryCount + 1)
@@ -48,6 +48,10 @@ export async function GET(request: NextRequest) {
           s.entryCount += 1
           // distinct day tracking
           if (d !== 'unknown') s.daySet.add(d)
+          // Calculate totalReps
+          const setsNum = Number((row as any)?.sets) || 1
+          const repsNum = Number((row as any)?.reps) || 0
+          s.totalReps += setsNum * repsNum
           const ts = (row as any).logged_at ? Date.parse((row as any).logged_at) : 0
           if (ts && ts > s.lastTs) s.lastTs = ts
         }
@@ -56,7 +60,8 @@ export async function GET(request: NextRequest) {
           count: bySkill[n].daySet.size || 0,
           avgRPE: Math.round(bySkill[n].avgRPE * 100) / 100,
           avgQuality: Math.round(bySkill[n].avgQuality * 100) / 100,
-          lastDate: bySkill[n].lastTs ? new Date(bySkill[n].lastTs).toISOString() : null
+          lastDate: bySkill[n].lastTs ? new Date(bySkill[n].lastTs).toISOString() : null,
+          totalReps: bySkill[n].totalReps
         }))
       }, [`skills-analytics:${userId}:${days}:summary`], { revalidate: 120, tags: [`skills-analytics:${userId}`] })
 

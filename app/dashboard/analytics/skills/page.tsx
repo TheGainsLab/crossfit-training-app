@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import CoachDrawer from '@/components/CoachDrawer'
 import PlanDiffViewer from '@/components/PlanDiffViewer'
@@ -45,14 +45,6 @@ export default function AnalyticsSkillsPage() {
         if (!detRes.ok || !detJson.success) throw new Error(detJson.error || 'Failed to load skills detail')
         setSummary(sumJson.data)
         setSessions(detJson.data.sessions || [])
-        console.log('📊 INVESTIGATION: Sessions data received:', {
-          totalSessions: detJson.data.sessions?.length || 0,
-          ringMuscleUpsEntries: detJson.data.sessions?.filter((s: any) => 
-            s.exercise_name?.toLowerCase().includes('ring muscle')
-          ) || [],
-          allExerciseNames: [...new Set(detJson.data.sessions?.map((s: any) => s.exercise_name) || [])],
-          sampleEntry: detJson.data.sessions?.[0]
-        })
       } catch (e) {
         setSummary({ summary: [] })
         setSessions([])
@@ -63,47 +55,6 @@ export default function AnalyticsSkillsPage() {
     run()
   }, [days])
 
-  const metricsBySkill = useMemo(() => {
-    console.log('🔍 INVESTIGATION: Starting metricsBySkill calculation')
-    console.log('🔍 INVESTIGATION: Sessions array length:', sessions.length)
-    
-    const map: Record<string, { totalReps: number; last?: any }> = {}
-    for (const row of sessions) {
-      const name = (row as any)?.exercise_name || 'Unknown'
-      if (!map[name]) map[name] = { totalReps: 0 }
-      
-      const setsNum = Number((row as any)?.sets) || 1
-      const repsNum = Number((row as any)?.reps) || 0
-      
-      // Log specifically for Ring Muscle Ups
-      if (name.toLowerCase().includes('ring muscle')) {
-        console.log('🔍 INVESTIGATION: Ring Muscle Ups row found:', {
-          exercise_name: name,
-          sets: row.sets,
-          reps: row.reps,
-          setsType: typeof row.sets,
-          repsType: typeof row.reps,
-          setsNum,
-          repsNum,
-          product: setsNum * repsNum,
-          beforeTotal: map[name].totalReps
-        })
-      }
-      
-      map[name].totalReps += setsNum * repsNum
-      const ts = (row as any)?.logged_at ? Date.parse((row as any).logged_at) : 0
-      const lastTs = map[name].last?.logged_at ? Date.parse(map[name].last.logged_at) : 0
-      if (ts && ts > lastTs) map[name].last = row
-    }
-    
-    console.log('🔍 INVESTIGATION: Final metricsBySkill:', {
-      allKeys: Object.keys(map),
-      ringMuscleUpsValue: map['Ring Muscle Ups'],
-      ringMuscleUpsKeys: Object.keys(map).filter(k => k.toLowerCase().includes('ring muscle'))
-    })
-    
-    return map
-  }, [sessions])
 
   const formatDateCompact = (dateString: string) => {
     const date = new Date(dateString);
@@ -182,18 +133,6 @@ export default function AnalyticsSkillsPage() {
               .sort((a: any, b: any) => (b.count || 0) - (a.count || 0))
               .map((sk: any) => {
                 const lastDate = sk.lastDate ? new Date(sk.lastDate).toLocaleDateString() : null
-                const metrics = metricsBySkill[sk.name] || { totalReps: 0 }
-                
-                // Log for Ring Muscle Ups specifically
-                if (sk.name.toLowerCase().includes('ring muscle')) {
-                  console.log('🔍 INVESTIGATION: Displaying Ring Muscle Ups:', {
-                    skName: sk.name,
-                    skNameExact: JSON.stringify(sk.name),
-                    metricsExists: !!metricsBySkill[sk.name],
-                    metricsValue: metrics,
-                    availableKeys: Object.keys(metricsBySkill).filter(k => k.toLowerCase().includes('ring muscle'))
-                  })
-                }
                 
                 return (
                   <button
@@ -225,12 +164,9 @@ export default function AnalyticsSkillsPage() {
                       <div className="flex justify-between"><span className="text-gray-600">Sessions</span><span className="font-medium">{sk.count || 0}</span></div>
                       <div className="flex justify-between"><span className="text-gray-600">Avg RPE</span><span className="font-medium">{Math.round((sk.avgRPE || 0) * 10) / 10}</span></div>
                       <div className="flex justify-between"><span className="text-gray-600">Avg Quality</span><span className="font-medium">{Math.round((sk.avgQuality || 0) * 10) / 10}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-600">Total reps</span><span className="font-medium">{metrics.totalReps || 0}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Total reps</span><span className="font-medium">{sk.totalReps || 0}</span></div>
                       <div className="flex justify-between"><span className="text-gray-600">Last</span><span className="font-medium">{lastDate || '—'}</span></div>
                     </div>
-                    {metrics.last && (
-                      <div className="mt-2 text-xs text-gray-600">Last: {new Date(metrics.last.logged_at).toLocaleDateString()} — {(metrics.last.sets || 0)} × {(metrics.last.reps || 0)}</div>
-                    )}
                   </button>
                 )
               })}
