@@ -200,19 +200,43 @@ const renderStandardBlock = (blockName: string, exercises: Exercise[]) => {
               <p className="text-gray-600 text-lg">{metconData.metcon.format}</p>
             </div>
 
-            {/* Score & Performance Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-blue-50 rounded-lg p-4 text-center border border-blue-200">
-                <div className="text-sm font-medium text-blue-700 mb-1">Your Score</div>
-                <div className="text-2xl font-bold text-blue-900">{metconData.user_score}</div>
+            {/* Score & Percentile Slider */}
+            <div className="mb-6">
+              {/* Your Score - Simple text display */}
+              <div className="text-center mb-6">
+                <span className="text-lg font-medium text-gray-700">Your Score: </span>
+                <span className="text-2xl font-bold text-gray-900">{metconData.user_score}</span>
               </div>
-              <div className="bg-purple-50 rounded-lg p-4 text-center border border-purple-200">
-                <div className="text-sm font-medium text-purple-700 mb-1">Percentile</div>
-                <div className="text-2xl font-bold text-purple-900">{metconData.percentile}%</div>
-              </div>
-              <div className={`rounded-lg p-4 text-center border ${getPerformanceTierColor(metconData.performance_tier)}`}>
-                <div className="text-sm font-medium mb-1">Performance</div>
-                <div className="text-2xl font-bold">{metconData.performance_tier}</div>
+
+              {/* Percentile Slider */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Percentile</span>
+                  <span className="text-sm font-bold text-gray-900">{metconData.percentile}%</span>
+                </div>
+                <div className="relative">
+                  {/* Slider track */}
+                  <div className="w-full h-2 bg-gray-200 rounded-full relative">
+                    {/* Slider fill (optional - shows progress) */}
+                    <div 
+                      className="h-2 bg-coral rounded-full"
+                      style={{ width: `${parseFloat(metconData.percentile)}%` }}
+                    ></div>
+                    {/* User position indicator */}
+                    <div
+                      className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2"
+                      style={{ left: `${parseFloat(metconData.percentile)}%` }}
+                    >
+                      <div className="w-4 h-4 bg-coral rounded-full border-2 border-white shadow-md"></div>
+                    </div>
+                  </div>
+                  {/* Slider labels */}
+                  <div className="flex justify-between mt-1">
+                    <span className="text-xs text-gray-500">1%</span>
+                    <span className="text-xs text-gray-500">50%</span>
+                    <span className="text-xs text-gray-500">99%</span>
+                  </div>
+                </div>
               </div>
             </div>
 
