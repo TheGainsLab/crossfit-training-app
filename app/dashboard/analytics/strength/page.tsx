@@ -154,9 +154,8 @@ export default function AnalyticsStrengthPage() {
                   } catch {}
                 }}
               >
-                <div className="font-medium text-gray-900 mb-1 text-center">{m.exercise_name}</div>
+                <div className="font-medium text-gray-900 mb-1 text-center">{m.exercise_name} ({m.session_count})</div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-600">Sessions</span><span className="font-medium">{m.session_count}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600">Avg RPE</span><span className="font-medium">{m.avg_rpe ?? '—'}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600">Max weight</span><span className="font-medium">{m.max_weight || 0} lbs</span></div>
                   <div className="flex justify-between"><span className="text-gray-600">Avg top-set</span><span className="font-medium">{m.avg_top_set_weight || 0} lbs</span></div>

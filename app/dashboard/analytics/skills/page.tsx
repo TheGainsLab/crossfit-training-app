@@ -168,9 +168,8 @@ export default function AnalyticsSkillsPage() {
                       } catch {}
                     }}
                   >
-                    <div className="font-medium text-gray-900 mb-1 text-center">{sk.name}</div>
+                    <div className="font-medium text-gray-900 mb-1 text-center">{sk.name} ({sk.count || 0})</div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="flex justify-between"><span className="text-gray-600">Sessions</span><span className="font-medium">{sk.count || 0}</span></div>
                       <div className="flex justify-between"><span className="text-gray-600">Avg RPE</span><span className="font-medium">{Math.round((sk.avgRPE || 0) * 10) / 10}</span></div>
                       <div className="flex justify-between"><span className="text-gray-600">Avg Quality</span><span className="font-medium">{Math.round((sk.avgQuality || 0) * 10) / 10}</span></div>
                       <div className="flex justify-between"><span className="text-gray-600">Total reps</span><span className="font-medium">{sk.totalReps || 0}</span></div>
