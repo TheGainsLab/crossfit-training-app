@@ -901,9 +901,17 @@ const [heatMapData, setHeatMapData] = useState<any>(null)
     }
   }, [currentProgram, currentWeek, currentDay])
 
+  // Defer analytics loading to improve initial page load performance
+  // Load analytics after critical UI (workout) has rendered
   useEffect(() => {
     if (userId && currentProgram) {
-      fetchAnalytics()
+      // Use setTimeout to defer analytics loading until after initial render
+      // This allows the critical path (workout) to load first
+      const analyticsTimer = setTimeout(() => {
+        fetchAnalytics()
+      }, 100) // Small delay to let critical UI render first
+      
+      return () => clearTimeout(analyticsTimer)
     }
   }, [userId, currentProgram])
 
@@ -1518,7 +1526,16 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         )}
 
 {/* Overview Cards */}
-{dashboardAnalytics?.data?.dashboard && (
+{analyticsLoading ? (
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-6">
+    {[1, 2, 3, 4].map((i) => (
+      <div key={i} className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+        <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+      </div>
+    ))}
+  </div>
+) : dashboardAnalytics?.data?.dashboard && (
   <>
   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-6">
     {/* Training Days */}
