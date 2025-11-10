@@ -351,8 +351,8 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
   }
 
   const getBlockColor = (blockName: string) => {
-    // All blocks use slate-blue background with coral border
-    return 'bg-slate-blue border-coral'
+    // All blocks use slate-blue background with charcoal border
+    return 'bg-slate-blue border-[#282B34]'
   }
 
 
@@ -394,12 +394,7 @@ const getBlockHeaderStyle = (blockName: string, exercises: Exercise[], completio
   const totalCount = exercises.length;
   const baseStyle = getBlockColor(blockName);
   
-  if (completedCount === totalCount && totalCount > 0) {
-    // All complete - add coral accent
-    return `${baseStyle} ring-2 ring-coral ring-opacity-50`;
-  }
-  
-  // Not started or partial - original styling (no special treatment)
+  // Always return the same style - single charcoal border
   return baseStyle;
 };
 
