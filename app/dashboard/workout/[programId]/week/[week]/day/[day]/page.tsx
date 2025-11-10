@@ -140,48 +140,82 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
   
  
   useEffect(() => {
-    fetchWorkout()
-  }, [programId, week, day])
-
-const fetchWorkout = async () => {
-  try {
-    setLoading(true)
+    // Create abort controller for this request to prevent race conditions
+    const abortController = new AbortController()
     
-    // Server merges program + AI modifications + completions
-    const response = await fetch(`/api/workouts/${programId}/week/${week}/day/${day}`)
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch workout')
-    }
-
-    const data = await response.json()
-    
-    if (data.success) {
-      setWorkout(data.workout)
-      if (Array.isArray(data.completions)) {
-        const completionMap: Record<string, Completion> = {}
-        data.completions.forEach((comp: any) => {
-          const setNumber = comp.set_number || 1
-          const key = setNumber > 1 ? `${comp.exercise_name} - Set ${setNumber}` : comp.exercise_name
-          completionMap[key] = {
-            exerciseName: comp.exercise_name,
-            setsCompleted: comp.sets_completed,
-            repsCompleted: comp.reps_completed,
-            weightUsed: comp.weight_used,
-            rpe: comp.rpe,
-            notes: comp.notes,
-            wasRx: comp.was_rx
-          }
+    const fetchWorkout = async () => {
+      try {
+        setLoading(true)
+        setError(null) // Clear previous errors
+        
+        // Server merges program + AI modifications + completions
+        const response = await fetch(`/api/workouts/${programId}/week/${week}/day/${day}`, {
+          signal: abortController.signal
         })
-        setCompletions(completionMap)
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || 'Failed to fetch workout')
+        }
+
+        const data = await response.json()
+        
+        if (data.success && data.workout) {
+          // Validate workout has blocks with exercises
+          if (!data.workout.blocks || !Array.isArray(data.workout.blocks) || data.workout.blocks.length === 0) {
+            throw new Error('Workout has no blocks')
+          }
+          
+          // Validate at least one block has exercises
+          const hasExercises = data.workout.blocks.some((block: any) => 
+            block.exercises && Array.isArray(block.exercises) && block.exercises.length > 0
+          )
+          
+          if (!hasExercises) {
+            throw new Error('Workout blocks contain no exercises')
+          }
+          
+          setWorkout(data.workout)
+          if (Array.isArray(data.completions)) {
+            const completionMap: Record<string, Completion> = {}
+            data.completions.forEach((comp: any) => {
+              const setNumber = comp.set_number || 1
+              const key = setNumber > 1 ? `${comp.exercise_name} - Set ${setNumber}` : comp.exercise_name
+              completionMap[key] = {
+                exerciseName: comp.exercise_name,
+                setsCompleted: comp.sets_completed,
+                repsCompleted: comp.reps_completed,
+                weightUsed: comp.weight_used,
+                rpe: comp.rpe,
+                notes: comp.notes,
+                wasRx: comp.was_rx
+              }
+            })
+            setCompletions(completionMap)
+          }
+        } else {
+          // Handle case where success is false or workout is missing
+          throw new Error(data.error || 'Workout data is invalid or missing')
+        }
+      } catch (err: any) {
+        // Don't set error if request was aborted (user navigated away)
+        if (err.name === 'AbortError') {
+          return
+        }
+        setError(err instanceof Error ? err.message : 'Unknown error')
+        setWorkout(null) // Ensure workout is cleared on error
+      } finally {
+        setLoading(false)
       }
     }
-  } catch (err) {
-    setError(err instanceof Error ? err.message : 'Unknown error')
-  } finally {
-    setLoading(false)
-  }
-}
+    
+    fetchWorkout()
+    
+    // Cleanup: abort request if component unmounts or params change
+    return () => {
+      abortController.abort()
+    }
+  }, [programId, week, day])
 
 
 const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
