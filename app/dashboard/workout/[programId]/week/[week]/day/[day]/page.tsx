@@ -407,15 +407,27 @@ const calculateProgress = () => {
   if (!workout) return 0
   const blocks = Array.isArray((workout as any)?.blocks) ? (workout as any).blocks : []
   const totalExercises = blocks.reduce((sum: number, block: any) => sum + (Array.isArray(block.exercises) ? block.exercises.length : 0), 0)
-  const completedExercises = Object.keys(completions).length
+  
+  // Count unique exercises completed, not completion entries
+  // Completion entries can include "Exercise - Set 2", but we only want to count each exercise once
+  const completedExerciseNames = new Set<string>()
+  Object.keys(completions).forEach(key => {
+    // Remove " - Set X" suffix to get the base exercise name
+    const baseName = key.replace(/ - Set \d+$/, '')
+    completedExerciseNames.add(baseName)
+  })
+  const completedExercises = completedExerciseNames.size
 
   console.log('🔢 PROGRESS DEBUG:')
   console.log('Total exercises:', totalExercises)
-  console.log('Completed exercises:', completedExercises)
+  console.log('Completed exercises (unique):', completedExercises)
+  console.log('Completion entries:', Object.keys(completions).length)
   console.log('Completions object:', completions)
   console.log('Workout blocks:', blocks.map((b: any) => ({ name: b.blockName, count: Array.isArray(b.exercises) ? b.exercises.length : 0 })))
 
-  return totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0
+  // Cap progress at 100% to prevent values like 120%
+  const progress = totalExercises > 0 ? Math.min(100, (completedExercises / totalExercises) * 100) : 0
+  return progress
 }
 
   if (loading) {
@@ -435,7 +447,28 @@ const calculateProgress = () => {
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-600 text-5xl mb-4">⚠️</div>
           <h2 className="text-xl font-semibold text-charcoal mb-2">Workout Not Found</h2>
-          <p className="text-charcoal mb-4">{error}</p>
+          <p className="text-charcoal mb-4">{error || 'Workout data is missing'}</p>
+          <Link href="/dashboard" className="bg-coral text-white px-4 py-2 rounded-lg hover:bg-coral">
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // Additional validation: Check if workout has any exercises at all
+  // This prevents blank days where workout exists but has no exercises
+  const totalExercisesInWorkout = workout.blocks.reduce((sum: number, block: any) => 
+    sum + (Array.isArray(block.exercises) ? block.exercises.length : 0), 0
+  )
+
+  if (totalExercisesInWorkout === 0) {
+    return (
+      <div className="min-h-screen bg-ice-blue flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-red-600 text-5xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-charcoal mb-2">Empty Workout</h2>
+          <p className="text-charcoal mb-4">This workout has no exercises. Please contact support.</p>
           <Link href="/dashboard" className="bg-coral text-white px-4 py-2 rounded-lg hover:bg-coral">
             Back to Dashboard
           </Link>
