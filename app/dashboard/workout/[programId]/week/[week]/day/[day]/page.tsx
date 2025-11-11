@@ -137,6 +137,8 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
   }
   const [isEstimating, setIsEstimating] = useState(false)
   const [isRefreshingAI, setIsRefreshingAI] = useState(false)
+  const [allPrograms, setAllPrograms] = useState<Array<{ id: number; weeks_generated: number[] }>>([])
+  const [navUrls, setNavUrls] = useState<{ prev: string | null; next: string | null }>({ prev: null, next: null })
   
  
   useEffect(() => {
@@ -215,6 +217,93 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
     return () => {
       abortController.abort()
     }
+  }, [programId, week, day])
+
+  // Calculate navigation URLs for Prev/Next buttons
+  useEffect(() => {
+    const calculateNavigation = async () => {
+      try {
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_id', user.id)
+          .single()
+
+        if (!userData) return
+
+        // Fetch all programs
+        const { data: programs } = await supabase
+          .from('programs')
+          .select('id, weeks_generated')
+          .eq('user_id', userData.id)
+          .order('generated_at', { ascending: true })
+
+        if (!programs || programs.length === 0) return
+
+        setAllPrograms(programs)
+
+        // Find current program index
+        const currentProgramIndex = programs.findIndex(p => p.id === parseInt(programId))
+        if (currentProgramIndex === -1) return
+
+        const programIndex = currentProgramIndex + 1 // 1-based index
+        const weekNum = parseInt(week)
+        const dayNum = parseInt(day)
+
+        // Calculate global week: Global Week = 4 * (programIndex - 1) + week
+        const globalWeek = 4 * (programIndex - 1) + weekNum
+
+        // Calculate previous day
+        let prevUrl: string | null = null
+        if (dayNum > 1) {
+          // Same week, previous day
+          prevUrl = `/dashboard/workout/${programId}/week/${weekNum}/day/${dayNum - 1}`
+        } else if (globalWeek > 1) {
+          // Previous week, day 5
+          const prevGlobalWeek = globalWeek - 1
+          const prevProgramIndex = Math.ceil(prevGlobalWeek / 4)
+          const prevProgramWeek = ((prevGlobalWeek - 1) % 4) + 1
+          const prevProgram = programs[prevProgramIndex - 1]
+          if (prevProgram && prevProgram.weeks_generated.includes(prevProgramWeek)) {
+            prevUrl = `/dashboard/workout/${prevProgram.id}/week/${prevProgramWeek}/day/5`
+          }
+        }
+
+        // Calculate next day
+        let nextUrl: string | null = null
+        if (dayNum < 5) {
+          // Same week, next day
+          nextUrl = `/dashboard/workout/${programId}/week/${weekNum}/day/${dayNum + 1}`
+        } else {
+          // Next week, day 1
+          const nextGlobalWeek = globalWeek + 1
+          const nextProgramIndex = Math.ceil(nextGlobalWeek / 4)
+          const nextProgramWeek = ((nextGlobalWeek - 1) % 4) + 1
+          const nextProgram = programs[nextProgramIndex - 1]
+          if (nextProgram && nextProgram.weeks_generated.includes(nextProgramWeek)) {
+            nextUrl = `/dashboard/workout/${nextProgram.id}/week/${nextProgramWeek}/day/1`
+          }
+        }
+
+        setNavUrls({ prev: prevUrl, next: nextUrl })
+      } catch (err) {
+        console.error('Error calculating navigation:', err)
+        // Fallback to simple navigation without program boundaries
+        const dayNum = parseInt(day)
+        const weekNum = parseInt(week)
+        setNavUrls({
+          prev: dayNum > 1 ? `/dashboard/workout/${programId}/week/${weekNum}/day/${dayNum - 1}` : null,
+          next: dayNum < 5 ? `/dashboard/workout/${programId}/week/${weekNum}/day/${dayNum + 1}` : null
+        })
+      }
+    }
+
+    calculateNavigation()
   }, [programId, week, day])
 
 
@@ -757,14 +846,18 @@ block.blockName === 'METCONS' ? (
         {/* MetCon Special Section */}
         {/* Navigation */}
         <div className="relative flex flex-wrap items-center justify-between gap-3 mt-8 pt-6 border-t border-slate-blue">
-          <Link 
-            href={`/dashboard/workout/${programId}/week/${week}/day/${Math.max(1, parseInt(day) - 1)}`}
-            className={`px-4 py-2 rounded-lg ${parseInt(day) > 1 
-              ? 'bg-slate-blue text-charcoal hover:bg-slate-blue' 
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-          >
-            ← Prev
-          </Link>
+          {navUrls.prev ? (
+            <Link 
+              href={navUrls.prev}
+              className="px-4 py-2 rounded-lg bg-slate-blue text-charcoal hover:bg-slate-blue"
+            >
+              ← Prev
+            </Link>
+          ) : (
+            <span className="px-4 py-2 rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed">
+              ← Prev
+            </span>
+          )}
           
           <Link 
             href="/dashboard"
@@ -773,14 +866,18 @@ block.blockName === 'METCONS' ? (
             Dashboard
           </Link>
           
-          <Link 
-            href={`/dashboard/workout/${programId}/week/${week}/day/${Math.min(5, parseInt(day) + 1)}`}
-            className={`px-4 py-2 rounded-lg ${parseInt(day) < 5 
-              ? 'bg-slate-blue text-charcoal hover:bg-slate-blue' 
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-          >
-            Next →
-          </Link>
+          {navUrls.next ? (
+            <Link 
+              href={navUrls.next}
+              className="px-4 py-2 rounded-lg bg-slate-blue text-charcoal hover:bg-slate-blue"
+            >
+              Next →
+            </Link>
+          ) : (
+            <span className="px-4 py-2 rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed">
+              Next →
+            </span>
+          )}
 
           {/* AI Calories Estimate */}
           <button

@@ -34,6 +34,14 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
   onNavigate,
   updatedDays = []
 }) => {
+  // Calculate program-specific week on-the-fly to avoid race conditions
+  // This ensures URLs are always correct even if programSpecificWeek prop is stale
+  const calculateProgramWeek = (globalWeek: number): number => {
+    return ((globalWeek - 1) % 4) + 1
+  }
+  
+  // Use calculated value, fallback to prop if calculation fails
+  const effectiveProgramWeek = calculateProgramWeek(currentWeek) || programSpecificWeek
   const [metconOpen, setMetconOpen] = useState(false)
   const [metconRows, setMetconRows] = useState<any[]>([])
   const [metconDebug, setMetconDebug] = useState<Array<{ dayLabel: string; week: number; day: number; timeRange: string | null }>>([])
@@ -326,7 +334,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         <div className="text-center">
           <Link
             prefetch
-            href={`/dashboard/workout/${programId}/week/${programSpecificWeek}/day/${currentDay}`}
+            href={`/dashboard/workout/${programId}/week/${effectiveProgramWeek}/day/${currentDay}`}
             className="inline-flex items-center px-6 py-3 rounded-lg font-semibold transition-colors border"
             style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
           >
@@ -369,7 +377,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         <div className="text-center">
           <Link
             prefetch
-            href={`/dashboard/workout/${programId}/week/${programSpecificWeek}/day/${currentDay}`}
+            href={`/dashboard/workout/${programId}/week/${effectiveProgramWeek}/day/${currentDay}`}
             className="inline-flex items-center px-6 py-3 rounded-lg font-semibold transition-colors text-lg w-full justify-center border"
             style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
           >
