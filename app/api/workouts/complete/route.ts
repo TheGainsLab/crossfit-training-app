@@ -413,7 +413,8 @@ export async function POST(request: NextRequest) {
     const qualityNumeric = completionData.quality ? 
       { 'A': 4, 'B': 3, 'C': 2, 'D': 1 }[completionData.quality] : null
 
-    const perfLogData = {
+    // Build perfLogData, only including fields that have values (don't overwrite with null)
+    const perfLogData: any = {
       program_id: completionData.programId,
       user_id: completionData.userId,
       program_workout_id: programWorkout?.id,
@@ -421,15 +422,25 @@ export async function POST(request: NextRequest) {
       day: completionData.day,
       block: completionData.block,
       exercise_name: completionData.exerciseName,
-      sets: completionData.setsCompleted?.toString(),
       set_number: completionData.setNumber || 1,
-      reps: completionData.repsCompleted?.toString(),
-      weight_time: completionData.weightUsed?.toString(),
-      result: completionData.notes,
       rpe: completionData.rpe,
       completion_quality: qualityNumeric,
       quality_grade: completionData.quality,
       logged_at: new Date().toISOString()
+    }
+
+    // Only include sets/reps/weight_time if they have values (don't overwrite with null)
+    if (completionData.setsCompleted !== undefined && completionData.setsCompleted !== null) {
+      perfLogData.sets = completionData.setsCompleted.toString()
+    }
+    if (completionData.repsCompleted !== undefined && completionData.repsCompleted !== null && completionData.repsCompleted.toString().trim() !== '') {
+      perfLogData.reps = completionData.repsCompleted.toString()
+    }
+    if (completionData.weightUsed !== undefined && completionData.weightUsed !== null) {
+      perfLogData.weight_time = completionData.weightUsed.toString()
+    }
+    if (completionData.notes !== undefined && completionData.notes !== null) {
+      perfLogData.result = completionData.notes
     }
     
     console.log('💾 Saving to performance_logs:', {

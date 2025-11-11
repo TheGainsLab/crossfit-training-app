@@ -984,15 +984,29 @@ function ExerciseCard({
   const [isExpanded, setIsExpanded] = useState(!completion)
   const [showCues, setShowCues] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
-  const [completionType, setCompletionType] = useState(completion ? 'modified' : '')
+  const [completionType, setCompletionType] = useState(completion ? 'modified' : 'asRx')
   const [formData, setFormData] = useState({
-    setsCompleted: completion?.setsCompleted || '',
-    repsCompleted: completion?.repsCompleted || '',
-    weightUsed: completion?.weightUsed || '',
+    setsCompleted: completion?.setsCompleted || exercise.sets || '',
+    repsCompleted: completion?.repsCompleted || exercise.reps?.toString() || '',
+    weightUsed: completion?.weightUsed || (exercise.weightTime && exercise.weightTime !== 'BW' ? parseFloat(exercise.weightTime) : ''),
     rpe: completion?.rpe || 7,
     quality: completion?.quality || '',
     notes: completion?.notes || ''
   })
+
+  // Pre-populate form when switching to Modified if fields are empty
+  useEffect(() => {
+    if (completionType === 'modified' && !completion) {
+      setFormData(prev => ({
+        setsCompleted: prev.setsCompleted || exercise.sets || '',
+        repsCompleted: prev.repsCompleted || exercise.reps?.toString() || '',
+        weightUsed: prev.weightUsed || (exercise.weightTime && exercise.weightTime !== 'BW' ? parseFloat(exercise.weightTime) : ''),
+        rpe: prev.rpe || 7,
+        quality: prev.quality || '',
+        notes: prev.notes || ''
+      }))
+    }
+  }, [completionType, exercise, completion])
 
   const isCompleted = completion !== undefined
 
@@ -1016,11 +1030,11 @@ const handleDetailedSubmit = () => {
       wasRx: true
     }
   } else {
-    // Use custom values for Modified completion
+    // Use custom values for Modified completion, with fallback to exercise values
     completionData = {
-      setsCompleted: formData.setsCompleted ? parseInt(formData.setsCompleted.toString()) : undefined,
-      repsCompleted: formData.repsCompleted.toString(),
-      weightUsed: formData.weightUsed ? parseFloat(formData.weightUsed.toString()) : undefined,
+      setsCompleted: formData.setsCompleted ? parseInt(formData.setsCompleted.toString()) : (parseInt(exercise.sets.toString()) || 1),
+      repsCompleted: formData.repsCompleted && formData.repsCompleted.toString().trim() !== '' ? formData.repsCompleted.toString() : exercise.reps.toString(),
+      weightUsed: formData.weightUsed ? parseFloat(formData.weightUsed.toString()) : (exercise.weightTime !== 'BW' ? parseFloat(exercise.weightTime) : undefined),
       rpe: formData.rpe,
       quality: formData.quality || undefined,
       notes: formData.notes.toString(),
