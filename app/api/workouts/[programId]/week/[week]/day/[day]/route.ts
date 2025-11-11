@@ -264,7 +264,43 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
       if (aiRes.ok) {
         const ai = await aiRes.json()
         if (ai?.success && ai?.program?.blocks?.length) {
-          workout = ai.program
+          // Merge AI modifications with original workout structure
+          // This preserves week, day, programId, and ensures exercises maintain proper structure
+          workout = {
+            ...workout, // Preserve all original properties (week, day, programId, dayName, mainLift, isDeload, userGender, etc.)
+            blocks: workout.blocks.map((originalBlock: any, blockIndex: number) => {
+              const aiBlock = ai.program.blocks[blockIndex]
+              if (!aiBlock) return originalBlock // Fallback to original if AI block missing
+              
+              // For each block, merge exercises carefully to preserve set structure
+              return {
+                ...originalBlock, // Preserve blockName and other properties
+                exercises: aiBlock.exercises && Array.isArray(aiBlock.exercises) && aiBlock.exercises.length > 0
+                  ? aiBlock.exercises.map((aiExercise: any, exIndex: number) => {
+                      // Validate AI exercise structure - ensure reps is not concatenated
+                      const originalExercise = originalBlock.exercises[exIndex]
+                      if (originalExercise) {
+                        // Check for concatenated reps (e.g., "642" instead of separate exercises)
+                        if (typeof aiExercise.reps === 'string' && aiExercise.reps.length > 3) {
+                          // Likely concatenated reps - use original structure
+                          console.warn(`⚠️ AI returned malformed reps "${aiExercise.reps}" for ${aiExercise.name}, using original structure`)
+                          return originalExercise
+                        }
+                        // Check if AI exercise is missing critical properties
+                        if (!aiExercise.name || !aiExercise.hasOwnProperty('sets') || !aiExercise.hasOwnProperty('reps')) {
+                          console.warn(`⚠️ AI exercise missing properties for ${aiExercise.name || 'unknown'}, using original structure`)
+                          return originalExercise
+                        }
+                      }
+                      return aiExercise
+                    })
+                  : originalBlock.exercises // Fallback to original exercises if AI exercises are invalid
+              }
+            }),
+            ...(ai.program.metconData && { metconData: ai.program.metconData }),
+            ...(ai.source && { source: ai.source }),
+            ...(ai.rationale && { rationale: ai.rationale })
+          }
         }
       }
     } catch (e) {
