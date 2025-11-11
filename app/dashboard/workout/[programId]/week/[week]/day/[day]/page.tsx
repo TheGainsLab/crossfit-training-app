@@ -248,7 +248,7 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
         setAllPrograms(programs)
 
         // Find current program index
-        const currentProgramIndex = programs.findIndex(p => p.id === parseInt(programId))
+        const currentProgramIndex = programs.findIndex((p: { id: number; weeks_generated: number[] }) => p.id === parseInt(programId))
         if (currentProgramIndex === -1) return
 
         const programIndex = currentProgramIndex + 1 // 1-based index
