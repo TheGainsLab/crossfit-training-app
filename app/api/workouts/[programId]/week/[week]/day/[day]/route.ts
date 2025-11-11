@@ -325,7 +325,7 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
         .eq('day', dayNum)
         .order('logged_at', { ascending: true })
       mappedCompletions = (completions || []).map((log: any) => ({
-        exercise_name: log.set_number > 1 ? `${log.exercise_name} - Set ${log.set_number}` : log.exercise_name,
+        exercise_name: log.exercise_name, // Return clean name - frontend will add "- Set X" suffix when creating keys
         sets_completed: parseInt(log.sets) || 0,
         reps_completed: log.reps,
         weight_used: parseFloat(log.weight_time) || 0,
