@@ -874,6 +874,7 @@ export default function DashboardPage() {
   const [currentProgram, setCurrentProgram] = useState<number | null>(null)
   const [currentWeek, setCurrentWeek] = useState(1)
   const [currentDay, setCurrentDay] = useState(1)
+  const [programSpecificWeek, setProgramSpecificWeek] = useState(1) // Program-specific week (1-4) for API calls
   const [user, setUser] = useState<User | null>(null)
   const [userId, setUserId] = useState<number | null>(null)
   const [dashboardAnalytics, setDashboardAnalytics] = useState<DashboardAnalytics | null>(null)
@@ -1205,6 +1206,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
                   setCurrentWeek(globalWeek)
                   setCurrentDay(w.day)
                   setCurrentProgram(program.id)
+                  setProgramSpecificWeek(w.week) // Set program-specific week
                   foundNext = true
                   break
                 }
@@ -1220,6 +1222,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
             setCurrentWeek(1) // Global week 1 = Program 1, Week 1
             setCurrentDay(1)
             setCurrentProgram(allProgramsForInit[0].id)
+            setProgramSpecificWeek(1) // Program-specific week 1
           }
         }
       } catch {
@@ -1314,6 +1317,9 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         if (currentProgram !== programIdForWeek) {
           setCurrentProgram(programIdForWeek)
         }
+        
+        // Update program-specific week for API calls
+        setProgramSpecificWeek(weekInProgram)
       }
       setLoading(false)
     } catch (err) {
@@ -1517,6 +1523,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
             currentWeek={currentWeek}
             currentDay={currentDay}
             programId={currentProgram}
+            programSpecificWeek={programSpecificWeek}
             updatedDays={(lastRefresh?.changeSummary?.updatedDays) || []}
             onNavigate={(week, day) => {
               setCurrentWeek(week)

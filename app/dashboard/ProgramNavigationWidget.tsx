@@ -18,9 +18,10 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 // Program Navigation Widget Component
 interface NavigationProps {
-  currentWeek: number;
+  currentWeek: number; // Global week for display
   currentDay: number;
   programId: number;
+  programSpecificWeek: number; // Program-specific week (1-4) for API calls
   onNavigate: (week: number, day: number) => void;
   updatedDays?: Array<{ week: number; day: number }>
 }
@@ -29,6 +30,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
   currentWeek, 
   currentDay, 
   programId, 
+  programSpecificWeek,
   onNavigate,
   updatedDays = []
 }) => {
@@ -324,7 +326,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         <div className="text-center">
           <Link
             prefetch
-            href={`/dashboard/workout/${programId}/week/${currentWeek}/day/${currentDay}`}
+            href={`/dashboard/workout/${programId}/week/${programSpecificWeek}/day/${currentDay}`}
             className="inline-flex items-center px-6 py-3 rounded-lg font-semibold transition-colors border"
             style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
           >
@@ -367,7 +369,7 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         <div className="text-center">
           <Link
             prefetch
-            href={`/dashboard/workout/${programId}/week/${currentWeek}/day/${currentDay}`}
+            href={`/dashboard/workout/${programId}/week/${programSpecificWeek}/day/${currentDay}`}
             className="inline-flex items-center px-6 py-3 rounded-lg font-semibold transition-colors text-lg w-full justify-center border"
             style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
           >
