@@ -1293,7 +1293,6 @@ const loadProfile = async () => {
                             <div className="flex items-center">
                               <div>
                                 <span className="font-bold" style={{ color: '#282B34' }}>{skill.name}</span>
-                                <span className="text-sm ml-2" style={{ color: '#DAE2EA' }}>({skill.category})</span>
                               </div>
                             </div>
                           </div>
