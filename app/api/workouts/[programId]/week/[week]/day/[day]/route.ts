@@ -291,6 +291,12 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
                           console.warn(`⚠️ AI exercise missing properties for ${aiExercise.name || 'unknown'}, using original structure`)
                           return originalExercise
                         }
+                        // Preserve weightTime from original if AI version is missing it
+                        // This allows AI to modify weights when it provides them, but prevents weight loss when AI omits weightTime
+                        if (originalExercise.weightTime && !aiExercise.weightTime) {
+                          console.warn(`⚠️ AI exercise missing weightTime for ${aiExercise.name}, preserving from original`)
+                          aiExercise.weightTime = originalExercise.weightTime
+                        }
                       }
                       return aiExercise
                     })
