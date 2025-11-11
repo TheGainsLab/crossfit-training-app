@@ -250,6 +250,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const completionData: CompletionData = body
 
+    console.log('📥 API received request body:', JSON.stringify(body, null, 2))
+    console.log('🔍 Parsed completionData:', {
+      exerciseName: completionData.exerciseName,
+      setNumber: completionData.setNumber,
+      setsCompleted: completionData.setsCompleted,
+      setsCompletedType: typeof completionData.setsCompleted,
+      repsCompleted: completionData.repsCompleted,
+      repsCompletedType: typeof completionData.repsCompleted,
+      weightUsed: completionData.weightUsed,
+      weightUsedType: typeof completionData.weightUsed,
+      rpe: completionData.rpe,
+      quality: completionData.quality,
+      wasRx: completionData.wasRx
+    })
+
     // Validate required fields
     if (!completionData.programId || !completionData.userId || 
         !completionData.week || !completionData.day || 
@@ -416,18 +431,80 @@ export async function POST(request: NextRequest) {
       quality_grade: completionData.quality,
       logged_at: new Date().toISOString()
     }
+    
+    console.log('💾 Saving to performance_logs:', {
+      exercise_name: perfLogData.exercise_name,
+      set_number: perfLogData.set_number,
+      sets: perfLogData.sets,
+      setsSource: completionData.setsCompleted,
+      reps: perfLogData.reps,
+      repsSource: completionData.repsCompleted,
+      weight_time: perfLogData.weight_time,
+      weightSource: completionData.weightUsed,
+      rpe: perfLogData.rpe,
+      completion_quality: perfLogData.completion_quality,
+      quality_grade: perfLogData.quality_grade
+    })
 
+    let savedLogId: number | null = null
     if (existingPerfLog) {
       // Update existing performance log
-      await supabase
+      const { data: updatedLog, error: updateError } = await supabase
         .from('performance_logs')
         .update(perfLogData)
         .eq('id', existingPerfLog.id)
+        .select()
+        .single()
+      
+      if (updateError) {
+        console.error('❌ Error updating performance log:', updateError)
+      } else {
+        savedLogId = updatedLog?.id || existingPerfLog.id
+        console.log('✅ Updated existing performance log:', {
+          id: savedLogId,
+          sets: updatedLog?.sets,
+          reps: updatedLog?.reps,
+          weight_time: updatedLog?.weight_time
+        })
+      }
     } else {
       // Create new performance log
-      await supabase
+      const { data: insertedLog, error: insertError } = await supabase
         .from('performance_logs')
         .insert(perfLogData)
+        .select()
+        .single()
+      
+      if (insertError) {
+        console.error('❌ Error inserting performance log:', insertError)
+      } else {
+        savedLogId = insertedLog?.id || null
+        console.log('✅ Created new performance log:', {
+          id: savedLogId,
+          sets: insertedLog?.sets,
+          reps: insertedLog?.reps,
+          weight_time: insertedLog?.weight_time
+        })
+      }
+    }
+
+    // Verify what was actually saved
+    if (savedLogId) {
+      const { data: verifiedLog } = await supabase
+        .from('performance_logs')
+        .select('*')
+        .eq('id', savedLogId)
+        .single()
+      
+      console.log('🔍 Verified saved log in database:', {
+        id: verifiedLog?.id,
+        exercise_name: verifiedLog?.exercise_name,
+        set_number: verifiedLog?.set_number,
+        sets: verifiedLog?.sets,
+        reps: verifiedLog?.reps,
+        weight_time: verifiedLog?.weight_time,
+        rpe: verifiedLog?.rpe
+      })
     }
 
     console.log('✅ Workout completion saved successfully')

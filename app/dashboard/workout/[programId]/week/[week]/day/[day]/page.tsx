@@ -220,6 +220,17 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
 
 const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
   console.log('🚀 logCompletion called for:', exerciseName)
+  console.log('📦 Completion object received:', JSON.stringify(completion, null, 2))
+  console.log('🔍 Sets/Reps in completion:', {
+    setsCompleted: completion.setsCompleted,
+    setsCompletedType: typeof completion.setsCompleted,
+    repsCompleted: completion.repsCompleted,
+    repsCompletedType: typeof completion.repsCompleted,
+    weightUsed: completion.weightUsed,
+    rpe: completion.rpe,
+    quality: completion.quality,
+    wasRx: completion.wasRx
+  })
   
   // Extract set number from exercise name if it exists
   const setMatch = exerciseName.match(/Set (\d+)$/);
@@ -239,21 +250,33 @@ const logCompletion = async (exerciseName: string, block: string, completion: Pa
     }))
     console.log('✅ Optimistic UI update applied')
     
+    const requestBody = {
+      programId: parseInt(programId),
+      userId,
+      week: parseInt(week),
+      day: parseInt(day),
+      block,
+      exerciseName: cleanExerciseName,
+      setNumber,
+      ...completion
+    }
+    console.log('📤 Request body being sent:', JSON.stringify(requestBody, null, 2))
+    console.log('🔍 Sets/Reps in request body:', {
+      setsCompleted: requestBody.setsCompleted,
+      setsCompletedType: typeof requestBody.setsCompleted,
+      repsCompleted: requestBody.repsCompleted,
+      repsCompletedType: typeof requestBody.repsCompleted,
+      weightUsed: requestBody.weightUsed,
+      setNumber: requestBody.setNumber,
+      exerciseName: requestBody.exerciseName
+    })
+    
     const response = await fetch('/api/workouts/complete', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        programId: parseInt(programId),
-        userId,
-        week: parseInt(week),
-        day: parseInt(day),
-        block,
-        exerciseName: cleanExerciseName,
-        setNumber,
-        ...completion
-      })
+      body: JSON.stringify(requestBody)
     })
     
     console.log('📡 POST response:', response.status)
