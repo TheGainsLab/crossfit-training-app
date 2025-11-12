@@ -444,8 +444,23 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
     
     console.log('✅ MetCon completion logged successfully!')
     
-    // Update UI to show completion
-    // TODO: Update completion state
+    // Update local completions state to reflect the logged tasks
+    setCompletions(prev => {
+      const updated = { ...prev }
+      taskCompletions.forEach(task => {
+        // Use the exercise name as the key (metcon tasks don't have set numbers)
+        updated[task.exerciseName] = {
+          exerciseName: task.exerciseName,
+          setsCompleted: 1,
+          repsCompleted: '',
+          weightUsed: undefined,
+          rpe: task.rpe,
+          notes: `Part of ${workout?.metconData?.workoutId}`,
+          wasRx: true
+        }
+      })
+      return updated
+    })
     
   } catch (error) {
     console.error('❌ Failed to log MetCon completion:', error)
