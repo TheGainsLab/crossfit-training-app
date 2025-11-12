@@ -245,7 +245,7 @@ export default function AnalyticsMetconsPage() {
               })}
             </div>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
             <div className="p-3 border rounded bg-gray-50">
               <div className="text-xs text-gray-600">Completions</div>
               <div className="text-xl font-semibold">{summary?.completions ?? '—'}</div>
@@ -253,10 +253,6 @@ export default function AnalyticsMetconsPage() {
             <div className="p-3 border rounded bg-gray-50">
               <div className="text-xs text-gray-600">Avg percentile</div>
               <div className="text-xl font-semibold">{summary?.avg_percentile ?? '—'}</div>
-            </div>
-            <div className="p-3 border rounded bg-gray-50">
-              <div className="text-xs text-gray-600">Top time domains</div>
-              <div className="text-sm">{(summary?.time_domain_mix || []).slice(0,3).map((t:any)=>`${t.range}:${t.count}`).join(', ') || '—'}</div>
             </div>
           </div>
         </>
