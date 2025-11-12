@@ -56,7 +56,7 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
   if (!data || !data.exercises || data.exercises.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Exercise Performance Heat Map</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">MetCon Heat Map</h3>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
           <div className="text-4xl mb-3">💪</div>
           <p className="text-blue-800 font-medium mb-2">No MetCon Data Yet</p>
@@ -83,8 +83,8 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Exercise Performance Heat Map</h3>
-      <p className="text-sm text-gray-600 mb-6">Performance percentiles for each exercise across different time domains</p>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">MetCon Heat Map</h3>
+      <p className="text-sm text-gray-600 mb-6">Task Level Percentile Analysis</p>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
