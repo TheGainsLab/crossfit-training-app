@@ -515,19 +515,14 @@ const calculateProgress = () => {
   const blocks = Array.isArray((workout as any)?.blocks) ? (workout as any).blocks : []
   const totalExercises = blocks.reduce((sum: number, block: any) => sum + (Array.isArray(block.exercises) ? block.exercises.length : 0), 0)
   
-  // Count unique exercises completed, not completion entries
-  // Completion entries can include "Exercise - Set 2", but we only want to count each exercise once
-  const completedExerciseNames = new Set<string>()
-  Object.keys(completions).forEach(key => {
-    // Remove " - Set X" suffix to get the base exercise name
-    const baseName = key.replace(/ - Set \d+$/, '')
-    completedExerciseNames.add(baseName)
-  })
-  const completedExercises = completedExerciseNames.size
+  // Count each completion entry separately (don't deduplicate by removing "Set X" suffix)
+  // For strength exercises, each set is a separate exercise object, so each completion should count separately
+  // This matches how totalExercises counts each exercise object in the array
+  const completedExercises = Object.keys(completions).length
 
   console.log('🔢 PROGRESS DEBUG:')
   console.log('Total exercises:', totalExercises)
-  console.log('Completed exercises (unique):', completedExercises)
+  console.log('Completed exercises:', completedExercises)
   console.log('Completion entries:', Object.keys(completions).length)
   console.log('Completions object:', completions)
   console.log('Workout blocks:', blocks.map((b: any) => ({ name: b.blockName, count: Array.isArray(b.exercises) ? b.exercises.length : 0 })))
