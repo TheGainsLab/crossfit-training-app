@@ -338,7 +338,51 @@ if (skills && skills.length > 0) {
     
     console.log(`🏋️ Generating ${isAppliedPower ? 'Applied Power' : 'Full'} program for ${weeksToGenerate.length} weeks...`)
 
-    // Call generate-program edge function with program type flag
+    // Check if user already has a program - only generate if this is their first program
+    const { data: existingPrograms } = await supabaseAdmin
+      .from('programs')
+      .select('id')
+      .eq('user_id', effectiveUserId)
+      .limit(1)
+
+    if (existingPrograms && existingPrograms.length > 0) {
+      console.log(`ℹ️ User already has program(s) - skipping program generation on intake update`)
+      // Still generate profile since that can be updated
+      console.log(`📊 Generating updated user profile...`)
+      const profileResponse = await fetch(
+        `${supabaseUrl}/functions/v1/generate-user-profile`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            user_id: effectiveUserId,
+            sport_id: 1,
+            force_regenerate: true  // Force regenerate since data changed
+          })
+        }
+      )
+      
+      if (!profileResponse.ok) {
+        const errorText = await profileResponse.text()
+        console.error('❌ Profile generation failed:', errorText)
+      } else {
+        console.log(`✅ Profile regenerated successfully!`)
+      }
+      
+      return NextResponse.json({ 
+        success: true,
+        message: 'Intake data saved successfully',
+        intakeSaved: true,
+        programGenerated: false,
+        profileGenerated: true,
+        note: 'Program generation skipped - user already has existing program. Profile updated with new data.'
+      })
+    }
+
+    // Call generate-program edge function (only for first-time users)
     const programResponse = await fetch(
       `${supabaseUrl}/functions/v1/generate-program`,
       {
