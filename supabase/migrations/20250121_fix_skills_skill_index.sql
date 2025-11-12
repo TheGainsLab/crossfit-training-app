@@ -27,3 +27,4 @@ UPDATE exercises
 SET skill_index = 7 
 WHERE name = 'Dip Bar Dips' AND skill_index IS NULL;
 
+

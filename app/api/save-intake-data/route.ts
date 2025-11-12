@@ -9,6 +9,8 @@ export async function POST(request: NextRequest) {
       skills, 
       oneRMs,
       bodyWeight,
+      height,
+      age,
       gender,
       units,
       benchmarks,
@@ -64,6 +66,8 @@ export async function POST(request: NextRequest) {
     // Update user details first
     console.log('👤 Updating user details...')
     const parsedWeight = typeof bodyWeight === 'number' ? bodyWeight : (bodyWeight ? parseFloat(bodyWeight) : null)
+    const parsedHeight = typeof height === 'number' ? height : (height ? parseFloat(height) : null)
+    const parsedAge = typeof age === 'number' ? age : (age ? parseInt(age) : null)
     // Normalize conditioning benchmarks keys to snake_case expected by downstream functions
     const snakeBenchmarks: any = benchmarks ? {
       mile_run: benchmarks.mileRun || null,
@@ -79,6 +83,8 @@ export async function POST(request: NextRequest) {
       .from('users')
       .update({
         body_weight: parsedWeight,
+        height: parsedHeight,
+        age: parsedAge,
         gender: gender || null,
         units: units || 'Imperial (lbs)',
         conditioning_benchmarks: snakeBenchmarks,

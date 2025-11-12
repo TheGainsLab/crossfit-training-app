@@ -218,36 +218,35 @@ export default function Navigation() {
     <>
 			<nav className="supports-[backdrop-filter]:bg-white/80 bg-white/95 backdrop-blur border-b shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 relative">
-            {/* Left side - Main navigation (Desktop only) */}
-            <div className="hidden sm:flex sm:space-x-8 flex-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
+          <div className="flex justify-between h-16">
+            {/* Left side - Logo and main nav */}
+            <div className="flex">
+              {/* Logo */}
+              <div className="flex-shrink-0 flex items-center">
+								<Link 
+                  href={isBTNUser ? '/btn' : '/dashboard'} 
+                  className="text-xl font-bold text-gray-900 hover:text-coral transition-colors"
+                >
+                  The Gains Apps
+                </Link>
+              </div>
+
+              {/* Main navigation - Desktop only */}
+              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
 									className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
 										isActive(link.href)
 											? 'border-coral text-gray-900'
 											: 'border-transparent text-gray-500 hover:border-slate-300 hover:text-gray-800'
 									}`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-
-            {/* Center - Logo */}
-            <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center">
-								<Link 
-                  href={isBTNUser ? '/btn' : '/dashboard'} 
-                  className="text-5xl md:text-6xl font-bold tracking-tight flex items-center space-x-1"
-                >
-                  <span style={{ color: '#282B34' }}>G</span>
-                  <span style={{ color: '#FE5858' }}>A</span>
-                  <span style={{ color: '#FE5858' }}>I</span>
-                  <span style={{ color: '#282B34' }}>N</span>
-                  <span style={{ color: '#282B34' }}>S</span>
-                </Link>
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
             </div>
 
             {/* Right side - Auth actions (Desktop) */}

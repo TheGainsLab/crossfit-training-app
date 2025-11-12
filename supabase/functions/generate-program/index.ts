@@ -284,6 +284,9 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
     mainLifts = ordered
   }
   
+  console.log(`🔍 Main lifts rotation:`, mainLifts)
+  console.log(`🔍 User preferences primaryStrengthLifts:`, user?.preferences?.primaryStrengthLifts)
+  
   for (const week of weeksToGenerate) {
     console.log(`📅 Generating Week ${week}...`)
     
@@ -304,8 +307,10 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
       const dayNumber = day + 1
       const isDeload = [4, 8, 12].includes(week)
       const mainLift = getEquipmentGatedMainLift(mainLifts, day, user?.equipment || [])
+      const expectedLift = mainLifts[day % mainLifts.length]
       
       console.log(`  📅 Generating ${days[day]} (${mainLift})...`)
+      console.log(`🔍 Day ${day} (index ${day}), selected mainLift: ${mainLift}, expected: ${expectedLift}`)
       
       const dayData = {
         day: dayNumber,
@@ -456,6 +461,7 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
               previousDayAccessories: previousDayAccessories,
               previousDaySkills: previousDaySkills,
               dailyStrengthExercises: dailyStrengthExercises,
+              usedStrengths: Array.from(usedWeeklyStrengths),
               previousAccessoryCategoryDays: previousAccessoryCategoryDays
             })
           })

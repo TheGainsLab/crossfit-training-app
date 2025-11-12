@@ -890,6 +890,8 @@ const [heatMapData, setHeatMapData] = useState<any>(null)
   const [isRefreshingAI, setIsRefreshingAI] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<any>(null)
   const [allPrograms, setAllPrograms] = useState<Array<{ id: number; weeks_generated: number[] }>>([])
+  const [estimatedTDEE, setEstimatedTDEE] = useState<number | null>(null)
+  const [tdeeLoading, setTdeeLoading] = useState(false)
 
   useEffect(() => {
     loadUserAndProgram()
@@ -899,8 +901,9 @@ const [heatMapData, setHeatMapData] = useState<any>(null)
   useEffect(() => {
     if (currentProgram && currentWeek && currentDay) {
       fetchTodaysWorkout()
+      calculateEstimatedTDEE()
     }
-  }, [currentProgram, currentWeek, currentDay])
+  }, [currentProgram, currentWeek, currentDay, userId])
 
   // Defer analytics loading to improve initial page load performance
   // Load analytics after critical UI (workout) has rendered
@@ -1282,6 +1285,80 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
     }
   }
 
+  const calculateEstimatedTDEE = async () => {
+    if (!userId || !currentProgram || !currentWeek || !currentDay) {
+      setEstimatedTDEE(null)
+      return
+    }
+
+    setTdeeLoading(true)
+    try {
+      const supabase = createClient()
+      
+      // Fetch user data
+      const { data: userData } = await supabase
+        .from('users')
+        .select('body_weight, height, age, gender, units')
+        .eq('id', userId)
+        .single()
+
+      if (!userData || !userData.body_weight || !userData.height || !userData.age) {
+        setEstimatedTDEE(null)
+        setTdeeLoading(false)
+        return
+      }
+
+      // Calculate BMR using Mifflin-St Jeor
+      const weight = userData.body_weight
+      const isMetric = userData.units?.includes('kg')
+      const weightKg = isMetric ? weight : weight * 0.453592
+      const heightCm = isMetric ? userData.height : userData.height * 2.54
+      const age = userData.age
+      const s = userData.gender === 'Male' ? 5 : -161
+      const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + s
+
+      // Fetch workout structure to estimate activity level
+      const programAndWeek = await findProgramAndWeekForGlobalWeek(currentWeek)
+      if (!programAndWeek) {
+        setEstimatedTDEE(null)
+        setTdeeLoading(false)
+        return
+      }
+
+      const response = await fetch(`/api/workouts/${programAndWeek.programId}/week/${programAndWeek.week}/day/${currentDay}`)
+      if (!response.ok) {
+        setEstimatedTDEE(null)
+        setTdeeLoading(false)
+        return
+      }
+
+      const data = await response.json()
+      if (!data.success || !data.workout) {
+        setEstimatedTDEE(null)
+        setTdeeLoading(false)
+        return
+      }
+
+      // Estimate activity multiplier based on workout structure
+      // Medium RPE assumption for pre-workout estimate
+      const blocks = data.workout.blocks || []
+      const totalExercises = blocks.reduce((sum: number, block: any) => 
+        sum + (Array.isArray(block.exercises) ? block.exercises.length : 0), 0)
+      
+      // Activity multiplier: 1.375 (light), 1.55 (moderate), 1.725 (active), 1.9 (very active)
+      // CrossFit training day: typically 1.725-1.9, use 1.8 for medium RPE
+      const activityMultiplier = 1.8
+      const tdee = Math.round(bmr * activityMultiplier)
+
+      setEstimatedTDEE(tdee)
+    } catch (err) {
+      console.error('Error calculating TDEE:', err)
+      setEstimatedTDEE(null)
+    } finally {
+      setTdeeLoading(false)
+    }
+  }
+
   const fetchTodaysWorkout = async () => {
     try {
       // Convert global week to program and week within program
@@ -1530,6 +1607,31 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
               setCurrentDay(day)
             }}
           />
+        )}
+
+        {/* Estimated TDEE Widget */}
+        {estimatedTDEE !== null && (
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
+            <p className="text-xs sm:text-sm mb-1" style={{ color: '#282B34' }}>
+              Estimated TDEE (Week {currentWeek} • Day {currentDay})
+            </p>
+            <p className="text-xl sm:text-2xl font-bold text-coral">
+              {tdeeLoading ? '...' : `${estimatedTDEE} kcal/day`}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Based on BMR + activity level (medium RPE assumption)
+            </p>
+          </div>
+        )}
+        {estimatedTDEE === null && !tdeeLoading && userId && (
+          <div className="bg-gray-50 rounded-lg shadow p-4 sm:p-6 border-2 border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-500">
+              Calorie Calculations Unavailable
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              Add height and age in your profile to enable TDEE estimates
+            </p>
+          </div>
         )}
 
 {/* Overview Cards */}

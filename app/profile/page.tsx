@@ -311,6 +311,8 @@ export default function ProfilePage() {
   const [showAllLifts, setShowAllLifts] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<string[]>([])
   const [userSkills, setUserSkills] = useState<{[key: string]: string}>({})
+  const [height, setHeight] = useState<number | null>(null)
+  const [age, setAge] = useState<number | null>(null)
 
   // CRITICAL: Safe calculation helper to prevent null/undefined errors
   const safeRatio = (numerator: number | null, denominator: number | null, asPercent = true): string => {
@@ -447,7 +449,7 @@ const loadProfile = async () => {
 
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id')
+        .select('id, height, age')
         .eq('auth_id', user.id)
         .single()
 
@@ -456,6 +458,9 @@ const loadProfile = async () => {
         setLoading(false)
         return
       }
+
+      setHeight(userData.height)
+      setAge(userData.age)
 
       const { data: profileData, error: profileError } = await supabase
         .from('user_profiles')
@@ -483,6 +488,39 @@ const loadProfile = async () => {
   const formatWeight = (weight: number | null) => {
     if (!weight) return 'Not recorded'
     return `${weight} ${profile?.user_summary.units.includes('kg') ? 'kg' : 'lbs'}`
+  }
+
+  // Calculate BMI
+  const calculateBMI = (): number | null => {
+    if (!profile?.user_summary.body_weight || !height) return null
+    const weight = profile.user_summary.body_weight
+    const isMetric = profile.user_summary.units.includes('kg')
+    
+    // Convert to metric if needed
+    const weightKg = isMetric ? weight : weight * 0.453592
+    const heightM = isMetric ? height / 100 : height * 0.0254
+    
+    if (heightM === 0) return null
+    return parseFloat((weightKg / (heightM * heightM)).toFixed(1))
+  }
+
+  // Calculate BMR using Mifflin-St Jeor equation
+  const calculateBMR = (): number | null => {
+    if (!profile?.user_summary.body_weight || !height || !age) return null
+    const weight = profile.user_summary.body_weight
+    const isMetric = profile.user_summary.units.includes('kg')
+    const gender = profile.user_summary.gender
+    
+    // Convert to metric
+    const weightKg = isMetric ? weight : weight * 0.453592
+    const heightCm = isMetric ? height : height * 2.54
+    
+    // Mifflin-St Jeor: BMR = 10 * weight(kg) + 6.25 * height(cm) - 5 * age(years) + s
+    // s = +5 for males, -161 for females
+    const s = gender === 'Male' ? 5 : -161
+    const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + s
+    
+    return Math.round(bmr)
   }
 
   const formatLiftName = (liftKey: string) => {
@@ -548,9 +586,23 @@ const loadProfile = async () => {
               <h1 className="text-xl md:text-3xl font-bold text-charcoal mb-1 md:mb-2">
                 Athlete Profile
               </h1>
-              <div className="text-sm md:text-base text-charcoal font-semibold">
+              <div className="text-sm md:text-base text-charcoal font-semibold mb-2">
                 {profile.user_summary.name} • {new Date(profile.generated_at).toLocaleDateString()}
               </div>
+              {(calculateBMI() !== null || calculateBMR() !== null) && (
+                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                  {calculateBMI() !== null && (
+                    <div>
+                      <span className="font-semibold">BMI:</span> {calculateBMI()}
+                    </div>
+                  )}
+                  {calculateBMR() !== null && (
+                    <div>
+                      <span className="font-semibold">BMR:</span> {calculateBMR()} kcal/day
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <a
               href="/intake"

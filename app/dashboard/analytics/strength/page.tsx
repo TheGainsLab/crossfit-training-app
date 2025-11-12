@@ -54,15 +54,6 @@ export default function AnalyticsStrengthPage() {
     );
   };
 
-  const getQualityGrade = (quality: number | string | null | undefined): string => {
-    const num = Number(quality)
-    if (num === 4) return 'A'
-    if (num === 3) return 'B'
-    if (num === 2) return 'C'
-    if (num === 1) return 'D'
-    return quality?.toString() || ''
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-xs">
@@ -154,8 +145,9 @@ export default function AnalyticsStrengthPage() {
                   } catch {}
                 }}
               >
-                <div className="font-medium text-gray-900 mb-1 text-center">{m.exercise_name} ({m.session_count})</div>
+                <div className="font-medium text-gray-900 mb-1 text-center">{m.exercise_name}</div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-600">Sessions</span><span className="font-medium">{m.session_count}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600">Avg RPE</span><span className="font-medium">{m.avg_rpe ?? '—'}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600">Max weight</span><span className="font-medium">{m.max_weight || 0} lbs</span></div>
                   <div className="flex justify-between"><span className="text-gray-600">Avg top-set</span><span className="font-medium">{m.avg_top_set_weight || 0} lbs</span></div>
@@ -183,11 +175,11 @@ export default function AnalyticsStrengthPage() {
                 <thead>
                   <tr className="bg-gray-50 text-left">
                     <th className="p-2 border-b">Date</th>
-                    <th className="p-2 border-b text-center">Sets</th>
-                    <th className="p-2 border-b text-center">Reps</th>
-                    <th className="p-2 border-b text-center">Wt/Time</th>
-                    <th className="p-2 border-b text-center">RPE</th>
-                    <th className="p-2 border-b text-center">Quality</th>
+                    <th className="p-2 border-b">Sets</th>
+                    <th className="p-2 border-b">Reps</th>
+                    <th className="p-2 border-b">Weight/Time</th>
+                    <th className="p-2 border-b">RPE</th>
+                    <th className="p-2 border-b">Quality</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -196,11 +188,11 @@ export default function AnalyticsStrengthPage() {
                     .map((r: any, i: number) => (
                       <tr key={i} className="odd:bg-white even:bg-gray-50">
                         <td className="p-2 border-b">{formatDateCompact(r.training_date)}</td>
-                        <td className="p-2 border-b text-center">{r.sets ?? ''}</td>
-                        <td className="p-2 border-b text-center">{r.reps ?? ''}</td>
-                        <td className="p-2 border-b text-center">{r.weight_time ?? ''}</td>
-                        <td className="p-2 border-b text-center">{r.rpe ?? ''}</td>
-                        <td className="p-2 border-b text-center">{getQualityGrade(r.completion_quality)}</td>
+                        <td className="p-2 border-b">{r.sets ?? ''}</td>
+                        <td className="p-2 border-b">{r.reps ?? ''}</td>
+                        <td className="p-2 border-b">{r.weight_time ?? ''}</td>
+                        <td className="p-2 border-b">{r.rpe ?? ''}</td>
+                        <td className="p-2 border-b">{r.completion_quality ?? ''}</td>
                       </tr>
                     ))}
                 </tbody>

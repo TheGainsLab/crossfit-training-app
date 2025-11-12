@@ -13,6 +13,8 @@ interface MetConCompletionData {
   day: number
   workoutScore: string
   notes?: string
+  avgHR?: number
+  peakHR?: number
 }
 
 // =============================================================================
@@ -317,6 +319,8 @@ export async function POST(request: NextRequest) {
           excellent_score: isMale ? metcon.male_p90 : metcon.female_p90,
           median_score: isMale ? metcon.male_p50 : metcon.female_p50,
           std_dev: isMale ? metcon.male_std_dev : metcon.female_std_dev,
+          avg_heart_rate: completionData.avgHR || null,
+          max_heart_rate: completionData.peakHR || null,
           completed_at: new Date().toISOString()
         })
         .eq('id', existingCompletion.id)
@@ -340,6 +344,8 @@ export async function POST(request: NextRequest) {
           excellent_score: isMale ? metcon.male_p90 : metcon.female_p90,
           median_score: isMale ? metcon.male_p50 : metcon.female_p50,
           std_dev: isMale ? metcon.male_std_dev : metcon.female_std_dev,
+          avg_heart_rate: completionData.avgHR || null,
+          max_heart_rate: completionData.peakHR || null,
           completed_at: new Date().toISOString()
         })
         .select()

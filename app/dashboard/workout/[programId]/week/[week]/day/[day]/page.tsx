@@ -401,7 +401,7 @@ const logCompletion = async (exerciseName: string, block: string, completion: Pa
 }
 
 
-const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerciseName: string, rpe: number, quality: string}[]) => {
+const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerciseName: string, rpe: number, quality: string}[], avgHR?: string, peakHR?: string) => {
   try {
     const userId = await getCurrentUserId()
     
@@ -435,7 +435,9 @@ const logMetConCompletion = async (workoutScore: string, taskCompletions: {exerc
         week: parseInt(week),
         day: parseInt(day),
         workoutScore,
-        metconId: workout?.metconData?.id // We'll need this
+        metconId: workout?.metconData?.id,
+        avgHR: avgHR ? parseInt(avgHR) : undefined,
+        peakHR: peakHR ? parseInt(peakHR) : undefined
       })
     })
     
@@ -1502,7 +1504,7 @@ function MetConCard({
     }
     rxWeights: { male: string, female: string }
   }
-  onComplete: (workoutScore: string, taskCompletions: {exerciseName: string, rpe: number, quality: string}[]) => void
+  onComplete: (workoutScore: string, taskCompletions: {exerciseName: string, rpe: number, quality: string}[], avgHR?: string, peakHR?: string) => void
 }) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCompleted, setIsCompleted] = useState(false)
@@ -1514,6 +1516,8 @@ function MetConCard({
   const [taskQualities, setTaskQualities] = useState<{[key: string]: string}>({})
   const [notes, setNotes] = useState('')
   const [gender, setGender] = useState<'male' | 'female'>('male')
+  const [avgHR, setAvgHR] = useState('')
+  const [peakHR, setPeakHR] = useState('')
 
   const handleTaskRPE = (exerciseName: string, rpe: number) => {
     setTaskRPEs(prev => ({...prev, [exerciseName]: rpe}))
@@ -1535,7 +1539,7 @@ function MetConCard({
         quality: taskQualities[task.exercise] || 'C'
       })) || []
       
-      await onComplete(workoutScore, taskCompletions)
+      await onComplete(workoutScore, taskCompletions, avgHR || undefined, peakHR || undefined)
       
       setIsCompleted(true)
       setIsExpanded(false)
@@ -1703,6 +1707,39 @@ function MetConCard({
               className="w-full p-3 border border-slate-blue rounded-lg text-base focus:ring-2 focus:ring-coral focus:border-coral"
               disabled={isSubmitting}
             />
+          </div>
+
+          {/* Heart Rate Section */}
+          <div className="bg-ice-blue rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Heart Rate (Optional)</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-charcoal mb-1">Avg HR (bpm)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="250"
+                  placeholder="e.g., 145"
+                  value={avgHR}
+                  onChange={(e) => setAvgHR(e.target.value)}
+                  className="w-full p-3 border border-slate-blue rounded-lg text-base focus:ring-2 focus:ring-coral focus:border-coral"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-charcoal mb-1">Peak HR (bpm)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="250"
+                  placeholder="e.g., 180"
+                  value={peakHR}
+                  onChange={(e) => setPeakHR(e.target.value)}
+                  className="w-full p-3 border border-slate-blue rounded-lg text-base focus:ring-2 focus:ring-coral focus:border-coral"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Notes Section - Collapsible */}

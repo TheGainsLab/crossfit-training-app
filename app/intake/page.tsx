@@ -12,6 +12,8 @@ interface IntakeFormData {
   gender: 'Male' | 'Female' | 'Prefer not to say' | ''
   units: 'Imperial (lbs)' | 'Metric (kg)' | ''
   bodyWeight: string
+  height: string
+  age: string
   equipment: string[]
   
   // Section 2: Skills (26 skills, 0-25 index)
@@ -332,6 +334,8 @@ const [currentSection, setCurrentSection] = useState<number>(1)
     gender: '',
     units: '',
     bodyWeight: '',
+    height: '',
+    age: '',
     equipment: [],
     skills: new Array(26).fill("Don't have it"),
     conditioningBenchmarks: {
@@ -501,6 +505,8 @@ setSubscriptionStatus(subscription.status)
             gender: userData.gender || '',
             units: userData.units || '',
             bodyWeight: userData.body_weight?.toString() || '',
+            height: userData.height?.toString() || '',
+            age: userData.age?.toString() || '',
             conditioningBenchmarks: userData.conditioning_benchmarks || {
               mileRun: '', fiveKRun: '', tenKRun: '',
               oneKRow: '', twoKRow: '', fiveKRow: '',
@@ -950,6 +956,8 @@ setSubscriptionStatus(subscription.status)
         email: formData.email,
         gender: formData.gender,
         body_weight: formData.bodyWeight ? parseFloat(formData.bodyWeight) : null,
+        height: formData.height ? parseFloat(formData.height) : null,
+        age: formData.age ? parseInt(formData.age) : null,
         units: formData.units,
         ability_level: 'Beginner',
         conditioning_benchmarks: formData.conditioningBenchmarks,
@@ -986,6 +994,8 @@ const saveUserData = async (userId: number) => {
       skills: formData.skills,
       oneRMs: formData.oneRMs,
       bodyWeight: formData.bodyWeight,
+      height: formData.height,
+      age: formData.age,
       gender: formData.gender,
       units: formData.units,
       benchmarks: formData.conditioningBenchmarks,  // <-- Use the correct property name
@@ -1285,6 +1295,42 @@ const saveUserData = async (userId: number) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder={formData.units === 'Metric (kg)' ? 'e.g., 70.5' : 'e.g., 155.5'}
                     required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Enter your height
+                  </label>
+                  <p className="text-sm text-gray-500 mb-2">
+                    Required for BMI and BMR calculations (calorie estimation)
+                  </p>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formData.height}
+                    onChange={(e) => updateFormData('height', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={formData.units === 'Metric (kg)' ? 'e.g., 175 (cm)' : 'e.g., 70 (inches)'}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Enter your age
+                  </label>
+                  <p className="text-sm text-gray-500 mb-2">
+                    Required for accurate BMR calculation (calorie estimation)
+                  </p>
+                  <input
+                    type="number"
+                    step="1"
+                    min="13"
+                    max="100"
+                    value={formData.age}
+                    onChange={(e) => updateFormData('age', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 30"
                   />
                 </div>
 

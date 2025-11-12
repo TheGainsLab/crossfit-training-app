@@ -26,42 +26,15 @@ export async function GET(req: Request, context: any) {
     } catch {}
     if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
 
-    // Convert global week to program index and week within program
-    // Global Week = 4(m-1) + w, where m = program index, w = week within program (1-4)
-    const programIndex = Math.ceil(week / 4)
-    const weekInProgram = ((week - 1) % 4) + 1
-
-    // Find the program at the calculated index
-    const { data: allPrograms } = await supabase
+    // Get latest program for user
+    const { data: prog } = await supabase
       .from('programs')
-      .select('id, program_data, weeks_generated')
+      .select('id, program_data')
       .eq('user_id', userId)
-      .order('generated_at', { ascending: true })
-
-    if (!allPrograms || allPrograms.length === 0) {
-      return NextResponse.json({ success: true, days: [] })
-    }
-
-    // Get the program at the calculated index (programIndex is 1-based, array is 0-based)
-    const programWithWeek = allPrograms[programIndex - 1]
-
-    if (!programWithWeek) {
-      return NextResponse.json({ 
-        success: false, 
-        error: `Week ${week} (Program ${programIndex}, Week ${weekInProgram}) not found` 
-      }, { status: 404 })
-    }
-
-    // Verify the week exists in this program's weeks_generated
-    if (!Array.isArray(programWithWeek.weeks_generated) || !programWithWeek.weeks_generated.includes(weekInProgram)) {
-      return NextResponse.json({ 
-        success: false, 
-        error: `Week ${weekInProgram} not found in program ${programIndex}` 
-      }, { status: 404 })
-    }
-
-    const programId = programWithWeek.id
-    const prog = programWithWeek
+      .order('id', { ascending: false })
+      .limit(1)
+      .single()
+    const programId = prog?.id
     if (!programId) return NextResponse.json({ success: true, days: [] })
 
     // Build originals directly from programs.program_data JSON (source of truth)
@@ -69,8 +42,7 @@ export async function GET(req: Request, context: any) {
     try {
       const programData: any = prog?.program_data || {}
       const weeksArr: any[] = Array.isArray(programData.weeks) ? programData.weeks : []
-      // Use weekInProgram (1-4) to find the week data, not the global week
-      const targetWeek = weeksArr.find((w: any) => Number(w?.week) === Number(weekInProgram))
+      const targetWeek = weeksArr.find((w: any) => Number(w?.week) === Number(week))
       const daysArr: any[] = Array.isArray(targetWeek?.days) ? targetWeek.days : []
 
       for (const d of daysArr) {
