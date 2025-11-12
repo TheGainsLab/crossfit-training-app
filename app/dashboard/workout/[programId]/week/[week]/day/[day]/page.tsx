@@ -1091,7 +1091,8 @@ function ExerciseCard({
   const [isExpanded, setIsExpanded] = useState(!completion)
   const [showCues, setShowCues] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
-  const [completionType, setCompletionType] = useState(completion ? 'modified' : 'asRx')
+  // Default to 'asRx' unless completion was explicitly saved as modified (wasRx: false)
+  const [completionType, setCompletionType] = useState(completion && completion.wasRx === false ? 'modified' : 'asRx')
   const [formData, setFormData] = useState({
     setsCompleted: completion?.setsCompleted || exercise.sets || '',
     repsCompleted: completion?.repsCompleted || exercise.reps?.toString() || '',
