@@ -958,8 +958,6 @@ block.blockName === 'METCONS' ? (
           <div className="text-sm text-gray-700 mb-4">
             Program #{workout.programId} • Week {workout.week} • Day {workout.day}
           </div>
-          <div className="mb-2"><span className="font-semibold">Day:</span> {workout.dayName}</div>
-          <div className="mb-4"><span className="font-semibold">Main Lift:</span> {workout.mainLift}</div>
           <div className="space-y-4">
             {workout.blocks.map((block) => (
               <div key={block.blockName}>
