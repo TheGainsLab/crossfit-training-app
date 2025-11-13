@@ -130,8 +130,12 @@ serve(async (req) => {
       try {
         console.log('🔍 Checking for existing user')
         
+        // Normalize email to lowercase for consistent lookups
+        // Users are stored with lowercase email (from trigger or API)
+        const normalizedEmail = customerEmail.toLowerCase()
+        
         // Check if user exists
-        const userCheckResponse = await fetch(`${supabaseUrl}/rest/v1/users?email=eq.${encodeURIComponent(customerEmail)}&select=id,email`, {
+        const userCheckResponse = await fetch(`${supabaseUrl}/rest/v1/users?email=eq.${encodeURIComponent(normalizedEmail)}&select=id,email`, {
           method: 'GET',
           headers: supabaseHeaders
         })

@@ -301,11 +301,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       planType = getPlanFromPriceId(priceId).toUpperCase() // 'btn' -> 'BTN', 'premium' -> 'PREMIUM'
     }
 
+    // Normalize email to lowercase for consistent lookups
+    // Users are stored with lowercase email (from trigger or API)
+    const normalizedEmail = customerEmail.toLowerCase()
+
     // Check if user exists
     const { data: existingUsers, error: userCheckError } = await supabase
       .from('users')
       .select('id, email')
-      .eq('email', customerEmail)
+      .eq('email', normalizedEmail)
 
     if (userCheckError) {
       console.error('Error checking user:', userCheckError)
