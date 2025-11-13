@@ -279,7 +279,7 @@ function BTNWorkoutGenerator() {
               <h3 className="text-xl font-bold mb-4">Generated Workouts ({generatedWorkouts.length})</h3>
               <div className="space-y-6">
                 {generatedWorkouts.map((workout, index) => (
-                  <div key={index} className="border rounded-lg p-6 bg-gray-50">
+                  <div key={index} className="border rounded-lg p-6" style={{ backgroundColor: '#F8FBFE' }}>
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="text-lg font-bold">{workout.name}</h4>
                       <div className="flex gap-2">
@@ -288,14 +288,16 @@ function BTNWorkoutGenerator() {
                             <button
                               onClick={() => saveWorkout(workout, index)}
                               disabled={savingWorkouts.has(index)}
-                              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
                             >
                               {savingWorkouts.has(index) ? 'Saving...' : 'Save'}
                             </button>
                             <button
                               onClick={() => discardWorkout(index)}
                               disabled={savingWorkouts.has(index)}
-                              className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}
                             >
                               Discard
                             </button>
@@ -326,22 +328,22 @@ function BTNWorkoutGenerator() {
                     
                     {/* Benchmark Scores */}
                     {workout.medianScore && workout.excellentScore && (
-                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="text-sm font-semibold text-blue-900 mb-2">Performance Benchmarks</div>
+                      <div className="mb-4 p-3 border rounded-lg" style={{ backgroundColor: '#FFFFFF' }}>
+                        <div className="text-sm font-semibold mb-2" style={{ color: '#FE5858' }}>Performance Benchmarks</div>
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div>
                             <span className="text-gray-600">50th Percentile (Median):</span>
-                            <span className="ml-2 font-semibold text-gray-900">{workout.medianScore}</span>
+                            <span className="ml-2 font-semibold" style={{ color: '#FE5858' }}>{workout.medianScore}</span>
                           </div>
                           <div>
                             <span className="text-gray-600">90th Percentile (Excellent):</span>
-                            <span className="ml-2 font-semibold text-blue-700">{workout.excellentScore}</span>
+                            <span className="ml-2 font-semibold" style={{ color: '#FE5858' }}>{workout.excellentScore}</span>
                           </div>
                         </div>
                       </div>
                     )}
                     
-                    <div className="bg-white rounded p-4 mb-4">
+                    <div className="rounded p-4 mb-4" style={{ backgroundColor: '#FFFFFF' }}>
                       <p className="font-semibold mb-2">Exercises:</p>
                       {workout.exercises.map((exercise, exIndex) => (
                         <div key={exIndex} className="flex justify-between py-1">
