@@ -57,21 +57,57 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Auth account created:', authData.user.id)
 
-    // Find existing user record created by webhook
+    // Find or create user record
+    // Check if user record exists (may have been created by webhook)
     const { data: existingUser, error: userFindError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('email', email)
-      .single()
+      .maybeSingle()
 
-    if (userFindError || !existingUser) {
+    if (userFindError) {
       console.error('❌ User lookup error:', userFindError)
       return NextResponse.json({ 
-        error: 'Unable to find your account. Please contact support.' 
-      }, { status: 404 })
+        error: 'Database error while checking user account', 
+        details: userFindError.message 
+      }, { status: 500 })
     }
 
-    console.log('✅ Found existing user record:', existingUser.id)
+    let userId: number
+
+    if (existingUser) {
+      // User record exists (created by webhook)
+      userId = existingUser.id
+      console.log('✅ Found existing user record:', userId)
+    } else {
+      // User record doesn't exist yet (race condition - webhook hasn't processed)
+      // Create it now to prevent the intake form from failing
+      console.log('⚠️ User record not found, creating it now (webhook may update later)')
+      
+      const { data: newUser, error: createError } = await supabaseAdmin
+        .from('users')
+        .insert({
+          email: email,
+          name: userData.name || email.split('@')[0],
+          subscription_status: 'PENDING', // Webhook will update this
+          subscription_tier: 'PREMIUM', // Webhook will update this
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select('id')
+        .single()
+
+      if (createError || !newUser) {
+        console.error('❌ User creation error:', createError)
+        return NextResponse.json({ 
+          error: 'Failed to create user record', 
+          details: createError?.message 
+        }, { status: 500 })
+      }
+
+      userId = newUser.id
+      console.log('✅ Created user record:', userId)
+    }
 
     // Update user record with auth ID and intake data
     const { error: updateError } = await supabaseAdmin
@@ -86,7 +122,7 @@ export async function POST(request: NextRequest) {
         conditioning_benchmarks: userData.conditioningBenchmarks,
         updated_at: new Date().toISOString()
       })
-      .eq('id', existingUser.id)
+      .eq('id', userId)
 
     if (updateError) {
       console.error('❌ User update error:', updateError)
@@ -104,7 +140,7 @@ export async function POST(request: NextRequest) {
       user: {
         id: authData.user.id,
         email: authData.user.email,
-        userId: existingUser.id
+        userId: userId
       }
     })
 
