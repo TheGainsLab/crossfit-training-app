@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, productType, userData } = await request.json()
+    const { email, password, productType, sessionId, userData } = await request.json()
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
@@ -170,6 +173,77 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ User record updated with auth ID')
+
+    // Create subscription record if Stripe session is complete
+    if (sessionId) {
+      try {
+        console.log('🔍 Retrieving Stripe session to create subscription record:', sessionId)
+        
+        const session = await stripe.checkout.sessions.retrieve(sessionId, {
+          expand: ['subscription', 'line_items', 'line_items.data.price']
+        })
+
+        if (session.status === 'complete' && session.subscription) {
+          console.log('✅ Session is complete, creating subscription record')
+          
+          // Get subscription details
+          const subscription = typeof session.subscription === 'string' 
+            ? await stripe.subscriptions.retrieve(session.subscription)
+            : session.subscription
+
+          const planType = productType ? productType.toLowerCase() : 'premium'
+          
+          // Helper to convert timestamp to ISO date
+          const toIsoDate = (value: number | null | undefined): string | null => {
+            if (!value) return null
+            return new Date(value < 10_000_000_000 ? value * 1000 : value).toISOString()
+          }
+
+          // Type assertion for subscription properties
+          const sub = subscription as any
+
+          const subscriptionData = {
+            user_id: userId,
+            stripe_customer_id: session.customer as string,
+            stripe_subscription_id: subscription.id,
+            status: subscription.status === 'active' || subscription.status === 'trialing' ? subscription.status : 'active',
+            plan: planType,
+            amount_cents: session.amount_total,
+            billing_interval: subscription.items.data[0].price.recurring?.interval || 'month',
+            subscription_start: toIsoDate(sub.created),
+            current_period_start: toIsoDate(sub.current_period_start),
+            current_period_end: toIsoDate(sub.current_period_end),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+
+          const { error: subError } = await supabaseAdmin
+            .from('subscriptions')
+            .insert(subscriptionData)
+
+          if (subError) {
+            console.error('❌ Error creating subscription record:', subError)
+            // Don't fail the whole request - subscription can be created by webhook later
+          } else {
+            console.log('✅ Created subscription record')
+            
+            // Update user status to ACTIVE since subscription exists
+            await supabaseAdmin
+              .from('users')
+              .update({
+                subscription_status: 'ACTIVE',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', userId)
+          }
+        } else {
+          console.log('⚠️ Session not complete or no subscription yet, skipping subscription creation')
+        }
+      } catch (stripeError) {
+        console.error('❌ Error retrieving Stripe session:', stripeError)
+        // Don't fail the whole request - webhook will handle it
+      }
+    }
 
     // Return success with user data
     return NextResponse.json({

@@ -840,6 +840,7 @@ setSubscriptionStatus(subscription.status)
         email: formData.email,
         password: formData.password,
         productType: productType, // Pass product type to set correct subscription tier
+        sessionId: stripeSession?.sessionId, // Pass session ID to create subscription record
         userData: {
           name: formData.name,
           gender: formData.gender,
