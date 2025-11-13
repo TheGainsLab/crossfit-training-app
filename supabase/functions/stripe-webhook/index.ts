@@ -7,6 +7,21 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 }
 
+// Helper function to determine plan type from Stripe price ID
+function getPlanFromPriceId(priceId: string): string {
+  const BTN_PRICE_ID = Deno.env.get('BTN_STRIPE_PRICE_ID') || 'price_1SK2r2LEmGVLIgpHjn1dF2EU'
+  const APPLIED_POWER_PRICE_ID = Deno.env.get('APPLIED_POWER_STRIPE_PRICE_ID') || 'price_1SK4BSLEmGVLIgpHrS1cfLrH'
+  
+  if (priceId === BTN_PRICE_ID) {
+    return 'btn'
+  }
+  if (priceId === APPLIED_POWER_PRICE_ID) {
+    return 'applied_power'
+  }
+  // Default to premium for other price IDs
+  return 'premium'
+}
+
 serve(async (req) => {
   console.log(`🚀 Webhook function started - ${req.method} ${req.url}`)
   
@@ -52,6 +67,35 @@ serve(async (req) => {
 
       console.log(`👤 Customer: ${customerEmail} (${customerName})`)
       console.log(`💰 Amount: ${amountTotal} ${session.currency}`)
+
+      // Get the subscription to determine plan type
+      let planType = 'PREMIUM' // Default
+      if (session.subscription) {
+        const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
+        if (stripeSecretKey) {
+          try {
+            const subscriptionResponse = await fetch(`https://api.stripe.com/v1/subscriptions/${session.subscription}`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${stripeSecretKey}`,
+                'Content-Type': 'application/x-www-form-urlencoded'
+              }
+            })
+            
+            if (subscriptionResponse.ok) {
+              const subscription = await subscriptionResponse.json()
+              const priceId = subscription.items?.data?.[0]?.price?.id
+              if (priceId) {
+                planType = getPlanFromPriceId(priceId).toUpperCase()
+                console.log(`📦 Detected plan type: ${planType} from price ID: ${priceId}`)
+              }
+            }
+          } catch (err) {
+            console.error('⚠️ Error fetching subscription from Stripe:', err)
+            // Continue with default PREMIUM
+          }
+        }
+      }
 
       if (!customerEmail) {
         console.error('❌ No customer email in session')
@@ -110,7 +154,7 @@ serve(async (req) => {
             headers: supabaseHeaders,
             body: JSON.stringify({
               subscription_status: 'ACTIVE',
-              subscription_tier: 'PREMIUM',
+              subscription_tier: planType,
               stripe_customer_id: stripeCustomerId,
               updated_at: new Date().toISOString()
             })
@@ -122,107 +166,91 @@ serve(async (req) => {
           }
           
           console.log('✅ Updated existing user subscription')
-        } else {
-          // Create new user
-          console.log('➕ Creating new user')
           
-          const createResponse = await fetch(`${supabaseUrl}/rest/v1/users`, {
-            method: 'POST',
-            headers: supabaseHeaders,
-            body: JSON.stringify({
-              email: customerEmail,
-              name: customerName || customerEmail.split('@')[0],
-              subscription_status: 'ACTIVE',
-              subscription_tier: 'PREMIUM',
-              stripe_customer_id: stripeCustomerId,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
+          // Create/update subscription record
+          console.log('💳 Managing subscription record')
+          
+          const subCheckResponse = await fetch(`${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}&select=id`, {
+            method: 'GET',
+            headers: supabaseHeaders
           })
 
-          if (!createResponse.ok) {
-            const errorText = await createResponse.text()
-            console.error('❌ Error creating user:', errorText)
-            throw new Error(`Failed to create user: ${errorText}`)
+          if (!subCheckResponse.ok) {
+            console.error('❌ Error checking subscription:', await subCheckResponse.text())
+            throw new Error('Failed to check subscription')
           }
 
-          const newUsers = await createResponse.json()
-          userId = newUsers[0]?.id
-          console.log(`✅ Created new user: ${userId}`)
-        }
+          const existingSubscriptions = await subCheckResponse.json()
 
-        // Create/update subscription record
-        console.log('💳 Managing subscription record')
-        
-        const subCheckResponse = await fetch(`${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}&select=id`, {
-          method: 'GET',
-          headers: supabaseHeaders
-        })
-
-        if (!subCheckResponse.ok) {
-          console.error('❌ Error checking subscription:', await subCheckResponse.text())
-          throw new Error('Failed to check subscription')
-        }
-
-        const existingSubscriptions = await subCheckResponse.json()
-
-        if (existingSubscriptions && existingSubscriptions.length > 0) {
-          // Update existing subscription
-          const subUpdateResponse = await fetch(`${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}`, {
-            method: 'PATCH',
-            headers: supabaseHeaders,
-            body: JSON.stringify({
-              status: 'active',
-              stripe_customer_id: stripeCustomerId,
-              amount_cents: amountTotal,
-              subscription_start: new Date().toISOString(),
-              current_period_start: new Date().toISOString(),
-              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-              updated_at: new Date().toISOString()
+          if (existingSubscriptions && existingSubscriptions.length > 0) {
+            // Update existing subscription
+            const subUpdateResponse = await fetch(`${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}`, {
+              method: 'PATCH',
+              headers: supabaseHeaders,
+              body: JSON.stringify({
+                status: 'active',
+                stripe_customer_id: stripeCustomerId,
+                amount_cents: amountTotal,
+                subscription_start: new Date().toISOString(),
+                current_period_start: new Date().toISOString(),
+                current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                updated_at: new Date().toISOString()
+              })
             })
-          })
 
-          if (!subUpdateResponse.ok) {
-            console.error('❌ Error updating subscription:', await subUpdateResponse.text())
+            if (!subUpdateResponse.ok) {
+              console.error('❌ Error updating subscription:', await subUpdateResponse.text())
+            } else {
+              console.log('✅ Updated existing subscription')
+            }
           } else {
-            console.log('✅ Updated existing subscription')
+            // Create new subscription
+            const subCreateResponse = await fetch(`${supabaseUrl}/rest/v1/subscriptions`, {
+              method: 'POST',
+              headers: supabaseHeaders,
+              body: JSON.stringify({
+                user_id: userId,
+                stripe_customer_id: stripeCustomerId,
+                status: 'active',
+                plan: planType.toLowerCase(),
+                amount_cents: amountTotal,
+                billing_interval: 'month',
+                subscription_start: new Date().toISOString(),
+                current_period_start: new Date().toISOString(),
+                current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+            })
+
+            if (!subCreateResponse.ok) {
+              console.error('❌ Error creating subscription:', await subCreateResponse.text())
+            } else {
+              console.log('✅ Created new subscription')
+            }
           }
+
+          console.log('🎉 Webhook processing complete!')
+          
+          return new Response(JSON.stringify({ 
+            success: true, 
+            userId: userId,
+            message: 'User and subscription processed successfully' 
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
         } else {
-          // Create new subscription
-          const subCreateResponse = await fetch(`${supabaseUrl}/rest/v1/subscriptions`, {
-            method: 'POST',
-            headers: supabaseHeaders,
-            body: JSON.stringify({
-              user_id: userId,
-              stripe_customer_id: stripeCustomerId,
-              status: 'active',
-              plan: 'premium',
-              amount_cents: amountTotal,
-              billing_interval: 'month',
-              subscription_start: new Date().toISOString(),
-              current_period_start: new Date().toISOString(),
-              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
+          // User doesn't exist yet - API will create it when intake form submits
+          console.log('⚠️ User record not found - will be created by create-user-account API')
+          console.log('⚠️ Skipping user and subscription updates - will be handled when user is created')
+          return new Response(JSON.stringify({ 
+            received: true, 
+            message: 'User will be created by API' 
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
-
-          if (!subCreateResponse.ok) {
-            console.error('❌ Error creating subscription:', await subCreateResponse.text())
-          } else {
-            console.log('✅ Created new subscription')
-          }
         }
-
-        console.log('🎉 Webhook processing complete!')
-        
-        return new Response(JSON.stringify({ 
-          success: true, 
-          userId: userId,
-          message: 'User and subscription processed successfully' 
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
 
       } catch (dbError) {
         console.error('❌ Database error:', dbError)
