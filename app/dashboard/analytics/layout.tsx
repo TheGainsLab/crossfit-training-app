@@ -81,6 +81,7 @@ export default function AnalyticsLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-gray-50 py-4 sm:py-6">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header - stack on mobile */}
+        {/* Trigger redeploy */}
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
           <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
           <Link 
