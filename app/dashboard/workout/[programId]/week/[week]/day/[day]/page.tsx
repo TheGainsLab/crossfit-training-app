@@ -1290,16 +1290,17 @@ className="w-6 h-6 bg-coral text-white rounded-full text-xs flex items-center ju
           {/* Completion Type Selection - REMOVED HEADER */}
           <div className="bg-ice-blue rounded-lg p-4">
             <div className="space-y-3">
-              <label className={`flex items-center space-x-3 cursor-pointer p-3 rounded-lg transition-colors ${completionType === 'asRx' ? 'bg-[#FE5858] text-white' : 'bg-white'}`}>
+              <label className="flex items-center space-x-3 cursor-pointer">
                 <input
                   type="radio"
                   name="completionType"
                   value="asRx"
                   checked={completionType === 'asRx'}
                   onChange={(e) => setCompletionType(e.target.value)}
-                  className="w-4 h-4 text-coral border-2 border-gray-300 focus:ring-2 focus:ring-coral"
+                  className="w-4 h-4 border-2 border-gray-300 focus:ring-2 focus:ring-coral accent-[#FE5858]"
+                  style={{ accentColor: '#FE5858' }}
                 />
-                <span className={`text-base font-medium ${completionType === 'asRx' ? 'text-white' : 'text-charcoal'}`}>
+                <span className="text-base font-medium text-charcoal">
                   As Prescribed (As Rx)
                 </span>
               </label>
@@ -1310,7 +1311,8 @@ className="w-6 h-6 bg-coral text-white rounded-full text-xs flex items-center ju
                   value="modified"
                   checked={completionType === 'modified'}
                   onChange={(e) => setCompletionType(e.target.value)}
-                  className="w-4 h-4 text-coral border-2 border-gray-300 focus:ring-2 focus:ring-coral"
+                  className="w-4 h-4 border-2 border-gray-300 focus:ring-2 focus:ring-coral accent-[#FE5858]"
+                  style={{ accentColor: '#FE5858' }}
                 />
                 <span className="text-base font-medium text-charcoal">
                   Modified Workout
