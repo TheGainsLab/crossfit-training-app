@@ -114,7 +114,14 @@ const routes = [
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
-      <h2 className="text-2xl font-bold mb-6">The Gains Apps - API Debug Tool</h2>
+      <h2 className="text-2xl font-bold mb-6 flex items-center">
+        <span style={{ color: '#282B34' }}>G</span>
+        <span style={{ color: '#FE5858' }}>A</span>
+        <span style={{ color: '#FE5858' }}>I</span>
+        <span style={{ color: '#282B34' }}>N</span>
+        <span style={{ color: '#282B34' }}>S</span>
+        <span className="ml-2" style={{ color: '#282B34' }}>- API Debug Tool</span>
+      </h2>
       
       <div className="mb-6">
         <button 

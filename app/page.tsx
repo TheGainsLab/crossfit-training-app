@@ -219,7 +219,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-1 gap-8">
             <div>
-              <h3 className="text-lg font-semibold mb-4">The Gains Apps</h3>
+              <h3 className="text-lg font-semibold mb-4 flex items-center">
+                <span style={{ color: '#282B34' }}>G</span>
+                <span style={{ color: '#FE5858' }}>A</span>
+                <span style={{ color: '#FE5858' }}>I</span>
+                <span style={{ color: '#282B34' }}>N</span>
+                <span style={{ color: '#282B34' }}>S</span>
+              </h3>
               <p className="text-gray-400">Personalized CrossFit training programs powered by GainsAI™. Built by coaches, enhanced by artificial intelligence.</p>
             </div>
           </div>

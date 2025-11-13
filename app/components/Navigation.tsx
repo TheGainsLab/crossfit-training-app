@@ -225,9 +225,13 @@ export default function Navigation() {
               <div className="flex-shrink-0 flex items-center">
 								<Link 
                   href={isBTNUser ? '/btn' : '/dashboard'} 
-                  className="text-xl font-bold text-gray-900 hover:text-coral transition-colors"
+                  className="text-xl font-bold hover:opacity-90 transition-opacity flex items-center"
                 >
-                  The Gains Apps
+                  <span style={{ color: '#282B34' }}>G</span>
+                  <span style={{ color: '#FE5858' }}>A</span>
+                  <span style={{ color: '#FE5858' }}>I</span>
+                  <span style={{ color: '#282B34' }}>N</span>
+                  <span style={{ color: '#282B34' }}>S</span>
                 </Link>
               </div>
 
