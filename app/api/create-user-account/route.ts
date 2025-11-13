@@ -57,12 +57,16 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Auth account created:', authData.user.id)
 
+    // Normalize email to lowercase for consistent lookups
+    // The trigger creates users with lowercase email, so we need to match that
+    const normalizedEmail = email.toLowerCase()
+
     // Find or create user record
-    // Check if user record exists (may have been created by webhook)
+    // Check if user record exists (may have been created by trigger or webhook)
     const { data: existingUser, error: userFindError } = await supabaseAdmin
       .from('users')
       .select('id')
-      .eq('email', email)
+      .eq('email', normalizedEmail)  // ← Use normalized email for case-insensitive lookup
       .maybeSingle()
 
     if (userFindError) {
@@ -76,7 +80,7 @@ export async function POST(request: NextRequest) {
     let userId: number
 
     if (existingUser) {
-      // User record exists (shouldn't happen with Option B, but handle gracefully)
+      // User record exists (created by trigger or webhook)
       userId = existingUser.id
       console.log('✅ Found existing user record:', userId)
     } else {
@@ -84,15 +88,14 @@ export async function POST(request: NextRequest) {
       console.log('📝 Creating new user record with subscription tier:', productType || 'PREMIUM')
       
       // Determine subscription tier from productType
-      // Convert 'btn' -> 'BTN', 'premium' -> 'PREMIUM', 'applied_power' -> 'APPLIED_POWER'
       const subscriptionTier = productType ? productType.toUpperCase() : 'PREMIUM'
       
       const { data: newUser, error: createError } = await supabaseAdmin
         .from('users')
         .insert({
-          email: email,
+          email: normalizedEmail,  // ← Store as lowercase for consistency
           name: userData.name || email.split('@')[0],
-          subscription_status: 'PENDING', // Webhook will update this if it processes later
+          subscription_status: 'PENDING',
           subscription_tier: subscriptionTier,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -100,19 +103,48 @@ export async function POST(request: NextRequest) {
         .select('id')
         .single()
 
-      if (createError || !newUser) {
-        console.error('❌ User creation error:', createError)
+      if (createError) {
+        // Handle duplicate email error gracefully (trigger may have created user)
+        if (createError.code === '23505' && createError.message?.includes('email')) {
+          console.log('⚠️ Duplicate email detected (likely created by trigger), finding existing user...')
+          
+          // Try to find the user again (trigger may have just created it)
+          const { data: retryUser } = await supabaseAdmin
+            .from('users')
+            .select('id')
+            .eq('email', normalizedEmail)
+            .maybeSingle()
+          
+          if (retryUser) {
+            userId = retryUser.id
+            console.log('✅ Found user record after duplicate error:', userId)
+          } else {
+            console.error('❌ User creation error (duplicate but not found):', createError)
+            return NextResponse.json({ 
+              error: 'Failed to create user record', 
+              details: createError?.message 
+            }, { status: 500 })
+          }
+        } else {
+          console.error('❌ User creation error:', createError)
+          return NextResponse.json({ 
+            error: 'Failed to create user record', 
+            details: createError?.message 
+          }, { status: 500 })
+        }
+      } else if (newUser) {
+        userId = newUser.id
+        console.log('✅ Created user record:', userId)
+      } else {
         return NextResponse.json({ 
           error: 'Failed to create user record', 
-          details: createError?.message 
+          details: 'No user returned from insert' 
         }, { status: 500 })
       }
-
-      userId = newUser.id
-      console.log('✅ Created user record:', userId)
     }
 
-    // Update user record with auth ID and intake data
+    // Update user record with auth ID, subscription tier, and intake data
+    // This ensures correct subscription tier even if trigger created the user
     const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({
@@ -123,6 +155,8 @@ export async function POST(request: NextRequest) {
         units: userData.units,
         ability_level: 'Beginner',
         conditioning_benchmarks: userData.conditioningBenchmarks,
+        subscription_status: 'PENDING', // Ensure it's set correctly
+        subscription_tier: productType ? productType.toUpperCase() : 'PREMIUM', // Ensure it's set correctly
         updated_at: new Date().toISOString()
       })
       .eq('id', userId)
