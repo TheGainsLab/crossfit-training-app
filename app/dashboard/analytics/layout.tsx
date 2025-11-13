@@ -85,7 +85,8 @@ export default function AnalyticsLayout({ children }: { children: React.ReactNod
           <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
           <Link 
             href="/dashboard" 
-            className="text-blue-600 hover:text-blue-700 text-sm sm:text-base self-start sm:self-auto"
+            className="px-4 py-2 rounded text-sm sm:text-base font-medium transition-colors self-start sm:self-auto"
+            style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
           >
             ← Back to Dashboard
           </Link>
