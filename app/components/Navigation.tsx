@@ -218,39 +218,36 @@ export default function Navigation() {
     <>
 			<nav className="supports-[backdrop-filter]:bg-white/80 bg-white/95 backdrop-blur border-b shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            {/* Left side - Logo and main nav */}
-            <div className="flex">
-              {/* Logo */}
-              <div className="flex-shrink-0 flex items-center">
-								<Link 
-                  href={isBTNUser ? '/btn' : '/dashboard'} 
-                  className="text-xl font-bold hover:opacity-90 transition-opacity flex items-center"
-                >
-                  <span style={{ color: '#282B34' }}>G</span>
-                  <span style={{ color: '#FE5858' }}>A</span>
-                  <span style={{ color: '#FE5858' }}>I</span>
-                  <span style={{ color: '#282B34' }}>N</span>
-                  <span style={{ color: '#282B34' }}>S</span>
-                </Link>
-              </div>
-
-              {/* Main navigation - Desktop only */}
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
+          <div className="flex justify-between items-center h-16 relative">
+            {/* Left side - Main navigation - Desktop only */}
+            <div className="hidden sm:flex sm:space-x-8">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
 									className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
 										isActive(link.href)
 											? 'border-coral text-gray-900'
 											: 'border-transparent text-gray-500 hover:border-slate-300 hover:text-gray-800'
 									}`}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Centered Logo */}
+            <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center h-full">
+              <Link 
+                href={isBTNUser ? '/btn' : '/dashboard'} 
+                className="text-5xl sm:text-6xl font-bold hover:opacity-90 transition-opacity flex items-center h-full leading-none"
+              >
+                <span style={{ color: '#282B34' }}>G</span>
+                <span style={{ color: '#FE5858' }}>A</span>
+                <span style={{ color: '#FE5858' }}>I</span>
+                <span style={{ color: '#282B34' }}>N</span>
+                <span style={{ color: '#282B34' }}>S</span>
+              </Link>
             </div>
 
             {/* Right side - Auth actions (Desktop) */}
@@ -280,7 +277,7 @@ export default function Navigation() {
             </div>
 
             {/* Mobile menu button */}
-            <div className="flex items-center sm:hidden">
+            <div className="flex items-center sm:hidden ml-auto">
               <button
                 type="button"
 					className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-coral"
