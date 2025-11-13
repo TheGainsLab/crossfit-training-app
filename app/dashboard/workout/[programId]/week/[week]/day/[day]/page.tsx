@@ -1180,13 +1180,7 @@ const handleDetailedSubmit = () => {
       const baseStyle = "flex-1 py-3 rounded-lg font-semibold text-sm transition-all duration-200 border-2 min-w-0"
       
       if (isSelected) {
-        switch (grade) {
-          case 'A': return `${baseStyle} bg-green-500 text-white border-green-500 shadow-md`
-          case 'B': return `${baseStyle} bg-blue-500 text-white border-blue-500 shadow-md`
-          case 'C': return `${baseStyle} bg-yellow-500 text-white border-yellow-500 shadow-md`
-          case 'D': return `${baseStyle} bg-red-500 text-white border-red-500 shadow-md`
-          default: return `${baseStyle} bg-gray-500 text-white border-gray-500`
-        }
+        return `${baseStyle} bg-[#FE5858] text-white border-[#FE5858] shadow-md`
       } else {
         return `${baseStyle} bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50`
       }
@@ -1296,7 +1290,7 @@ className="w-6 h-6 bg-coral text-white rounded-full text-xs flex items-center ju
           {/* Completion Type Selection - REMOVED HEADER */}
           <div className="bg-ice-blue rounded-lg p-4">
             <div className="space-y-3">
-              <label className="flex items-center space-x-3 cursor-pointer">
+              <label className={`flex items-center space-x-3 cursor-pointer p-3 rounded-lg transition-colors ${completionType === 'asRx' ? 'bg-[#FE5858] text-white' : 'bg-white'}`}>
                 <input
                   type="radio"
                   name="completionType"
@@ -1305,7 +1299,7 @@ className="w-6 h-6 bg-coral text-white rounded-full text-xs flex items-center ju
                   onChange={(e) => setCompletionType(e.target.value)}
                   className="w-4 h-4 text-coral border-2 border-gray-300 focus:ring-2 focus:ring-coral"
                 />
-                <span className="text-base font-medium text-charcoal">
+                <span className={`text-base font-medium ${completionType === 'asRx' ? 'text-white' : 'text-charcoal'}`}>
                   As Prescribed (As Rx)
                 </span>
               </label>
@@ -1557,13 +1551,7 @@ function MetConCard({
       const baseStyle = "flex-1 py-3 rounded-lg font-semibold text-sm transition-all duration-200 border-2 min-w-0"
       
       if (isSelected) {
-        switch (grade) {
-          case 'A': return `${baseStyle} bg-green-500 text-white border-green-500 shadow-md`
-          case 'B': return `${baseStyle} bg-blue-500 text-white border-blue-500 shadow-md`
-          case 'C': return `${baseStyle} bg-yellow-500 text-white border-yellow-500 shadow-md`
-          case 'D': return `${baseStyle} bg-red-500 text-white border-red-500 shadow-md`
-          default: return `${baseStyle} bg-gray-500 text-white border-gray-500`
-        }
+        return `${baseStyle} bg-[#FE5858] text-white border-[#FE5858] shadow-md`
       } else {
         return `${baseStyle} bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50`
       }
