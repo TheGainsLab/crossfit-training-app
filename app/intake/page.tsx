@@ -839,6 +839,7 @@ setSubscriptionStatus(subscription.status)
       body: JSON.stringify({
         email: formData.email,
         password: formData.password,
+        productType: productType, // Pass product type to set correct subscription tier
         userData: {
           name: formData.name,
           gender: formData.gender,

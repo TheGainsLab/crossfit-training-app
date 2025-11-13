@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, userData } = await request.json()
+    const { email, password, productType, userData } = await request.json()
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
@@ -76,21 +76,24 @@ export async function POST(request: NextRequest) {
     let userId: number
 
     if (existingUser) {
-      // User record exists (created by webhook)
+      // User record exists (shouldn't happen with Option B, but handle gracefully)
       userId = existingUser.id
       console.log('✅ Found existing user record:', userId)
     } else {
-      // User record doesn't exist yet (race condition - webhook hasn't processed)
-      // Create it now to prevent the intake form from failing
-      console.log('⚠️ User record not found, creating it now (webhook may update later)')
+      // Create user record (Option B: API is the primary creator)
+      console.log('📝 Creating new user record with subscription tier:', productType || 'PREMIUM')
+      
+      // Determine subscription tier from productType
+      // Convert 'btn' -> 'BTN', 'premium' -> 'PREMIUM', 'applied_power' -> 'APPLIED_POWER'
+      const subscriptionTier = productType ? productType.toUpperCase() : 'PREMIUM'
       
       const { data: newUser, error: createError } = await supabaseAdmin
         .from('users')
         .insert({
           email: email,
           name: userData.name || email.split('@')[0],
-          subscription_status: 'PENDING', // Webhook will update this
-          subscription_tier: 'PREMIUM', // Webhook will update this
+          subscription_status: 'PENDING', // Webhook will update this if it processes later
+          subscription_tier: subscriptionTier,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })

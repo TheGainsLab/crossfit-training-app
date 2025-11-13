@@ -336,33 +336,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       
       console.log(`Updated existing user subscription to ${planType}`)
     } else {
-      // Create new user
-      console.log('Creating new user')
-      
-      const { data: newUsers, error: createError } = await supabase
-        .from('users')
-        .insert({
-          email: customerEmail,
-          name: customerName || customerEmail.split('@')[0],
-          subscription_status: 'ACTIVE',
-          subscription_tier: planType,
-          stripe_customer_id: stripeCustomerId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select('id')
-
-      if (createError) {
-        console.error('Error creating user:', createError)
-        throw createError
-      }
-
-      if (newUsers && newUsers.length > 0) {
-        userId = newUsers[0].id
-        console.log(`Created new user: ${userId} with ${planType} subscription`)
-      } else {
-        throw new Error('Failed to get new user ID')
-      }
+      // User doesn't exist yet - API will create it when intake form submits
+      console.log('⚠️ User record not found - will be created by create-user-account API')
+      console.log('⚠️ Skipping user and subscription updates - will be handled when user is created')
+      return // Skip user and subscription updates
     }
 
     // Create/update subscription record with proper Stripe data
