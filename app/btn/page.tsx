@@ -329,7 +329,7 @@ function BTNWorkoutGenerator() {
                     {/* Benchmark Scores */}
                     {workout.medianScore && workout.excellentScore && (
                       <div className="mb-4 p-3 border rounded-lg" style={{ backgroundColor: '#FFFFFF' }}>
-                        <div className="text-sm font-semibold mb-2" style={{ color: '#FE5858' }}>Performance Benchmarks</div>
+                        <div className="text-sm font-semibold mb-2 text-center" style={{ color: '#FE5858' }}>Performance Benchmarks</div>
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div>
                             <span className="text-gray-600">50th Percentile (Median):</span>
