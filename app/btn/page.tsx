@@ -321,6 +321,20 @@ function BTNWorkoutGenerator() {
                       </div>
                     </div>
                     
+                    <div className="rounded p-4 mb-4 border" style={{ backgroundColor: '#FFFFFF', borderColor: '#282B34' }}>
+                      <p className="font-semibold mb-2">Exercises:</p>
+                      {workout.exercises.map((exercise, exIndex) => (
+                        <div key={exIndex} className="flex justify-between py-1">
+                          <span>
+                            {workout.format === 'For Time' && workout.pattern
+                              ? exercise.name
+                              : `${exercise.reps} ${exercise.name}`}
+                          </span>
+                          {exercise.weight && <span className="text-[#FE5858] font-medium">{exercise.weight}</span>}
+                        </div>
+                      ))}
+                    </div>
+                    
                     {/* Benchmark Scores */}
                     {workout.medianScore && workout.excellentScore && (
                       <div className="mb-4 p-3 border rounded-lg" style={{ backgroundColor: '#FFFFFF' }}>
@@ -337,20 +351,6 @@ function BTNWorkoutGenerator() {
                         </div>
                       </div>
                     )}
-                    
-                    <div className="rounded p-4 mb-4" style={{ backgroundColor: '#FFFFFF' }}>
-                      <p className="font-semibold mb-2">Exercises:</p>
-                      {workout.exercises.map((exercise, exIndex) => (
-                        <div key={exIndex} className="flex justify-between py-1">
-                          <span>
-                            {workout.format === 'For Time' && workout.pattern
-                              ? exercise.name
-                              : `${exercise.reps} ${exercise.name}`}
-                          </span>
-                          {exercise.weight && <span className="text-[#FE5858] font-medium">{exercise.weight}</span>}
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 ))}
               </div>

@@ -157,24 +157,7 @@ export default function WorkoutCard({ workout, onUpdate }: WorkoutCardProps) {
         </div>
       </div>
       
-      {/* Benchmark Scores */}
-      {workout.median_score && workout.excellent_score && (
-        <div className="mb-4 p-3 border rounded-lg" style={{ backgroundColor: '#FFFFFF' }}>
-          <div className="text-sm font-semibold mb-2 text-center" style={{ color: '#FE5858' }}>Performance Benchmarks</div>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <span className="text-gray-600">50th Percentile (Median):</span>
-              <span className="ml-2 font-semibold" style={{ color: '#FE5858' }}>{workout.median_score}</span>
-            </div>
-            <div>
-              <span className="text-gray-600">90th Percentile (Excellent):</span>
-              <span className="ml-2 font-semibold" style={{ color: '#FE5858' }}>{workout.excellent_score}</span>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      <div className="rounded p-4 mb-4" style={{ backgroundColor: '#FFFFFF' }}>
+      <div className="rounded p-4 mb-4 border" style={{ backgroundColor: '#FFFFFF', borderColor: '#282B34' }}>
         <p className="font-semibold mb-2">Exercises:</p>
         {workout.exercises && workout.exercises.length > 0 ? (
           workout.exercises.map((exercise: any, exIndex: number) => (
@@ -191,6 +174,23 @@ export default function WorkoutCard({ workout, onUpdate }: WorkoutCardProps) {
           <p className="text-gray-600">No exercises available</p>
         )}
       </div>
+      
+      {/* Benchmark Scores */}
+      {workout.median_score && workout.excellent_score && (
+        <div className="mb-4 p-3 border rounded-lg" style={{ backgroundColor: '#FFFFFF' }}>
+          <div className="text-sm font-semibold mb-2 text-center" style={{ color: '#FE5858' }}>Performance Benchmarks</div>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-gray-600">50th Percentile (Median):</span>
+              <span className="ml-2 font-semibold" style={{ color: '#FE5858' }}>{workout.median_score}</span>
+            </div>
+            <div>
+              <span className="text-gray-600">90th Percentile (Excellent):</span>
+              <span className="ml-2 font-semibold" style={{ color: '#FE5858' }}>{workout.excellent_score}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Completed Result Display */}
       {isCompleted && result && (
