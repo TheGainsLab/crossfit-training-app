@@ -84,21 +84,21 @@ export default function WorkoutHistoryTab() {
       {/* Stats Section */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {/* Saved */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 border" style={{ borderColor: '#282B34' }}>
           <p className="text-sm text-gray-600 mb-1">Saved</p>
-          <p className="text-4xl font-bold text-blue-600">{stats.total}</p>
+          <p className="text-4xl font-bold" style={{ color: '#FE5858' }}>{stats.total}</p>
         </div>
 
         {/* Logged */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 border" style={{ borderColor: '#282B34' }}>
           <p className="text-sm text-gray-600 mb-1">Logged</p>
-          <p className="text-4xl font-bold text-green-600">{stats.completed}</p>
+          <p className="text-4xl font-bold" style={{ color: '#FE5858' }}>{stats.completed}</p>
         </div>
 
         {/* Complete */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 border" style={{ borderColor: '#282B34' }}>
           <p className="text-sm text-gray-600 mb-1">Complete</p>
-          <p className="text-4xl font-bold text-[#FE5858]">{stats.completionRate}%</p>
+          <p className="text-4xl font-bold" style={{ color: '#FE5858' }}>{stats.completionRate}%</p>
         </div>
       </div>
 
