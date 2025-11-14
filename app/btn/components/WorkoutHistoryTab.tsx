@@ -29,6 +29,8 @@ interface SavedWorkout {
   created_at: string
   percentile: string | null
   performance_tier: string | null
+  median_score: string | null
+  excellent_score: string | null
 }
 
 export default function WorkoutHistoryTab() {
