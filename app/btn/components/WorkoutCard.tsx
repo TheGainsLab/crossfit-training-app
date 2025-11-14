@@ -152,13 +152,12 @@ export default function WorkoutCard({ workout, onUpdate }: WorkoutCardProps) {
         <div>
           <span className="font-semibold">Time Domain:</span> {workout.time_domain}
         </div>
-        <div>
-          <span className="font-semibold">Format:</span> {formatDisplayFormat()}
-        </div>
       </div>
       
       <div className="rounded p-4 mb-4 border" style={{ backgroundColor: '#FFFFFF', borderColor: '#282B34' }}>
-        <p className="font-semibold mb-2">Exercises:</p>
+        <p className="font-semibold mb-2">
+          <span className="font-semibold">Format:</span> {formatDisplayFormat()}
+        </p>
         {workout.exercises && workout.exercises.length > 0 ? (
           workout.exercises.map((exercise: any, exIndex: number) => (
             <div key={exIndex} className="flex justify-between py-1">

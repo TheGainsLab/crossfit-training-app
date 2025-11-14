@@ -311,18 +311,17 @@ function BTNWorkoutGenerator() {
                       <div>
                         <span className="font-semibold">Time Domain:</span> {workout.timeDomain}
                       </div>
-                      <div>
+                    </div>
+                    
+                    <div className="rounded p-4 mb-4 border" style={{ backgroundColor: '#FFFFFF', borderColor: '#282B34' }}>
+                      <p className="font-semibold mb-2">
                         <span className="font-semibold">Format:</span>{' '}
                         {workout.format === 'Rounds For Time' && workout.rounds
                           ? `${workout.rounds} Rounds For Time`
                           : workout.format === 'AMRAP' && workout.amrapTime
                           ? `AMRAP ${workout.amrapTime} minutes`
                           : `${workout.format}${workout.pattern ? `: ${workout.pattern}` : ''}`}
-                      </div>
-                    </div>
-                    
-                    <div className="rounded p-4 mb-4 border" style={{ backgroundColor: '#FFFFFF', borderColor: '#282B34' }}>
-                      <p className="font-semibold mb-2">Exercises:</p>
+                      </p>
                       {workout.exercises.map((exercise, exIndex) => (
                         <div key={exIndex} className="flex justify-between py-1">
                           <span>
