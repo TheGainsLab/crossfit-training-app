@@ -53,26 +53,29 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Week {week} Preview</h1>
           <div className="flex items-center gap-3">
-            <button onClick={async () => {
-              try {
-                setShowCoach(true)
-                setCoachLoading(true)
-                const { createClient } = await import('@/lib/supabase/client')
-                const sb = createClient()
-                const { data: { session } } = await sb.auth.getSession()
-                const token = session?.access_token || ''
-                const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-                if (token) headers['Authorization'] = `Bearer ${token}`
-                const res = await fetch('/api/coach/brief', { method: 'POST', headers, body: JSON.stringify({}) })
-                const json = await res.json()
-                if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load coach brief')
-                setCoachBrief(json.brief)
-              } catch (e: any) {
-                setCoachBrief({ error: e?.message || 'Failed to load coach brief' })
-              } finally {
-                setCoachLoading(false)
-              }
-            }} className="px-3 py-1.5 rounded-md border text-gray-700 hover:bg-gray-50">Coach</button>
+            {/* Coach button - Hidden for MVP. To re-enable: change false to true */}
+            {false && (
+              <button onClick={async () => {
+                try {
+                  setShowCoach(true)
+                  setCoachLoading(true)
+                  const { createClient } = await import('@/lib/supabase/client')
+                  const sb = createClient()
+                  const { data: { session } } = await sb.auth.getSession()
+                  const token = session?.access_token || ''
+                  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+                  if (token) headers['Authorization'] = `Bearer ${token}`
+                  const res = await fetch('/api/coach/brief', { method: 'POST', headers, body: JSON.stringify({}) })
+                  const json = await res.json()
+                  if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load coach brief')
+                  setCoachBrief(json.brief)
+                } catch (e: any) {
+                  setCoachBrief({ error: e?.message || 'Failed to load coach brief' })
+                } finally {
+                  setCoachLoading(false)
+                }
+              }} className="px-3 py-1.5 rounded-md border text-gray-700 hover:bg-gray-50">Coach</button>
+            )}
             <Link href="/dashboard" className="text-blue-600 hover:text-blue-700">Back to Dashboard</Link>
           </div>
         </div>
