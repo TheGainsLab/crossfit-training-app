@@ -142,18 +142,34 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
 
       {/* Coach slide-over (simple panel) */}
       {showCoach && (
-        <div className="fixed inset-0 bg-black/30 flex justify-end">
-          <div className="w-full max-w-md h-full bg-white shadow-xl p-4 overflow-y-auto">
-            <div className="flex items-center justify-between mb-3">
+        <div 
+          className="fixed inset-0 bg-black/30 flex justify-end z-50"
+          onClick={() => setShowCoach(false)} // Close on backdrop click
+        >
+          <div 
+            className="w-full max-w-md h-full bg-white shadow-xl flex flex-col"
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside panel
+          >
+            {/* Sticky header with close button */}
+            <div className="flex items-center justify-between p-4 border-b bg-white sticky top-0 z-10">
               <div className="text-lg font-semibold">Coach</div>
-              <button onClick={() => setShowCoach(false)} className="text-gray-600 hover:text-gray-900">✕</button>
+              <button 
+                onClick={() => setShowCoach(false)} 
+                className="text-gray-600 hover:text-gray-900 text-xl font-bold leading-none px-2 py-1 rounded hover:bg-gray-100"
+                aria-label="Close"
+              >
+                ×
+              </button>
             </div>
-            {coachLoading ? (
-              <div className="text-gray-600">Loading brief…</div>
-            ) : coachBrief?.error ? (
-              <div className="text-red-600 text-sm">{coachBrief.error}</div>
-            ) : (
-              <div className="space-y-4">
+            
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {coachLoading ? (
+                <div className="text-gray-600">Loading brief…</div>
+              ) : coachBrief?.error ? (
+                <div className="text-red-600 text-sm">{coachBrief.error}</div>
+              ) : (
+                <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-600">Coaching Brief</div>
                   <button className="text-xs px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100" onClick={() => setShowBriefJson(v => !v)}>{showBriefJson ? 'Hide JSON' : 'View JSON'}</button>
@@ -350,8 +366,9 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
                     </div>
                   )}
                 </section>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
