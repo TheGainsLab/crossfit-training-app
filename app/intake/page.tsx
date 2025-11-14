@@ -67,7 +67,7 @@ const equipmentOptions = [
   'High Rings', 'Low or Adjustable Rings', 'Jump Rope', 'Kettlebells',
   'Open Space', 'Parallettes', 'Pegboard', 'Pullup Bar or Rig',
   'Rowing Machine', 'Ski Erg', 'Bike Erg', 'Sandbag', 'Wall Ball',
-  'Wall Space', 'Bodyweight Only'
+  'Wall Space'
 ]
 
 const skillCategories = [
@@ -1404,19 +1404,6 @@ const saveUserData = async (userId: number) => {
         'Plyo Box',
         'HS Walk Obstacle',
         'Sandbag'
-      ]}
-      formData={formData}
-      toggleEquipment={toggleEquipment}
-      colorClass="bg-[#DAE2EA]"
-      onSetEquipment={(list) => updateFormData('equipment', list)}
-    />
-
-    <EquipmentCategoryCard
-      title="Minimal Setup"
-      description="Training with just your body"
-      icon="🤸"
-      equipment={[
-        'Bodyweight Only'
       ]}
       formData={formData}
       toggleEquipment={toggleEquipment}

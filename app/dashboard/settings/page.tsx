@@ -726,27 +726,6 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-
-            <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
-              <div className="p-4" style={{ backgroundColor: '#DAE2EA' }}>
-                <h3 className="text-lg font-semibold text-gray-900">Minimal Setup</h3>
-              </div>
-              <div className="p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {['Bodyweight Only'].map(eq => (
-                    <label key={eq} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                      <input
-                        type="checkbox"
-                        checked={equipment.includes(eq)}
-                        onChange={(e) => handleEquipmentChange(eq, e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-5 w-5"
-                      />
-                      <span className="text-sm text-gray-700">{eq}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
