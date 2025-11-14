@@ -186,6 +186,23 @@ export async function POST(request: NextRequest) {
         if (session.status === 'complete' && session.subscription) {
           console.log('✅ Session is complete, creating subscription record')
           
+          // Update user with stripe_customer_id FIRST
+          if (session.customer) {
+            const { error: customerUpdateError } = await supabaseAdmin
+              .from('users')
+              .update({
+                stripe_customer_id: session.customer as string,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', userId)
+            
+            if (customerUpdateError) {
+              console.error('❌ Error updating user with stripe_customer_id:', customerUpdateError)
+            } else {
+              console.log('✅ Updated user with stripe_customer_id:', session.customer)
+            }
+          }
+          
           // Get subscription details
           const subscription = typeof session.subscription === 'string' 
             ? await stripe.subscriptions.retrieve(session.subscription)
