@@ -50,7 +50,7 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h1 className="text-2xl font-bold text-gray-900">Week {week} Preview</h1>
           <div className="flex items-center gap-3">
             {/* Coach button - Hidden for MVP. To re-enable: change false to true */}
@@ -76,7 +76,13 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
                 }
               }} className="px-3 py-1.5 rounded-md border text-gray-700 hover:bg-gray-50">Coach</button>
             )}
-            <Link href="/dashboard" className="text-blue-600 hover:text-blue-700">Back to Dashboard</Link>
+            <Link 
+              href="/dashboard" 
+              className="px-4 py-2 rounded-md font-medium transition-colors"
+              style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
+            >
+              Back to Dashboard
+            </Link>
           </div>
         </div>
 
