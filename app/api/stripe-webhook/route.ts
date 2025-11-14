@@ -106,6 +106,21 @@ async function generateRenewalProgram(stripeSubscriptionId: string) {
       return
     }
 
+    // Get user's subscription tier to determine program type
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('subscription_tier')
+      .eq('id', subscription.user_id)
+      .single()
+
+    if (userError) {
+      console.error('Error getting user subscription tier:', userError)
+      // Continue with default 'full' if we can't determine tier
+    }
+
+    const isAppliedPower = userData?.subscription_tier === 'APPLIED_POWER'
+    const programType = isAppliedPower ? 'applied_power' : 'full'
+
     // Get current program count to determine next program number
     const { data: programData, error: programError } = await supabase
       .from('programs')
@@ -120,7 +135,7 @@ async function generateRenewalProgram(stripeSubscriptionId: string) {
     }
 
     const nextProgramNumber = (programData?.[0]?.program_number || 0) + 1
-    console.log(`Generating program #${nextProgramNumber} for user ${subscription.user_id}`)
+    console.log(`Generating program #${nextProgramNumber} for user ${subscription.user_id} (type: ${programType})`)
 
     // Get current user data from settings
     const currentUserData = await getCurrentUserData(subscription.user_id)
@@ -141,7 +156,8 @@ async function generateRenewalProgram(stripeSubscriptionId: string) {
         },
         body: JSON.stringify({ 
           user_id: subscription.user_id,
-          weeksToGenerate
+          weeksToGenerate,
+          programType
         })
       }
     )
