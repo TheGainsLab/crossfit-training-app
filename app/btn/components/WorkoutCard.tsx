@@ -156,7 +156,7 @@ export default function WorkoutCard({ workout, onUpdate }: WorkoutCardProps) {
       
       <div className="rounded p-4 mb-4 border" style={{ backgroundColor: '#FFFFFF', borderColor: '#282B34' }}>
         <p className="font-semibold mb-2">
-          <span className="font-semibold">Format:</span> {formatDisplayFormat()}
+          {formatDisplayFormat()}
         </p>
         {workout.exercises && workout.exercises.length > 0 ? (
           workout.exercises.map((exercise: any, exIndex: number) => (

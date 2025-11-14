@@ -315,7 +315,6 @@ function BTNWorkoutGenerator() {
                     
                     <div className="rounded p-4 mb-4 border" style={{ backgroundColor: '#FFFFFF', borderColor: '#282B34' }}>
                       <p className="font-semibold mb-2">
-                        <span className="font-semibold">Format:</span>{' '}
                         {workout.format === 'Rounds For Time' && workout.rounds
                           ? `${workout.rounds} Rounds For Time`
                           : workout.format === 'AMRAP' && workout.amrapTime
