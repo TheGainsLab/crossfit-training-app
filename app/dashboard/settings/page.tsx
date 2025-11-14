@@ -382,6 +382,30 @@ export default function SettingsPage() {
           .from('user_skills')
           .insert(skillRecords)
         if (skillsError) throw skillsError
+        
+        // Recalculate and update ability_level after skills are saved
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          const token = session?.access_token || ''
+          
+          const abilityResponse = await fetch('/api/update-ability-level', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({ userId })
+          })
+          
+          if (!abilityResponse.ok) {
+            console.warn('⚠️ Failed to update ability level:', await abilityResponse.text())
+          } else {
+            console.log('✅ Ability level updated')
+          }
+        } catch (error) {
+          console.warn('⚠️ Error updating ability level (continuing):', error)
+          // Don't fail the whole save if this fails
+        }
       }
 
       // Update 1RMs

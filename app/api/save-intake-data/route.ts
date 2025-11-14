@@ -222,6 +222,48 @@ if (skills && skills.length > 0) {
         }
         
         console.log('✅ Skills saved:', skillRecords.length, 'records')
+        
+        // Recalculate and update ability_level after skills are saved
+        console.log('🎯 Recalculating ability level...')
+        try {
+          const abilityResponse = await fetch(
+            `${supabaseUrl}/functions/v1/determine-user-ability`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ user_id: effectiveUserId })
+            }
+          )
+          
+          if (abilityResponse.ok) {
+            const abilityResult = await abilityResponse.json()
+            console.log(`✅ Ability determined: ${abilityResult.ability} (${abilityResult.advancedCount} advanced, ${abilityResult.intermediateCount} intermediate)`)
+            
+            // Update users table with new ability_level
+            const { error: abilityUpdateError } = await supabaseAdmin
+              .from('users')
+              .update({ 
+                ability_level: abilityResult.ability,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', effectiveUserId)
+            
+            if (abilityUpdateError) {
+              console.error('⚠️ Failed to update ability_level:', abilityUpdateError)
+            } else {
+              console.log(`✅ Updated ability_level to: ${abilityResult.ability}`)
+            }
+          } else {
+            const errorText = await abilityResponse.text()
+            console.error('⚠️ Failed to determine ability:', errorText)
+          }
+        } catch (error) {
+          console.error('⚠️ Error updating ability level (continuing):', error)
+          // Don't fail the whole save if this fails
+        }
       }
     }
 
