@@ -1463,7 +1463,7 @@ const saveUserData = async (userId: number) => {
                         className="px-8 py-3 font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
                       >
-                        💾 Save Profile
+                        Save Profile
                       </button>
                     </div>
                     <p className="text-sm text-gray-500 mt-2">Save changes and return to your profile</p>
@@ -1568,7 +1568,7 @@ const saveUserData = async (userId: number) => {
                         className="px-8 py-3 font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
                       >
-                        💾 Save Profile
+                        Save Profile
                       </button>
                     </div>
                     <p className="text-sm text-gray-500 mt-2">Save changes and return to your profile</p>
@@ -1679,7 +1679,7 @@ const saveUserData = async (userId: number) => {
                         className="px-8 py-3 font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
                       >
-                        💾 Save Profile
+                        Save Profile
                       </button>
                     </div>
                     <p className="text-sm text-gray-500 mt-2">Save changes and return to your profile</p>
@@ -1837,7 +1837,7 @@ const saveUserData = async (userId: number) => {
                         className="px-8 py-3 font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
                       >
-                        💾 Save Profile
+                        Save Profile
                       </button>
                     </div>
                     <p className="text-sm text-gray-500 mt-2">Save changes and return to your profile</p>
