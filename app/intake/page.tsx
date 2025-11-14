@@ -1056,6 +1056,12 @@ const saveUserData = async (userId: number) => {
     }
   }
 
+  const handleCancel = () => {
+    if (confirm('Are you sure you want to discard all changes?')) {
+      router.push('/profile')
+    }
+  }
+
   const isValidSection = (section: number) => {
     switch (section) {
       case 1:
@@ -1453,14 +1459,26 @@ const saveUserData = async (userId: number) => {
                 {/* Save Profile button for existing users */}
                 {!isNewPaidUser && (
                   <div className="mt-4 text-center">
-                    <button
-                      type="button"
-                      onClick={handleQuickSave}
-                      disabled={isSubmitting || !isValidSection(currentSection)}
-                      className="px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      💾 Save Profile
-                    </button>
+                    <div className="flex justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        disabled={isSubmitting}
+                        className="px-8 py-3 font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleQuickSave}
+                        disabled={isSubmitting || !isValidSection(currentSection)}
+                        className="px-8 py-3 font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
+                      >
+                        💾 Save Profile
+                      </button>
+                    </div>
                     <p className="text-sm text-gray-500 mt-2">Save changes and return to your profile</p>
                   </div>
                 )}
@@ -1546,14 +1564,26 @@ const saveUserData = async (userId: number) => {
                 {/* Save Profile button for existing users */}
                 {!isNewPaidUser && (
                   <div className="mt-4 text-center">
-                    <button
-                      type="button"
-                      onClick={handleQuickSave}
-                      disabled={isSubmitting || !isValidSection(currentSection)}
-                      className="px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      💾 Save Profile
-                    </button>
+                    <div className="flex justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        disabled={isSubmitting}
+                        className="px-8 py-3 font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleQuickSave}
+                        disabled={isSubmitting || !isValidSection(currentSection)}
+                        className="px-8 py-3 font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
+                      >
+                        💾 Save Profile
+                      </button>
+                    </div>
                     <p className="text-sm text-gray-500 mt-2">Save changes and return to your profile</p>
                   </div>
                 )}
@@ -1645,14 +1675,26 @@ const saveUserData = async (userId: number) => {
                 {/* Save Profile button for existing users */}
                 {!isNewPaidUser && (
                   <div className="mt-4 text-center">
-                    <button
-                      type="button"
-                      onClick={handleQuickSave}
-                      disabled={isSubmitting || !isValidSection(currentSection)}
-                      className="px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      💾 Save Profile
-                    </button>
+                    <div className="flex justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        disabled={isSubmitting}
+                        className="px-8 py-3 font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleQuickSave}
+                        disabled={isSubmitting || !isValidSection(currentSection)}
+                        className="px-8 py-3 font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
+                      >
+                        💾 Save Profile
+                      </button>
+                    </div>
                     <p className="text-sm text-gray-500 mt-2">Save changes and return to your profile</p>
                   </div>
                 )}
@@ -1791,14 +1833,26 @@ const saveUserData = async (userId: number) => {
                 {/* Save Profile button for existing users */}
                 {!isNewPaidUser && (
                   <div className="mt-4 text-center">
-                    <button
-                      type="button"
-                      onClick={handleQuickSave}
-                      disabled={isSubmitting || !isValidSection(currentSection)}
-                      className="px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      💾 Save Profile
-                    </button>
+                    <div className="flex justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        disabled={isSubmitting}
+                        className="px-8 py-3 font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleQuickSave}
+                        disabled={isSubmitting || !isValidSection(currentSection)}
+                        className="px-8 py-3 font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
+                      >
+                        💾 Save Profile
+                      </button>
+                    </div>
                     <p className="text-sm text-gray-500 mt-2">Save changes and return to your profile</p>
                   </div>
                 )}
