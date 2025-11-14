@@ -198,11 +198,6 @@ function BTNWorkoutGenerator() {
         </div>
 
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-4">Workout Generator</h2>
-          <p className="text-gray-600 mb-6">
-            Generate 5 realistic CrossFit workouts with proper exercise selection, rep schemes, and equipment consistency
-          </p>
-          
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3">Select Time Domains:</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
