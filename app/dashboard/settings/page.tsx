@@ -282,6 +282,14 @@ export default function SettingsPage() {
     }
   }
 
+  const cancelChanges = () => {
+    if (confirm('Are you sure you want to discard all changes?')) {
+      loadUserSettings()
+      setMessage('Changes discarded')
+      setTimeout(() => setMessage(''), 3000)
+    }
+  }
+
   const handleSettingsChange = (field: keyof UserSettings, value: any) => {
     setSettings(prev => ({ ...prev, [field]: value }))
   }
@@ -940,13 +948,22 @@ export default function SettingsPage() {
             >
               {isRefreshingAI ? 'Saving…' : 'AI Save'}
             </button>
-          <button
-            onClick={saveSettings}
-            disabled={saving}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? 'Saving...' : 'Save All Changes'}
-          </button>
+            <button
+              onClick={cancelChanges}
+              disabled={saving || isRefreshingAI}
+              className="px-6 py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveSettings}
+              disabled={saving}
+              className="px-6 py-3 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
+            >
+              {saving ? 'Saving...' : 'Save All Changes'}
+            </button>
           </div>
         </div>
 
