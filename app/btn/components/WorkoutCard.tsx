@@ -22,6 +22,8 @@ interface WorkoutCardProps {
     created_at: string
     percentile: string | null
     performance_tier: string | null
+    median_score: string | null
+    excellent_score: string | null
   }
   onUpdate: () => void
 }
@@ -105,124 +107,119 @@ export default function WorkoutCard({ workout, onUpdate }: WorkoutCardProps) {
 
   const result = formatResult()
 
+  // Format workout format to match generated card
+  const formatDisplayFormat = () => {
+    if (workout.workout_format === 'Rounds For Time' && workout.rounds) {
+      return `${workout.rounds} Rounds For Time`
+    }
+    if (workout.workout_format === 'AMRAP' && workout.amrap_time) {
+      return `AMRAP ${workout.amrap_time} minutes`
+    }
+    if (workout.pattern) {
+      return `${workout.workout_format}: ${workout.pattern}`
+    }
+    return workout.workout_format
+  }
+
   return (
-    <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-xl font-bold text-gray-900">{workout.workout_name}</h3>
-              {isCompleted ? (
-                <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full flex items-center gap-1">
-                  <span>✅</span> Completed
-                </span>
-              ) : (
-                <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full flex items-center gap-1">
-                  <span>📝</span> To Do
-                </span>
-              )}
-            </div>
-            
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
-              <span><strong>Format:</strong> {formatWorkoutFormat()}</span>
-              <span><strong>Time Domain:</strong> {workout.time_domain}</span>
-              <span><strong>Exercises:</strong> {workout.exercises?.length || 0}</span>
-            </div>
-
-            <p className="text-xs text-gray-500 mt-2">
-              Generated: {formatDate(workout.created_at)}
-            </p>
-
-            {isCompleted && result && (
-              <div className="mt-3 p-3 bg-green-50 rounded-lg">
-                <p className="text-sm font-semibold text-green-900">
-                  Result: {result}
-                  {workout.percentile && (
-                    <span className="ml-3 text-green-700">
-                      ({workout.percentile}th percentile{workout.performance_tier && ` - ${workout.performance_tier}`})
-                    </span>
-                  )}
-                </p>
-                {workout.notes && (
-                  <p className="text-sm text-green-700 mt-1">"{workout.notes}"</p>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-          >
-            {expanded ? 'Hide Details ▲' : 'View Details ▼'}
-          </button>
-          
+    <div className="border rounded-lg p-6" style={{ backgroundColor: '#F8FBFE' }}>
+      <div className="flex justify-between items-start mb-2">
+        <h4 className="text-lg font-bold">{workout.workout_name}</h4>
+        <div className="flex gap-2">
           {!isCompleted && (
             <button
               onClick={() => {
                 setExpanded(true)
                 setShowLogging(true)
               }}
-              className="px-4 py-2 text-sm bg-[#FE5858] text-white rounded-lg hover:bg-[#ff6b6b] transition-colors font-medium"
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
             >
               Log Result
             </button>
           )}
-
           <button
             onClick={handleDelete}
             disabled={deleting}
-            className="ml-auto px-4 py-2 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors font-medium disabled:opacity-50"
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}
           >
             {deleting ? 'Deleting...' : 'Delete'}
           </button>
         </div>
-
-        {/* Expanded Details */}
-        {expanded && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <h4 className="font-semibold text-gray-900 mb-3">📋 Workout Details:</h4>
-            
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              {workout.pattern && (
-                <p className="font-semibold text-gray-900 mb-2">{workout.pattern}</p>
-              )}
-              
-              {workout.exercises && workout.exercises.length > 0 ? (
-                <div className="space-y-1">
-                  {workout.exercises.map((exercise: any, idx: number) => (
-                    <div key={idx} className="flex justify-between items-center py-1">
-                      <span className="text-gray-900">
-                        {exercise.reps && `${exercise.reps} `}
-                        {exercise.name}
-                      </span>
-                      {exercise.weight && (
-                        <span className="text-gray-600 text-sm">@ {exercise.weight}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-600">No exercise details available</p>
-              )}
+      </div>
+      <div className="flex gap-4 mb-4 text-sm text-gray-600">
+        <div>
+          <span className="font-semibold">Time Domain:</span> {workout.time_domain}
+        </div>
+        <div>
+          <span className="font-semibold">Format:</span> {formatDisplayFormat()}
+        </div>
+      </div>
+      
+      {/* Benchmark Scores */}
+      {workout.median_score && workout.excellent_score && (
+        <div className="mb-4 p-3 border rounded-lg" style={{ backgroundColor: '#FFFFFF' }}>
+          <div className="text-sm font-semibold mb-2 text-center" style={{ color: '#FE5858' }}>Performance Benchmarks</div>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-gray-600">50th Percentile (Median):</span>
+              <span className="ml-2 font-semibold" style={{ color: '#FE5858' }}>{workout.median_score}</span>
             </div>
-
-            {/* Result Logging Form */}
-            {showLogging && !isCompleted && (
-              <ResultLoggingForm
-                workoutId={workout.id}
-                workoutFormat={workout.workout_format}
-                onSuccess={handleResultSaved}
-                onCancel={() => setShowLogging(false)}
-              />
-            )}
+            <div>
+              <span className="text-gray-600">90th Percentile (Excellent):</span>
+              <span className="ml-2 font-semibold" style={{ color: '#FE5858' }}>{workout.excellent_score}</span>
+            </div>
           </div>
+        </div>
+      )}
+      
+      <div className="rounded p-4 mb-4" style={{ backgroundColor: '#FFFFFF' }}>
+        <p className="font-semibold mb-2">Exercises:</p>
+        {workout.exercises && workout.exercises.length > 0 ? (
+          workout.exercises.map((exercise: any, exIndex: number) => (
+            <div key={exIndex} className="flex justify-between py-1">
+              <span>
+                {workout.workout_format === 'For Time' && workout.pattern
+                  ? exercise.name
+                  : `${exercise.reps || ''} ${exercise.name}`.trim()}
+              </span>
+              {exercise.weight && <span className="text-[#FE5858] font-medium">{exercise.weight}</span>}
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-600">No exercises available</p>
         )}
       </div>
+
+      {/* Completed Result Display */}
+      {isCompleted && result && (
+        <div className="mt-4 p-3 bg-green-50 rounded-lg">
+          <p className="text-sm font-semibold text-green-900">
+            Result: {result}
+            {workout.percentile && (
+              <span className="ml-3 text-green-700">
+                ({workout.percentile}th percentile{workout.performance_tier && ` - ${workout.performance_tier}`})
+              </span>
+            )}
+          </p>
+          {workout.notes && (
+            <p className="text-sm text-green-700 mt-1">"{workout.notes}"</p>
+          )}
+        </div>
+      )}
+
+      {/* Result Logging Form */}
+      {showLogging && !isCompleted && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <ResultLoggingForm
+            workoutId={workout.id}
+            workoutFormat={workout.workout_format}
+            onSuccess={handleResultSaved}
+            onCancel={() => setShowLogging(false)}
+          />
+        </div>
+      )}
     </div>
   )
 }
