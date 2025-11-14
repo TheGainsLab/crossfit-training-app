@@ -276,30 +276,84 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
               return {
                 ...originalBlock, // Preserve blockName and other properties
                 exercises: aiBlock.exercises && Array.isArray(aiBlock.exercises) && aiBlock.exercises.length > 0
-                  ? aiBlock.exercises.map((aiExercise: any, exIndex: number) => {
-                      // Validate AI exercise structure - ensure reps is not concatenated
-                      const originalExercise = originalBlock.exercises[exIndex]
-                      if (originalExercise) {
-                        // Check for concatenated reps (e.g., "642" instead of separate exercises)
-                        if (typeof aiExercise.reps === 'string' && aiExercise.reps.length > 3) {
-                          // Likely concatenated reps - use original structure
-                          console.warn(`⚠️ AI returned malformed reps "${aiExercise.reps}" for ${aiExercise.name}, using original structure`)
-                          return originalExercise
-                        }
-                        // Check if AI exercise is missing critical properties
-                        if (!aiExercise.name || !aiExercise.hasOwnProperty('sets') || !aiExercise.hasOwnProperty('reps')) {
-                          console.warn(`⚠️ AI exercise missing properties for ${aiExercise.name || 'unknown'}, using original structure`)
-                          return originalExercise
-                        }
-                        // Preserve weightTime from original if AI version is missing it
-                        // This allows AI to modify weights when it provides them, but prevents weight loss when AI omits weightTime
-                        if (originalExercise.weightTime && !aiExercise.weightTime) {
-                          console.warn(`⚠️ AI exercise missing weightTime for ${aiExercise.name}, preserving from original`)
-                          aiExercise.weightTime = originalExercise.weightTime
+                  ? (() => {
+                      // STRENGTH AND POWER: Ensure exercise count matches (prevents AI from combining sets)
+                      if (originalBlock.blockName === 'STRENGTH AND POWER') {
+                        if (aiBlock.exercises.length !== originalBlock.exercises.length) {
+                          console.warn(`⚠️ AI returned ${aiBlock.exercises.length} exercises but original had ${originalBlock.exercises.length} for STRENGTH AND POWER block, using original structure`)
+                          return originalBlock.exercises
                         }
                       }
-                      return aiExercise
-                    })
+                      
+                      // Map exercises with validation
+                      return aiBlock.exercises.map((aiExercise: any, exIndex: number) => {
+                        // Validate AI exercise structure - ensure reps is not concatenated
+                        const originalExercise = originalBlock.exercises[exIndex]
+                        if (originalExercise) {
+                          // STRENGTH AND POWER block validation
+                          if (originalBlock.blockName === 'STRENGTH AND POWER') {
+                            // 1. Sets must always be 1 for strength exercises
+                            if (aiExercise.sets !== 1 && aiExercise.sets !== undefined) {
+                              console.warn(`⚠️ AI returned strength exercise with sets !== 1 (${aiExercise.sets}) for ${aiExercise.name}, using original structure`)
+                              return originalExercise
+                            }
+                            
+                            // 2. Reps must be a valid number between 1-20
+                            const repsNum = typeof aiExercise.reps === 'string' 
+                              ? parseInt(aiExercise.reps) 
+                              : aiExercise.reps
+                            
+                            if (isNaN(repsNum) || repsNum < 1 || repsNum > 20) {
+                              console.warn(`⚠️ AI returned invalid reps "${aiExercise.reps}" (must be 1-20) for ${aiExercise.name}, using original structure`)
+                              return originalExercise
+                            }
+                            
+                            // 3. Check for concatenated reps (e.g., "654" = 654, which is > 20)
+                            if (typeof aiExercise.reps === 'string' && aiExercise.reps.length > 2) {
+                              // If it's a string longer than 2 chars, it's likely concatenated (e.g., "654")
+                              const parsed = parseInt(aiExercise.reps)
+                              if (!isNaN(parsed) && parsed > 20) {
+                                console.warn(`⚠️ AI returned concatenated reps "${aiExercise.reps}" for ${aiExercise.name}, using original structure`)
+                                return originalExercise
+                              }
+                            }
+                            
+                            // 4. Weight validation - string length > 4 OR numeric value > 1000 = likely concatenated
+                            if (aiExercise.weightTime && typeof aiExercise.weightTime === 'string') {
+                              const weightNum = parseFloat(aiExercise.weightTime)
+                              // If string is longer than 4 chars OR value > 1000, it's likely concatenated
+                              // (Allows "1000" = 4 chars, but catches "180185190" = 9 chars)
+                              if (aiExercise.weightTime.length > 4 || (!isNaN(weightNum) && weightNum > 1000)) {
+                                console.warn(`⚠️ AI returned malformed weight "${aiExercise.weightTime}" (length ${aiExercise.weightTime.length}, value ${weightNum}) for ${aiExercise.name}, using original structure`)
+                                return originalExercise
+                              }
+                            }
+                          }
+                          
+                          // General validation for all blocks
+                          // Check for concatenated reps (e.g., "642" instead of separate exercises)
+                          if (typeof aiExercise.reps === 'string' && aiExercise.reps.length > 3) {
+                            // Likely concatenated reps - use original structure
+                            console.warn(`⚠️ AI returned malformed reps "${aiExercise.reps}" for ${aiExercise.name}, using original structure`)
+                            return originalExercise
+                          }
+                          
+                          // Check if AI exercise is missing critical properties
+                          if (!aiExercise.name || !aiExercise.hasOwnProperty('sets') || !aiExercise.hasOwnProperty('reps')) {
+                            console.warn(`⚠️ AI exercise missing properties for ${aiExercise.name || 'unknown'}, using original structure`)
+                            return originalExercise
+                          }
+                          
+                          // Preserve weightTime from original if AI version is missing it
+                          // This allows AI to modify weights when it provides them, but prevents weight loss when AI omits weightTime
+                          if (originalExercise.weightTime && !aiExercise.weightTime) {
+                            console.warn(`⚠️ AI exercise missing weightTime for ${aiExercise.name}, preserving from original`)
+                            aiExercise.weightTime = originalExercise.weightTime
+                          }
+                        }
+                        return aiExercise
+                      })
+                    })()
                   : originalBlock.exercises // Fallback to original exercises if AI exercises are invalid
               }
             }),
