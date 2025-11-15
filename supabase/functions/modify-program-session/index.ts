@@ -47,6 +47,7 @@ serve(async (req) => {
       .from('performance_logs')
       .select('id')
       .eq('user_id', user_id)
+      .eq('program_id', originalProgram?.programId)
       .eq('week', week)
       .eq('day', day)
       .limit(1);
@@ -58,6 +59,7 @@ if (completedLogs && completedLogs.length > 0) {
     .from('modified_workouts')
     .select('modified_program, modifications_applied')
     .eq('user_id', user_id)
+    .eq('program_id', originalProgram?.programId)
     .eq('week', week)
     .eq('day', day)
     .single();
@@ -77,6 +79,7 @@ if (completedLogs && completedLogs.length > 0) {
    .from('modified_workouts')
    .select('modified_program, modifications_applied, created_at')
    .eq('user_id', user_id)
+   .eq('program_id', originalProgram?.programId)
    .eq('week', week)
    .eq('day', day)
    .single();
