@@ -239,6 +239,76 @@ if (plateauAnalysis && Object.keys(plateauConstraints).length > 0) {
 TODAY'S ORIGINAL PROGRAM:
 ${JSON.stringify(originalProgram.blocks)}
 
+CRITICAL STRUCTURE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
+
+PROGRAM STRUCTURE HIERARCHY:
+- Blocks contain Tasks (exercises)
+- Tasks have Sets
+- Sets have Reps
+- Reps have Weight, Distance, or Time (in weightTime field)
+
+BLOCK RULES:
+1. Block names (blockName) MUST NEVER CHANGE - AI cannot modify block names
+2. Block order MUST match original exactly
+3. Use "blockName" property (not "name") to match original structure
+
+TASK-LEVEL RULES BY BLOCK:
+
+1. SKILLS Block:
+   - Sets: Can modify, but MUST be between 1-3 (never 0, never 4+)
+   - Reps: Can modify (can be numbers or strings)
+   - weightTime: Can modify (usually empty for bodyweight, but can be specified)
+   - Task name: Cannot change (cannot remove exercises entirely)
+   - Can reduce volume: If original has sets: 3, can reduce to sets: 1 (low volume), but cannot remove the task
+   - RESTRICTION: Cannot remove tasks - all original tasks must remain, even if reduced to minimum volume
+
+2. TECHNICAL WORK Block:
+   - Sets: Can modify, but MUST be between 1-3 (never 0, never 4+)
+   - Reps: Can modify (usually low, 1-5)
+   - weightTime: Can modify (usually specified as weight)
+   - Task name: Cannot change (cannot remove exercises entirely)
+   - Can reduce volume: If original has sets: 3, can reduce to sets: 1 (low volume), but cannot remove the task
+   - RESTRICTION: Cannot remove tasks - all original tasks must remain, even if reduced to minimum volume
+
+3. STRENGTH AND POWER Block - SPECIAL RULES:
+   - ⚠️ CRITICAL: Each set is a SEPARATE task object with sets: 1
+   - Structure: NEVER use sets: 2, sets: 3, etc. - always sets: 1 per task
+   - Sets: AI can change the NUMBER of sets (by adding/removing task objects), but each task object must have sets: 1
+   - Reps: Can modify, but MUST be between 2-20 (numeric)
+   - weightTime: Can modify, but CANNOT exceed the heaviest weight from the original program's heaviest set
+   - To reduce volume from 4 sets to 3 sets: Return 3 separate task objects (remove one), each with sets: 1
+   - Weight restriction: If heaviest original weight is "265", no modified weight can exceed "265"
+   - Task count: Can be changed (add/remove task objects to modify volume), but each task must have sets: 1
+   - VIOLATION: Returning { name: "Front Squat", sets: 3, ... } will be REJECTED
+   - VIOLATION: Returning reps < 2 or reps > 20 will be REJECTED
+   - VIOLATION: Returning weightTime higher than original max weight will be REJECTED
+
+4. ACCESSORIES Block:
+   - Sets: Can modify, but MUST be between 1-3 (never 0, never 4+)
+   - Reps: Can modify (usually moderate, 5-15)
+   - weightTime: Can modify (usually specified as weight)
+   - Task name: Cannot change (cannot remove exercises entirely)
+   - Can reduce volume: If original has sets: 3, can reduce to sets: 1 (low volume), but cannot remove the task
+   - RESTRICTION: Cannot remove tasks - all original tasks must remain, even if reduced to minimum volume
+
+5. METCONS Block:
+   - ⚠️ RESTRICTION: AI CANNOT MODIFY METCONS - Return original tasks exactly as provided
+   - Do not change task names, sets, reps, weightTime, or notes
+   - Preserve the entire METCONS block structure unchanged
+   - This restriction may be lifted in the future, but for now METCONS are off-limits
+
+VALIDATION RULES (your response will be rejected if):
+- Block name (blockName) is changed
+- METCONS block: Any modification attempted (will be rejected)
+- SKILLS, TECHNICAL WORK, or ACCESSORIES: sets < 1 or sets > 3
+- SKILLS, TECHNICAL WORK, or ACCESSORIES: Task removed (all original tasks must remain)
+- STRENGTH AND POWER: sets !== 1 (each task object must have sets: 1)
+- STRENGTH AND POWER: reps < 2 or reps > 20
+- STRENGTH AND POWER: weightTime exceeds original max weight
+- Any block: Missing task name, sets, or reps properties
+- Any block: Malformed reps (concatenated numbers like "654" for non-distance tasks)
+- Any block: Malformed weightTime (length > 4 chars or value > 1000 for weight values)
+
 MODIFICATION HIERARCHY:
 A11 STRATEGIC RULES (Only apply when plateauConstraints has entries):
 ${Object.keys(plateauConstraints).length > 0 ? 

@@ -301,12 +301,20 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
                 ...originalBlock, // Preserve blockName and other properties
                 exercises: aiBlock.exercises && Array.isArray(aiBlock.exercises) && aiBlock.exercises.length > 0
                   ? (() => {
-                      // STRENGTH AND POWER: Ensure exercise count matches (prevents AI from combining sets)
+                      // Block-specific validation
                       if (originalBlock.blockName === 'STRENGTH AND POWER') {
+                        // STRENGTH AND POWER: Exercise count can change (volume modification), but each must have sets: 1
+                        // No strict count check here - allow volume changes
+                      } else if (['SKILLS', 'TECHNICAL WORK', 'ACCESSORIES'].includes(originalBlock.blockName)) {
+                        // SKILLS, TECHNICAL WORK, ACCESSORIES: Task count must match (cannot remove tasks)
                         if (aiBlock.exercises.length !== originalBlock.exercises.length) {
-                          console.warn(`⚠️ AI returned ${aiBlock.exercises.length} exercises but original had ${originalBlock.exercises.length} for STRENGTH AND POWER block, using original structure`)
+                          console.warn(`⚠️ AI returned ${aiBlock.exercises.length} tasks but original had ${originalBlock.exercises.length} for ${originalBlock.blockName} block, using original structure`)
                           return originalBlock.exercises
                         }
+                      } else if (originalBlock.blockName === 'METCONS') {
+                        // METCONS: No modifications allowed - return original
+                        console.warn(`⚠️ AI attempted to modify METCONS block, using original structure`)
+                        return originalBlock.exercises
                       }
                       
                       // Map exercises with validation
@@ -322,13 +330,13 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
                               return originalExercise
                             }
                             
-                            // 2. Reps must be a valid number between 1-20
+                            // 2. Reps must be a valid number between 2-20
                             const repsNum = typeof aiExercise.reps === 'string' 
                               ? parseInt(aiExercise.reps) 
                               : aiExercise.reps
                             
-                            if (isNaN(repsNum) || repsNum < 1 || repsNum > 20) {
-                              console.warn(`⚠️ AI returned invalid reps "${aiExercise.reps}" (must be 1-20) for ${aiExercise.name}, using original structure`)
+                            if (isNaN(repsNum) || repsNum < 2 || repsNum > 20) {
+                              console.warn(`⚠️ AI returned invalid reps "${aiExercise.reps}" (must be 2-20) for ${aiExercise.name}, using original structure`)
                               return originalExercise
                             }
                             
@@ -343,6 +351,7 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
                             }
                             
                             // 4. Weight validation - string length > 4 OR numeric value > 1000 = likely concatenated
+                            // 5. Weight cannot exceed original max weight
                             if (aiExercise.weightTime && typeof aiExercise.weightTime === 'string') {
                               const weightNum = parseFloat(aiExercise.weightTime)
                               // If string is longer than 4 chars OR value > 1000, it's likely concatenated
@@ -351,6 +360,30 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
                                 console.warn(`⚠️ AI returned malformed weight "${aiExercise.weightTime}" (length ${aiExercise.weightTime.length}, value ${weightNum}) for ${aiExercise.name}, using original structure`)
                                 return originalExercise
                               }
+                              
+                              // Check if weight exceeds original max weight for this exercise
+                              const originalWeights = originalBlock.exercises
+                                .filter((ex: any) => ex.name === aiExercise.name && ex.weightTime)
+                                .map((ex: any) => parseFloat(ex.weightTime) || 0)
+                              const maxOriginalWeight = originalWeights.length > 0 ? Math.max(...originalWeights) : Infinity
+                              
+                              if (!isNaN(weightNum) && weightNum > maxOriginalWeight) {
+                                console.warn(`⚠️ AI returned weight "${aiExercise.weightTime}" (${weightNum}) exceeding original max weight ${maxOriginalWeight} for ${aiExercise.name}, using original structure`)
+                                return originalExercise
+                              }
+                            }
+                          }
+                          
+                          // Block-specific validation for SKILLS, TECHNICAL WORK, ACCESSORIES
+                          if (['SKILLS', 'TECHNICAL WORK', 'ACCESSORIES'].includes(originalBlock.blockName)) {
+                            // Sets must be between 1-3
+                            const setsNum = typeof aiExercise.sets === 'string' 
+                              ? parseInt(aiExercise.sets) 
+                              : aiExercise.sets
+                            
+                            if (isNaN(setsNum) || setsNum < 1 || setsNum > 3) {
+                              console.warn(`⚠️ AI returned invalid sets "${aiExercise.sets}" (must be 1-3) for ${aiExercise.name} in ${originalBlock.blockName}, using original structure`)
+                              return originalExercise
                             }
                           }
                           
