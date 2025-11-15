@@ -75,13 +75,15 @@ if (completedLogs && completedLogs.length > 0) {
  // If not completed, return cached modified workout if it exists to avoid re-calling AI on every load
  const { data: cachedModification } = await supabase
    .from('modified_workouts')
-   .select('modified_program, modifications_applied')
+   .select('modified_program, modifications_applied, updated_at')
    .eq('user_id', user_id)
    .eq('week', week)
    .eq('day', day)
    .single();
 
+ console.log(`🔍 Cache check for user ${user_id}, week ${week}, day ${day}:`, cachedModification ? 'FOUND' : 'NOT FOUND')
  if (cachedModification) {
+   console.log(`✅ Using cached modification from ${cachedModification.updated_at || 'unknown time'}`)
    return new Response(JSON.stringify({
      success: true,
      program: cachedModification.modified_program,
@@ -97,6 +99,9 @@ if (completedLogs && completedLogs.length > 0) {
     // Get user context and recent performance
     const userContext = await buildUserContext(user_id);
     
+    console.log(`🤖 Calling AI for user ${user_id}, week ${week}, day ${day}`)
+    console.log(`📊 User context: ability=${userContext.userProfile.ability}, recentSessions=${userContext.recentPerformance.length}, plateauConstraints=${Object.keys(userContext.plateauConstraints || {}).length}`)
+    
     // Try AI modifications, fallback to original program
     let modifiedProgram;
     try {
@@ -108,18 +113,36 @@ if (completedLogs && completedLogs.length > 0) {
 
 // ADD STORAGE LOGIC HERE (before the return statement):
 // Store the modified workout (even if no modifications) so subsequent loads use cache instead of re-calling AI
-await supabase
-  .from('modified_workouts')
-  .upsert({
-    user_id: user_id,
-    program_id: originalProgram?.programId || null,
-    week: week,
-    day: day,
-    modified_program: modifiedProgram,
-    modifications_applied: modifiedProgram?.modifications || [],
-    is_preview: true,
-    source: 'on_load' // or 'weekly'/'chat' when applicable
-  });
+try {
+  const { data: upsertData, error: upsertError } = await supabase
+    .from('modified_workouts')
+    .upsert({
+      user_id: user_id,
+      program_id: originalProgram?.programId || null,
+      week: week,
+      day: day,
+      modified_program: modifiedProgram,
+      modifications_applied: modifiedProgram?.modifications || [],
+      is_preview: true,
+      source: 'on_load' // or 'weekly'/'chat' when applicable
+    }, { onConflict: 'user_id,program_id,week,day' })
+    .select()
+  
+  if (upsertError) {
+    console.error(`❌ Failed to store in modified_workouts:`, upsertError)
+  } else {
+    console.log(`✅ Stored in modified_workouts:`, {
+      id: upsertData?.[0]?.id,
+      user_id,
+      program_id: originalProgram?.programId,
+      week,
+      day,
+      modificationCount: modifiedProgram?.modifications?.length || 0
+    })
+  }
+} catch (e) {
+  console.error(`❌ Upsert exception:`, e)
+}
 
 return new Response(JSON.stringify({
   success: true,
@@ -182,6 +205,8 @@ async function applyAIModifications(originalProgram: any, userContext: any) {
 
   const data = await response.json();
   const aiResponse = data.content[0].text;
+  
+  console.log(`📥 AI Response (raw, first 500 chars):`, aiResponse.substring(0, 500))
   
   return parseModificationResponse(aiResponse, originalProgram);
 }
@@ -262,6 +287,12 @@ function parseModificationResponse(aiResponse: string, originalProgram: any) {
   try {
     const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const parsed = JSON.parse(cleanResponse);
+    
+    console.log(`✅ Parsed AI response:`, {
+      needsModification: parsed.needsModification,
+      modificationCount: parsed.modifications?.length || 0,
+      firstModification: parsed.modifications?.[0] || null
+    })
     
     if (!parsed.needsModification) {
       return { 

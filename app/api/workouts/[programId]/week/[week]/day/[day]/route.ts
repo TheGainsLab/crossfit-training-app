@@ -251,8 +251,25 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
       totalBlocks: targetDay.blocks.length
     }
 
+    // Check cache before calling Edge Function
+    console.log(`🔍 Checking cache for workout: user ${program.user_id}, program ${programIdNum}, week ${weekNum}, day ${dayNum}`)
+    const { data: cachedMod, error: cacheError } = await supabase
+      .from('modified_workouts')
+      .select('modified_program, modifications_applied, updated_at')
+      .eq('user_id', program.user_id)
+      .eq('program_id', programIdNum)
+      .eq('week', weekNum)
+      .eq('day', dayNum)
+      .single()
+
+    if (cacheError && cacheError.code !== 'PGRST116') {
+      console.warn(`⚠️ Cache check error:`, cacheError)
+    }
+    console.log(`📦 Cache result:`, cachedMod ? `FOUND (updated ${cachedMod.updated_at})` : 'NOT FOUND')
+
     // Apply AI modifications server-side to avoid extra client roundtrip
     try {
+      console.log(`🚀 Calling Edge Function modify-program-session`)
       const aiRes = await fetch(`${process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/modify-program-session`, {
         method: 'POST',
         headers: {
@@ -263,6 +280,13 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
       })
       if (aiRes.ok) {
         const ai = await aiRes.json()
+        console.log(`📥 Edge Function response:`, {
+          success: ai?.success,
+          hasProgram: !!ai?.program,
+          blockCount: ai?.program?.blocks?.length,
+          source: ai?.source,
+          modificationsAppliedCount: ai?.modificationsApplied?.length || 0
+        })
         if (ai?.success && ai?.program?.blocks?.length) {
           // Merge AI modifications with original workout structure
           // This preserves week, day, programId, and ensures exercises maintain proper structure
@@ -361,6 +385,12 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
             ...(ai.source && { source: ai.source }),
             ...(ai.rationale && { rationale: ai.rationale })
           }
+          console.log(`✅ Workout merged:`, {
+            totalBlocks: workout.blocks.length,
+            totalExercises: workout.blocks.reduce((sum: number, b: any) => sum + (b.exercises?.length || 0), 0),
+            hasMetconData: !!workout.metconData,
+            source: (workout as any).source || 'original'
+          })
         }
       }
     } catch (e) {
