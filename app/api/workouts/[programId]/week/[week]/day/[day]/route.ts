@@ -255,7 +255,7 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
     console.log(`🔍 Checking cache for workout: user ${program.user_id}, program ${programIdNum}, week ${weekNum}, day ${dayNum}`)
     const { data: cachedMod, error: cacheError } = await supabase
       .from('modified_workouts')
-      .select('modified_program, modifications_applied, updated_at')
+      .select('modified_program, modifications_applied, created_at')
       .eq('user_id', program.user_id)
       .eq('program_id', programIdNum)
       .eq('week', weekNum)
@@ -265,7 +265,7 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
     if (cacheError && cacheError.code !== 'PGRST116') {
       console.warn(`⚠️ Cache check error:`, cacheError)
     }
-    console.log(`📦 Cache result:`, cachedMod ? `FOUND (updated ${cachedMod.updated_at})` : 'NOT FOUND')
+    console.log(`📦 Cache result:`, cachedMod ? `FOUND (created ${cachedMod.created_at})` : 'NOT FOUND')
 
     // Apply AI modifications server-side to avoid extra client roundtrip
     try {

@@ -75,7 +75,7 @@ if (completedLogs && completedLogs.length > 0) {
  // If not completed, return cached modified workout if it exists to avoid re-calling AI on every load
  const { data: cachedModification } = await supabase
    .from('modified_workouts')
-   .select('modified_program, modifications_applied, updated_at')
+   .select('modified_program, modifications_applied, created_at')
    .eq('user_id', user_id)
    .eq('week', week)
    .eq('day', day)
@@ -83,7 +83,7 @@ if (completedLogs && completedLogs.length > 0) {
 
  console.log(`🔍 Cache check for user ${user_id}, week ${week}, day ${day}:`, cachedModification ? 'FOUND' : 'NOT FOUND')
  if (cachedModification) {
-   console.log(`✅ Using cached modification from ${cachedModification.updated_at || 'unknown time'}`)
+   console.log(`✅ Using cached modification from ${cachedModification.created_at || 'unknown time'}`)
    return new Response(JSON.stringify({
      success: true,
      program: cachedModification.modified_program,
@@ -124,7 +124,7 @@ try {
       modified_program: modifiedProgram,
       modifications_applied: modifiedProgram?.modifications || [],
       is_preview: true,
-      source: 'on_load' // or 'weekly'/'chat' when applicable
+      source: 'ai'  // AI-generated modifications
     }, { onConflict: 'user_id,program_id,week,day' })
     .select()
   
