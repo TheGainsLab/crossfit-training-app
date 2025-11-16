@@ -19,6 +19,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
     
+    // Get recent activity date ranges
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const oneDayAgo = new Date()
+    oneDayAgo.setHours(oneDayAgo.getHours() - 24)
+    
     // Get all stats in parallel
     const [
       { data: users, count: userCount },
@@ -29,11 +35,12 @@ export async function GET(request: NextRequest) {
       { data: freeUsers, count: freeCount },
       { data: approvedCoaches },
       { data: programs, count: programCount },
-      { data: usersWithPrograms },
+      { data: usersWithProgramsData },
       { data: performanceLogs, count: logCount },
-      { data: activeUsers },
+      { data: activeUsersData },
       { data: relationships, count: relationshipCount },
-      { data: activeRelationships, count: activeRelationshipCount }
+      { data: activeRelationships, count: activeRelationshipCount },
+      { count: recentLogs }
     ] = await Promise.all([
       supabase.from('users').select('*', { count: 'exact', head: true }),
       supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'athlete'),
@@ -43,21 +50,23 @@ export async function GET(request: NextRequest) {
       supabase.from('users').select('*', { count: 'exact', head: true }).eq('subscription_tier', 'FREE'),
       supabase.from('coaches').select('id').eq('status', 'approved'),
       supabase.from('programs').select('*', { count: 'exact', head: true }),
-      supabase.from('programs').select('user_id', { count: 'exact' }).limit(1),
+      supabase.from('programs').select('user_id'), // Get all user_ids to count distinct
       supabase.from('performance_logs').select('*', { count: 'exact', head: true }),
-      supabase.from('performance_logs').select('user_id', { count: 'exact' }).limit(1),
+      supabase.from('performance_logs').select('user_id').gte('logged_at', oneDayAgo.toISOString()), // Active users in last 24h
       supabase.from('coach_athlete_relationships').select('*', { count: 'exact', head: true }),
-      supabase.from('coach_athlete_relationships').select('*', { count: 'exact', head: true }).eq('status', 'active')
+      supabase.from('coach_athlete_relationships').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+      supabase.from('performance_logs').select('*', { count: 'exact', head: true }).gte('logged_at', sevenDaysAgo.toISOString())
     ])
     
-    // Get recent activity (last 7 days)
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    // Count distinct users with programs
+    const uniqueUsersWithPrograms = new Set(
+      (usersWithProgramsData || []).map((p: any) => p.user_id)
+    )
     
-    const { count: recentLogs } = await supabase
-      .from('performance_logs')
-      .select('*', { count: 'exact', head: true })
-      .gte('logged_at', sevenDaysAgo.toISOString())
+    // Count distinct active users (last 24 hours)
+    const uniqueActiveUsers = new Set(
+      (activeUsersData || []).map((log: any) => log.user_id)
+    )
     
     const { count: recentPrograms } = await supabase
       .from('programs')
@@ -83,11 +92,11 @@ export async function GET(request: NextRequest) {
         },
         programs: {
           total: programCount || 0,
-          usersWithPrograms: usersWithPrograms?.length || 0
+          usersWithPrograms: uniqueUsersWithPrograms.size || 0
         },
         activity: {
           totalPerformanceLogs: logCount || 0,
-          activeUsers: activeUsers?.length || 0,
+          activeUsers: uniqueActiveUsers.size || 0,
           recentLogs: recentLogs || 0,
           recentPrograms: recentPrograms || 0
         },
