@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
           subscription_tier,
           subscription_status,
           created_at,
-          programs!inner!programs_user_id_fkey(id, generated_at)
+          programs!programs_user_id_fkey!inner(id, generated_at)
         `, { count: 'exact' })
         .eq('role', 'athlete')
         .order('created_at', { ascending: false })
