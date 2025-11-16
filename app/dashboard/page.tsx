@@ -876,6 +876,306 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
     )
   }
 
+// Admin Dashboard Component
+const AdminDashboard = () => {
+  const [athletes, setAthletes] = useState<any[]>([])
+  const [athletesLoading, setAthletesLoading] = useState(true)
+  const [systemStats, setSystemStats] = useState<any>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [selectedAthlete, setSelectedAthlete] = useState<any>(null)
+  const [hasProgramFilter, setHasProgramFilter] = useState<string>('all') // 'all', 'with', 'without'
+
+  useEffect(() => {
+    fetchSystemStats()
+    fetchAthletes()
+  }, [])
+
+  useEffect(() => {
+    fetchAthletes()
+  }, [currentPage, searchTerm, hasProgramFilter])
+
+  const fetchSystemStats = async () => {
+    setStatsLoading(true)
+    try {
+      const response = await fetch('/api/admin/system-stats')
+      const data = await response.json()
+      
+      if (data.success) {
+        setSystemStats(data.stats)
+      } else {
+        console.error('Failed to fetch system stats:', data.error)
+      }
+    } catch (error) {
+      console.error('Error fetching system stats:', error)
+    } finally {
+      setStatsLoading(false)
+    }
+  }
+
+  const fetchAthletes = async () => {
+    setAthletesLoading(true)
+    try {
+      let url = `/api/admin/athletes?page=${currentPage}&limit=50`
+      if (searchTerm) {
+        url += `&search=${encodeURIComponent(searchTerm)}`
+      }
+      if (hasProgramFilter === 'with') {
+        url += `&hasProgram=true`
+      }
+      
+      const response = await fetch(url)
+      const data = await response.json()
+      
+      if (data.success) {
+        let filteredAthletes = data.athletes || []
+        
+        // Client-side filter for 'without programs'
+        if (hasProgramFilter === 'without') {
+          filteredAthletes = filteredAthletes.filter((a: any) => !a.hasProgram)
+        }
+        
+        setAthletes(filteredAthletes)
+        setTotalPages(data.pagination?.totalPages || 1)
+      } else {
+        console.error('Failed to fetch athletes:', data.error)
+        setAthletes([])
+      }
+    } catch (error) {
+      console.error('Error fetching athletes:', error)
+      setAthletes([])
+    } finally {
+      setAthletesLoading(false)
+    }
+  }
+
+  const AthleteCard = ({ athlete }: { athlete: any }) => (
+    <div className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow p-4">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1">
+          <h3 className="font-semibold text-gray-900 text-lg">{athlete.name}</h3>
+          <p className="text-sm text-gray-500">{athlete.email}</p>
+          <p className="text-xs text-gray-400 capitalize mt-1">{athlete.abilityLevel}</p>
+        </div>
+        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+          athlete.hasProgram 
+            ? 'bg-green-100 text-green-800 border border-green-200' 
+            : 'bg-gray-100 text-gray-800 border border-gray-200'
+        }`}>
+          {athlete.hasProgram ? '✓ Program' : 'No Program'}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+        <div className="bg-gray-50 rounded p-2">
+          <div className="text-gray-600">Tier</div>
+          <div className="font-semibold text-gray-900">{athlete.subscriptionTier}</div>
+        </div>
+        <div className="bg-gray-50 rounded p-2">
+          <div className="text-gray-600">Status</div>
+          <div className="font-semibold text-gray-900">{athlete.subscriptionStatus}</div>
+        </div>
+      </div>
+
+      {athlete.hasProgram && (
+        <div className="text-xs text-gray-500 mb-3">
+          {athlete.programCount} program{athlete.programCount !== 1 ? 's' : ''} • Latest: {athlete.latestProgramDate ? new Date(athlete.latestProgramDate).toLocaleDateString() : 'N/A'}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          onClick={() => {
+            window.location.href = `/dashboard?viewAs=athlete&athleteId=${athlete.id}`
+          }}
+          className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+        >
+          View Dashboard
+        </button>
+        <button
+          onClick={() => setSelectedAthlete(athlete)}
+          className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+        >
+          Details
+        </button>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="space-y-6">
+      {/* Admin Header */}
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Admin Dashboard</h2>
+            <p className="text-gray-600">System overview and athlete management</p>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-purple-600">🔐</div>
+            <div className="text-sm text-gray-600">Admin Access</div>
+          </div>
+        </div>
+      </div>
+
+      {/* System Stats */}
+      {statsLoading ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="animate-pulse bg-gray-100 rounded-lg h-24"></div>
+          ))}
+        </div>
+      ) : systemStats && (
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total Users</p>
+                <p className="text-2xl font-bold text-gray-900">{systemStats.users?.total || 0}</p>
+              </div>
+              <div className="text-2xl">👥</div>
+            </div>
+            <div className="mt-2 text-xs text-gray-500">
+              {systemStats.users?.athletes || 0} athletes • {systemStats.users?.coaches || 0} coaches
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Active Programs</p>
+                <p className="text-2xl font-bold text-blue-600">{systemStats.programs?.total || 0}</p>
+              </div>
+              <div className="text-2xl">📋</div>
+            </div>
+            <div className="mt-2 text-xs text-gray-500">
+              {systemStats.programs?.usersWithPrograms || 0} users with programs
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Recent Activity</p>
+                <p className="text-2xl font-bold text-green-600">{systemStats.activity?.recentLogs || 0}</p>
+              </div>
+              <div className="text-2xl">📊</div>
+            </div>
+            <div className="mt-2 text-xs text-gray-500">
+              {systemStats.activity?.activeUsers || 0} active users (24h)
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Subscriptions</p>
+                <p className="text-2xl font-bold text-purple-600">{systemStats.subscriptions?.premium || 0}</p>
+              </div>
+              <div className="text-2xl">💳</div>
+            </div>
+            <div className="mt-2 text-xs text-gray-500">
+              {systemStats.subscriptions?.premium || 0} premium • {systemStats.subscriptions?.free || 0} free
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Athletes Section */}
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">All Athletes</h3>
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* Search */}
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setCurrentPage(1) // Reset to first page on search
+              }}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            
+            {/* Filter */}
+            <select
+              value={hasProgramFilter}
+              onChange={(e) => {
+                setHasProgramFilter(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Athletes</option>
+              <option value="with">With Programs</option>
+              <option value="without">Without Programs</option>
+            </select>
+          </div>
+        </div>
+
+        {athletesLoading ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="animate-pulse bg-gray-100 rounded-lg h-48"></div>
+            ))}
+          </div>
+        ) : athletes.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-4xl mb-4">👥</div>
+            <h4 className="text-lg font-medium text-gray-900 mb-2">No Athletes Found</h4>
+            <p className="text-gray-600">Try adjusting your search or filters</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              {athletes.map((athlete) => (
+                <AthleteCard key={athlete.id} athlete={athlete} />
+              ))}
+            </div>
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t pt-4">
+                <div className="text-sm text-gray-600">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Athlete Detail Modal */}
+      {selectedAthlete && (
+        <AthleteDetailModal 
+          athlete={selectedAthlete} 
+          onClose={() => setSelectedAthlete(null)} 
+        />
+      )}
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [todaysWorkout, setTodaysWorkout] = useState<WorkoutSummary | null>(null)
@@ -894,7 +1194,7 @@ const [heatMapData, setHeatMapData] = useState<any>(null)
   // ADD THESE THREE NEW LINES HERE:
   const [isCoach, setIsCoach] = useState(false)
   const [coachData, setCoachData] = useState(null)
-  const [viewMode, setViewMode] = useState('athlete') // 'athlete' or 'coach'
+  const [viewMode, setViewMode] = useState('athlete') // 'athlete', 'coach', or 'admin'
   const [pendingInvitations, setPendingInvitations] = useState([])
   // Admin/Coach viewing athlete state
   const [viewingAsAthlete, setViewingAsAthlete] = useState<number | null>(null)
@@ -1703,7 +2003,46 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
           </div>
         </div>
       )}
-      {isCoach && !viewingAsAthlete && (
+      {/* Admin Toggle */}
+      {isAdmin && !viewingAsAthlete && (
+        <div className="bg-white rounded-lg shadow-sm border p-4 mb-6 max-w-4xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Welcome, Admin!
+              </h3>
+              <p className="text-sm text-gray-600">
+                Switch between your athlete training and admin dashboard
+              </p>
+            </div>
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode("athlete")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === "athlete"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                🏋️ My Training
+              </button>
+              <button
+                onClick={() => setViewMode("admin")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === "admin"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                🔐 Admin Portal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Coach Toggle */}
+      {isCoach && !isAdmin && !viewingAsAthlete && (
         <div className="bg-white rounded-lg shadow-sm border p-4 mb-6 max-w-4xl mx-auto">
           <div className="flex items-center justify-between">
             <div>
@@ -1742,7 +2081,9 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {viewMode === "coach" && !viewingAsAthlete ? (
+        {viewMode === "admin" && !viewingAsAthlete ? (
+          <AdminDashboard />
+        ) : viewMode === "coach" && !viewingAsAthlete ? (
           <CoachDashboard coachData={coachData} />
         ) : (
           <div className="space-y-6">        {/* Program Navigation */}
