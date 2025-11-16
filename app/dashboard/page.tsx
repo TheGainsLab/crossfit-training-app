@@ -627,12 +627,20 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
         )}
 
         {/* Action Button */}
-        <button
-          onClick={() => setSelectedAthlete(athlete)}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-        >
-          View Details →
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setSelectedAthlete(athlete)}
+            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            View Details →
+          </button>
+          <button
+            onClick={() => router.push(`/dashboard?viewAs=athlete&athleteId=${(athlete as any).athlete.id}`)}
+            className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+          >
+            View Dashboard
+          </button>
+        </div>
       </div>
     )
 
@@ -886,6 +894,10 @@ const [heatMapData, setHeatMapData] = useState<any>(null)
   const [coachData, setCoachData] = useState(null)
   const [viewMode, setViewMode] = useState('athlete') // 'athlete' or 'coach'
   const [pendingInvitations, setPendingInvitations] = useState([])
+  // Admin/Coach viewing athlete state
+  const [viewingAsAthlete, setViewingAsAthlete] = useState<number | null>(null)
+  const [viewingAthleteName, setViewingAthleteName] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [invitationsLoading, setInvitationsLoading] = useState(false)
   const [isRefreshingAI, setIsRefreshingAI] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<any>(null)
@@ -894,9 +906,41 @@ const [heatMapData, setHeatMapData] = useState<any>(null)
   const [tdeeLoading, setTdeeLoading] = useState(false)
 
   useEffect(() => {
-    loadUserAndProgram()
-    fetchPendingInvitations()
+    // Check for viewAs parameter in URL
+    const initializeView = async () => {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search)
+        const viewAs = params.get('viewAs')
+        const athleteId = params.get('athleteId')
+        
+        if (viewAs === 'athlete' && athleteId) {
+          const athleteIdNum = parseInt(athleteId)
+          if (!isNaN(athleteIdNum)) {
+            await checkViewPermissions(athleteIdNum)
+          } else {
+            await loadUserAndProgram()
+          }
+        } else {
+          await loadUserAndProgram()
+        }
+      } else {
+        await loadUserAndProgram()
+      }
+      
+      fetchPendingInvitations()
+    }
+    
+    initializeView()
   }, [])
+  
+  // Reload when viewingAsAthlete is cleared (user clicks "Exit View")
+  useEffect(() => {
+    // Only reload when viewingAsAthlete is cleared (goes from a value to null)
+    // When it's set, loadUserAndProgram is called directly in checkViewPermissions
+    if (viewingAsAthlete === null && userId !== null) {
+      loadUserAndProgram()
+    }
+  }, [viewingAsAthlete])
 
   useEffect(() => {
     if (currentProgram && currentWeek && currentDay) {
@@ -982,9 +1026,78 @@ const checkCoachRole = async () => {
       setIsCoach(false)
       setCoachData(null)
     }
+    
+    // Check if user is admin
+    if (data.success && data.user) {
+      const supabase = createClient()
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', data.user.id)
+        .single()
+      
+      if (userData?.role === 'admin') {
+        setIsAdmin(true)
+      }
+    }
   } catch (error) {
     console.error('Error checking coach role:', error)
     setIsCoach(false)
+  }
+}
+
+const checkViewPermissions = async (athleteId: number): Promise<void> => {
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      router.push('/dashboard')
+      return
+    }
+    
+    const { data: currentUser } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('auth_id', user.id)
+      .single()
+    
+    if (!currentUser) {
+      router.push('/dashboard')
+      return
+    }
+    
+    // Check permissions using canAccessAthleteData (handles admin and coach)
+    const { canAccessAthleteData } = await import('@/lib/permissions')
+    const permissionCheck = await canAccessAthleteData(supabase, currentUser.id, athleteId)
+    
+    if (permissionCheck.hasAccess) {
+      // Get athlete name
+      const { data: athleteData } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', athleteId)
+        .single()
+      
+      if (athleteData) {
+        setViewingAsAthlete(athleteId)
+        setViewingAthleteName(athleteData.name)
+        if (permissionCheck.isAdmin) {
+          setIsAdmin(true)
+        }
+        if (permissionCheck.isCoach) {
+          setIsCoach(true)
+        }
+        // Load user and program data for the athlete we're viewing
+        loadUserAndProgram()
+      }
+    } else {
+      // No permission - redirect or show error
+      console.warn('No permission to view athlete:', athleteId)
+      router.push('/dashboard')
+    }
+  } catch (error) {
+    console.error('Error checking view permissions:', error)
+    router.push('/dashboard')
   }
 }
 
@@ -1116,32 +1229,43 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       }
       setUser(user)
 
-      // Get user ID and subscription tier from users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, subscription_tier')
-        .eq('auth_id', user.id)
-        .single()
+      // Determine effective user ID (viewing as athlete or own)
+      let effectiveUserId: number | null = null
+      
+      if (viewingAsAthlete) {
+        // Admin/Coach viewing as athlete - use athlete's ID
+        effectiveUserId = viewingAsAthlete
+      } else {
+        // Normal user - get their own ID
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id, subscription_tier')
+          .eq('auth_id', user.id)
+          .single()
 
-      if (userError || !userData) {
-        setError('User not found')
-        setLoading(false)
-        return
+        if (userError || !userData) {
+          setError('User not found')
+          setLoading(false)
+          return
+        }
+        effectiveUserId = userData.id
+        
+        // Only check subscription tier for own account
+        // BTN users should use the workout generator, not the program dashboard
+        if (userData.subscription_tier === 'BTN') {
+          console.log('🎯 BTN user detected - redirecting to generator')
+          router.push('/btn')
+          return
+        }
       }
-      setUserId(userData.id)
+      
+      setUserId(effectiveUserId)
 
-      // BTN users should use the workout generator, not the program dashboard
-      if (userData.subscription_tier === 'BTN') {
-        console.log('🎯 BTN user detected - redirecting to generator')
-        router.push('/btn')
-        return
-      }
-
-      // Get latest program for this user
+      // Get latest program for effective user
       const { data: programData, error: programError } = await supabase
         .from('programs')
         .select('id, generated_at')
-        .eq('user_id', userData.id)
+        .eq('user_id', effectiveUserId)
         .order('generated_at', { ascending: false })
         .limit(1)
         .single()
@@ -1152,11 +1276,11 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         return
       }
 
-      // Fetch all programs for this user to enable seamless navigation
+      // Fetch all programs for effective user to enable seamless navigation
       const { data: allProgramsData } = await supabase
         .from('programs')
         .select('id, weeks_generated')
-        .eq('user_id', userData.id)
+        .eq('user_id', effectiveUserId)
         .order('generated_at', { ascending: true })
 
       if (allProgramsData) {
@@ -1172,13 +1296,13 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         const { data: allProgramsForInit } = await supabase
           .from('programs')
           .select('id')
-          .eq('user_id', userData.id)
+          .eq('user_id', effectiveUserId)
           .order('generated_at', { ascending: true })
 
         const { data: logs } = await supabase
           .from('performance_logs')
           .select('program_id, week, day')
-          .eq('user_id', userData.id)
+          .eq('user_id', effectiveUserId)
 
         // Build completed set using program_id-week-day
         const completed = new Set<string>((logs || []).map((l: any) => `${l.program_id}-${l.week}-${l.day}`))
@@ -1498,6 +1622,31 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Viewing As Athlete Banner */}
+      {viewingAsAthlete && viewingAthleteName && (
+        <div className="bg-blue-600 text-white px-4 py-3 shadow-md">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <span className="text-lg">👁️</span>
+              <div>
+                <span className="font-semibold">Viewing as: {viewingAthleteName}</span>
+                {isAdmin && <span className="ml-2 text-xs bg-blue-700 px-2 py-1 rounded">Admin</span>}
+                {isCoach && !isAdmin && <span className="ml-2 text-xs bg-blue-700 px-2 py-1 rounded">Coach</span>}
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setViewingAsAthlete(null)
+                setViewingAthleteName(null)
+                router.push('/dashboard')
+              }}
+              className="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              Exit View
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Coach Toggle */}
 
@@ -1552,7 +1701,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
           </div>
         </div>
       )}
-      {isCoach && (
+      {isCoach && !viewingAsAthlete && (
         <div className="bg-white rounded-lg shadow-sm border p-4 mb-6 max-w-4xl mx-auto">
           <div className="flex items-center justify-between">
             <div>
@@ -1591,7 +1740,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {viewMode === "coach" ? (
+        {viewMode === "coach" && !viewingAsAthlete ? (
           <CoachDashboard coachData={coachData} />
         ) : (
           <div className="space-y-6">        {/* Program Navigation */}
