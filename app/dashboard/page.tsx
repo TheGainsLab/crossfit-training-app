@@ -1045,19 +1045,6 @@ const AdminDashboard = () => {
           <div className="bg-white rounded-lg shadow-sm border p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Active Programs</p>
-                <p className="text-2xl font-bold text-blue-600">{systemStats.programs?.total || 0}</p>
-              </div>
-              <div className="text-2xl">📋</div>
-            </div>
-            <div className="mt-2 text-xs text-gray-500">
-              {systemStats.programs?.usersWithPrograms || 0} users with programs
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm border p-4">
-            <div className="flex items-center justify-between">
-              <div>
                 <p className="text-sm text-gray-600">Recent Activity</p>
                 <p className="text-2xl font-bold text-green-600">{systemStats.activity?.recentLogs || 0}</p>
               </div>
