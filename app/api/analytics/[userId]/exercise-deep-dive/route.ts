@@ -132,7 +132,7 @@ if (block === 'METCONS') {
         time_range,
         tasks
       ),
-      programs(
+      programs!inner(
         user_id
       )
     `)

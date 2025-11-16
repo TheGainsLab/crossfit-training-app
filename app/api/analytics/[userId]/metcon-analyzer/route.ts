@@ -93,7 +93,7 @@ export async function GET(
           time_range,
           tasks
         ),
-        programs(
+        programs!inner(
           user_id
         )
       `)
