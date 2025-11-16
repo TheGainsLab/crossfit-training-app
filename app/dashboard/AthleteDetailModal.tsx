@@ -401,7 +401,13 @@ interface AthleteDetailModalProps {
 }
 
 const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClose }) => {
+  // Normalize athlete structure - handle both { athlete: { id } } and { id } formats
+  // Coach dashboard passes nested structure, admin dashboard passes flat structure
+  const normalizedAthlete = athlete?.athlete ? athlete.athlete : athlete;
+  const athleteId = normalizedAthlete?.id;
+
   console.log('🔍 FULL athlete object:', JSON.stringify(athlete, null, 2));
+  console.log('🔍 Normalized athlete ID:', athleteId);
 
   // Updated activeTab type to include 'editProgram'
   const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 'metcons' | 'notes' | 'editProgram'>('overview');
@@ -437,7 +443,7 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
   const fetchProgramData = async () => {
     setProgramLoading(true);
     try {
-      const response = await fetch(`/api/coach/program-editor/${athlete.athlete.id}`);
+      const response = await fetch(`/api/coach/program-editor/${athleteId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -459,7 +465,7 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     setLoadingExercises(prev => ({ ...prev, [block]: true }));
     
     try {
-      const response = await fetch(`/api/exercises/available?athleteId=${athlete.athlete.id}&block=${encodeURIComponent(block)}`);
+      const response = await fetch(`/api/exercises/available?athleteId=${athleteId}&block=${encodeURIComponent(block)}`);
       const result = await response.json();
       
       if (result.success) {
@@ -477,7 +483,7 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
   // Handle exercise modifications
   const handleSaveExerciseModification = async (exerciseData: any, editedExercise: EditingExercise) => {
     try {
-      const response = await fetch(`/api/coach/program-editor/${athlete.athlete.id}/modify-exercise`, {
+      const response = await fetch(`/api/coach/program-editor/${athleteId}/modify-exercise`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -555,15 +561,15 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
   const fetchAthleteAnalytics = async () => {
     setLoading(true);
     try {
-      console.log('🔍 Fetching analytics for athlete ID:', athlete.athlete.id);
+      console.log('🔍 Fetching analytics for athlete ID:', athleteId);
 
       // Call all 5 permission-enabled analytics endpoints in parallel
       const [dashboardRes, recentRes, skillsRes, strengthRes, heatmapRes] = await Promise.allSettled([
-        fetch(`/api/analytics/${athlete.athlete.id}/dashboard`),
-        fetch(`/api/analytics/${athlete.athlete.id}/recent-activity`),
-        fetch(`/api/analytics/${athlete.athlete.id}/skills-analytics`),
-        fetch(`/api/analytics/${athlete.athlete.id}/strength-tracker`),
-        fetch(`/api/analytics/${athlete.athlete.id}/exercise-heatmap`)
+        fetch(`/api/analytics/${athleteId}/dashboard`),
+        fetch(`/api/analytics/${athleteId}/recent-activity`),
+        fetch(`/api/analytics/${athleteId}/skills-analytics`),
+        fetch(`/api/analytics/${athleteId}/strength-tracker`),
+        fetch(`/api/analytics/${athleteId}/exercise-heatmap`)
       ]);
 
       const newAnalyticsData: any = {};
@@ -635,7 +641,7 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
 
   const fetchCoachNotes = async () => {
     try {
-      const response = await fetch(`/api/coach/notes?athleteId=${athlete.athlete.id}`);
+      const response = await fetch(`/api/coach/notes?athleteId=${athleteId}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -655,8 +661,8 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
       const response = await fetch('/api/coach/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          athleteId: athlete.athlete.id,
+          body: JSON.stringify({
+          athleteId: athleteId,
           content: newNote.trim(),
           noteType: 'general'
         })
@@ -723,9 +729,9 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="text-2xl font-bold text-gray-900">{athlete.athlete.name}</h3>
-              <p className="text-gray-600 capitalize">{athlete.athlete.abilityLevel}</p>
-              <p className="text-sm text-gray-500">{athlete.athlete.email}</p>
+              <h3 className="text-2xl font-bold text-gray-900">{normalizedAthlete?.name || 'Unknown'}</h3>
+              <p className="text-gray-600 capitalize">{normalizedAthlete?.abilityLevel || normalizedAthlete?.ability_level || 'Unknown'}</p>
+              <p className="text-sm text-gray-500">{normalizedAthlete?.email || 'No email'}</p>
             </div>
             <div className={`px-4 py-2 rounded-full ${healthDisplay.bg} ${healthDisplay.border} border`}>
               <span className={`font-medium ${healthDisplay.color}`}>
@@ -769,7 +775,7 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
               {recent.slice(0, 5).map((session: any, index: number) => (
                 <Link 
                   key={session.sessionId || index}
-                  href={`/dashboard/session-review/${athlete.athlete.id}-${session.programId}-${session.week}-${session.day}`}
+                  href={`/dashboard/session-review/${athleteId}-${session.programId}-${session.week}-${session.day}`}
                   className="block border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300 cursor-pointer"
                 >
                   {/* Date and Session Info */}
@@ -1743,7 +1749,7 @@ return (
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b">
         <h2 className="text-2xl font-bold text-gray-900">
-          Athlete Analytics: {athlete.athlete.name}
+          Athlete Analytics: {normalizedAthlete?.name || 'Unknown'}
         </h2>
         <button
           onClick={onClose}
