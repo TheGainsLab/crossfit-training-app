@@ -6,6 +6,7 @@ import { processExerciseData } from '@/lib/analytics/data-processors'
 import { formatTrendsChart, formatVolumeChart, formatMetConChart } from '@/lib/analytics/chart-formatters'
 import { generateDataReflectiveInsights, generateCoachCollaborativeRecommendations } from '@/lib/analytics/insights-generator'
 import { ExerciseDeepDiveResponse } from '@/lib/analytics/types'
+import { canAccessAthleteData, getUserIdFromAuth } from '@/lib/permissions'
 
 export async function GET(
   request: NextRequest,
@@ -63,35 +64,32 @@ export async function GET(
       }
     )
 
-    // Verify user authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // Get requesting user ID from authentication
+    const { userId: requestingUserId, error: authError } = await getUserIdFromAuth(supabase)
+    if (authError || !requestingUserId) {
       console.log('Auth error:', authError)
       return NextResponse.json(
-        { error: 'Unauthorized', details: 'Auth session missing!' },
+        { error: authError || 'Unauthorized', details: 'Auth session missing!' },
         { status: 401 }
       )
     }
 
-    console.log('Authenticated user:', user.id)
+    // Check if user has permission to access this athlete's data
+    const { hasAccess, permissionLevel, isCoach } = await canAccessAthleteData(
+      supabase, 
+      requestingUserId, 
+      userIdNum
+    )
 
-    // Verify user owns this data (assuming auth_id maps to user)
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('auth_id', user.id)
-      .eq('id', userIdNum)
-      .single()
-
-    if (userError || !userData) {
-      console.log('User verification error:', userError)
+    if (!hasAccess) {
+      console.log('User verification error: No access')
       return NextResponse.json(
         { error: 'Unauthorized access to user data' },
         { status: 403 }
       )
     }
 
-    console.log(`📊 Generating exercise deep dive for User ${userIdNum}: ${exercise} in ${block}`)
+    console.log(`📊 Generating exercise deep dive for User ${userIdNum}: ${exercise} in ${block} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
 
     // Calculate date range
     const startDate = new Date()

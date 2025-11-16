@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { canAccessAthleteData, getUserIdFromAuth } from '@/lib/permissions'
 
 interface ExerciseHeatmapCell {
   exercise_name: string
@@ -69,31 +70,30 @@ export async function GET(
       }
     )
 
-    // Verify user authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // Get requesting user ID from authentication
+    const { userId: requestingUserId, error: authError } = await getUserIdFromAuth(supabase)
+    if (authError || !requestingUserId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: authError || 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    // Verify user ownership
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('auth_id', user.id)
-      .eq('id', userIdNum)
-      .single()
+    // Check if user has permission to access this athlete's data
+    const { hasAccess, permissionLevel, isCoach } = await canAccessAthleteData(
+      supabase, 
+      requestingUserId, 
+      userIdNum
+    )
 
-    if (userError || !userData) {
+    if (!hasAccess) {
       return NextResponse.json(
         { error: 'Unauthorized access to user data' },
         { status: 403 }
       )
     }
 
-    console.log(`🔥 Generating exercise heat map for User ${userIdNum}`)
+    console.log(`🔥 Generating exercise heat map for User ${userIdNum} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
 
     // Step 1: Get user's most recent program
     const { data: programData, error: programError } = await supabase
