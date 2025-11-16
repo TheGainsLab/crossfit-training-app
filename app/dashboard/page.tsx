@@ -1072,12 +1072,15 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Subscriptions</p>
-                <p className="text-2xl font-bold text-purple-600">{systemStats.subscriptions?.premium || 0}</p>
+                <p className="text-2xl font-bold text-purple-600">{systemStats.subscriptions?.total || 0}</p>
               </div>
               <div className="text-2xl">💳</div>
             </div>
             <div className="mt-2 text-xs text-gray-500">
               {systemStats.subscriptions?.premium || 0} premium • {systemStats.subscriptions?.free || 0} free
+              {systemStats.subscriptions?.btn ? ` • ${systemStats.subscriptions.btn} BTN` : ''}
+              {systemStats.subscriptions?.appliedPower ? ` • ${systemStats.subscriptions.appliedPower} AP` : ''}
+              {systemStats.subscriptions?.null ? ` • ${systemStats.subscriptions.null} null` : ''}
             </div>
           </div>
         </div>

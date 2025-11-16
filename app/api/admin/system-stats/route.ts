@@ -33,6 +33,9 @@ export async function GET(request: NextRequest) {
       { data: admins, count: adminCount },
       { data: premiumUsers, count: premiumCount },
       { data: freeUsers, count: freeCount },
+      { data: btnUsers, count: btnCount },
+      { data: appliedPowerUsers, count: appliedPowerCount },
+      { data: nullTierUsers, count: nullTierCount },
       { data: approvedCoaches },
       { data: programs, count: programCount },
       { data: usersWithProgramsData },
@@ -48,6 +51,9 @@ export async function GET(request: NextRequest) {
       supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'admin'),
       supabase.from('users').select('*', { count: 'exact', head: true }).eq('subscription_tier', 'PREMIUM'),
       supabase.from('users').select('*', { count: 'exact', head: true }).eq('subscription_tier', 'FREE'),
+      supabase.from('users').select('*', { count: 'exact', head: true }).eq('subscription_tier', 'BTN'),
+      supabase.from('users').select('*', { count: 'exact', head: true }).eq('subscription_tier', 'APPLIED_POWER'),
+      supabase.from('users').select('*', { count: 'exact', head: true }).is('subscription_tier', null),
       supabase.from('coaches').select('id').eq('status', 'approved'),
       supabase.from('programs').select('*', { count: 'exact', head: true }),
       supabase.from('programs').select('user_id'), // Get all user_ids to count distinct
@@ -84,7 +90,11 @@ export async function GET(request: NextRequest) {
         },
         subscriptions: {
           premium: premiumCount || 0,
-          free: freeCount || 0
+          free: freeCount || 0,
+          btn: btnCount || 0,
+          appliedPower: appliedPowerCount || 0,
+          null: nullTierCount || 0,
+          total: (premiumCount || 0) + (freeCount || 0) + (btnCount || 0) + (appliedPowerCount || 0) + (nullTierCount || 0)
         },
         coaches: {
           total: (approvedCoaches || []).length,
