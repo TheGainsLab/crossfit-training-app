@@ -717,11 +717,34 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
     return icons[blockName] || '📊';
   };
 
-  const healthDisplay = getHealthStatusDisplay(athlete.recentActivity.healthStatus);
+  // Calculate health status and activity stats from analytics data
+  // This handles both coach dashboard (nested structure) and admin dashboard (flat structure)
+  const recent = analyticsData.recent?.data?.recentSessions || [];
+  const sessionsLast14Days = recent.filter((s: any) => {
+    if (!s.date) return false;
+    const sessionDate = new Date(s.date);
+    const daysAgo = (Date.now() - sessionDate.getTime()) / (1000 * 60 * 60 * 24);
+    return daysAgo <= 14;
+  }).length;
+
+  const daysSinceLastSession = recent.length > 0 && recent[0].date
+    ? Math.floor((Date.now() - new Date(recent[0].date).getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  // Determine health status based on activity
+  let healthStatus = 'good';
+  if (daysSinceLastSession === null) {
+    healthStatus = 'needs_attention';
+  } else if (daysSinceLastSession > 14) {
+    healthStatus = 'needs_attention';
+  } else if (daysSinceLastSession > 7) {
+    healthStatus = 'warning';
+  }
+
+  const healthDisplay = getHealthStatusDisplay(healthStatus);
 
   const renderOverviewTab = () => {
     const dashboard = analyticsData.dashboard?.data?.dashboard;
-    const recent = analyticsData.recent?.data?.recentSessions || [];
 
     return (
       <div className="space-y-6">
@@ -735,7 +758,7 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
             </div>
             <div className={`px-4 py-2 rounded-full ${healthDisplay.bg} ${healthDisplay.border} border`}>
               <span className={`font-medium ${healthDisplay.color}`}>
-                {healthDisplay.icon} {athlete.recentActivity.healthStatus.replace('_', ' ')}
+                {healthDisplay.icon} {healthStatus.replace('_', ' ')}
               </span>
             </div>
           </div>
@@ -744,12 +767,12 @@ const AthleteDetailModal: React.FC<AthleteDetailModalProps> = ({ athlete, onClos
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg p-4 border">
-            <div className="text-2xl font-bold text-blue-600">{athlete.recentActivity.sessionsLast14Days}</div>
+            <div className="text-2xl font-bold text-blue-600">{sessionsLast14Days}</div>
             <div className="text-sm text-gray-600">Sessions (14d)</div>
           </div>
           <div className="bg-white rounded-lg p-4 border">
             <div className="text-2xl font-bold text-green-600">
-              {athlete.recentActivity.daysSinceLastSession === null ? '—' : `${athlete.recentActivity.daysSinceLastSession}d`}
+              {daysSinceLastSession === null ? '—' : `${daysSinceLastSession}d`}
             </div>
             <div className="text-sm text-gray-600">Since Last</div>
           </div>
