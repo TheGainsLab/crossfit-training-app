@@ -635,7 +635,9 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
             View Details →
           </button>
           <button
-            onClick={() => router.push(`/dashboard?viewAs=athlete&athleteId=${(athlete as any).athlete.id}`)}
+            onClick={() => {
+              window.location.href = `/dashboard?viewAs=athlete&athleteId=${(athlete as any).athlete.id}`
+            }}
             className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
           >
             View Dashboard
