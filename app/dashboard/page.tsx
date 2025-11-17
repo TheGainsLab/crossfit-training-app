@@ -887,10 +887,13 @@ const AdminDashboard = () => {
   const [totalPages, setTotalPages] = useState(1)
   const [selectedAthlete, setSelectedAthlete] = useState<any>(null)
   const [hasProgramFilter, setHasProgramFilter] = useState<string>('all') // 'all', 'with', 'without'
+  const [activity, setActivity] = useState<any[]>([])
+  const [activityLoading, setActivityLoading] = useState(false)
 
   useEffect(() => {
     fetchSystemStats()
     fetchAthletes()
+    fetchDailyActivity()
   }, [])
 
   useEffect(() => {
@@ -948,6 +951,25 @@ const AdminDashboard = () => {
       setAthletes([])
     } finally {
       setAthletesLoading(false)
+    }
+  }
+
+  const fetchDailyActivity = async () => {
+    setActivityLoading(true)
+    try {
+      const res = await fetch('/api/admin/daily-active-users')
+      const data = await res.json()
+      if (data.success) {
+        setActivity(data.rows || [])
+      } else {
+        console.error('Failed to fetch daily activity:', data.error)
+        setActivity([])
+      }
+    } catch (e) {
+      console.error('Error fetching daily activity:', e)
+      setActivity([])
+    } finally {
+      setActivityLoading(false)
     }
   }
 
@@ -1072,6 +1094,58 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Daily Activity Inbox */}
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Last 24 Hours Activity</h3>
+          <span className="text-xs text-gray-500">
+            {activity.length} active {activity.length === 1 ? 'athlete' : 'athletes'}
+          </span>
+        </div>
+
+        {activityLoading ? (
+          <div className="text-sm text-gray-500">Loading activity…</div>
+        ) : activity.length === 0 ? (
+          <div className="text-sm text-gray-500">No recent activity.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-500 border-b">
+                  <th className="py-2 pr-4 text-left">Athlete</th>
+                  <th className="py-2 px-4 text-left">Program Type</th>
+                  <th className="py-2 px-4 text-left">Month</th>
+                  <th className="py-2 px-4 text-right">Sessions</th>
+                  <th className="py-2 px-4 text-right">Tasks</th>
+                  <th className="py-2 px-4 text-right">MetCons</th>
+                  <th className="py-2 pl-4 text-right">Last Activity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activity.map((row) => (
+                  <tr key={row.id} className="border-b last:border-0">
+                    <td className="py-2 pr-4">
+                      <div className="font-medium text-gray-900">{row.name || 'Unknown'}</div>
+                      <div className="text-xs text-gray-500">{row.email}</div>
+                    </td>
+                    <td className="py-2 px-4">{row.subscriptionTier || '—'}</td>
+                    <td className="py-2 px-4">{row.programMonth ?? '—'}</td>
+                    <td className="py-2 px-4 text-right">{row.sessions}</td>
+                    <td className="py-2 px-4 text-right">{row.tasks}</td>
+                    <td className="py-2 px-4 text-right">{row.metcons}</td>
+                    <td className="py-2 pl-4 text-right text-xs text-gray-500">
+                      {row.lastActivityAt
+                        ? new Date(row.lastActivityAt).toLocaleString()
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Athletes Section */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
