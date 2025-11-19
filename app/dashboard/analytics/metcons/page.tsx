@@ -142,7 +142,7 @@ export default function AnalyticsMetconsPage() {
           ))}
         </div>
       </div>
-      <div className="flex items-center gap-2 text-xs">
+      <div className="flex items-center gap-2 text-xs pt-3 border-t border-gray-200">
         <button className="px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100" onClick={async () => {
           try {
             const { createClient } = await import('@/lib/supabase/client')
