@@ -876,6 +876,131 @@ const CoachDashboard = ({ coachData }: { coachData: any }) => {
     )
   }
 
+// Activity Detail Modal Component
+const ActivityDetailModal = ({ athlete, onClose }: { athlete: any; onClose: () => void }) => {
+  const [sessions, setSessions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (athlete?.userId) {
+      fetchActivity()
+    }
+  }, [athlete?.userId])
+
+  const fetchActivity = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/analytics/${athlete.userId}/recent-activity?limit=100`)
+      const data = await response.json()
+      
+      if (data.success) {
+        // Filter to last 24 hours
+        const oneDayAgo = new Date()
+        oneDayAgo.setHours(oneDayAgo.getHours() - 24)
+        
+        const last24Hours = (data.data.recentSessions || []).filter((session: any) => {
+          const sessionDate = new Date(session.date)
+          return sessionDate >= oneDayAgo
+        })
+        
+        setSessions(last24Hours)
+      }
+    } catch (error) {
+      console.error('Error fetching activity:', error)
+      setSessions([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const today = new Date()
+    const diffTime = Math.abs(today.getTime() - date.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays <= 7) return `${diffDays} days ago`
+    
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">{athlete.name}</h2>
+            <p className="text-sm text-gray-600">{athlete.email}</p>
+            <p className="text-xs text-gray-500 mt-1">Last 24 Hours Activity</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading activity...</p>
+            </div>
+          ) : sessions.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600">No activity in the last 24 hours</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sessions.map((session, index) => (
+                <div
+                  key={session.sessionId || index}
+                  className="block border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-coral cursor-pointer"
+                >
+                  {/* Date and Session Info */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="text-lg font-semibold text-charcoal">
+                        {formatDate(session.date)}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        Week {session.week}, Day {session.day}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Training Blocks */}
+                  <div className="flex flex-wrap gap-2">
+                    {session.blocks && session.blocks.map((block: any) => (
+                      <span 
+                        key={block.blockName}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                      >
+                        {block.blockName}
+                        {block.exerciseCount > 0 && (
+                          <span className="ml-1 text-coral">({block.exerciseCount})</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Admin Dashboard Component
 const AdminDashboard = () => {
   const [athletes, setAthletes] = useState<any[]>([])
@@ -889,6 +1014,7 @@ const AdminDashboard = () => {
   const [hasProgramFilter, setHasProgramFilter] = useState<string>('all') // 'all', 'with', 'without'
   const [activity, setActivity] = useState<any[]>([])
   const [activityLoading, setActivityLoading] = useState(false)
+  const [selectedActivityAthlete, setSelectedActivityAthlete] = useState<any>(null)
 
   useEffect(() => {
     fetchSystemStats()
@@ -1124,7 +1250,11 @@ const AdminDashboard = () => {
               </thead>
               <tbody>
                 {activity.map((row) => (
-                  <tr key={row.id} className="border-b last:border-0">
+                  <tr 
+                    key={row.id} 
+                    className="border-b last:border-0 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => setSelectedActivityAthlete(row)}
+                  >
                     <td className="py-2 pr-4">
                       <div className="font-medium text-gray-900">{row.name || 'Unknown'}</div>
                       <div className="text-xs text-gray-500">{row.email}</div>
@@ -1234,6 +1364,14 @@ const AdminDashboard = () => {
         <AthleteDetailModal 
           athlete={selectedAthlete} 
           onClose={() => setSelectedAthlete(null)} 
+        />
+      )}
+
+      {/* Activity Detail Modal */}
+      {selectedActivityAthlete && (
+        <ActivityDetailModal
+          athlete={selectedActivityAthlete}
+          onClose={() => setSelectedActivityAthlete(null)}
         />
       )}
     </div>
