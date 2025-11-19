@@ -115,7 +115,6 @@ export default function AnalyticsAccessoriesPage() {
         <div className="text-sm text-gray-500">Loading…</div>
       ) : (
         <>
-          <div className="text-sm text-gray-700">Accessories movements (block: {summary?.block || 'ACCESSORIES'})</div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {(summary?.movements || []).map((m: any) => (
               <button

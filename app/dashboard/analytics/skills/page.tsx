@@ -136,7 +136,6 @@ export default function AnalyticsSkillsPage() {
               } catch {}
             }}>Recommend</button>
           </div>
-          <div className="text-sm text-gray-700">Skills movements (block: SKILLS)</div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {[...(summary?.summary || [])]
               .sort((a: any, b: any) => (b.count || 0) - (a.count || 0))

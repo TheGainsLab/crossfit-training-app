@@ -121,7 +121,6 @@ export default function AnalyticsTechnicalPage() {
         <div className="text-sm text-gray-500">Loading…</div>
       ) : (
         <>
-          <div className="text-sm text-gray-700">Technical Work movements (block: {summary?.block || 'TECHNICAL WORK'})</div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {(summary?.movements || []).map((m: any) => (
               <button
