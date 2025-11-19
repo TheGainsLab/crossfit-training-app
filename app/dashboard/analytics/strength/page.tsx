@@ -54,6 +54,16 @@ export default function AnalyticsStrengthPage() {
     );
   };
 
+  const getQualityGrade = (quality: number | string | null | undefined): string => {
+    const num = Number(quality)
+    if (isNaN(num)) return quality?.toString() || ''
+    if (num >= 3.01 && num <= 4) return 'A'
+    if (num >= 2.01 && num <= 3) return 'B'
+    if (num >= 1.01 && num <= 2) return 'C'
+    if (num <= 1.0) return 'D'
+    return quality?.toString() || ''
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-xs">
@@ -190,7 +200,7 @@ export default function AnalyticsStrengthPage() {
                         <td className="p-2 border-b">{r.reps ?? ''}</td>
                         <td className="p-2 border-b">{r.weight_time ?? ''}</td>
                         <td className="p-2 border-b">{r.rpe ?? ''}</td>
-                        <td className="p-2 border-b">{r.completion_quality ?? ''}</td>
+                        <td className="p-2 border-b">{getQualityGrade(r.completion_quality)}</td>
                       </tr>
                     ))}
                 </tbody>

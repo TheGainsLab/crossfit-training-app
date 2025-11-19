@@ -57,10 +57,11 @@ export default function AnalyticsTechnicalPage() {
 
   const getQualityGrade = (quality: number | string | null | undefined): string => {
     const num = Number(quality)
-    if (num === 4) return 'A'
-    if (num === 3) return 'B'
-    if (num === 2) return 'C'
-    if (num === 1) return 'D'
+    if (isNaN(num)) return quality?.toString() || ''
+    if (num >= 3.01 && num <= 4) return 'A'
+    if (num >= 2.01 && num <= 3) return 'B'
+    if (num >= 1.01 && num <= 2) return 'C'
+    if (num <= 1.0) return 'D'
     return quality?.toString() || ''
   }
 

@@ -71,10 +71,11 @@ export default function AnalyticsSkillsPage() {
 
   const getQualityGrade = (quality: number | string | null | undefined): string => {
     const num = Number(quality)
-    if (num === 4) return 'A'
-    if (num === 3) return 'B'
-    if (num === 2) return 'C'
-    if (num === 1) return 'D'
+    if (isNaN(num)) return quality?.toString() || ''
+    if (num >= 3.01 && num <= 4) return 'A'
+    if (num >= 2.01 && num <= 3) return 'B'
+    if (num >= 1.01 && num <= 2) return 'C'
+    if (num <= 1.0) return 'D'
     return quality?.toString() || ''
   }
 
@@ -170,7 +171,7 @@ export default function AnalyticsSkillsPage() {
                     <div className="font-medium text-gray-900 mb-1 text-center">{sk.name} ({sk.count || 0})</div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="flex justify-between"><span className="text-gray-600">Avg RPE</span><span className="font-medium">{Math.round((sk.avgRPE || 0) * 10) / 10}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-600">Avg Quality</span><span className="font-medium">{Math.round((sk.avgQuality || 0) * 10) / 10}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Avg Quality</span><span className="font-medium">{getQualityGrade(sk.avgQuality)}</span></div>
                       <div className="flex justify-between"><span className="text-gray-600">Total reps</span><span className="font-medium">{sk.totalReps || 0}</span></div>
                       <div className="flex justify-between"><span className="text-gray-600">Last</span><span className="font-medium">{lastDate || '—'}</span></div>
                     </div>

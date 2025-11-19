@@ -2038,16 +2038,16 @@ const MetConAnalyticsView = () => {
 
 
 <header className="bg-white shadow-sm border-b">
-  <div className="max-w-7xl mx-auto px-4 py-6">
-    <div className="flex items-center justify-between">
-      <div>
-<h1 className="text-2xl font-bold text-charcoal">Performance Analytics</h1>       
- <p className="text-gray-600">Comprehensive training insights and progress tracking</p>
+  <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex-1">
+        <h1 className="text-xl sm:text-2xl font-bold text-charcoal">Performance Analytics</h1>       
+        <p className="text-sm sm:text-base text-gray-600 mt-1">Comprehensive training insights and progress tracking</p>
       </div>
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center">
         <Link
           href="/dashboard"
-          className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+          className="bg-gray-100 text-gray-700 px-3 py-2 sm:px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm sm:text-base whitespace-nowrap"
         >
           ← Back to Dashboard
         </Link>
