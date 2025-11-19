@@ -2042,7 +2042,7 @@ const MetConAnalyticsView = () => {
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div className="flex-1">
         <h1 className="text-xl sm:text-2xl font-bold text-charcoal">Performance Analytics</h1>       
-        <p className="text-sm sm:text-base text-gray-600 mt-1">Comprehensive training insights and progress tracking</p>
+        <p className="text-sm sm:text-base text-gray-600 mt-1">Training insights and progress tracking</p>
       </div>
       <div className="flex items-center">
         <Link
