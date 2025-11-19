@@ -24,50 +24,55 @@ export async function GET(request: NextRequest) {
     const hours = parseInt(url.searchParams.get('hours') || '24', 10)
     const sinceISO = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
 
-    // Join daily_active_users → users for name/email
-    const { data, error } = await supabase
+    // Fetch daily_active_users first (without join)
+    const { data: dailyData, error: dailyError } = await supabase
       .from('daily_active_users')
-      .select(`
-        id,
-        user_id,
-        window_start,
-        window_end,
-        sessions_completed,
-        tasks_completed,
-        metcons_completed,
-        primary_program_id,
-        subscription_tier,
-        program_month,
-        first_activity_at,
-        last_activity_at,
-        users!inner(
-          name,
-          email
-        )
-      `)
-      .gte('window_start', sinceISO)
+      .select('*')
+      .gte('last_activity_at', sinceISO)
       .order('last_activity_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching daily active users:', error)
+    if (dailyError) {
+      console.error('Error fetching daily active users:', dailyError)
       return NextResponse.json(
         { success: false, error: 'Failed to fetch daily activity' },
         { status: 500 }
       )
     }
 
-    const rows = (data || []).map((row: any) => ({
-      id: row.id,
-      userId: row.user_id,
-      name: row.users?.name,
-      email: row.users?.email,
-      subscriptionTier: row.subscription_tier,
-      programMonth: row.program_month,
-      sessions: row.sessions_completed,
-      tasks: row.tasks_completed,
-      metcons: row.metcons_completed,
-      lastActivityAt: row.last_activity_at,
-    }))
+    // Get unique user IDs (filter out nulls)
+    const userIds = [...new Set((dailyData || []).map((row: any) => row.user_id).filter((id: any) => id != null))]
+
+    // Fetch users separately if we have any user IDs
+    let usersMap = new Map()
+    if (userIds.length > 0) {
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, name, email')
+        .in('id', userIds)
+      
+      if (usersError) {
+        console.error('Error fetching users:', usersError)
+      } else {
+        usersMap = new Map((usersData || []).map((u: any) => [u.id, u]))
+      }
+    }
+
+    // Join the data manually
+    const rows = (dailyData || []).map((row: any) => {
+      const user = usersMap.get(row.user_id)
+      return {
+        id: row.id,
+        userId: row.user_id,
+        name: user?.name || null,
+        email: user?.email || null,
+        subscriptionTier: row.subscription_tier,
+        programMonth: row.program_month,
+        sessions: row.sessions_completed,
+        tasks: row.tasks_completed,
+        metcons: row.metcons_completed,
+        lastActivityAt: row.last_activity_at,
+      }
+    })
 
     return NextResponse.json({ success: true, rows })
   } catch (e) {
@@ -78,4 +83,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
