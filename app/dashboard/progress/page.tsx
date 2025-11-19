@@ -2047,7 +2047,8 @@ const MetConAnalyticsView = () => {
       <div className="flex items-center">
         <Link
           href="/dashboard"
-          className="bg-gray-100 text-gray-700 px-3 py-2 sm:px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm sm:text-base whitespace-nowrap"
+          className="bg-coral text-white px-3 py-2 sm:px-4 rounded-lg hover:opacity-90 transition-colors text-sm sm:text-base whitespace-nowrap"
+          style={{ backgroundColor: '#FE5858' }}
         >
           ← Back to Dashboard
         </Link>
