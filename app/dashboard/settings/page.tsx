@@ -433,23 +433,9 @@ export default function SettingsPage() {
         if (rmError) throw rmError
       }
 
-      // Upsert preferences
-      const { error: prefsError } = await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: userId,
-          three_month_goals: threeMonthGoals || null,
-          monthly_primary_goal: monthlyPrimaryGoal || null,
-          preferred_metcon_exercises: preferredMetconExercises || [],
-          avoided_exercises: avoidedExercises || [],
-          training_days_per_week: trainingDaysPerWeek || 5,
-          primary_strength_lifts: primaryStrengthLifts || null,
-          emphasized_strength_lifts: emphasizedStrengthLifts || null,
-          selected_goals: selectedGoals || [],
-          metcon_time_focus: metconTimeFocus || [],
-          ai_auto_apply_low_risk: aiAutoApply
-        }, { onConflict: 'user_id' })
-      if (prefsError) throw prefsError
+      // user_preferences writes removed - no longer collecting preference data
+      // Program generation uses defaults (5 days/week, standard lift rotation)
+      // Users can modify programs via in-program modifications instead
 
       // Detect AI-triggering changes
       const primaryLiftsForDelta = ['Snatch','Clean and Jerk','Back Squat','Front Squat','Deadlift','Strict Press']

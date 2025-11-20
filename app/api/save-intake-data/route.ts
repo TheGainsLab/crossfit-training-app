@@ -126,67 +126,9 @@ export async function POST(request: NextRequest) {
       console.log('✅ Equipment saved:', equipment.length, 'items')
     }
 
-    // Save user preferences (with fallback for older schema and missing unique constraints)
-    if (preferences) {
-      const fullPayload: any = {
-        user_id: effectiveUserId,
-        three_month_goals: preferences.threeMonthGoals || null,
-        monthly_primary_goal: preferences.monthlyPrimaryGoal || null,
-        preferred_metcon_exercises: Array.isArray(preferences.preferredMetconExercises) ? preferences.preferredMetconExercises : [],
-        avoided_exercises: Array.isArray(preferences.avoidedExercises) ? preferences.avoidedExercises : [],
-        training_days_per_week: typeof preferences.trainingDaysPerWeek === 'number' ? preferences.trainingDaysPerWeek : 5,
-        primary_strength_lifts: Array.isArray(preferences.primaryStrengthLifts) ? preferences.primaryStrengthLifts : null,
-        emphasized_strength_lifts: Array.isArray(preferences.emphasizedStrengthLifts) ? preferences.emphasizedStrengthLifts : null
-      }
-
-      const basePayload: any = {
-        user_id: effectiveUserId,
-        three_month_goals: fullPayload.three_month_goals,
-        monthly_primary_goal: fullPayload.monthly_primary_goal,
-        preferred_metcon_exercises: fullPayload.preferred_metcon_exercises,
-        avoided_exercises: fullPayload.avoided_exercises
-      }
-
-      // Determine if a row already exists
-      const { data: existingRows, error: selError } = await supabaseAdmin
-        .from('user_preferences')
-        .select('user_id')
-        .eq('user_id', effectiveUserId)
-
-      const exists = !selError && Array.isArray(existingRows) && existingRows.length > 0
-
-      if (exists) {
-        // Try update with all fields, fallback to base fields on error
-        let { error: updErr } = await supabaseAdmin
-          .from('user_preferences')
-          .update(fullPayload)
-          .eq('user_id', effectiveUserId)
-
-        if (updErr) {
-          const retryUpd = await supabaseAdmin
-            .from('user_preferences')
-            .update(basePayload)
-            .eq('user_id', effectiveUserId)
-          if (retryUpd.error) {
-            console.warn('⚠️ Preferences update warning (continuing):', updErr?.message || updErr, 'retry:', retryUpd.error?.message || retryUpd.error)
-          }
-        }
-      } else {
-        // Try insert with all fields, fallback to base fields on error
-        let { error: insErr } = await supabaseAdmin
-          .from('user_preferences')
-          .insert(fullPayload)
-
-        if (insErr) {
-          const retryIns = await supabaseAdmin
-            .from('user_preferences')
-            .insert(basePayload)
-          if (retryIns.error) {
-            console.warn('⚠️ Preferences insert warning (continuing):', insErr?.message || insErr, 'retry:', retryIns.error?.message || retryIns.error)
-          }
-        }
-      }
-    }
+    // user_preferences writes removed - no longer collecting preference data
+    // Program generation uses defaults (5 days/week, standard lift rotation)
+    // Users can modify programs via in-program modifications instead
 
   // Save skills
 console.log('🎯 Saving skills...')
