@@ -19,21 +19,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing fields', debug }, { status: 400 })
     }
 
-    // Try to update program_workouts.daily_calories if column exists
-    let updatedDaily = false
-    try {
-      const { error: updateErr } = await supabase
-        .from('program_workouts')
-        .update({ daily_calories: calories })
-        .eq('program_id', programId)
-        .eq('week', week)
-        .eq('day', day)
-      if (!updateErr) updatedDaily = true
-      debug.updateDaily = updateErr ? { ok: false, error: updateErr.message } : { ok: true }
-    } catch (_) {
-      // Ignore; may be missing column/table
-      debug.updateDaily = { ok: false, error: 'exception during update' }
-    }
+    // program_workouts table removed - skip daily_calories update
+    const updatedDaily = false
+    debug.updateDaily = { ok: false, error: 'program_workouts table removed' }
 
     // Always append audit log entry
     const { error: auditErr } = await supabase

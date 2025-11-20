@@ -239,62 +239,6 @@ serve(async (req) => {
 
     console.log(`✅ Program generated successfully!`)
 
-    // Persist scaffold into program_workouts honoring training_days_per_week
-    try {
-      const programId = savedProgram?.id
-      const weeks = programResult?.program?.weeks || []
-      // Read user preferences to determine day limit (fallback 5)
-      let dayLimit = 5
-      try {
-        const { data: prefs } = await supabase
-          .from('user_preferences')
-          .select('training_days_per_week')
-          .eq('user_id', user_id)
-          .single()
-        if (prefs && typeof prefs.training_days_per_week === 'number') {
-          dayLimit = Math.max(3, Math.min(6, prefs.training_days_per_week))
-        }
-      } catch (_) {}
-      if (programId && Array.isArray(weeks) && weeks.length > 0) {
-        const rows: any[] = []
-        for (const w of weeks) {
-          const weekNum = w.week
-          const daysArr = w.days || []
-          for (const d of daysArr) {
-            if (typeof d.day === 'number' && d.day > dayLimit) continue
-            const blocksArr = d.blocks || []
-            for (const b of blocksArr) {
-              const exercises = b.exercises || []
-              for (const ex of exercises) {
-                rows.push({
-                  program_id: programId,
-                  week: weekNum,
-                  day: d.day,
-                  block: b.block,
-                  exercise_name: ex.name,
-                  main_lift: d.mainLift || null,
-                  is_deload: !!d.isDeload
-                })
-              }
-            }
-          }
-        }
-        if (rows.length > 0) {
-          // Best-effort insert; ignore duplicates on reruns
-          const { error: pwErr } = await supabase
-            .from('program_workouts')
-            .insert(rows)
-          if (pwErr) {
-            console.warn('program_workouts insert warning:', pwErr.message)
-          }
-        }
-      }
-    } catch (scaffoldErr) {
-      console.warn('Failed to persist program_workouts scaffold (non-fatal):', scaffoldErr)
-    }
-
-
-
 // Generate user profile
 console.log(`📊 Generating user profile...`)
 

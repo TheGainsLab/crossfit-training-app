@@ -1819,31 +1819,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
             const program = allProgramsForInit[programIdx]
             const programIndex = programIdx + 1 // 1-based index
 
-            // Get workouts for this program
-            const { data: workouts } = await supabase
-              .from('program_workouts')
-              .select('week, day')
-              .eq('program_id', program.id)
-              .order('week', { ascending: true })
-              .order('day', { ascending: true })
-
-            if (workouts && workouts.length > 0) {
-              // Find first incomplete workout in this program
-              for (const w of workouts) {
-                const key = `${program.id}-${w.week}-${w.day}`
-                if (!completed.has(key)) {
-                  // Convert to global week
-                  const globalWeek = programAndWeekToGlobalWeek(programIndex, w.week)
-                  setCurrentWeek(globalWeek)
-                  setCurrentDay(w.day)
-                  setCurrentProgram(program.id)
-                  setProgramSpecificWeek(w.week) // Set program-specific week
-                  foundNext = true
-                  break
-                }
-              }
-              if (foundNext) break
-            }
+            // program_workouts table removed - skip lookup, use fallback to week 1, day 1
           }
         }
 

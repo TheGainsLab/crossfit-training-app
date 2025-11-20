@@ -306,17 +306,6 @@ export async function POST(request: NextRequest) {
 
     console.log(`📊 Logging completion: ${completionData.exerciseName} - Week ${completionData.week}, Day ${completionData.day}`)
 
-    // First, try to find the program_workout_id
-    const { data: programWorkout } = await supabase
-      .from('program_workouts')
-      .select('id')
-      .eq('program_id', completionData.programId)
-      .eq('week', completionData.week)
-      .eq('day', completionData.day)
-      .eq('exercise_name', completionData.exerciseName)
-      .eq('block', completionData.block)
-      .single()
-
     // Check if performance log already exists (prevent duplicates)
     const { data: existingPerfLog } = await supabase
       .from('performance_logs')
@@ -337,7 +326,7 @@ export async function POST(request: NextRequest) {
     const perfLogData: any = {
       program_id: completionData.programId,
       user_id: completionData.userId,
-      program_workout_id: programWorkout?.id,
+      program_workout_id: null, // program_workouts table removed
       week: completionData.week,
       day: completionData.day,
       block: completionData.block,
