@@ -442,6 +442,22 @@ export async function POST(request: NextRequest) {
     if (completionData.notes !== undefined && completionData.notes !== null) {
       perfLogData.result = completionData.notes
     }
+    // Include new fields for complete data tracking
+    if (completionData.wasRx !== undefined) {
+      perfLogData.was_rx = completionData.wasRx
+    }
+    if (completionData.scalingUsed !== undefined && completionData.scalingUsed !== null) {
+      perfLogData.scaling_used = completionData.scalingUsed
+    }
+    if (completionData.caloriesCompleted !== undefined && completionData.caloriesCompleted !== null) {
+      perfLogData.calories_completed = completionData.caloriesCompleted
+    }
+    if (completionData.distanceCompleted !== undefined && completionData.distanceCompleted !== null) {
+      perfLogData.distance_completed = completionData.distanceCompleted
+    }
+    if (completionData.timeCompleted !== undefined && completionData.timeCompleted !== null) {
+      perfLogData.time_completed = completionData.timeCompleted
+    }
     
     console.log('💾 Saving to performance_logs:', {
       exercise_name: perfLogData.exercise_name,
@@ -454,7 +470,12 @@ export async function POST(request: NextRequest) {
       weightSource: completionData.weightUsed,
       rpe: perfLogData.rpe,
       completion_quality: perfLogData.completion_quality,
-      quality_grade: perfLogData.quality_grade
+      quality_grade: perfLogData.quality_grade,
+      was_rx: perfLogData.was_rx,
+      scaling_used: perfLogData.scaling_used,
+      calories_completed: perfLogData.calories_completed,
+      distance_completed: perfLogData.distance_completed,
+      time_completed: perfLogData.time_completed
     })
 
     let savedLogId: number | null = null
@@ -628,7 +649,11 @@ const mappedCompletions = completions?.map(log => ({
   rpe: log.rpe,
   quality: log.quality_grade,
   notes: log.result,
-  was_rx: true
+  was_rx: log.was_rx ?? true,
+  scaling_used: log.scaling_used || null,
+  calories_completed: log.calories_completed || null,
+  distance_completed: log.distance_completed || null,
+  time_completed: log.time_completed || null
 })) || []
 
 return NextResponse.json({

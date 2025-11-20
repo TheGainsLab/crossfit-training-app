@@ -449,7 +449,11 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
         rpe: log.rpe,
         quality: log.quality_grade,
         notes: log.result,
-        was_rx: true,
+        was_rx: log.was_rx ?? true,
+        scaling_used: log.scaling_used || null,
+        calories_completed: log.calories_completed || null,
+        distance_completed: log.distance_completed || null,
+        time_completed: log.time_completed || null,
         set_number: log.set_number || 1
       }))
     } catch {}
