@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { populateExercisePercentileLog } from '@/app/api/utils/populate-exercise-percentile-log'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -363,6 +364,20 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ MetCon completion saved successfully:', result.data)
+
+    // Populate exercise_percentile_log
+    if (result.data) {
+      await populateExercisePercentileLog(
+        supabase,
+        result.data.id,
+        completionData.userId,
+        percentile,
+        performanceTier,
+        completionData.week,
+        completionData.day,
+        new Date().toISOString()
+      )
+    }
 
     return NextResponse.json({ 
       success: true, 

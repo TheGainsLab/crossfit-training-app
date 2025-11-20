@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { populateExercisePercentileLog } from '@/app/api/utils/populate-exercise-percentile-log'
 
 interface LogResultRequest {
   workoutId: number
@@ -277,6 +279,35 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`💾 Result saved successfully`)
+
+    // Populate exercise_percentile_log
+    if (updatedWorkout) {
+      // Fetch full workout to get week/day
+      const { data: fullWorkout } = await supabase
+        .from('program_metcons')
+        .select('week, day')
+        .eq('id', workoutId)
+        .single()
+
+      if (fullWorkout) {
+        // Create service role client for helper function (needs elevated permissions)
+        const serviceSupabase = createServiceClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
+
+        await populateExercisePercentileLog(
+          serviceSupabase,
+          workoutId,
+          userData.id,
+          percentile,
+          performanceTier,
+          fullWorkout.week || 1,
+          fullWorkout.day || 1,
+          new Date().toISOString()
+        )
+      }
+    }
 
     return NextResponse.json({
       success: true,
