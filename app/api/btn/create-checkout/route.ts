@@ -9,12 +9,30 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// BTN Stripe Price ID (TEST MODE)
-const BTN_PRICE_ID = process.env.BTN_STRIPE_PRICE_ID || 'price_1SK2r2LEmGVLIgpHjn1dF2EU'
-
 export async function POST(request: NextRequest) {
   try {
     console.log('🚀 BTN checkout: Starting checkout session creation')
+    
+    // Get BTN tier from subscription_tiers table
+    const { data: tier, error: tierError } = await supabase
+      .from('subscription_tiers')
+      .select('*')
+      .eq('id', 'btn')
+      .eq('is_active', true)
+      .single()
+
+    if (tierError || !tier) {
+      console.error('❌ BTN tier not found:', tierError)
+      return NextResponse.json({ 
+        error: 'BTN subscription tier not available' 
+      }, { status: 404 })
+    }
+
+    if (!tier.stripe_price_id_monthly) {
+      return NextResponse.json({ 
+        error: 'BTN monthly pricing not configured' 
+      }, { status: 500 })
+    }
     
     // Get authorization header for authenticated requests
     const authHeader = request.headers.get('authorization')
@@ -56,7 +74,7 @@ export async function POST(request: NextRequest) {
               name: userData.name,
               metadata: {
                 user_id: userData.id.toString(),
-                product: 'btn'
+                tier_id: 'btn'
               }
             })
             stripeCustomerId = customer.id
@@ -83,7 +101,7 @@ export async function POST(request: NextRequest) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: BTN_PRICE_ID,
+          price: tier.stripe_price_id_monthly, // Use price ID from tier
           quantity: 1,
         },
       ],
@@ -91,11 +109,13 @@ export async function POST(request: NextRequest) {
       success_url: `${origin}/intake?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/btn?canceled=true`,
       metadata: {
-        product: 'btn'
+        product: 'btn',
+        tier_id: 'btn'
       },
       subscription_data: {
         metadata: {
-          product: 'btn'
+          product: 'btn',
+          tier_id: 'btn'
         }
       },
       allow_promotion_codes: true

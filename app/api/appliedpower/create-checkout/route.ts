@@ -9,12 +9,30 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Applied Power Stripe Price ID (TEST MODE)
-const APPLIED_POWER_PRICE_ID = process.env.APPLIED_POWER_STRIPE_PRICE_ID || 'price_1SK4BSLEmGVLIgpHrS1cfLrH'
-
 export async function POST(request: NextRequest) {
   try {
     console.log('🚀 Applied Power checkout: Starting checkout session creation')
+    
+    // Get Applied Power tier from subscription_tiers table
+    const { data: tier, error: tierError } = await supabase
+      .from('subscription_tiers')
+      .select('*')
+      .eq('id', 'applied_power')
+      .eq('is_active', true)
+      .single()
+
+    if (tierError || !tier) {
+      console.error('❌ Applied Power tier not found:', tierError)
+      return NextResponse.json({ 
+        error: 'Applied Power subscription tier not available' 
+      }, { status: 404 })
+    }
+
+    if (!tier.stripe_price_id_monthly) {
+      return NextResponse.json({ 
+        error: 'Applied Power monthly pricing not configured' 
+      }, { status: 500 })
+    }
     
     // Get authorization header for authenticated requests
     const authHeader = request.headers.get('authorization')
@@ -57,7 +75,7 @@ export async function POST(request: NextRequest) {
               name: userData.name,
               metadata: {
                 user_id: userData.id.toString(),
-                product: 'applied_power'
+                tier_id: 'applied_power'
               }
             })
             stripeCustomerId = customer.id
@@ -84,7 +102,7 @@ export async function POST(request: NextRequest) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: APPLIED_POWER_PRICE_ID,
+          price: tier.stripe_price_id_monthly, // Use price ID from tier
           quantity: 1,
         },
       ],
@@ -92,11 +110,13 @@ export async function POST(request: NextRequest) {
       success_url: `${origin}/intake?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/appliedpower?canceled=true`,
       metadata: {
-        product: 'applied_power'
+        product: 'applied_power',
+        tier_id: 'applied_power'
       },
       subscription_data: {
         metadata: {
-          product: 'applied_power'
+          product: 'applied_power',
+          tier_id: 'applied_power'
         }
       },
       allow_promotion_codes: true
