@@ -64,7 +64,9 @@ export async function populateExercisePercentileLog(
       }
     } else {
       // Premium: exercises are in metcons.tasks JSONB
-      const metcon = programMetcon.metcons
+      // Note: Supabase join may return an array or object depending on query structure
+      const metconsData = (programMetcon as any).metcons
+      const metcon = Array.isArray(metconsData) ? metconsData[0] : metconsData
       if (metcon?.tasks) {
         exercises = (metcon.tasks || []).map((task: any) => task.exercise).filter(Boolean)
         timeRange = metcon.time_range || null
