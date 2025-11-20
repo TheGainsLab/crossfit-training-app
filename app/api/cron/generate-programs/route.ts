@@ -71,6 +71,13 @@ async function generateScheduledProgram(userId: number, billingInterval: string)
       .limit(1)
     const nextProgramNumber = (progCount?.[0]?.program_number || 0) + 1
 
+    // Calculate correct weeks for this program number
+    // Program #1: weeks [1, 2, 3, 4]
+    // Program #2: weeks [5, 6, 7, 8]
+    // Program #3: weeks [9, 10, 11, 12]
+    // etc.
+    const weeksToGenerate = Array.from({length: 4}, (_, i) => i + 1 + (4 * (nextProgramNumber - 1)))
+
     // Enqueue to dedicated program generation queue
     const { error: insErr } = await supabase
       .from('program_generation_jobs')
@@ -78,7 +85,7 @@ async function generateScheduledProgram(userId: number, billingInterval: string)
         user_id: userId,
         program_number: nextProgramNumber,
         status: 'pending',
-        payload: { weeksToGenerate: [1, 2, 3, 4] }
+        payload: { weeksToGenerate }
       })
     
     if (insErr) {

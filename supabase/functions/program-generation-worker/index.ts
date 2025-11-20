@@ -24,6 +24,17 @@ async function processJob(job: any) {
     
     console.log(`🔄 Processing program generation for user ${userId}, program #${programNumber}`)
     
+    // Get user's subscription tier to determine program type
+    const { data: userData } = await supabase
+      .from('users')
+      .select('subscription_tier')
+      .eq('id', userId)
+      .single()
+    
+    const isAppliedPower = userData?.subscription_tier === 'APPLIED_POWER'
+    const programType = isAppliedPower ? 'applied_power' : 'full'
+    console.log(`📋 Program type: ${programType} (tier: ${userData?.subscription_tier || 'unknown'})`)
+    
     // Call generate-program Edge Function
     const generateResponse = await fetch(`${supabaseUrl}/functions/v1/generate-program`, {
       method: 'POST',
@@ -33,7 +44,8 @@ async function processJob(job: any) {
       },
       body: JSON.stringify({
         user_id: userId,
-        weeksToGenerate
+        weeksToGenerate,
+        programType
       })
     })
     
@@ -63,6 +75,29 @@ async function processJob(job: any) {
     
     if (saveError) {
       throw new Error(`Failed to save program: ${saveError.message}`)
+    }
+    
+    // Generate updated profile
+    console.log(`📊 Regenerating user profile...`)
+    const profileResponse = await fetch(`${supabaseUrl}/functions/v1/generate-user-profile`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        user_id: userId,
+        sport_id: 1,
+        force_regenerate: true
+      })
+    })
+    
+    if (!profileResponse.ok) {
+      const errorText = await profileResponse.text()
+      console.warn(`⚠️ Profile regeneration failed (non-critical): ${errorText}`)
+      // Don't throw - profile regeneration is non-critical
+    } else {
+      console.log(`✅ User profile regenerated successfully`)
     }
     
     // Mark as completed
