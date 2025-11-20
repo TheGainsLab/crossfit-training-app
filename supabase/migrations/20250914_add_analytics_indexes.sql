@@ -8,8 +8,8 @@ create index if not exists idx_perflogs_user_exercise_logged_at on public.perfor
 -- user_one_rms lookups
 create index if not exists idx_useronerms_user_exercise_recorded on public.user_one_rms (user_id, exercise_name, recorded_at desc);
 
--- workout_completions day aggregation
-create index if not exists idx_workoutcompletions_user_program_week_day on public.workout_completions (user_id, program_id, week, day);
+-- workout_completions day aggregation (REMOVED - table dropped, using performance_logs instead)
+-- create index if not exists idx_workoutcompletions_user_program_week_day on public.workout_completions (user_id, program_id, week, day);
 
 -- modified_workouts cache lookup
 create index if not exists idx_modified_workouts_user_program_week_day on public.modified_workouts (user_id, program_id, week, day);

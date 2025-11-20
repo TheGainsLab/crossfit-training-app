@@ -306,86 +306,6 @@ export async function POST(request: NextRequest) {
 
     console.log(`📊 Logging completion: ${completionData.exerciseName} - Week ${completionData.week}, Day ${completionData.day}`)
 
-    // Check if this exact completion already exists (prevent duplicates)
-    const { data: existingCompletion } = await supabase
-      .from('workout_completions')
-      .select('id')
-      .eq('user_id', completionData.userId)
-      .eq('program_id', completionData.programId)
-      .eq('week', completionData.week)
-      .eq('day', completionData.day)
-      .eq('block', completionData.block)
-      .eq('exercise_name', completionData.exerciseName)
-      .eq('set_number', completionData.setNumber || 1)
-      .single()
-
-    let result
-    if (existingCompletion) {
-      // Update existing completion
-      console.log('🔄 Updating existing completion...')
-      const { data, error } = await supabase
-        .from('workout_completions')
-        .update({
-          set_number: completionData.setNumber || 1,
-          sets_completed: completionData.setsCompleted,
-          reps_completed: completionData.repsCompleted?.toString(),
-          weight_used: completionData.weightUsed,
-          time_completed: completionData.timeCompleted,
-          calories_completed: completionData.caloriesCompleted,
-          distance_completed: completionData.distanceCompleted,
-          rpe: completionData.rpe,
-          notes: completionData.notes,
-          was_rx: completionData.wasRx,
-          scaling_used: completionData.scalingUsed,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingCompletion.id)
-        .select()
-        .single()
-
-      result = { data, error }
-    } else {
-      // Create new completion
-      console.log('✨ Creating new completion...')
-      const { data, error } = await supabase
-        .from('workout_completions')
-        .insert({
-          user_id: completionData.userId,
-          program_id: completionData.programId,
-          week: completionData.week,
-          day: completionData.day,
-          block: completionData.block,
-          exercise_name: completionData.exerciseName,
-          set_number: completionData.setNumber || 1,
-          sets_completed: completionData.setsCompleted,
-          reps_completed: completionData.repsCompleted?.toString(),
-          weight_used: completionData.weightUsed,
-          time_completed: completionData.timeCompleted,
-          calories_completed: completionData.caloriesCompleted,
-          distance_completed: completionData.distanceCompleted,
-          rpe: completionData.rpe,
-          notes: completionData.notes,
-          was_rx: completionData.wasRx,
-          scaling_used: completionData.scalingUsed,
-          completed_at: new Date().toISOString()
-        })
-        .select()
-        .single()
-
-      result = { data, error }
-    }
-
-    if (result.error) {
-      console.error('❌ Failed to save completion:', result.error)
-      return NextResponse.json(
-        { error: 'Failed to save workout completion', details: result.error.message },
-        { status: 500 }
-      )
-    }
-
-    // Also log to performance_logs for analytics (including quality grade)
-    console.log('📊 Logging to performance_logs for analytics...')
-    
     // First, try to find the program_workout_id
     const { data: programWorkout } = await supabase
       .from('program_workouts')
@@ -397,7 +317,7 @@ export async function POST(request: NextRequest) {
       .eq('block', completionData.block)
       .single()
 
-    // Check if performance log already exists
+    // Check if performance log already exists (prevent duplicates)
     const { data: existingPerfLog } = await supabase
       .from('performance_logs')
       .select('id')
@@ -478,9 +398,12 @@ export async function POST(request: NextRequest) {
       time_completed: perfLogData.time_completed
     })
 
-    let savedLogId: number | null = null
+    let savedLog: any = null
+    let resultError: any = null
+    
     if (existingPerfLog) {
       // Update existing performance log
+      console.log('🔄 Updating existing performance log...')
       const { data: updatedLog, error: updateError } = await supabase
         .from('performance_logs')
         .update(perfLogData)
@@ -490,17 +413,19 @@ export async function POST(request: NextRequest) {
       
       if (updateError) {
         console.error('❌ Error updating performance log:', updateError)
+        resultError = updateError
       } else {
-        savedLogId = updatedLog?.id || existingPerfLog.id
+        savedLog = updatedLog
         console.log('✅ Updated existing performance log:', {
-          id: savedLogId,
-          sets: updatedLog?.sets,
-          reps: updatedLog?.reps,
-          weight_time: updatedLog?.weight_time
+          id: savedLog?.id,
+          sets: savedLog?.sets,
+          reps: savedLog?.reps,
+          weight_time: savedLog?.weight_time
         })
       }
     } else {
       // Create new performance log
+      console.log('✨ Creating new performance log...')
       const { data: insertedLog, error: insertError } = await supabase
         .from('performance_logs')
         .insert(perfLogData)
@@ -509,23 +434,32 @@ export async function POST(request: NextRequest) {
       
       if (insertError) {
         console.error('❌ Error inserting performance log:', insertError)
+        resultError = insertError
       } else {
-        savedLogId = insertedLog?.id || null
+        savedLog = insertedLog
         console.log('✅ Created new performance log:', {
-          id: savedLogId,
-          sets: insertedLog?.sets,
-          reps: insertedLog?.reps,
-          weight_time: insertedLog?.weight_time
+          id: savedLog?.id,
+          sets: savedLog?.sets,
+          reps: savedLog?.reps,
+          weight_time: savedLog?.weight_time
         })
       }
     }
 
+    if (resultError) {
+      console.error('❌ Failed to save completion:', resultError)
+      return NextResponse.json(
+        { error: 'Failed to save workout completion', details: resultError.message },
+        { status: 500 }
+      )
+    }
+
     // Verify what was actually saved
-    if (savedLogId) {
+    if (savedLog?.id) {
       const { data: verifiedLog } = await supabase
         .from('performance_logs')
         .select('*')
-        .eq('id', savedLogId)
+        .eq('id', savedLog.id)
         .single()
       
       console.log('🔍 Verified saved log in database:', {
@@ -560,9 +494,9 @@ export async function POST(request: NextRequest) {
       // Don't fail the entire request if weekly summary update fails
     }
 
-    // Get completion stats for this workout session
+    // Get completion stats for this workout session (from performance_logs)
     const { data: sessionStats } = await supabase
-      .from('workout_completions')
+      .from('performance_logs')
       .select('exercise_name')
       .eq('user_id', completionData.userId)
       .eq('program_id', completionData.programId)
@@ -573,14 +507,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      completion: result.data,
+      completion: savedLog,
       sessionStats: {
         completedExercises,
         week: completionData.week,
         day: completionData.day,
         block: completionData.block
       },
-      message: existingCompletion ? 'Workout completion updated successfully' : 'Workout completion logged successfully'
+      message: existingPerfLog ? 'Workout completion updated successfully' : 'Workout completion logged successfully'
     })
 
   } catch (error) {
