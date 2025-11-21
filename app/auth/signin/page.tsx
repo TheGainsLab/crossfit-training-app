@@ -32,14 +32,21 @@ export default function SignIn() {
       if (data.user) {
         setMessage('✅ Signed in successfully! Redirecting...')
         
-        // Check if user has a program
+        // Check user's subscription tier and program status
         const { data: userData } = await supabase
           .from('users')
-          .select('id')
+          .select('id, subscription_tier')
           .eq('auth_id', data.user.id)
           .single()
 
         if (userData) {
+          // BTN users should go to workout history
+          if (userData.subscription_tier === 'BTN') {
+            router.push('/btn/history')
+            return
+          }
+          
+          // Check if user has a program (for Premium/Applied Power)
           const { data: programData } = await supabase
             .from('programs')
             .select('id')

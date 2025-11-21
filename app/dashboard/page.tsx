@@ -1755,10 +1755,10 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         effectiveUserId = userData.id
         
         // Only check subscription tier for own account
-        // BTN users should use the workout generator, not the program dashboard
+        // BTN users should use the workout history page, not the program dashboard
         if (userData.subscription_tier === 'BTN') {
-          console.log('🎯 BTN user detected - redirecting to generator')
-          router.push('/btn')
+          console.log('🎯 BTN user detected - redirecting to workout history')
+          router.push('/btn/history')
           return
         }
       }
