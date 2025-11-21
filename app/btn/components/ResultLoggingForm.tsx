@@ -123,8 +123,8 @@ export default function ResultLoggingForm({
   }
 
   return (
-    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-      <h4 className="font-semibold text-gray-900 mb-3">✍️ Log Your Result</h4>
+    <div className="bg-white rounded-lg p-4 border border-[#282B34]">
+      <h4 className="font-semibold text-center mb-3" style={{ color: '#FE5858' }}>Log Your Result</h4>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Result Input */}
@@ -145,7 +145,7 @@ export default function ResultLoggingForm({
                   ? '5+10 or 5' 
                   : 'Enter result'
             }
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FE5858] focus:border-transparent"
+            className="w-full px-3 py-2 border border-[#282B34] rounded-lg focus:ring-2 focus:ring-[#FE5858] focus:border-transparent"
             disabled={saving}
           />
           {isForTime && (
@@ -171,7 +171,7 @@ export default function ResultLoggingForm({
               value={avgHeartRate}
               onChange={(e) => handleHeartRateChange(e.target.value, setAvgHeartRate)}
               placeholder="145"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FE5858] focus:border-transparent"
+              className="w-full px-3 py-2 border border-[#282B34] rounded-lg focus:ring-2 focus:ring-[#FE5858] focus:border-transparent"
               disabled={saving}
             />
             <p className="text-xs text-gray-600 mt-1">
@@ -187,7 +187,7 @@ export default function ResultLoggingForm({
               value={maxHeartRate}
               onChange={(e) => handleHeartRateChange(e.target.value, setMaxHeartRate)}
               placeholder="175"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FE5858] focus:border-transparent"
+              className="w-full px-3 py-2 border border-[#282B34] rounded-lg focus:ring-2 focus:ring-[#FE5858] focus:border-transparent"
               disabled={saving}
             />
             <p className="text-xs text-gray-600 mt-1">
@@ -206,7 +206,7 @@ export default function ResultLoggingForm({
             onChange={(e) => setNotes(e.target.value)}
             placeholder="How did it feel? Any modifications?"
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FE5858] focus:border-transparent resize-none"
+            className="w-full px-3 py-2 border border-[#282B34] rounded-lg focus:ring-2 focus:ring-[#FE5858] focus:border-transparent resize-none"
             disabled={saving}
           />
         </div>
