@@ -30,6 +30,17 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
     return cell ? cell.session_count : 0
   }
 
+  const getHRData = (exercise: string, timeDomain: string): { avgHR: number | null, maxHR: number | null } | null => {
+    if (!data?.heatmapCells) return null
+    const cell = data.heatmapCells.find((cell: any) => 
+      cell.exercise_name === exercise && cell.time_range === timeDomain
+    )
+    return cell ? {
+      avgHR: cell.avg_heart_rate ?? null,
+      maxHR: cell.max_heart_rate ?? null
+    } : null
+  }
+
   const calculateExerciseAverage = (exercise: string): number | null => {
     if (!data?.exerciseAverages) return null
     const exerciseAvg = data.exerciseAverages.find((avg: any) => 
@@ -103,14 +114,27 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
                 {shownDomains.map((domain: string) => {
                   const percentile = getPercentile(exercise, domain)
                   const sessions = getSessionCount(exercise, domain)
+                  const hrData = getHRData(exercise, domain)
                   const colorClass = getHeatMapColor(percentile)
+                  
+                  // Build tooltip text
+                  const tooltipText = percentile 
+                    ? `Exercise: ${exercise}\nTime Domain: ${domain}\nPercentile: ${percentile}%\nSessions: ${sessions}${hrData?.avgHR ? `\nAvg HR: ${hrData.avgHR} bpm${hrData.maxHR ? `\nPeak HR: ${hrData.maxHR} bpm` : ''}` : ''}`
+                    : `Exercise: ${exercise}\nTime Domain: ${domain}\nNo data`
+                  
                   return (
                     <td key={domain} className="p-1">
-                      <div className={`${colorClass} rounded p-3 text-center font-semibold transition-all hover:scale-105 cursor-pointer ${percentile ? 'shadow-sm' : ''}`}>
+                      <div 
+                        className={`${colorClass} rounded p-3 text-center font-semibold transition-all hover:scale-105 cursor-pointer ${percentile ? 'shadow-sm' : ''}`}
+                        title={tooltipText}
+                      >
                         {percentile ? (
                           <div>
                             <div className="text-lg">{percentile}%</div>
                             {sessions > 0 && (<div className="text-xs opacity-75">{sessions} sessions</div>)}
+                            {hrData?.avgHR && (
+                              <div className="text-xs opacity-60 mt-1">HR: {hrData.avgHR}</div>
+                            )}
                           </div>
                         ) : (
                           <div className="text-lg">—</div>

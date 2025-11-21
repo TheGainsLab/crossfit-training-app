@@ -2,22 +2,27 @@
 
 import { useState, useEffect } from 'react'
 import MetconHeatmap from '@/components/MetconHeatmap'
+import HRStatisticsPanel from '@/components/HRStatisticsPanel'
 
 export default function BTNExerciseHeatMap() {
   const [heatMapData, setHeatMapData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [equipmentFilter, setEquipmentFilter] = useState<'all' | 'barbell' | 'no_barbell' | 'gymnastics' | 'bodyweight'>('all')
 
   useEffect(() => {
     loadHeatMapData()
-  }, [])
+  }, [equipmentFilter])
 
   const loadHeatMapData = async () => {
     setLoading(true)
     setError(null)
     try {
-      console.log('🔥 BTN Heatmap: Fetching data from /api/btn/exercise-heatmap...')
-      const response = await fetch('/api/btn/exercise-heatmap')
+      const url = equipmentFilter !== 'all' 
+        ? `/api/btn/exercise-heatmap?equip=${equipmentFilter}`
+        : '/api/btn/exercise-heatmap'
+      console.log('🔥 BTN Heatmap: Fetching data from', url)
+      const response = await fetch(url)
       console.log('📡 BTN Heatmap: Response status:', response.status, response.ok ? 'OK' : 'ERROR')
       
       if (response.ok) {
@@ -91,7 +96,16 @@ export default function BTNExerciseHeatMap() {
   }
 
   // Use the Premium MetconHeatmap component directly - data format is now identical!
-  return <MetconHeatmap data={heatMapData} />
+  return (
+    <>
+      <MetconHeatmap data={heatMapData} />
+      <HRStatisticsPanel 
+        heatmapData={heatMapData} 
+        equipmentFilter={equipmentFilter}
+        onEquipmentFilterChange={setEquipmentFilter}
+      />
+    </>
+  )
 }
 
 // OLD CODE BELOW - NO LONGER NEEDED, USING PREMIUM COMPONENT NOW

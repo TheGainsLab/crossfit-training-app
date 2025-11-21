@@ -9,6 +9,8 @@ interface ExerciseHeatmapCell {
   time_range: string | null
   session_count: number
   avg_percentile: number
+  avg_heart_rate?: number | null
+  max_heart_rate?: number | null
   sort_order: number
 }
 
@@ -104,6 +106,8 @@ export async function GET(
       .from('program_metcons')
       .select(`
         percentile,
+        avg_heart_rate,
+        max_heart_rate,
         completed_at,
         week,
         day,
@@ -244,7 +248,13 @@ export async function GET(
 }
 
 function processRawDataToHeatmap(rawData: any[]): any[] {
-  const exerciseTimeMap = new Map<string, Map<string, { count: number, totalPercentile: number }>>()
+  const exerciseTimeMap = new Map<string, Map<string, { 
+    count: number, 
+    totalPercentile: number,
+    totalAvgHR: number,
+    totalMaxHR: number,
+    hrCount: number
+  }>>()
   const exerciseOverallMap = new Map<string, { count: number, totalPercentile: number }>()
 
   console.log('🔍 Processing raw data for heat map...')
@@ -252,6 +262,8 @@ function processRawDataToHeatmap(rawData: any[]): any[] {
   // Process each workout
   rawData.forEach(workout => {
     const percentile = parseFloat(workout.percentile)
+    const avgHR = workout.avg_heart_rate ? parseFloat(workout.avg_heart_rate) : null
+    const maxHR = workout.max_heart_rate ? parseFloat(workout.max_heart_rate) : null
     const timeRange = workout.metcons.time_range
     const tasks = workout.metcons.tasks || []
 
@@ -275,11 +287,20 @@ function processRawDataToHeatmap(rawData: any[]): any[] {
       const exerciseMap = exerciseTimeMap.get(exerciseName)!
       
       if (!exerciseMap.has(timeRange)) {
-        exerciseMap.set(timeRange, { count: 0, totalPercentile: 0 })
+        exerciseMap.set(timeRange, { count: 0, totalPercentile: 0, totalAvgHR: 0, totalMaxHR: 0, hrCount: 0 })
       }
       const timeData = exerciseMap.get(timeRange)!
       timeData.count++
       timeData.totalPercentile += percentile
+      
+      // Track HR data
+      if (avgHR !== null) {
+        timeData.totalAvgHR += avgHR
+        timeData.hrCount++
+      }
+      if (maxHR !== null) {
+        timeData.totalMaxHR += maxHR
+      }
 
       // Track overall averages
       if (!exerciseOverallMap.has(exerciseName)) {
@@ -310,6 +331,8 @@ function processRawDataToHeatmap(rawData: any[]): any[] {
         time_range: timeRange,
         session_count: data.count,
         avg_percentile: Math.round(data.totalPercentile / data.count),
+        avg_heart_rate: data.hrCount > 0 ? Math.round(data.totalAvgHR / data.hrCount) : null,
+        max_heart_rate: data.hrCount > 0 ? Math.round(data.totalMaxHR / data.hrCount) : null,
         total_sessions: overallData.count,
         overall_avg_percentile: Math.round(overallData.totalPercentile / overallData.count),
         sort_order: sortOrder

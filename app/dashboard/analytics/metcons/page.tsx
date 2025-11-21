@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import MetconHeatmap from '@/components/MetconHeatmap'
+import HRStatisticsPanel from '@/components/HRStatisticsPanel'
 import CoachDrawer from '@/components/CoachDrawer'
 import PlanDiffViewer from '@/components/PlanDiffViewer'
 
@@ -217,6 +218,21 @@ export default function AnalyticsMetconsPage() {
             }
             return heatmapData ? <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} /> : <div className="text-sm text-gray-500">No heat map data</div>
           })()}
+          {heatmapData && (
+            <HRStatisticsPanel 
+              heatmapData={heatmapData} 
+              equipmentFilter={(searchParams.get('equip') || 'all').toLowerCase() as any}
+              onEquipmentFilterChange={(filter) => {
+                const q = new URLSearchParams(searchParams as any)
+                if (filter === 'all') {
+                  q.delete('equip')
+                } else {
+                  q.set('equip', filter)
+                }
+                router.replace(`?${q.toString()}`)
+              }}
+            />
+          )}
           {selection.length === 2 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
               {sortByOrder(selection).map((td) => {

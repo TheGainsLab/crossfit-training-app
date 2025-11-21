@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { detectEquipment } from '@/lib/utils/equipment-detection'
 
 interface ExerciseHeatmapCell {
   exercise_name: string
   time_range: string | null
   session_count: number
   avg_percentile: number
+  avg_heart_rate?: number | null
+  max_heart_rate?: number | null
   sort_order: number
 }
 
@@ -61,31 +64,17 @@ export async function GET(request: NextRequest) {
 
     console.log(`🔥 Generating BTN exercise heat map for User ${userData.id}`)
 
-    // First, check ALL BTN workouts (for debugging)
-    const { data: allWorkouts, error: allWorkoutsError } = await supabase
-      .from('program_metcons')
-      .select('id, time_domain, exercises, workout_name, completed_at, percentile')
-      .eq('user_id', userData.id)
-      .eq('workout_type', 'btn')
-    
-    console.log(`🔍 Found ${allWorkouts?.length || 0} total BTN workouts for user ${userData.id}`)
-    
-    if (allWorkouts && allWorkouts.length > 0) {
-      allWorkouts.forEach(w => {
-        console.log(`  - Workout ${w.id}: completed_at=${w.completed_at ? 'YES' : 'NO'}, percentile=${w.percentile || 'NULL'}`)
-      })
-    }
+    // Optional equipment filter
+    const equip = new URL(request.url).searchParams.get('equip') || ''
 
     // Fetch all BTN workouts for this user (only completed ones with percentile)
     const { data: workouts, error: workoutsError } = await supabase
       .from('program_metcons')
-      .select('id, time_domain, exercises, workout_name, completed_at, percentile')
+      .select('id, time_domain, exercises, workout_name, completed_at, percentile, avg_heart_rate, max_heart_rate')
       .eq('user_id', userData.id)
       .eq('workout_type', 'btn')
       .not('percentile', 'is', null)
       .not('completed_at', 'is', null)
-
-    console.log(`✅ Filtered to ${workouts?.length || 0} workouts WITH percentile and completed_at`)
 
     if (workoutsError) {
       console.error('❌ Failed to fetch BTN workouts:', workoutsError)
@@ -115,10 +104,26 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    console.log(`📊 Processing ${workouts.length} BTN workouts`)
+    // Apply equipment filter if specified
+    let filteredWorkouts = workouts
+    if (equip && equip !== 'all') {
+      filteredWorkouts = workouts.filter(workout => {
+        const exercises = workout.exercises || []
+        const equipment = detectEquipment(exercises)
+        
+        if (equip === 'barbell') return equipment.includes('barbell')
+        if (equip === 'no_barbell') return !equipment.includes('barbell')
+        if (equip === 'gymnastics') return equipment.includes('gymnastics')
+        if (equip === 'bodyweight') return equipment.includes('bodyweight')
+        return true
+      })
+      console.log(`🔍 Equipment filter "${equip}": ${filteredWorkouts.length} of ${workouts.length} workouts`)
+    }
+
+    console.log(`📊 Processing ${filteredWorkouts.length} BTN workouts`)
 
     // Process workouts into heat map data
-    const heatmapData = processWorkoutsToHeatmap(workouts)
+    const heatmapData = processWorkoutsToHeatmap(filteredWorkouts)
 
     // Get unique exercises and time domains
     const exercises = [...new Set(heatmapData.map(row => row.exercise_name))].sort()
@@ -162,7 +167,7 @@ export async function GET(request: NextRequest) {
       heatmapCells: heatmapData.filter(row => row.time_range !== null),
       exerciseAverages: exerciseCounts, // Renamed to match Premium format
       globalFitnessScore, // Now calculated!
-      totalCompletedWorkouts: workouts.length
+      totalCompletedWorkouts: filteredWorkouts.length
     }
 
     console.log(`✅ Heat map generated: ${exercises.length} exercises, ${timeDomains.length} time domains, ${responseData.heatmapCells.length} cells, global fitness score: ${globalFitnessScore}%`)
@@ -194,13 +199,21 @@ export async function GET(request: NextRequest) {
 function processWorkoutsToHeatmap(workouts: any[]): ExerciseHeatmapCell[] {
   // Map to track exercise × time domain combinations
   // Now tracking both count AND percentiles (same as Premium!)
-  const exerciseTimeMap = new Map<string, Map<string, { count: number, totalPercentile: number }>>()
+  const exerciseTimeMap = new Map<string, Map<string, { 
+    count: number, 
+    totalPercentile: number,
+    totalAvgHR: number,
+    totalMaxHR: number,
+    hrCount: number
+  }>>()
   const exerciseOverallMap = new Map<string, { count: number, totalPercentile: number }>()
 
   console.log('🔍 Processing BTN workouts for heat map...')
 
   workouts.forEach(workout => {
     const percentile = parseFloat(workout.percentile)
+    const avgHR = workout.avg_heart_rate ? parseFloat(workout.avg_heart_rate) : null
+    const maxHR = workout.max_heart_rate ? parseFloat(workout.max_heart_rate) : null
     
     if (isNaN(percentile)) {
       console.log(`⚠️ Workout ${workout.id} has invalid percentile: ${workout.percentile}`)
@@ -238,11 +251,20 @@ function processWorkoutsToHeatmap(workouts: any[]): ExerciseHeatmapCell[] {
       const exerciseMap = exerciseTimeMap.get(exerciseName)!
       
       if (!exerciseMap.has(timeRange)) {
-        exerciseMap.set(timeRange, { count: 0, totalPercentile: 0 })
+        exerciseMap.set(timeRange, { count: 0, totalPercentile: 0, totalAvgHR: 0, totalMaxHR: 0, hrCount: 0 })
       }
       const timeData = exerciseMap.get(timeRange)!
       timeData.count++
       timeData.totalPercentile += percentile
+      
+      // Track HR data
+      if (avgHR !== null) {
+        timeData.totalAvgHR += avgHR
+        timeData.hrCount++
+      }
+      if (maxHR !== null) {
+        timeData.totalMaxHR += maxHR
+      }
 
       // Track overall averages
       if (!exerciseOverallMap.has(exerciseName)) {
@@ -273,6 +295,8 @@ function processWorkoutsToHeatmap(workouts: any[]): ExerciseHeatmapCell[] {
         time_range: timeRange,
         session_count: data.count,
         avg_percentile: Math.round(data.totalPercentile / data.count),
+        avg_heart_rate: data.hrCount > 0 ? Math.round(data.totalAvgHR / data.hrCount) : null,
+        max_heart_rate: data.hrCount > 0 ? Math.round(data.totalMaxHR / data.hrCount) : null,
         sort_order: sortOrder
       })
     })
