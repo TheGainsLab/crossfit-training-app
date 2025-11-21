@@ -246,7 +246,7 @@ blocks: targetDay.blocks.map((block: any) => ({
 
       // Include MetCon metadata if available
 metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData) : null,
-      // Summary information
+      // Summary information (will be recalculated after modifications if needed)
       totalExercises: targetDay.blocks.reduce((sum: number, block: any) => sum + (block.exercises?.length || 0), 0),
       totalBlocks: targetDay.blocks.length
     }
@@ -418,9 +418,13 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
             ...(ai.source && { source: ai.source }),
             ...(ai.rationale && { rationale: ai.rationale })
           }
+          // Recalculate totalExercises after modifications are applied
+          workout.totalExercises = workout.blocks.reduce((sum: number, b: any) => 
+            sum + (Array.isArray(b.exercises) ? b.exercises.length : 0), 0)
+          
           console.log(`✅ Workout merged:`, {
             totalBlocks: workout.blocks.length,
-            totalExercises: workout.blocks.reduce((sum: number, b: any) => sum + (b.exercises?.length || 0), 0),
+            totalExercises: workout.totalExercises,
             hasMetconData: !!workout.metconData,
             source: (workout as any).source || 'original'
           })
@@ -428,6 +432,12 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
       }
     } catch (e) {
       console.warn('⚠️ AI modify-program-session failed, returning original workout')
+    }
+    
+    // Ensure totalExercises is always up-to-date (recalculate if not set or if modifications were applied)
+    if (!workout.totalExercises || (workout as any).source === 'ai-enhanced') {
+      workout.totalExercises = workout.blocks.reduce((sum: number, b: any) => 
+        sum + (Array.isArray(b.exercises) ? b.exercises.length : 0), 0)
     }
 
     // Include completions inline to reduce client requests

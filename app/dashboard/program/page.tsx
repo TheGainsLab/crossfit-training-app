@@ -91,7 +91,25 @@ export default function ProgramPage() {
 
             const daySummaries: DaySummary[] = await Promise.all(
               days.map(async (d: any) => {
-                const totalExercises = (d.blocks || []).reduce((sum: number, block: any) => sum + (block.exercises?.length || 0), 0)
+                // Default to original count from program_data (fallback)
+                let totalExercises = (d.blocks || []).reduce((sum: number, block: any) => sum + (block.exercises?.length || 0), 0)
+                
+                // Fetch workout from API to get modified exercise count (accounts for AI modifications)
+                try {
+                  const workoutRes = await fetch(`/api/workouts/${p.id}/week/${weekNum}/day/${d.day}`)
+                  if (workoutRes.ok) {
+                    const workoutData = await workoutRes.json()
+                    if (workoutData.success && workoutData.workout?.blocks) {
+                      // Calculate total from modified blocks (after AI modifications applied)
+                      totalExercises = workoutData.workout.blocks.reduce((sum: number, block: any) => 
+                        sum + (Array.isArray(block.exercises) ? block.exercises.length : 0), 0)
+                    }
+                  }
+                } catch (err) {
+                  // If workout API fails, use original count from program_data
+                  console.warn(`Failed to fetch modified workout count for week ${weekNum}, day ${d.day}:`, err)
+                }
+                
                 // Fetch completion count for this day via existing API
                 let completed = 0
                 try {
