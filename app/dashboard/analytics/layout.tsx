@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useSearchParams, useRouter } from 'next/navigation'
-import { useMemo, Suspense } from 'react'
+import { useMemo, Suspense, useEffect, useState } from 'react'
 
 function RangeChips() {
   const router = useRouter()
@@ -36,13 +36,50 @@ function RangeChips() {
 
 function AnalyticsSubnav() {
   const pathname = usePathname()
-  const tabs = useMemo(() => ([
+  const [isAppliedPower, setIsAppliedPower] = useState(false)
+  
+  // Check if user is Applied Power to filter out Skills and Metcons tabs
+  useEffect(() => {
+    const checkSubscriptionTier = async () => {
+      try {
+        const { createClient } = await import('@/lib/supabase/client')
+        const sb = createClient()
+        const { data: { user } } = await sb.auth.getUser()
+        if (!user) return
+        const { data: userData } = await sb
+          .from('users')
+          .select('subscription_tier')
+          .eq('auth_id', user.id)
+          .single()
+        if (userData?.subscription_tier === 'APPLIED_POWER') {
+          setIsAppliedPower(true)
+        }
+      } catch (err) {
+        console.warn('Failed to check subscription tier:', err)
+      }
+    }
+    checkSubscriptionTier()
+  }, [])
+  
+  const allTabs = useMemo(() => ([
     { href: '/dashboard/analytics/skills', label: 'Skills' },
     { href: '/dashboard/analytics/strength', label: 'Strength' },
     { href: '/dashboard/analytics/technical', label: 'Technical Work' },
     { href: '/dashboard/analytics/accessories', label: 'Accessories' },
     { href: '/dashboard/analytics/metcons', label: 'Metcons' }
   ]), [])
+  
+  // Filter out Skills and Metcons for Applied Power users
+  const tabs = useMemo(() => {
+    if (isAppliedPower) {
+      return allTabs.filter(tab => 
+        tab.href !== '/dashboard/analytics/skills' && 
+        tab.href !== '/dashboard/analytics/metcons'
+      )
+    }
+    return allTabs
+  }, [isAppliedPower, allTabs])
+  
   // Hide range filters on metcons page - they're moved into the heat map area
   const isMetconsPage = pathname === '/dashboard/analytics/metcons'
   

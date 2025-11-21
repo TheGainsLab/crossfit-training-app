@@ -17,7 +17,31 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
   const [proposeLoading, setProposeLoading] = useState(false)
   const [planDiff, setPlanDiff] = useState<any>(null)
   const [showDiffJson, setShowDiffJson] = useState(false)
+  const [isAppliedPower, setIsAppliedPower] = useState(false)
   // No jwt state; we resolve a fresh token before each API call to avoid races
+
+  // Check if user is Applied Power to filter out SKILLS and METCONS
+  useEffect(() => {
+    const checkSubscriptionTier = async () => {
+      try {
+        const { createClient } = await import('@/lib/supabase/client')
+        const sb = createClient()
+        const { data: { user } } = await sb.auth.getUser()
+        if (!user) return
+        const { data: userData } = await sb
+          .from('users')
+          .select('subscription_tier')
+          .eq('auth_id', user.id)
+          .single()
+        if (userData?.subscription_tier === 'APPLIED_POWER') {
+          setIsAppliedPower(true)
+        }
+      } catch (err) {
+        console.warn('Failed to check subscription tier:', err)
+      }
+    }
+    checkSubscriptionTier()
+  }, [])
 
   useEffect(() => {
     const run = async () => {
@@ -45,7 +69,11 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
   if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-700">Loading preview…</div>
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-600">{error}</div>
 
-  const blockNames = ['All', 'SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS']
+  // Filter out SKILLS and METCONS for Applied Power users
+  const allBlockNames = ['All', 'SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS']
+  const blockNames = isAppliedPower 
+    ? allBlockNames.filter(bn => bn !== 'SKILLS' && bn !== 'METCONS')
+    : allBlockNames
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">

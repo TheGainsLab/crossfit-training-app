@@ -126,9 +126,67 @@ export async function POST(request: NextRequest) {
       console.log('✅ Equipment saved:', equipment.length, 'items')
     }
 
-    // user_preferences writes removed - no longer collecting preference data
-    // Program generation uses defaults (5 days/week, standard lift rotation)
-    // Users can modify programs via in-program modifications instead
+    // Save user preferences (with fallback for older schema and missing unique constraints)
+    if (preferences) {
+      const fullPayload: any = {
+        user_id: effectiveUserId,
+        three_month_goals: preferences.threeMonthGoals || null,
+        monthly_primary_goal: preferences.monthlyPrimaryGoal || null,
+        preferred_metcon_exercises: Array.isArray(preferences.preferredMetconExercises) ? preferences.preferredMetconExercises : [],
+        avoided_exercises: Array.isArray(preferences.avoidedExercises) ? preferences.avoidedExercises : [],
+        training_days_per_week: typeof preferences.trainingDaysPerWeek === 'number' ? preferences.trainingDaysPerWeek : 5,
+        primary_strength_lifts: Array.isArray(preferences.primaryStrengthLifts) ? preferences.primaryStrengthLifts : null,
+        emphasized_strength_lifts: Array.isArray(preferences.emphasizedStrengthLifts) ? preferences.emphasizedStrengthLifts : null
+      }
+
+      const basePayload: any = {
+        user_id: effectiveUserId,
+        three_month_goals: fullPayload.three_month_goals,
+        monthly_primary_goal: fullPayload.monthly_primary_goal,
+        preferred_metcon_exercises: fullPayload.preferred_metcon_exercises,
+        avoided_exercises: fullPayload.avoided_exercises
+      }
+
+      // Determine if a row already exists
+      const { data: existingRows, error: selError } = await supabaseAdmin
+        .from('user_preferences')
+        .select('user_id')
+        .eq('user_id', effectiveUserId)
+
+      const exists = !selError && Array.isArray(existingRows) && existingRows.length > 0
+
+      if (exists) {
+        // Try update with all fields, fallback to base fields on error
+        let { error: updErr } = await supabaseAdmin
+          .from('user_preferences')
+          .update(fullPayload)
+          .eq('user_id', effectiveUserId)
+
+        if (updErr) {
+          const retryUpd = await supabaseAdmin
+            .from('user_preferences')
+            .update(basePayload)
+            .eq('user_id', effectiveUserId)
+          if (retryUpd.error) {
+            console.warn('⚠️ Preferences update warning (continuing):', updErr?.message || updErr, 'retry:', retryUpd.error?.message || retryUpd.error)
+          }
+        }
+      } else {
+        // Try insert with all fields, fallback to base fields on error
+        let { error: insErr } = await supabaseAdmin
+          .from('user_preferences')
+          .insert(fullPayload)
+
+        if (insErr) {
+          const retryIns = await supabaseAdmin
+            .from('user_preferences')
+            .insert(basePayload)
+          if (retryIns.error) {
+            console.warn('⚠️ Preferences insert warning (continuing):', insErr?.message || insErr, 'retry:', retryIns.error?.message || retryIns.error)
+          }
+        }
+      }
+    }
 
   // Save skills
 console.log('🎯 Saving skills...')
@@ -417,6 +475,60 @@ if (skills && skills.length > 0) {
     }
 
     console.log(`✅ Program generated successfully!`)
+
+    // Persist scaffold into program_workouts honoring training_days_per_week
+    try {
+      const programId = savedProgram?.id
+      const weeks = programResult?.program?.weeks || []
+      if (programId && Array.isArray(weeks) && weeks.length > 0) {
+        const rows: any[] = []
+        // Read user preferences for day limit
+        let dayLimit = 5
+        try {
+          const { data: prefs } = await supabaseAdmin
+            .from('user_preferences')
+            .select('training_days_per_week')
+            .eq('user_id', effectiveUserId)
+            .single()
+          if (prefs && typeof prefs.training_days_per_week === 'number') {
+            dayLimit = Math.max(3, Math.min(6, prefs.training_days_per_week))
+          }
+        } catch (_) {}
+
+        for (const w of weeks) {
+          const weekNum = w.week
+          const daysArr = w.days || []
+          for (const d of daysArr) {
+            if (typeof d.day === 'number' && d.day > dayLimit) continue
+            const blocksArr = d.blocks || []
+            for (const b of blocksArr) {
+              const exercises = b.exercises || []
+              for (const ex of exercises) {
+                rows.push({
+                  program_id: programId,
+                  week: weekNum,
+                  day: d.day,
+                  block: b.blockName,
+                  exercise_name: ex.name,
+                  main_lift: d.mainLift || null,
+                  is_deload: !!d.isDeload
+                })
+              }
+            }
+          }
+        }
+        if (rows.length > 0) {
+          const { error: pwErr } = await supabaseAdmin
+            .from('program_workouts')
+            .insert(rows)
+          if (pwErr) {
+            console.warn('program_workouts insert warning:', pwErr.message)
+          }
+        }
+      }
+    } catch (scaffoldErr: any) {
+      console.warn('Failed to persist program_workouts scaffold (non-fatal):', scaffoldErr?.message || scaffoldErr)
+    }
 
 console.log(`📊 Generating user profile...`)
 

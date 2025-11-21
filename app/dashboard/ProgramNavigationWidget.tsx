@@ -34,6 +34,30 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
   onNavigate,
   updatedDays = []
 }) => {
+  // Check if user is Applied Power to hide MetCon Preview
+  const [isAppliedPower, setIsAppliedPower] = useState(false)
+  
+  useEffect(() => {
+    const checkSubscriptionTier = async () => {
+      try {
+        const sb = createClient()
+        const { data: { user } } = await sb.auth.getUser()
+        if (!user) return
+        const { data: userData } = await sb
+          .from('users')
+          .select('subscription_tier')
+          .eq('auth_id', user.id)
+          .single()
+        if (userData?.subscription_tier === 'APPLIED_POWER') {
+          setIsAppliedPower(true)
+        }
+      } catch (err) {
+        console.warn('Failed to check subscription tier:', err)
+      }
+    }
+    checkSubscriptionTier()
+  }, [])
+  
   // Calculate program-specific week on-the-fly to avoid race conditions
   // This ensures URLs are always correct even if programSpecificWeek prop is stale
   const calculateProgramWeek = (globalWeek: number): number => {
@@ -436,18 +460,22 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         >
           Week Preview
         </Link>
-        <button
-          onClick={() => setMetconOpen(true)}
-          className="px-4 py-2 rounded-lg border transition-colors"
-          style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
-          aria-haspopup="dialog"
-          aria-expanded={metconOpen}
-        >
-          MetCon Preview
-        </button>
+        {!isAppliedPower && (
+          <button
+            onClick={() => setMetconOpen(true)}
+            className="px-4 py-2 rounded-lg border transition-colors"
+            style={{ backgroundColor: '#DAE2EA', borderColor: '#282B34', color: '#282B34' }}
+            aria-haspopup="dialog"
+            aria-expanded={metconOpen}
+          >
+            MetCon Preview
+          </button>
+        )}
       </div>
-      {/* Modal mount */}
-      <MetconPreviewModal open={metconOpen} onClose={() => setMetconOpen(false)} chart={metconChart} summary={domainSummary} />
+      {/* Modal mount - only render if not Applied Power */}
+      {!isAppliedPower && (
+        <MetconPreviewModal open={metconOpen} onClose={() => setMetconOpen(false)} chart={metconChart} summary={domainSummary} />
+      )}
     </div>
   );
 };
