@@ -61,14 +61,7 @@ export default function BTNHistoryPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto p-5">
         {/* Navigation */}
-        <div className="mb-6 flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Home
-          </Link>
-          
+        <div className="mb-6 flex items-center justify-end">
           <div className="flex items-center gap-3">
             <Link 
               href="/profile" 
