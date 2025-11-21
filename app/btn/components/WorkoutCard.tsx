@@ -193,17 +193,19 @@ export default function WorkoutCard({ workout, onUpdate }: WorkoutCardProps) {
 
       {/* Completed Result Display */}
       {isCompleted && result && (
-        <div className="mt-4 p-3 bg-green-50 rounded-lg">
-          <p className="text-sm font-semibold text-green-900">
-            Result: {result}
+        <div className="mt-4 p-3 bg-white rounded-lg border border-[#282B34]">
+          <p className="text-sm font-semibold">
+            Result: <span style={{ color: '#FE5858' }}>{result}</span>
             {workout.percentile && (
-              <span className="ml-3 text-green-700">
-                ({workout.percentile}th percentile{workout.performance_tier && ` - ${workout.performance_tier}`})
+              <span className="ml-3" style={{ color: '#282B34' }}>
+                ({workout.percentile}%)
               </span>
             )}
           </p>
           {workout.notes && (
-            <p className="text-sm text-green-700 mt-1">"{workout.notes}"</p>
+            <p className="text-sm mt-1" style={{ color: '#282B34' }}>
+              Notes: {workout.notes.toLowerCase()}
+            </p>
           )}
         </div>
       )}
