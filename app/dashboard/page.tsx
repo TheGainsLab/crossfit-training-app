@@ -1824,7 +1824,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         }
 
         // Fallback: if no workouts found, default to first program, week 1, day 1
-        if (!foundNext) {image.png
+        if (!foundNext) {
           if (allProgramsForInit && allProgramsForInit.length > 0) {
             setCurrentWeek(1) // Global week 1 = Program 1, Week 1
             setCurrentDay(1)
