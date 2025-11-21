@@ -17,6 +17,8 @@ export default function ResultLoggingForm({
 }: ResultLoggingFormProps) {
   const [result, setResult] = useState('')
   const [notes, setNotes] = useState('')
+  const [avgHeartRate, setAvgHeartRate] = useState('')
+  const [maxHeartRate, setMaxHeartRate] = useState('')
   const [saving, setSaving] = useState(false)
   const [showResult, setShowResult] = useState(false)
   const [percentile, setPercentile] = useState<number | null>(null)
@@ -41,7 +43,9 @@ export default function ResultLoggingForm({
         body: JSON.stringify({ 
           workoutId,
           userScore: result.trim(),
-          notes: notes.trim() || undefined
+          notes: notes.trim() || undefined,
+          avgHeartRate: avgHeartRate.trim() ? parseInt(avgHeartRate.trim()) : undefined,
+          maxHeartRate: maxHeartRate.trim() ? parseInt(maxHeartRate.trim()) : undefined
         })
       })
 
@@ -86,6 +90,14 @@ export default function ResultLoggingForm({
       setResult(formatTimeInput(value))
     } else {
       setResult(value)
+    }
+  }
+
+  // Validate heart rate input (only numbers, max 220 bpm)
+  const handleHeartRateChange = (value: string, setter: (val: string) => void) => {
+    const digits = value.replace(/\D/g, '')
+    if (digits === '' || parseInt(digits) <= 220) {
+      setter(digits)
     }
   }
 
@@ -146,6 +158,42 @@ export default function ResultLoggingForm({
               Enter "5+10" for 5 rounds plus 10 reps, or just "5" for 5 complete rounds
             </p>
           )}
+        </div>
+
+        {/* Heart Rate Fields */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Avg HR (optional)
+            </label>
+            <input
+              type="text"
+              value={avgHeartRate}
+              onChange={(e) => handleHeartRateChange(e.target.value, setAvgHeartRate)}
+              placeholder="145"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FE5858] focus:border-transparent"
+              disabled={saving}
+            />
+            <p className="text-xs text-gray-600 mt-1">
+              Average heart rate (bpm)
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Peak HR (optional)
+            </label>
+            <input
+              type="text"
+              value={maxHeartRate}
+              onChange={(e) => handleHeartRateChange(e.target.value, setMaxHeartRate)}
+              placeholder="175"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FE5858] focus:border-transparent"
+              disabled={saving}
+            />
+            <p className="text-xs text-gray-600 mt-1">
+              Peak heart rate (bpm)
+            </p>
+          </div>
         </div>
 
         {/* Notes Input */}

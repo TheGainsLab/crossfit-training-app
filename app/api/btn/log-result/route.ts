@@ -7,6 +7,8 @@ interface LogResultRequest {
   workoutId: number
   userScore: string
   notes?: string
+  avgHeartRate?: number
+  maxHeartRate?: number
 }
 
 // =============================================================================
@@ -176,7 +178,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { workoutId, userScore, notes }: LogResultRequest = await request.json()
+    const { workoutId, userScore, notes, avgHeartRate, maxHeartRate }: LogResultRequest = await request.json()
 
     if (!workoutId || !userScore) {
       return NextResponse.json(
@@ -254,17 +256,27 @@ export async function POST(request: NextRequest) {
     console.log(`✅ Calculated percentile: ${percentile}% (${performanceTier})`)
 
     // Step 5: Update the workout
+    const updateData: any = {
+      user_score: userScore,
+      percentile: percentile, // Save as number, not string (DB column is numeric(5,2))
+      performance_tier: performanceTier,
+      excellent_score: workout.excellent_score, // Keep existing
+      median_score: workout.median_score,       // Keep existing
+      completed_at: new Date().toISOString(),
+      notes: notes || null
+    }
+
+    // Add heart rate data if provided
+    if (avgHeartRate !== undefined && avgHeartRate !== null) {
+      updateData.avg_heart_rate = avgHeartRate
+    }
+    if (maxHeartRate !== undefined && maxHeartRate !== null) {
+      updateData.max_heart_rate = maxHeartRate
+    }
+
     const { data: updatedWorkout, error: updateError } = await supabase
       .from('program_metcons')
-      .update({
-        user_score: userScore,
-        percentile: percentile, // Save as number, not string (DB column is numeric(5,2))
-        performance_tier: performanceTier,
-        excellent_score: workout.excellent_score, // Keep existing
-        median_score: workout.median_score,       // Keep existing
-        completed_at: new Date().toISOString(),
-        notes: notes || null
-      })
+      .update(updateData)
       .eq('id', workoutId)
       .select()
       .single()
@@ -278,7 +290,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`💾 Result saved successfully`)
+    console.log(`💾 Result saved successfully${avgHeartRate ? ` (Avg HR: ${avgHeartRate}, Max HR: ${maxHeartRate || 'N/A'})` : ''}`)
 
     // Populate exercise_percentile_log
     if (updatedWorkout) {
