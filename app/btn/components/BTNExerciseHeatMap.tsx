@@ -63,7 +63,7 @@ export default function BTNExerciseHeatMap() {
   if (error) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">🔥 Exercise Distribution Heat Map</h3>
+        <h3 className="text-lg font-semibold text-center mb-4" style={{ color: '#FE5858' }}>Exercise Distribution Heat Map</h3>
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <div className="text-4xl mb-3">⚠️</div>
           <p className="text-red-800 font-medium mb-2">Failed to Load Heat Map</p>
@@ -82,11 +82,9 @@ export default function BTNExerciseHeatMap() {
   if (!heatMapData || heatMapData.exercises.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">🔥 Exercise Performance Heat Map</h3>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-          <div className="text-4xl mb-3">💪</div>
-          <p className="text-blue-800 font-medium mb-2">No Completed Workouts Yet</p>
-          <p className="text-blue-600">Complete workouts and log your results to see your performance across exercises and time domains!</p>
+        <h3 className="text-lg font-semibold text-center mb-4" style={{ color: '#FE5858' }}>Exercise Performance Heat Map</h3>
+        <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
+          <p className="text-lg font-medium" style={{ color: '#282B34' }}>Your completed workouts will display here.</p>
         </div>
       </div>
     )

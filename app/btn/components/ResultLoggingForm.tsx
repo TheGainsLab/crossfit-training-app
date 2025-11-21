@@ -217,7 +217,8 @@ export default function ResultLoggingForm({
             type="button"
             onClick={onCancel}
             disabled={saving}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+            className="px-4 py-2 text-sm border border-gray-300 rounded-lg transition-colors font-medium disabled:opacity-50"
+            style={{ backgroundColor: '#DAE2EA' }}
           >
             Cancel
           </button>
