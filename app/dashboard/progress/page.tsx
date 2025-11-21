@@ -967,6 +967,7 @@ export default function AnalyticsProgressPage() {
   const [userId, setUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAppliedPower, setIsAppliedPower] = useState(false);
 
   // Analytics data states
   const [dashboardData, setDashboardData] = useState<any>(null);
@@ -1042,7 +1043,7 @@ const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 
       // Get user ID from users table
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id')
+        .select('id, subscription_tier')
         .eq('auth_id', user.id)
         .single();
 
@@ -1052,6 +1053,11 @@ const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 
       }
       
       setUserId(userData.id);
+      
+      // Check if user is Applied Power
+      if (userData.subscription_tier === 'APPLIED_POWER') {
+        setIsAppliedPower(true);
+      }
     } catch (err) {
       console.error('Error loading user:', err);
       setError('Failed to load user data');
@@ -1147,46 +1153,51 @@ const [activeTab, setActiveTab] = useState<'overview' | 'skills' | 'strength' | 
 
   // Enhanced Tab Navigation with Prominent Styling
 
-const TabNavigation = () => (
-  <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-8 p-4">
-    <nav className="flex flex-wrap gap-3" role="tablist" aria-label="Analytics Navigation">
-      
-{[
-  { id: 'overview', name: 'Overview' },
-  { id: 'skills', name: 'Skills' },
-  { id: 'strength', name: 'Strength' },
-  { id: 'metcons', name: 'MetCons' },
-  { id: 'insights', name: 'Insights' }
-].map((tab) => (
+const TabNavigation = () => {
+  const allTabs = [
+    { id: 'overview', name: 'Overview' },
+    { id: 'skills', name: 'Skills' },
+    { id: 'strength', name: 'Strength' },
+    { id: 'metcons', name: 'MetCons' },
+    { id: 'insights', name: 'Insights' }
+  ];
+  
+  // Filter out Skills and Metcons for Applied Power users
+  const tabs = isAppliedPower
+    ? allTabs.filter(tab => tab.id !== 'skills' && tab.id !== 'metcons')
+    : allTabs;
+  
+  return (
+    <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-8 p-4">
+      <nav className="flex flex-wrap gap-3" role="tablist" aria-label="Analytics Navigation">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-controls={`${tab.id}-panel`}
+            className={`px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2 ${
+              activeTab === tab.id
+                ? 'bg-coral text-white shadow-lg scale-105 ring-2 ring-coral ring-offset-2'
+                : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200'
+            }`}
+          >
+            <span className="font-medium">{tab.name}</span>       
+          </button>
+        ))}
         
-<button
-          key={tab.id}
-          onClick={() => setActiveTab(tab.id as any)}
-          role="tab"
-          aria-selected={activeTab === tab.id}
-          aria-controls={`${tab.id}-panel`}
-
-className={`px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2 ${
-  activeTab === tab.id
-    ? 'bg-coral text-white shadow-lg scale-105 ring-2 ring-coral ring-offset-2'
-    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200'
-}`}
->
-  <span className="font-medium">{tab.name}</span>       
- </button>
-      ))}
-      
-      {/* Exercise Deep Dive Button - NOW MATCHES OTHER INACTIVE TABS */}
-     
-<Link
-  href="/dashboard/exercise-deep-dive"
-  className="px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200"
->
-  <span className="font-medium">Exercise Deep Dive</span>
-      </Link>
-    </nav>
-  </div>
-);
+        {/* Exercise Deep Dive Button - NOW MATCHES OTHER INACTIVE TABS */}
+        <Link
+          href="/dashboard/exercise-deep-dive"
+          className="px-6 py-4 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md border border-gray-200"
+        >
+          <span className="font-medium">Exercise Deep Dive</span>
+        </Link>
+      </nav>
+    </div>
+  );
+};
 
 
 // Enhanced Skill Card Component
@@ -2066,11 +2077,15 @@ const MetConAnalyticsView = () => {
         <div className="bg-white rounded-lg shadow p-4 border mb-6">
           <div className="text-sm font-medium text-gray-900 mb-2">Analytics shortcuts</div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-            <Link href="/dashboard/analytics/skills" className="block p-3 rounded border bg-gray-50 hover:bg-gray-100">Skills</Link>
+            {!isAppliedPower && (
+              <Link href="/dashboard/analytics/skills" className="block p-3 rounded border bg-gray-50 hover:bg-gray-100">Skills</Link>
+            )}
             <Link href="/dashboard/analytics/strength" className="block p-3 rounded border bg-gray-50 hover:bg-gray-100">Strength</Link>
             <Link href="/dashboard/analytics/technical" className="block p-3 rounded border bg-gray-50 hover:bg-gray-100">Technical Work</Link>
             <Link href="/dashboard/analytics/accessories" className="block p-3 rounded border bg-gray-50 hover:bg-gray-100">Accessories</Link>
-            <Link href="/dashboard/analytics/metcons" className="block p-3 rounded border bg-gray-50 hover:bg-gray-100">Metcons</Link>
+            {!isAppliedPower && (
+              <Link href="/dashboard/analytics/metcons" className="block p-3 rounded border bg-gray-50 hover:bg-gray-100">Metcons</Link>
+            )}
           </div>
         </div>
         <RecentActivityOverview userId={userId} />
