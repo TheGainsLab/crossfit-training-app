@@ -1758,7 +1758,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         // BTN users should use the workout history page, not the program dashboard
         if (userData.subscription_tier === 'BTN') {
           console.log('🎯 BTN user detected - redirecting to workout history')
-          router.push('/btn/history')
+          router.push('/btn/workouts')
           return
         }
       }

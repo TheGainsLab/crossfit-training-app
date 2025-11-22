@@ -42,7 +42,7 @@ export default function SignIn() {
         if (userData) {
           // BTN users should go to workout history
           if (userData.subscription_tier === 'BTN') {
-            router.push('/btn/history')
+            router.push('/btn/workouts')
             return
           }
           

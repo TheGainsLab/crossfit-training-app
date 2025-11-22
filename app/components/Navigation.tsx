@@ -202,7 +202,7 @@ export default function Navigation() {
   const navLinks = isBTNUser
     ? [
         { href: '/btn', label: 'Generator' },
-        { href: '/btn/history', label: 'History' },
+        { href: '/btn/workouts', label: 'Workouts' },
         { href: '/btn/analytics', label: 'Analytics' },
         { href: '/profile', label: 'Profile' },
       ]
