@@ -140,9 +140,6 @@ export default function WorkoutHistoryTab() {
       {/* Workout List */}
       {workouts.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
-          <div className="text-6xl mb-4">
-            {filter === 'completed' ? '✅' : filter === 'incomplete' ? '📝' : '🎲'}
-          </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">
             {filter === 'completed' && 'No completed workouts yet!'}
             {filter === 'incomplete' && 'No workouts to do!'}
@@ -151,13 +148,13 @@ export default function WorkoutHistoryTab() {
           <p className="text-gray-600 mb-6">
             {filter === 'completed' && 'When you complete workouts, you\'ll see them here with your results and stats.'}
             {filter === 'incomplete' && 'All caught up! Generate more workouts to keep training.'}
-            {filter === 'all' && 'When you complete workouts, you\'ll see them here. Start by generating your first batch!'}
+            {filter === 'all' && 'When you build your workout library, you\'ll see it here'}
           </p>
           <a
             href="/btn"
             className="inline-block px-6 py-3 bg-[#FE5858] text-white rounded-lg font-semibold hover:bg-[#ff6b6b] transition-colors"
           >
-            {filter === 'all' ? 'Go to Generator' : 'Generate More Workouts'}
+            {filter === 'all' ? 'Go to Workout Generator' : 'Generate More Workouts'}
           </a>
         </div>
       ) : (
