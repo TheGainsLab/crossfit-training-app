@@ -98,10 +98,8 @@ export default function BTNExerciseHeatMap() {
   // Use the Premium MetconHeatmap component directly - data format is now identical!
   return (
     <>
-      <MetconHeatmap data={heatMapData} />
-      
-      {/* Equipment Filter - moved to top for better UX */}
-      <div className="bg-white rounded-lg shadow p-6 mt-6 mb-6">
+      {/* Equipment Filter - at the top so users can filter before viewing analytics */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Filter by Equipment</h3>
         <div className="flex flex-wrap gap-2">
           {(['all', 'barbell', 'no_barbell', 'gymnastics'] as const).map(filter => (
@@ -122,6 +120,8 @@ export default function BTNExerciseHeatMap() {
           ))}
         </div>
       </div>
+      
+      <MetconHeatmap data={heatMapData} />
       
       <HRStatisticsPanel 
         heatmapData={heatMapData} 
