@@ -203,6 +203,7 @@ export default function Navigation() {
     ? [
         { href: '/btn', label: 'Generator' },
         { href: '/btn/history', label: 'History' },
+        { href: '/btn/analytics', label: 'Analytics' },
         { href: '/profile', label: 'Profile' },
       ]
     : [
