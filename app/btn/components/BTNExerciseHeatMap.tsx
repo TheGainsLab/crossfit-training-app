@@ -8,7 +8,7 @@ export default function BTNExerciseHeatMap() {
   const [heatMapData, setHeatMapData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [equipmentFilter, setEquipmentFilter] = useState<'all' | 'barbell' | 'no_barbell' | 'gymnastics' | 'bodyweight'>('all')
+  const [equipmentFilter, setEquipmentFilter] = useState<'all' | 'barbell' | 'no_barbell' | 'gymnastics'>('all')
 
   useEffect(() => {
     loadHeatMapData()

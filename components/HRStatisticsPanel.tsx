@@ -17,8 +17,8 @@ interface HRStatisticsPanelProps {
       total_sessions: number
     }>
   }
-  equipmentFilter?: 'all' | 'barbell' | 'no_barbell' | 'gymnastics' | 'bodyweight'
-  onEquipmentFilterChange?: (filter: 'all' | 'barbell' | 'no_barbell' | 'gymnastics' | 'bodyweight') => void
+  equipmentFilter?: 'all' | 'barbell' | 'no_barbell' | 'gymnastics'
+  onEquipmentFilterChange?: (filter: 'all' | 'barbell' | 'no_barbell' | 'gymnastics') => void
   // For Premium: pass raw workout data to detect equipment
   rawWorkouts?: any[]
 }
@@ -55,7 +55,7 @@ export default function HRStatisticsPanel({
   // Calculate HR by Equipment (if rawWorkouts provided)
   const hrByEquipment = rawWorkouts ? calculateHRByEquipment(rawWorkouts) : []
 
-  const handleFilterChange = (filter: 'all' | 'barbell' | 'no_barbell' | 'gymnastics' | 'bodyweight') => {
+  const handleFilterChange = (filter: 'all' | 'barbell' | 'no_barbell' | 'gymnastics') => {
     setLocalFilter(filter)
     if (onEquipmentFilterChange) {
       onEquipmentFilterChange(filter)
@@ -69,7 +69,7 @@ export default function HRStatisticsPanel({
       {/* Equipment Filter Buttons */}
       {onEquipmentFilterChange && (
         <div className="flex flex-wrap gap-2 mb-6">
-          {(['all', 'barbell', 'no_barbell', 'gymnastics', 'bodyweight'] as const).map(filter => (
+          {(['all', 'barbell', 'no_barbell', 'gymnastics'] as const).map(filter => (
             <button
               key={filter}
               onClick={() => handleFilterChange(filter)}
