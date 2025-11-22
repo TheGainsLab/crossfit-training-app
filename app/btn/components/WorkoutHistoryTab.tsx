@@ -82,24 +82,24 @@ export default function WorkoutHistoryTab() {
 
   return (
     <div>
-      {/* Stats Section */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      {/* Stats Section - Mobile responsive */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
         {/* Saved */}
-        <div className="bg-white rounded-lg shadow p-6 border" style={{ borderColor: '#282B34' }}>
-          <p className="text-sm text-gray-600 mb-1">Saved</p>
-          <p className="text-4xl font-bold" style={{ color: '#FE5858' }}>{stats.total}</p>
+        <div className="bg-white rounded-lg shadow p-3 sm:p-6 border" style={{ borderColor: '#282B34' }}>
+          <p className="text-xs sm:text-sm text-gray-600 mb-1">Saved</p>
+          <p className="text-2xl sm:text-4xl font-bold" style={{ color: '#FE5858' }}>{stats.total}</p>
         </div>
 
         {/* Logged */}
-        <div className="bg-white rounded-lg shadow p-6 border" style={{ borderColor: '#282B34' }}>
-          <p className="text-sm text-gray-600 mb-1">Logged</p>
-          <p className="text-4xl font-bold" style={{ color: '#FE5858' }}>{stats.completed}</p>
+        <div className="bg-white rounded-lg shadow p-3 sm:p-6 border" style={{ borderColor: '#282B34' }}>
+          <p className="text-xs sm:text-sm text-gray-600 mb-1">Logged</p>
+          <p className="text-2xl sm:text-4xl font-bold" style={{ color: '#FE5858' }}>{stats.completed}</p>
         </div>
 
         {/* Complete */}
-        <div className="bg-white rounded-lg shadow p-6 border" style={{ borderColor: '#282B34' }}>
-          <p className="text-sm text-gray-600 mb-1">Complete</p>
-          <p className="text-4xl font-bold" style={{ color: '#FE5858' }}>{stats.completionRate}%</p>
+        <div className="bg-white rounded-lg shadow p-3 sm:p-6 border" style={{ borderColor: '#282B34' }}>
+          <p className="text-xs sm:text-sm text-gray-600 mb-1">Complete</p>
+          <p className="text-2xl sm:text-4xl font-bold" style={{ color: '#FE5858' }}>{stats.completionRate}%</p>
         </div>
       </div>
 
