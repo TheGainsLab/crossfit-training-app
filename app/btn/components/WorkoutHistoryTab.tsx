@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import WorkoutCard from './WorkoutCard'
-import BTNExerciseHeatMap from './BTNExerciseHeatMap'
 
 interface WorkoutHistoryStats {
   total: number
@@ -102,11 +101,6 @@ export default function WorkoutHistoryTab() {
           <p className="text-sm text-gray-600 mb-1">Complete</p>
           <p className="text-4xl font-bold" style={{ color: '#FE5858' }}>{stats.completionRate}%</p>
         </div>
-      </div>
-
-      {/* Exercise Distribution Heat Map */}
-      <div className="mb-6">
-        <BTNExerciseHeatMap />
       </div>
 
       {/* Filter Buttons */}
