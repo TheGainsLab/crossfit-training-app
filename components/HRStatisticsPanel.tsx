@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 
 interface HRStatisticsPanelProps {
   heatmapData: {
@@ -29,7 +29,6 @@ export default function HRStatisticsPanel({
   onEquipmentFilterChange,
   rawWorkouts
 }: HRStatisticsPanelProps) {
-  const [localFilter, setLocalFilter] = useState(equipmentFilter)
 
   if (!heatmapData?.heatmapCells || heatmapData.heatmapCells.length === 0) {
     return null
@@ -55,36 +54,32 @@ export default function HRStatisticsPanel({
   // Calculate HR by Equipment (if rawWorkouts provided)
   const hrByEquipment = rawWorkouts ? calculateHRByEquipment(rawWorkouts) : []
 
-  const handleFilterChange = (filter: 'all' | 'barbell' | 'no_barbell' | 'gymnastics') => {
-    setLocalFilter(filter)
-    if (onEquipmentFilterChange) {
-      onEquipmentFilterChange(filter)
-    }
-  }
-
   return (
     <div className="bg-white rounded-lg shadow p-6 mt-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Heart Rate Statistics</h3>
       
-      {/* Equipment Filter Buttons */}
+      {/* Equipment Filter Buttons - only show if onEquipmentFilterChange is provided (Premium page) */}
       {onEquipmentFilterChange && (
         <div className="flex flex-wrap gap-2 mb-6">
           {(['all', 'barbell', 'no_barbell', 'gymnastics'] as const).map(filter => (
             <button
               key={filter}
-              onClick={() => handleFilterChange(filter)}
-              className={`px-3 py-1 rounded border text-sm transition-colors ${
-                localFilter === filter 
+              onClick={() => onEquipmentFilterChange(filter)}
+              className={`px-4 py-2 rounded border text-sm font-medium transition-colors ${
+                equipmentFilter === filter 
                   ? 'bg-[#FE5858] text-white border-[#FE5858]' 
                   : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
               }`}
             >
-              {filter.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              {filter === 'all' ? 'All' : 
+               filter === 'barbell' ? 'Barbell' :
+               filter === 'no_barbell' ? 'No Barbell' :
+               'Gymnastics'}
             </button>
           ))}
         </div>
       )}
-
+      
       {/* HR by Time Domain */}
       {hrByTimeDomain.length > 0 && (
         <div className="mb-6">

@@ -99,10 +99,33 @@ export default function BTNExerciseHeatMap() {
   return (
     <>
       <MetconHeatmap data={heatMapData} />
+      
+      {/* Equipment Filter - moved to top for better UX */}
+      <div className="bg-white rounded-lg shadow p-6 mt-6 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Filter by Equipment</h3>
+        <div className="flex flex-wrap gap-2">
+          {(['all', 'barbell', 'no_barbell', 'gymnastics'] as const).map(filter => (
+            <button
+              key={filter}
+              onClick={() => setEquipmentFilter(filter)}
+              className={`px-4 py-2 rounded border text-sm font-medium transition-colors ${
+                equipmentFilter === filter 
+                  ? 'bg-[#FE5858] text-white border-[#FE5858]' 
+                  : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
+              }`}
+            >
+              {filter === 'all' ? 'All' : 
+               filter === 'barbell' ? 'Barbell' :
+               filter === 'no_barbell' ? 'No Barbell' :
+               'Gymnastics'}
+            </button>
+          ))}
+        </div>
+      </div>
+      
       <HRStatisticsPanel 
         heatmapData={heatMapData} 
         equipmentFilter={equipmentFilter}
-        onEquipmentFilterChange={setEquipmentFilter}
       />
     </>
   )
