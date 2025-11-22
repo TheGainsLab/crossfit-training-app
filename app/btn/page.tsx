@@ -199,24 +199,19 @@ function BTNWorkoutGenerator() {
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3">Select Time Domains:</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="flex flex-wrap gap-2">
               {timeDomains.map((domain) => (
-                <label
+                <button
                   key={domain}
-                  className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all ${
+                  onClick={() => toggleDomain(domain)}
+                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
                     selectedDomains.includes(domain)
-                      ? 'border-[#FE5858] bg-red-50'
-                      : 'border-gray-300 bg-white hover:border-gray-400'
+                      ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedDomains.includes(domain)}
-                    onChange={() => toggleDomain(domain)}
-                    className="w-4 h-4 text-[#FE5858] rounded focus:ring-[#FE5858]"
-                  />
-                  <span className="text-sm font-medium">{domain}</span>
-                </label>
+                  {domain}
+                </button>
               ))}
             </div>
             <p className="text-xs text-gray-500 mt-2">
