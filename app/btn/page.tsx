@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { GeneratedWorkout, UserProfile } from '@/lib/btn/types';
 import { generateTestWorkouts } from '@/lib/btn/utils';
+import { exerciseEquipment } from '@/lib/btn/data';
 
 interface SubscriptionStatus {
   hasAccess: boolean
@@ -24,7 +25,7 @@ function BTNWorkoutGenerator() {
   const [savedWorkouts, setSavedWorkouts] = useState<Set<number>>(new Set());
   const [savingWorkouts, setSavingWorkouts] = useState<Set<number>>(new Set());
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
-  const [requireBarbell, setRequireBarbell] = useState<boolean>(false);
+  const [equipmentFilter, setEquipmentFilter] = useState<'all' | 'barbell' | 'no_barbell' | 'gymnastics'>('all');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
@@ -92,18 +93,59 @@ function BTNWorkoutGenerator() {
     try {
       console.log('🎲 Generating workouts...');
       console.log('Selected domains:', selectedDomains.length > 0 ? selectedDomains : 'all (random)');
+      console.log('Equipment filter:', equipmentFilter);
       console.log('Using profile:', userProfile ? 'Yes' : 'No (default generator)');
+      
+      // Determine requiredEquipment based on filter
+      let requiredEquipment: string[] | undefined;
+      if (equipmentFilter === 'barbell') {
+        requiredEquipment = ['Barbell'];
+      } else {
+        requiredEquipment = undefined; // 'all', 'no_barbell', or 'gymnastics' - handled post-generation
+      }
       
       const workouts = generateTestWorkouts(
         selectedDomains.length > 0 ? selectedDomains : undefined,
         userProfile || undefined,
-        requireBarbell ? ['Barbell'] : undefined
+        requiredEquipment
       );
       
+      // Apply post-generation filtering for 'no_barbell' and 'gymnastics'
+      // This matches the analysis filter logic exactly
+      let filteredWorkouts = workouts;
+      if (equipmentFilter === 'no_barbell' || equipmentFilter === 'gymnastics') {
+        filteredWorkouts = workouts.filter(workout => {
+          // Calculate required_equipment for this workout (same logic as when saving)
+          const equipmentSet = new Set<string>();
+          workout.exercises.forEach((exercise: any) => {
+            const exerciseName = exercise.name || exercise.exercise;
+            const equipment = exerciseEquipment[exerciseName] || [];
+            equipment.forEach(eq => equipmentSet.add(eq));
+          });
+          const reqEq = Array.from(equipmentSet);
+          
+          if (equipmentFilter === 'no_barbell') {
+            return !reqEq.includes('Barbell');
+          } else if (equipmentFilter === 'gymnastics') {
+            return reqEq.some(eq => 
+              eq === 'Pullup Bar or Rig' || 
+              eq === 'High Rings' || 
+              eq === 'Climbing Rope'
+            );
+          }
+          return true;
+        });
+        
+        // If we filtered out too many, show what we have
+        if (filteredWorkouts.length < 5) {
+          console.warn(`⚠️ Only ${filteredWorkouts.length} workouts match filter, showing available workouts`);
+        }
+      }
+      
       // Display workouts immediately (no auto-save)
-      setGeneratedWorkouts(workouts);
+      setGeneratedWorkouts(filteredWorkouts);
       setSavedWorkouts(new Set()); // Clear saved state
-      console.log(`✅ Generated ${workouts.length} workouts`);
+      console.log(`✅ Generated ${filteredWorkouts.length} workouts`);
     } catch (error) {
       console.error('❌ Generation failed:', error);
       alert('Failed to generate workouts. Please try again.');
@@ -216,27 +258,32 @@ function BTNWorkoutGenerator() {
           {/* Equipment Filter Section */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3">Select Equipment:</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              <label
-                className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all ${
-                  requireBarbell
-                    ? 'border-[#FE5858] bg-red-50'
-                    : 'border-gray-300 bg-white hover:border-gray-400'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={requireBarbell}
-                  onChange={() => setRequireBarbell(!requireBarbell)}
-                  className="w-4 h-4 text-[#FE5858] rounded focus:ring-[#FE5858]"
-                />
-                <span className="text-sm font-medium">Barbell</span>
-              </label>
+            <div className="flex flex-wrap gap-2">
+              {(['all', 'barbell', 'no_barbell', 'gymnastics'] as const).map(filter => (
+                <button
+                  key={filter}
+                  onClick={() => setEquipmentFilter(filter)}
+                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                    equipmentFilter === filter
+                      ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  {filter === 'all' ? 'All' : 
+                   filter === 'barbell' ? 'Barbell' :
+                   filter === 'no_barbell' ? 'No Barbell' :
+                   'Gymnastics'}
+                </button>
+              ))}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              {requireBarbell 
+              {equipmentFilter === 'all' 
+                ? 'No equipment filter - workouts may include any equipment'
+                : equipmentFilter === 'barbell'
                 ? 'All workouts will include at least one barbell exercise'
-                : 'No equipment filter - workouts may include any equipment'
+                : equipmentFilter === 'no_barbell'
+                ? 'Workouts will not include barbell exercises'
+                : 'All workouts will include at least one gymnastics exercise'
               }
             </p>
           </div>
