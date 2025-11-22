@@ -52,8 +52,23 @@ export async function POST(request: NextRequest) {
     console.log(`💾 Saving ${workouts.length} BTN workouts for user ${userData.id}`)
     console.log('Sample workout to save:', JSON.stringify(workouts[0], null, 2))
 
+    // Get count of existing BTN workouts for this user to determine starting number
+    const { count: existingWorkoutCount, error: countError } = await supabase
+      .from('program_metcons')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userData.id)
+      .eq('workout_type', 'btn')
+
+    if (countError) {
+      console.error('⚠️ Error counting existing workouts:', countError)
+      // Continue anyway, start from 1
+    }
+
+    const startNumber = (existingWorkoutCount || 0) + 1
+    console.log(`📊 Existing workouts: ${existingWorkoutCount || 0}, starting new workouts at: ${startNumber}`)
+
     // Transform BTN workouts to database format
-    const workoutRecords = workouts.map((workout: BTNWorkout) => {
+    const workoutRecords = workouts.map((workout: BTNWorkout, index: number) => {
       // Calculate required equipment from exercises
       const equipmentSet = new Set<string>()
       workout.exercises.forEach((exercise: any) => {
@@ -66,7 +81,7 @@ export async function POST(request: NextRequest) {
       return {
         user_id: userData.id,
         workout_type: 'btn',
-        workout_name: workout.name,
+        workout_name: `Workout ${startNumber + index}`, // Sequential naming regardless of original name
         workout_format: workout.format,
         time_domain: workout.timeDomain,
         exercises: workout.exercises,
