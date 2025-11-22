@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { detectEquipment } from '@/lib/utils/equipment-detection'
 
 interface ExerciseHeatmapCell {
   exercise_name: string
@@ -70,7 +69,7 @@ export async function GET(request: NextRequest) {
     // Fetch all BTN workouts for this user (only completed ones with percentile)
     const { data: workouts, error: workoutsError } = await supabase
       .from('program_metcons')
-      .select('id, time_domain, exercises, workout_name, completed_at, percentile, avg_heart_rate, max_heart_rate')
+      .select('id, time_domain, exercises, workout_name, completed_at, percentile, avg_heart_rate, max_heart_rate, required_equipment')
       .eq('user_id', userData.id)
       .eq('workout_type', 'btn')
       .not('percentile', 'is', null)
@@ -108,13 +107,26 @@ export async function GET(request: NextRequest) {
     let filteredWorkouts = workouts
     if (equip && equip !== 'all') {
       filteredWorkouts = workouts.filter(workout => {
-        const exercises = workout.exercises || []
-        const equipment = detectEquipment(exercises)
+        const reqEq = Array.isArray(workout.required_equipment) 
+          ? workout.required_equipment 
+          : []
         
-        if (equip === 'barbell') return equipment.includes('barbell')
-        if (equip === 'no_barbell') return !equipment.includes('barbell')
-        if (equip === 'gymnastics') return equipment.includes('gymnastics')
-        if (equip === 'bodyweight') return equipment.includes('bodyweight')
+        if (equip === 'barbell') {
+          return reqEq.includes('Barbell')
+        }
+        if (equip === 'no_barbell') {
+          return !reqEq.includes('Barbell')
+        }
+        if (equip === 'gymnastics') {
+          return reqEq.some(eq => 
+            eq === 'Pullup Bar or Rig' || 
+            eq === 'High Rings' || 
+            eq === 'Climbing Rope'
+          )
+        }
+        if (equip === 'bodyweight') {
+          return reqEq.length === 0 || reqEq.every(eq => eq === 'Wall Space')
+        }
         return true
       })
       console.log(`🔍 Equipment filter "${equip}": ${filteredWorkouts.length} of ${workouts.length} workouts`)

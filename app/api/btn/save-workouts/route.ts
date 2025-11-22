@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { exerciseEquipment } from '@/lib/btn/data'
 
 interface BTNWorkout {
   name: string
@@ -52,38 +53,50 @@ export async function POST(request: NextRequest) {
     console.log('Sample workout to save:', JSON.stringify(workouts[0], null, 2))
 
     // Transform BTN workouts to database format
-    const workoutRecords = workouts.map((workout: BTNWorkout) => ({
-      user_id: userData.id,
-      workout_type: 'btn',
-      workout_name: workout.name,
-      workout_format: workout.format,
-      time_domain: workout.timeDomain,
-      exercises: workout.exercises,
-      rounds: workout.rounds || null,
-      amrap_time: workout.amrapTime || null,
-      pattern: workout.pattern || null,
-      
-      // Benchmark scores for percentile calculation
-      median_score: workout.medianScore || null,
-      excellent_score: workout.excellentScore || null,
-      
-      // Result fields (empty until user logs result)
-      user_score: null,
-      percentile: null,
-      completed_at: null,
-      notes: null,
-      result: null,
-      result_time: null,
-      result_rounds: null,
-      result_reps: null,
-      
-      // Program fields (null for BTN - not part of a program)
-      program_id: null,
-      program_workout_id: null,
-      week: null,
-      day: null,
-      metcon_id: null, // Could match to library metcon later
-    }))
+    const workoutRecords = workouts.map((workout: BTNWorkout) => {
+      // Calculate required equipment from exercises
+      const equipmentSet = new Set<string>()
+      workout.exercises.forEach((exercise: any) => {
+        const exerciseName = exercise.name || exercise.exercise
+        const equipment = exerciseEquipment[exerciseName] || []
+        equipment.forEach(eq => equipmentSet.add(eq))
+      })
+      const requiredEquipment = Array.from(equipmentSet)
+
+      return {
+        user_id: userData.id,
+        workout_type: 'btn',
+        workout_name: workout.name,
+        workout_format: workout.format,
+        time_domain: workout.timeDomain,
+        exercises: workout.exercises,
+        required_equipment: requiredEquipment.length > 0 ? requiredEquipment : null,
+        rounds: workout.rounds || null,
+        amrap_time: workout.amrapTime || null,
+        pattern: workout.pattern || null,
+        
+        // Benchmark scores for percentile calculation
+        median_score: workout.medianScore || null,
+        excellent_score: workout.excellentScore || null,
+        
+        // Result fields (empty until user logs result)
+        user_score: null,
+        percentile: null,
+        completed_at: null,
+        notes: null,
+        result: null,
+        result_time: null,
+        result_rounds: null,
+        result_reps: null,
+        
+        // Program fields (null for BTN - not part of a program)
+        program_id: null,
+        program_workout_id: null,
+        week: null,
+        day: null,
+        metcon_id: null, // Could match to library metcon later
+      }
+    })
 
     const { data, error } = await supabase
       .from('program_metcons')

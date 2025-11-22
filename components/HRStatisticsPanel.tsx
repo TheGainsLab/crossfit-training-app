@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState } from 'react'
-import { detectEquipment } from '@/lib/utils/equipment-detection'
 
 interface HRStatisticsPanelProps {
   heatmapData: {
@@ -269,16 +268,24 @@ function calculateHRByEquipment(workouts: any[]) {
   }>()
 
   workouts.forEach(workout => {
-    const exercises = workout.exercises || []
-    const equipment = detectEquipment(exercises)
+    const reqEq = Array.isArray(workout.required_equipment) 
+      ? workout.required_equipment 
+      : []
     const avgHR = workout.avg_heart_rate ? parseFloat(workout.avg_heart_rate) : null
     const maxHR = workout.max_heart_rate ? parseFloat(workout.max_heart_rate) : null
     const percentile = workout.percentile ? parseFloat(workout.percentile) : null
 
     // Categorize by primary equipment
     let category = 'bodyweight'
-    if (equipment.includes('barbell')) category = 'barbell'
-    else if (equipment.includes('gymnastics')) category = 'gymnastics'
+    if (reqEq.includes('Barbell')) {
+      category = 'barbell'
+    } else if (reqEq.some(eq => 
+      eq === 'Pullup Bar or Rig' || 
+      eq === 'High Rings' || 
+      eq === 'Climbing Rope'
+    )) {
+      category = 'gymnastics'
+    }
 
     if (!equipmentMap.has(category)) {
       equipmentMap.set(category, { totalAvgHR: 0, totalMaxHR: 0, totalPercentile: 0, workoutCount: 0, hrCount: 0 })
