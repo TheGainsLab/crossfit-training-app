@@ -279,7 +279,7 @@ function calculateHRByEquipment(workouts: any[]) {
     let category = 'bodyweight'
     if (reqEq.includes('Barbell')) {
       category = 'barbell'
-    } else if (reqEq.some(eq => 
+    } else if (reqEq.some((eq: string) => 
       eq === 'Pullup Bar or Rig' || 
       eq === 'High Rings' || 
       eq === 'Climbing Rope'
