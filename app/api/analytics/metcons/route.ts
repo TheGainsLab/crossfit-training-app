@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// Map BTN time domains to Premium time ranges
+const timeDomainMapping: { [key: string]: string } = {
+  '1:00 - 5:00': '1:00–5:00',
+  '5:00 - 10:00': '5:00–10:00',
+  '10:00 - 15:00': '10:00–15:00',
+  '15:00 - 20:00': '15:00–20:00',
+  '20:00+': '20:00–30:00'
+}
+
+function mapBTNTimeDomainToTimeRange(timeDomain: string | null): string | null {
+  if (!timeDomain) return null
+  return timeDomainMapping[timeDomain] || timeDomain
+}
+
 function mapRange(range: string | null): string {
   switch ((range || '').toLowerCase()) {
     case 'last_60_days': return "pm.completed_at >= now() - interval '60 days'"
@@ -231,12 +245,42 @@ export async function GET(req: NextRequest) {
     if (rangeSql) whereParts.push(rangeSql)
     if (level) whereParts.push(`m.level = '${level.replace(/'/g, "''")}'`)
 
-    // We'll fetch rows then filter equipment client-side for ANY() easily by JS
-    const { data: rows, error } = await supabase
+    // Fetch Premium MetCons
+    const { data: premiumRows, error: premiumError } = await supabase
       .from('program_metcons as pm')
       .select('week, day, percentile, completed_at, metcons!inner(id, workout_id, time_range, required_equipment, level)')
       .filter('program_id', 'eq', programId)
-    if (error) throw error
+      .not('metcon_id', 'is', null)
+    
+    // Fetch BTN workouts for this user
+    const { data: btnRows, error: btnError } = await supabase
+      .from('program_metcons')
+      .select('percentile, completed_at, time_domain, required_equipment')
+      .eq('user_id', userId)
+      .eq('workout_type', 'btn')
+      .is('program_id', null)
+    
+    if (premiumError || btnError) {
+      throw premiumError || btnError
+    }
+
+    // Normalize BTN workouts to match Premium format
+    const normalizedBtnRows = (btnRows || []).map((w: any) => ({
+      week: null,
+      day: null,
+      percentile: w.percentile,
+      completed_at: w.completed_at,
+      metcons: {
+        id: null,
+        workout_id: null,
+        time_range: mapBTNTimeDomainToTimeRange(w.time_domain),
+        required_equipment: w.required_equipment || [],
+        level: null
+      }
+    }))
+
+    // Merge Premium and BTN rows
+    const rows = [...(premiumRows || []), ...normalizedBtnRows]
 
     const filtered = (rows || []).filter((r: any) => {
       // Range

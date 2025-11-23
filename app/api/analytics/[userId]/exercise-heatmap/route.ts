@@ -5,6 +5,20 @@ import { cookies } from 'next/headers'
 import { canAccessAthleteData, getUserIdFromAuth } from '@/lib/permissions'
 import { exerciseEquipment } from '@/lib/btn/data'
 
+// Map BTN time domains to Premium time ranges
+const timeDomainMapping: { [key: string]: string } = {
+  '1:00 - 5:00': '1:00–5:00',
+  '5:00 - 10:00': '5:00–10:00',
+  '10:00 - 15:00': '10:00–15:00',
+  '15:00 - 20:00': '15:00–20:00',
+  '20:00+': '20:00–30:00'
+}
+
+function mapBTNTimeDomainToTimeRange(timeDomain: string | null): string | null {
+  if (!timeDomain) return null
+  return timeDomainMapping[timeDomain] || timeDomain
+}
+
 interface ExerciseHeatmapCell {
   exercise_name: string
   time_range: string | null
@@ -103,9 +117,8 @@ export async function GET(
     // Optional equipment filter
     const equip = new URL(request.url).searchParams.get('equip') || ''
 
-    // Step 1: Get completed MetCons with exercise data
-    // FIXED: Use same approach as metcon-analyzer
-    const { data: rawData, error: dataError } = await supabase
+    // Step 1: Get completed MetCons with exercise data (Premium workouts)
+    const { data: premiumData, error: premiumError } = await supabase
       .from('program_metcons')
       .select(`
         percentile,
@@ -114,6 +127,7 @@ export async function GET(
         completed_at,
         week,
         day,
+        program_id,
         metcons!inner(
           time_range,
           workout_id,
@@ -125,16 +139,63 @@ export async function GET(
         )
       `)
       .eq('programs.user_id', userIdNum)
+      .not('metcon_id', 'is', null) // Only Premium metcons
       .not('percentile', 'is', null)
       .not('completed_at', 'is', null)
 
-    if (dataError || !rawData) {
-      console.error('❌ Failed to fetch workout data:', dataError)
+    // Step 1b: Get BTN workouts
+    const { data: btnData, error: btnError } = await supabase
+      .from('program_metcons')
+      .select(`
+        percentile,
+        avg_heart_rate,
+        max_heart_rate,
+        completed_at,
+        time_domain,
+        exercises,
+        required_equipment
+      `)
+      .eq('user_id', userIdNum)
+      .eq('workout_type', 'btn')
+      .not('percentile', 'is', null)
+      .not('completed_at', 'is', null)
+
+    if (premiumError || btnError) {
+      console.error('❌ Failed to fetch workout data:', premiumError || btnError)
       return NextResponse.json(
-        { error: 'Failed to fetch workout data', details: dataError?.message },
+        { error: 'Failed to fetch workout data', details: (premiumError || btnError)?.message },
         { status: 500 }
       )
     }
+
+    // Normalize and merge the data
+    const rawData = [
+      ...(premiumData || []).map((w: any) => ({
+        ...w,
+        source: 'premium',
+        time_range: w.metcons?.time_range,
+        tasks: w.metcons?.tasks || [],
+        exercises: null,
+        required_equipment: w.metcons?.required_equipment || []
+      })),
+      ...(btnData || []).map((w: any) => ({
+        ...w,
+        id: w.id, // Keep the program_metcons.id for BTN workout lookup
+        source: 'btn',
+        time_range: mapBTNTimeDomainToTimeRange(w.time_domain),
+        tasks: null,
+        exercises: w.exercises || [],
+        required_equipment: w.required_equipment || [],
+        week: null,
+        day: null,
+        program_id: null,
+        metcons: {
+          time_range: mapBTNTimeDomainToTimeRange(w.time_domain),
+          tasks: w.exercises?.map((e: any) => ({ exercise: e.name || e.exercise || e })) || [],
+          required_equipment: w.required_equipment || []
+        }
+      }))
+    ]
 
     if (rawData.length === 0) {
       return NextResponse.json({
@@ -161,14 +222,13 @@ export async function GET(
 
     console.log(`📊 Processing ${rawData.length} completed MetCons (filtering at task level)`)
 
-    // Step 2: Fetch RPE/Quality data from performance_logs for all MetCons
-    const programIds = [...new Set(rawData.map((w: any) => w.programs?.user_id).filter(Boolean))]
+    // Step 2: Fetch RPE/Quality data from performance_logs for all MetCons (both Premium and BTN)
+    const programIds = [...new Set(rawData.map((w: any) => w.program_id).filter(Boolean))]
     const { data: rpeQualityData, error: rpeError } = await supabase
       .from('performance_logs')
-      .select('program_id, week, day, exercise_name, rpe, completion_quality, block')
+      .select('program_id, week, day, exercise_name, rpe, completion_quality, block, result')
       .eq('user_id', userIdNum)
-      .eq('block', 'METCONS')
-      .in('program_id', rawData.map((w: any) => w.program_id).filter(Boolean))
+      .in('block', ['METCONS', 'BTN'])
       .not('rpe', 'is', null)
 
     if (rpeError) {
@@ -281,10 +341,26 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
   }>>()
   const exerciseOverallMap = new Map<string, { count: number, totalPercentile: number }>()
   
-  // Create a lookup map for RPE/Quality data: (program_id, week, day, exercise_name) -> {rpe, quality}
+  // Create a lookup map for RPE/Quality data: 
+  // For Premium: (program_id, week, day, exercise_name) -> {rpe, quality}
+  // For BTN: (workout_id from result, exercise_name) -> {rpe, quality}
   const rpeQualityMap = new Map<string, { rpe: number, quality: number }>()
   rpeQualityData.forEach((log: any) => {
-    const key = `${log.program_id}_${log.week}_${log.day}_${log.exercise_name}`
+    let key: string
+    if (log.block === 'BTN') {
+      // Extract workout ID from result column (format: "BTN Workout 123: Workout Name")
+      const workoutMatch = log.result?.match(/BTN Workout (\d+)/)
+      if (workoutMatch) {
+        const workoutId = workoutMatch[1]
+        key = `btn_${workoutId}_${log.exercise_name}`
+      } else {
+        return // Skip if we can't parse BTN workout ID
+      }
+    } else {
+      // Premium format
+      key = `${log.program_id}_${log.week}_${log.day}_${log.exercise_name}`
+    }
+    
     if (log.rpe !== null && log.rpe !== undefined) {
       const existing = rpeQualityMap.get(key)
       if (!existing) {
@@ -293,7 +369,7 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
           quality: log.completion_quality || 0
         })
       } else {
-        // Average if multiple entries (shouldn't happen, but handle it)
+        // Average if multiple entries
         existing.rpe = (existing.rpe + log.rpe) / 2
         if (log.completion_quality) {
           existing.quality = existing.quality ? (existing.quality + log.completion_quality) / 2 : log.completion_quality
@@ -309,19 +385,24 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
     const percentile = parseFloat(workout.percentile)
     const avgHR = workout.avg_heart_rate ? parseFloat(workout.avg_heart_rate) : null
     const maxHR = workout.max_heart_rate ? parseFloat(workout.max_heart_rate) : null
-    const timeRange = workout.metcons.time_range
-    const tasks = workout.metcons.tasks || []
+    const timeRange = workout.time_range || workout.metcons?.time_range
+    const tasks = workout.tasks || workout.metcons?.tasks || []
+    const exercises = workout.exercises || []
+    const isBTN = workout.source === 'btn'
 
     if (!timeRange) {
-      console.log(`⚠️ Skipping workout without time_range: ${workout.metcons.workout_id}`)
+      console.log(`⚠️ Skipping workout without time_range`)
       return
     }
 
-    // Extract exercises from tasks with task-level filtering
-    tasks.forEach((task: any) => {
-      const exerciseName = task.exercise
+    // Extract exercises from tasks (Premium) or exercises array (BTN)
+    const exerciseList = isBTN ? exercises : tasks
+    
+    exerciseList.forEach((item: any) => {
+      // Handle Premium format (task.exercise) or BTN format (exercise.name or exercise.exercise)
+      const exerciseName = item.exercise || item.name || (typeof item === 'string' ? item : null)
       if (!exerciseName) {
-        console.log(`⚠️ Task missing exercise name:`, task)
+        console.log(`⚠️ Exercise missing name:`, item)
         return
       }
 
@@ -365,7 +446,15 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
       }
       
       // Track RPE/Quality data from performance_logs
-      const rpeKey = `${workout.program_id}_${workout.week}_${workout.day}_${exerciseName}`
+      let rpeKey: string
+      if (isBTN) {
+        // BTN format: extract workout ID from workout object
+        const workoutId = workout.id
+        rpeKey = `btn_${workoutId}_${exerciseName}`
+      } else {
+        // Premium format
+        rpeKey = `${workout.program_id}_${workout.week}_${workout.day}_${exerciseName}`
+      }
       const rpeQuality = rpeQualityMap.get(rpeKey)
       if (rpeQuality) {
         timeData.totalRpe += rpeQuality.rpe

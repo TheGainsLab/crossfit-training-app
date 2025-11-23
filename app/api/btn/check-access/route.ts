@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { checkBTNAccess } from '@/lib/subscription-check'
+import { checkBTNFeatureAccess } from '@/lib/subscription-check'
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
 
     console.log(`Checking BTN access for user ${userData.id}, tier: ${userData.subscription_tier}, status: ${userData.subscription_status}`)
 
-    // Check BTN subscription access
-    const accessStatus = await checkBTNAccess(userData.id)
+    // Check BTN feature access (BTN or Premium subscription)
+    const accessStatus = await checkBTNFeatureAccess(userData.id)
 
     console.log(`Access check result:`, accessStatus)
 

@@ -7,6 +7,20 @@ import { formatMetConCharts } from '@/lib/analytics/chart-formatters'
 import { generateMetConInsights } from '@/lib/analytics/insights-generator'
 import { canAccessAthleteData, getUserIdFromAuth } from '@/lib/permissions'
 
+// Map BTN time domains to Premium time ranges
+const timeDomainMapping: { [key: string]: string } = {
+  '1:00 - 5:00': '1:00–5:00',
+  '5:00 - 10:00': '5:00–10:00',
+  '10:00 - 15:00': '10:00–15:00',
+  '15:00 - 20:00': '15:00–20:00',
+  '20:00+': '20:00–30:00'
+}
+
+function mapBTNTimeDomainToTimeRange(timeDomain: string | null): string | null {
+  if (!timeDomain) return null
+  return timeDomainMapping[timeDomain] || timeDomain
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
@@ -83,8 +97,8 @@ export async function GET(
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - timeRange)
 
-    // Query MetCon performance data - FIXED: Join through programs table to get user data
-    const { data: metconData, error: metconError } = await supabase
+    // Query Premium MetCon performance data
+    const { data: premiumMetcons, error: premiumError } = await supabase
       .from('program_metcons')
       .select(`
         *,
@@ -98,16 +112,47 @@ export async function GET(
         )
       `)
       .eq('programs.user_id', userIdNum)
+      .not('metcon_id', 'is', null) // Only Premium metcons
       .gte('completed_at', startDate.toISOString())
       .order('completed_at', { ascending: true })
 
-    if (metconError) {
-      console.error('❌ Failed to fetch MetCon data:', metconError)
+    // Query BTN workouts
+    const { data: btnWorkouts, error: btnError } = await supabase
+      .from('program_metcons')
+      .select('*')
+      .eq('user_id', userIdNum)
+      .eq('workout_type', 'btn')
+      .gte('completed_at', startDate.toISOString())
+      .order('completed_at', { ascending: true })
+
+    if (premiumError || btnError) {
+      console.error('❌ Failed to fetch MetCon data:', premiumError || btnError)
       return NextResponse.json(
-        { error: 'Failed to fetch MetCon data', details: metconError.message },
+        { error: 'Failed to fetch MetCon data', details: (premiumError || btnError)?.message },
         { status: 500 }
       )
     }
+
+    // Normalize and merge the data
+    const metconData = [
+      ...(premiumMetcons || []).map((w: any) => ({
+        ...w,
+        source: 'premium',
+        time_range: w.metcons?.time_range,
+        tasks: w.metcons?.tasks || []
+      })),
+      ...(btnWorkouts || []).map((w: any) => ({
+        ...w,
+        source: 'btn',
+        time_range: mapBTNTimeDomainToTimeRange(w.time_domain),
+        tasks: w.exercises?.map((e: any) => ({ exercise: e.name || e.exercise || e })) || [],
+        metcons: {
+          workout_id: null,
+          time_range: mapBTNTimeDomainToTimeRange(w.time_domain),
+          tasks: w.exercises?.map((e: any) => ({ exercise: e.name || e.exercise || e })) || []
+        }
+      }))
+    ]
 
     if (!metconData || metconData.length === 0) {
       return NextResponse.json(

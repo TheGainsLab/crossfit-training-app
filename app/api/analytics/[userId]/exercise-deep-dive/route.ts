@@ -8,6 +8,20 @@ import { generateDataReflectiveInsights, generateCoachCollaborativeRecommendatio
 import { ExerciseDeepDiveResponse } from '@/lib/analytics/types'
 import { canAccessAthleteData, getUserIdFromAuth } from '@/lib/permissions'
 
+// Map BTN time domains to Premium time ranges
+const timeDomainMapping: { [key: string]: string } = {
+  '1:00 - 5:00': '1:00–5:00',
+  '5:00 - 10:00': '5:00–10:00',
+  '10:00 - 15:00': '10:00–15:00',
+  '15:00 - 20:00': '15:00–20:00',
+  '20:00+': '20:00–30:00'
+}
+
+function mapBTNTimeDomainToTimeRange(timeDomain: string | null): string | null {
+  if (!timeDomain) return null
+  return timeDomainMapping[timeDomain] || timeDomain
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
@@ -120,10 +134,11 @@ export async function GET(
       )
     }
 
-// Query MetCon data if this is a MetCon exercise - FIXED: Join through programs table
+// Query MetCon data if this is a MetCon exercise - includes both Premium and BTN
 let metconData = []
 if (block === 'METCONS') {
-  const { data: metconResults, error: metconError } = await supabase
+  // Query Premium MetCons
+  const { data: premiumMetcons, error: premiumError } = await supabase
     .from('program_metcons')
     .select(`
       *,
@@ -136,24 +151,57 @@ if (block === 'METCONS') {
         user_id
       )
     `)
-    .eq('programs.user_id', userIdNum)  // ✅ Fixed: Join through programs table
+    .eq('programs.user_id', userIdNum)
+    .not('metcon_id', 'is', null)
     .gte('completed_at', startDate.toISOString())
 
+  // Query BTN workouts
+  const { data: btnWorkouts, error: btnError } = await supabase
+    .from('program_metcons')
+    .select('*')
+    .eq('user_id', userIdNum)
+    .eq('workout_type', 'btn')
+    .gte('completed_at', startDate.toISOString())
 
-
-      if (!metconError && metconResults) {
-        // Filter MetCons that contain this exercise
-        metconData = metconResults.filter(result => {
-          const tasks = result.metcons?.tasks
-          if (Array.isArray(tasks)) {
-            return tasks.some((task: any) => 
-              typeof task === 'string' && task.toLowerCase().includes(exercise.toLowerCase())
-            )
-          }
-          return false
+  if (!premiumError && premiumMetcons) {
+    // Filter Premium MetCons that contain this exercise
+    const premiumFiltered = premiumMetcons.filter(result => {
+      const tasks = result.metcons?.tasks
+      if (Array.isArray(tasks)) {
+        return tasks.some((task: any) => {
+          const taskExercise = task.exercise || task
+          return typeof taskExercise === 'string' && taskExercise.toLowerCase().includes(exercise.toLowerCase())
         })
       }
-    }
+      return false
+    })
+    metconData.push(...premiumFiltered)
+  }
+
+  if (!btnError && btnWorkouts) {
+    // Filter BTN workouts that contain this exercise
+    const btnFiltered = btnWorkouts.filter(result => {
+      const exercises = result.exercises || []
+      if (Array.isArray(exercises)) {
+        return exercises.some((ex: any) => {
+          const exerciseName = ex.name || ex.exercise || ex
+          return typeof exerciseName === 'string' && exerciseName.toLowerCase().includes(exercise.toLowerCase())
+        })
+      }
+      return false
+    })
+    // Normalize BTN workouts to match Premium format
+    const normalizedBtn = btnFiltered.map(w => ({
+      ...w,
+      metcons: {
+        workout_id: null,
+        time_range: mapBTNTimeDomainToTimeRange(w.time_domain),
+        tasks: w.exercises?.map((e: any) => ({ exercise: e.name || e.exercise || e })) || []
+      }
+    }))
+    metconData.push(...normalizedBtn)
+  }
+}
 
 
 // Process the data

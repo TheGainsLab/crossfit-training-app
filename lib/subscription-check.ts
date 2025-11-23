@@ -89,3 +89,18 @@ export async function checkAnyActiveSubscription(userId: number): Promise<Subscr
 export async function checkAppliedPowerAccess(userId: number): Promise<SubscriptionStatus> {
   return checkSubscriptionAccess(userId, 'applied_power')
 }
+
+/**
+ * Check if a user has access to BTN features (BTN or Premium subscription)
+ * Premium users get access to BTN features as well
+ */
+export async function checkBTNFeatureAccess(userId: number): Promise<SubscriptionStatus> {
+  // First check BTN subscription
+  const btnAccess = await checkBTNAccess(userId)
+  if (btnAccess.hasAccess) {
+    return btnAccess
+  }
+  
+  // If no BTN subscription, check Premium (Premium users get BTN features)
+  return checkPremiumAccess(userId)
+}
