@@ -2,16 +2,60 @@
 
 import React from 'react'
 
-export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any, visibleTimeDomains?: string[] }) {
-  const getHeatMapColor = (percentile: number | null) => {
-    if (percentile === null) return 'bg-gray-100 text-gray-400'
-    if (percentile >= 80) return 'bg-green-600 text-white'
-    if (percentile >= 70) return 'bg-green-500 text-white'
-    if (percentile >= 60) return 'bg-green-400 text-white'
-    if (percentile >= 50) return 'bg-yellow-400 text-black'
-    if (percentile >= 40) return 'bg-orange-400 text-white'
-    if (percentile >= 30) return 'bg-orange-500 text-white'
-    return 'bg-red-500 text-white'
+type MetricType = 'percentile' | 'rpe' | 'quality' | 'heartrate'
+
+export default function MetconHeatmap({ 
+  data, 
+  visibleTimeDomains,
+  metric = 'percentile'
+}: { 
+  data: any, 
+  visibleTimeDomains?: string[],
+  metric?: MetricType
+}) {
+  const getHeatMapColor = (value: number | null, metricType: MetricType) => {
+    if (value === null) return 'bg-gray-100 text-gray-400'
+    
+    switch (metricType) {
+      case 'percentile':
+        if (value >= 80) return 'bg-green-600 text-white'
+        if (value >= 70) return 'bg-green-500 text-white'
+        if (value >= 60) return 'bg-green-400 text-white'
+        if (value >= 50) return 'bg-yellow-400 text-black'
+        if (value >= 40) return 'bg-orange-400 text-white'
+        if (value >= 30) return 'bg-orange-500 text-white'
+        return 'bg-red-500 text-white'
+      
+      case 'rpe':
+        // RPE: Red (high) to Green (low) - inverted from percentile
+        if (value >= 9) return 'bg-red-600 text-white'
+        if (value >= 8) return 'bg-red-500 text-white'
+        if (value >= 7) return 'bg-orange-500 text-white'
+        if (value >= 6) return 'bg-orange-400 text-white'
+        if (value >= 5) return 'bg-yellow-400 text-black'
+        if (value >= 4) return 'bg-green-400 text-white'
+        return 'bg-green-500 text-white'
+      
+      case 'quality':
+        // Quality: Green (A) to Red (D)
+        if (value >= 3.5) return 'bg-green-600 text-white' // A
+        if (value >= 2.5) return 'bg-yellow-400 text-black' // B
+        if (value >= 1.5) return 'bg-orange-400 text-white' // C
+        return 'bg-red-500 text-white' // D
+      
+      case 'heartrate':
+        // HR: Red (high) to Green (low) - similar to RPE
+        if (value >= 180) return 'bg-red-600 text-white'
+        if (value >= 170) return 'bg-red-500 text-white'
+        if (value >= 160) return 'bg-orange-500 text-white'
+        if (value >= 150) return 'bg-orange-400 text-white'
+        if (value >= 140) return 'bg-yellow-400 text-black'
+        if (value >= 130) return 'bg-green-400 text-white'
+        return 'bg-green-500 text-white'
+      
+      default:
+        return 'bg-gray-100 text-gray-400'
+    }
   }
 
   const getPercentile = (exercise: string, timeDomain: string): number | null => {
@@ -60,37 +104,180 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
     return 'D'
   }
 
-  const calculateExerciseAverage = (exercise: string): number | null => {
-    if (!data?.exerciseAverages) return null
-    const exerciseAvg = data.exerciseAverages.find((avg: any) => 
-      avg.exercise_name === exercise
+  const calculateExerciseAverage = (exercise: string, metricType: MetricType): number | null => {
+    if (!data?.heatmapCells) return null
+    const exerciseCells = data.heatmapCells.filter((cell: any) => 
+      cell.exercise_name === exercise
     )
-    return exerciseAvg ? exerciseAvg.overall_avg_percentile : null
+    if (exerciseCells.length === 0) return null
+    
+    let totalWeighted = 0
+    let totalSessions = 0
+    
+    exerciseCells.forEach((cell: any) => {
+      let value: number | null = null
+      switch (metricType) {
+        case 'percentile':
+          value = cell.avg_percentile
+          break
+        case 'rpe':
+          value = cell.avg_rpe
+          break
+        case 'quality':
+          value = cell.avg_quality
+          break
+        case 'heartrate':
+          value = cell.avg_heart_rate
+          break
+      }
+      
+      if (value !== null && value !== undefined) {
+        totalWeighted += value * cell.session_count
+        totalSessions += cell.session_count
+      }
+    })
+    
+    return totalSessions > 0 ? Math.round((totalWeighted / totalSessions) * 10) / 10 : null
   }
 
-  const calculateTimeDomainAverage = (timeDomain: string): number | null => {
+  const calculateTimeDomainAverage = (timeDomain: string, metricType: MetricType): number | null => {
     if (!data?.heatmapCells) return null
     const domainCells = data.heatmapCells.filter((cell: any) => 
       cell.time_range === timeDomain
     )
     if (domainCells.length === 0) return null
-    let totalWeightedScore = 0
+    
+    let totalWeighted = 0
     let totalSessions = 0
+    
     domainCells.forEach((cell: any) => {
-      totalWeightedScore += cell.avg_percentile * cell.session_count
-      totalSessions += cell.session_count
+      let value: number | null = null
+      switch (metricType) {
+        case 'percentile':
+          value = cell.avg_percentile
+          break
+        case 'rpe':
+          value = cell.avg_rpe
+          break
+        case 'quality':
+          value = cell.avg_quality
+          break
+        case 'heartrate':
+          value = cell.avg_heart_rate
+          break
+      }
+      
+      if (value !== null && value !== undefined) {
+        totalWeighted += value * cell.session_count
+        totalSessions += cell.session_count
+      }
     })
-    return totalSessions > 0 ? Math.round(totalWeightedScore / totalSessions) : null
+    
+    return totalSessions > 0 ? Math.round((totalWeighted / totalSessions) * 10) / 10 : null
+  }
+  
+  const getGlobalAverage = (metricType: MetricType): number | null => {
+    if (!data?.heatmapCells) return null
+    const cells = data.heatmapCells
+    let totalWeighted = 0
+    let totalSessions = 0
+    
+    cells.forEach((cell: any) => {
+      let value: number | null = null
+      switch (metricType) {
+        case 'percentile':
+          value = cell.avg_percentile
+          break
+        case 'rpe':
+          value = cell.avg_rpe
+          break
+        case 'quality':
+          value = cell.avg_quality
+          break
+        case 'heartrate':
+          value = cell.avg_heart_rate
+          break
+      }
+      
+      if (value !== null && value !== undefined) {
+        totalWeighted += value * cell.session_count
+        totalSessions += cell.session_count
+      }
+    })
+    
+    return totalSessions > 0 ? Math.round((totalWeighted / totalSessions) * 10) / 10 : null
+  }
+  
+  const getMetricTitle = (metricType: MetricType): string => {
+    switch (metricType) {
+      case 'percentile': return 'Percentile Heatmap'
+      case 'rpe': return 'RPE Heatmap'
+      case 'quality': return 'Quality Heatmap'
+      case 'heartrate': return 'Heart Rate Heatmap'
+      default: return 'MetCon Heat Map'
+    }
+  }
+  
+  const getMetricSubtitle = (metricType: MetricType): string => {
+    switch (metricType) {
+      case 'percentile': return 'Task Level Percentile Analysis'
+      case 'rpe': return 'Rate of Perceived Exertion'
+      case 'quality': return 'Movement Quality Grades'
+      case 'heartrate': return 'Average Heart Rate (bpm)'
+      default: return 'Task Level Analysis'
+    }
+  }
+  
+  const formatCellValue = (value: number | null, metricType: MetricType): string => {
+    if (value === null) return '—'
+    
+    switch (metricType) {
+      case 'percentile':
+        return `${value}%`
+      case 'rpe':
+        return value.toFixed(1)
+      case 'quality':
+        return getQualityGrade(value)
+      case 'heartrate':
+        return Math.round(value).toString()
+      default:
+        return value.toString()
+    }
+  }
+  
+  const formatAverageValue = (value: number | null, metricType: MetricType): string => {
+    if (value === null) return '—'
+    
+    switch (metricType) {
+      case 'percentile':
+        return `Avg: ${value}%`
+      case 'rpe':
+        return `Avg: ${value.toFixed(1)}`
+      case 'quality':
+        return `Avg: ${getQualityGrade(value)}`
+      case 'heartrate':
+        return `Avg: ${Math.round(value)}`
+      default:
+        return `Avg: ${value}`
+    }
   }
 
   if (!data || !data.exercises || data.exercises.length === 0) {
+    const emptyMessage = metric === 'percentile' 
+      ? 'Complete more MetCon workouts to see exercise-specific performance data!'
+      : metric === 'rpe'
+      ? 'Log workouts with RPE to see effort statistics!'
+      : metric === 'quality'
+      ? 'Log workouts with Quality ratings to see statistics!'
+      : 'Log workouts with Heart Rate to see statistics!'
+    
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">MetCon Heat Map</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{getMetricTitle(metric)}</h3>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
           <div className="text-4xl mb-3">💪</div>
-          <p className="text-blue-800 font-medium mb-2">No MetCon Data Yet</p>
-          <p className="text-blue-600">Complete more MetCon workouts to see exercise-specific performance data!</p>
+          <p className="text-blue-800 font-medium mb-2">No {getMetricTitle(metric)} Data Yet</p>
+          <p className="text-blue-600">{emptyMessage}</p>
         </div>
       </div>
     )
@@ -113,8 +300,8 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">MetCon Heat Map</h3>
-      <p className="text-sm text-gray-600 mb-6">Task Level Percentile Analysis</p>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{getMetricTitle(metric)}</h3>
+      <p className="text-sm text-gray-600 mb-6">{getMetricSubtitle(metric)}</p>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -131,15 +318,33 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
               <tr key={exercise} className="border-t">
                 <td className="p-3 font-medium text-gray-900 bg-gray-50">{exercise}</td>
                 {shownDomains.map((domain: string) => {
-                  const percentile = getPercentile(exercise, domain)
                   const sessions = getSessionCount(exercise, domain)
                   const hrData = getHRData(exercise, domain)
                   const rpeData = getRPEData(exercise, domain)
-                  const colorClass = getHeatMapColor(percentile)
                   
-                  // Build tooltip text
+                  // Get value based on metric
+                  let cellValue: number | null = null
+                  switch (metric) {
+                    case 'percentile':
+                      cellValue = getPercentile(exercise, domain)
+                      break
+                    case 'rpe':
+                      cellValue = rpeData?.avgRpe ?? null
+                      break
+                    case 'quality':
+                      cellValue = rpeData?.avgQuality ?? null
+                      break
+                    case 'heartrate':
+                      cellValue = hrData?.avgHR ?? null
+                      break
+                  }
+                  
+                  const colorClass = getHeatMapColor(cellValue, metric)
+                  
+                  // Build tooltip text with all metrics
                   let tooltipText = `Exercise: ${exercise}\nTime Domain: ${domain}`
-                  if (percentile) {
+                  const percentile = getPercentile(exercise, domain)
+                  if (percentile !== null) {
                     tooltipText += `\nPercentile: ${percentile}%\nSessions: ${sessions}`
                     if (hrData?.avgHR) {
                       tooltipText += `\nAvg HR: ${hrData.avgHR} bpm${hrData.maxHR ? `\nPeak HR: ${hrData.maxHR} bpm` : ''}`
@@ -157,16 +362,13 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
                   return (
                     <td key={domain} className="p-1">
                       <div 
-                        className={`${colorClass} rounded p-3 text-center font-semibold transition-all hover:scale-105 cursor-pointer ${percentile ? 'shadow-sm' : ''}`}
+                        className={`${colorClass} rounded p-3 text-center font-semibold transition-all hover:scale-105 cursor-pointer ${cellValue !== null ? 'shadow-sm' : ''}`}
                         title={tooltipText}
                       >
-                        {percentile ? (
+                        {cellValue !== null ? (
                           <div>
-                            <div className="text-lg">{percentile}%</div>
+                            <div className="text-lg">{formatCellValue(cellValue, metric)}</div>
                             {sessions > 0 && (<div className="text-xs opacity-75">{sessions} sessions</div>)}
-                            {hrData?.avgHR && (
-                              <div className="text-xs opacity-60 mt-1">HR: {hrData.avgHR}</div>
-                            )}
                           </div>
                         ) : (
                           <div className="text-lg">—</div>
@@ -177,15 +379,15 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
                 })}
                 <td className="p-1 border-l-2 border-blue-200 bg-blue-50">
                   {(() => {
-                    const avgPercentile = calculateExerciseAverage(exercise)
-                    const colorClass = getHeatMapColor(avgPercentile)
+                    const avgValue = calculateExerciseAverage(exercise, metric)
+                    const colorClass = getHeatMapColor(avgValue, metric)
                     const exerciseData = data.exerciseAverages.find((avg: any) => avg.exercise_name === exercise)
                     const totalSessions = exerciseData?.total_sessions || 0
                     return (
-                      <div className={`${colorClass} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md border-2 border-white ${avgPercentile ? 'ring-1 ring-blue-300' : ''}`} style={{ minHeight: '60px' }}>
-                        {avgPercentile ? (
+                      <div className={`${colorClass} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md border-2 border-white ${avgValue !== null ? 'ring-1 ring-blue-300' : ''}`} style={{ minHeight: '60px' }}>
+                        {avgValue !== null ? (
                           <div>
-                            <div className="text-lg font-bold">Avg: {avgPercentile}%</div>
+                            <div className="text-lg font-bold">{formatAverageValue(avgValue, metric)}</div>
                             <div className="text-xs opacity-75 font-medium">{totalSessions} total</div>
                           </div>
                         ) : (
@@ -200,8 +402,8 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
             <tr className="border-t-2 border-blue-200 bg-blue-50">
               <td className="p-3 font-bold text-gray-900 bg-blue-100 border-r-2 border-blue-200">Time Domain Avg</td>
               {shownDomains.map((domain: string) => {
-                const avgPercentile = calculateTimeDomainAverage(domain)
-                const colorClass = getHeatMapColor(avgPercentile)
+                const avgValue = calculateTimeDomainAverage(domain, metric)
+                const colorClass = getHeatMapColor(avgValue, metric)
                 // Calculate total workout count for this time domain
                 const domainCells = data.heatmapCells?.filter((cell: any) => 
                   cell.time_range === domain
@@ -211,10 +413,10 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
                 )
                 return (
                   <td key={domain} className="p-1">
-                    <div className={`${colorClass} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md border-2 border-white ${avgPercentile ? 'ring-1 ring-blue-300' : ''}`} style={{ minHeight: '60px' }}>
-                      {avgPercentile ? (
+                    <div className={`${colorClass} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md border-2 border-white ${avgValue !== null ? 'ring-1 ring-blue-300' : ''}`} style={{ minHeight: '60px' }}>
+                      {avgValue !== null ? (
                         <div>
-                          <div className="text-lg font-bold">Avg: {avgPercentile}%</div>
+                          <div className="text-lg font-bold">{formatAverageValue(avgValue, metric)}</div>
                           <div className="text-xs opacity-75 font-medium">{totalWorkouts} {totalWorkouts === 1 ? 'workout' : 'workouts'}</div>
                         </div>
                       ) : (
@@ -226,13 +428,17 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
               })}
               <td className="p-1 border-l-2 border-blue-200 bg-blue-100">
                 {(() => {
-                  const colorClass = getHeatMapColor(globalFitnessScore)
+                  const globalAvg = metric === 'percentile' ? globalFitnessScore : getGlobalAverage(metric)
+                  const colorClass = getHeatMapColor(globalAvg, metric)
+                  const label = metric === 'percentile' ? 'FITNESS' : 
+                                metric === 'rpe' ? 'AVG RPE' :
+                                metric === 'quality' ? 'AVG QUALITY' : 'AVG HR'
                   return (
-                    <div className={`${colorClass} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-lg border-4 border-white ${globalFitnessScore ? 'ring-2 ring-blue-400' : ''}`} style={{ minHeight: '60px' }}>
-                      {globalFitnessScore ? (
+                    <div className={`${colorClass} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-lg border-4 border-white ${globalAvg !== null ? 'ring-2 ring-blue-400' : ''}`} style={{ minHeight: '60px' }}>
+                      {globalAvg !== null ? (
                         <div>
-                          <div className="text-xl font-bold">{globalFitnessScore}%</div>
-                          <div className="text-xs opacity-75 font-bold">FITNESS</div>
+                          <div className="text-xl font-bold">{formatCellValue(globalAvg, metric)}</div>
+                          <div className="text-xs opacity-75 font-bold">{label}</div>
                         </div>
                       ) : (
                         <div className="text-xl font-bold">—</div>
@@ -247,18 +453,62 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
       </div>
       <div className="mt-6 flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <span className="text-sm font-medium text-gray-700">Performance:</span>
+          <span className="text-sm font-medium text-gray-700">
+            {metric === 'percentile' ? 'Performance:' :
+             metric === 'rpe' ? 'Effort:' :
+             metric === 'quality' ? 'Quality:' : 'Heart Rate:'}
+          </span>
           <div className="flex items-center space-x-2">
-            <div className="bg-red-500 w-4 h-4 rounded"></div>
-            <span className="text-xs text-gray-600">Poor</span>
-            <div className="bg-orange-400 w-4 h-4 rounded"></div>
-            <span className="text-xs text-gray-600">Below Avg</span>
-            <div className="bg-yellow-400 w-4 h-4 rounded"></div>
-            <span className="text-xs text-gray-600">Average</span>
-            <div className="bg-green-400 w-4 h-4 rounded"></div>
-            <span className="text-xs text-gray-600">Good</span>
-            <div className="bg-green-600 w-4 h-4 rounded"></div>
-            <span className="text-xs text-gray-600">Excellent</span>
+            {metric === 'percentile' && (
+              <>
+                <div className="bg-red-500 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">Poor</span>
+                <div className="bg-orange-400 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">Below Avg</span>
+                <div className="bg-yellow-400 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">Average</span>
+                <div className="bg-green-400 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">Good</span>
+                <div className="bg-green-600 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">Excellent</span>
+              </>
+            )}
+            {metric === 'rpe' && (
+              <>
+                <div className="bg-green-500 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">Low (1-4)</span>
+                <div className="bg-yellow-400 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">Moderate (5-6)</span>
+                <div className="bg-orange-400 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">High (7-8)</span>
+                <div className="bg-red-500 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">Very High (9-10)</span>
+              </>
+            )}
+            {metric === 'quality' && (
+              <>
+                <div className="bg-green-600 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">A</span>
+                <div className="bg-yellow-400 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">B</span>
+                <div className="bg-orange-400 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">C</span>
+                <div className="bg-red-500 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">D</span>
+              </>
+            )}
+            {metric === 'heartrate' && (
+              <>
+                <div className="bg-green-500 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">Low (&lt;130)</span>
+                <div className="bg-yellow-400 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">Moderate (130-150)</span>
+                <div className="bg-orange-400 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">High (150-170)</span>
+                <div className="bg-red-500 w-4 h-4 rounded"></div>
+                <span className="text-xs text-gray-600">Very High (&gt;170)</span>
+              </>
+            )}
           </div>
         </div>
         <div className="text-sm text-gray-500">

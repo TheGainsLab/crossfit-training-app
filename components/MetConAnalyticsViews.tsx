@@ -42,20 +42,19 @@ export function PerformanceView({ heatmapData, baselineHeatmap, selection, searc
 
       {/* Heatmap */}
       <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Percentile Heatmap</h3>
         {equip && baselineHeatmap ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <div className="text-xs text-gray-500 mb-1">Filtered ({equip})</div>
-              <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} />
+              <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} metric="percentile" />
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">All equipment</div>
-              <MetconHeatmap data={baselineHeatmap} visibleTimeDomains={selection} />
+              <MetconHeatmap data={baselineHeatmap} visibleTimeDomains={selection} metric="percentile" />
             </div>
           </div>
         ) : (
-          <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} />
+          <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} metric="percentile" />
         )}
       </div>
     </div>
@@ -93,7 +92,12 @@ export function EffortView({ heatmapData }: MetConAnalyticsViewsProps) {
         </div>
       </div>
 
-      {validRpe.length === 0 && (
+      {/* Heatmap */}
+      {validRpe.length > 0 ? (
+        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+          <MetconHeatmap data={heatmapData} visibleTimeDomains={[]} metric="rpe" />
+        </div>
+      ) : (
         <div className="bg-white rounded-lg shadow p-6 border border-gray-200 text-center">
           <p className="text-gray-500">No RPE data available. Log workouts with RPE to see effort statistics.</p>
         </div>
@@ -141,7 +145,12 @@ export function QualityView({ heatmapData }: MetConAnalyticsViewsProps) {
         </div>
       </div>
 
-      {validQuality.length === 0 && (
+      {/* Heatmap */}
+      {validQuality.length > 0 ? (
+        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+          <MetconHeatmap data={heatmapData} visibleTimeDomains={[]} metric="quality" />
+        </div>
+      ) : (
         <div className="bg-white rounded-lg shadow p-6 border border-gray-200 text-center">
           <p className="text-gray-500">No Quality data available. Log workouts with Quality ratings to see statistics.</p>
         </div>
@@ -150,16 +159,65 @@ export function QualityView({ heatmapData }: MetConAnalyticsViewsProps) {
   )
 }
 
-export function HeartRateView({ heatmapData, searchParams, router, onEquipmentFilterChange }: MetConAnalyticsViewsProps) {
-  const equipmentFilter = (searchParams.get('equip') || 'all').toLowerCase() as 'all' | 'barbell' | 'no_barbell' | 'gymnastics'
+export function HeartRateView({ heatmapData, baselineHeatmap, selection, searchParams, onEquipmentFilterChange }: MetConAnalyticsViewsProps) {
+  const equip = (searchParams.get('equip') || '').toLowerCase()
+  const cells = heatmapData?.heatmapCells || []
+  
+  // Calculate global HR
+  const validHR = cells.filter((c: any) => c.avg_heart_rate !== null && c.avg_heart_rate !== undefined)
+  const avgHR = validHR.length > 0 
+    ? Math.round(validHR.reduce((sum: number, c: any) => sum + (c.avg_heart_rate * c.session_count), 0) / 
+                 validHR.reduce((sum: number, c: any) => sum + c.session_count, 0))
+    : null
+  
+  const maxHR = validHR.length > 0
+    ? Math.round(Math.max(...validHR.map((c: any) => c.max_heart_rate || c.avg_heart_rate || 0)))
+    : null
   
   return (
     <div className="space-y-6">
-      <HRStatisticsPanel 
-        heatmapData={heatmapData} 
-        equipmentFilter={equipmentFilter}
-        onEquipmentFilterChange={onEquipmentFilterChange}
-      />
+      {/* Summary Card */}
+      <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold text-gray-900">Heart Rate Summary</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-xs text-gray-600">Avg HR</div>
+            <div className="text-2xl font-bold" style={{ color: '#FE5858' }}>{avgHR ?? '—'}</div>
+            <div className="text-xs text-gray-500 mt-1">bpm</div>
+          </div>
+          <div>
+            <div className="text-xs text-gray-600">Peak HR</div>
+            <div className="text-2xl font-bold" style={{ color: '#FE5858' }}>{maxHR ?? '—'}</div>
+            <div className="text-xs text-gray-500 mt-1">bpm</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Heatmap */}
+      {validHR.length > 0 ? (
+        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+          {equip && baselineHeatmap ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <div className="text-xs text-gray-500 mb-1">Filtered ({equip})</div>
+                <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} metric="heartrate" />
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 mb-1">All equipment</div>
+                <MetconHeatmap data={baselineHeatmap} visibleTimeDomains={selection} metric="heartrate" />
+              </div>
+            </div>
+          ) : (
+            <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} metric="heartrate" />
+          )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200 text-center">
+          <p className="text-gray-500">No Heart Rate data available. Log workouts with HR to see statistics.</p>
+        </div>
+      )}
     </div>
   )
 }
