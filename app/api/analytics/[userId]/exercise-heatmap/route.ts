@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { canAccessAthleteData, getUserIdFromAuth } from '@/lib/permissions'
+import { exerciseEquipment } from '@/lib/btn/data'
 
 interface ExerciseHeatmapCell {
   exercise_name: string
@@ -156,36 +157,19 @@ export async function GET(
       })
     }
 
-    console.log(`📊 Processing ${rawData.length} completed MetCons`)
+    console.log(`📊 Processing ${rawData.length} completed MetCons (filtering at task level)`)
 
-    // Step 2: Apply optional equipment filter
-    const filteredRaw = (() => {
-      if (!equip) return rawData
-      if (equip === 'barbell') {
-        return rawData.filter(r => {
-          const m: any = (r as any).metcons
-          const req = Array.isArray(m) ? (m?.[0]?.required_equipment || []) : (m?.required_equipment || [])
-          return Array.isArray(req) && req.includes('Barbell')
-        })
-      }
-      if (equip === 'gymnastics') {
-        return rawData.filter(r => {
-          const m: any = (r as any).metcons
-          const req = Array.isArray(m) ? (m?.[0]?.required_equipment || []) : (m?.required_equipment || [])
-          return Array.isArray(req) && (req.includes('Pullup Bar or Rig') || req.includes('High Rings'))
-        })
-      }
-      return rawData
-    })()
+    // Step 2: Process raw data into heat map structure with task-level filtering
+    // Note: Equipment filtering is now done at the task/exercise level inside processRawDataToHeatmap
+    // This allows filtering individual exercises within a workout (e.g., if a workout has deadlifts and burpees,
+    // and "Barbell" filter is applied, only deadlifts will be shown)
+    const heatmapData = processRawDataToHeatmap(rawData, equip || undefined)
 
-    // Step 3: Process raw data into heat map structure
-    const heatmapData = processRawDataToHeatmap(filteredRaw)
-
-    // Step 4: Calculate global fitness score
-    const globalFitnessScore = filteredRaw.length > 0
+    // Step 3: Calculate global fitness score (use all workouts for this calculation)
+    const globalFitnessScore = rawData.length > 0
       ? Math.round(
-          filteredRaw.reduce((sum, row) => sum + parseFloat(row.percentile), 0) / 
-          filteredRaw.length
+          rawData.reduce((sum, row) => sum + parseFloat(row.percentile), 0) / 
+          rawData.length
         )
       : 0
 
@@ -216,7 +200,7 @@ export async function GET(
       heatmapCells: heatmapData.filter(row => row.time_range !== null),
       exerciseAverages,
       globalFitnessScore,
-      totalCompletedWorkouts: filteredRaw.length
+      totalCompletedWorkouts: rawData.length // Use all workouts, not filtered
     }
 
     console.log(`✅ Heat map generated: ${exercises.length} exercises, ${timeDomains.length} time domains, ${responseData.heatmapCells.length} cells`)
@@ -247,7 +231,27 @@ export async function GET(
   }
 }
 
-function processRawDataToHeatmap(rawData: any[]): any[] {
+// Helper function to check if an exercise matches the equipment filter
+function exerciseMatchesFilter(exerciseName: string, filter: string): boolean {
+  const equipment = exerciseEquipment[exerciseName] || []
+  
+  if (filter === 'barbell') {
+    return equipment.includes('Barbell')
+  }
+  if (filter === 'no_barbell') {
+    return !equipment.includes('Barbell')
+  }
+  if (filter === 'gymnastics') {
+    return equipment.some(eq => 
+      eq === 'Pullup Bar or Rig' || 
+      eq === 'High Rings' || 
+      eq === 'Climbing Rope'
+    )
+  }
+  return true // 'all' or undefined - no filter
+}
+
+function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string): any[] {
   const exerciseTimeMap = new Map<string, Map<string, { 
     count: number, 
     totalPercentile: number,
@@ -272,12 +276,19 @@ function processRawDataToHeatmap(rawData: any[]): any[] {
       return
     }
 
-    // Extract exercises from tasks
+    // Extract exercises from tasks with task-level filtering
     tasks.forEach((task: any) => {
       const exerciseName = task.exercise
       if (!exerciseName) {
         console.log(`⚠️ Task missing exercise name:`, task)
         return
+      }
+
+      // Filter at task/exercise level (task-level filtering)
+      if (equipmentFilter && equipmentFilter !== 'all') {
+        if (!exerciseMatchesFilter(exerciseName, equipmentFilter)) {
+          return // Skip this exercise if it doesn't match the equipment filter
+        }
       }
 
       // Track by time domain
