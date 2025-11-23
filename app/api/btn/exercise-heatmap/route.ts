@@ -9,6 +9,8 @@ interface ExerciseHeatmapCell {
   avg_percentile: number
   avg_heart_rate?: number | null
   max_heart_rate?: number | null
+  avg_rpe?: number | null
+  avg_quality?: number | null
   sort_order: number
 }
 
@@ -109,8 +111,21 @@ export async function GET(request: NextRequest) {
     // and "Barbell" filter is applied, only deadlifts will be shown)
     console.log(`📊 Processing ${workouts.length} BTN workouts (filtering at exercise level)`)
 
+    // Fetch RPE/Quality data from performance_logs for all BTN workouts
+    const workoutIds = workouts.map(w => w.id)
+    const { data: rpeQualityData, error: rpeError } = await supabase
+      .from('performance_logs')
+      .select('exercise_name, rpe, completion_quality, result')
+      .eq('user_id', userData.id)
+      .eq('block', 'BTN')
+      .not('rpe', 'is', null)
+
+    if (rpeError) {
+      console.warn('⚠️ Failed to fetch RPE/Quality data:', rpeError)
+    }
+
     // Process workouts into heat map data with exercise-level filtering
-    const heatmapData = processWorkoutsToHeatmap(workouts, equip || undefined)
+    const heatmapData = processWorkoutsToHeatmap(workouts, equip || undefined, rpeQualityData || [])
 
     // Get unique exercises and time domains
     const exercises = [...new Set(heatmapData.map(row => row.exercise_name))].sort()
@@ -203,7 +218,7 @@ function exerciseMatchesFilter(exerciseName: string, filter: string): boolean {
   return true // 'all' or undefined - no filter
 }
 
-function processWorkoutsToHeatmap(workouts: any[], equipmentFilter?: string): ExerciseHeatmapCell[] {
+function processWorkoutsToHeatmap(workouts: any[], equipmentFilter?: string, rpeQualityData: any[] = []): ExerciseHeatmapCell[] {
   // Map to track exercise × time domain combinations
   // Now tracking both count AND percentiles (same as Premium!)
   const exerciseTimeMap = new Map<string, Map<string, { 
@@ -211,9 +226,39 @@ function processWorkoutsToHeatmap(workouts: any[], equipmentFilter?: string): Ex
     totalPercentile: number,
     totalAvgHR: number,
     totalMaxHR: number,
-    hrCount: number
+    hrCount: number,
+    totalRpe: number,
+    rpeCount: number,
+    totalQuality: number,
+    qualityCount: number
   }>>()
   const exerciseOverallMap = new Map<string, { count: number, totalPercentile: number }>()
+  
+  // Create a lookup map for RPE/Quality data: workoutId_exerciseName -> {rpe, quality}
+  const rpeQualityMap = new Map<string, { rpe: number, quality: number }>()
+  rpeQualityData.forEach((log: any) => {
+    // Extract workout ID from result column (format: "BTN Workout 123: Workout Name")
+    const workoutMatch = log.result?.match(/BTN Workout (\d+)/)
+    if (workoutMatch) {
+      const workoutId = workoutMatch[1]
+      const key = `${workoutId}_${log.exercise_name}`
+      if (log.rpe !== null && log.rpe !== undefined) {
+        const existing = rpeQualityMap.get(key)
+        if (!existing) {
+          rpeQualityMap.set(key, {
+            rpe: log.rpe,
+            quality: log.completion_quality || 0
+          })
+        } else {
+          // Average if multiple entries
+          existing.rpe = (existing.rpe + log.rpe) / 2
+          if (log.completion_quality) {
+            existing.quality = existing.quality ? (existing.quality + log.completion_quality) / 2 : log.completion_quality
+          }
+        }
+      }
+    }
+  })
 
   console.log('🔍 Processing BTN workouts for heat map...')
 
@@ -266,7 +311,17 @@ function processWorkoutsToHeatmap(workouts: any[], equipmentFilter?: string): Ex
       const exerciseMap = exerciseTimeMap.get(exerciseName)!
       
       if (!exerciseMap.has(timeRange)) {
-        exerciseMap.set(timeRange, { count: 0, totalPercentile: 0, totalAvgHR: 0, totalMaxHR: 0, hrCount: 0 })
+        exerciseMap.set(timeRange, { 
+          count: 0, 
+          totalPercentile: 0, 
+          totalAvgHR: 0, 
+          totalMaxHR: 0, 
+          hrCount: 0,
+          totalRpe: 0,
+          rpeCount: 0,
+          totalQuality: 0,
+          qualityCount: 0
+        })
       }
       const timeData = exerciseMap.get(timeRange)!
       timeData.count++
@@ -279,6 +334,18 @@ function processWorkoutsToHeatmap(workouts: any[], equipmentFilter?: string): Ex
       }
       if (maxHR !== null) {
         timeData.totalMaxHR += maxHR
+      }
+      
+      // Track RPE/Quality data from performance_logs
+      const rpeKey = `${workout.id}_${exerciseName}`
+      const rpeQuality = rpeQualityMap.get(rpeKey)
+      if (rpeQuality) {
+        timeData.totalRpe += rpeQuality.rpe
+        timeData.rpeCount++
+        if (rpeQuality.quality > 0) {
+          timeData.totalQuality += rpeQuality.quality
+          timeData.qualityCount++
+        }
       }
 
       // Track overall averages
@@ -312,6 +379,8 @@ function processWorkoutsToHeatmap(workouts: any[], equipmentFilter?: string): Ex
         avg_percentile: Math.round(data.totalPercentile / data.count),
         avg_heart_rate: data.hrCount > 0 ? Math.round(data.totalAvgHR / data.hrCount) : null,
         max_heart_rate: data.hrCount > 0 ? Math.round(data.totalMaxHR / data.hrCount) : null,
+        avg_rpe: data.rpeCount > 0 ? Math.round((data.totalRpe / data.rpeCount) * 10) / 10 : null,
+        avg_quality: data.qualityCount > 0 ? Math.round((data.totalQuality / data.qualityCount) * 10) / 10 : null,
         sort_order: sortOrder
       })
     })

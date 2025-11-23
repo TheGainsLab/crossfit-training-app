@@ -95,6 +95,37 @@ export default function BTNExerciseHeatMap() {
     )
   }
 
+  // Calculate global averages for summary cards
+  const calculateGlobalAverages = () => {
+    if (!heatMapData?.heatmapCells) return { avgRpe: null, avgQuality: null }
+    
+    const cells = heatMapData.heatmapCells
+    const validRpe = cells.filter((c: any) => c.avg_rpe !== null && c.avg_rpe !== undefined)
+    const validQuality = cells.filter((c: any) => c.avg_quality !== null && c.avg_quality !== undefined)
+    
+    const avgRpe = validRpe.length > 0 
+      ? Math.round((validRpe.reduce((sum: number, c: any) => sum + (c.avg_rpe * c.session_count), 0) / 
+                   validRpe.reduce((sum: number, c: any) => sum + c.session_count, 0)) * 10) / 10
+      : null
+    
+    const avgQuality = validQuality.length > 0
+      ? Math.round((validQuality.reduce((sum: number, c: any) => sum + (c.avg_quality * c.session_count), 0) / 
+                   validQuality.reduce((sum: number, c: any) => sum + c.session_count, 0)) * 10) / 10
+      : null
+    
+    return { avgRpe, avgQuality }
+  }
+
+  const getQualityGrade = (quality: number | null): string => {
+    if (quality === null) return '—'
+    if (quality >= 3.5) return 'A'
+    if (quality >= 2.5) return 'B'
+    if (quality >= 1.5) return 'C'
+    return 'D'
+  }
+
+  const { avgRpe, avgQuality } = calculateGlobalAverages()
+
   // Use the Premium MetconHeatmap component directly - data format is now identical!
   return (
     <>
@@ -127,6 +158,26 @@ export default function BTNExerciseHeatMap() {
         heatmapData={heatMapData} 
         equipmentFilter={equipmentFilter}
       />
+      
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+        <div className="p-3 border rounded bg-gray-50">
+          <div className="text-xs text-gray-600">Completions</div>
+          <div className="text-xl font-semibold">{heatMapData?.totalCompletedWorkouts ?? '—'}</div>
+        </div>
+        <div className="p-3 border rounded bg-gray-50">
+          <div className="text-xs text-gray-600">Avg percentile</div>
+          <div className="text-xl font-semibold">{heatMapData?.globalFitnessScore ?? '—'}</div>
+        </div>
+        <div className="p-3 border rounded bg-gray-50">
+          <div className="text-xs text-gray-600">Avg RPE</div>
+          <div className="text-xl font-semibold">{avgRpe ?? '—'}</div>
+        </div>
+        <div className="p-3 border rounded bg-gray-50">
+          <div className="text-xs text-gray-600">Avg Quality</div>
+          <div className="text-xl font-semibold">{getQualityGrade(avgQuality)}</div>
+        </div>
+      </div>
     </>
   )
 }

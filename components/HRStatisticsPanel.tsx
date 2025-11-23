@@ -9,6 +9,8 @@ interface HRStatisticsPanelProps {
       time_range: string | null
       avg_heart_rate?: number | null
       max_heart_rate?: number | null
+      avg_rpe?: number | null
+      avg_quality?: number | null
       session_count: number
       avg_percentile?: number
     }>
@@ -53,6 +55,26 @@ export default function HRStatisticsPanel({
   
   // Calculate HR by Equipment (if rawWorkouts provided)
   const hrByEquipment = rawWorkouts ? calculateHRByEquipment(rawWorkouts) : []
+  
+  // Calculate RPE by Time Domain
+  const rpeByTimeDomain = calculateRPEByTimeDomain(cells)
+  
+  // Calculate RPE by Exercise
+  const rpeByExercise = calculateRPEByExercise(cells)
+  
+  // Calculate Quality by Time Domain
+  const qualityByTimeDomain = calculateQualityByTimeDomain(cells)
+  
+  // Calculate Quality by Exercise
+  const qualityByExercise = calculateQualityByExercise(cells)
+  
+  const getQualityGrade = (quality: number | null): string => {
+    if (quality === null) return '—'
+    if (quality >= 3.5) return 'A'
+    if (quality >= 2.5) return 'B'
+    if (quality >= 1.5) return 'C'
+    return 'D'
+  }
 
   return (
     <div className="bg-white rounded-lg shadow p-6 mt-6">
@@ -169,9 +191,119 @@ export default function HRStatisticsPanel({
         </div>
       )}
 
-      {hrByTimeDomain.length === 0 && hrByExercise.length === 0 && hrByEquipment.length === 0 && (
+      {/* RPE by Time Domain */}
+      {rpeByTimeDomain.length > 0 && (
+        <div className="mb-6">
+          <h4 className="font-semibold text-gray-800 mb-3">RPE by Time Domain</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-2">Time Domain</th>
+                  <th className="text-right p-2">Avg RPE</th>
+                  <th className="text-right p-2">Frequency</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rpeByTimeDomain.map(domain => (
+                  <tr key={domain.time_range} className="border-b">
+                    <td className="p-2 font-medium">{domain.time_range}</td>
+                    <td className="p-2 text-right">{domain.avg_rpe !== null ? domain.avg_rpe : '—'}</td>
+                    <td className="p-2 text-right">{domain.workout_count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* RPE by Exercise (Top 10) */}
+      {rpeByExercise.length > 0 && (
+        <div className="mb-6">
+          <h4 className="font-semibold text-gray-800 mb-3">RPE by Exercise (Top 10)</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-2">Exercise</th>
+                  <th className="text-right p-2">Avg RPE</th>
+                  <th className="text-right p-2">Frequency</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rpeByExercise.slice(0, 10).map(exercise => (
+                  <tr key={exercise.exercise_name} className="border-b">
+                    <td className="p-2 font-medium">{exercise.exercise_name}</td>
+                    <td className="p-2 text-right">{exercise.avg_rpe !== null ? exercise.avg_rpe : '—'}</td>
+                    <td className="p-2 text-right">{exercise.appearances}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Quality by Time Domain */}
+      {qualityByTimeDomain.length > 0 && (
+        <div className="mb-6">
+          <h4 className="font-semibold text-gray-800 mb-3">Quality by Time Domain</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-2">Time Domain</th>
+                  <th className="text-right p-2">Avg Quality</th>
+                  <th className="text-right p-2">Frequency</th>
+                </tr>
+              </thead>
+              <tbody>
+                {qualityByTimeDomain.map(domain => (
+                  <tr key={domain.time_range} className="border-b">
+                    <td className="p-2 font-medium">{domain.time_range}</td>
+                    <td className="p-2 text-right">{domain.avg_quality !== null ? getQualityGrade(domain.avg_quality) : '—'}</td>
+                    <td className="p-2 text-right">{domain.workout_count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Quality by Exercise (Top 10) */}
+      {qualityByExercise.length > 0 && (
+        <div className="mb-6">
+          <h4 className="font-semibold text-gray-800 mb-3">Quality by Exercise (Top 10)</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-2">Exercise</th>
+                  <th className="text-right p-2">Avg Quality</th>
+                  <th className="text-right p-2">Frequency</th>
+                </tr>
+              </thead>
+              <tbody>
+                {qualityByExercise.slice(0, 10).map(exercise => (
+                  <tr key={exercise.exercise_name} className="border-b">
+                    <td className="p-2 font-medium">{exercise.exercise_name}</td>
+                    <td className="p-2 text-right">{exercise.avg_quality !== null ? getQualityGrade(exercise.avg_quality) : '—'}</td>
+                    <td className="p-2 text-right">{exercise.appearances}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {hrByTimeDomain.length === 0 && hrByExercise.length === 0 && hrByEquipment.length === 0 && 
+       rpeByTimeDomain.length === 0 && rpeByExercise.length === 0 && 
+       qualityByTimeDomain.length === 0 && qualityByExercise.length === 0 && (
         <div className="text-center py-8 text-gray-500">
-          <p>No heart rate data available. Log workouts with HR to see statistics.</p>
+          <p>No performance data available. Log workouts with RPE/Quality/HR to see statistics.</p>
         </div>
       )}
     </div>
@@ -309,5 +441,133 @@ function calculateHRByEquipment(workouts: any[]) {
     }))
     .filter(eq => eq.workout_count > 0)
     .sort((a, b) => b.workout_count - a.workout_count)
+}
+
+function calculateRPEByTimeDomain(cells: any[]) {
+  const domainMap = new Map<string, { 
+    totalRpe: number, 
+    count: number, 
+    rpeCount: number 
+  }>()
+  
+  cells.forEach(cell => {
+    if (!cell.time_range) return
+    if (!domainMap.has(cell.time_range)) {
+      domainMap.set(cell.time_range, { totalRpe: 0, count: 0, rpeCount: 0 })
+    }
+    const data = domainMap.get(cell.time_range)!
+    data.count += cell.session_count
+    if (cell.avg_rpe !== null && cell.avg_rpe !== undefined) {
+      data.totalRpe += cell.avg_rpe * cell.session_count
+      data.rpeCount += cell.session_count
+    }
+  })
+  
+  return Array.from(domainMap.entries())
+    .map(([time_range, data]) => ({
+      time_range,
+      avg_rpe: data.rpeCount > 0 ? Math.round((data.totalRpe / data.rpeCount) * 10) / 10 : null,
+      workout_count: data.count
+    }))
+    .sort((a, b) => {
+      const order: { [key: string]: number } = {
+        '1:00–5:00': 1, '5:00–10:00': 2, '10:00–15:00': 3,
+        '15:00–20:00': 4, '20:00–30:00': 5, '30:00+': 6
+      }
+      return (order[a.time_range] || 7) - (order[b.time_range] || 7)
+    })
+}
+
+function calculateRPEByExercise(cells: any[]) {
+  const exerciseMap = new Map<string, { 
+    totalRpe: number, 
+    count: number, 
+    rpeCount: number 
+  }>()
+  
+  cells.forEach(cell => {
+    if (!exerciseMap.has(cell.exercise_name)) {
+      exerciseMap.set(cell.exercise_name, { totalRpe: 0, count: 0, rpeCount: 0 })
+    }
+    const data = exerciseMap.get(cell.exercise_name)!
+    data.count += cell.session_count
+    if (cell.avg_rpe !== null && cell.avg_rpe !== undefined) {
+      data.totalRpe += cell.avg_rpe * cell.session_count
+      data.rpeCount += cell.session_count
+    }
+  })
+  
+  return Array.from(exerciseMap.entries())
+    .map(([exercise_name, data]) => ({
+      exercise_name,
+      avg_rpe: data.rpeCount > 0 ? Math.round((data.totalRpe / data.rpeCount) * 10) / 10 : null,
+      appearances: data.count
+    }))
+    .filter(ex => ex.avg_rpe !== null)
+    .sort((a, b) => b.appearances - a.appearances)
+}
+
+function calculateQualityByTimeDomain(cells: any[]) {
+  const domainMap = new Map<string, { 
+    totalQuality: number, 
+    count: number, 
+    qualityCount: number 
+  }>()
+  
+  cells.forEach(cell => {
+    if (!cell.time_range) return
+    if (!domainMap.has(cell.time_range)) {
+      domainMap.set(cell.time_range, { totalQuality: 0, count: 0, qualityCount: 0 })
+    }
+    const data = domainMap.get(cell.time_range)!
+    data.count += cell.session_count
+    if (cell.avg_quality !== null && cell.avg_quality !== undefined) {
+      data.totalQuality += cell.avg_quality * cell.session_count
+      data.qualityCount += cell.session_count
+    }
+  })
+  
+  return Array.from(domainMap.entries())
+    .map(([time_range, data]) => ({
+      time_range,
+      avg_quality: data.qualityCount > 0 ? Math.round((data.totalQuality / data.qualityCount) * 10) / 10 : null,
+      workout_count: data.count
+    }))
+    .sort((a, b) => {
+      const order: { [key: string]: number } = {
+        '1:00–5:00': 1, '5:00–10:00': 2, '10:00–15:00': 3,
+        '15:00–20:00': 4, '20:00–30:00': 5, '30:00+': 6
+      }
+      return (order[a.time_range] || 7) - (order[b.time_range] || 7)
+    })
+}
+
+function calculateQualityByExercise(cells: any[]) {
+  const exerciseMap = new Map<string, { 
+    totalQuality: number, 
+    count: number, 
+    qualityCount: number 
+  }>()
+  
+  cells.forEach(cell => {
+    if (!exerciseMap.has(cell.exercise_name)) {
+      exerciseMap.set(cell.exercise_name, { totalQuality: 0, count: 0, qualityCount: 0 })
+    }
+    const data = exerciseMap.get(cell.exercise_name)!
+    data.count += cell.session_count
+    if (cell.avg_quality !== null && cell.avg_quality !== undefined) {
+      data.totalQuality += cell.avg_quality * cell.session_count
+      data.qualityCount += cell.session_count
+    }
+  })
+  
+  return Array.from(exerciseMap.entries())
+    .map(([exercise_name, data]) => ({
+      exercise_name,
+      avg_quality: data.qualityCount > 0 ? Math.round((data.totalQuality / data.qualityCount) * 10) / 10 : null,
+      appearances: data.count
+    }))
+    .filter(ex => ex.avg_quality !== null)
+    .sort((a, b) => b.appearances - a.appearances)
 }
 

@@ -85,14 +85,66 @@ export default function AnalyticsMetconsPage() {
             const js2 = await res2.json()
             if (res2.ok && js2.success) {
               setHeatmapData(js2.data)
-              setSummary({ completions: js2.data.totalCompletedWorkouts, avg_percentile: js2.data.globalFitnessScore, time_domain_mix: [] })
+              // Calculate global RPE/Quality from heatmap cells
+              const cells = js2.data.heatmapCells || []
+              const validRpe = cells.filter((c: any) => c.avg_rpe !== null && c.avg_rpe !== undefined)
+              const validQuality = cells.filter((c: any) => c.avg_quality !== null && c.avg_quality !== undefined)
+              const avgRpe = validRpe.length > 0 
+                ? Math.round((validRpe.reduce((sum: number, c: any) => sum + (c.avg_rpe * c.session_count), 0) / 
+                             validRpe.reduce((sum: number, c: any) => sum + c.session_count, 0)) * 10) / 10
+                : null
+              const avgQuality = validQuality.length > 0
+                ? Math.round((validQuality.reduce((sum: number, c: any) => sum + (c.avg_quality * c.session_count), 0) / 
+                             validQuality.reduce((sum: number, c: any) => sum + c.session_count, 0)) * 10) / 10
+                : null
+              setSummary({ 
+                completions: js2.data.totalCompletedWorkouts, 
+                avg_percentile: js2.data.globalFitnessScore, 
+                avg_rpe: avgRpe,
+                avg_quality: avgQuality,
+                time_domain_mix: [] 
+              })
             } else {
               setHeatmapData(oldJson.data)
-              setSummary({ completions: oldJson.data.totalCompletedWorkouts, avg_percentile: oldJson.data.globalFitnessScore, time_domain_mix: [] })
+              const cells = oldJson.data.heatmapCells || []
+              const validRpe = cells.filter((c: any) => c.avg_rpe !== null && c.avg_rpe !== undefined)
+              const validQuality = cells.filter((c: any) => c.avg_quality !== null && c.avg_quality !== undefined)
+              const avgRpe = validRpe.length > 0 
+                ? Math.round((validRpe.reduce((sum: number, c: any) => sum + (c.avg_rpe * c.session_count), 0) / 
+                             validRpe.reduce((sum: number, c: any) => sum + c.session_count, 0)) * 10) / 10
+                : null
+              const avgQuality = validQuality.length > 0
+                ? Math.round((validQuality.reduce((sum: number, c: any) => sum + (c.avg_quality * c.session_count), 0) / 
+                             validQuality.reduce((sum: number, c: any) => sum + c.session_count, 0)) * 10) / 10
+                : null
+              setSummary({ 
+                completions: oldJson.data.totalCompletedWorkouts, 
+                avg_percentile: oldJson.data.globalFitnessScore,
+                avg_rpe: avgRpe,
+                avg_quality: avgQuality,
+                time_domain_mix: [] 
+              })
             }
           } else {
             setHeatmapData(oldJson.data)
-            setSummary({ completions: oldJson.data.totalCompletedWorkouts, avg_percentile: oldJson.data.globalFitnessScore, time_domain_mix: [] })
+            const cells = oldJson.data.heatmapCells || []
+            const validRpe = cells.filter((c: any) => c.avg_rpe !== null && c.avg_rpe !== undefined)
+            const validQuality = cells.filter((c: any) => c.avg_quality !== null && c.avg_quality !== undefined)
+            const avgRpe = validRpe.length > 0 
+              ? Math.round((validRpe.reduce((sum: number, c: any) => sum + (c.avg_rpe * c.session_count), 0) / 
+                           validRpe.reduce((sum: number, c: any) => sum + c.session_count, 0)) * 10) / 10
+              : null
+            const avgQuality = validQuality.length > 0
+              ? Math.round((validQuality.reduce((sum: number, c: any) => sum + (c.avg_quality * c.session_count), 0) / 
+                           validQuality.reduce((sum: number, c: any) => sum + c.session_count, 0)) * 10) / 10
+              : null
+            setSummary({ 
+              completions: oldJson.data.totalCompletedWorkouts, 
+              avg_percentile: oldJson.data.globalFitnessScore,
+              avg_rpe: avgRpe,
+              avg_quality: avgQuality,
+              time_domain_mix: [] 
+            })
           }
         } else {
           throw new Error(oldJson.error || 'Failed to load')
@@ -248,6 +300,29 @@ export default function AnalyticsMetconsPage() {
                   const w = cells.reduce((s: number, c: any) => s + (c.avg_percentile || 0) * (c.session_count || 0), 0)
                   return Math.round((w / totalSessions) * 10) / 10
                 })()
+                const avgRpe = (() => {
+                  const validCells = cells.filter((c: any) => c.avg_rpe !== null && c.avg_rpe !== undefined)
+                  if (validCells.length === 0) return null
+                  const totalSessions = validCells.reduce((s: number, c: any) => s + (c.session_count || 0), 0)
+                  if (!totalSessions) return null
+                  const w = validCells.reduce((s: number, c: any) => s + (c.avg_rpe || 0) * (c.session_count || 0), 0)
+                  return Math.round((w / totalSessions) * 10) / 10
+                })()
+                const avgQuality = (() => {
+                  const validCells = cells.filter((c: any) => c.avg_quality !== null && c.avg_quality !== undefined)
+                  if (validCells.length === 0) return null
+                  const totalSessions = validCells.reduce((s: number, c: any) => s + (c.session_count || 0), 0)
+                  if (!totalSessions) return null
+                  const w = validCells.reduce((s: number, c: any) => s + (c.avg_quality || 0) * (c.session_count || 0), 0)
+                  return Math.round((w / totalSessions) * 10) / 10
+                })()
+                const getQualityGrade = (quality: number | null): string => {
+                  if (quality === null) return '—'
+                  if (quality >= 3.5) return 'A'
+                  if (quality >= 2.5) return 'B'
+                  if (quality >= 1.5) return 'C'
+                  return 'D'
+                }
                 return (
                   <div key={td} className="p-3 border rounded bg-white">
                     <div className="text-xs text-gray-500 mb-1">Time domain</div>
@@ -255,13 +330,15 @@ export default function AnalyticsMetconsPage() {
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="flex justify-between"><span className="text-gray-600">Completions</span><span className="font-medium">{completions}</span></div>
                       <div className="flex justify-between"><span className="text-gray-600">Avg percentile</span><span className="font-medium">{avg ?? '—'}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Avg RPE</span><span className="font-medium">{avgRpe ?? '—'}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-600">Avg Quality</span><span className="font-medium">{getQualityGrade(avgQuality)}</span></div>
                     </div>
                   </div>
                 )
               })}
             </div>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-2">
             <div className="p-3 border rounded bg-gray-50">
               <div className="text-xs text-gray-600">Completions</div>
               <div className="text-xl font-semibold">{summary?.completions ?? '—'}</div>
@@ -269,6 +346,14 @@ export default function AnalyticsMetconsPage() {
             <div className="p-3 border rounded bg-gray-50">
               <div className="text-xs text-gray-600">Avg percentile</div>
               <div className="text-xl font-semibold">{summary?.avg_percentile ?? '—'}</div>
+            </div>
+            <div className="p-3 border rounded bg-gray-50">
+              <div className="text-xs text-gray-600">Avg RPE</div>
+              <div className="text-xl font-semibold">{summary?.avg_rpe ?? '—'}</div>
+            </div>
+            <div className="p-3 border rounded bg-gray-50">
+              <div className="text-xs text-gray-600">Avg Quality</div>
+              <div className="text-xl font-semibold">{summary?.avg_quality ?? '—'}</div>
             </div>
           </div>
         </>

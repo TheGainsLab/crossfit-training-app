@@ -41,6 +41,25 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
     } : null
   }
 
+  const getRPEData = (exercise: string, timeDomain: string): { avgRpe: number | null, avgQuality: number | null } | null => {
+    if (!data?.heatmapCells) return null
+    const cell = data.heatmapCells.find((cell: any) => 
+      cell.exercise_name === exercise && cell.time_range === timeDomain
+    )
+    return cell ? {
+      avgRpe: cell.avg_rpe ?? null,
+      avgQuality: cell.avg_quality ?? null
+    } : null
+  }
+
+  const getQualityGrade = (quality: number | null): string => {
+    if (quality === null) return '—'
+    if (quality >= 3.5) return 'A'
+    if (quality >= 2.5) return 'B'
+    if (quality >= 1.5) return 'C'
+    return 'D'
+  }
+
   const calculateExerciseAverage = (exercise: string): number | null => {
     if (!data?.exerciseAverages) return null
     const exerciseAvg = data.exerciseAverages.find((avg: any) => 
@@ -115,12 +134,25 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
                   const percentile = getPercentile(exercise, domain)
                   const sessions = getSessionCount(exercise, domain)
                   const hrData = getHRData(exercise, domain)
+                  const rpeData = getRPEData(exercise, domain)
                   const colorClass = getHeatMapColor(percentile)
                   
                   // Build tooltip text
-                  const tooltipText = percentile 
-                    ? `Exercise: ${exercise}\nTime Domain: ${domain}\nPercentile: ${percentile}%\nSessions: ${sessions}${hrData?.avgHR ? `\nAvg HR: ${hrData.avgHR} bpm${hrData.maxHR ? `\nPeak HR: ${hrData.maxHR} bpm` : ''}` : ''}`
-                    : `Exercise: ${exercise}\nTime Domain: ${domain}\nNo data`
+                  let tooltipText = `Exercise: ${exercise}\nTime Domain: ${domain}`
+                  if (percentile) {
+                    tooltipText += `\nPercentile: ${percentile}%\nSessions: ${sessions}`
+                    if (hrData?.avgHR) {
+                      tooltipText += `\nAvg HR: ${hrData.avgHR} bpm${hrData.maxHR ? `\nPeak HR: ${hrData.maxHR} bpm` : ''}`
+                    }
+                    if (rpeData && rpeData.avgRpe !== null) {
+                      tooltipText += `\nAvg RPE: ${rpeData.avgRpe}/10`
+                    }
+                    if (rpeData && rpeData.avgQuality !== null) {
+                      tooltipText += `\nAvg Quality: ${getQualityGrade(rpeData.avgQuality)}`
+                    }
+                  } else {
+                    tooltipText += `\nNo data`
+                  }
                   
                   return (
                     <td key={domain} className="p-1">
