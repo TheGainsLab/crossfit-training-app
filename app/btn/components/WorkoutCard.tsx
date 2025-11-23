@@ -126,7 +126,7 @@ export default function WorkoutCard({ workout, onUpdate }: WorkoutCardProps) {
       <div className="flex justify-between items-start mb-2">
         <h4 className="text-lg font-bold">{workout.workout_name}</h4>
         <div className="flex gap-2">
-          {!isCompleted && (
+          {!isCompleted ? (
             <button
               onClick={() => {
                 setExpanded(true)
@@ -136,6 +136,14 @@ export default function WorkoutCard({ workout, onUpdate }: WorkoutCardProps) {
               style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
             >
               Log Result
+            </button>
+          ) : (
+            <button
+              disabled
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
+            >
+              Completed
             </button>
           )}
           <button
