@@ -2,8 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import MetconHeatmap from '@/components/MetconHeatmap'
-import HRStatisticsPanel from '@/components/HRStatisticsPanel'
+import MetConAnalyticsTabs from '@/components/MetConAnalyticsTabs'
+import { PerformanceView, EffortView, QualityView, HeartRateView } from '@/components/MetConAnalyticsViews'
 import CoachDrawer from '@/components/CoachDrawer'
 import PlanDiffViewer from '@/components/PlanDiffViewer'
 
@@ -160,9 +160,19 @@ export default function AnalyticsMetconsPage() {
     run()
   }, [userId, searchParams])
 
+  const handleEquipmentFilterChange = (filter: 'all' | 'barbell' | 'no_barbell' | 'gymnastics') => {
+    const q = new URLSearchParams(searchParams as any)
+    if (filter === 'all') {
+      q.delete('equip')
+    } else {
+      q.set('equip', filter)
+    }
+    router.replace(`?${q.toString()}`)
+  }
+
   return (
     <div className="space-y-4">
-      {/* Range filter - moved from layout to be with heat map controls */}
+      {/* Range filter */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pb-3 border-b border-gray-200">
         <span className="text-xs whitespace-nowrap" style={{ color: '#282B34' }}>Time Range:</span>
         <div className="flex flex-wrap gap-2">
@@ -195,6 +205,8 @@ export default function AnalyticsMetconsPage() {
           ))}
         </div>
       </div>
+
+      {/* Coach buttons */}
       <div className="flex items-center gap-2 text-xs pt-3 border-t border-gray-200">
         <button className="px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100" onClick={async () => {
           try {
@@ -248,116 +260,41 @@ export default function AnalyticsMetconsPage() {
           } catch {}
         }}>Recommend</button>
       </div>
+
+      {/* Tabbed Analytics */}
       {loading ? (
-        <div className="text-sm text-gray-500">Loading…</div>
-      ) : (
-        <>
-          {(() => {
-            const equip = (searchParams.get('equip') || '').toLowerCase()
-            if (equip && baselineHeatmap) {
-              return (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Filtered ({equip})</div>
-                    <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} />
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">All equipment</div>
-                    <MetconHeatmap data={baselineHeatmap} visibleTimeDomains={selection} />
-                  </div>
-                </div>
-              )
+        <div className="text-sm text-gray-500 py-8 text-center">Loading…</div>
+      ) : heatmapData ? (
+        <MetConAnalyticsTabs>
+          {(activeTab) => {
+            const viewProps = {
+              heatmapData,
+              baselineHeatmap,
+              selection,
+              searchParams,
+              router,
+              onEquipmentFilterChange: handleEquipmentFilterChange,
+              activeTab
             }
-            return heatmapData ? <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} /> : <div className="text-sm text-gray-500">No heat map data</div>
-          })()}
-          {heatmapData && (
-            <HRStatisticsPanel 
-              heatmapData={heatmapData} 
-              equipmentFilter={(searchParams.get('equip') || 'all').toLowerCase() as any}
-              onEquipmentFilterChange={(filter) => {
-                const q = new URLSearchParams(searchParams as any)
-                if (filter === 'all') {
-                  q.delete('equip')
-                } else {
-                  q.set('equip', filter)
-                }
-                router.replace(`?${q.toString()}`)
-              }}
-            />
-          )}
-          {selection.length === 2 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-              {sortByOrder(selection).map((td) => {
-                // compute domain summary from legacy heatmap cells
-                const cells = (heatmapData?.heatmapCells || []).filter((c: any) => {
-                  if (td === '20+') return c.time_range === '20:00–30:00' || c.time_range === '30:00+'
-                  return c.time_range?.startsWith(td.replace('-', ':00–'))
-                })
-                const completions = cells.reduce((s: number, c: any) => s + (c.session_count || 0), 0)
-                const avg = (() => {
-                  const totalSessions = completions
-                  if (!totalSessions) return null
-                  const w = cells.reduce((s: number, c: any) => s + (c.avg_percentile || 0) * (c.session_count || 0), 0)
-                  return Math.round((w / totalSessions) * 10) / 10
-                })()
-                const avgRpe = (() => {
-                  const validCells = cells.filter((c: any) => c.avg_rpe !== null && c.avg_rpe !== undefined)
-                  if (validCells.length === 0) return null
-                  const totalSessions = validCells.reduce((s: number, c: any) => s + (c.session_count || 0), 0)
-                  if (!totalSessions) return null
-                  const w = validCells.reduce((s: number, c: any) => s + (c.avg_rpe || 0) * (c.session_count || 0), 0)
-                  return Math.round((w / totalSessions) * 10) / 10
-                })()
-                const avgQuality = (() => {
-                  const validCells = cells.filter((c: any) => c.avg_quality !== null && c.avg_quality !== undefined)
-                  if (validCells.length === 0) return null
-                  const totalSessions = validCells.reduce((s: number, c: any) => s + (c.session_count || 0), 0)
-                  if (!totalSessions) return null
-                  const w = validCells.reduce((s: number, c: any) => s + (c.avg_quality || 0) * (c.session_count || 0), 0)
-                  return Math.round((w / totalSessions) * 10) / 10
-                })()
-                const getQualityGrade = (quality: number | null): string => {
-                  if (quality === null) return '—'
-                  if (quality >= 3.5) return 'A'
-                  if (quality >= 2.5) return 'B'
-                  if (quality >= 1.5) return 'C'
-                  return 'D'
-                }
-                return (
-                  <div key={td} className="p-3 border rounded bg-white">
-                    <div className="text-xs text-gray-500 mb-1">Time domain</div>
-                    <div className="text-lg font-semibold mb-2">{td}</div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="flex justify-between"><span className="text-gray-600">Completions</span><span className="font-medium">{completions}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-600">Avg percentile</span><span className="font-medium">{avg ?? '—'}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-600">Avg RPE</span><span className="font-medium">{avgRpe ?? '—'}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-600">Avg Quality</span><span className="font-medium">{getQualityGrade(avgQuality)}</span></div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-2">
-            <div className="p-3 border rounded bg-gray-50">
-              <div className="text-xs text-gray-600">Completions</div>
-              <div className="text-xl font-semibold">{summary?.completions ?? '—'}</div>
-            </div>
-            <div className="p-3 border rounded bg-gray-50">
-              <div className="text-xs text-gray-600">Avg percentile</div>
-              <div className="text-xl font-semibold">{summary?.avg_percentile ?? '—'}</div>
-            </div>
-            <div className="p-3 border rounded bg-gray-50">
-              <div className="text-xs text-gray-600">Avg RPE</div>
-              <div className="text-xl font-semibold">{summary?.avg_rpe ?? '—'}</div>
-            </div>
-            <div className="p-3 border rounded bg-gray-50">
-              <div className="text-xs text-gray-600">Avg Quality</div>
-              <div className="text-xl font-semibold">{summary?.avg_quality ?? '—'}</div>
-            </div>
-          </div>
-        </>
+            
+            switch (activeTab) {
+              case 'performance':
+                return <PerformanceView {...viewProps} />
+              case 'effort':
+                return <EffortView {...viewProps} />
+              case 'quality':
+                return <QualityView {...viewProps} />
+              case 'heartrate':
+                return <HeartRateView {...viewProps} />
+              default:
+                return <PerformanceView {...viewProps} />
+            }
+          }}
+        </MetConAnalyticsTabs>
+      ) : (
+        <div className="text-sm text-gray-500 py-8 text-center">No heat map data available</div>
       )}
+      
       <CoachDrawer open={openCoach} title="Coach" onClose={() => setOpenCoach(false)}>
         {coachContent}
       </CoachDrawer>

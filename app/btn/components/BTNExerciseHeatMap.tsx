@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import MetconHeatmap from '@/components/MetconHeatmap'
-import HRStatisticsPanel from '@/components/HRStatisticsPanel'
+import MetConAnalyticsTabs from '@/components/MetConAnalyticsTabs'
+import { PerformanceView, EffortView, QualityView, HeartRateView } from '@/components/MetConAnalyticsViews'
 
 export default function BTNExerciseHeatMap() {
   const [heatMapData, setHeatMapData] = useState<any>(null)
@@ -95,42 +95,12 @@ export default function BTNExerciseHeatMap() {
     )
   }
 
-  // Calculate global averages for summary cards
-  const calculateGlobalAverages = () => {
-    if (!heatMapData?.heatmapCells) return { avgRpe: null, avgQuality: null }
-    
-    const cells = heatMapData.heatmapCells
-    const validRpe = cells.filter((c: any) => c.avg_rpe !== null && c.avg_rpe !== undefined)
-    const validQuality = cells.filter((c: any) => c.avg_quality !== null && c.avg_quality !== undefined)
-    
-    const avgRpe = validRpe.length > 0 
-      ? Math.round((validRpe.reduce((sum: number, c: any) => sum + (c.avg_rpe * c.session_count), 0) / 
-                   validRpe.reduce((sum: number, c: any) => sum + c.session_count, 0)) * 10) / 10
-      : null
-    
-    const avgQuality = validQuality.length > 0
-      ? Math.round((validQuality.reduce((sum: number, c: any) => sum + (c.avg_quality * c.session_count), 0) / 
-                   validQuality.reduce((sum: number, c: any) => sum + c.session_count, 0)) * 10) / 10
-      : null
-    
-    return { avgRpe, avgQuality }
-  }
 
-  const getQualityGrade = (quality: number | null): string => {
-    if (quality === null) return '—'
-    if (quality >= 3.5) return 'A'
-    if (quality >= 2.5) return 'B'
-    if (quality >= 1.5) return 'C'
-    return 'D'
-  }
-
-  const { avgRpe, avgQuality } = calculateGlobalAverages()
-
-  // Use the Premium MetconHeatmap component directly - data format is now identical!
+  // Use the Premium tabbed analytics structure
   return (
-    <>
+    <div className="space-y-4">
       {/* Equipment Filter - at the top so users can filter before viewing analytics */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Filter by Equipment</h3>
         <div className="flex flex-wrap gap-2">
           {(['all', 'barbell', 'no_barbell', 'gymnastics'] as const).map(filter => (
@@ -152,33 +122,42 @@ export default function BTNExerciseHeatMap() {
         </div>
       </div>
       
-      <MetconHeatmap data={heatMapData} />
-      
-      <HRStatisticsPanel 
-        heatmapData={heatMapData} 
-        equipmentFilter={equipmentFilter}
-      />
-      
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
-        <div className="p-3 border rounded bg-gray-50">
-          <div className="text-xs text-gray-600">Completions</div>
-          <div className="text-xl font-semibold">{heatMapData?.totalCompletedWorkouts ?? '—'}</div>
-        </div>
-        <div className="p-3 border rounded bg-gray-50">
-          <div className="text-xs text-gray-600">Avg percentile</div>
-          <div className="text-xl font-semibold">{heatMapData?.globalFitnessScore ?? '—'}</div>
-        </div>
-        <div className="p-3 border rounded bg-gray-50">
-          <div className="text-xs text-gray-600">Avg RPE</div>
-          <div className="text-xl font-semibold">{avgRpe ?? '—'}</div>
-        </div>
-        <div className="p-3 border rounded bg-gray-50">
-          <div className="text-xs text-gray-600">Avg Quality</div>
-          <div className="text-xl font-semibold">{getQualityGrade(avgQuality)}</div>
-        </div>
-      </div>
-    </>
+      {/* Tabbed Analytics */}
+      <MetConAnalyticsTabs>
+        {(activeTab) => {
+          // Create a mock searchParams object for BTN
+          const mockSearchParams = new URLSearchParams()
+          if (equipmentFilter !== 'all') {
+            mockSearchParams.set('equip', equipmentFilter)
+          }
+          
+          const viewProps = {
+            heatmapData: heatMapData,
+            baselineHeatmap: undefined,
+            selection: [],
+            searchParams: mockSearchParams,
+            router: null,
+            onEquipmentFilterChange: (filter: 'all' | 'barbell' | 'no_barbell' | 'gymnastics') => {
+              setEquipmentFilter(filter)
+            },
+            activeTab
+          }
+          
+          switch (activeTab) {
+            case 'performance':
+              return <PerformanceView {...viewProps} />
+            case 'effort':
+              return <EffortView {...viewProps} />
+            case 'quality':
+              return <QualityView {...viewProps} />
+            case 'heartrate':
+              return <HeartRateView {...viewProps} />
+            default:
+              return <PerformanceView {...viewProps} />
+          }
+        }}
+      </MetConAnalyticsTabs>
+    </div>
   )
 }
 
