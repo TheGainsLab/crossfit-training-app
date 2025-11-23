@@ -41,7 +41,7 @@ export default function WorkoutHistoryTab() {
     completionRate: 0
   })
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<'all' | 'completed' | 'incomplete'>('all')
+  const [filter, setFilter] = useState<'all' | 'completed' | 'incomplete'>('incomplete')
 
   useEffect(() => {
     loadWorkouts()
@@ -84,9 +84,9 @@ export default function WorkoutHistoryTab() {
     <div>
       {/* Stats Section - Mobile responsive */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
-        {/* Saved */}
+        {/* Total */}
         <div className="bg-white rounded-lg shadow p-3 sm:p-6 border" style={{ borderColor: '#282B34' }}>
-          <p className="text-xs sm:text-sm text-gray-600 mb-1">Saved</p>
+          <p className="text-xs sm:text-sm text-gray-600 mb-1">Total</p>
           <p className="text-2xl sm:text-4xl font-bold" style={{ color: '#FE5858' }}>{stats.total}</p>
         </div>
 
@@ -106,14 +106,14 @@ export default function WorkoutHistoryTab() {
       {/* Filter Buttons */}
       <div className="flex gap-3 mb-6">
         <button
-          onClick={() => setFilter('all')}
+          onClick={() => setFilter('incomplete')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'all'
+            filter === 'incomplete'
               ? 'bg-[#FE5858] text-white'
               : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
           }`}
         >
-          All ({stats.total})
+          To Do ({stats.incomplete})
         </button>
         <button
           onClick={() => setFilter('completed')}
@@ -126,14 +126,14 @@ export default function WorkoutHistoryTab() {
           Completed ({stats.completed})
         </button>
         <button
-          onClick={() => setFilter('incomplete')}
+          onClick={() => setFilter('all')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'incomplete'
+            filter === 'all'
               ? 'bg-[#FE5858] text-white'
               : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
           }`}
         >
-          To Do ({stats.incomplete})
+          All ({stats.total})
         </button>
       </div>
 
