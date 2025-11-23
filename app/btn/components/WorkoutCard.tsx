@@ -224,6 +224,7 @@ export default function WorkoutCard({ workout, onUpdate }: WorkoutCardProps) {
           <ResultLoggingForm
             workoutId={workout.id}
             workoutFormat={workout.workout_format}
+            exercises={workout.exercises || []}
             onSuccess={handleResultSaved}
             onCancel={() => setShowLogging(false)}
           />

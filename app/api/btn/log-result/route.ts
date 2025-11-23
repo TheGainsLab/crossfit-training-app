@@ -9,6 +9,7 @@ interface LogResultRequest {
   notes?: string
   avgHeartRate?: number
   maxHeartRate?: number
+  taskCompletions?: Array<{exerciseName: string, rpe: number, quality: string}>
 }
 
 // =============================================================================
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { workoutId, userScore, notes, avgHeartRate, maxHeartRate }: LogResultRequest = await request.json()
+    const { workoutId, userScore, notes, avgHeartRate, maxHeartRate, taskCompletions }: LogResultRequest = await request.json()
 
     if (!workoutId || !userScore) {
       return NextResponse.json(
@@ -291,6 +292,82 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`💾 Result saved successfully${avgHeartRate ? ` (Avg HR: ${avgHeartRate}, Max HR: ${maxHeartRate || 'N/A'})` : ''}`)
+
+    // Step 6: Log task-level completions to performance_logs (if provided)
+    if (taskCompletions && taskCompletions.length > 0 && updatedWorkout) {
+      console.log(`📊 Logging ${taskCompletions.length} task completions to performance_logs`)
+      
+      // Create service role client for performance_logs writes
+      const serviceSupabase = createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+
+      // Log each task to performance_logs
+      const taskLogPromises = taskCompletions.map(async (task) => {
+        // Convert quality letter grade to numeric
+        const qualityNumeric = task.quality ? 
+          { 'A': 4, 'B': 3, 'C': 2, 'D': 1 }[task.quality] : null
+
+        // For BTN workouts, program_id, week, day are null
+        // Use a unique identifier: user_id + exercise_name + workout_id (in notes) + logged_at
+        const perfLogData = {
+          program_id: null, // BTN workouts don't have program_id
+          user_id: userData.id,
+          program_workout_id: null,
+          week: null, // BTN workouts don't have week
+          day: null, // BTN workouts don't have day
+          block: 'BTN', // Use 'BTN' to distinguish from Premium metcons
+          exercise_name: task.exerciseName,
+          set_number: 1,
+          rpe: task.rpe,
+          completion_quality: qualityNumeric,
+          quality_grade: task.quality,
+          notes: `BTN Workout ${workoutId}: ${workout.workout_name || 'Workout'}`,
+          logged_at: new Date().toISOString()
+        }
+
+        // Check for existing log (for BTN, we check by user_id, exercise_name, and notes containing workout_id)
+        const { data: existingLog } = await serviceSupabase
+          .from('performance_logs')
+          .select('id')
+          .eq('user_id', userData.id)
+          .eq('exercise_name', task.exerciseName)
+          .eq('block', 'BTN')
+          .like('notes', `%BTN Workout ${workoutId}%`)
+          .order('logged_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (existingLog) {
+          // Update existing log
+          const { error: updateErr } = await serviceSupabase
+            .from('performance_logs')
+            .update(perfLogData)
+            .eq('id', existingLog.id)
+
+          if (updateErr) {
+            console.error(`❌ Error updating performance log for ${task.exerciseName}:`, updateErr)
+          } else {
+            console.log(`✅ Updated performance log for ${task.exerciseName}`)
+          }
+        } else {
+          // Insert new log
+          const { error: insertErr } = await serviceSupabase
+            .from('performance_logs')
+            .insert(perfLogData)
+
+          if (insertErr) {
+            console.error(`❌ Error inserting performance log for ${task.exerciseName}:`, insertErr)
+          } else {
+            console.log(`✅ Created performance log for ${task.exerciseName}`)
+          }
+        }
+      })
+
+      await Promise.all(taskLogPromises)
+      console.log(`✅ All task completions logged to performance_logs`)
+    }
 
     // Populate exercise_percentile_log
     if (updatedWorkout) {
