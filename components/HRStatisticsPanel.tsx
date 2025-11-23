@@ -91,15 +91,15 @@ export default function HRStatisticsPanel({
                   <th className="text-left p-2">Time Domain</th>
                   <th className="text-right p-2">Avg HR</th>
                   <th className="text-right p-2">Peak HR</th>
-                  <th className="text-right p-2">Workouts</th>
+                  <th className="text-right p-2">Frequency</th>
                 </tr>
               </thead>
               <tbody>
                 {hrByTimeDomain.map(domain => (
                   <tr key={domain.time_range} className="border-b">
                     <td className="p-2 font-medium">{domain.time_range}</td>
-                    <td className="p-2 text-right">{domain.avg_hr !== null ? `${domain.avg_hr} bpm` : '—'}</td>
-                    <td className="p-2 text-right">{domain.max_hr !== null ? `${domain.max_hr} bpm` : '—'}</td>
+                    <td className="p-2 text-right">{domain.avg_hr !== null ? domain.avg_hr : '—'}</td>
+                    <td className="p-2 text-right">{domain.max_hr !== null ? domain.max_hr : '—'}</td>
                     <td className="p-2 text-right">{domain.workout_count}</td>
                   </tr>
                 ))}
@@ -120,15 +120,15 @@ export default function HRStatisticsPanel({
                   <th className="text-left p-2">Exercise</th>
                   <th className="text-right p-2">Avg HR</th>
                   <th className="text-right p-2">Peak HR</th>
-                  <th className="text-right p-2">Appearances</th>
+                  <th className="text-right p-2">Frequency</th>
                 </tr>
               </thead>
               <tbody>
                 {hrByExercise.slice(0, 10).map(exercise => (
                   <tr key={exercise.exercise_name} className="border-b">
                     <td className="p-2 font-medium">{exercise.exercise_name}</td>
-                    <td className="p-2 text-right">{exercise.avg_hr !== null ? `${exercise.avg_hr} bpm` : '—'}</td>
-                    <td className="p-2 text-right">{exercise.max_hr !== null ? `${exercise.max_hr} bpm` : '—'}</td>
+                    <td className="p-2 text-right">{exercise.avg_hr !== null ? exercise.avg_hr : '—'}</td>
+                    <td className="p-2 text-right">{exercise.max_hr !== null ? exercise.max_hr : '—'}</td>
                     <td className="p-2 text-right">{exercise.appearances}</td>
                   </tr>
                 ))}
@@ -157,8 +157,8 @@ export default function HRStatisticsPanel({
                 {hrByEquipment.map(eq => (
                   <tr key={eq.type} className="border-b">
                     <td className="p-2 font-medium">{eq.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</td>
-                    <td className="p-2 text-right">{eq.avg_hr !== null ? `${eq.avg_hr} bpm` : '—'}</td>
-                    <td className="p-2 text-right">{eq.max_hr !== null ? `${eq.max_hr} bpm` : '—'}</td>
+                    <td className="p-2 text-right">{eq.avg_hr !== null ? eq.avg_hr : '—'}</td>
+                    <td className="p-2 text-right">{eq.max_hr !== null ? eq.max_hr : '—'}</td>
                     <td className="p-2 text-right">{eq.avg_percentile !== null ? `${eq.avg_percentile}%` : '—'}</td>
                     <td className="p-2 text-right">{eq.workout_count}</td>
                   </tr>
@@ -250,7 +250,7 @@ function calculateHRByExercise(cells: any[]) {
       appearances: data.count
     }))
     .filter(ex => ex.avg_hr !== null) // Only show exercises with HR data
-    .sort((a, b) => (b.avg_hr || 0) - (a.avg_hr || 0)) // Sort by avg HR descending
+    .sort((a, b) => b.appearances - a.appearances) // Sort by frequency (appearances) descending
 }
 
 function calculateHRByEquipment(workouts: any[]) {
