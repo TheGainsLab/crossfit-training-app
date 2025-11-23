@@ -202,13 +202,20 @@ export default function MetconHeatmap({ data, visibleTimeDomains }: { data: any,
               {shownDomains.map((domain: string) => {
                 const avgPercentile = calculateTimeDomainAverage(domain)
                 const colorClass = getHeatMapColor(avgPercentile)
+                // Calculate total workout count for this time domain
+                const domainCells = data.heatmapCells?.filter((cell: any) => 
+                  cell.time_range === domain
+                ) || []
+                const totalWorkouts = domainCells.reduce((sum: number, cell: any) => 
+                  sum + (cell.session_count || 0), 0
+                )
                 return (
                   <td key={domain} className="p-1">
                     <div className={`${colorClass} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md border-2 border-white ${avgPercentile ? 'ring-1 ring-blue-300' : ''}`} style={{ minHeight: '60px' }}>
                       {avgPercentile ? (
                         <div>
                           <div className="text-lg font-bold">Avg: {avgPercentile}%</div>
-                          <div className="text-xs opacity-75 font-medium">Domain</div>
+                          <div className="text-xs opacity-75 font-medium">{totalWorkouts} {totalWorkouts === 1 ? 'workout' : 'workouts'}</div>
                         </div>
                       ) : (
                         <div className="text-lg font-bold">—</div>
