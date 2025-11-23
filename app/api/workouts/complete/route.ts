@@ -79,6 +79,8 @@ async function updateWeeklySummary(data: {
       
       metcons_completed: metconData.count,
       metcons_avg_percentile: metconData.avgPercentile,
+      metcons_avg_rpe: metconData.avgRpe || null,
+      metcons_avg_quality: metconData.avgQuality || null,
       
       // Overall totals
       total_exercises_completed: overallTotals.totalExercises,
@@ -163,7 +165,7 @@ async function getMetconAggregation(data: { programId: number; week: number }) {
   // First, try to get from program_metcons (new method with actual scores)
   const { data: metconData, error } = await supabase
     .from('program_metcons')
-    .select('percentile')
+    .select('percentile, avg_rpe, avg_quality')
     .eq('program_id', data.programId)
     .eq('week', data.week)
     .not('user_score', 'is', null);
@@ -174,10 +176,24 @@ async function getMetconAggregation(data: { programId: number; week: number }) {
     const avgPercentile = percentiles.length > 0 
       ? Math.round((percentiles.reduce((sum, p) => sum + p, 0) / percentiles.length) * 100) / 100
       : null;
+    
+    // Calculate average RPE and Quality
+    const validRpe = metconData.map((m: any) => m.avg_rpe).filter((r: any) => r !== null && r !== undefined);
+    const validQuality = metconData.map((m: any) => m.avg_quality).filter((q: any) => q !== null && q !== undefined);
+    
+    const avgRpe = validRpe.length > 0
+      ? Math.round((validRpe.reduce((sum: number, rpe: number) => sum + rpe, 0) / validRpe.length) * 10) / 10
+      : null;
+      
+    const avgQuality = validQuality.length > 0
+      ? Math.round((validQuality.reduce((sum: number, q: number) => sum + q, 0) / validQuality.length) * 10) / 10
+      : null;
       
     return {
       count: percentiles.length, // Count of actual MetCon completions with scores
-      avgPercentile
+      avgPercentile,
+      avgRpe,
+      avgQuality
     };
   }
   
@@ -193,7 +209,7 @@ async function getMetconAggregation(data: { programId: number; week: number }) {
     
   if (perfError || !performanceData || performanceData.length === 0) {
     console.log(`⚠️ No MetCon performance data found for program ${data.programId}, week ${data.week}`);
-    return { count: 0, avgPercentile: null };
+    return { count: 0, avgPercentile: null, avgRpe: null, avgQuality: null };
   }
   
   // Count unique days with MetCon exercises
@@ -204,7 +220,9 @@ async function getMetconAggregation(data: { programId: number; week: number }) {
   
   return {
     count: sessionCount, // Count of distinct MetCon session days
-    avgPercentile: null   // No percentile data available from performance_logs
+    avgPercentile: null,   // No percentile data available from performance_logs
+    avgRpe: null,
+    avgQuality: null
   };
 }
 

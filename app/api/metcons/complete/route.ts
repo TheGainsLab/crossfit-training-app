@@ -163,6 +163,45 @@ function getPerformanceTier(percentile: number): string {
   return 'Needs Improvement'
 }
 
+/**
+ * Calculate workout-level RPE and Quality averages from task completions
+ */
+async function calculateWorkoutRPEAndQuality(
+  userId: number,
+  programId: number,
+  week: number,
+  day: number
+): Promise<{ avgRpe: number | null; avgQuality: number | null }> {
+  // Query performance_logs for all tasks in this MetCon
+  const { data: taskLogs, error } = await supabase
+    .from('performance_logs')
+    .select('rpe, completion_quality')
+    .eq('user_id', userId)
+    .eq('program_id', programId)
+    .eq('week', week)
+    .eq('day', day)
+    .eq('block', 'METCONS')
+    .not('rpe', 'is', null) // Only count tasks with RPE
+
+  if (error || !taskLogs || taskLogs.length === 0) {
+    return { avgRpe: null, avgQuality: null }
+  }
+
+  // Calculate averages
+  const validRpe = taskLogs.filter(t => t.rpe !== null).map(t => t.rpe)
+  const validQuality = taskLogs.filter(t => t.completion_quality !== null).map(t => t.completion_quality)
+
+  const avgRpe = validRpe.length > 0
+    ? Math.round((validRpe.reduce((sum, rpe) => sum + rpe, 0) / validRpe.length) * 10) / 10
+    : null
+
+  const avgQuality = validQuality.length > 0
+    ? Math.round((validQuality.reduce((sum, q) => sum + q, 0) / validQuality.length) * 10) / 10
+    : null
+
+  return { avgRpe, avgQuality }
+}
+
 // =============================================================================
 // MAIN API HANDLER
 // =============================================================================
@@ -307,6 +346,14 @@ export async function POST(request: NextRequest) {
       .eq('day', completionData.day)
       .single()
 
+    // Calculate workout-level RPE/Quality from task completions
+    const { avgRpe, avgQuality } = await calculateWorkoutRPEAndQuality(
+      completionData.userId,
+      completionData.programId,
+      completionData.week,
+      completionData.day
+    )
+
     let result
     if (existingCompletion) {
       // Update existing completion
@@ -322,6 +369,8 @@ export async function POST(request: NextRequest) {
           std_dev: isMale ? metcon.male_std_dev : metcon.female_std_dev,
           avg_heart_rate: completionData.avgHR || null,
           max_heart_rate: completionData.peakHR || null,
+          avg_rpe: avgRpe,
+          avg_quality: avgQuality,
           completed_at: new Date().toISOString()
         })
         .eq('id', existingCompletion.id)
@@ -347,6 +396,8 @@ export async function POST(request: NextRequest) {
           std_dev: isMale ? metcon.male_std_dev : metcon.female_std_dev,
           avg_heart_rate: completionData.avgHR || null,
           max_heart_rate: completionData.peakHR || null,
+          avg_rpe: avgRpe,
+          avg_quality: avgQuality,
           completed_at: new Date().toISOString()
         })
         .select()

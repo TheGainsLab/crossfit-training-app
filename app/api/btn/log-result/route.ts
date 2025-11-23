@@ -149,6 +149,42 @@ function getPerformanceTier(percentile: number): string {
   return 'Needs Improvement'
 }
 
+/**
+ * Calculate workout-level RPE and Quality averages from task completions
+ */
+async function calculateBTNWorkoutRPEAndQuality(
+  supabase: any,
+  userId: number,
+  workoutId: number
+): Promise<{ avgRpe: number | null; avgQuality: number | null }> {
+  // Query performance_logs for all tasks in this BTN workout
+  const { data: taskLogs, error } = await supabase
+    .from('performance_logs')
+    .select('rpe, completion_quality')
+    .eq('user_id', userId)
+    .eq('block', 'BTN')
+    .like('result', `%BTN Workout ${workoutId}%`)
+    .not('rpe', 'is', null) // Only count tasks with RPE
+
+  if (error || !taskLogs || taskLogs.length === 0) {
+    return { avgRpe: null, avgQuality: null }
+  }
+
+  // Calculate averages
+  const validRpe = taskLogs.filter((t: any) => t.rpe !== null).map((t: any) => t.rpe as number)
+  const validQuality = taskLogs.filter((t: any) => t.completion_quality !== null).map((t: any) => t.completion_quality as number)
+
+  const avgRpe = validRpe.length > 0
+    ? Math.round((validRpe.reduce((sum: number, rpe: number) => sum + rpe, 0) / validRpe.length) * 10) / 10
+    : null
+
+  const avgQuality = validQuality.length > 0
+    ? Math.round((validQuality.reduce((sum: number, q: number) => sum + q, 0) / validQuality.length) * 10) / 10
+    : null
+
+  return { avgRpe, avgQuality }
+}
+
 // =============================================================================
 // MAIN API HANDLER
 // =============================================================================
@@ -257,6 +293,34 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Calculated percentile: ${percentile}% (${performanceTier})`)
 
+    // Calculate workout-level RPE/Quality from task completions (if provided)
+    let avgRpe: number | null = null
+    let avgQuality: number | null = null
+    
+    if (taskCompletions && taskCompletions.length > 0) {
+      const validRpe = taskCompletions.filter((t: any) => t.rpe !== null && t.rpe !== undefined).map((t: any) => t.rpe)
+      const validQuality = taskCompletions
+        .filter((t: any) => t.quality !== null && t.quality !== undefined)
+        .map((t: any) => {
+          const q = t.quality
+          return q === 'A' ? 4 : q === 'B' ? 3 : q === 'C' ? 2 : q === 'D' ? 1 : null
+        })
+        .filter((q: any) => q !== null) as number[]
+
+      avgRpe = validRpe.length > 0
+        ? Math.round((validRpe.reduce((sum: number, rpe: number) => sum + rpe, 0) / validRpe.length) * 10) / 10
+        : null
+
+      avgQuality = validQuality.length > 0
+        ? Math.round((validQuality.reduce((sum: number, q: number) => sum + q, 0) / validQuality.length) * 10) / 10
+        : null
+    } else {
+      // If no task completions provided, try to calculate from existing performance_logs
+      const calculated = await calculateBTNWorkoutRPEAndQuality(supabase, userData.id, workoutId)
+      avgRpe = calculated.avgRpe
+      avgQuality = calculated.avgQuality
+    }
+
     // Step 5: Update the workout
     const updateData: any = {
       user_score: userScore,
@@ -265,7 +329,9 @@ export async function POST(request: NextRequest) {
       excellent_score: workout.excellent_score, // Keep existing
       median_score: workout.median_score,       // Keep existing
       completed_at: new Date().toISOString(),
-      notes: notes || null
+      notes: notes || null,
+      avg_rpe: avgRpe,
+      avg_quality: avgQuality
     }
 
     // Add heart rate data if provided
