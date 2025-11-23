@@ -18,15 +18,8 @@ export function PerformanceView({ heatmapData, baselineHeatmap, selection, searc
   const equip = (searchParams.get('equip') || '').toLowerCase()
   
   // Calculate summary stats
-  const cells = heatmapData?.heatmapCells || []
   const completions = heatmapData?.totalCompletedWorkouts || 0
   const avgPercentile = heatmapData?.globalFitnessScore || null
-
-  // Calculate by time domain
-  const timeDomainStats = calculateTimeDomainStats(cells)
-  
-  // Calculate by exercise (top 10)
-  const exerciseStats = calculateExerciseStats(cells).slice(0, 10)
 
   return (
     <div className="space-y-6">
@@ -65,54 +58,6 @@ export function PerformanceView({ heatmapData, baselineHeatmap, selection, searc
           <MetconHeatmap data={heatmapData} visibleTimeDomains={selection} />
         )}
       </div>
-
-      {/* By Time Domain */}
-      {timeDomainStats.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">By Time Domain</h3>
-          <div className="space-y-2">
-            {timeDomainStats.map((stat) => (
-              <div key={stat.time_range} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="font-medium text-gray-900">{stat.time_range}</div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <div className="text-xs text-gray-600">Avg Percentile</div>
-                    <div className="text-lg font-bold" style={{ color: '#FE5858' }}>{stat.avg_percentile ?? '—'}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-gray-600">Workouts</div>
-                    <div className="text-lg font-semibold">{stat.workout_count}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* By Exercise (Top 10) */}
-      {exerciseStats.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">By Exercise (Top 10)</h3>
-          <div className="space-y-2">
-            {exerciseStats.map((stat) => (
-              <div key={stat.exercise_name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="font-medium text-gray-900">{stat.exercise_name}</div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <div className="text-xs text-gray-600">Avg Percentile</div>
-                    <div className="text-lg font-bold" style={{ color: '#FE5858' }}>{stat.avg_percentile ?? '—'}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-gray-600">Frequency</div>
-                    <div className="text-lg font-semibold">{stat.frequency}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -126,12 +71,6 @@ export function EffortView({ heatmapData }: MetConAnalyticsViewsProps) {
     ? Math.round((validRpe.reduce((sum: number, c: any) => sum + (c.avg_rpe * c.session_count), 0) / 
                  validRpe.reduce((sum: number, c: any) => sum + c.session_count, 0)) * 10) / 10
     : null
-
-  // Calculate by time domain
-  const rpeByTimeDomain = calculateRPEByTimeDomain(cells)
-  
-  // Calculate by exercise (top 10)
-  const rpeByExercise = calculateRPEByExercise(cells).slice(0, 10)
 
   return (
     <div className="space-y-6">
@@ -154,55 +93,7 @@ export function EffortView({ heatmapData }: MetConAnalyticsViewsProps) {
         </div>
       </div>
 
-      {/* By Time Domain */}
-      {rpeByTimeDomain.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">By Time Domain</h3>
-          <div className="space-y-2">
-            {rpeByTimeDomain.map((stat) => (
-              <div key={stat.time_range} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="font-medium text-gray-900">{stat.time_range}</div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <div className="text-xs text-gray-600">Avg RPE</div>
-                    <div className="text-lg font-bold" style={{ color: '#FE5858' }}>{stat.avg_rpe ?? '—'}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-gray-600">Frequency</div>
-                    <div className="text-lg font-semibold">{stat.workout_count}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* By Exercise (Top 10) */}
-      {rpeByExercise.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">By Exercise (Top 10)</h3>
-          <div className="space-y-2">
-            {rpeByExercise.map((stat) => (
-              <div key={stat.exercise_name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="font-medium text-gray-900">{stat.exercise_name}</div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <div className="text-xs text-gray-600">Avg RPE</div>
-                    <div className="text-lg font-bold" style={{ color: '#FE5858' }}>{stat.avg_rpe ?? '—'}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-gray-600">Frequency</div>
-                    <div className="text-lg font-semibold">{stat.appearances}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {rpeByTimeDomain.length === 0 && rpeByExercise.length === 0 && (
+      {validRpe.length === 0 && (
         <div className="bg-white rounded-lg shadow p-6 border border-gray-200 text-center">
           <p className="text-gray-500">No RPE data available. Log workouts with RPE to see effort statistics.</p>
         </div>
@@ -229,12 +120,6 @@ export function QualityView({ heatmapData }: MetConAnalyticsViewsProps) {
     return 'D'
   }
 
-  // Calculate by time domain
-  const qualityByTimeDomain = calculateQualityByTimeDomain(cells)
-  
-  // Calculate by exercise (top 10)
-  const qualityByExercise = calculateQualityByExercise(cells).slice(0, 10)
-
   return (
     <div className="space-y-6">
       {/* Summary Card */}
@@ -256,55 +141,7 @@ export function QualityView({ heatmapData }: MetConAnalyticsViewsProps) {
         </div>
       </div>
 
-      {/* By Time Domain */}
-      {qualityByTimeDomain.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">By Time Domain</h3>
-          <div className="space-y-2">
-            {qualityByTimeDomain.map((stat) => (
-              <div key={stat.time_range} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="font-medium text-gray-900">{stat.time_range}</div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <div className="text-xs text-gray-600">Avg Quality</div>
-                    <div className="text-lg font-bold" style={{ color: '#FE5858' }}>{getQualityGrade(stat.avg_quality)}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-gray-600">Frequency</div>
-                    <div className="text-lg font-semibold">{stat.workout_count}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* By Exercise (Top 10) */}
-      {qualityByExercise.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">By Exercise (Top 10)</h3>
-          <div className="space-y-2">
-            {qualityByExercise.map((stat) => (
-              <div key={stat.exercise_name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="font-medium text-gray-900">{stat.exercise_name}</div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <div className="text-xs text-gray-600">Avg Quality</div>
-                    <div className="text-lg font-bold" style={{ color: '#FE5858' }}>{getQualityGrade(stat.avg_quality)}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-gray-600">Frequency</div>
-                    <div className="text-lg font-semibold">{stat.appearances}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {qualityByTimeDomain.length === 0 && qualityByExercise.length === 0 && (
+      {validQuality.length === 0 && (
         <div className="bg-white rounded-lg shadow p-6 border border-gray-200 text-center">
           <p className="text-gray-500">No Quality data available. Log workouts with Quality ratings to see statistics.</p>
         </div>
