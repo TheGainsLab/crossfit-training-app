@@ -166,18 +166,14 @@ export default function ResultLoggingForm({
   // Show success message with percentile
   if (showResult && percentile !== null) {
     return (
-      <div className="bg-green-50 rounded-lg p-6 border border-green-200 text-center">
-        <div className="text-5xl mb-3">🎉</div>
-        <h4 className="font-bold text-2xl text-green-900 mb-2">Result Logged!</h4>
+      <div className="bg-white rounded-lg p-6 border border-[#282B34] text-center">
+        <h4 className="font-bold text-2xl mb-2" style={{ color: '#FE5858' }}>Result Logged!</h4>
         <div className="text-lg mb-2">
           <span className="font-semibold text-gray-700">Your Score:</span>{' '}
-          <span className="font-bold text-green-700">{result}</span>
+          <span className="font-bold" style={{ color: '#FE5858' }}>{result}</span>
         </div>
-        <div className="text-3xl font-bold text-green-600 mb-1">
+        <div className="text-3xl font-bold mb-1" style={{ color: '#FE5858' }}>
           {percentile}th Percentile
-        </div>
-        <div className="text-lg font-semibold text-green-700">
-          {performanceTier}
         </div>
         <p className="text-sm text-gray-600 mt-4">Updating your stats...</p>
       </div>
