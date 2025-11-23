@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
     // Step 1: Fetch the workout
     const { data: workout, error: workoutError } = await supabase
       .from('program_metcons')
-      .select('id, workout_name, workout_format, median_score, excellent_score, user_id')
+      .select('id, workout_name, workout_format, median_score, excellent_score, user_id, workout_type')
       .eq('id', workoutId)
       .eq('workout_type', 'btn')
       .single()
@@ -280,7 +280,7 @@ export async function POST(request: NextRequest) {
       .from('program_metcons')
       .update(updateData)
       .eq('id', workoutId)
-      .select()
+      .select('*, workout_type')
       .single()
 
     if (updateError) {
@@ -317,7 +317,7 @@ export async function POST(request: NextRequest) {
           { 'A': 4, 'B': 3, 'C': 2, 'D': 1 }[task.quality] : null
 
         // For BTN workouts, program_id, week, day are null
-        // Use a unique identifier: user_id + exercise_name + workout_id (in notes) + logged_at
+        // Use a unique identifier: user_id + exercise_name + workout_id (in result) + logged_at
         const perfLogData = {
           program_id: null, // BTN workouts don't have program_id
           user_id: userData.id,
@@ -330,18 +330,18 @@ export async function POST(request: NextRequest) {
           rpe: task.rpe,
           completion_quality: qualityNumeric,
           quality_grade: task.quality,
-          notes: `BTN Workout ${workoutId}: ${workout.workout_name || 'Workout'}`,
+          result: `BTN Workout ${workoutId}: ${workout.workout_name || 'Workout'}`, // Use 'result' column, not 'notes'
           logged_at: new Date().toISOString()
         }
 
-        // Check for existing log (for BTN, we check by user_id, exercise_name, and notes containing workout_id)
+        // Check for existing log (for BTN, we check by user_id, exercise_name, and result containing workout_id)
         const { data: existingLog } = await serviceSupabase
           .from('performance_logs')
           .select('id')
           .eq('user_id', userData.id)
           .eq('exercise_name', task.exerciseName)
           .eq('block', 'BTN')
-          .like('notes', `%BTN Workout ${workoutId}%`)
+          .like('result', `%BTN Workout ${workoutId}%`) // Use 'result' column, not 'notes'
           .order('logged_at', { ascending: false })
           .limit(1)
           .maybeSingle()
@@ -376,8 +376,9 @@ export async function POST(request: NextRequest) {
       console.log(`✅ All task completions logged to performance_logs`)
     }
 
-    // Populate exercise_percentile_log
-    if (updatedWorkout) {
+    // Populate exercise_percentile_log (skip for BTN - metcon_id is required but BTN workouts don't have one)
+    if (updatedWorkout && updatedWorkout.workout_type !== 'btn') {
+      // Only populate for Premium metcons (BTN workouts don't have metcon_id which is required)
       // Fetch full workout to get week/day
       const { data: fullWorkout } = await supabase
         .from('program_metcons')
