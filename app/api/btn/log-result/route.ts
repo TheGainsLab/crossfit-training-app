@@ -181,14 +181,15 @@ export async function POST(request: NextRequest) {
 
     const { workoutId, userScore, notes, avgHeartRate, maxHeartRate, taskCompletions }: LogResultRequest = await request.json()
 
+    console.log(`🔥 BTN result logging for workout ${workoutId}, user ${userData.id}`)
+    console.log(`📋 Received taskCompletions:`, taskCompletions ? `${taskCompletions.length} tasks` : 'none', taskCompletions)
+
     if (!workoutId || !userScore) {
       return NextResponse.json(
         { error: 'Missing required fields: workoutId, userScore' },
         { status: 400 }
       )
     }
-
-    console.log(`🔥 BTN result logging for workout ${workoutId}, user ${userData.id}`)
 
     // Step 1: Fetch the workout
     const { data: workout, error: workoutError } = await supabase
@@ -292,6 +293,12 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`💾 Result saved successfully${avgHeartRate ? ` (Avg HR: ${avgHeartRate}, Max HR: ${maxHeartRate || 'N/A'})` : ''}`)
+    console.log(`🔍 Checking taskCompletions:`, {
+      hasTaskCompletions: !!taskCompletions,
+      length: taskCompletions?.length || 0,
+      hasUpdatedWorkout: !!updatedWorkout,
+      willLog: !!(taskCompletions && taskCompletions.length > 0 && updatedWorkout)
+    })
 
     // Step 6: Log task-level completions to performance_logs (if provided)
     if (taskCompletions && taskCompletions.length > 0 && updatedWorkout) {
