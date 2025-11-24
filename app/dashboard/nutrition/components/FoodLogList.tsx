@@ -32,13 +32,15 @@ export default function FoodLogList({ logs, onDelete }: FoodLogListProps) {
 
   return (
     <div className="space-y-6">
-      {Object.entries(grouped).map(([mealType, mealLogs]) => (
+      {Object.entries(grouped).map(([mealType, mealLogs]) => {
+        const typedMealLogs = mealLogs as any[]
+        return (
         <div key={mealType}>
           <h3 className="text-sm font-semibold text-gray-700 mb-2">
             {mealTypeLabels[mealType] || mealType}
           </h3>
           <div className="space-y-2">
-            {mealLogs.map((log) => (
+            {typedMealLogs.map((log) => (
               <div
                 key={log.id}
                 className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
@@ -68,7 +70,8 @@ export default function FoodLogList({ logs, onDelete }: FoodLogListProps) {
             ))}
           </div>
         </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
