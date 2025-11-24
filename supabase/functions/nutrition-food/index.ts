@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,7 +24,11 @@ async function getFatSecretToken(): Promise<string | null> {
   }
 
   try {
-    const authString = btoa(`${clientId}:${clientSecret}`)
+    // Use Deno's standard library for base64 encoding
+    const credentials = `${clientId}:${clientSecret}`
+    const encoder = new TextEncoder()
+    const data = encoder.encode(credentials)
+    const authString = base64Encode(data)
     
     const response = await fetch('https://oauth.fatsecret.com/connect/token', {
       method: 'POST',
@@ -62,7 +67,8 @@ async function callFatSecretAPI(method: string, params: Record<string, string | 
     throw new Error('Failed to obtain FatSecret access token')
   }
 
-  const queryParams = new URLSearchParams({
+  // Build form data body (FatSecret expects form-urlencoded in body)
+  const formData = new URLSearchParams({
     method,
     format: 'json',
     ...Object.entries(params).reduce((acc, [key, value]) => {
@@ -72,13 +78,14 @@ async function callFatSecretAPI(method: string, params: Record<string, string | 
   })
 
   const response = await fetch(
-    `https://platform.fatsecret.com/rest/server.api?${queryParams.toString()}`,
+    'https://platform.fatsecret.com/rest/server.api',
     {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
+      body: formData.toString(),
     }
   )
 
