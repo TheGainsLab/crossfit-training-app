@@ -52,7 +52,7 @@ async function getFatSecretToken(): Promise<string | null> {
     // Include credentials in both header AND body (FatSecret might require both)
     const formData = new URLSearchParams({
       grant_type: 'client_credentials',
-      scope: 'premier',
+      scope: 'basic',
       client_id: clientId,
       client_secret: clientSecret,
     })
