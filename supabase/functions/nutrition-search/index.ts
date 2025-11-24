@@ -122,10 +122,22 @@ async function callFatSecretAPI(method: string, params: Record<string, string | 
 
   if (!response.ok) {
     const errorText = await response.text()
+    console.error('FatSecret API response error:', response.status, errorText)
     throw new Error(`FatSecret API error: ${response.status} - ${errorText}`)
   }
 
-  return response.json()
+  const result = await response.json()
+  
+  // Log the full response to see what we're getting
+  console.log('FatSecret API raw response:', JSON.stringify(result))
+  
+  // Check if response is an error
+  if (result.error) {
+    console.error('FatSecret API returned error:', result.error)
+    throw new Error(`FatSecret API error: ${result.error.message || result.error}`)
+  }
+
+  return result
 }
 
 // Helper to normalize foods.search response (handles single vs array quirk)
@@ -146,7 +158,7 @@ function normalizeFoodsSearchResponse(response: any): {
   const { foods } = response
   
   if (!foods) {
-    console.error('Response missing foods property:', JSON.stringify(response))
+    console.error('Response missing foods property. Full response:', JSON.stringify(response))
     throw new Error('Invalid response structure: missing foods property')
   }
 
