@@ -9,21 +9,22 @@ const corsHeaders = {
 // Manual base64 encoding (no external imports needed)
 function base64Encode(str: string): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-  let result = ''
-  let i = 0
   const encoder = new TextEncoder()
   const bytes = encoder.encode(str)
+  let result = ''
   
-  while (i < bytes.length) {
-    const a = bytes[i++]
-    const b = i < bytes.length ? bytes[i++] : 0
-    const c = i < bytes.length ? bytes[i++] : 0
+  for (let i = 0; i < bytes.length; i += 3) {
+    const a = bytes[i]
+    const b = bytes[i + 1] || 0
+    const c = bytes[i + 2] || 0
     const bitmap = (a << 16) | (b << 8) | c
+    
     result += chars.charAt((bitmap >> 18) & 63)
     result += chars.charAt((bitmap >> 12) & 63)
-    result += i - 2 < bytes.length ? chars.charAt((bitmap >> 6) & 63) : '='
-    result += i - 1 < bytes.length ? chars.charAt(bitmap & 63) : '='
+    result += i + 1 < bytes.length ? chars.charAt((bitmap >> 6) & 63) : '='
+    result += i + 2 < bytes.length ? chars.charAt(bitmap & 63) : '='
   }
+  
   return result
 }
 
@@ -49,21 +50,32 @@ async function getFatSecretToken(): Promise<string | null> {
     const credentials = `${clientId}:${clientSecret}`
     const authString = base64Encode(credentials)
     
+    // Include credentials in both header AND body (FatSecret might require both)
+    const formData = new URLSearchParams({
+      grant_type: 'client_credentials',
+      scope: 'premier',
+      client_id: clientId,
+      client_secret: clientSecret,
+    })
+    
     const response = await fetch('https://oauth.fatsecret.com/connect/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${authString}`,
       },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        scope: 'premier',
-      }),
+      body: formData.toString(),
     })
 
     if (!response.ok) {
       const errorText = await response.text()
       console.error('FatSecret OAuth error:', response.status, errorText)
+      console.error('Request details:', {
+        hasClientId: !!clientId,
+        hasClientSecret: !!clientSecret,
+        authStringLength: authString.length,
+        authStringPreview: authString.substring(0, 20) + '...'
+      })
       return null
     }
 
