@@ -1,10 +1,30 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// Manual base64 encoding (no external imports needed)
+function base64Encode(str: string): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  let result = ''
+  let i = 0
+  const encoder = new TextEncoder()
+  const bytes = encoder.encode(str)
+  
+  while (i < bytes.length) {
+    const a = bytes[i++]
+    const b = i < bytes.length ? bytes[i++] : 0
+    const c = i < bytes.length ? bytes[i++] : 0
+    const bitmap = (a << 16) | (b << 8) | c
+    result += chars.charAt((bitmap >> 18) & 63)
+    result += chars.charAt((bitmap >> 12) & 63)
+    result += i - 2 < bytes.length ? chars.charAt((bitmap >> 6) & 63) : '='
+    result += i - 1 < bytes.length ? chars.charAt(bitmap & 63) : '='
+  }
+  return result
 }
 
 // FatSecret token cache (in-memory)
@@ -25,11 +45,9 @@ async function getFatSecretToken(): Promise<string | null> {
   }
 
   try {
-    // Use Deno's standard library for base64 encoding
+    // Use manual base64 encoding
     const credentials = `${clientId}:${clientSecret}`
-    const encoder = new TextEncoder()
-    const data = encoder.encode(credentials)
-    const authString = base64Encode(data)
+    const authString = base64Encode(credentials)
     
     const response = await fetch('https://oauth.fatsecret.com/connect/token', {
       method: 'POST',
