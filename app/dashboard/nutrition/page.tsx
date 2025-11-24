@@ -58,9 +58,9 @@ export default function NutritionPage() {
           .select('*')
           .eq('user_id', userId)
           .eq('date', today)
-          .single()
+          .maybeSingle() // Use maybeSingle() - returns null if no row exists
 
-        setDailySummary(summary)
+        setDailySummary(summary || null)
 
         // Load today's food entries
         const startOfDay = new Date()
