@@ -157,17 +157,25 @@ serve(async (req) => {
       )
     }
 
-    // Verify user via Supabase
+    // Verify user via Supabase - Direct token verification
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } }
-    })
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    // Extract token from Authorization header (remove "Bearer " if present)
+    const token = authHeader.replace(/^Bearer\s+/i, '')
+    
+    // Create Supabase client
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    
+    // Pass token directly to getUser() - more reliable than relying on client auth state
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        JSON.stringify({ 
+          success: false, 
+          error: 'Unauthorized',
+          details: authError?.message || 'No user returned'
+        }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
