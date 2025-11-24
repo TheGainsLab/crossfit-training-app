@@ -204,12 +204,14 @@ export default function Navigation() {
         { href: '/btn', label: 'Generator' },
         { href: '/btn/workouts', label: 'Workouts' },
         { href: '/btn/analytics', label: 'Analytics' },
+        { href: '/dashboard/nutrition', label: 'Nutrition' },
         { href: '/profile', label: 'Profile' },
       ]
     : [
         { href: '/dashboard', label: 'Dashboard' },
         { href: todaysHref, label: 'Today\'s Workout' },
         { href: '/workouts', label: 'Workouts' },
+        { href: '/dashboard/nutrition', label: 'Nutrition' },
         { href: '/profile', label: 'Profile' },
       ]
 
