@@ -137,7 +137,32 @@ function normalizeFoodsSearchResponse(response: any): {
     total: number
   }
 } {
+  // Add defensive checks
+  if (!response) {
+    console.error('Response is null or undefined')
+    throw new Error('Invalid response from FatSecret API')
+  }
+
   const { foods } = response
+  
+  if (!foods) {
+    console.error('Response missing foods property:', JSON.stringify(response))
+    throw new Error('Invalid response structure: missing foods property')
+  }
+
+  // Handle case where foods.food doesn't exist
+  if (!foods.food) {
+    console.error('Response missing foods.food property:', JSON.stringify(foods))
+    // Return empty array if no foods found
+    return {
+      foods: [],
+      pagination: {
+        page: 0,
+        maxResults: 0,
+        total: 0,
+      },
+    }
+  }
   
   // Handle the single vs array quirk
   const foodArray = Array.isArray(foods.food) 
@@ -147,9 +172,9 @@ function normalizeFoodsSearchResponse(response: any): {
   return {
     foods: foodArray,
     pagination: {
-      page: parseInt(foods.page_number, 10),
-      maxResults: parseInt(foods.max_results, 10),
-      total: parseInt(foods.total_results, 10),
+      page: parseInt(foods.page_number || '0', 10),
+      maxResults: parseInt(foods.max_results || '0', 10),
+      total: parseInt(foods.total_results || '0', 10),
     },
   }
 }
@@ -222,6 +247,8 @@ serve(async (req) => {
       page_number: pageNumber,
       max_results: maxResults,
     })
+
+    console.log('FatSecret API response:', JSON.stringify(result).substring(0, 500)) // Log first 500 chars
 
     // Normalize response (handle single vs array quirk)
     const normalized = normalizeFoodsSearchResponse(result)
