@@ -58,7 +58,7 @@ interface StripeSessionData {
   name: string
   sessionId: string
   isValid: boolean
-  productType?: 'premium' | 'applied_power' | 'btn'
+  productType?: 'premium' | 'applied_power' | 'btn' | 'engine'
 }
 
 const equipmentOptions = [
