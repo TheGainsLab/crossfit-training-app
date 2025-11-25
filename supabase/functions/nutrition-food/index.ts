@@ -132,7 +132,7 @@ serve(async (req) => {
     const normalized = normalizeFoodGetResponse(result)
 
     return new Response(
-      JSON.stringify({ success: true, data: normalized }),
+      JSON.stringify({ success: true, data: { food: normalized } }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
