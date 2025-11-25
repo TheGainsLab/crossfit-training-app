@@ -6,125 +6,38 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Manual base64 encoding (no external imports needed)
-function base64Encode(str: string): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-  const encoder = new TextEncoder()
-  const bytes = encoder.encode(str)
-  let result = ''
-  
-  for (let i = 0; i < bytes.length; i += 3) {
-    const a = bytes[i]
-    const b = bytes[i + 1] || 0
-    const c = bytes[i + 2] || 0
-    const bitmap = (a << 16) | (b << 8) | c
-    
-    result += chars.charAt((bitmap >> 18) & 63)
-    result += chars.charAt((bitmap >> 12) & 63)
-    result += i + 1 < bytes.length ? chars.charAt((bitmap >> 6) & 63) : '='
-    result += i + 2 < bytes.length ? chars.charAt(bitmap & 63) : '='
-  }
-  
-  return result
-}
-
-// Reuse token cache from search function (in production, consider shared cache)
-let cachedToken: { access_token: string; expires_at: number } | null = null
-
-async function getFatSecretToken(): Promise<string | null> {
-  const clientId = Deno.env.get('FATSECRET_CLIENT_ID')
-  const clientSecret = Deno.env.get('FATSECRET_CLIENT_SECRET')
-
-  if (!clientId || !clientSecret) {
-    console.error('FatSecret credentials not configured')
-    return null
-  }
-
-  if (cachedToken && cachedToken.expires_at > Date.now() + 3600000) {
-    return cachedToken.access_token
-  }
-
-  try {
-    // Use manual base64 encoding
-    const credentials = `${clientId}:${clientSecret}`
-    const authString = base64Encode(credentials)
-    
-    // Include credentials in both header AND body (FatSecret might require both)
-    const formData = new URLSearchParams({
-      grant_type: 'client_credentials',
-      scope: 'basic',
-      client_id: clientId,
-      client_secret: clientSecret,
-    })
-    
-    const response = await fetch('https://oauth.fatsecret.com/connect/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${authString}`,
-      },
-      body: formData.toString(),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('FatSecret OAuth error:', response.status, errorText)
-      console.error('Request details:', {
-        hasClientId: !!clientId,
-        hasClientSecret: !!clientSecret,
-        authStringLength: authString.length,
-        authStringPreview: authString.substring(0, 20) + '...'
-      })
-      return null
-    }
-
-    const tokenData = await response.json()
-    cachedToken = {
-      access_token: tokenData.access_token,
-      expires_at: Date.now() + (tokenData.expires_in * 1000),
-    }
-
-    return cachedToken.access_token
-  } catch (error) {
-    console.error('Failed to get FatSecret token:', error)
-    return null
-  }
-}
-
+// Call FatSecret API through proxy server
 async function callFatSecretAPI(method: string, params: Record<string, string | number>): Promise<any> {
-  const accessToken = await getFatSecretToken()
-  if (!accessToken) {
-    throw new Error('Failed to obtain FatSecret access token')
-  }
-
-  // Build form data body (FatSecret expects form-urlencoded in body)
-  const formData = new URLSearchParams({
-    method,
-    format: 'json',
-    ...Object.entries(params).reduce((acc, [key, value]) => {
-      acc[key] = String(value)
-      return acc
-    }, {} as Record<string, string>),
+  // Proxy server URL (static IP whitelisted in FatSecret)
+  const proxyUrl = 'http://104.236.49.96:3000'
+  
+  const response = await fetch(proxyUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      method,
+      params,
+    }),
   })
-
-  const response = await fetch(
-    'https://platform.fatsecret.com/rest/server.api',
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData.toString(),
-    }
-  )
 
   if (!response.ok) {
     const errorText = await response.text()
-    throw new Error(`FatSecret API error: ${response.status} - ${errorText}`)
+    console.error('Proxy error:', response.status, errorText)
+    throw new Error(`Proxy error: ${response.status} - ${errorText}`)
   }
 
-  return response.json()
+  const result = await response.json()
+  
+  if (!result.success) {
+    console.error('Proxy returned unsuccessful response:', result)
+    throw new Error(result.error || 'Proxy returned unsuccessful response')
+  }
+
+  // Proxy returns {success: true, data: {...}}
+  // The data contains the FatSecret API response
+  return result.data
 }
 
 // Helper to normalize food.get response (handles single vs array serving quirk)
