@@ -11,12 +11,16 @@ const corsHeaders = {
 function getPlanFromPriceId(priceId: string): string {
   const BTN_PRICE_ID = Deno.env.get('BTN_STRIPE_PRICE_ID') || 'price_1SK2r2LEmGVLIgpHjn1dF2EU'
   const APPLIED_POWER_PRICE_ID = Deno.env.get('APPLIED_POWER_STRIPE_PRICE_ID') || 'price_1SK4BSLEmGVLIgpHrS1cfLrH'
+  const ENGINE_PRICE_ID = Deno.env.get('ENGINE_STRIPE_PRICE_ID') || 'price_1SXSbCLEmGVLIgpHRK07PDHg'
   
   if (priceId === BTN_PRICE_ID) {
     return 'btn'
   }
   if (priceId === APPLIED_POWER_PRICE_ID) {
     return 'applied_power'
+  }
+  if (priceId === ENGINE_PRICE_ID) {
+    return 'engine'
   }
   // Default to premium for other price IDs
   return 'premium'

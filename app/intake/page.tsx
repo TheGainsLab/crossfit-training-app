@@ -386,14 +386,17 @@ const [currentSection, setCurrentSection] = useState<number>(1)
       // Determine product type from price ID
       const APPLIED_POWER_PRICE_ID = 'price_1SK4BSLEmGVLIgpHrS1cfLrH'
       const BTN_PRICE_ID = 'price_1SK2r2LEmGVLIgpHjn1dF2EU'
+      const ENGINE_PRICE_ID = 'price_1SXSbCLEmGVLIgpHRK07PDHg'
       
       const priceId = sessionData.line_items?.data?.[0]?.price?.id
-      let productType: 'premium' | 'applied_power' | 'btn' = 'premium'
+      let productType: 'premium' | 'applied_power' | 'btn' | 'engine' = 'premium'
       
       if (priceId === APPLIED_POWER_PRICE_ID) {
         productType = 'applied_power'
       } else if (priceId === BTN_PRICE_ID) {
         productType = 'btn'
+      } else if (priceId === ENGINE_PRICE_ID) {
+        productType = 'engine'
       }
       
       console.log('📦 Product type detected:', productType, 'from price:', priceId)

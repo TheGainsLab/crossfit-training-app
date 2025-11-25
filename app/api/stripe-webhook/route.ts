@@ -13,6 +13,7 @@ const supabase = createClient(
 // Stripe Price IDs (TEST MODE)
 const BTN_PRICE_ID = process.env.BTN_STRIPE_PRICE_ID || 'price_1SK2r2LEmGVLIgpHjn1dF2EU'
 const APPLIED_POWER_PRICE_ID = process.env.APPLIED_POWER_STRIPE_PRICE_ID || 'price_1SK4BSLEmGVLIgpHrS1cfLrH'
+const ENGINE_PRICE_ID = process.env.ENGINE_STRIPE_PRICE_ID || 'price_1SXSbCLEmGVLIgpHRK07PDHg'
 
 // Helper: Determine plan type from Stripe price ID
 function getPlanFromPriceId(priceId: string): string {
@@ -21,6 +22,9 @@ function getPlanFromPriceId(priceId: string): string {
   }
   if (priceId === APPLIED_POWER_PRICE_ID) {
     return 'applied_power'
+  }
+  if (priceId === ENGINE_PRICE_ID) {
+    return 'engine'
   }
   // Default to premium for other price IDs
   return 'premium'

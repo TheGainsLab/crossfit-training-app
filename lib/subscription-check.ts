@@ -91,6 +91,13 @@ export async function checkAppliedPowerAccess(userId: number): Promise<Subscript
 }
 
 /**
+ * Convenience function: Check if a user has an active Engine subscription
+ */
+export async function checkEngineAccess(userId: number): Promise<SubscriptionStatus> {
+  return checkSubscriptionAccess(userId, 'engine')
+}
+
+/**
  * Check if a user has access to BTN features (BTN or Premium subscription)
  * Premium users get access to BTN features as well
  */
