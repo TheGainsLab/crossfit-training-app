@@ -7,23 +7,45 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 }
 
-// Helper function to determine plan type from Stripe price ID
-function getPlanFromPriceId(priceId: string): string {
-  const BTN_PRICE_ID = Deno.env.get('BTN_STRIPE_PRICE_ID') || 'price_1SK2r2LEmGVLIgpHjn1dF2EU'
-  const APPLIED_POWER_PRICE_ID = Deno.env.get('APPLIED_POWER_STRIPE_PRICE_ID') || 'price_1SK4BSLEmGVLIgpHrS1cfLrH'
-  const ENGINE_PRICE_ID = Deno.env.get('ENGINE_STRIPE_PRICE_ID') || 'price_1SXSbCLEmGVLIgpHRK07PDHg'
-  
-  if (priceId === BTN_PRICE_ID) {
-    return 'btn'
+// Helper function to determine plan type from Stripe price ID by querying the database
+async function getPlanFromPriceId(priceId: string): Promise<string> {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('❌ Missing Supabase environment variables')
+      return 'premium'
+    }
+    
+    // Query subscription_tiers to find which tier has this price ID
+    const queryUrl = `${supabaseUrl}/rest/v1/subscription_tiers?or=(stripe_price_id_monthly.eq.${priceId},stripe_price_id_quarterly.eq.${priceId},stripe_price_id_yearly.eq.${priceId})&select=id&limit=1`
+    
+    const response = await fetch(queryUrl, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (response.ok) {
+      const tiers = await response.json()
+      if (tiers && tiers.length > 0) {
+        // Map tier id to plan type (tier id is already in the correct format)
+        return tiers[0].id.toLowerCase() // 'btn', 'applied_power', 'engine', etc.
+      }
+    }
+    
+    // Default to premium if not found
+    console.log(`⚠️ Price ID ${priceId} not found in subscription_tiers, defaulting to premium`)
+    return 'premium'
+  } catch (error) {
+    console.error('❌ Error querying subscription_tiers:', error)
+    // Default to premium on error
+    return 'premium'
   }
-  if (priceId === APPLIED_POWER_PRICE_ID) {
-    return 'applied_power'
-  }
-  if (priceId === ENGINE_PRICE_ID) {
-    return 'engine'
-  }
-  // Default to premium for other price IDs
-  return 'premium'
 }
 
 serve(async (req) => {
@@ -90,7 +112,7 @@ serve(async (req) => {
               const subscription = await subscriptionResponse.json()
               const priceId = subscription.items?.data?.[0]?.price?.id
               if (priceId) {
-                planType = getPlanFromPriceId(priceId).toUpperCase()
+                planType = (await getPlanFromPriceId(priceId)).toUpperCase()
                 console.log(`📦 Detected plan type: ${planType} from price ID: ${priceId}`)
               }
             }

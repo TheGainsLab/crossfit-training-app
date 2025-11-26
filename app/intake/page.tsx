@@ -389,23 +389,30 @@ const [currentSection, setCurrentSection] = useState<number>(1)
       const sessionData = await response.json()
       console.log('✅ Stripe session verified:', sessionData)
       
-      // Determine product type from price ID
-      const APPLIED_POWER_PRICE_ID = 'price_1SK4BSLEmGVLIgpHrS1cfLrH'
-      const BTN_PRICE_ID = 'price_1SK2r2LEmGVLIgpHjn1dF2EU'
-      const ENGINE_PRICE_ID = 'price_1SXSbCLEmGVLIgpHRK07PDHg'
-      
+      // Determine product type from price ID by querying the database
       const priceId = sessionData.line_items?.data?.[0]?.price?.id
       let productType: 'premium' | 'applied_power' | 'btn' | 'engine' = 'premium'
       
-      if (priceId === APPLIED_POWER_PRICE_ID) {
-        productType = 'applied_power'
-      } else if (priceId === BTN_PRICE_ID) {
-        productType = 'btn'
-      } else if (priceId === ENGINE_PRICE_ID) {
-        productType = 'engine'
+      if (priceId) {
+        try {
+          const productTypeResponse = await fetch(`/api/get-product-type`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ priceId })
+          })
+          
+          if (productTypeResponse.ok) {
+            const productTypeData = await productTypeResponse.json()
+            productType = productTypeData.productType as 'premium' | 'applied_power' | 'btn' | 'engine'
+            console.log('📦 Product type detected from database:', productType, 'from price:', priceId)
+          } else {
+            console.warn('⚠️ Failed to get product type from database, defaulting to premium')
+          }
+        } catch (error) {
+          console.error('❌ Error getting product type:', error)
+          // Default to premium on error
+        }
       }
-      
-      console.log('📦 Product type detected:', productType, 'from price:', priceId)
       
       return {
         email: sessionData.customer_details?.email || '',

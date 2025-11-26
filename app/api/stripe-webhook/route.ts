@@ -10,24 +10,29 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Stripe Price IDs (TEST MODE)
-const BTN_PRICE_ID = process.env.BTN_STRIPE_PRICE_ID || 'price_1SK2r2LEmGVLIgpHjn1dF2EU'
-const APPLIED_POWER_PRICE_ID = process.env.APPLIED_POWER_STRIPE_PRICE_ID || 'price_1SK4BSLEmGVLIgpHrS1cfLrH'
-const ENGINE_PRICE_ID = process.env.ENGINE_STRIPE_PRICE_ID || 'price_1SXSbCLEmGVLIgpHRK07PDHg'
-
-// Helper: Determine plan type from Stripe price ID
-function getPlanFromPriceId(priceId: string): string {
-  if (priceId === BTN_PRICE_ID) {
-    return 'btn'
+// Helper: Determine plan type from Stripe price ID by querying the database
+async function getPlanFromPriceId(priceId: string): Promise<string> {
+  try {
+    // Query subscription_tiers to find which tier has this price ID
+    const { data: tier, error } = await supabase
+      .from('subscription_tiers')
+      .select('id')
+      .or(`stripe_price_id_monthly.eq.${priceId},stripe_price_id_quarterly.eq.${priceId},stripe_price_id_yearly.eq.${priceId}`)
+      .single()
+    
+    if (!error && tier) {
+      // Map tier id to plan type (tier id is already in the correct format)
+      return tier.id.toLowerCase() // 'btn', 'applied_power', 'engine', etc.
+    }
+    
+    // Default to premium if not found
+    console.log(`⚠️ Price ID ${priceId} not found in subscription_tiers, defaulting to premium`)
+    return 'premium'
+  } catch (error) {
+    console.error('❌ Error querying subscription_tiers:', error)
+    // Default to premium on error
+    return 'premium'
   }
-  if (priceId === APPLIED_POWER_PRICE_ID) {
-    return 'applied_power'
-  }
-  if (priceId === ENGINE_PRICE_ID) {
-    return 'engine'
-  }
-  // Default to premium for other price IDs
-  return 'premium'
 }
 
 // Helper: normalize Stripe timestamps (seconds, milliseconds, ISO) -> ISO date string or null
@@ -318,7 +323,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     if (session.subscription) {
       const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
       const priceId = (subscription as any).items.data[0].price.id
-      planType = getPlanFromPriceId(priceId).toUpperCase() // 'btn' -> 'BTN', 'premium' -> 'PREMIUM'
+      planType = (await getPlanFromPriceId(priceId)).toUpperCase() // 'btn' -> 'BTN', 'premium' -> 'PREMIUM'
     }
 
     // Normalize email to lowercase for consistent lookups
@@ -385,7 +390,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
       // Determine plan type from price ID
       const priceId = (subscription as any).items.data[0].price.id
-      const planType = getPlanFromPriceId(priceId)
+      const planType = await getPlanFromPriceId(priceId)
 
       const subscriptionData = {
         user_id: userId,
@@ -467,7 +472,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 
   // Determine plan type from price ID
   const priceId = (subscription as any).items.data[0].price.id
-  const planType = getPlanFromPriceId(priceId)
+  const planType = await getPlanFromPriceId(priceId)
 
   // Use existing subscriptions table structure
   const subscriptionData = {
