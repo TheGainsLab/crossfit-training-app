@@ -63,6 +63,16 @@ export async function POST(request: NextRequest) {
 
     console.log('💾 Saving intake data for user:', effectiveUserId)
 
+    // Get user's subscription tier to determine what data to save
+    const { data: userData } = await supabaseAdmin
+      .from('users')
+      .select('subscription_tier')
+      .eq('id', effectiveUserId)
+      .single()
+    
+    const isEngineUser = userData?.subscription_tier === 'ENGINE'
+    console.log('📊 User subscription tier:', userData?.subscription_tier, '| Is Engine user:', isEngineUser)
+
     // Update user details first
     console.log('👤 Updating user details...')
     const parsedWeight = typeof bodyWeight === 'number' ? bodyWeight : (bodyWeight ? parseFloat(bodyWeight) : null)
@@ -127,7 +137,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Save user preferences (with fallback for older schema and missing unique constraints)
-    if (preferences) {
+    // Skip preferences for Engine users
+    if (preferences && !isEngineUser) {
       const fullPayload: any = {
         user_id: effectiveUserId,
         three_month_goals: preferences.threeMonthGoals || null,
@@ -186,11 +197,14 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+    } else if (preferences && isEngineUser) {
+      console.log('⏭️ Skipping preferences save for Engine user')
     }
 
-  // Save skills
-console.log('🎯 Saving skills...')
-await supabaseAdmin.from('user_skills').delete().eq('user_id', effectiveUserId)
+  // Save skills (skip for Engine users)
+  if (!isEngineUser) {
+    console.log('🎯 Saving skills...')
+    await supabaseAdmin.from('user_skills').delete().eq('user_id', effectiveUserId)
 
 if (skills && skills.length > 0) {
   const skillRecords = skills.map((skillLevel: string, index: number) => {
@@ -266,10 +280,14 @@ if (skills && skills.length > 0) {
         }
       }
     }
+  } else {
+    console.log('⏭️ Skipping skills save for Engine user')
+  }
 
-    // Save 1RMs
-    console.log('💪 Saving 1RMs...')
-    await supabaseAdmin.from('user_one_rms').delete().eq('user_id', effectiveUserId)
+    // Save 1RMs (skip for Engine users)
+    if (!isEngineUser) {
+      console.log('💪 Saving 1RMs...')
+      await supabaseAdmin.from('user_one_rms').delete().eq('user_id', effectiveUserId)
     
     if (oneRMs && oneRMs.length > 0) {
       const oneRMLifts = [
@@ -301,6 +319,8 @@ if (skills && skills.length > 0) {
         
         console.log('✅ 1RMs saved:', oneRMRecords.length, 'records')
       }
+    } else {
+      console.log('⏭️ Skipping 1RMs save for Engine user')
     }
 
     console.log('🎉 All intake data saved successfully')
