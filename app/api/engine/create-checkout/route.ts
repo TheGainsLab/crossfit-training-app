@@ -137,15 +137,31 @@ export async function POST(request: NextRequest) {
     console.log('💳 Creating Stripe checkout session with price:', tier.stripe_price_id_monthly)
     console.log('🔑 Stripe key mode:', process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ? 'TEST' : 'LIVE')
     
-    // Verify the price exists before creating checkout session
+    // Verify the price exists and is active before creating checkout session
     try {
       const price = await stripe.prices.retrieve(tier.stripe_price_id_monthly)
-      console.log('✅ Price verified:', price.id, 'Active:', price.active)
+      console.log('✅ Price verified:', price.id, 'Active:', price.active, 'Type:', price.type)
+      
+      if (!price.active) {
+        return NextResponse.json({ 
+          error: `Price ID ${tier.stripe_price_id_monthly} is archived or inactive. Please activate it in Stripe dashboard.`,
+          priceId: tier.stripe_price_id_monthly
+        }, { status: 400 })
+      }
+      
+      if (price.type !== 'recurring') {
+        return NextResponse.json({ 
+          error: `Price ID ${tier.stripe_price_id_monthly} is not a recurring subscription. Please use a recurring price.`,
+          priceId: tier.stripe_price_id_monthly,
+          priceType: price.type
+        }, { status: 400 })
+      }
     } catch (priceError: any) {
-      console.error('❌ Price verification failed:', priceError.message)
+      console.error('❌ Price verification failed:', priceError.message, priceError.code)
       return NextResponse.json({ 
         error: `Price ID ${tier.stripe_price_id_monthly} not found in Stripe. Please verify the price ID in your Stripe dashboard.`,
         details: priceError.message,
+        code: priceError.code,
         priceId: tier.stripe_price_id_monthly
       }, { status: 400 })
     }
