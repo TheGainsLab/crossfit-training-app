@@ -353,6 +353,21 @@ export async function POST(request: NextRequest) {
     // Determine program type based on subscription tier
     const isAppliedPower = userTier?.subscription_tier === 'APPLIED_POWER'
     const isBTN = userTier?.subscription_tier === 'BTN'
+    const isEngine = userTier?.subscription_tier === 'ENGINE'
+    
+    // Engine users don't need program generation - they use static workouts
+    if (isEngine) {
+      console.log('🎯 Engine user - skipping program generation (static workouts)')
+      
+      return NextResponse.json({ 
+        success: true,
+        message: 'Intake data saved successfully for Engine user',
+        intakeSaved: true,
+        programGenerated: false,
+        profileGenerated: false,
+        note: 'Engine uses static workouts - no program generation needed'
+      })
+    }
     
     // BTN users don't need program generation - they use the workout generator
     // But they DO need a user profile generated for /profile page access
