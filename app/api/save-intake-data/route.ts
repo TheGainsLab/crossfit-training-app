@@ -206,21 +206,21 @@ export async function POST(request: NextRequest) {
     console.log('🎯 Saving skills...')
     await supabaseAdmin.from('user_skills').delete().eq('user_id', effectiveUserId)
 
-if (skills && skills.length > 0) {
-  const skillRecords = skills.map((skillLevel: string, index: number) => {
-    // Extract just the category from strings like "Advanced (More than 15)"
-    let cleanLevel = skillLevel;
-    if (skillLevel && skillLevel.includes('(')) {
-      cleanLevel = skillLevel.split('(')[0].trim();
-    }
-    
-    return {
-      user_id: effectiveUserId,
-      skill_index: index,
-      skill_name: getSkillNameByIndex(index),
-      skill_level: cleanLevel  // Now saves clean values
-    }
-  }).filter((skill: any) => skill.skill_name)
+    if (skills && skills.length > 0) {
+      const skillRecords = skills.map((skillLevel: string, index: number) => {
+        // Extract just the category from strings like "Advanced (More than 15)"
+        let cleanLevel = skillLevel;
+        if (skillLevel && skillLevel.includes('(')) {
+          cleanLevel = skillLevel.split('(')[0].trim();
+        }
+        
+        return {
+          user_id: effectiveUserId,
+          skill_index: index,
+          skill_name: getSkillNameByIndex(index),
+          skill_level: cleanLevel  // Now saves clean values
+        }
+      }).filter((skill: any) => skill.skill_name)
 
       if (skillRecords.length > 0) {
         const { error: skillsError } = await supabaseAdmin
@@ -550,31 +550,30 @@ if (skills && skills.length > 0) {
       console.warn('Failed to persist program_workouts scaffold (non-fatal):', scaffoldErr?.message || scaffoldErr)
     }
 
-console.log(`📊 Generating user profile...`)
+    console.log(`📊 Generating user profile...`)
 
-const profileResponse = await fetch(
-  `${supabaseUrl}/functions/v1/generate-user-profile`,
-  {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${supabaseServiceKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ 
-      user_id: effectiveUserId,
-      sport_id: 1,
-      force_regenerate: false
-    })
-  }
-)
+    const profileResponse = await fetch(
+      `${supabaseUrl}/functions/v1/generate-user-profile`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          user_id: effectiveUserId,
+          sport_id: 1,
+          force_regenerate: false
+        })
+      }
+    )
 
-if (!profileResponse.ok) {
-  const errorText = await profileResponse.text()
-  console.error('❌ Profile generation failed:', errorText)
-} else {
-  console.log(`✅ Profile generated successfully!`)
-}
-
+    if (!profileResponse.ok) {
+      const errorText = await profileResponse.text()
+      console.error('❌ Profile generation failed:', errorText)
+    } else {
+      console.log(`✅ Profile generated successfully!`)
+    }
 
     return NextResponse.json({
       success: true,
