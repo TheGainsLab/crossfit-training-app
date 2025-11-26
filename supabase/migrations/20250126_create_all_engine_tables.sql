@@ -10,7 +10,9 @@ DROP TABLE IF EXISTS engine_user_modality_preferences CASCADE;
 DROP TABLE IF EXISTS engine_program_mapping CASCADE;
 DROP TABLE IF EXISTS engine_time_trials CASCADE;
 DROP TABLE IF EXISTS engine_day_types CASCADE;
+DROP TABLE IF EXISTS engine_workouts CASCADE;
 DROP VIEW IF EXISTS workouts CASCADE;
+DROP TABLE IF EXISTS workouts CASCADE;
 
 -- Step 2: Create day_types table (no dependencies)
 CREATE TABLE day_types (
@@ -263,36 +265,51 @@ CREATE INDEX IF NOT EXISTS idx_workout_sessions_baseline_lookup ON workout_sessi
   time_trial_baseline_id, completed
 ) WHERE completed = true;
 
--- Step 8: Create workouts view from engine_workouts table
--- (engine_workouts should already exist from previous migration)
-CREATE OR REPLACE VIEW workouts AS
-SELECT 
-  id,
-  program_type,
-  day_number,
-  day_type,
-  phase,
-  block_count,
-  set_rest_seconds,
-  block_1_params,
-  block_2_params,
-  block_3_params,
-  block_4_params,
-  total_duration_minutes,
-  base_intensity_percent,
-  created_at,
-  updated_at,
-  month,
-  avg_work_rest_ratio
-FROM engine_workouts;
+-- Step 8: Create workouts table (matching original schema exactly)
+-- This should be created after day_types since it has a foreign key to it
+CREATE TABLE workouts (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  program_type TEXT NOT NULL DEFAULT 'main_5day',
+  day_number INTEGER NOT NULL,
+  day_type TEXT NOT NULL,
+  phase INTEGER NOT NULL,
+  block_count INTEGER NULL DEFAULT 1,
+  set_rest_seconds INTEGER NULL,
+  block_1_params JSONB NOT NULL,
+  block_2_params JSONB NULL,
+  block_3_params JSONB NULL,
+  block_4_params JSONB NULL,
+  total_duration_minutes INTEGER NOT NULL,
+  base_intensity_percent NUMERIC(5, 2) NOT NULL,
+  created_at TIMESTAMPTZ NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NULL DEFAULT NOW(),
+  month INTEGER NOT NULL DEFAULT 1,
+  avg_work_rest_ratio NUMERIC NULL,
+  CONSTRAINT workouts_pkey PRIMARY KEY (id),
+  CONSTRAINT workouts_program_type_day_number_key UNIQUE (program_type, day_number),
+  CONSTRAINT workouts_day_type_fkey FOREIGN KEY (day_type) REFERENCES day_types(id),
+  CONSTRAINT workouts_phase_check CHECK (
+    (phase >= 1) AND (phase <= 12)
+  ),
+  CONSTRAINT workouts_month_check CHECK (
+    (month >= 1) AND (month <= 36)
+  ),
+  CONSTRAINT workouts_day_number_check CHECK (
+    (day_number >= 1) AND (day_number <= 720)
+  ),
+  CONSTRAINT workouts_block_count_check CHECK (
+    (block_count >= 1) AND (block_count <= 4)
+  )
+);
 
-COMMENT ON VIEW workouts IS 'View alias for engine_workouts table - provides compatibility with Engine app code';
+CREATE INDEX IF NOT EXISTS idx_workouts_program_day ON workouts(program_type, day_number);
+CREATE INDEX IF NOT EXISTS idx_workouts_day_type ON workouts(day_type);
+CREATE INDEX IF NOT EXISTS idx_workouts_phase ON workouts(phase);
+CREATE INDEX IF NOT EXISTS idx_workouts_program_phase ON workouts(program_type, phase);
+CREATE INDEX IF NOT EXISTS idx_workouts_month ON workouts(month);
+CREATE INDEX IF NOT EXISTS idx_workouts_program_month ON workouts(program_type, month);
 
--- Step 9: Add foreign key from workouts to day_types (if engine_workouts exists)
--- Note: This requires engine_workouts.day_type to reference day_types.id
--- ALTER TABLE engine_workouts
--- ADD CONSTRAINT engine_workouts_day_type_fkey 
--- FOREIGN KEY (day_type) REFERENCES day_types(id);
+COMMENT ON TABLE workouts IS 'Deterministic workout templates for Engine program (Day 1, Day 2, etc.)';
 
 COMMENT ON TABLE day_types IS 'Day type definitions for Engine program';
 COMMENT ON TABLE program_mapping IS 'Maps days from various program types to base 5-day program days';
