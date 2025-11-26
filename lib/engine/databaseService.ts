@@ -38,6 +38,11 @@ class EngineDatabaseService {
     return !!this.userId
   }
 
+  // Get user ID (for components that need it)
+  getUserId(): string | null {
+    return this.userId
+  }
+
   // Load user data
   async loadUserData() {
     if (!this.userId || !this.supabase) return null
