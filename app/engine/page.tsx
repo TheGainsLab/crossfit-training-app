@@ -3,6 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import engineDatabaseService from '@/lib/engine/databaseService';
+import ProgramSelection from './components/ProgramSelection';
+import Dashboard from './components/Dashboard';
+import TrainingDayComponent from './components/TrainingDayComponent';
+import Analytics from './components/Analytics';
 
 interface SubscriptionStatus {
   hasAccess: boolean
@@ -13,18 +18,28 @@ interface SubscriptionStatus {
   }
 }
 
+type EngineView = 'dashboard' | 'trainingday' | 'analytics'
+
 export default function EnginePage() {
   const [loading, setLoading] = useState(true)
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus>({ hasAccess: false })
   const [checkingOut, setCheckingOut] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [currentView, setCurrentView] = useState<EngineView>('dashboard')
+  const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const [needsProgramSelection, setNeedsProgramSelection] = useState<boolean | null>(null)
+  const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
-    checkAccess()
+    initializeAndCheckAccess()
   }, [])
 
-  const checkAccess = async () => {
+  const initializeAndCheckAccess = async () => {
     try {
+      // Initialize database service
+      const connected = await engineDatabaseService.initialize()
+      setInitialized(connected)
+
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       
@@ -40,6 +55,12 @@ export default function EnginePage() {
       const data = await response.json()
       
       setSubscriptionStatus(data)
+
+      // If user has access, check if they need program selection
+      if (data.hasAccess && connected) {
+        const programVersion = await engineDatabaseService.loadProgramVersion()
+        setNeedsProgramSelection(!programVersion)
+      }
     } catch (error) {
       console.error('Error checking access:', error)
     } finally {
@@ -89,31 +110,114 @@ export default function EnginePage() {
     )
   }
 
-  // User has access - show Engine dashboard (placeholder for now)
+  // Show program selection if needed
+  if (subscriptionStatus.hasAccess && needsProgramSelection === true) {
+    return (
+      <ProgramSelection 
+        onComplete={async () => {
+          setNeedsProgramSelection(false)
+          setCurrentView('dashboard')
+        }} 
+      />
+    )
+  }
+
+  // Show loading while checking program selection
+  if (subscriptionStatus.hasAccess && needsProgramSelection === null) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FE5858] mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // User has access - show Engine app with routing
   if (subscriptionStatus.hasAccess) {
+    const handleDayClick = (dayNumber: number, dayType?: string) => {
+      setSelectedDay(dayNumber)
+      setCurrentView('trainingday')
+    }
+
+    const handleBackToDashboard = () => {
+      setSelectedDay(null)
+      setCurrentView('dashboard')
+    }
+
+    const handleAnalyticsClick = () => {
+      setCurrentView('analytics')
+    }
+
+    const handleBackFromAnalytics = () => {
+      setCurrentView('dashboard')
+    }
+
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-6xl mx-auto p-8">
-          <div className="mb-6">
-            <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Home
-            </Link>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Engine Conditioning Program</h1>
-            <p className="text-xl text-gray-600 mb-8">
-              Welcome to your Engine program! The full dashboard is coming soon.
-            </p>
-            <div className="bg-gray-50 rounded-lg p-8">
-              <p className="text-gray-700">
-                Your Engine subscription is active. The full program interface will be available here soon.
-              </p>
+        {/* Navigation */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors text-sm">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Home
+              </Link>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setSelectedDay(null)
+                    setCurrentView('dashboard')
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    currentView === 'dashboard'
+                      ? 'bg-[#FE5858] text-white border-2 border-[#FE5858]'
+                      : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={handleAnalyticsClick}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    currentView === 'analytics'
+                      ? 'bg-[#FE5858] text-white border-2 border-[#FE5858]'
+                      : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  Analytics
+                </button>
+              </div>
             </div>
           </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto">
+          {currentView === 'dashboard' && (
+            <Dashboard
+              onDayClick={handleDayClick}
+              onAnalyticsClick={handleAnalyticsClick}
+              showTrainingView={false}
+              onTrainingViewShown={() => {}}
+            />
+          )}
+
+          {currentView === 'trainingday' && selectedDay && (
+            <TrainingDayComponent
+              dayNumber={selectedDay}
+              onBack={handleBackToDashboard}
+              onBackToMonth={handleBackToDashboard}
+            />
+          )}
+
+          {currentView === 'analytics' && (
+            <Analytics onBack={handleBackFromAnalytics} />
+          )}
         </div>
       </div>
     )
