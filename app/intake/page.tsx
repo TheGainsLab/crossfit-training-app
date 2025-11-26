@@ -246,9 +246,15 @@ const [currentSection, setCurrentSection] = useState<number>(1)
   
   // Define which sections are active based on product type
   // Applied Power: Skip Skills (2) and Conditioning (3)
+  // Engine: Skip Skills (2) and 1RM Lifts (4) - only Personal Info, Conditioning, Generate
   const activeSections = productType === 'applied_power' 
     ? [true, false, false, true, true]  // Sections 1, 4, 5 only
-    : [true, true, true, true, true]     // All sections
+    : productType === 'engine'
+    ? [true, false, true, false, true]   // Sections 1, 3, 5 only
+    : [true, true, true, true, true]      // All sections
+  
+  // Calculate active section count for progress display
+  const activeSectionCount = activeSections.filter(Boolean).length
   const primaryBtn = 'px-6 py-2 bg-[#FE5858] text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed'
   const secondaryBtn = 'px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed'
 
@@ -918,6 +924,8 @@ setSubscriptionStatus(subscription.status)
           // Redirect based on subscription tier
           if (userInfo?.subscription_tier === 'BTN') {
             router.push('/btn?refreshed=true')
+          } else if (userInfo?.subscription_tier === 'ENGINE') {
+            router.push('/engine')
           } else if (userInfo?.subscription_tier === 'APPLIED_POWER') {
             router.push('/dashboard')
           } else {
@@ -1068,7 +1076,14 @@ const saveUserData = async (userId: number) => {
   const isValidSection = (section: number) => {
     switch (section) {
       case 1:
-        return formData.name && formData.email && formData.gender && formData.units && formData.bodyWeight
+        const basicInfoValid = formData.name && formData.email && formData.gender && formData.units && formData.bodyWeight
+        // For Engine users, also require at least one cardio machine
+        if (productType === 'engine') {
+          const cardioMachines = ['Rowing Machine', 'Air Bike', 'Ski Erg', 'Bike Erg']
+          const hasCardioMachine = formData.equipment.some(eq => cardioMachines.includes(eq))
+          return basicInfoValid && hasCardioMachine
+        }
+        return basicInfoValid
       case 2:
         return true // Skills are optional with defaults
       case 3:
@@ -1159,13 +1174,13 @@ const saveUserData = async (userId: number) => {
             <div className="mt-6">
 
             <div className="flex justify-between text-sm text-gray-500 mb-2">
-  <span>Section {currentSection} of {sectionTitles.length}</span>
-  <span>{Math.round((currentSection / sectionTitles.length) * 100)}% Complete</span>
+  <span>Section {currentSection} of {activeSectionCount}</span>
+  <span>{Math.round((currentSection / activeSectionCount) * 100)}% Complete</span>
 </div>
 <div className="w-full bg-gray-200 rounded-full h-2">
   <div 
     className="h-2 rounded-full transition-all duration-300"
-    style={{ width: `${(currentSection / sectionTitles.length) * 100}%`, backgroundColor: '#FE5858' }}
+    style={{ width: `${(currentSection / activeSectionCount) * 100}%`, backgroundColor: '#FE5858' }}
   />
 </div>
 
@@ -1347,78 +1362,105 @@ const saveUserData = async (userId: number) => {
 
                <div>
   <label className="block text-sm font-medium text-gray-700 mb-6">
-    Select all equipment available for your training
+    {productType === 'engine' 
+      ? 'Select your cardio machine(s) *' 
+      : 'Select all equipment available for your training'}
   </label>
   
   {/* Equipment Category Cards */}
   <div className="space-y-6">
-    <EquipmentCategoryCard
-      title="The Basics"
-      description=""
-      icon="💪"
-      equipment={[
-        'Barbell',
-        'Dumbbells', 
-        'Kettlebells',
-        'Pullup Bar or Rig',
-        'High Rings',
-        'Low or Adjustable Rings',
-        'Bench',
-        'Squat Rack',
-        'Open Space',
-        'Wall Space',
-        'Jump Rope',
-        'Wall Ball'
-      ]}
-      formData={formData}
-      toggleEquipment={toggleEquipment}
-      colorClass="bg-[#DAE2EA]"
-      onSetEquipment={(list) => updateFormData('equipment', list)}
-    />
+    {productType === 'engine' ? (
+      // Engine users: Only show cardio machines
+      <EquipmentCategoryCard
+        title="Cardio Machines"
+        description="Select the cardio machine(s) you have access to"
+        icon="🏋️"
+        equipment={[
+          'Rowing Machine',
+          'Air Bike',
+          'Ski Erg',
+          'Bike Erg'
+        ]}
+        formData={formData}
+        toggleEquipment={toggleEquipment}
+        colorClass="bg-[#DAE2EA]"
+        onSetEquipment={(list) => updateFormData('equipment', list)}
+      />
+    ) : (
+      // Other users: Show all equipment categories
+      <>
+        <EquipmentCategoryCard
+          title="The Basics"
+          description=""
+          icon="💪"
+          equipment={[
+            'Barbell',
+            'Dumbbells', 
+            'Kettlebells',
+            'Pullup Bar or Rig',
+            'High Rings',
+            'Low or Adjustable Rings',
+            'Bench',
+            'Squat Rack',
+            'Open Space',
+            'Wall Space',
+            'Jump Rope',
+            'Wall Ball'
+          ]}
+          formData={formData}
+          toggleEquipment={toggleEquipment}
+          colorClass="bg-[#DAE2EA]"
+          onSetEquipment={(list) => updateFormData('equipment', list)}
+        />
 
-    <EquipmentCategoryCard
-      title="The Machines"
-      description="Cardio and specialty training machines"
-      icon="🏋️"
-      equipment={[
-        'Rowing Machine',
-        'Air Bike',
-        'Ski Erg',
-        'Bike Erg'
-      ]}
-      formData={formData}
-      toggleEquipment={toggleEquipment}
-      colorClass="bg-[#DAE2EA]"
-      onSetEquipment={(list) => updateFormData('equipment', list)}
-    />
+        <EquipmentCategoryCard
+          title="The Machines"
+          description="Cardio and specialty training machines"
+          icon="🏋️"
+          equipment={[
+            'Rowing Machine',
+            'Air Bike',
+            'Ski Erg',
+            'Bike Erg'
+          ]}
+          formData={formData}
+          toggleEquipment={toggleEquipment}
+          colorClass="bg-[#DAE2EA]"
+          onSetEquipment={(list) => updateFormData('equipment', list)}
+        />
 
-    <EquipmentCategoryCard
-      title="Less Common Equipment"
-      description=""
-      icon="🎯"
-      equipment={[
-        'GHD',
-        'Axle Bar',
-        'Climbing Rope',
-        'Pegboard',
-        'Parallettes',
-        'Dball',
-        'Dip Bar',
-        'Plyo Box',
-        'HS Walk Obstacle',
-        'Sandbag'
-      ]}
-      formData={formData}
-      toggleEquipment={toggleEquipment}
-      colorClass="bg-[#DAE2EA]"
-      onSetEquipment={(list) => updateFormData('equipment', list)}
-    />
+        <EquipmentCategoryCard
+          title="Less Common Equipment"
+          description=""
+          icon="🎯"
+          equipment={[
+            'GHD',
+            'Axle Bar',
+            'Climbing Rope',
+            'Pegboard',
+            'Parallettes',
+            'Dball',
+            'Dip Bar',
+            'Plyo Box',
+            'HS Walk Obstacle',
+            'Sandbag'
+          ]}
+          formData={formData}
+          toggleEquipment={toggleEquipment}
+          colorClass="bg-[#DAE2EA]"
+          onSetEquipment={(list) => updateFormData('equipment', list)}
+        />
+      </>
+    )}
   </div>
 
   {/* Equipment Summary */}
   <div className="mt-6 p-4 bg-gray-100 rounded-lg text-center">
     <div className="text-sm text-gray-600">
-      <strong>{formData.equipment.length}</strong> items selected out of {equipmentOptions.length} total
+      <strong>{formData.equipment.length}</strong> items selected
+      {productType === 'engine' 
+        ? ' (cardio machines)' 
+        : ` out of ${equipmentOptions.length} total`}
     </div>
   </div>
 </div>

@@ -46,6 +46,12 @@ export default function SignIn() {
             return
           }
           
+          // Engine users should go to Engine dashboard
+          if (userData.subscription_tier === 'ENGINE') {
+            router.push('/engine')
+            return
+          }
+          
           // Check if user has a program (for Premium/Applied Power)
           const { data: programData } = await supabase
             .from('programs')
