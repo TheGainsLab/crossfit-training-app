@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
         error: 'Engine monthly pricing not configured' 
       }, { status: 500 })
     }
+
+    console.log('💰 Using price ID from database:', tier.stripe_price_id_monthly)
     
     // Get authorization header for authenticated requests
     const authHeader = request.headers.get('authorization')
@@ -132,7 +134,22 @@ export async function POST(request: NextRequest) {
       console.log('📧 Stripe will collect customer email')
     }
 
-    console.log('💳 Creating Stripe checkout session...')
+    console.log('💳 Creating Stripe checkout session with price:', tier.stripe_price_id_monthly)
+    console.log('🔑 Stripe key mode:', process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ? 'TEST' : 'LIVE')
+    
+    // Verify the price exists before creating checkout session
+    try {
+      const price = await stripe.prices.retrieve(tier.stripe_price_id_monthly)
+      console.log('✅ Price verified:', price.id, 'Active:', price.active)
+    } catch (priceError: any) {
+      console.error('❌ Price verification failed:', priceError.message)
+      return NextResponse.json({ 
+        error: `Price ID ${tier.stripe_price_id_monthly} not found in Stripe. Please verify the price ID in your Stripe dashboard.`,
+        details: priceError.message,
+        priceId: tier.stripe_price_id_monthly
+      }, { status: 400 })
+    }
+    
     const session = await stripe.checkout.sessions.create(sessionConfig)
     console.log('✅ Checkout session created:', session.id)
 
