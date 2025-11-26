@@ -284,10 +284,10 @@ export async function POST(request: NextRequest) {
     console.log('⏭️ Skipping skills save for Engine user')
   }
 
-    // Save 1RMs (skip for Engine users)
-    if (!isEngineUser) {
-      console.log('💪 Saving 1RMs...')
-      await supabaseAdmin.from('user_one_rms').delete().eq('user_id', effectiveUserId)
+  // Save 1RMs (skip for Engine users)
+  if (!isEngineUser) {
+    console.log('💪 Saving 1RMs...')
+    await supabaseAdmin.from('user_one_rms').delete().eq('user_id', effectiveUserId)
     
     if (oneRMs && oneRMs.length > 0) {
       const oneRMLifts = [
@@ -319,9 +319,10 @@ export async function POST(request: NextRequest) {
         
         console.log('✅ 1RMs saved:', oneRMRecords.length, 'records')
       }
-    } else {
-      console.log('⏭️ Skipping 1RMs save for Engine user')
     }
+  } else {
+    console.log('⏭️ Skipping 1RMs save for Engine user')
+  }
 
     console.log('🎉 All intake data saved successfully')
 
@@ -582,7 +583,7 @@ export async function POST(request: NextRequest) {
       programGenerated: true
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Save intake data error:', error)
     return NextResponse.json({
       error: 'Failed to save intake data',
