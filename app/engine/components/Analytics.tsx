@@ -2652,8 +2652,8 @@ export default function Analytics({ onBack }: AnalyticsProps) {
         {isRatioComparisonView && showRatioCharts && dayTypeA && dayTypeB.length > 0 && compareModality && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {dayTypeB.map(denominator => {
-              const ratioData = getMonthlyRatioData(dayTypeA, denominator, compareModality, '', '');
-              const months = Object.keys(ratioData).sort((a: any, b: any) => parseInt(a) - parseInt(b));
+              const ratioData = getMonthlyRatioData(dayTypeA, [denominator], compareModality, '', '');
+              const months = Object.keys(ratioData).map(m => parseInt(m, 10)).sort((a: number, b: number) => a - b);
               
               // Don't render if no data available
               if (months.length === 0) {
