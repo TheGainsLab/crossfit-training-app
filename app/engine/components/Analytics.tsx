@@ -820,7 +820,18 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       session.average_heart_rate && session.peak_heart_rate
     ).sort((a: any, b: any) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
     
-    const insights = {
+    const insights: {
+      highStressDays: Array<{
+        date?: string;
+        dayType?: string;
+        trainingLoad: number;
+        avgHR?: number;
+        peakHR?: number;
+        pace: number;
+      }>;
+      recoveryPatterns: any[];
+      efficiencyTrends: any[];
+    } = {
       highStressDays: [],
       recoveryPatterns: [],
       efficiencyTrends: []
@@ -894,7 +905,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     return insights;
   };
 
-  const renderMainMenu = (): JSX.Element => {
+  const renderMainMenu = (): React.ReactElement => {
     const hasData = workoutSessions.length > 0 || timeTrials.length > 0;
     
     return (
@@ -1366,7 +1377,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   );
   };
 
-  const renderReviewHistory = (): JSX.Element => {
+  const renderReviewHistory = (): React.ReactElement => {
     const availableDayTypes = getAvailableDayTypes();
     const availableModalities = getAvailableModalities(selectedDayType);
     const programMonths = getProgramMonths();
@@ -1671,7 +1682,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     );
   };
 
-  const renderCompareDayTypes = (): JSX.Element => {
+  const renderCompareDayTypes = (): React.ReactElement => {
     const availableDayTypes = getAvailableDayTypes();
     const availableModalities = getAvailableModalities();
     const programMonths = getProgramMonths();
@@ -2710,7 +2721,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     );
   };
 
-  const renderShowTimeTrials = (): JSX.Element => {
+  const renderShowTimeTrials = (): React.ReactElement => {
     // Helper function to format units for display
     const formatUnits = (units) => {
       if (!units) return 'units';
@@ -3192,7 +3203,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     );
   };
 
-  const renderTargetVsActual = (): JSX.Element => {
+  const renderTargetVsActual = (): React.ReactElement => {
     const availableDayTypes = getAvailableDayTypes().filter(dayType => dayType !== 'time_trial');
     const availableModalities = getAvailableModalities();
     
@@ -3708,7 +3719,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     );
   };
 
-  const renderPersonalRecords = (): JSX.Element => {
+  const renderPersonalRecords = (): React.ReactElement => {
     const availableModalities = getAvailableModalities();
     const recordsData = getPersonalRecordsData(personalRecordsModality);
     const dayTypes = Object.keys(recordsData).sort((a: any, b: any) => {
@@ -4019,7 +4030,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     );
   };
 
-  const renderHeartRateAnalytics = (): JSX.Element => {
+  const renderHeartRateAnalytics = (): React.ReactElement => {
     const hrData = getHeartRateAnalyticsData();
     const recoveryInsights = getRecoveryInsights();
     const dayTypes = Object.keys(hrData).sort((a: any, b: any) => hrData[b].sessions.length - hrData[a].sessions.length);
@@ -4511,7 +4522,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   };
 
   // Render function for Volume Progression
-  const renderVolumeProgression = (): JSX.Element => {
+  const renderVolumeProgression = (): React.ReactElement => {
     // Group sessions by week
     const weeklyData = {};
     workoutSessions.forEach((session: WorkoutSession) => {
@@ -4610,7 +4621,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   };
 
   // Render function for Structure Analysis
-  const renderStructureAnalysis = (): JSX.Element => {
+  const renderStructureAnalysis = (): React.ReactElement => {
     // Filter sessions by modality if selected
     const filteredSessions = analyticsModalityFilter 
       ? workoutSessions.filter((s: WorkoutSession) => s.modality === analyticsModalityFilter)
@@ -4779,7 +4790,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   };
 
   // Render function for Completion Rates
-  const renderCompletionRates = (): JSX.Element => {
+  const renderCompletionRates = (): React.ReactElement => {
     // Filter sessions by modality if selected
     const filteredSessions = analyticsModalityFilter 
       ? workoutSessions.filter((s: WorkoutSession) => s.modality === analyticsModalityFilter)
@@ -4970,7 +4981,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   };
 
   // Render function for HR Day Type Details
-  const renderHrDayTypeDetails = (): JSX.Element => {
+  const renderHrDayTypeDetails = (): React.ReactElement => {
     const hrData = getHeartRateAnalyticsData();
     
     if (!selectedHrDayTypeForCards) {
@@ -5168,7 +5179,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   };
 
   // Render function for HR Session Details
-  const renderHrSessionDetails = (): JSX.Element => {
+  const renderHrSessionDetails = (): React.ReactElement => {
     const hrData = getHeartRateAnalyticsData();
     const baselines = getBaselinePaces();
     const sessions = hrData[selectedHrDayType]?.sessions || [];
@@ -5369,7 +5380,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   };
 
   // Render function for Work:Rest Ratio Performance
-  const renderWorkRestRatio = (): JSX.Element => {
+  const renderWorkRestRatio = (): React.ReactElement => {
     // Get available modalities
     const modalities = [...new Set(workoutSessions.map(s => s.modality).filter(Boolean))].sort();
     
@@ -5626,7 +5637,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     );
   };
 
-  const renderVariabilityTrend = (): JSX.Element => {
+  const renderVariabilityTrend = (): React.ReactElement => {
     const availableDayTypes = getAvailableDayTypes().filter(dayType => {
       const continuousDayTypes = ['endurance', 'threshold', 'polarized', 'tempo', 'recovery', 'flux', 'flux_stages', 'time_trial'];
       return !continuousDayTypes.includes(dayType);
@@ -6063,7 +6074,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     );
   };
 
-  const renderVariabilityComparison = (): JSX.Element => {
+  const renderVariabilityComparison = (): React.ReactElement => {
     const availableDayTypes = getAvailableDayTypes().filter(dayType => {
       const continuousDayTypes = ['endurance', 'threshold', 'polarized', 'tempo', 'recovery', 'flux', 'flux_stages', 'time_trial'];
       return !continuousDayTypes.includes(dayType);
@@ -6290,7 +6301,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     );
   };
 
-  const renderIntervalResults = (): JSX.Element => {
+  const renderIntervalResults = (): React.ReactElement => {
     const availableDayTypes = getAvailableDayTypes().filter(dayType => {
       // Only show day types that can have interval data (exclude continuous)
       const continuousDayTypes = ['endurance', 'threshold', 'polarized', 'tempo', 'recovery', 'flux', 'flux_stages', 'time_trial'];
