@@ -706,7 +706,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   // Helper function to get heart rate analytics data
   const getHeartRateAnalyticsData = (): any => {
     const baselines = getBaselinePaces();
-    const hrData = {};
+    const hrData: Record<string, any> = {};
     const sessionsWithHR = workoutSessions.filter((session: WorkoutSession) => 
       session.average_heart_rate && session.peak_heart_rate &&
       (!analyticsModalityFilter || session.modality === analyticsModalityFilter)
@@ -714,7 +714,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     
     // Group by day type
     sessionsWithHR.forEach((session: WorkoutSession) => {
-      const dayType = session.day_type;
+      const dayType: string = session.day_type || 'unknown';
       const pace = calculatePace(session);
       const avgHR = session.average_heart_rate;
       const peakHR = session.peak_heart_rate;
@@ -783,10 +783,10 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       const sessionCount = data.sessions.length;
       
       if (sessionCount > 0) {
-        data.avgHRMean = data.avgHR.reduce((sum, hr) => sum + hr, 0) / sessionCount;
-        data.peakHRMean = data.peakHR.reduce((sum, hr) => sum + hr, 0) / sessionCount;
-        data.efficiencyMean = data.efficiency.reduce((sum, eff) => sum + eff, 0) / sessionCount;
-        data.trainingLoadMean = data.trainingLoad.reduce((sum, load) => sum + load, 0) / sessionCount;
+        data.avgHRMean = data.avgHR.reduce((sum: number, hr: number) => sum + hr, 0) / sessionCount;
+        data.peakHRMean = data.peakHR.reduce((sum: number, hr: number) => sum + hr, 0) / sessionCount;
+        data.efficiencyMean = data.efficiency.reduce((sum: number, eff: number) => sum + eff, 0) / sessionCount;
+        data.trainingLoadMean = data.trainingLoad.reduce((sum: number, load: number) => sum + load, 0) / sessionCount;
         
         // Calculate trends (simple linear regression slope)
         data.avgHRTrend = calculateTrend(data.sessions.map(s => s.avgHR));
