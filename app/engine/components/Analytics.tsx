@@ -565,7 +565,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   };
 
   // Helper function to get monthly ratio data between two day types
-  const getMonthlyRatioData = (dayTypeA: string, dayTypeB: string[], modality: string, startMonth: string, endMonth: string): any[] => {
+  const getMonthlyRatioData = (dayTypeA: string, dayTypeB: string[], modality: string, startMonth: string, endMonth: string): Record<number, any> => {
     const sessionsA = getFilteredSessions(dayTypeA, modality, startMonth, endMonth);
     const sessionsB = getFilteredSessions(dayTypeB, modality, startMonth, endMonth);
     
@@ -632,7 +632,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       }
     });
     
-    return Object.values(ratioData);
+    return ratioData;
   };
 
   // Helper function to get personal records data
@@ -2328,12 +2328,22 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                     gap: '1rem',
                     flexWrap: 'wrap'
                   }}>
-                    {availableDayTypes.map(dayType => {
-                      const isSelected = dayTypeB === dayType;
+                    {availableDayTypes.map((dayType: string) => {
+                      const isSelected = Array.isArray(dayTypeB) ? dayTypeB.includes(dayType) : dayTypeB === dayType;
                       return (
                         <button
                           key={dayType}
-                          onClick={() => setDayTypeB(dayType)}
+                          onClick={() => {
+                            if (Array.isArray(dayTypeB)) {
+                              if (dayTypeB.includes(dayType)) {
+                                setDayTypeB(dayTypeB.filter((d: string) => d !== dayType));
+                              } else {
+                                setDayTypeB([...dayTypeB, dayType]);
+                              }
+                            } else {
+                              setDayTypeB([dayType]);
+                            }
+                          }}
                     style={{
                             padding: '0.75rem 1rem',
                       borderRadius: '0.5rem',
@@ -2411,9 +2421,9 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             {/* Ratio Comparison Chart - Render separate graph for each denominator */}
             {showRatioComparison && showRatioCharts && dayTypeA && dayTypeB.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {dayTypeB.map(denominator => {
-                  const ratioData = getMonthlyRatioData(dayTypeA, denominator, compareModality, compareStartMonth, compareEndMonth);
-                  const months = Object.keys(ratioData).sort((a: any, b: any) => parseInt(a) - parseInt(b));
+                {dayTypeB.map((denominator: string) => {
+                  const ratioData = getMonthlyRatioData(dayTypeA, [denominator], compareModality, compareStartMonth, compareEndMonth);
+                  const months = Object.keys(ratioData).map(m => parseInt(m, 10)).sort((a: number, b: number) => a - b);
                   
                   // Don't render if no data available
                   if (months.length === 0) {
@@ -2439,7 +2449,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                 </h3>
                 
                     <div style={{ marginBottom: '1rem' }}>
-                      {months.map(month => {
+                      {months.map((month: number) => {
                         const data = ratioData[month];
                         const ratio = showMonthlyAverage ? data.averageRatio : data.highRatio;
                             const barColor = '#FE5858';
