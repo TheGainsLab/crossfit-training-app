@@ -313,6 +313,7 @@ export default function ProfilePage() {
   const [userSkills, setUserSkills] = useState<{[key: string]: string}>({})
   const [height, setHeight] = useState<number | null>(null)
   const [age, setAge] = useState<number | null>(null)
+  const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null)
 
   // CRITICAL: Safe calculation helper to prevent null/undefined errors
   const safeRatio = (numerator: number | null, denominator: number | null, asPercent = true): string => {
@@ -449,7 +450,7 @@ const loadProfile = async () => {
 
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, height, age')
+        .select('id, height, age, subscription_tier')
         .eq('auth_id', user.id)
         .single()
 
@@ -461,6 +462,7 @@ const loadProfile = async () => {
 
       setHeight(userData.height)
       setAge(userData.age)
+      setSubscriptionTier(userData.subscription_tier)
 
       const { data: profileData, error: profileError } = await supabase
         .from('user_profiles')
@@ -1358,20 +1360,75 @@ const loadProfile = async () => {
           </div>
         </div>
 
-        {/* Missing Data */}
-        {profile.missing_data.length > 0 && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h3 className="font-semibold text-yellow-800 mb-2">Missing Data</h3>
-            <p className="text-yellow-700 mb-2">
-              Adding this information will improve your program accuracy:
-            </p>
-            <ul className="list-disc list-inside text-yellow-700">
-              {profile.missing_data.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {/* Missing Data - Filter based on subscription tier */}
+        {(() => {
+          // Filter missing data based on subscription tier
+          const applicableMissingData = subscriptionTier === 'ENGINE'
+            ? profile.missing_data.filter(item => {
+                // For Engine users, only show missing conditioning benchmarks
+                // Filter out all 1RM and skills items
+                return !item.includes('1RM') && 
+                       !item.includes('Snatch') && 
+                       !item.includes('Clean') && 
+                       !item.includes('Jerk') && 
+                       !item.includes('Squat') && 
+                       !item.includes('Deadlift') && 
+                       !item.includes('Bench Press') && 
+                       !item.includes('Press') && 
+                       !item.includes('Pullup') &&
+                       !item.includes('Double Unders') &&
+                       !item.includes('Wall Balls') &&
+                       !item.includes('Toes to Bar') &&
+                       !item.includes('Pull-ups') &&
+                       !item.includes('Push-ups') &&
+                       !item.includes('Ring Dips') &&
+                       !item.includes('Handstand') &&
+                       !item.includes('Pistols') &&
+                       !item.includes('GHD') &&
+                       !item.includes('Wall Walks') &&
+                       !item.includes('Muscle Ups') &&
+                       !item.includes('Rope Climbs') &&
+                       !item.includes('Pegboard')
+              })
+            : subscriptionTier === 'APPLIED_POWER'
+            ? profile.missing_data.filter(item => {
+                // For Applied Power, filter out Skills and MetCon benchmarks
+                return !item.includes('Double Unders') &&
+                       !item.includes('Wall Balls') &&
+                       !item.includes('Toes to Bar') &&
+                       !item.includes('Pull-ups') &&
+                       !item.includes('Push-ups') &&
+                       !item.includes('Ring Dips') &&
+                       !item.includes('Handstand') &&
+                       !item.includes('Pistols') &&
+                       !item.includes('GHD') &&
+                       !item.includes('Wall Walks') &&
+                       !item.includes('Muscle Ups') &&
+                       !item.includes('Rope Climbs') &&
+                       !item.includes('Pegboard') &&
+                       !item.includes('Mile Run') &&
+                       !item.includes('5K Run') &&
+                       !item.includes('10K Run') &&
+                       !item.includes('Air Bike')
+              })
+            : profile.missing_data // Premium users see all missing data
+
+          return applicableMissingData.length > 0 ? (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <h3 className="font-semibold text-yellow-800 mb-2">Missing Data</h3>
+              <p className="text-yellow-700 mb-2">
+                {subscriptionTier === 'ENGINE' 
+                  ? 'Adding this information will improve your Engine program accuracy:'
+                  : 'Adding this information will improve your program accuracy:'}
+              </p>
+              <ul className="list-disc list-inside text-yellow-700">
+                {applicableMissingData.map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null
+        })()}
       </div>
     </div>
   )
