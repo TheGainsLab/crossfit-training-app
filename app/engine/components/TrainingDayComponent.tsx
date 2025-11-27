@@ -2037,6 +2037,74 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
 
       await engineDatabaseService.saveTimeTrial(timeTrialData);
       
+      // Also create a workout session record to mark this day as completed
+      if (dayNumber && workoutId) {
+        try {
+          // Load program version if not already available
+          let programVersion = await engineDatabaseService.loadProgramVersion();
+          if (!programVersion) {
+            programVersion = '5-day';
+          }
+          
+          // Get program_day_number (same logic as saveWorkoutSession)
+          let programDayNumber = null;
+          if (programVersion === '5-day') {
+            programDayNumber = dayNumber;
+          } else if (programVersion === '3-day') {
+            programDayNumber = await engineDatabaseService.getProgramDayNumber(
+              dayNumber,
+              programVersion
+            );
+          }
+          if (programDayNumber === null) {
+            programDayNumber = dayNumber;
+          }
+          
+          // Load workout to get day_type if not already loaded
+          let dayType = 'time_trial';
+          let workoutDataForSession = workout;
+          if (!workoutDataForSession || !workoutDataForSession.day_type) {
+            workoutDataForSession = await engineDatabaseService.loadWorkoutForDay(dayNumber);
+            if (workoutDataForSession && workoutDataForSession.day_type) {
+              dayType = workoutDataForSession.day_type;
+            }
+          } else {
+            dayType = workoutDataForSession.day_type;
+          }
+          
+          // Create workout session record for time trial
+          const sessionData = {
+            program_day: dayNumber,
+            program_version: programVersion,
+            program_day_number: programDayNumber,
+            workout_id: workoutId,
+            day_type: dayType,
+            date: new Date().toISOString().split('T')[0],
+            completed: true,
+            total_output: scoreValue,
+            actual_pace: calculatedBaseline, // scoreValue / 10
+            target_pace: null, // Time trials don't have target pace
+            performance_ratio: null, // Time trials don't have performance ratio
+            modality: selectedModality,
+            units: preferredUnit,
+            average_heart_rate: avgHR,
+            peak_heart_rate: peakHR,
+            perceived_exertion: perceivedExertion,
+            workout_data: {
+              time_trial: true,
+              total_output: scoreValue,
+              duration_seconds: 600
+            }
+          };
+          
+          await engineDatabaseService.saveWorkoutSession(sessionData);
+          console.log('✅ Time trial workout session created');
+        } catch (sessionError) {
+          console.error('⚠️ Error creating workout session for time trial:', sessionError);
+          // Don't fail the entire time trial save if session creation fails
+        }
+      }
+      
       setTimeTrialScore(scoreValue.toString());
       setTimeTrialAverageHeartRate(avgHR ? avgHR.toString() : '');
       setTimeTrialPeakHeartRate(peakHR ? peakHR.toString() : '');
