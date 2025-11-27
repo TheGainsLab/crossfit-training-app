@@ -2553,7 +2553,10 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                 {selectedDayTypes.map(dayType => {
                   const sessions = getFilteredSessions(dayType, compareModality, compareStartMonth, compareEndMonth);
                   const averagePace = sessions.length > 0 
-                    ? sessions.reduce((sum, session) => sum + calculatePace(session), 0) / sessions.length
+                    ? sessions.reduce((sum: number, session: WorkoutSession) => {
+                        const pace = calculatePace(session);
+                        return sum + (pace !== null ? pace : 0);
+                      }, 0) / sessions.length
                     : 0;
                   
                   return (
@@ -2670,8 +2673,8 @@ export default function Analytics({ onBack }: AnalyticsProps) {
               </h3>
               
                   <div style={{ marginBottom: '1rem' }}>
-                    {months.map(month => {
-                      const data = ratioData[month];
+                      {months.map((month: number) => {
+                        const data = ratioData[month];
                       const ratio = data.averageRatio;
                         const barColor = '#FE5858';
                       const barWidth = Math.min(Math.max(ratio * 50, 10), 100);
