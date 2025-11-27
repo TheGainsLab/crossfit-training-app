@@ -5231,7 +5231,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             flexDirection: 'column',
             gap: '1rem'
           }}>
-            {sessions.map((sess, index) => {
+            {sessions.map((sess: any, index: number) => {
               const session = sess.session;
               const baseline = baselines[session.modality || 'unknown'];
                   const paceRatio = baseline && baseline > 0 && sess.pace !== null && sess.pace !== undefined ? sess.pace / baseline : 0;
@@ -5672,33 +5672,33 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       .map((session: WorkoutSession) => {
         const cv = calculateCoefficientOfVariation(session.workout_data.intervals);
         return {
-          date: new Date(session.date),
+          date: session.date ? new Date(session.date) : new Date(0),
           programDayNumber: session.program_day_number || session.program_day,
           cv: cv,
           dayType: session.day_type
         };
       })
-      .filter(d => d.cv !== null)
+      .filter((d: any) => d.cv !== null)
       .sort((a: any, b: any) => a.date - b.date);
 
     // Calculate average CV for the selected day type (only if a specific day type is selected)
     const dayTypeAverage = variabilityTrendDayType && variabilityData.length > 0
-      ? variabilityData.reduce((sum, d) => sum + d.cv, 0) / variabilityData.length
+      ? variabilityData.reduce((sum: number, d: any) => sum + (d.cv || 0), 0) / variabilityData.length
       : null;
 
     // Calculate averages per day type when "Compare Day Averages" is enabled
     const dayTypeAverages = showDayTypeAverages && !variabilityTrendDayType
       ? availableDayTypes.map((dayType: string) => {
-          const dayTypeSessions = variabilityData.filter(d => d.dayType === dayType);
+          const dayTypeSessions = variabilityData.filter((d: any) => d.dayType === dayType);
           if (dayTypeSessions.length === 0) return null;
-          const avg = dayTypeSessions.reduce((sum, d) => sum + d.cv, 0) / dayTypeSessions.length;
+          const avg = dayTypeSessions.reduce((sum: number, d: any) => sum + (d.cv || 0), 0) / dayTypeSessions.length;
           return { dayType, average: avg, count: dayTypeSessions.length };
         }).filter(Boolean).sort((a: any, b: any) => b.average - a.average)
       : null;
 
     const maxCV = showDayTypeAverages && dayTypeAverages
-      ? Math.max(...dayTypeAverages.map(d => d.average), 0)
-      : Math.max(...variabilityData.map(d => d.cv), dayTypeAverage || 0);
+      ? Math.max(...dayTypeAverages.map((d: any) => d?.average || 0).filter((a: number) => a !== null), 0)
+      : Math.max(...variabilityData.map((d: any) => d.cv || 0).filter((cv: number | null) => cv !== null), dayTypeAverage || 0);
 
     return (
       <div style={{ marginBottom: '1.5rem' }}>
@@ -5821,7 +5821,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                 gap: '1rem',
                 marginTop: '2rem'
               }}>
-                {dayTypeAverages.map(({ dayType, average, count }) => {
+                {dayTypeAverages?.filter((d: any) => d !== null).map(({ dayType, average, count }: any) => {
                   const barHeight = maxCV > 0 ? (average / maxCV) * 100 : 0;
                   return (
                     <div 
@@ -5967,8 +5967,8 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                   </div>
                 </div>
               )}
-              {variabilityData.map((dataPoint, index) => {
-                const barHeight = maxCV > 0 ? (dataPoint.cv / maxCV) * 100 : 0;
+              {variabilityData.map((dataPoint: any, index: number) => {
+                const barHeight = maxCV > 0 && dataPoint.cv !== null ? (dataPoint.cv / maxCV) * 100 : 0;
                 
                 return (
                   <div 
@@ -6042,7 +6042,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                               fontSize: '0.75rem',
                               fontWeight: '600'
                             }}>
-                              {dataPoint.cv.toFixed(1)}%
+                              {dataPoint.cv !== null ? dataPoint.cv.toFixed(1) : '0.0'}%
                             </span>
                           )}
                         </div>
@@ -6098,24 +6098,25 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     });
 
     // Get sessions with interval data grouped by day type
-    const sessionsByDayType = {};
+    const sessionsByDayType: Record<string, WorkoutSession[]> = {};
     workoutSessions.forEach((session: WorkoutSession) => {
       if (!session.workout_data?.intervals || !Array.isArray(session.workout_data.intervals) || session.workout_data.intervals.length === 0) return;
-      if (!sessionsByDayType[session.day_type]) {
-        sessionsByDayType[session.day_type] = [];
+      const dayType = session.day_type || 'unknown';
+      if (!sessionsByDayType[dayType]) {
+        sessionsByDayType[dayType] = [];
       }
-      sessionsByDayType[session.day_type].push(session);
+      sessionsByDayType[dayType].push(session);
     });
 
     // Calculate average CV for each selected day type
-    const comparisonData = variabilityComparisonDayTypes.map(dayType => {
+    const comparisonData = variabilityComparisonDayTypes.map((dayType: string) => {
       const sessions = sessionsByDayType[dayType] || [];
       const cvs = sessions
         .map((session: WorkoutSession) => calculateCoefficientOfVariation(session.workout_data.intervals))
-        .filter(cv => cv !== null);
+        .filter((cv: number | null): cv is number => cv !== null);
       
       const avgCV = cvs.length > 0 
-        ? cvs.reduce((sum, cv) => sum + cv, 0) / cvs.length 
+        ? cvs.reduce((sum: number, cv: number) => sum + cv, 0) / cvs.length 
         : null;
       
       return {
@@ -6123,9 +6124,9 @@ export default function Analytics({ onBack }: AnalyticsProps) {
         avgCV,
         sessionCount: sessions.length
       };
-    }).filter(d => d.avgCV !== null);
+    }).filter((d: any) => d.avgCV !== null);
 
-    const maxCV = Math.max(...comparisonData.map(d => d.avgCV), 0);
+    const maxCV = Math.max(...comparisonData.map((d: any) => d.avgCV || 0).filter((cv: number | null) => cv !== null), 0);
 
     return (
       <div style={{ marginBottom: '1.5rem' }}>
@@ -6232,8 +6233,8 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             }}>
               {comparisonData
                 .sort((a: any, b: any) => a.avgCV - b.avgCV)
-                .map((data, index) => {
-                  const barWidth = maxCV > 0 ? (data.avgCV / maxCV) * 100 : 0;
+                .map((data: any, index: number) => {
+                  const barWidth = maxCV > 0 && data.avgCV !== null ? (data.avgCV / maxCV) * 100 : 0;
                   
                   return (
                     <div key={data.dayType} style={{
@@ -6272,7 +6273,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                               fontSize: '0.75rem',
                               fontWeight: '600'
                             }}>
-                              {data.avgCV.toFixed(1)}%
+                              {data.avgCV !== null ? data.avgCV.toFixed(1) : '0.0'}%
                             </span>
                           )}
                         </div>
@@ -6469,8 +6470,8 @@ export default function Analytics({ onBack }: AnalyticsProps) {
               flexDirection: 'column',
               gap: '0.75rem'
             }}>
-              {selectedSession.workout_data.intervals.map((interval, index) => {
-                const maxOutput = Math.max(...selectedSession.workout_data.intervals.map(i => i.output || 0));
+              {selectedSession.workout_data.intervals.map((interval: any, index: number) => {
+                const maxOutput = Math.max(...selectedSession.workout_data.intervals.map((i: any) => i.output || 0));
                 const barWidth = maxOutput > 0 ? ((interval.output || 0) / maxOutput) * 100 : 0;
                 const units = selectedSession.units || '';
 
