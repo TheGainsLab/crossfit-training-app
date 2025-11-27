@@ -843,6 +843,9 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       }
       
       // Normalize training load to make it comparable across modalities: intensity × HR × duration
+      if (pace === null || !avgHR) {
+        return 0;
+      }
       if (baseline && baseline > 0) {
         return (pace / baseline) * avgHR * durationMinutes;
       } else {
@@ -869,6 +872,9 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       }
       
       // Use normalized training load: intensity × HR × duration
+      if (pace === null || !avgHR) {
+        return; // Skip this session
+      }
       const trainingLoad = baseline && baseline > 0 
         ? (pace / baseline) * avgHR * durationMinutes
         : pace * avgHR * durationMinutes;
