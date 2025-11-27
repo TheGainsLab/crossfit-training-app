@@ -2738,7 +2738,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
 
   const renderShowTimeTrials = (): React.ReactElement => {
     // Helper function to format units for display
-    const formatUnits = (units) => {
+    const formatUnits = (units: string | null | undefined): string => {
       if (!units) return 'units';
       const unitMap: Record<string, string> = {
         'cal': 'calories',
@@ -2748,14 +2748,15 @@ export default function Analytics({ onBack }: AnalyticsProps) {
         'miles': 'miles',
         'meters': 'meters'
       };
-      return unitMap[units] || units;
+      const normalizedUnits = units as string;
+      return unitMap[normalizedUnits] || normalizedUnits;
     };
     
     // Get available modalities from time trials
     const availableModalities = [...new Set(timeTrials.map(t => t.modality).filter(Boolean))].sort();
     
     // Group by modality and determine current (most recent by date)
-    const groupedByModality = {};
+    const groupedByModality: Record<string, TimeTrial[]> = {};
     timeTrials.forEach((trial: TimeTrial) => {
       const modality = trial.modality || 'unknown';
       if (!groupedByModality[modality]) {
