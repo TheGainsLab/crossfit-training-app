@@ -43,6 +43,7 @@ interface WorkoutSession {
   workout_day?: number
   duration_minutes?: number
   duration_seconds?: number
+  avg_work_rest_ratio?: number | null
 }
 
 interface TimeTrial {
@@ -296,7 +297,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     // Replace underscores with spaces and capitalize each word
     return modality
       .split('_')
-      .map(word => {
+      .map((word: string) => {
         // Handle special cases like "c2" -> "C2"
         if (word.toLowerCase() === 'c2') {
           return 'C2';
@@ -614,8 +615,8 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       const pacesB = monthlyDataB[month] || [];
       
       if (pacesA.length > 0 && pacesB.length > 0) {
-        const avgA = pacesA.reduce((sum, pace) => sum + pace, 0) / pacesA.length;
-        const avgB = pacesB.reduce((sum, pace) => sum + pace, 0) / pacesB.length;
+        const avgA = pacesA.reduce((sum: number, pace: number) => sum + pace, 0) / pacesA.length;
+        const avgB = pacesB.reduce((sum: number, pace: number) => sum + pace, 0) / pacesB.length;
         const highA = Math.max(...pacesA);
         const highB = Math.max(...pacesB);
         
@@ -778,7 +779,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     });
     
     // Calculate averages and trends
-    Object.keys(hrData).forEach(dayType => {
+    Object.keys(hrData).forEach((dayType: string) => {
       const data = hrData[dayType];
       const sessionCount = data.sessions.length;
       
@@ -864,7 +865,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       }
     });
     
-    const sortedLoads = [...trainingLoads].sort((a: any, b: any) => b - a);
+    const sortedLoads = [...trainingLoads].sort((a: number, b: number) => b - a);
     const threshold = sortedLoads[Math.floor(sortedLoads.length * 0.2)];
     
     sessionsWithHR.forEach((session: WorkoutSession) => {
@@ -1417,7 +1418,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                 flexWrap: 'wrap'
               }}>
                 {availableDayTypes.length > 0 ? (
-                  availableDayTypes.map(dayType => {
+                  availableDayTypes.map((dayType: string) => {
                     const isSelected = selectedDayType === dayType;
                     return (
                       <button
@@ -1487,7 +1488,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                 flexWrap: 'wrap'
               }}>
                 {availableModalities.length > 0 ? (
-                  availableModalities.map(modality => {
+                  availableModalities.map((modality: string) => {
                     const isSelected = selectedModality === modality;
                     return (
           <button
@@ -1723,7 +1724,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                 gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
                 gap: '0.5rem'
               }}>
-                {availableDayTypes.map(dayType => {
+                {availableDayTypes.map((dayType: string) => {
                   const isSelected = selectedDayTypes.includes(dayType);
                   const isDisabled = !isSelected && selectedDayTypes.length >= 3;
                   
@@ -1733,7 +1734,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                       onClick={() => {
                         if (isSelected) {
                           // Unselect if already selected
-                          setSelectedDayTypes(selectedDayTypes.filter(dt => dt !== dayType));
+                          setSelectedDayTypes(selectedDayTypes.filter((dt: string) => dt !== dayType));
                         } else if (!isDisabled) {
                           // Select if under limit
                           setSelectedDayTypes([...selectedDayTypes, dayType]);
@@ -1806,7 +1807,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
               gap: '0.5rem',
               flexWrap: 'wrap'
             }}>
-              {availableModalities.map(modality => {
+              {availableModalities.map((modality: string) => {
                 const isSelected = compareModality === modality;
                 return (
                   <button
@@ -2029,7 +2030,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                   >
                     <span>All Modalities</span>
                   </button>
-                {availableModalities.map(modality => {
+                {availableModalities.map((modality: string) => {
                   const isSelected = compareModality === modality;
                   return (
                     <button
@@ -2092,7 +2093,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                     gap: '1rem',
                     flexWrap: 'wrap'
                   }}>
-                    {availableDayTypes.map(dayType => {
+                    {availableDayTypes.map((dayType: string) => {
                       const isSelected = dayTypeA === dayType;
                       return (
                         <button
@@ -2155,14 +2156,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                     gap: '1rem',
                     flexWrap: 'wrap'
                   }}>
-                    {availableDayTypes.map(dayType => {
+                    {availableDayTypes.map((dayType: string) => {
                     const isSelected = dayTypeB.includes(dayType);
                       return (
                         <button
                           key={dayType}
                         onClick={() => {
                           if (isSelected) {
-                            setDayTypeB(dayTypeB.filter(dt => dt !== dayType)); // Remove if selected
+                            setDayTypeB(dayTypeB.filter((dt: string) => dt !== dayType)); // Remove if selected
                           } else {
                             setDayTypeB([...dayTypeB, dayType]); // Add if not selected
                           }
@@ -2271,7 +2272,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                     gap: '1rem',
                     flexWrap: 'wrap'
                   }}>
-                    {availableDayTypes.map(dayType => {
+                    {availableDayTypes.map((dayType: string) => {
                       const isSelected = dayTypeA === dayType;
                       return (
                         <button
@@ -2550,7 +2551,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                 Average Pace
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {selectedDayTypes.map(dayType => {
+                {selectedDayTypes.map((dayType: string) => {
                   const sessions = getFilteredSessions(dayType, compareModality, compareStartMonth, compareEndMonth);
                   const averagePace = sessions.length > 0 
                     ? sessions.reduce((sum: number, session: WorkoutSession) => {
@@ -2651,7 +2652,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
         {/* Ratio Comparison Chart for dedicated view - Render separate graph for each denominator */}
         {isRatioComparisonView && showRatioCharts && dayTypeA && dayTypeB.length > 0 && compareModality && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {dayTypeB.map(denominator => {
+            {dayTypeB.map((denominator: string) => {
               const ratioData = getMonthlyRatioData(dayTypeA, [denominator], compareModality, '', '');
               const months = Object.keys(ratioData).map(m => parseInt(m, 10)).sort((a: number, b: number) => a - b);
               
@@ -2766,17 +2767,17 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     });
     
     // Sort by date within each modality and mark most recent as current
-    const enrichedTrials = [];
-    Object.values(groupedByModality).forEach(trials => {
+    const enrichedTrials: any[] = [];
+    Object.values(groupedByModality).forEach((trials: TimeTrial[]) => {
       // Sort by date descending
-      trials.sort((a: any, b: any) => {
-        const dateA = a.date ? new Date(a.date) : new Date(0);
-        const dateB = b.date ? new Date(b.date) : new Date(0);
+      trials.sort((a: TimeTrial, b: TimeTrial) => {
+        const dateA = a.date ? new Date(a.date).getTime() : 0;
+        const dateB = b.date ? new Date(b.date).getTime() : 0;
         return dateB - dateA;
       });
       
       // Mark most recent as current
-      trials.forEach((trial, index) => {
+      trials.forEach((trial: TimeTrial, index: number) => {
         enrichedTrials.push({
           ...trial,
           isCurrent: index === 0
@@ -2804,8 +2805,8 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       if (a.modality !== b.modality) {
         return (a.modality || '').localeCompare(b.modality || '');
       }
-      const dateA = a.date ? new Date(a.date) : new Date(0);
-      const dateB = b.date ? new Date(b.date) : new Date(0);
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
       return dateB - dateA;
     });
     
@@ -3006,7 +3007,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                       >
                         <span>All Modalities</span>
                       </button>
-                      {availableModalities.map(modality => {
+                      {availableModalities.map((modality: string) => {
                         const isSelected = timeTrialModalityFilter === modality;
                         return (
                           <button
@@ -3234,11 +3235,11 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     }
     
     // Group sessions by day type first, then modality
-    const analysisDataByDayType = {};
+    const analysisDataByDayType: Record<string, Record<string, any>> = {};
     
     filteredSessions.forEach((session: WorkoutSession) => {
-      const dayType = session.day_type;
-      const modality = session.modality;
+      const dayType = session.day_type || 'unknown';
+      const modality = session.modality || 'unknown';
       
       // Initialize day type if not exists
       if (!analysisDataByDayType[dayType]) {
@@ -3276,39 +3277,39 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       let totalClose = 0;
       let totalEvaluable = 0;
       
-      Object.values(analysisDataByDayType).forEach(dayTypeData => {
-        Object.values(dayTypeData).forEach(modalityData => {
-          const evaluableSessions = modalityData.sessions.filter((s: WorkoutSession) => s.status !== 'unknown');
+      Object.values(analysisDataByDayType).forEach((dayTypeData: Record<string, any>) => {
+        Object.values(dayTypeData).forEach((modalityData: any) => {
+          const evaluableSessions = modalityData.sessions.filter((s: any) => s.status !== 'unknown');
           totalEvaluable += evaluableSessions.length;
           totalWithinTarget += modalityData.withinTarget;
           totalClose += modalityData.close;
         });
       });
       
-      const successRate = totalEvaluable > 0 ? ((totalWithinTarget + totalClose) / totalEvaluable * 100).toFixed(1) : 0;
+      const successRate = totalEvaluable > 0 ? ((totalWithinTarget + totalClose) / totalEvaluable * 100).toFixed(1) : '0';
       
       defaultAggregatedData = {
         totalWithinTarget,
         totalClose,
         totalEvaluable,
-        successRate: parseFloat(successRate),
+        successRate: parseFloat(successRate as string),
         label: 'All Training'
       };
     }
     
     // Convert to array grouped by day type (for filtered views)
-    const groupedChartData = Object.keys(analysisDataByDayType).map(dayType => {
-      const modalities = Object.values(analysisDataByDayType[dayType]).map(data => {
-      const evaluableSessions = data.sessions.filter((s: WorkoutSession) => s.status !== 'unknown');
+    const groupedChartData = Object.keys(analysisDataByDayType).map((dayType: string) => {
+      const modalities = Object.values(analysisDataByDayType[dayType]).map((data: any) => {
+      const evaluableSessions = data.sessions.filter((s: any) => s.status !== 'unknown');
       const total = evaluableSessions.length;
       const successRate = total > 0 ? ((data.withinTarget + data.close) / total * 100).toFixed(1) : 0;
         
         const targetPaces = data.sessionObjects
           .map((session: WorkoutSession) => getTargetPaceValue(session))
-          .filter(tp => tp !== null && tp > 0);
+          .filter((tp: number | null) => tp !== null && tp > 0);
         
-        const avgTargetPace = targetPaces.length > 0 
-          ? targetPaces.reduce((sum, tp) => sum + tp, 0) / targetPaces.length 
+          const avgTargetPace = targetPaces.length > 0 
+            ? targetPaces.reduce((sum: number, tp: number) => sum + tp, 0) / targetPaces.length
           : null;
         
         const units = data.sessionObjects[0]?.units || 'cal';
@@ -3318,8 +3319,8 @@ export default function Analytics({ onBack }: AnalyticsProps) {
         ...data,
           total: data.sessions.length,
           evaluableTotal: total,
-        successRate: parseFloat(successRate),
-          avgActualPace: data.sessions.reduce((sum, s) => sum + s.actualPace, 0) / data.sessions.length,
+        successRate: parseFloat(successRate as string),
+          avgActualPace: data.sessions.reduce((sum: number, s: any) => sum + (s.actualPace || 0), 0) / data.sessions.length,
           avgTargetPace: avgTargetPace,
           units: unitLabel
         };
@@ -3327,13 +3328,13 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       
       return {
         dayType: dayType,
-        modalities: modalities.sort((a: any, b: any) => b.successRate - a.successRate)
+        modalities: modalities.sort((a: any, b: any) => (b.successRate || 0) - (a.successRate || 0))
       };
-    }).filter(group => group.modalities.length > 0)
+    }).filter((group: any) => group.modalities.length > 0)
       .sort((a: any, b: any) => {
-        const maxA = Math.max(...a.modalities.map(m => m.successRate));
-        const maxB = Math.max(...b.modalities.map(m => m.successRate));
-        return maxB - maxA;
+        const maxA = Math.max(...a.modalities.map((m: any) => m.successRate));
+        const maxB = Math.max(...b.modalities.map((m: any) => m.successRate));
+        return (maxB || 0) - (maxA || 0);
       });
     
     // Determine what to display based on filters
@@ -3471,7 +3472,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                 >
                   <span>All Modalities</span>
                 </button>
-                {availableModalities.map(modality => {
+                {availableModalities.map((modality: string) => {
                   const isSelected = targetVsActualModality === modality;
                   return (
                     <button
@@ -3564,7 +3565,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                 >
                   <span>All Day Types</span>
                 </button>
-                {availableDayTypes.map(dayType => {
+                {availableDayTypes.map((dayType: string) => {
                   const isSelected = targetVsActualDayType === dayType;
                   return (
                     <button
@@ -3815,7 +3816,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
               >
                 <span>All Modalities</span>
           </button>
-              {availableModalities.map(modality => {
+              {availableModalities.map((modality: string) => {
                 const isSelected = personalRecordsModality === modality;
                 return (
                   <button
@@ -4406,14 +4407,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
 
   // Helper function to calculate coefficient of variation (CV) for interval outputs
   // CV = (std dev / mean) * 100
-  const calculateCoefficientOfVariation = (intervals) => {
+  const calculateCoefficientOfVariation = (intervals: any[]): number | null => {
     if (!intervals || !Array.isArray(intervals) || intervals.length === 0) return null;
     
-    const outputs = intervals.map(i => i.output).filter(o => o !== null && o !== undefined && o > 0);
+    const outputs = intervals.map((i: any) => i.output).filter((o: any) => o !== null && o !== undefined && o > 0);
     if (outputs.length === 0) return null;
     if (outputs.length === 1) return 0; // No variation with single value
     
-    const mean = outputs.reduce((sum, val) => sum + val, 0) / outputs.length;
+    const mean = outputs.reduce((sum: number, val: number) => sum + val, 0) / outputs.length;
     if (mean === 0) return null;
     
     const variance = outputs.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / outputs.length;
@@ -4425,7 +4426,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
 
   // Calculate average work:rest ratio from workout blocks
   // Excludes continuous blocks (restDuration === 0, ratio = 999)
-  const calculateWorkoutAvgWorkRestRatio = (workout) => {
+  const calculateWorkoutAvgWorkRestRatio = (workout: any): number | null => {
     if (!workout) return null;
     
     const blocks = [
@@ -4433,12 +4434,12 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       workout.block_2_params,
       workout.block_3_params,
       workout.block_4_params
-    ].filter(block => block && Object.keys(block).length > 0);
+    ].filter((block: any) => block && Object.keys(block).length > 0);
     
     if (blocks.length === 0) return null;
     
-    const ratios = [];
-    blocks.forEach(block => {
+    const ratios: number[] = [];
+    blocks.forEach((block: any) => {
       const workDuration = block.workDuration || 0;
       const restDuration = block.restDuration || 0;
       
@@ -4457,12 +4458,12 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     if (ratios.length === 0) return 999;
     
     // Average the ratios
-    const avgRatio = ratios.reduce((sum, r) => sum + r, 0) / ratios.length;
+    const avgRatio = ratios.reduce((sum: number, r: number) => sum + r, 0) / ratios.length;
     return avgRatio;
   };
 
   // Helper function to get work:rest ratio from session or workout
-  const getWorkToRestRatio = (session, workout = null) => {
+  const getWorkToRestRatio = (session: WorkoutSession, workout: any = null): number | null => {
     // First, try to use the session's avg_work_rest_ratio if available
     if (session.avg_work_rest_ratio !== null && session.avg_work_rest_ratio !== undefined) {
       return session.avg_work_rest_ratio;
@@ -4506,16 +4507,16 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   };
 
   // Helper function to calculate performance ratio
-  const getPerformanceRatio = (session) => {
+  const getPerformanceRatio = (session: WorkoutSession): number | null => {
     if (!session.target_pace || !session.actual_pace) return null;
     return session.actual_pace / session.target_pace;
   };
 
   // Helper function to format ratio for display (e.g., 0.20 → "1:5", 1.0 → "1:1", 2.0 → "2:1")
-  const formatRatioForDisplay = (ratio) => {
+  const formatRatioForDisplay = (ratio: number | string): string => {
     if (ratio === 'Continuous' || ratio === 999) return 'Continuous';
     
-    const numRatio = parseFloat(ratio);
+    const numRatio = typeof ratio === 'string' ? parseFloat(ratio) : ratio;
     if (numRatio < 1) {
       // Invert: 0.20 → "1:5"
       const inverted = 1 / numRatio;
@@ -4540,7 +4541,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   // Render function for Volume Progression
   const renderVolumeProgression = (): React.ReactElement => {
     // Group sessions by week
-    const weeklyData = {};
+    const weeklyData: Record<string, any> = {};
     workoutSessions.forEach((session: WorkoutSession) => {
       if (!session.date) return;
       const date = new Date(session.date);
@@ -4644,7 +4645,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       : workoutSessions;
     
     // Cross-tabulate day_type by work:rest ratio
-    const structureMap: Record<string, string> = {};
+    const structureMap: Record<string, any> = {};
     filteredSessions.forEach((session: WorkoutSession) => {
       const ratio = getWorkToRestRatio(session);
       if (!ratio || !session.day_type) return;
@@ -4676,12 +4677,12 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       });
 
     // Helper function to calculate average performance ratio
-    function getPerformanceRatioFromSessions(sessions) {
+    function getPerformanceRatioFromSessions(sessions: WorkoutSession[]): number | null {
       const ratios = sessions
-        .map(s => getPerformanceRatio(s))
-        .filter(r => r !== null);
+        .map((s: WorkoutSession) => getPerformanceRatio(s))
+        .filter((r: number | null): r is number => r !== null);
       return ratios.length > 0 
-        ? ratios.reduce((a, b) => a + b, 0) / ratios.length 
+        ? ratios.reduce((a: number, b: number) => a + b, 0) / ratios.length 
         : null;
     }
 
@@ -4813,7 +4814,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       : workoutSessions;
     
     // Group by workout structure
-    const structureGroups = {};
+    const structureGroups: Record<string, any> = {};
     filteredSessions.forEach((session: WorkoutSession) => {
       const ratio = getWorkToRestRatio(session);
       if (!ratio) return;
@@ -4832,25 +4833,25 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     });
 
     const completionStats = Object.values(structureGroups)
-      .map(group => {
+      .map((group: any) => {
         const totalWorkouts = group.sessions.length;
         
         // Calculate completion based on intervals_completed vs total_intervals
-        const intervalsStats = group.sessions.map(s => ({
+        const intervalsStats = group.sessions.map((s: any) => ({
           intervals_completed: s.workout_data?.intervals_completed || 0,
           total_intervals: s.workout_data?.total_intervals || 1
         }));
         
         // Fully completed = intervals_completed >= total_intervals
-        const fullyCompleted = intervalsStats.filter((s: WorkoutSession) => s.intervals_completed >= s.total_intervals).length;
+        const fullyCompleted = intervalsStats.filter((s: any) => s.intervals_completed >= s.total_intervals).length;
         const completionRate = totalWorkouts > 0 ? (fullyCompleted / totalWorkouts) * 100 : 0;
         
         const avgIntervalsCompleted = intervalsStats.length > 0
-          ? intervalsStats.reduce((sum, s) => sum + s.intervals_completed, 0) / intervalsStats.length
+          ? intervalsStats.reduce((sum: number, s: any) => sum + s.intervals_completed, 0) / intervalsStats.length
           : 0;
         
         const avgTotalIntervals = intervalsStats.length > 0
-          ? intervalsStats.reduce((sum, s) => sum + s.total_intervals, 0) / intervalsStats.length
+          ? intervalsStats.reduce((sum: number, s: any) => sum + s.total_intervals, 0) / intervalsStats.length
           : 0;
         
         return {
@@ -5414,7 +5415,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     });
     
     // Group sessions by work:rest ratio, filtering out continuous workouts
-    const ratioGroups = {};
+    const ratioGroups: Record<string, any[]> = {};
     let ratiosFound = 0;
     let ratiosFiltered = 0;
     filteredSessions.forEach((session: WorkoutSession) => {
@@ -5444,15 +5445,15 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     // Calculate stats for each ratio group
     const ratioStats = Object.entries(ratioGroups).map(([ratio, sessions]) => {
       const performanceRatios = sessions
-        .map(s => getPerformanceRatio(s))
-        .filter(r => r !== null);
+        .map((s: WorkoutSession) => getPerformanceRatio(s))
+        .filter((r: number | null): r is number => r !== null);
       
       return {
         ratio: parseFloat(ratio),
         displayRatio: ratio,
         count: sessions.length,
         avgPerformanceRatio: performanceRatios.length > 0 
-          ? performanceRatios.reduce((a, b) => a + b, 0) / performanceRatios.length 
+          ? performanceRatios.reduce((a: number, b: number) => a + b, 0) / performanceRatios.length 
           : null,
         avgActualPace: sessions
           .filter((s: WorkoutSession) => s.actual_pace)
@@ -5687,7 +5688,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
 
     // Calculate averages per day type when "Compare Day Averages" is enabled
     const dayTypeAverages = showDayTypeAverages && !variabilityTrendDayType
-      ? availableDayTypes.map(dayType => {
+      ? availableDayTypes.map((dayType: string) => {
           const dayTypeSessions = variabilityData.filter(d => d.dayType === dayType);
           if (dayTypeSessions.length === 0) return null;
           const avg = dayTypeSessions.reduce((sum, d) => sum + d.cv, 0) / dayTypeSessions.length;
@@ -5744,7 +5745,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
               All Days
             </button>
             {/* Day Type buttons */}
-            {availableDayTypes.map(dayType => {
+            {availableDayTypes.map((dayType: string) => {
               const isSelected = variabilityTrendDayType === dayType;
               return (
                 <button
@@ -6166,14 +6167,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             flexWrap: 'wrap',
             gap: '0.5rem'
           }}>
-            {availableDayTypes.map(dayType => {
+            {availableDayTypes.map((dayType: string) => {
               const isSelected = variabilityComparisonDayTypes.includes(dayType);
               return (
                 <button
                   key={dayType}
                   onClick={() => {
                     if (isSelected) {
-                      setVariabilityComparisonDayTypes(variabilityComparisonDayTypes.filter(dt => dt !== dayType));
+                      setVariabilityComparisonDayTypes(variabilityComparisonDayTypes.filter((dt: string) => dt !== dayType));
                     } else {
                       setVariabilityComparisonDayTypes([...variabilityComparisonDayTypes, dayType]);
                     }
@@ -6365,7 +6366,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
               flexWrap: 'wrap',
               gap: '0.5rem'
             }}>
-              {availableDayTypes.map(dayType => {
+              {availableDayTypes.map((dayType: string) => {
                 const isSelected = intervalResultsDayType === dayType;
                 return (
                   <button
