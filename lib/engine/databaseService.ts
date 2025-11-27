@@ -615,7 +615,7 @@ class EngineDatabaseService {
         isMaxEffort
       })
       
-      const { error } = await this.supabase.rpc('update_performance_metrics', {
+      const { error } = await this.supabase.rpc('update_engine_performance_metrics', {
         p_user_id: userId,
         p_day_type: dayType,
         p_modality: modality,
@@ -628,7 +628,7 @@ class EngineDatabaseService {
       console.log('✅ databaseService.updatePerformanceMetrics success')
       return true
     } catch (error) {
-      console.error('❌ Error calling update_performance_metrics:', error)
+      console.error('❌ Error calling update_engine_performance_metrics:', error)
       throw error
     }
   }
