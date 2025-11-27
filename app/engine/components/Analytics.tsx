@@ -789,9 +789,9 @@ export default function Analytics({ onBack }: AnalyticsProps) {
         data.trainingLoadMean = data.trainingLoad.reduce((sum: number, load: number) => sum + load, 0) / sessionCount;
         
         // Calculate trends (simple linear regression slope)
-        data.avgHRTrend = calculateTrend(data.sessions.map(s => s.avgHR));
-        data.efficiencyTrend = calculateTrend(data.sessions.map(s => s.efficiency));
-        data.trainingLoadTrend = calculateTrend(data.sessions.map(s => s.trainingLoad));
+        data.avgHRTrend = calculateTrend(data.sessions.map((s: any) => s.avgHR));
+        data.efficiencyTrend = calculateTrend(data.sessions.map((s: any) => s.efficiency));
+        data.trainingLoadTrend = calculateTrend(data.sessions.map((s: any) => s.trainingLoad));
       }
     });
     
@@ -799,15 +799,15 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   };
 
   // Helper function to calculate trend slope
-  const calculateTrend = (values: number[]): string => {
+  const calculateTrend = (values: number[]): number => {
     if (values.length < 2) return 0;
     
     const n = values.length;
     const x = Array.from({length: n}, (_, i) => i);
-    const sumX = x.reduce((sum, val) => sum + val, 0);
-    const sumY = values.reduce((sum, val) => sum + val, 0);
-    const sumXY = x.reduce((sum, val, i) => sum + val * values[i], 0);
-    const sumXX = x.reduce((sum, val) => sum + val * val, 0);
+    const sumX = x.reduce((sum: number, val: number) => sum + val, 0);
+    const sumY = values.reduce((sum: number, val: number) => sum + val, 0);
+    const sumXY = x.reduce((sum: number, val: number, i: number) => sum + val * values[i], 0);
+    const sumXX = x.reduce((sum: number, val: number) => sum + val * val, 0);
     
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
     return slope;
@@ -818,7 +818,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     const baselines = getBaselinePaces();
     const sessionsWithHR = workoutSessions.filter((session: WorkoutSession) => 
       session.average_heart_rate && session.peak_heart_rate
-    ).sort((a: any, b: any) => new Date(a.date) - new Date(b.date));
+    ).sort((a: any, b: any) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
     
     const insights = {
       highStressDays: [],
