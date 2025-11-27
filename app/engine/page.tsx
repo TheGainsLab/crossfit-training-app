@@ -170,40 +170,12 @@ export default function EnginePage() {
         {/* Navigation */}
         <div className="bg-white border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 py-3">
-            <div className="flex items-center justify-between">
-              <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors text-sm">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Home
-              </Link>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setSelectedDay(null)
-                    setCurrentView('dashboard')
-                  }}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    currentView === 'dashboard'
-                      ? 'bg-[#FE5858] text-white border-2 border-[#FE5858]'
-                      : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  Dashboard
-                </button>
-                <button
-                  onClick={handleAnalyticsClick}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    currentView === 'analytics'
-                      ? 'bg-[#FE5858] text-white border-2 border-[#FE5858]'
-                      : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  Analytics
-                </button>
-              </div>
-            </div>
+            <Link href="/dashboard" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors text-sm">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Dashboard
+            </Link>
           </div>
         </div>
 
