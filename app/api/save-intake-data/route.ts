@@ -356,16 +356,47 @@ export async function POST(request: NextRequest) {
     const isEngine = userTier?.subscription_tier === 'ENGINE'
     
     // Engine users don't need program generation - they use static workouts
+    // But they DO need a user profile generated for /profile page access
     if (isEngine) {
-      console.log('🎯 Engine user - skipping program generation (static workouts)')
+      console.log('🎯 Engine user - skipping program generation, generating profile only')
+      
+      // Generate user profile (needed for /profile page)
+      console.log(`📊 Generating user profile...`)
+      const profileResponse = await fetch(
+        `${supabaseUrl}/functions/v1/generate-user-profile`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            user_id: effectiveUserId,
+            sport_id: 1,
+            force_regenerate: false
+          })
+        }
+      )
+
+      if (!profileResponse.ok) {
+        const errorText = await profileResponse.text()
+        console.error('❌ Profile generation failed:', errorText)
+        return NextResponse.json({ 
+          error: 'Profile generation failed',
+          details: errorText,
+          success: false,
+          intakeSaved: true
+        }, { status: 500 })
+      }
+
+      console.log(`✅ Engine user profile generated successfully!`)
       
       return NextResponse.json({ 
         success: true,
-        message: 'Intake data saved successfully for Engine user',
+        message: 'Intake data saved and profile generated for Engine user',
         intakeSaved: true,
-        programGenerated: false,
-        profileGenerated: false,
-        note: 'Engine uses static workouts - no program generation needed'
+        profileGenerated: true,
+        programGenerated: false
       })
     }
     
