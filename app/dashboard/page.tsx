@@ -1865,6 +1865,13 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         const tier = userData.subscription_tier
         setSubscriptionTier(tier)
         
+        // Engine users don't have programs - skip program loading
+        // Check the local tier variable (not state) since state updates are async
+        if (tier === 'ENGINE') {
+          setLoading(false)
+          return
+        }
+        
         // Only check subscription tier for own account
         // BTN users should use the workout history page, not the program dashboard
         if (tier === 'BTN') {
@@ -1875,12 +1882,6 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       }
       
       setUserId(effectiveUserId)
-
-      // Engine users don't have programs - skip program loading
-      if (subscriptionTier === 'ENGINE') {
-        setLoading(false)
-        return
-      }
 
       // Get latest program for effective user
       const { data: programData, error: programError } = await supabase
