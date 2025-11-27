@@ -1865,10 +1865,11 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         const tier = userData.subscription_tier
         setSubscriptionTier(tier)
         
-        // Engine users don't have programs - skip program loading
+        // Engine users don't have programs - redirect to Engine dashboard
         // Check the local tier variable (not state) since state updates are async
         if (tier === 'ENGINE') {
-          setLoading(false)
+          console.log('🎯 Engine user detected - redirecting to Engine dashboard')
+          router.push('/engine')
           return
         }
         
@@ -2381,8 +2382,6 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
           <AdminDashboard />
         ) : viewMode === "coach" && !viewingAsAthlete ? (
           <CoachDashboard coachData={coachData} />
-        ) : subscriptionTier === 'ENGINE' ? (
-          <EngineDashboardView userId={userId} />
         ) : (
           <div className="space-y-6">        {/* Program Navigation */}
         {currentProgram && (

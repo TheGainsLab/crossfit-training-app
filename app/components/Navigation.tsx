@@ -207,8 +207,7 @@ export default function Navigation() {
   
   if (isEngineUser) {
     navLinks = [
-      { href: '/dashboard', label: 'Dashboard' },
-      { href: '/engine', label: 'Engine Program' },
+      { href: '/engine', label: 'Dashboard' },
       { href: '/dashboard/analytics?engine=true', label: 'Analytics' },
       { href: '/dashboard/nutrition', label: 'Nutrition' },
       { href: '/profile', label: 'Profile' },
