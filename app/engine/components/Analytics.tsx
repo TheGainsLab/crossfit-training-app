@@ -960,12 +960,12 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                   boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-1px)';
-                  e.target.style.boxShadow = '0 6px 16px rgba(37, 99, 235, 0.4)';
+                  (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                  (e.target as HTMLElement).style.boxShadow = '0 6px 16px rgba(37, 99, 235, 0.4)';
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.3)';
+                  (e.target as HTMLElement).style.transform = 'translateY(0)';
+                  (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.3)';
                 }}
               >
                 Start Workout
@@ -984,12 +984,12 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                   transition: 'all 0.3s ease'
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.background = 'rgba(255, 255, 255, 0.9)';
-                  e.target.style.transform = 'translateY(-1px)';
+                  (e.target as HTMLElement).style.background = 'rgba(255, 255, 255, 0.9)';
+                  (e.target as HTMLElement).style.transform = 'translateY(-1px)';
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.background = 'rgba(255, 255, 255, 0.7)';
-                  e.target.style.transform = 'translateY(0)';
+                  (e.target as HTMLElement).style.background = 'rgba(255, 255, 255, 0.7)';
+                  (e.target as HTMLElement).style.transform = 'translateY(0)';
                 }}
               >
                 Take Time Trial
@@ -1017,14 +1017,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-4px)';
-            e.target.style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
-            e.target.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+            (e.target as HTMLElement).style.transform = 'translateY(-4px)';
+            (e.target as HTMLElement).style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
+            (e.target as HTMLElement).style.borderColor = 'rgba(59, 130, 246, 0.3)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-            e.target.style.borderColor = '#FE5858';
+            (e.target as HTMLElement).style.transform = 'translateY(0)';
+            (e.target as HTMLElement).style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+            (e.target as HTMLElement).style.borderColor = '#FE5858';
           }}
           className="animate-fade-in"
         >
@@ -1058,14 +1058,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-4px)';
-            e.target.style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
-            e.target.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+            (e.target as HTMLElement).style.transform = 'translateY(-4px)';
+            (e.target as HTMLElement).style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
+            (e.target as HTMLElement).style.borderColor = 'rgba(34, 197, 94, 0.3)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-            e.target.style.borderColor = '#FE5858';
+            (e.target as HTMLElement).style.transform = 'translateY(0)';
+            (e.target as HTMLElement).style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+            (e.target as HTMLElement).style.borderColor = '#FE5858';
           }}
           className="animate-fade-in"
         >
@@ -1099,14 +1099,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-4px)';
-            e.target.style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
-            e.target.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+            (e.target as HTMLElement).style.transform = 'translateY(-4px)';
+            (e.target as HTMLElement).style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
+            (e.target as HTMLElement).style.borderColor = 'rgba(168, 85, 247, 0.3)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-            e.target.style.borderColor = '#FE5858';
+            (e.target as HTMLElement).style.transform = 'translateY(0)';
+            (e.target as HTMLElement).style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+            (e.target as HTMLElement).style.borderColor = '#FE5858';
           }}
           className="animate-fade-in"
         >
@@ -1140,14 +1140,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-4px)';
-            e.target.style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
-            e.target.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+            (e.target as HTMLElement).style.transform = 'translateY(-4px)';
+            (e.target as HTMLElement).style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
+            (e.target as HTMLElement).style.borderColor = 'rgba(239, 68, 68, 0.3)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-            e.target.style.borderColor = '#FE5858';
+            (e.target as HTMLElement).style.transform = 'translateY(0)';
+            (e.target as HTMLElement).style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+            (e.target as HTMLElement).style.borderColor = '#FE5858';
           }}
           className="animate-fade-in"
         >
@@ -1181,14 +1181,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-4px)';
-            e.target.style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
-            e.target.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+            (e.target as HTMLElement).style.transform = 'translateY(-4px)';
+            (e.target as HTMLElement).style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
+            (e.target as HTMLElement).style.borderColor = 'rgba(245, 158, 11, 0.3)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-            e.target.style.borderColor = '#FE5858';
+            (e.target as HTMLElement).style.transform = 'translateY(0)';
+            (e.target as HTMLElement).style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+            (e.target as HTMLElement).style.borderColor = '#FE5858';
           }}
           className="animate-fade-in"
         >
@@ -1222,14 +1222,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-4px)';
-            e.target.style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
-            e.target.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+            (e.target as HTMLElement).style.transform = 'translateY(-4px)';
+            (e.target as HTMLElement).style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
+            (e.target as HTMLElement).style.borderColor = 'rgba(239, 68, 68, 0.3)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-            e.target.style.borderColor = '#FE5858';
+            (e.target as HTMLElement).style.transform = 'translateY(0)';
+            (e.target as HTMLElement).style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+            (e.target as HTMLElement).style.borderColor = '#FE5858';
           }}
           className="animate-fade-in"
         >
@@ -1263,14 +1263,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-4px)';
-            e.target.style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
-            e.target.style.borderColor = 'rgba(139, 92, 246, 0.3)';
+            (e.target as HTMLElement).style.transform = 'translateY(-4px)';
+            (e.target as HTMLElement).style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
+            (e.target as HTMLElement).style.borderColor = 'rgba(139, 92, 246, 0.3)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-            e.target.style.borderColor = '#FE5858';
+            (e.target as HTMLElement).style.transform = 'translateY(0)';
+            (e.target as HTMLElement).style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+            (e.target as HTMLElement).style.borderColor = '#FE5858';
           }}
         >
             <h3 style={{
@@ -1303,14 +1303,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-4px)';
-            e.target.style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
-            e.target.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+            (e.target as HTMLElement).style.transform = 'translateY(-4px)';
+            (e.target as HTMLElement).style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
+            (e.target as HTMLElement).style.borderColor = 'rgba(34, 197, 94, 0.3)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-            e.target.style.borderColor = '#FE5858';
+            (e.target as HTMLElement).style.transform = 'translateY(0)';
+            (e.target as HTMLElement).style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+            (e.target as HTMLElement).style.borderColor = '#FE5858';
           }}
         >
             <h3 style={{
@@ -1346,14 +1346,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-4px)';
-            e.target.style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
-            e.target.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+            (e.target as HTMLElement).style.transform = 'translateY(-4px)';
+            (e.target as HTMLElement).style.boxShadow = '0 8px 30px -5px rgba(0, 0, 0, 0.15), 0 15px 15px -5px rgba(0, 0, 0, 0.08)';
+            (e.target as HTMLElement).style.borderColor = 'rgba(168, 85, 247, 0.3)';
           }}
           onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-            e.target.style.borderColor = '#FE5858';
+            (e.target as HTMLElement).style.transform = 'translateY(0)';
+            (e.target as HTMLElement).style.boxShadow = '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+            (e.target as HTMLElement).style.borderColor = '#FE5858';
           }}
         >
             <h3 style={{
@@ -1443,14 +1443,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                           whiteSpace: 'nowrap'
                         }}
                         onMouseEnter={(e) => {
-                          e.target.style.transform = 'translateY(-1px)';
-                          e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                          e.target.style.borderColor = '#FE5858';
+                          (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                          (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                          (e.target as HTMLElement).style.borderColor = '#FE5858';
                         }}
                         onMouseLeave={(e) => {
-                          e.target.style.transform = 'translateY(0)';
-                          e.target.style.boxShadow = 'none';
-                          e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+                          (e.target as HTMLElement).style.transform = 'translateY(0)';
+                          (e.target as HTMLElement).style.boxShadow = 'none';
+                          (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
                         }}
                       >
                         <span>{getWorkoutTypeDisplayName(dayType)}</span>
@@ -1510,14 +1510,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                           whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
-              e.target.style.transform = 'translateY(-1px)';
-                          e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                          e.target.style.borderColor = '#FE5858';
+              (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                          (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                          (e.target as HTMLElement).style.borderColor = '#FE5858';
             }}
             onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = 'none';
-                          e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+              (e.target as HTMLElement).style.transform = 'translateY(0)';
+              (e.target as HTMLElement).style.boxShadow = 'none';
+                          (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
             }}
           >
                         <span>{getModalityDisplayName(modality)}</span>
@@ -1613,6 +1613,8 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                   const daysPerMonth = getDaysPerMonth(programVersion);
                   const month = dayNumber ? Math.ceil(dayNumber / daysPerMonth) : 'Unknown';
                   
+                  if (pace === null) return null;
+                  
                   return (
                     <div key={index} style={{
                       display: 'flex',
@@ -1649,7 +1651,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                             justifyContent: 'flex-end',
                             paddingRight: '0.5rem',
                             transition: 'width 0.5s ease',
-                            width: `${Math.min((pace / 100) * 100, 100)}%`
+                            width: `${Math.min(((pace || 0) / 100) * 100, 100)}%`
                           }}
                         >
                           <span style={{
@@ -1759,16 +1761,16 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                       }}
                       onMouseEnter={(e) => {
                         if (!isDisabled) {
-                          e.target.style.transform = 'translateY(-1px)';
-                          e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                          e.target.style.borderColor = '#FE5858';
+                          (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                          (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                          (e.target as HTMLElement).style.borderColor = '#FE5858';
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (!isDisabled) {
-                          e.target.style.transform = 'translateY(0)';
-                          e.target.style.boxShadow = 'none';
-                          e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+                          (e.target as HTMLElement).style.transform = 'translateY(0)';
+                          (e.target as HTMLElement).style.boxShadow = 'none';
+                          (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
                         }
                       }}
                     >
@@ -1829,14 +1831,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                       minWidth: '0'
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-1px)';
-                      e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                      e.target.style.borderColor = '#FE5858';
+                      (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                      (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                      (e.target as HTMLElement).style.borderColor = '#FE5858';
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                      e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+                      (e.target as HTMLElement).style.transform = 'translateY(0)';
+                      (e.target as HTMLElement).style.boxShadow = 'none';
+                      (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
                     }}
                   >
                     <span>{getModalityDisplayName(modality)}</span>
@@ -2015,14 +2017,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                       whiteSpace: 'nowrap'
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-1px)';
-                      e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                      e.target.style.borderColor = '#FE5858';
+                      (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                      (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                      (e.target as HTMLElement).style.borderColor = '#FE5858';
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                      e.target.style.borderColor = compareModality === '' ? '#FE5858' : '#e5e7eb';
+                      (e.target as HTMLElement).style.transform = 'translateY(0)';
+                      (e.target as HTMLElement).style.boxShadow = 'none';
+                      (e.target as HTMLElement).style.borderColor = compareModality === '' ? '#FE5858' : '#e5e7eb';
                     }}
                   >
                     <span>All Modalities</span>
@@ -2050,14 +2052,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                           whiteSpace: 'nowrap'
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.transform = 'translateY(-1px)';
-                        e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                        e.target.style.borderColor = '#FE5858';
+                        (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                        (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                        (e.target as HTMLElement).style.borderColor = '#FE5858';
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = 'none';
-                        e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+                        (e.target as HTMLElement).style.transform = 'translateY(0)';
+                        (e.target as HTMLElement).style.boxShadow = 'none';
+                        (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
                       }}
                     >
                         <span>{getModalityDisplayName(modality)}</span>
@@ -2113,14 +2115,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                             whiteSpace: 'nowrap'
                           }}
                           onMouseEnter={(e) => {
-                            e.target.style.transform = 'translateY(-1px)';
-                            e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                            e.target.style.borderColor = '#FE5858';
+                            (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                            (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                            (e.target as HTMLElement).style.borderColor = '#FE5858';
                           }}
                           onMouseLeave={(e) => {
-                            e.target.style.transform = 'translateY(0)';
-                            e.target.style.boxShadow = 'none';
-                            e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+                            (e.target as HTMLElement).style.transform = 'translateY(0)';
+                            (e.target as HTMLElement).style.boxShadow = 'none';
+                            (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
                           }}
                         >
                         <span>{getWorkoutTypeDisplayName(dayType)}</span>
@@ -2182,14 +2184,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                             whiteSpace: 'nowrap'
                           }}
                           onMouseEnter={(e) => {
-                            e.target.style.transform = 'translateY(-1px)';
-                            e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                            e.target.style.borderColor = '#FE5858';
+                            (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                            (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                            (e.target as HTMLElement).style.borderColor = '#FE5858';
                           }}
                           onMouseLeave={(e) => {
-                            e.target.style.transform = 'translateY(0)';
-                            e.target.style.boxShadow = 'none';
-                            e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+                            (e.target as HTMLElement).style.transform = 'translateY(0)';
+                            (e.target as HTMLElement).style.boxShadow = 'none';
+                            (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
                           }}
                         >
                         <span>{getWorkoutTypeDisplayName(dayType)}</span>
@@ -2225,14 +2227,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.background = '#dc2626';
-                      e.target.style.transform = 'translateY(-1px)';
-                      e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+                      (e.target as HTMLElement).style.background = '#dc2626';
+                      (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                      (e.target as HTMLElement).style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.background = '#FE5858';
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                      (e.target as HTMLElement).style.background = '#FE5858';
+                      (e.target as HTMLElement).style.transform = 'translateY(0)';
+                      (e.target as HTMLElement).style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
                     }}
                   >
                     Generate
@@ -2293,14 +2295,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                             whiteSpace: 'nowrap'
                           }}
                           onMouseEnter={(e) => {
-                            e.target.style.transform = 'translateY(-1px)';
-                            e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                            e.target.style.borderColor = '#FE5858';
+                            (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                            (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                            (e.target as HTMLElement).style.borderColor = '#FE5858';
                           }}
                           onMouseLeave={(e) => {
-                            e.target.style.transform = 'translateY(0)';
-                            e.target.style.boxShadow = 'none';
-                            e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+                            (e.target as HTMLElement).style.transform = 'translateY(0)';
+                            (e.target as HTMLElement).style.boxShadow = 'none';
+                            (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
                           }}
                         >
                           <span>{getWorkoutTypeDisplayName(dayType)}</span>
@@ -2350,14 +2352,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                             whiteSpace: 'nowrap'
                           }}
                           onMouseEnter={(e) => {
-                            e.target.style.transform = 'translateY(-1px)';
-                            e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                            e.target.style.borderColor = '#FE5858';
+                            (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                            (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                            (e.target as HTMLElement).style.borderColor = '#FE5858';
                           }}
                           onMouseLeave={(e) => {
-                            e.target.style.transform = 'translateY(0)';
-                            e.target.style.boxShadow = 'none';
-                            e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+                            (e.target as HTMLElement).style.transform = 'translateY(0)';
+                            (e.target as HTMLElement).style.boxShadow = 'none';
+                            (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
                           }}
                         >
                           <span>{getWorkoutTypeDisplayName(dayType)}</span>
@@ -2385,14 +2387,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.background = '#dc2626';
-                      e.target.style.transform = 'translateY(-1px)';
-                      e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+                      (e.target as HTMLElement).style.background = '#dc2626';
+                      (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                      (e.target as HTMLElement).style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.background = '#FE5858';
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                      (e.target as HTMLElement).style.background = '#FE5858';
+                      (e.target as HTMLElement).style.transform = 'translateY(0)';
+                      (e.target as HTMLElement).style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
                     }}
                   >
                     Generate
@@ -2860,14 +2862,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                         whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
-                        e.target.style.transform = 'translateY(-1px)';
-                        e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                        e.target.style.borderColor = '#FE5858';
+                        (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                        (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                        (e.target as HTMLElement).style.borderColor = '#FE5858';
             }}
             onMouseLeave={(e) => {
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = 'none';
-                        e.target.style.borderColor = timeTrialBaselineFilter === 'all' ? '#FE5858' : '#e5e7eb';
+                        (e.target as HTMLElement).style.transform = 'translateY(0)';
+                        (e.target as HTMLElement).style.boxShadow = 'none';
+                        (e.target as HTMLElement).style.borderColor = timeTrialBaselineFilter === 'all' ? '#FE5858' : '#e5e7eb';
             }}
           >
                       <span>All</span>
@@ -2891,14 +2893,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                         whiteSpace: 'nowrap'
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.transform = 'translateY(-1px)';
-                        e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                        e.target.style.borderColor = '#FE5858';
+                        (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                        (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                        (e.target as HTMLElement).style.borderColor = '#FE5858';
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = 'none';
-                        e.target.style.borderColor = timeTrialBaselineFilter === 'current' ? '#FE5858' : '#e5e7eb';
+                        (e.target as HTMLElement).style.transform = 'translateY(0)';
+                        (e.target as HTMLElement).style.boxShadow = 'none';
+                        (e.target as HTMLElement).style.borderColor = timeTrialBaselineFilter === 'current' ? '#FE5858' : '#e5e7eb';
                       }}
                     >
                       <span>Current</span>
@@ -2922,14 +2924,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                         whiteSpace: 'nowrap'
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.transform = 'translateY(-1px)';
-                        e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                        e.target.style.borderColor = '#FE5858';
+                        (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                        (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                        (e.target as HTMLElement).style.borderColor = '#FE5858';
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = 'none';
-                        e.target.style.borderColor = timeTrialBaselineFilter === 'previous' ? '#FE5858' : '#e5e7eb';
+                        (e.target as HTMLElement).style.transform = 'translateY(0)';
+                        (e.target as HTMLElement).style.boxShadow = 'none';
+                        (e.target as HTMLElement).style.borderColor = timeTrialBaselineFilter === 'previous' ? '#FE5858' : '#e5e7eb';
                       }}
                     >
                       <span>Previous</span>
@@ -2978,14 +2980,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                           whiteSpace: 'nowrap'
                         }}
                         onMouseEnter={(e) => {
-                          e.target.style.transform = 'translateY(-1px)';
-                          e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                          e.target.style.borderColor = '#FE5858';
+                          (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                          (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                          (e.target as HTMLElement).style.borderColor = '#FE5858';
                         }}
                         onMouseLeave={(e) => {
-                          e.target.style.transform = 'translateY(0)';
-                          e.target.style.boxShadow = 'none';
-                          e.target.style.borderColor = timeTrialModalityFilter === '' ? '#FE5858' : '#e5e7eb';
+                          (e.target as HTMLElement).style.transform = 'translateY(0)';
+                          (e.target as HTMLElement).style.boxShadow = 'none';
+                          (e.target as HTMLElement).style.borderColor = timeTrialModalityFilter === '' ? '#FE5858' : '#e5e7eb';
                         }}
                       >
                         <span>All Modalities</span>
@@ -3013,14 +3015,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                               whiteSpace: 'nowrap'
                             }}
                             onMouseEnter={(e) => {
-                              e.target.style.transform = 'translateY(-1px)';
-                              e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                              e.target.style.borderColor = '#FE5858';
+                              (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                              (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                              (e.target as HTMLElement).style.borderColor = '#FE5858';
                             }}
                             onMouseLeave={(e) => {
-                              e.target.style.transform = 'translateY(0)';
-                              e.target.style.boxShadow = 'none';
-                              e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+                              (e.target as HTMLElement).style.transform = 'translateY(0)';
+                              (e.target as HTMLElement).style.boxShadow = 'none';
+                              (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
                             }}
                           >
                             <span>{getModalityDisplayName(modality)}</span>
@@ -3443,14 +3445,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                     whiteSpace: 'nowrap'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                    e.target.style.borderColor = '#FE5858';
+                    (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                    (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                    (e.target as HTMLElement).style.borderColor = '#FE5858';
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
-                    e.target.style.borderColor = targetVsActualModality === '' ? '#FE5858' : '#e5e7eb';
+                    (e.target as HTMLElement).style.transform = 'translateY(0)';
+                    (e.target as HTMLElement).style.boxShadow = 'none';
+                    (e.target as HTMLElement).style.borderColor = targetVsActualModality === '' ? '#FE5858' : '#e5e7eb';
                   }}
                 >
                   <span>All Modalities</span>
@@ -3478,14 +3480,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                         whiteSpace: 'nowrap'
             }}
                       onMouseEnter={(e) => {
-                        e.target.style.transform = 'translateY(-1px)';
-                        e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                        e.target.style.borderColor = '#FE5858';
+                        (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                        (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                        (e.target as HTMLElement).style.borderColor = '#FE5858';
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = 'none';
-                        e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+                        (e.target as HTMLElement).style.transform = 'translateY(0)';
+                        (e.target as HTMLElement).style.boxShadow = 'none';
+                        (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
                       }}
                     >
                       <span>{getModalityDisplayName(modality)}</span>
@@ -3536,14 +3538,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                     whiteSpace: 'nowrap'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                    e.target.style.borderColor = '#FE5858';
+                    (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                    (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                    (e.target as HTMLElement).style.borderColor = '#FE5858';
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
-                    e.target.style.borderColor = targetVsActualDayType === '' ? '#FE5858' : '#e5e7eb';
+                    (e.target as HTMLElement).style.transform = 'translateY(0)';
+                    (e.target as HTMLElement).style.boxShadow = 'none';
+                    (e.target as HTMLElement).style.borderColor = targetVsActualDayType === '' ? '#FE5858' : '#e5e7eb';
                   }}
                 >
                   <span>All Day Types</span>
@@ -3571,14 +3573,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                         whiteSpace: 'nowrap'
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.transform = 'translateY(-1px)';
-                        e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                        e.target.style.borderColor = '#FE5858';
+                        (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                        (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                        (e.target as HTMLElement).style.borderColor = '#FE5858';
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = 'none';
-                        e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+                        (e.target as HTMLElement).style.transform = 'translateY(0)';
+                        (e.target as HTMLElement).style.boxShadow = 'none';
+                        (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
                       }}
                     >
                       <span>{getWorkoutTypeDisplayName(dayType)}</span>
@@ -3787,14 +3789,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                   whiteSpace: 'nowrap'
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-1px)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                  e.target.style.borderColor = '#FE5858';
+                  (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                  (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                  (e.target as HTMLElement).style.borderColor = '#FE5858';
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
-                  e.target.style.borderColor = personalRecordsModality === '' ? '#FE5858' : '#e5e7eb';
+                  (e.target as HTMLElement).style.transform = 'translateY(0)';
+                  (e.target as HTMLElement).style.boxShadow = 'none';
+                  (e.target as HTMLElement).style.borderColor = personalRecordsModality === '' ? '#FE5858' : '#e5e7eb';
                 }}
               >
                 <span>All Modalities</span>
@@ -3822,14 +3824,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                       whiteSpace: 'nowrap'
             }}
                     onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-1px)';
-                      e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                      e.target.style.borderColor = '#FE5858';
+                      (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                      (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                      (e.target as HTMLElement).style.borderColor = '#FE5858';
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                      e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+                      (e.target as HTMLElement).style.transform = 'translateY(0)';
+                      (e.target as HTMLElement).style.boxShadow = 'none';
+                      (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
                     }}
                   >
                     <span>{getModalityDisplayName(modality)}</span>
@@ -4092,15 +4094,15 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                   }}
                   onMouseEnter={(e) => {
                     if (analyticsModalityFilter !== '') {
-                      e.target.style.borderColor = '#FE5858';
-                      e.target.style.transform = 'translateY(-1px)';
-                      e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                      (e.target as HTMLElement).style.borderColor = '#FE5858';
+                      (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                      (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
-                    e.target.style.borderColor = analyticsModalityFilter === '' ? '#FE5858' : '#282B34';
+                    (e.target as HTMLElement).style.transform = 'translateY(0)';
+                    (e.target as HTMLElement).style.boxShadow = 'none';
+                    (e.target as HTMLElement).style.borderColor = analyticsModalityFilter === '' ? '#FE5858' : '#282B34';
                   }}
                 >
                   All Modalities
@@ -4129,15 +4131,15 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                       }}
                       onMouseEnter={(e) => {
                         if (!isSelected) {
-                          e.target.style.borderColor = '#FE5858';
-                          e.target.style.transform = 'translateY(-1px)';
-                          e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                          (e.target as HTMLElement).style.borderColor = '#FE5858';
+                          (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                          (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
                         }
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = 'none';
-                        e.target.style.borderColor = isSelected ? '#FE5858' : '#282B34';
+                        (e.target as HTMLElement).style.transform = 'translateY(0)';
+                        (e.target as HTMLElement).style.boxShadow = 'none';
+                        (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#282B34';
                       }}
                     >
                       {getModalityDisplayName(modality)}
@@ -4229,15 +4231,15 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                       }}
                       onMouseEnter={(e) => {
                         if (!isSelected) {
-                          e.target.style.borderColor = '#FE5858';
-                          e.target.style.transform = 'translateY(-1px)';
-                          e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                          (e.target as HTMLElement).style.borderColor = '#FE5858';
+                          (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                          (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
                         }
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = 'none';
-                        e.target.style.borderColor = isSelected ? '#FE5858' : '#282B34';
+                        (e.target as HTMLElement).style.transform = 'translateY(0)';
+                        (e.target as HTMLElement).style.boxShadow = 'none';
+                        (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#282B34';
                       }}
                     >
                       {metric.label}
@@ -5044,10 +5046,10 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
-                e.target.style.color = '#FE5858';
+                (e.target as HTMLElement).style.color = '#FE5858';
               }}
               onMouseLeave={(e) => {
-                e.target.style.color = '#282B34';
+                (e.target as HTMLElement).style.color = '#282B34';
               }}
             >
               {getWorkoutTypeDisplayName(selectedHrDayTypeForCards)} ({data.sessions.length || 0})
@@ -5074,14 +5076,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
-                e.target.style.borderColor = '#FE5858';
-                e.target.style.background = '#FE5858';
-                e.target.style.color = '#F8FBFE';
+                (e.target as HTMLElement).style.borderColor = '#FE5858';
+                (e.target as HTMLElement).style.background = '#FE5858';
+                (e.target as HTMLElement).style.color = '#F8FBFE';
               }}
               onMouseLeave={(e) => {
-                e.target.style.borderColor = '#282B34';
-                e.target.style.background = '#DAE2EA';
-                e.target.style.color = '#282B34';
+                (e.target as HTMLElement).style.borderColor = '#282B34';
+                (e.target as HTMLElement).style.background = '#DAE2EA';
+                (e.target as HTMLElement).style.color = '#282B34';
               }}
             >
               Close
@@ -5217,7 +5219,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             {sessions.map((sess, index) => {
               const session = sess.session;
               const baseline = baselines[session.modality || 'unknown'];
-              const paceRatio = baseline && baseline > 0 ? sess.pace / baseline : 0;
+                  const paceRatio = baseline && baseline > 0 && sess.pace !== null && sess.pace !== undefined ? sess.pace / baseline : 0;
               
               // Get duration
               let durationMinutes = 0;
@@ -5495,14 +5497,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                     whiteSpace: 'nowrap'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                    e.target.style.borderColor = '#FE5858';
+                    (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                    (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                    (e.target as HTMLElement).style.borderColor = '#FE5858';
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
-                    e.target.style.borderColor = analyticsModalityFilter === '' ? '#FE5858' : '#e5e7eb';
+                    (e.target as HTMLElement).style.transform = 'translateY(0)';
+                    (e.target as HTMLElement).style.boxShadow = 'none';
+                    (e.target as HTMLElement).style.borderColor = analyticsModalityFilter === '' ? '#FE5858' : '#e5e7eb';
                   }}
                 >
                   <span>All Modalities</span>
@@ -5530,14 +5532,14 @@ export default function Analytics({ onBack }: AnalyticsProps) {
                         whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
-              e.target.style.transform = 'translateY(-1px)';
-                        e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                        e.target.style.borderColor = '#FE5858';
+              (e.target as HTMLElement).style.transform = 'translateY(-1px)';
+                        (e.target as HTMLElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                        (e.target as HTMLElement).style.borderColor = '#FE5858';
             }}
             onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = 'none';
-                        e.target.style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
+              (e.target as HTMLElement).style.transform = 'translateY(0)';
+                        (e.target as HTMLElement).style.boxShadow = 'none';
+                        (e.target as HTMLElement).style.borderColor = isSelected ? '#FE5858' : '#e5e7eb';
             }}
           >
                       <span>{getModalityDisplayName(modality)}</span>
