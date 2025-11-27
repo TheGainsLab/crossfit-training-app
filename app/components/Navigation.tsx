@@ -195,27 +195,45 @@ export default function Navigation() {
   // Debug: Log subscription tier
   console.log('Navigation rendering with subscriptionTier:', subscriptionTier, 'type:', typeof subscriptionTier)
 
-  // Conditional navigation based on subscription tier (case-insensitive)
-  // Also check if user is on BTN pages as fallback
-  const isBTNUser = subscriptionTier?.toUpperCase() === 'BTN' || pathname?.startsWith('/btn')
+  // Determine user tier (case-insensitive)
+  const tier = subscriptionTier?.toUpperCase() || ''
+  const isBTNUser = tier === 'BTN' || pathname?.startsWith('/btn')
+  const isEngineUser = tier === 'ENGINE' || pathname?.startsWith('/engine')
+  const isAppliedPowerUser = tier === 'APPLIED_POWER'
+  const isPremiumUser = tier === 'PREMIUM' || (!isBTNUser && !isEngineUser && !isAppliedPowerUser && tier !== '')
   
-  const navLinks = isBTNUser
-    ? [
-        { href: '/btn', label: 'Generator' },
-        { href: '/btn/workouts', label: 'Workouts' },
-        { href: '/btn/analytics', label: 'Analytics' },
-        { href: '/dashboard/nutrition', label: 'Nutrition' },
-        { href: '/profile', label: 'Profile' },
-      ]
-    : [
-        { href: '/dashboard', label: 'Dashboard' },
-        { href: todaysHref, label: 'Today\'s Workout' },
-        { href: '/workouts', label: 'Workouts' },
-        { href: '/dashboard/nutrition', label: 'Nutrition' },
-        { href: '/profile', label: 'Profile' },
-      ]
+  // Build navigation links based on tier
+  let navLinks: Array<{ href: string; label: string }> = []
+  
+  if (isEngineUser) {
+    navLinks = [
+      { href: '/dashboard', label: 'Dashboard' },
+      { href: '/engine', label: 'Engine Program' },
+      { href: '/dashboard/analytics?engine=true', label: 'Analytics' },
+      { href: '/dashboard/nutrition', label: 'Nutrition' },
+      { href: '/profile', label: 'Profile' },
+    ]
+  } else if (isBTNUser) {
+    navLinks = [
+      { href: '/btn', label: 'Generator' },
+      { href: '/btn/workouts', label: 'Workouts' },
+      { href: '/btn/analytics', label: 'Analytics' },
+      { href: '/dashboard/nutrition', label: 'Nutrition' },
+      { href: '/profile', label: 'Profile' },
+    ]
+  } else {
+    // Premium or Applied Power
+    navLinks = [
+      { href: '/dashboard', label: 'Dashboard' },
+      { href: todaysHref, label: 'Today\'s Workout' },
+      { href: '/workouts', label: 'Workouts' },
+      { href: '/dashboard/analytics', label: 'Analytics' },
+      { href: '/dashboard/nutrition', label: 'Nutrition' },
+      { href: '/profile', label: 'Profile' },
+    ]
+  }
 
-  console.log('Is BTN user:', isBTNUser, 'Links:', navLinks.map(l => l.label))
+  console.log('User tier:', tier, 'Links:', navLinks.map(l => l.label))
 
   return (
     <>
@@ -242,7 +260,7 @@ export default function Navigation() {
             {/* Centered Logo */}
             <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center h-full">
               <Link 
-                href={isBTNUser ? '/btn' : '/dashboard'} 
+                href={isEngineUser ? '/dashboard' : isBTNUser ? '/btn' : '/dashboard'} 
                 className="text-5xl sm:text-6xl font-bold hover:opacity-90 transition-opacity flex items-center h-full leading-none"
               >
                 <span style={{ color: '#282B34' }}>G</span>

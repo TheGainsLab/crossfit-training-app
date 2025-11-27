@@ -37,8 +37,9 @@ function RangeChips() {
 function AnalyticsSubnav() {
   const pathname = usePathname()
   const [isAppliedPower, setIsAppliedPower] = useState(false)
+  const [isEngine, setIsEngine] = useState(false)
   
-  // Check if user is Applied Power to filter out Skills and Metcons tabs
+  // Check if user is Applied Power or Engine to filter tabs
   useEffect(() => {
     const checkSubscriptionTier = async () => {
       try {
@@ -53,6 +54,9 @@ function AnalyticsSubnav() {
           .single()
         if (userData?.subscription_tier === 'APPLIED_POWER') {
           setIsAppliedPower(true)
+        }
+        if (userData?.subscription_tier === 'ENGINE') {
+          setIsEngine(true)
         }
       } catch (err) {
         console.warn('Failed to check subscription tier:', err)
@@ -69,16 +73,23 @@ function AnalyticsSubnav() {
     { href: '/dashboard/analytics/metcons', label: 'Metcons' }
   ]), [])
   
-  // Filter out Skills and Metcons for Applied Power users
+  // Filter tabs based on subscription tier
   const tabs = useMemo(() => {
+    if (isEngine) {
+      // Engine users only see Engine analytics link
+      return [
+        { href: '/engine?view=analytics', label: 'Engine Analytics' }
+      ]
+    }
     if (isAppliedPower) {
+      // Applied Power: filter out Skills and Metcons
       return allTabs.filter(tab => 
         tab.href !== '/dashboard/analytics/skills' && 
         tab.href !== '/dashboard/analytics/metcons'
       )
     }
     return allTabs
-  }, [isAppliedPower, allTabs])
+  }, [isAppliedPower, isEngine, allTabs])
   
   // Hide range filters on metcons page - they're moved into the heat map area
   const isMetconsPage = pathname === '/dashboard/analytics/metcons'

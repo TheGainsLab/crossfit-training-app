@@ -57,11 +57,112 @@ interface DashboardAnalytics {
   metadata: any;
 }
 
+// Engine Dashboard View Component
+function EngineDashboardView({ userId }: { userId: number | null }) {
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-lg p-8 border-2 border-[#FE5858]">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Engine Conditioning Program</h1>
+          <p className="text-gray-600">5-day conditioning program with personalized pacing</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <Link 
+            href="/engine"
+            className="block bg-gradient-to-br from-[#FE5858] to-[#ff6b6b] rounded-lg p-6 text-white hover:shadow-lg transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold mb-2">Training Program</h3>
+                <p className="text-sm opacity-90">Access your 5-day conditioning workouts</p>
+              </div>
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
+          
+          <Link 
+            href="/engine?view=analytics"
+            className="block bg-gradient-to-br from-[#282B34] to-[#3a3d47] rounded-lg p-6 text-white hover:shadow-lg transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold mb-2">Analytics</h3>
+                <p className="text-sm opacity-90">View performance metrics and trends</p>
+              </div>
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+          </Link>
+        </div>
+        
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h3 className="font-semibold text-gray-900 mb-4">Program Features</h3>
+          <ul className="space-y-2 text-sm text-gray-700">
+            <li className="flex items-start">
+              <svg className="w-5 h-5 text-[#FE5858] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Deterministic 5-day conditioning program</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-5 h-5 text-[#FE5858] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Performance ratio learning - workouts adapt to your pace</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-5 h-5 text-[#FE5858] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Time trial baselines for personalized target pacing</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-5 h-5 text-[#FE5858] mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Support for rowing, bike, and ski modalities</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Training Blocks Visualization Component
 // Training Blocks Visualization Component - Streamlined Version
 const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ analytics, blockData }) => {
   const router = useRouter()
   const donutRef = useRef<any>(null)
+  const [isAppliedPower, setIsAppliedPower] = useState(false)
+  
+  // Check if user is Applied Power to filter blocks
+  useEffect(() => {
+    const checkSubscriptionTier = async () => {
+      try {
+        const { createClient } = await import('@/lib/supabase/client')
+        const sb = createClient()
+        const { data: { user } } = await sb.auth.getUser()
+        if (!user) return
+        const { data: userData } = await sb
+          .from('users')
+          .select('subscription_tier')
+          .eq('auth_id', user.id)
+          .single()
+        if (userData?.subscription_tier === 'APPLIED_POWER') {
+          setIsAppliedPower(true)
+        }
+      } catch (err) {
+        console.warn('Failed to check subscription tier:', err)
+      }
+    }
+    checkSubscriptionTier()
+  }, [])
+  
   if (!blockData?.data?.blockAnalysis?.blockSummaries) {
     return (
       <div className="bg-ice-blue rounded-lg border border-charcoal p-6">
@@ -91,8 +192,15 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
   // Define the desired order for blocks
   const blockOrder = ['Skills', 'Technical', 'Strength', 'Accessories', 'MetCons']
   
+  // Filter blocks for Applied Power users (exclude Skills and MetCons)
+  const filteredBlockSummaries = isAppliedPower
+    ? blockSummaries.filter((block: any) => 
+        block.blockName !== 'Skills' && block.blockName !== 'MetCons'
+      )
+    : blockSummaries
+  
   // Sort block summaries according to the desired order
-  const sortedBlockSummaries = [...blockSummaries].sort((a, b) => {
+  const sortedBlockSummaries = [...filteredBlockSummaries].sort((a, b) => {
     const aIndex = blockOrder.indexOf(a.blockName)
     const bIndex = blockOrder.indexOf(b.blockName)
     return aIndex - bIndex
@@ -1408,6 +1516,7 @@ const [heatMapData, setHeatMapData] = useState<any>(null)
   const [allPrograms, setAllPrograms] = useState<Array<{ id: number; weeks_generated: number[] }>>([])
   const [estimatedTDEE, setEstimatedTDEE] = useState<number | null>(null)
   const [tdeeLoading, setTdeeLoading] = useState(false)
+  const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null)
 
   useEffect(() => {
     // Check for viewAs parameter in URL
@@ -1753,10 +1862,12 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
           return
         }
         effectiveUserId = userData.id
+        const tier = userData.subscription_tier
+        setSubscriptionTier(tier)
         
         // Only check subscription tier for own account
         // BTN users should use the workout history page, not the program dashboard
-        if (userData.subscription_tier === 'BTN') {
+        if (tier === 'BTN') {
           console.log('🎯 BTN user detected - redirecting to workout history')
           router.push('/btn/workouts')
           return
@@ -1764,6 +1875,12 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       }
       
       setUserId(effectiveUserId)
+
+      // Engine users don't have programs - skip program loading
+      if (subscriptionTier === 'ENGINE') {
+        setLoading(false)
+        return
+      }
 
       // Get latest program for effective user
       const { data: programData, error: programError } = await supabase
@@ -2263,6 +2380,8 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
           <AdminDashboard />
         ) : viewMode === "coach" && !viewingAsAthlete ? (
           <CoachDashboard coachData={coachData} />
+        ) : subscriptionTier === 'ENGINE' ? (
+          <EngineDashboardView userId={userId} />
         ) : (
           <div className="space-y-6">        {/* Program Navigation */}
         {currentProgram && (

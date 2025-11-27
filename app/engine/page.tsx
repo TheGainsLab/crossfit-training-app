@@ -30,6 +30,17 @@ export default function EnginePage() {
   const [needsProgramSelection, setNeedsProgramSelection] = useState<boolean | null>(null)
   const [initialized, setInitialized] = useState(false)
 
+  // Check for view parameter in URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const view = params.get('view')
+      if (view === 'analytics') {
+        setCurrentView('analytics')
+      }
+    }
+  }, [])
+
   useEffect(() => {
     initializeAndCheckAccess()
   }, [])
