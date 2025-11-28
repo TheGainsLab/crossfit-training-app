@@ -2081,7 +2081,6 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 
   const estimateAICalories = async () => {
     if (!userId || !currentProgram || !currentWeek || !currentDay) {
-      alert('Unable to estimate calories: missing program information')
       return
     }
 
@@ -2090,7 +2089,6 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       // Get programId and week for the current global week
       const programAndWeek = await findProgramAndWeekForGlobalWeek(currentWeek)
       if (!programAndWeek) {
-        alert('Unable to find program information for this week')
         return
       }
 
@@ -2149,13 +2147,9 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
 
         // Success! Refresh TDEE calculation to include the new AI Cals
         await calculateEstimatedTDEE()
-        alert(`Estimated calories saved: ${low}–${high} kcal (avg ~${avg} kcal). TDEE updated.`)
-      } else {
-        alert('Could not parse calorie estimate from AI response.')
       }
     } catch (err: any) {
       console.error('Error estimating calories:', err)
-      alert(`Failed to estimate calories: ${err.message || 'Unknown error'}`)
     } finally {
       setIsEstimatingCalories(false)
     }
