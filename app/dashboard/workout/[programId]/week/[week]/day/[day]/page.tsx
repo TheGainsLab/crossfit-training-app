@@ -135,7 +135,6 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
       window.print()
     }
   }
-  const [isEstimating, setIsEstimating] = useState(false)
   const [isRefreshingAI, setIsRefreshingAI] = useState(false)
   const [allPrograms, setAllPrograms] = useState<Array<{ id: number; weeks_generated: number[] }>>([])
   const [navUrls, setNavUrls] = useState<{ prev: string | null; next: string | null }>({ prev: null, next: null })
@@ -890,66 +889,6 @@ block.blockName === 'METCONS' ? (
               Next →
             </span>
           )}
-
-          {/* AI Calories Estimate */}
-          <button
-            type="button"
-            onClick={async () => {
-              console.log('AI Cals button clicked')
-              try {
-                if (isEstimating) return
-                setIsEstimating(true)
-                const userId = await getCurrentUserId()
-                // Get user's JWT for auth to Edge Function
-                const { createClient: createSbClient2 } = await import('@/lib/supabase/client')
-                const sbClient2 = createSbClient2()
-                const { data: { session: session2 } } = await sbClient2.auth.getSession()
-                const userJwt2 = session2?.access_token
-
-                const res = await fetch(`/api/ai/estimate-calories`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    ...(userJwt2 ? { 'Authorization': `Bearer ${userJwt2}` } : {})
-                  },
-                  body: JSON.stringify({ userId, programId, week, day })
-                })
-                if (!res.ok) {
-                  const errText = await res.text().catch(() => '')
-                  throw new Error(`AI request failed (${res.status}): ${errText}`)
-                }
-                const data = await res.json()
-                if (data.success && data.low != null && data.high != null) {
-                  const low = data.low as number
-                  const high = data.high as number
-                  const avg = data.average as number
-                  const saveRes = await fetch('/api/workouts/save-calories', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ programId: Number(programId), week: Number(week), day: Number(day), calories: avg, low, high })
-                  })
-                  if (!saveRes.ok) {
-                    const t = await saveRes.text().catch(() => '')
-                    throw new Error(`Save failed (${saveRes.status}): ${t}`)
-                  }
-                  // Optionally show range
-                  alert(`Estimated calories saved: ${low}–${high} kcal (avg ~${avg} kcal)`)
-                } else {
-                  alert('Could not parse calorie estimate from AI response.')
-                }
-              } catch (e: any) {
-                console.error('AI calories error:', e)
-                alert(`Failed to estimate calories. ${e?.message ? `Details: ${e.message}` : ''}`)
-              } finally {
-                setIsEstimating(false)
-              }
-            }}
-            className={`relative z-10 px-4 py-2 rounded-lg cursor-pointer pointer-events-auto ${isEstimating ? 'opacity-60 cursor-not-allowed' : ''}`}
-            style={{ backgroundColor: '#509895', color: '#ffffff' }}
-            disabled={isEstimating}
-          >
-            {isEstimating ? 'Estimating…' : 'AI Cals'}
-          </button>
         </div>
       </main>
 

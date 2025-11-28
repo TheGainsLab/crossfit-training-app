@@ -1516,6 +1516,7 @@ const [heatMapData, setHeatMapData] = useState<any>(null)
   const [allPrograms, setAllPrograms] = useState<Array<{ id: number; weeks_generated: number[] }>>([])
   const [estimatedTDEE, setEstimatedTDEE] = useState<number | null>(null)
   const [tdeeLoading, setTdeeLoading] = useState(false)
+  const [isEstimatingCalories, setIsEstimatingCalories] = useState(false)
   const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null)
 
   useEffect(() => {
@@ -2040,7 +2041,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       const s = userData.gender === 'Male' ? 5 : -161
       const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + s
 
-      // Fetch workout structure to estimate activity level
+      // Get programId and week for the current global week
       const programAndWeek = await findProgramAndWeekForGlobalWeek(currentWeek)
       if (!programAndWeek) {
         setEstimatedTDEE(null)
@@ -2048,30 +2049,26 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         return
       }
 
-      const response = await fetch(`/api/workouts/${programAndWeek.programId}/week/${programAndWeek.week}/day/${currentDay}`)
-      if (!response.ok) {
-        setEstimatedTDEE(null)
-        setTdeeLoading(false)
-        return
-      }
+      // Check for AI Cals estimate for this workout (direct Supabase query, not API call)
+      const { data: workoutCalories } = await supabase
+        .from('workout_calories')
+        .select('calories_low, calories_high')
+        .eq('user_id', userId)
+        .eq('program_id', programAndWeek.programId)
+        .eq('week', programAndWeek.week)
+        .eq('day', currentDay)
+        .single()
 
-      const data = await response.json()
-      if (!data.success || !data.workout) {
-        setEstimatedTDEE(null)
-        setTdeeLoading(false)
-        return
-      }
-
-      // Estimate activity multiplier based on workout structure
-      // Medium RPE assumption for pre-workout estimate
-      const blocks = data.workout.blocks || []
-      const totalExercises = blocks.reduce((sum: number, block: any) => 
-        sum + (Array.isArray(block.exercises) ? block.exercises.length : 0), 0)
+      // Calculate TDEE: BMR × 1.2 (sedentary baseline) + AI Cals (if available)
+      const sedentaryBaseline = bmr * 1.2
+      let aiCals = 0
       
-      // Activity multiplier: 1.375 (light), 1.55 (moderate), 1.725 (active), 1.9 (very active)
-      // CrossFit training day: typically 1.725-1.9, use 1.8 for medium RPE
-      const activityMultiplier = 1.8
-      const tdee = Math.round(bmr * activityMultiplier)
+      if (workoutCalories) {
+        // Use the average of low and high estimates
+        aiCals = Math.round((workoutCalories.calories_low + workoutCalories.calories_high) / 2)
+      }
+
+      const tdee = Math.round(sedentaryBaseline + aiCals)
 
       setEstimatedTDEE(tdee)
     } catch (err) {
@@ -2079,6 +2076,88 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       setEstimatedTDEE(null)
     } finally {
       setTdeeLoading(false)
+    }
+  }
+
+  const estimateAICalories = async () => {
+    if (!userId || !currentProgram || !currentWeek || !currentDay) {
+      alert('Unable to estimate calories: missing program information')
+      return
+    }
+
+    setIsEstimatingCalories(true)
+    try {
+      // Get programId and week for the current global week
+      const programAndWeek = await findProgramAndWeekForGlobalWeek(currentWeek)
+      if (!programAndWeek) {
+        alert('Unable to find program information for this week')
+        return
+      }
+
+      // Get user's JWT for auth to Edge Function
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const userJwt = session?.access_token
+
+      const res = await fetch(`/api/ai/estimate-calories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(userJwt ? { 'Authorization': `Bearer ${userJwt}` } : {})
+        },
+        body: JSON.stringify({ 
+          userId, 
+          programId: programAndWeek.programId, 
+          week: programAndWeek.week, 
+          day: currentDay 
+        })
+      })
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '')
+        throw new Error(`AI request failed (${res.status}): ${errText}`)
+      }
+
+      const data = await res.json()
+      if (data.error) {
+        throw new Error(data.error)
+      }
+
+      if (data.success && data.low != null && data.high != null) {
+        const low = data.low as number
+        const high = data.high as number
+        const avg = data.average as number
+        
+        // Save the calories estimate
+        const saveRes = await fetch('/api/workouts/save-calories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            programId: programAndWeek.programId, 
+            week: programAndWeek.week, 
+            day: currentDay, 
+            calories: avg, 
+            low, 
+            high 
+          })
+        })
+
+        if (!saveRes.ok) {
+          const t = await saveRes.text().catch(() => '')
+          throw new Error(`Save failed (${saveRes.status}): ${t}`)
+        }
+
+        // Success! Refresh TDEE calculation to include the new AI Cals
+        await calculateEstimatedTDEE()
+        alert(`Estimated calories saved: ${low}–${high} kcal (avg ~${avg} kcal). TDEE updated.`)
+      } else {
+        alert('Could not parse calorie estimate from AI response.')
+      }
+    } catch (err: any) {
+      console.error('Error estimating calories:', err)
+      alert(`Failed to estimate calories: ${err.message || 'Unknown error'}`)
+    } finally {
+      setIsEstimatingCalories(false)
     }
   }
 
@@ -2401,15 +2480,26 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
         {/* Estimated TDEE Widget */}
         {estimatedTDEE !== null && (
           <div className="bg-white rounded-lg shadow p-4 sm:p-6 border-2 border-slate-blue">
-            <p className="text-xs sm:text-sm mb-1" style={{ color: '#282B34' }}>
-              Estimated TDEE (Week {currentWeek} • Day {currentDay})
-            </p>
-            <p className="text-xl sm:text-2xl font-bold text-coral">
-              {tdeeLoading ? '...' : `${estimatedTDEE} kcal/day`}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Based on BMR + activity level (medium RPE assumption)
-            </p>
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm mb-1" style={{ color: '#282B34' }}>
+                  Estimated TDEE (Week {currentWeek} • Day {currentDay})
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-coral">
+                  {tdeeLoading ? '...' : `${estimatedTDEE} kcal/day`}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Based on BMR × 1.2 + AI Cals (if available)
+                </p>
+              </div>
+              <button
+                onClick={estimateAICalories}
+                disabled={isEstimatingCalories || tdeeLoading}
+                className="ml-4 px-3 py-1.5 text-xs font-medium rounded-md text-white bg-[#FE5858] hover:bg-[#ff6b6b] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isEstimatingCalories ? 'Estimating…' : 'AI Cals'}
+              </button>
+            </div>
           </div>
         )}
         {estimatedTDEE === null && !tdeeLoading && userId && (
