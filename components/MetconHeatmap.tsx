@@ -7,11 +7,13 @@ type MetricType = 'percentile' | 'rpe' | 'quality' | 'heartrate'
 export default function MetconHeatmap({ 
   data, 
   visibleTimeDomains,
-  metric = 'percentile'
+  metric = 'percentile',
+  hideTitle = false
 }: { 
   data: any, 
   visibleTimeDomains?: string[],
-  metric?: MetricType
+  metric?: MetricType,
+  hideTitle?: boolean
 }) {
   const getHeatMapColor = (value: number | null, metricType: MetricType) => {
     if (value === null) return 'bg-gray-100 text-gray-400'
@@ -273,7 +275,9 @@ export default function MetconHeatmap({
     
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{getMetricTitle(metric)}</h3>
+        {!hideTitle && (
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{getMetricTitle(metric)}</h3>
+        )}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
           <div className="text-4xl mb-3">💪</div>
           <p className="text-blue-800 font-medium mb-2">No {getMetricTitle(metric)} Data Yet</p>
@@ -300,8 +304,12 @@ export default function MetconHeatmap({
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">{getMetricTitle(metric)}</h3>
-      <p className="text-sm text-gray-600 mb-6">{getMetricSubtitle(metric)}</p>
+      {!hideTitle && (
+        <>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{getMetricTitle(metric)}</h3>
+          <p className="text-sm text-gray-600 mb-6">{getMetricSubtitle(metric)}</p>
+        </>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
