@@ -2050,14 +2050,16 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       }
 
       // Check for AI Cals estimate for this workout (direct Supabase query, not API call)
+      // Get the latest entry (ordered by created_at DESC, limit 1)
       const { data: workoutCalories } = await supabase
         .from('workout_calories')
-        .select('calories_low, calories_high')
-        .eq('user_id', userId)
+        .select('low, high')
         .eq('program_id', programAndWeek.programId)
         .eq('week', programAndWeek.week)
         .eq('day', currentDay)
-        .single()
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
       // Calculate TDEE: BMR × 1.2 (sedentary baseline) + AI Cals (if available)
       const sedentaryBaseline = bmr * 1.2
@@ -2065,7 +2067,7 @@ if (heatMapRes.status === 'fulfilled' && heatMapRes.value.ok) {
       
       if (workoutCalories) {
         // Use the average of low and high estimates
-        aiCals = Math.round((workoutCalories.calories_low + workoutCalories.calories_high) / 2)
+        aiCals = Math.round((workoutCalories.low + workoutCalories.high) / 2)
       }
 
       const tdee = Math.round(sedentaryBaseline + aiCals)
