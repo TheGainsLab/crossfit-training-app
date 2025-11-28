@@ -49,36 +49,15 @@ export function EffortView({ heatmapData }: MetConAnalyticsViewsProps) {
   
   // Calculate global RPE
   const validRpe = cells.filter((c: any) => c.avg_rpe !== null && c.avg_rpe !== undefined)
-  const avgRpe = validRpe.length > 0 
-    ? Math.round((validRpe.reduce((sum: number, c: any) => sum + (c.avg_rpe * c.session_count), 0) / 
-                 validRpe.reduce((sum: number, c: any) => sum + c.session_count, 0)) * 10) / 10
-    : null
+  const workoutCount = validRpe.reduce((sum: number, c: any) => sum + c.session_count, 0)
 
   return (
     <div className="space-y-6">
-      {/* Summary Card */}
-      <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-semibold text-gray-900">Effort Summary</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="text-xs text-gray-600">Avg RPE</div>
-            <div className="text-2xl font-bold" style={{ color: '#FE5858' }}>{avgRpe ?? '—'}</div>
-            <div className="text-xs text-gray-500 mt-1">/ 10</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-600">Workouts</div>
-            <div className="text-2xl font-bold" style={{ color: '#FE5858' }}>{validRpe.reduce((sum: number, c: any) => sum + c.session_count, 0)}</div>
-            <div className="text-xs text-gray-500 mt-1">with RPE data</div>
-          </div>
-        </div>
-      </div>
-
       {/* Heatmap */}
       {validRpe.length > 0 ? (
         <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-          <MetconHeatmap data={heatmapData} visibleTimeDomains={[]} metric="rpe" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">RPE Heatmap ({workoutCount})</h3>
+          <MetconHeatmap data={heatmapData} visibleTimeDomains={[]} metric="rpe" hideTitle />
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow p-6 border border-gray-200 text-center">
@@ -94,44 +73,15 @@ export function QualityView({ heatmapData }: MetConAnalyticsViewsProps) {
   
   // Calculate global Quality
   const validQuality = cells.filter((c: any) => c.avg_quality !== null && c.avg_quality !== undefined)
-  const avgQuality = validQuality.length > 0
-    ? Math.round((validQuality.reduce((sum: number, c: any) => sum + (c.avg_quality * c.session_count), 0) / 
-                 validQuality.reduce((sum: number, c: any) => sum + c.session_count, 0)) * 10) / 10
-    : null
-
-  const getQualityGrade = (quality: number | null): string => {
-    if (quality === null) return '—'
-    if (quality >= 3.5) return 'A'
-    if (quality >= 2.5) return 'B'
-    if (quality >= 1.5) return 'C'
-    return 'D'
-  }
+  const workoutCount = validQuality.reduce((sum: number, c: any) => sum + c.session_count, 0)
 
   return (
     <div className="space-y-6">
-      {/* Summary Card */}
-      <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-semibold text-gray-900">Quality Summary</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="text-xs text-gray-600">Avg Quality</div>
-            <div className="text-2xl font-bold" style={{ color: '#FE5858' }}>{getQualityGrade(avgQuality)}</div>
-            <div className="text-xs text-gray-500 mt-1">Grade</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-600">Workouts</div>
-            <div className="text-2xl font-bold" style={{ color: '#FE5858' }}>{validQuality.reduce((sum: number, c: any) => sum + c.session_count, 0)}</div>
-            <div className="text-xs text-gray-500 mt-1">with Quality data</div>
-          </div>
-        </div>
-      </div>
-
       {/* Heatmap */}
       {validQuality.length > 0 ? (
         <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-          <MetconHeatmap data={heatmapData} visibleTimeDomains={[]} metric="quality" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quality Heatmap ({workoutCount})</h3>
+          <MetconHeatmap data={heatmapData} visibleTimeDomains={[]} metric="quality" hideTitle />
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow p-6 border border-gray-200 text-center">
