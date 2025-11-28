@@ -40,10 +40,7 @@ export default function MetConAnalyticsTabs({ children, defaultTab = 'performanc
                   : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-lg">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </div>
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>
