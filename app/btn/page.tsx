@@ -439,7 +439,7 @@ export default function BTNPage() {
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto p-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="mb-6">
             <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors">
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -449,71 +449,234 @@ export default function BTNPage() {
             </Link>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-12">
-            <div className="text-center mb-8">
-              <div className="mb-6">
-                <svg className="w-20 h-20 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">BTN Workout Generator</h1>
-              <p className="text-xl text-gray-600 mb-8">
-                Premium workout generation requires a subscription
-              </p>
-            </div>
+          {/* Hero Section */}
+          <div className="text-center mb-16">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+              BTN: BETTER THAN NOTHING — PERSONALIZED TRAINING, POWERFUL ANALYTICS
+            </h1>
+            <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
+              Confused by endless programs and cookie-cutter templates?
+            </p>
+            <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mt-4">
+              BTN gives you personalized training, deep analytics, and a full nutrition log—at a fraction of what most group programs cost.
+            </p>
+            <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mt-4 font-semibold">
+              It's strength. It's conditioning. It's data.
+            </p>
+            <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mt-2 font-semibold">
+              And it's built entirely around you.
+            </p>
+          </div>
 
-            <div className="bg-gray-50 rounded-lg p-8 mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">What You&apos;ll Get</h2>
-              <ul className="space-y-4 max-w-md mx-auto">
+          {/* How BTN Works Section */}
+          <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
+              HOW BTN WORKS: SIMPLE, PERSONAL, POWERFUL
+            </h2>
+            <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+              When you join, you enter just a few key details—your lifts, skills, and available equipment.
+            </p>
+            <p className="text-lg text-gray-700 mb-8 leading-relaxed font-semibold">
+              BTN's Workout Generator instantly creates personalized workouts based on your exact profile.
+            </p>
+
+            <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Build Your Personal Training Library</h3>
+            <ul className="space-y-4 max-w-3xl mx-auto mb-8">
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">Pick the workouts you like</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">Save up to 20 at a time</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">Complete them, then generate more anytime</span>
+              </li>
+            </ul>
+
+            <p className="text-lg text-gray-700 mb-6 leading-relaxed font-semibold text-center">
+              Every workout is perfectly matched to your strength, skill level, and preferences.
+            </p>
+            <p className="text-lg text-gray-700 mb-6 leading-relaxed text-center">
+              No scaling. No substitutions. No guessing.
+            </p>
+
+            <div className="bg-gray-50 rounded-lg p-6 max-w-3xl mx-auto">
+              <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+                Each session includes:
+              </p>
+              <ul className="space-y-3">
                 <li className="flex items-start">
-                  <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-700">AI-powered workout generation tailored to your goals</span>
+                  <span className="text-lg text-gray-700"><strong>A precise target</strong></span>
                 </li>
                 <li className="flex items-start">
-                  <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-700">Customized programming based on your equipment and preferences</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-gray-700">Unlimited workout generation and modifications</span>
-                </li>
-                <li className="flex items-start">
-                  <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-gray-700">Access to premium training algorithms and insights</span>
+                  <span className="text-lg text-gray-700"><strong>A stretch goal</strong> for athletes who want an extra push</span>
                 </li>
               </ul>
-            </div>
-
-            <div className="text-center">
-              <button
-                onClick={handleSubscribe}
-                disabled={checkingOut}
-                className="inline-block px-8 py-4 bg-[#FE5858] text-white rounded-lg text-lg font-semibold hover:bg-[#ff6b6b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {checkingOut ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </span>
-                ) : (
-                  'Subscribe Now'
-                )}
-              </button>
-              <p className="text-sm text-gray-500 mt-4">
-                Secure payment powered by Stripe • Create account during checkout
+              <p className="text-lg text-gray-700 mt-4 leading-relaxed">
+                So beginners, intermediates, and advanced athletes all have something to aim for.
               </p>
             </div>
+          </div>
+
+          {/* Fitness Matrix Section */}
+          <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
+              THE FITNESS MATRIX: YOUR PERFORMANCE, DECODED
+            </h2>
+            <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+              BTN includes our proprietary Fitness Matrix—the most advanced performance evaluation tool in the industry.
+            </p>
+            <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+              Every time you complete and save a BTN workout, the app:
+            </p>
+            <ul className="space-y-4 max-w-3xl mx-auto mb-8">
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">Calculates your percentile score against our global database</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">Adds your results to the Fitness Matrix at the task level</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">Expands a detailed, high-definition map of your fitness across every domain</span>
+              </li>
+            </ul>
+
+            <p className="text-lg text-gray-700 mb-6 leading-relaxed font-semibold text-center">
+              You'll see your abilities in a level of detail no other app offers:
+            </p>
+
+            <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Analyze Every Angle of Your Fitness</h3>
+            <ul className="space-y-4 max-w-3xl mx-auto mb-6">
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">Compare your barbell workouts vs. non-barbell workouts</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">See your performance on any task across all time domains</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">Filter by equipment, pacing style, time domain, and movement type</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">Reveal strengths you never noticed—and weaknesses you can immediately address</span>
+              </li>
+            </ul>
+            <p className="text-lg text-gray-700 leading-relaxed font-semibold text-center">
+              This is the most objective, quantifiable view of your fitness you've ever had.
+            </p>
+          </div>
+
+          {/* Turn Insights Section */}
+          <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
+              TURN INSIGHTS INTO BETTER TRAINING
+            </h2>
+            <p className="text-lg text-gray-700 mb-6 leading-relaxed text-center">
+              The Fitness Matrix doesn't just look cool—it makes you better.
+            </p>
+            <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+              Use your data to:
+            </p>
+            <ul className="space-y-4 max-w-3xl mx-auto mb-6">
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">Identify weaknesses with surgical precision</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">Preserve and enhance your strengths</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">Choose the next set of generated workouts with confidence</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-lg text-gray-700">Build a smarter, more targeted training plan without paying for coaching</span>
+              </li>
+            </ul>
+            <p className="text-lg text-gray-700 leading-relaxed font-semibold text-center">
+              BTN helps you stop wasting time and start training with purpose.
+            </p>
+          </div>
+
+          {/* CTA Section */}
+          <div className="text-center bg-gradient-to-br from-[#FE5858] to-[#ff6b6b] rounded-xl shadow-lg p-8 md:p-12 text-white">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              BETTER THAN NOTHING? TRY BETTER THAN EVERYTHING.
+            </h2>
+            <p className="text-lg md:text-xl mb-8 leading-relaxed">
+              We call it BTN — Better Than Nothing,
+            </p>
+            <p className="text-lg md:text-xl mb-8 leading-relaxed">
+              but once you experience personalized workouts and the power of the Fitness Matrix…
+            </p>
+            <p className="text-lg md:text-xl mb-8 leading-relaxed font-semibold">
+              you'll realize it's better than almost every program out there.
+            </p>
+            <button
+              onClick={handleSubscribe}
+              disabled={checkingOut}
+              className="inline-block px-10 py-5 bg-white text-[#FE5858] rounded-lg text-xl font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            >
+              {checkingOut ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-[#FE5858]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </span>
+              ) : (
+                'Subscribe Now'
+              )}
+            </button>
+            <p className="text-sm text-white/90 mt-4">
+              Secure payment powered by Stripe • Create account during checkout
+            </p>
           </div>
         </div>
       </div>
@@ -528,7 +691,7 @@ export default function BTNPage() {
   // User does not have access - show paywall
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto p-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-6">
           <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -538,71 +701,234 @@ export default function BTNPage() {
           </Link>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-12">
-          <div className="text-center mb-8">
-            <div className="mb-6">
-              <svg className="w-20 h-20 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">BTN Workout Generator</h1>
-            <p className="text-xl text-gray-600 mb-8">
-              Premium workout generation requires a subscription
-            </p>
-          </div>
+        {/* Hero Section */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+            BTN: BETTER THAN NOTHING — PERSONALIZED TRAINING, POWERFUL ANALYTICS
+          </h1>
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
+            Confused by endless programs and cookie-cutter templates?
+          </p>
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mt-4">
+            BTN gives you personalized training, deep analytics, and a full nutrition log—at a fraction of what most group programs cost.
+          </p>
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mt-4 font-semibold">
+            It's strength. It's conditioning. It's data.
+          </p>
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mt-2 font-semibold">
+            And it's built entirely around you.
+          </p>
+        </div>
 
-          <div className="bg-gray-50 rounded-lg p-8 mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">What You&apos;ll Get</h2>
-            <ul className="space-y-4 max-w-md mx-auto">
+        {/* How BTN Works Section */}
+        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
+            HOW BTN WORKS: SIMPLE, PERSONAL, POWERFUL
+          </h2>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            When you join, you enter just a few key details—your lifts, skills, and available equipment.
+          </p>
+          <p className="text-lg text-gray-700 mb-8 leading-relaxed font-semibold">
+            BTN's Workout Generator instantly creates personalized workouts based on your exact profile.
+          </p>
+
+          <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Build Your Personal Training Library</h3>
+          <ul className="space-y-4 max-w-3xl mx-auto mb-8">
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">Pick the workouts you like</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">Save up to 20 at a time</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">Complete them, then generate more anytime</span>
+            </li>
+          </ul>
+
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed font-semibold text-center">
+            Every workout is perfectly matched to your strength, skill level, and preferences.
+          </p>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed text-center">
+            No scaling. No substitutions. No guessing.
+          </p>
+
+          <div className="bg-gray-50 rounded-lg p-6 max-w-3xl mx-auto">
+            <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+              Each session includes:
+            </p>
+            <ul className="space-y-3">
               <li className="flex items-start">
-                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-gray-700">AI-powered workout generation tailored to your goals</span>
+                <span className="text-lg text-gray-700"><strong>A precise target</strong></span>
               </li>
               <li className="flex items-start">
-                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-gray-700">Customized programming based on your equipment and preferences</span>
-              </li>
-              <li className="flex items-start">
-                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-gray-700">Unlimited workout generation and modifications</span>
-              </li>
-              <li className="flex items-start">
-                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-gray-700">Access to premium training algorithms and insights</span>
+                <span className="text-lg text-gray-700"><strong>A stretch goal</strong> for athletes who want an extra push</span>
               </li>
             </ul>
-          </div>
-
-          <div className="text-center">
-            <button
-              onClick={handleSubscribe}
-              disabled={checkingOut}
-              className="inline-block px-8 py-4 bg-[#FE5858] text-white rounded-lg text-lg font-semibold hover:bg-[#ff6b6b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {checkingOut ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </span>
-              ) : (
-                'Subscribe Now'
-              )}
-            </button>
-            <p className="text-sm text-gray-500 mt-4">
-              Secure payment powered by Stripe
+            <p className="text-lg text-gray-700 mt-4 leading-relaxed">
+              So beginners, intermediates, and advanced athletes all have something to aim for.
             </p>
           </div>
+        </div>
+
+        {/* Fitness Matrix Section */}
+        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
+            THE FITNESS MATRIX: YOUR PERFORMANCE, DECODED
+          </h2>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            BTN includes our proprietary Fitness Matrix—the most advanced performance evaluation tool in the industry.
+          </p>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            Every time you complete and save a BTN workout, the app:
+          </p>
+          <ul className="space-y-4 max-w-3xl mx-auto mb-8">
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">Calculates your percentile score against our global database</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">Adds your results to the Fitness Matrix at the task level</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">Expands a detailed, high-definition map of your fitness across every domain</span>
+            </li>
+          </ul>
+
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed font-semibold text-center">
+            You'll see your abilities in a level of detail no other app offers:
+          </p>
+
+          <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Analyze Every Angle of Your Fitness</h3>
+          <ul className="space-y-4 max-w-3xl mx-auto mb-6">
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">Compare your barbell workouts vs. non-barbell workouts</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">See your performance on any task across all time domains</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">Filter by equipment, pacing style, time domain, and movement type</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">Reveal strengths you never noticed—and weaknesses you can immediately address</span>
+            </li>
+          </ul>
+          <p className="text-lg text-gray-700 leading-relaxed font-semibold text-center">
+            This is the most objective, quantifiable view of your fitness you've ever had.
+          </p>
+        </div>
+
+        {/* Turn Insights Section */}
+        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
+            TURN INSIGHTS INTO BETTER TRAINING
+          </h2>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed text-center">
+            The Fitness Matrix doesn't just look cool—it makes you better.
+          </p>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            Use your data to:
+          </p>
+          <ul className="space-y-4 max-w-3xl mx-auto mb-6">
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">Identify weaknesses with surgical precision</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">Preserve and enhance your strengths</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">Choose the next set of generated workouts with confidence</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700">Build a smarter, more targeted training plan without paying for coaching</span>
+            </li>
+          </ul>
+          <p className="text-lg text-gray-700 leading-relaxed font-semibold text-center">
+            BTN helps you stop wasting time and start training with purpose.
+          </p>
+        </div>
+
+        {/* CTA Section */}
+        <div className="text-center bg-gradient-to-br from-[#FE5858] to-[#ff6b6b] rounded-xl shadow-lg p-8 md:p-12 text-white">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            BETTER THAN NOTHING? TRY BETTER THAN EVERYTHING.
+          </h2>
+          <p className="text-lg md:text-xl mb-4 leading-relaxed">
+            We call it BTN — Better Than Nothing,
+          </p>
+          <p className="text-lg md:text-xl mb-4 leading-relaxed">
+            but once you experience personalized workouts and the power of the Fitness Matrix…
+          </p>
+          <p className="text-lg md:text-xl mb-8 leading-relaxed font-semibold">
+            you'll realize it's better than almost every program out there.
+          </p>
+          <button
+            onClick={handleSubscribe}
+            disabled={checkingOut}
+            className="inline-block px-10 py-5 bg-white text-[#FE5858] rounded-lg text-xl font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+          >
+            {checkingOut ? (
+              <span className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-[#FE5858]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </span>
+            ) : (
+              'Subscribe Now'
+            )}
+          </button>
+          <p className="text-sm text-white/90 mt-4">
+            Secure payment powered by Stripe • Create account during checkout
+          </p>
         </div>
       </div>
     </div>
