@@ -240,25 +240,7 @@ export default function AnalyticsMetconsPage() {
             )
             setOpenCoach(true)
           } catch {}
-        }}>Explain</button>
-        <button className="px-2 py-1 rounded border bg-gray-50 hover:bg-gray-100" onClick={async () => {
-          try {
-            const { createClient } = await import('@/lib/supabase/client')
-            const sb = createClient()
-            const { data: { session } } = await sb.auth.getSession()
-            const token = session?.access_token || ''
-            const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-            if (token) headers['Authorization'] = `Bearer ${token}`
-            const coachBriefRes = await fetch('/api/coach/brief', { method: 'POST', headers, body: JSON.stringify({}) })
-            const briefJson = await coachBriefRes.json()
-            if (!coachBriefRes.ok || !briefJson.success) throw new Error('Failed to load brief')
-            const msg = `Recommend metcon plan tweaks for current filters: timeDomains=${selection.join(',') || 'all'}.`
-            const res = await fetch('/api/coach/propose', { method: 'POST', headers, body: JSON.stringify({ brief: briefJson.brief, message: msg }) })
-            const json = await res.json().catch(() => ({}))
-            setCoachContent(<PlanDiffViewer data={json} />)
-            setOpenCoach(true)
-          } catch {}
-        }}>Recommend</button>
+        }}>Expl<span style={{ color: '#FE5858' }}>ai</span>n</button>
       </div>
 
       {/* Tabbed Analytics */}
