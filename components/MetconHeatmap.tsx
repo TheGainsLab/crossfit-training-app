@@ -373,8 +373,6 @@ export default function MetconHeatmap({
                     tooltipText += `\nNo data`
                   }
                   
-                  const percentile = getPercentile(exercise, domain)
-                  
                   return (
                     <td key={domain} className="p-1">
                       <div 
