@@ -404,7 +404,7 @@ export default function MetconHeatmap({
                       <div className={`${getCellStyle(avgValue !== null)} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md relative`} style={{ minHeight: '60px' }}>
                         {renderMedal(exercisePercentile)}
                         {avgValue !== null ? (
-                          <div>
+                          <div style={{ color: '#FE5858' }}>
                             <div className="text-lg font-bold">{formatAverageValue(avgValue, metric)}</div>
                             <div className="text-xs opacity-75 font-medium">{totalSessions} {totalSessions === 1 ? 'workout' : 'workouts'}</div>
                           </div>
@@ -437,7 +437,7 @@ export default function MetconHeatmap({
                     <div className={`${getCellStyle(avgValue !== null)} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md relative`} style={{ minHeight: '60px' }}>
                       {renderMedal(domainPercentile)}
                       {avgValue !== null ? (
-                        <div>
+                        <div style={{ color: '#FE5858' }}>
                           <div className="text-lg font-bold">{formatAverageValue(avgValue, metric)}</div>
                           <div className="text-xs opacity-75 font-medium">{totalWorkouts} {totalWorkouts === 1 ? 'workout' : 'workouts'}</div>
                         </div>
@@ -455,7 +455,7 @@ export default function MetconHeatmap({
                                 metric === 'rpe' ? 'AVG RPE' :
                                 metric === 'quality' ? 'AVG QUALITY' : 'AVG HR'
                   return (
-                    <div className={`${getCellStyle(globalAvg !== null)} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-lg relative`} style={{ minHeight: '60px' }}>
+                    <div className="rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-lg relative" style={{ minHeight: '60px', backgroundColor: '#FE5858', color: '#F8FBFE', border: '1px solid #FE5858' }}>
                       {renderMedal(globalFitnessScore)}
                       {globalAvg !== null ? (
                         <div>
