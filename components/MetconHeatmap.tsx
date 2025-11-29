@@ -377,6 +377,7 @@ export default function MetconHeatmap({
                     <td key={domain} className="p-1">
                       <div 
                         className={`${getCellStyle(cellValue !== null)} rounded p-3 text-center font-semibold transition-all hover:scale-105 cursor-pointer relative ${cellValue !== null ? 'shadow-sm' : ''}`}
+                        style={{ minHeight: '60px' }}
                         title={tooltipText}
                       >
                         {renderMedal(percentile)}
