@@ -209,7 +209,7 @@ export default function EnginePage() {
   // User does not have access - show paywall
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto p-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-6">
           <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,77 +219,175 @@ export default function EnginePage() {
           </Link>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-12">
-          <div className="text-center mb-8">
-            <div className="mb-6">
-              <svg className="w-20 h-20 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        {/* Hero Section */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+            THE YEAR OF THE ENGINE: WHERE CONDITIONING MEETS INTELLIGENCE
+          </h1>
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
+            Most conditioning programs juggle Zone 2, intervals, and sprints—good at first, then predictable. The Year of the Engine is different. Built on a decade of coaching 10,000+ athletes and powered by a machine-learning engine, it becomes a true training partner, ensuring every second of effort drives measurable progress.
+          </p>
+        </div>
+
+        {/* A Coach With a Computer Chip Section */}
+        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
+            A Coach With a Computer Chip in Their Head
+          </h2>
+          <p className="text-xl font-semibold text-gray-800 mb-6 text-center">
+            No more guesswork. Just guaranteed progress.
+          </p>
+          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+            After every session, you log your score. Our AI processes your performance instantly and adjusts the next workout with precision:
+          </p>
+          <ul className="space-y-4 max-w-3xl mx-auto mb-6">
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Engine Conditioning Program</h1>
-            <p className="text-xl text-gray-600 mb-4">
-              5 Days conditioning program with personalized pacing
-            </p>
-          </div>
+              <span className="text-lg text-gray-700"><strong>Crush a target?</strong> Your pacing automatically gets harder.</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700"><strong>Come up short?</strong> It fine-tunes the difficulty to keep you in the ideal stimulus zone.</span>
+            </li>
+          </ul>
+          <p className="text-lg text-gray-700 leading-relaxed">
+            Each energy system adapts independently—if your sprint engine climbs while your aerobic power lags, the program adjusts both separately so your entire engine rises together.
+          </p>
+        </div>
 
-          <div className="bg-gray-50 rounded-lg p-8 mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">What You&apos;ll Get</h2>
-            <ul className="space-y-4 max-w-md mx-auto">
-              <li className="flex items-start">
-                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-gray-700">Deterministic 5-day conditioning program (Day 1, Day 2, etc.)</span>
-              </li>
-              <li className="flex items-start">
-                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-gray-700">Performance ratio learning - workouts adapt to your pace</span>
-              </li>
-              <li className="flex items-start">
-                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-gray-700">Time trial baselines for personalized target pacing</span>
-              </li>
-              <li className="flex items-start">
-                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-gray-700">Support for rowing, bike, and ski modalities</span>
-              </li>
-              <li className="flex items-start">
-                <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-gray-700">Progressive month-by-month program unlock</span>
-              </li>
-            </ul>
-          </div>
+        {/* Foundation Section */}
+        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
+            A FOUNDATION OF 25 TRAINING STRUCTURES — SUPERCHARGED BY AI
+          </h2>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            The program is built on 25 proven frameworks engineered to stress every muscle fiber and energy system.
+          </p>
+          <ul className="space-y-4 max-w-3xl mx-auto mb-6">
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700"><strong>Variable Pacing Sessions:</strong> From long grinds to sharp burners, your body learns to answer any demand.</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700"><strong>Dynamic Work-to-Rest Ratios:</strong> Intelligent interval manipulation builds recovery capacity and pacing control.</span>
+            </li>
+          </ul>
+          <p className="text-lg text-gray-700 leading-relaxed font-semibold">
+            Every workout is calibrated to exactly where you are today—not where a template thinks you should be.
+          </p>
+        </div>
 
-          <div className="text-center">
-            <button
-              onClick={handleSubscribe}
-              disabled={checkingOut}
-              className="inline-block px-8 py-4 bg-[#FE5858] text-white rounded-lg text-lg font-semibold hover:bg-[#ff6b6b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {checkingOut ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </span>
-              ) : (
-                'Subscribe Now'
-              )}
-            </button>
-            <p className="text-sm text-gray-500 mt-4">
-              Secure payment powered by Stripe {!user && '• Create account during checkout'}
-            </p>
-          </div>
+        {/* Analytics Section */}
+        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
+            UNMATCHED ANALYTICS: SEE YOUR ENGINE IN HIGH DEFINITION
+          </h2>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed text-center">
+            Go beyond generic tracking with the most advanced conditioning analytics available.
+          </p>
+          <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Your Personal Fitness Dashboard</h3>
+          <ul className="space-y-4 max-w-3xl mx-auto">
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700"><strong>Energy System Profiling:</strong> Compare your aerobic, anaerobic, and glycolytic engines with live trend tracking.</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700"><strong>Target Completion Intelligence:</strong> Measure how consistently you're hitting rising expectations.</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700"><strong>Heart Rate Efficiency Metrics:</strong> See training load, intensity distribution, and cardiovascular improvements across workout types.</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg text-gray-700"><strong>Advanced Recovery Insights:</strong> Learn how you handle work intervals longer than rest and what that reveals about your metabolism and pacing under fatigue.</span>
+            </li>
+          </ul>
+          <p className="text-lg text-gray-700 mt-6 leading-relaxed font-semibold text-center">
+            This is elite-level data—finally made accessible.
+          </p>
+        </div>
+
+        {/* YOE Advantage Section */}
+        <div className="bg-gradient-to-br from-[#FE5858] to-[#ff6b6b] rounded-xl shadow-lg p-8 md:p-12 mb-12 text-white">
+          <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">THE YOE ADVANTAGE</h2>
+          <ul className="space-y-5 max-w-3xl mx-auto">
+            <li className="flex items-start">
+              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg"><strong>AI-Powered Personalization:</strong> Targets adjust after every workout for continuous progress.</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg"><strong>Proven Foundations:</strong> A decade of results across 10,000+ athletes and 25 refined training structures.</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg"><strong>Deep, Actionable Analytics:</strong> Insights no other app provides.</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg"><strong>Dynamic & Adaptive Training:</strong> Your program evolves session by session.</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-lg"><strong>Comprehensive Conditioning:</strong> Every energy system. Every fiber. One integrated plan.</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* CTA Section */}
+        <div className="text-center bg-white rounded-xl shadow-lg p-8 md:p-12">
+          <p className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">
+            Start your 3-Day Free Trial and experience the future of conditioning.
+          </p>
+          <button
+            onClick={handleSubscribe}
+            disabled={checkingOut}
+            className="inline-block px-10 py-5 bg-[#FE5858] text-white rounded-lg text-xl font-semibold hover:bg-[#ff6b6b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+          >
+            {checkingOut ? (
+              <span className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </span>
+            ) : (
+              'Start Your Free Trial'
+            )}
+          </button>
+          <p className="text-sm text-gray-500 mt-4">
+            Secure payment powered by Stripe {!user && '• Create account during checkout'}
+          </p>
         </div>
       </div>
     </div>
