@@ -138,7 +138,7 @@ export default function NutritionPage() {
       {/* Food Search */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Search Foods</h2>
-        <FoodSearch onFoodSelected={handleFoodSelected} />
+        <FoodSearch onFoodSelected={handleFoodSelected} userId={userId} />
       </div>
 
       {/* Today's Food Log */}

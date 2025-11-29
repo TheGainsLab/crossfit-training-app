@@ -25,6 +25,20 @@ export default function FoodDetailsModal({
   const [mealType, setMealType] = useState<string>('other')
   const [error, setError] = useState<string | null>(null)
 
+  // Default meal type based on time of day
+  useEffect(() => {
+    if (open) {
+      const hour = new Date().getHours()
+      if (hour < 11) {
+        setMealType('breakfast')
+      } else if (hour < 16) {
+        setMealType('lunch')
+      } else {
+        setMealType('dinner')
+      }
+    }
+  }, [open])
+
   useEffect(() => {
     if (open && food?.food_id) {
       loadFoodDetails()
@@ -209,22 +223,34 @@ export default function FoodDetailsModal({
                   />
                 </div>
 
-                {/* Meal Type */}
+                {/* Meal Type - Tap Buttons */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Meal Type
                   </label>
-                  <select
-                    value={mealType}
-                    onChange={(e) => setMealType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="breakfast">Breakfast</option>
-                    <option value="lunch">Lunch</option>
-                    <option value="dinner">Dinner</option>
-                    <option value="snack">Snack</option>
-                    <option value="other">Other</option>
-                  </select>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: 'breakfast', label: 'Breakfast' },
+                      { value: 'lunch', label: 'Lunch' },
+                      { value: 'dinner', label: 'Dinner' },
+                      { value: 'pre_workout', label: 'Pre-Workout' },
+                      { value: 'post_workout', label: 'Post-Workout' },
+                      { value: 'snack', label: 'Snack' },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setMealType(option.value)}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                          mealType === option.value
+                            ? 'bg-[#FE5858] text-white'
+                            : 'bg-[#F8FBFE] text-[#282B34] border border-[#FE5858] hover:bg-[#FE5858] hover:text-white'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Nutrition Preview */}
