@@ -326,7 +326,7 @@ export default function MetconHeatmap({
               {shownDomains.map((domain: string) => (
                 <th key={domain} className="text-center p-3 font-medium text-[#282B34] min-w-[100px]">{domain}</th>
               ))}
-              <th className="text-center p-3 font-bold text-[#282B34] min-w-[100px] bg-[#F8FBFE] border-l-2 border-[#FE5858]">Exercise Avg</th>
+              <th className="text-center p-3 font-bold text-[#282B34] min-w-[100px] bg-[#F8FBFE] border-l-2 border-[#282B34]">Exercise Avg</th>
             </tr>
           </thead>
           <tbody>
@@ -393,7 +393,7 @@ export default function MetconHeatmap({
                     </td>
                   )
                 })}
-                <td className="p-1 border-l-2 border-[#FE5858] bg-[#F8FBFE]">
+                <td className="p-1 border-l-2 border-[#282B34] bg-[#F8FBFE]">
                   {(() => {
                     const avgValue = calculateExerciseAverage(exercise, metric)
                     const exerciseData = data.exerciseAverages.find((avg: any) => avg.exercise_name === exercise)
@@ -417,8 +417,8 @@ export default function MetconHeatmap({
                 </td>
               </tr>
             ))}
-            <tr className="border-t-2 border-[#FE5858] bg-[#F8FBFE]">
-              <td className="p-3 font-bold text-[#282B34] bg-[#DAE2EA] border-r-2 border-[#FE5858]">Time Domain Avg</td>
+            <tr className="border-t-2 border-[#282B34] bg-[#F8FBFE]">
+              <td className="p-3 font-bold text-[#282B34] bg-[#DAE2EA] border-r-2 border-[#282B34]">Time Domain Avg</td>
               {shownDomains.map((domain: string) => {
                 const avgValue = calculateTimeDomainAverage(domain, metric)
                 // Use backend-provided time domain workout count (unique workouts per time domain)
@@ -448,7 +448,7 @@ export default function MetconHeatmap({
                   </td>
                 )
               })}
-              <td className="p-1 border-l-2 border-[#FE5858] bg-[#DAE2EA]">
+              <td className="p-1 border-l-2 border-[#282B34] bg-[#DAE2EA]">
                 {(() => {
                   const globalAvg = metric === 'percentile' ? globalFitnessScore : getGlobalAverage(metric)
                   const label = metric === 'percentile' ? 'FITNESS' : 
