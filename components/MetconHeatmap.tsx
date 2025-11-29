@@ -353,7 +353,7 @@ export default function MetconHeatmap({
                   let tooltipText = `Exercise: ${exercise}\nTime Domain: ${domain}`
                   const percentile = getPercentile(exercise, domain)
                   if (percentile !== null) {
-                    tooltipText += `\nPercentile: ${percentile}%\nSessions: ${sessions}`
+                    tooltipText += `\nPercentile: ${percentile}%\nWorkouts: ${sessions}`
                     if (hrData?.avgHR) {
                       tooltipText += `\nAvg HR: ${hrData.avgHR} bpm${hrData.maxHR ? `\nPeak HR: ${hrData.maxHR} bpm` : ''}`
                     }
@@ -376,7 +376,7 @@ export default function MetconHeatmap({
                         {cellValue !== null ? (
                           <div>
                             <div className="text-lg">{formatCellValue(cellValue, metric)}</div>
-                            {sessions > 0 && (<div className="text-xs opacity-75">{sessions} sessions</div>)}
+                            {sessions > 0 && (<div className="text-xs opacity-75">{sessions} {sessions === 1 ? 'workout' : 'workouts'}</div>)}
                           </div>
                         ) : (
                           <div className="text-lg">—</div>
@@ -396,7 +396,7 @@ export default function MetconHeatmap({
                         {avgValue !== null ? (
                           <div>
                             <div className="text-lg font-bold">{formatAverageValue(avgValue, metric)}</div>
-                            <div className="text-xs opacity-75 font-medium">{totalSessions} total</div>
+                            <div className="text-xs opacity-75 font-medium">{totalSessions} {totalSessions === 1 ? 'workout' : 'workouts'}</div>
                           </div>
                         ) : (
                           <div className="text-lg font-bold">—</div>
@@ -412,13 +412,8 @@ export default function MetconHeatmap({
               {shownDomains.map((domain: string) => {
                 const avgValue = calculateTimeDomainAverage(domain, metric)
                 const colorClass = getHeatMapColor(avgValue, metric)
-                // Calculate total workout count for this time domain
-                const domainCells = data.heatmapCells?.filter((cell: any) => 
-                  cell.time_range === domain
-                ) || []
-                const totalWorkouts = domainCells.reduce((sum: number, cell: any) => 
-                  sum + (cell.session_count || 0), 0
-                )
+                // Use backend-provided time domain workout count (unique workouts per time domain)
+                const totalWorkouts = data.timeDomainWorkoutCounts?.[domain] || 0
                 return (
                   <td key={domain} className="p-1">
                     <div className={`${colorClass} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md border-2 border-white ${avgValue !== null ? 'ring-1 ring-blue-300' : ''}`} style={{ minHeight: '60px' }}>

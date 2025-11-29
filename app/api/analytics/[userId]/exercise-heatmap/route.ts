@@ -44,6 +44,7 @@ interface HeatmapData {
   exerciseAverages: ExerciseOverallAverage[]
   globalFitnessScore: number
   totalCompletedWorkouts: number
+  timeDomainWorkoutCounts: Record<string, number>
 }
 
 export async function GET(
@@ -206,7 +207,8 @@ export async function GET(
           heatmapCells: [],
           exerciseAverages: [],
           globalFitnessScore: 0,
-          totalCompletedWorkouts: 0
+          totalCompletedWorkouts: 0,
+          timeDomainWorkoutCounts: {}
         },
         metadata: {
           generatedAt: new Date().toISOString(),
@@ -239,7 +241,7 @@ export async function GET(
     // Note: Equipment filtering is now done at the task/exercise level inside processRawDataToHeatmap
     // This allows filtering individual exercises within a workout (e.g., if a workout has deadlifts and burpees,
     // and "Barbell" filter is applied, only deadlifts will be shown)
-    const heatmapData = processRawDataToHeatmap(rawData, equip || undefined, rpeQualityData || [])
+    const { cells: heatmapData, timeDomainWorkoutCounts } = processRawDataToHeatmap(rawData, equip || undefined, rpeQualityData || [])
 
     // Step 3: Calculate global fitness score (use all workouts for this calculation)
     const globalFitnessScore = rawData.length > 0
@@ -276,7 +278,8 @@ export async function GET(
       heatmapCells: heatmapData.filter(row => row.time_range !== null),
       exerciseAverages,
       globalFitnessScore,
-      totalCompletedWorkouts: rawData.length // Use all workouts, not filtered
+      totalCompletedWorkouts: rawData.length, // Use all workouts, not filtered
+      timeDomainWorkoutCounts
     }
 
     console.log(`✅ Heat map generated: ${exercises.length} exercises, ${timeDomains.length} time domains, ${responseData.heatmapCells.length} cells`)
@@ -327,9 +330,10 @@ function exerciseMatchesFilter(exerciseName: string, filter: string): boolean {
   return true // 'all' or undefined - no filter
 }
 
-function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQualityData: any[] = []): any[] {
+function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQualityData: any[] = []): { cells: any[], timeDomainWorkoutCounts: Record<string, number> } {
+  // Track unique workouts instead of task instances
   const exerciseTimeMap = new Map<string, Map<string, { 
-    count: number, 
+    workoutKeys: Set<string>, // Track unique workouts (program_id_week_day for Premium, id for BTN)
     totalPercentile: number,
     totalAvgHR: number,
     totalMaxHR: number,
@@ -339,7 +343,9 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
     totalQuality: number,
     qualityCount: number
   }>>()
-  const exerciseOverallMap = new Map<string, { count: number, totalPercentile: number }>()
+  const exerciseOverallMap = new Map<string, { workoutKeys: Set<string>, totalPercentile: number }>()
+  // Track unique workouts per time domain
+  const timeDomainWorkoutMap = new Map<string, Set<string>>()
   
   // Create a lookup map for RPE/Quality data: 
   // For Premium: (program_id, week, day, exercise_name) -> {rpe, quality}
@@ -395,6 +401,11 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
       return
     }
 
+    // Create unique workout identifier
+    const workoutKey = isBTN 
+      ? `btn_${workout.id}` 
+      : `${workout.program_id}_${workout.week}_${workout.day}`
+
     // Extract exercises from tasks (Premium) or exercises array (BTN)
     const exerciseList = isBTN ? exercises : tasks
     
@@ -421,7 +432,7 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
       
       if (!exerciseMap.has(timeRange)) {
         exerciseMap.set(timeRange, { 
-          count: 0, 
+          workoutKeys: new Set(),
           totalPercentile: 0, 
           totalAvgHR: 0, 
           totalMaxHR: 0, 
@@ -433,45 +444,57 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
         })
       }
       const timeData = exerciseMap.get(timeRange)!
-      timeData.count++
-      timeData.totalPercentile += percentile
       
-      // Track HR data
-      if (avgHR !== null) {
-        timeData.totalAvgHR += avgHR
-        timeData.hrCount++
-      }
-      if (maxHR !== null) {
-        timeData.totalMaxHR += maxHR
-      }
-      
-      // Track RPE/Quality data from performance_logs
-      let rpeKey: string
-      if (isBTN) {
-        // BTN format: extract workout ID from workout object
-        const workoutId = workout.id
-        rpeKey = `btn_${workoutId}_${exerciseName}`
-      } else {
-        // Premium format
-        rpeKey = `${workout.program_id}_${workout.week}_${workout.day}_${exerciseName}`
-      }
-      const rpeQuality = rpeQualityMap.get(rpeKey)
-      if (rpeQuality) {
-        timeData.totalRpe += rpeQuality.rpe
-        timeData.rpeCount++
-        if (rpeQuality.quality > 0) {
-          timeData.totalQuality += rpeQuality.quality
-          timeData.qualityCount++
+      // Only add this workout once per exercise+timeDomain combination
+      if (!timeData.workoutKeys.has(workoutKey)) {
+        timeData.workoutKeys.add(workoutKey)
+        timeData.totalPercentile += percentile
+        
+        // Track HR data (only once per workout)
+        if (avgHR !== null) {
+          timeData.totalAvgHR += avgHR
+          timeData.hrCount++
+        }
+        if (maxHR !== null) {
+          timeData.totalMaxHR += maxHR
+        }
+        
+        // Track RPE/Quality data from performance_logs
+        let rpeKey: string
+        if (isBTN) {
+          // BTN format: extract workout ID from workout object
+          const workoutId = workout.id
+          rpeKey = `btn_${workoutId}_${exerciseName}`
+        } else {
+          // Premium format
+          rpeKey = `${workout.program_id}_${workout.week}_${workout.day}_${exerciseName}`
+        }
+        const rpeQuality = rpeQualityMap.get(rpeKey)
+        if (rpeQuality) {
+          timeData.totalRpe += rpeQuality.rpe
+          timeData.rpeCount++
+          if (rpeQuality.quality > 0) {
+            timeData.totalQuality += rpeQuality.quality
+            timeData.qualityCount++
+          }
         }
       }
 
-      // Track overall averages
+      // Track overall averages (unique workouts per exercise)
       if (!exerciseOverallMap.has(exerciseName)) {
-        exerciseOverallMap.set(exerciseName, { count: 0, totalPercentile: 0 })
+        exerciseOverallMap.set(exerciseName, { workoutKeys: new Set(), totalPercentile: 0 })
       }
       const overallData = exerciseOverallMap.get(exerciseName)!
-      overallData.count++
-      overallData.totalPercentile += percentile
+      if (!overallData.workoutKeys.has(workoutKey)) {
+        overallData.workoutKeys.add(workoutKey)
+        overallData.totalPercentile += percentile
+      }
+      
+      // Track unique workouts per time domain
+      if (!timeDomainWorkoutMap.has(timeRange)) {
+        timeDomainWorkoutMap.set(timeRange, new Set())
+      }
+      timeDomainWorkoutMap.get(timeRange)!.add(workoutKey)
     })
   })
 
@@ -489,23 +512,30 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
         '15:00–20:00': 4, '20:00–30:00': 5, '30:00+': 6
       }[timeRange] || 7
 
+      const workoutCount = data.workoutKeys.size
       result.push({
         exercise_name: exerciseName,
         time_range: timeRange,
-        session_count: data.count,
-        avg_percentile: Math.round(data.totalPercentile / data.count),
+        session_count: workoutCount, // Now represents unique workouts, not task instances
+        avg_percentile: workoutCount > 0 ? Math.round(data.totalPercentile / workoutCount) : 0,
         avg_heart_rate: data.hrCount > 0 ? Math.round(data.totalAvgHR / data.hrCount) : null,
         max_heart_rate: data.hrCount > 0 ? Math.round(data.totalMaxHR / data.hrCount) : null,
         avg_rpe: data.rpeCount > 0 ? Math.round((data.totalRpe / data.rpeCount) * 10) / 10 : null,
         avg_quality: data.qualityCount > 0 ? Math.round((data.totalQuality / data.qualityCount) * 10) / 10 : null,
-        total_sessions: overallData.count,
-        overall_avg_percentile: Math.round(overallData.totalPercentile / overallData.count),
+        total_sessions: overallData.workoutKeys.size, // Now represents unique workouts
+        overall_avg_percentile: overallData.workoutKeys.size > 0 ? Math.round(overallData.totalPercentile / overallData.workoutKeys.size) : 0,
         sort_order: sortOrder
       })
     })
   })
 
+  // Build time domain workout counts object
+  const timeDomainWorkoutCounts: Record<string, number> = {}
+  timeDomainWorkoutMap.forEach((workoutKeys, timeRange) => {
+    timeDomainWorkoutCounts[timeRange] = workoutKeys.size
+  })
+
   console.log(`✅ Generated ${result.length} heat map cells`)
 
-  return result
+  return { cells: result, timeDomainWorkoutCounts }
 }
