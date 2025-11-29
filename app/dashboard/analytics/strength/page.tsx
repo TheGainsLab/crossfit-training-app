@@ -98,7 +98,7 @@ export default function AnalyticsStrengthPage() {
             )
             setOpenCoach(true)
           } catch {}
-        }}>Expl<span style={{ color: '#FE5858' }}>ai</span>n</button>
+        }}>EXPL<span style={{ color: '#FE5858' }}>AI</span>N</button>
       </div>
       {loading ? (
         <div className="text-sm text-gray-500">Loading…</div>

@@ -240,7 +240,7 @@ export default function AnalyticsMetconsPage() {
             )
             setOpenCoach(true)
           } catch {}
-        }}>Expl<span style={{ color: '#FE5858' }}>ai</span>n</button>
+        }}>EXPL<span style={{ color: '#FE5858' }}>AI</span>N</button>
       </div>
 
       {/* Tabbed Analytics */}
