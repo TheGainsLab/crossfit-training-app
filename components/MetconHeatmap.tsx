@@ -4,6 +4,28 @@ import React from 'react'
 
 type MetricType = 'percentile' | 'rpe' | 'quality' | 'heartrate'
 
+// Medal SVG components
+const GoldMedal = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="10" cy="10" r="9" fill="#FFD700" stroke="#FFA500" strokeWidth="1.5"/>
+    <path d="M10 6L11.5 9L15 9.5L12.5 12L13 15.5L10 14L7 15.5L7.5 12L5 9.5L8.5 9L10 6Z" fill="#FFA500"/>
+  </svg>
+)
+
+const SilverMedal = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="10" cy="10" r="9" fill="#C0C0C0" stroke="#808080" strokeWidth="1.5"/>
+    <path d="M10 6L11.5 9L15 9.5L12.5 12L13 15.5L10 14L7 15.5L7.5 12L5 9.5L8.5 9L10 6Z" fill="#808080"/>
+  </svg>
+)
+
+const BronzeMedal = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="10" cy="10" r="9" fill="#CD7F32" stroke="#8B4513" strokeWidth="1.5"/>
+    <path d="M10 6L11.5 9L15 9.5L12.5 12L13 15.5L10 14L7 15.5L7.5 12L5 9.5L8.5 9L10 6Z" fill="#8B4513"/>
+  </svg>
+)
+
 export default function MetconHeatmap({ 
   data, 
   visibleTimeDomains,
@@ -15,49 +37,35 @@ export default function MetconHeatmap({
   metric?: MetricType,
   hideTitle?: boolean
 }) {
-  const getHeatMapColor = (value: number | null, metricType: MetricType) => {
-    if (value === null) return 'bg-gray-100 text-gray-400'
+  // Get medal based on percentile (persists across all metric views)
+  const getMedal = (percentile: number | null): 'gold' | 'silver' | 'bronze' | null => {
+    if (percentile === null) return null
+    if (percentile >= 90) return 'gold'
+    if (percentile >= 80) return 'silver'
+    if (percentile >= 70) return 'bronze'
+    return null
+  }
+
+  // Render medal icon
+  const renderMedal = (percentile: number | null) => {
+    const medal = getMedal(percentile)
+    if (!medal) return null
     
-    switch (metricType) {
-      case 'percentile':
-        if (value >= 80) return 'bg-green-600 text-white'
-        if (value >= 70) return 'bg-green-500 text-white'
-        if (value >= 60) return 'bg-green-400 text-white'
-        if (value >= 50) return 'bg-yellow-400 text-black'
-        if (value >= 40) return 'bg-orange-400 text-white'
-        if (value >= 30) return 'bg-orange-500 text-white'
-        return 'bg-red-500 text-white'
-      
-      case 'rpe':
-        // RPE: Red (high) to Green (low) - inverted from percentile
-        if (value >= 9) return 'bg-red-600 text-white'
-        if (value >= 8) return 'bg-red-500 text-white'
-        if (value >= 7) return 'bg-orange-500 text-white'
-        if (value >= 6) return 'bg-orange-400 text-white'
-        if (value >= 5) return 'bg-yellow-400 text-black'
-        if (value >= 4) return 'bg-green-400 text-white'
-        return 'bg-green-500 text-white'
-      
-      case 'quality':
-        // Quality: Green (A) to Red (D)
-        if (value >= 3.5) return 'bg-green-600 text-white' // A
-        if (value >= 2.5) return 'bg-yellow-400 text-black' // B
-        if (value >= 1.5) return 'bg-orange-400 text-white' // C
-        return 'bg-red-500 text-white' // D
-      
-      case 'heartrate':
-        // HR: Red (high) to Green (low) - similar to RPE
-        if (value >= 180) return 'bg-red-600 text-white'
-        if (value >= 170) return 'bg-red-500 text-white'
-        if (value >= 160) return 'bg-orange-500 text-white'
-        if (value >= 150) return 'bg-orange-400 text-white'
-        if (value >= 140) return 'bg-yellow-400 text-black'
-        if (value >= 130) return 'bg-green-400 text-white'
-        return 'bg-green-500 text-white'
-      
-      default:
-        return 'bg-gray-100 text-gray-400'
+    return (
+      <div className="absolute top-1 right-1">
+        {medal === 'gold' && <GoldMedal />}
+        {medal === 'silver' && <SilverMedal />}
+        {medal === 'bronze' && <BronzeMedal />}
+      </div>
+    )
+  }
+
+  // New cell styling - consistent across all metrics
+  const getCellStyle = (hasData: boolean) => {
+    if (!hasData) {
+      return 'bg-gray-100 text-gray-400 border border-gray-300'
     }
+    return 'bg-[#F8FBFE] text-[#282B34] border border-[#FE5858]'
   }
 
   const getPercentile = (exercise: string, timeDomain: string): number | null => {
@@ -306,25 +314,25 @@ export default function MetconHeatmap({
     <div className="bg-white rounded-lg shadow p-6">
       {!hideTitle && (
         <>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">{getMetricTitle(metric)}</h3>
-          <p className="text-sm text-gray-600 mb-6">{getMetricSubtitle(metric)}</p>
+          <h3 className="text-lg font-semibold text-[#282B34] mb-4">{getMetricTitle(metric)}</h3>
+          <p className="text-sm text-[#282B34] mb-6">{getMetricSubtitle(metric)}</p>
         </>
       )}
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr>
-              <th className="text-left p-3 font-medium text-gray-900">Exercise</th>
+              <th className="text-left p-3 font-medium text-[#282B34]">Exercise</th>
               {shownDomains.map((domain: string) => (
-                <th key={domain} className="text-center p-3 font-medium text-gray-900 min-w-[100px]">{domain}</th>
+                <th key={domain} className="text-center p-3 font-medium text-[#282B34] min-w-[100px]">{domain}</th>
               ))}
-              <th className="text-center p-3 font-bold text-gray-900 min-w-[100px] bg-blue-50 border-l-2 border-blue-200">Exercise Avg</th>
+              <th className="text-center p-3 font-bold text-[#282B34] min-w-[100px] bg-[#F8FBFE] border-l-2 border-[#FE5858]">Exercise Avg</th>
             </tr>
           </thead>
           <tbody>
             {exercises.map((exercise: string) => (
               <tr key={exercise} className="border-t">
-                <td className="p-3 font-medium text-gray-900 bg-gray-50">{exercise}</td>
+                <td className="p-3 font-medium text-[#282B34] bg-[#DAE2EA]">{exercise}</td>
                 {shownDomains.map((domain: string) => {
                   const sessions = getSessionCount(exercise, domain)
                   const hrData = getHRData(exercise, domain)
@@ -347,8 +355,6 @@ export default function MetconHeatmap({
                       break
                   }
                   
-                  const colorClass = getHeatMapColor(cellValue, metric)
-                  
                   // Build tooltip text with all metrics
                   let tooltipText = `Exercise: ${exercise}\nTime Domain: ${domain}`
                   const percentile = getPercentile(exercise, domain)
@@ -367,12 +373,15 @@ export default function MetconHeatmap({
                     tooltipText += `\nNo data`
                   }
                   
+                  const percentile = getPercentile(exercise, domain)
+                  
                   return (
                     <td key={domain} className="p-1">
                       <div 
-                        className={`${colorClass} rounded p-3 text-center font-semibold transition-all hover:scale-105 cursor-pointer ${cellValue !== null ? 'shadow-sm' : ''}`}
+                        className={`${getCellStyle(cellValue !== null)} rounded p-3 text-center font-semibold transition-all hover:scale-105 cursor-pointer relative ${cellValue !== null ? 'shadow-sm' : ''}`}
                         title={tooltipText}
                       >
+                        {renderMedal(percentile)}
                         {cellValue !== null ? (
                           <div>
                             <div className="text-lg">{formatCellValue(cellValue, metric)}</div>
@@ -385,14 +394,16 @@ export default function MetconHeatmap({
                     </td>
                   )
                 })}
-                <td className="p-1 border-l-2 border-blue-200 bg-blue-50">
+                <td className="p-1 border-l-2 border-[#FE5858] bg-[#F8FBFE]">
                   {(() => {
                     const avgValue = calculateExerciseAverage(exercise, metric)
-                    const colorClass = getHeatMapColor(avgValue, metric)
                     const exerciseData = data.exerciseAverages.find((avg: any) => avg.exercise_name === exercise)
                     const totalSessions = exerciseData?.total_sessions || 0
+                    // Get percentile for medal (from exercise average)
+                    const exercisePercentile = exerciseData?.overall_avg_percentile || null
                     return (
-                      <div className={`${colorClass} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md border-2 border-white ${avgValue !== null ? 'ring-1 ring-blue-300' : ''}`} style={{ minHeight: '60px' }}>
+                      <div className={`${getCellStyle(avgValue !== null)} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md relative`} style={{ minHeight: '60px' }}>
+                        {renderMedal(exercisePercentile)}
                         {avgValue !== null ? (
                           <div>
                             <div className="text-lg font-bold">{formatAverageValue(avgValue, metric)}</div>
@@ -407,16 +418,25 @@ export default function MetconHeatmap({
                 </td>
               </tr>
             ))}
-            <tr className="border-t-2 border-blue-200 bg-blue-50">
-              <td className="p-3 font-bold text-gray-900 bg-blue-100 border-r-2 border-blue-200">Time Domain Avg</td>
+            <tr className="border-t-2 border-[#FE5858] bg-[#F8FBFE]">
+              <td className="p-3 font-bold text-[#282B34] bg-[#DAE2EA] border-r-2 border-[#FE5858]">Time Domain Avg</td>
               {shownDomains.map((domain: string) => {
                 const avgValue = calculateTimeDomainAverage(domain, metric)
-                const colorClass = getHeatMapColor(avgValue, metric)
                 // Use backend-provided time domain workout count (unique workouts per time domain)
                 const totalWorkouts = data.timeDomainWorkoutCounts?.[domain] || 0
+                // Calculate average percentile for this time domain to determine medal
+                const domainCells = data.heatmapCells?.filter((cell: any) => 
+                  cell.time_range === domain
+                ) || []
+                const domainPercentile = domainCells.length > 0
+                  ? Math.round(domainCells.reduce((sum: number, cell: any) => 
+                      sum + (cell.avg_percentile * cell.session_count), 0) / 
+                      domainCells.reduce((sum: number, cell: any) => sum + cell.session_count, 0))
+                  : null
                 return (
                   <td key={domain} className="p-1">
-                    <div className={`${colorClass} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md border-2 border-white ${avgValue !== null ? 'ring-1 ring-blue-300' : ''}`} style={{ minHeight: '60px' }}>
+                    <div className={`${getCellStyle(avgValue !== null)} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md relative`} style={{ minHeight: '60px' }}>
+                      {renderMedal(domainPercentile)}
                       {avgValue !== null ? (
                         <div>
                           <div className="text-lg font-bold">{formatAverageValue(avgValue, metric)}</div>
@@ -429,15 +449,15 @@ export default function MetconHeatmap({
                   </td>
                 )
               })}
-              <td className="p-1 border-l-2 border-blue-200 bg-blue-100">
+              <td className="p-1 border-l-2 border-[#FE5858] bg-[#DAE2EA]">
                 {(() => {
                   const globalAvg = metric === 'percentile' ? globalFitnessScore : getGlobalAverage(metric)
-                  const colorClass = getHeatMapColor(globalAvg, metric)
                   const label = metric === 'percentile' ? 'FITNESS' : 
                                 metric === 'rpe' ? 'AVG RPE' :
                                 metric === 'quality' ? 'AVG QUALITY' : 'AVG HR'
                   return (
-                    <div className={`${colorClass} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-lg border-4 border-white ${globalAvg !== null ? 'ring-2 ring-blue-400' : ''}`} style={{ minHeight: '60px' }}>
+                    <div className={`${getCellStyle(globalAvg !== null)} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-lg relative`} style={{ minHeight: '60px' }}>
+                      {renderMedal(globalFitnessScore)}
                       {globalAvg !== null ? (
                         <div>
                           <div className="text-xl font-bold">{formatCellValue(globalAvg, metric)}</div>
@@ -454,67 +474,25 @@ export default function MetconHeatmap({
           </tbody>
         </table>
       </div>
-      <div className="mt-6 flex items-center justify-between">
+      <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
-          <span className="text-sm font-medium text-gray-700">
-            {metric === 'percentile' ? 'Performance:' :
-             metric === 'rpe' ? 'Effort:' :
-             metric === 'quality' ? 'Quality:' : 'Heart Rate:'}
-          </span>
-          <div className="flex items-center space-x-2">
-            {metric === 'percentile' && (
-              <>
-                <div className="bg-red-500 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">Poor</span>
-                <div className="bg-orange-400 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">Below Avg</span>
-                <div className="bg-yellow-400 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">Average</span>
-                <div className="bg-green-400 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">Good</span>
-                <div className="bg-green-600 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">Excellent</span>
-              </>
-            )}
-            {metric === 'rpe' && (
-              <>
-                <div className="bg-green-500 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">Low (1-4)</span>
-                <div className="bg-yellow-400 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">Moderate (5-6)</span>
-                <div className="bg-orange-400 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">High (7-8)</span>
-                <div className="bg-red-500 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">Very High (9-10)</span>
-              </>
-            )}
-            {metric === 'quality' && (
-              <>
-                <div className="bg-green-600 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">A</span>
-                <div className="bg-yellow-400 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">B</span>
-                <div className="bg-orange-400 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">C</span>
-                <div className="bg-red-500 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">D</span>
-              </>
-            )}
-            {metric === 'heartrate' && (
-              <>
-                <div className="bg-green-500 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">Low (&lt;130)</span>
-                <div className="bg-yellow-400 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">Moderate (130-150)</span>
-                <div className="bg-orange-400 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">High (150-170)</span>
-                <div className="bg-red-500 w-4 h-4 rounded"></div>
-                <span className="text-xs text-gray-600">Very High (&gt;170)</span>
-              </>
-            )}
+          <span className="text-sm font-medium text-[#282B34]">Performance Medals:</span>
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-1">
+              <GoldMedal />
+              <span className="text-xs text-[#282B34]">90%+</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <SilverMedal />
+              <span className="text-xs text-[#282B34]">80-89%</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <BronzeMedal />
+              <span className="text-xs text-[#282B34]">70-79%</span>
+            </div>
           </div>
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-[#282B34]">
           <span className="font-medium">Bold cells</span> show weighted averages
         </div>
       </div>
