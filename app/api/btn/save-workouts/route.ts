@@ -52,6 +52,39 @@ export async function POST(request: NextRequest) {
     console.log(`💾 Saving ${workouts.length} BTN workouts for user ${userData.id}`)
     console.log('Sample workout to save:', JSON.stringify(workouts[0], null, 2))
 
+    // Check incomplete workout limit (20 incomplete workouts max)
+    const MAX_INCOMPLETE_WORKOUTS = 20
+    const { count: incompleteWorkoutCount, error: incompleteCountError } = await supabase
+      .from('program_metcons')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userData.id)
+      .eq('workout_type', 'btn')
+      .is('completed_at', null) // Only count incomplete workouts
+
+    if (incompleteCountError) {
+      console.error('⚠️ Error counting incomplete workouts:', incompleteCountError)
+      // Continue anyway - don't block on count error, but log it
+    }
+
+    const currentIncomplete = incompleteWorkoutCount || 0
+    const availableSlots = MAX_INCOMPLETE_WORKOUTS - currentIncomplete
+
+    if (workouts.length > availableSlots) {
+      console.log(`❌ Workout limit exceeded: ${currentIncomplete} incomplete, trying to add ${workouts.length}, limit is ${MAX_INCOMPLETE_WORKOUTS}`)
+      return NextResponse.json(
+        { 
+          error: `You can only store ${MAX_INCOMPLETE_WORKOUTS} incomplete workouts. You currently have ${currentIncomplete} incomplete workouts. Please complete or delete some workouts to make room.`,
+          incompleteCount: currentIncomplete,
+          maxAllowed: MAX_INCOMPLETE_WORKOUTS,
+          availableSlots,
+          requestedCount: workouts.length
+        }, 
+        { status: 400 }
+      )
+    }
+
+    console.log(`✅ Workout limit check passed: ${currentIncomplete} incomplete, ${availableSlots} slots available, adding ${workouts.length}`)
+
     // Get count of existing BTN workouts for this user to determine starting number
     const { count: existingWorkoutCount, error: countError } = await supabase
       .from('program_metcons')
