@@ -308,7 +308,6 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  const [showAllLifts, setShowAllLifts] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<string[]>([])
   const [userSkills, setUserSkills] = useState<{[key: string]: string}>({})
   const [height, setHeight] = useState<number | null>(null)
@@ -645,11 +644,11 @@ const loadProfile = async () => {
             />
           </div>
           
-          {/* Foundation Strength Card */}
+          {/* Card 1: Foundation Strength */}
           <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
             <div className="mb-6">              
-<h2 className="text-xl font-bold text-charcoal mb-2">RAW STRENGTH</h2>
-<div className="w-full h-0.5 bg-coral"></div>
+              <h2 className="text-xl font-bold text-charcoal mb-2">FOUNDATION STRENGTH</h2>
+              <div className="w-full h-0.5 bg-coral"></div>
               <p className="text-sm text-gray-600 mt-2">Progression levels relative to bodyweight ({formatWeight(profile.user_summary.body_weight)})</p>
             </div>
             
@@ -703,176 +702,197 @@ const loadProfile = async () => {
                 elite: 1.7
               }}
             />
+          </div>
 
-            {/* Expandable Details */}
-            {showAllLifts && (
-              <div className="border-t border-slate-blue pt-6 mt-6">
-                <h3 className="font-semibold text-charcoal mb-6">Complete Lift & Ratio Details</h3>
-                
-                {/* ALL MAX LIFTS Section */}
-                <div className="mb-8">
-                  <h4 className="font-medium text-charcoal mb-4 text-lg">ALL MAX LIFTS</h4>
-                  
-                  {/* Olympic Variations */}
-                  <div className="mb-6">
-                    <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Olympic Variations</h5>
-                    <div className="space-y-2">
-                      {profile.one_rms.jerk_only && (
-                        <div className="flex justify-between py-1">
-                          <span className="text-gray-700">Jerk Only</span>
-                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.jerk_only)}</span>
-                        </div>
-                      )}
-                      {profile.one_rms.clean_only && (
-                        <div className="flex justify-between py-1">
-                          <span className="text-gray-700">Clean Only</span>
-                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.clean_only)}</span>
-                        </div>
-                      )}
-                      {profile.one_rms.power_clean && (
-                        <div className="flex justify-between py-1">
-                          <span className="text-gray-700">Power Clean</span>
-                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.power_clean)}</span>
-                        </div>
-                      )}
-                      {profile.one_rms.power_snatch && (
-                        <div className="flex justify-between py-1">
-                          <span className="text-gray-700">Power Snatch</span>
-                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.power_snatch)}</span>
-                        </div>
-                      )}
-                    </div>
+          {/* Card 2: All Max Lifts */}
+          <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
+            <div className="mb-6">              
+              <h2 className="text-xl font-bold text-charcoal mb-2">MAX LIFTS</h2>
+              <div className="w-full h-0.5 bg-coral"></div>
+            </div>
+            
+            {/* Olympic Lifts */}
+            <div className="mb-6">
+              <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Olympic Lifts</h5>
+              <div className="space-y-2">
+                {profile.one_rms.snatch && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Snatch</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.snatch)}</span>
                   </div>
-
-                  {/* Squatting */}
-                  <div className="mb-6">
-                    <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Squatting</h5>
-                    <div className="space-y-2">
-                      {profile.one_rms.front_squat && (
-                        <div className="flex justify-between py-1">
-                          <span className="text-gray-700">Front Squat</span>
-                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.front_squat)}</span>
-                        </div>
-                      )}
-                      {profile.one_rms.overhead_squat && (
-                        <div className="flex justify-between py-1">
-                          <span className="text-gray-700">Overhead Squat</span>
-                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.overhead_squat)}</span>
-                        </div>
-                      )}
-                    </div>
+                )}
+                {profile.one_rms.clean_and_jerk && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Clean and Jerk</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.clean_and_jerk)}</span>
                   </div>
-
-                  {/* Pressing */}
-                  <div className="mb-6">
-                    <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Pressing</h5>
-                    <div className="space-y-2">
-                      {profile.one_rms.push_press && (
-                        <div className="flex justify-between py-1">
-                          <span className="text-gray-700">Push Press</span>
-                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.push_press)}</span>
-                        </div>
-                      )}
-                      {profile.one_rms.strict_press && (
-                        <div className="flex justify-between py-1">
-                          <span className="text-gray-700">Strict Press</span>
-                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.strict_press)}</span>
-                        </div>
-                      )}
-                    </div>
+                )}
+                {profile.one_rms.power_snatch && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Power Snatch</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.power_snatch)}</span>
                   </div>
+                )}
+                {profile.one_rms.power_clean && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Power Clean</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.power_clean)}</span>
+                  </div>
+                )}
+                {profile.one_rms.clean_only && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Clean Only</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.clean_only)}</span>
+                  </div>
+                )}
+                {profile.one_rms.jerk_only && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Jerk Only</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.jerk_only)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
 
-                  {/* Pulling */}
-                  <div className="mb-6">
-                    <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Pulling</h5>
-                    <div className="space-y-2">
-                      {profile.one_rms.weighted_pullup && (
-                        <div className="flex justify-between py-1">
-                          <span className="text-gray-700">Weighted Pullup</span>
-                          <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.weighted_pullup)}</span>
-                        </div>
-                      )}
-                    </div>
+            {/* Squatting */}
+            <div className="mb-6">
+              <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Squatting</h5>
+              <div className="space-y-2">
+                {profile.one_rms.back_squat && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Back Squat</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.back_squat)}</span>
+                  </div>
+                )}
+                {profile.one_rms.front_squat && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Front Squat</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.front_squat)}</span>
+                  </div>
+                )}
+                {profile.one_rms.overhead_squat && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Overhead Squat</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.overhead_squat)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Pressing */}
+            <div className="mb-6">
+              <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Pressing</h5>
+              <div className="space-y-2">
+                {profile.one_rms.bench_press && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Bench Press</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.bench_press)}</span>
+                  </div>
+                )}
+                {profile.one_rms.push_press && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Push Press</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.push_press)}</span>
+                  </div>
+                )}
+                {profile.one_rms.strict_press && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Strict Press</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.strict_press)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Pulling */}
+            <div className="mb-6">
+              <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Pulling</h5>
+              <div className="space-y-2">
+                {profile.one_rms.deadlift && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Deadlift</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.deadlift)}</span>
+                  </div>
+                )}
+                {profile.one_rms.weighted_pullup && (
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-700">Weighted Pullup</span>
+                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.weighted_pullup)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Strength Ratios */}
+          <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
+            <div className="mb-6">              
+              <h2 className="text-xl font-bold text-charcoal mb-2">STRENGTH RATIOS</h2>
+              <div className="w-full h-0.5 bg-coral"></div>
+            </div>
+            
+            {/* Olympic Lift Efficiency */}
+            <div className="mb-6 bg-ice-blue rounded-lg p-4">
+              <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Olympic Lift Efficiency</h5>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-700">Power Snatch / Snatch</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-3 h-3 rounded-full bg-coral"></span>
+                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.power_snatch, profile.one_rms.snatch)}</span>
                   </div>
                 </div>
-
-                {/* ALL RATIOS Section */}
-                <div>
-                  <h4 className="font-medium text-charcoal mb-4 text-lg">ALL RATIOS</h4>
-                  
-                  {/* Olympic Lift Efficiency */}
-                  <div className="mb-6 bg-ice-blue rounded-lg p-4">
-                    <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Olympic Lift Efficiency</h5>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-gray-700">Power Snatch / Snatch</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="w-3 h-3 rounded-full bg-coral"></span>
-                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.power_snatch, profile.one_rms.snatch)}</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-gray-700">Power Clean / Clean</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="w-3 h-3 rounded-full bg-coral"></span>
-                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.power_clean, profile.one_rms.clean_only)}</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-gray-700">Jerk / Clean</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="w-3 h-3 rounded-full bg-coral"></span>
-                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.jerk_only, profile.one_rms.clean_only)}</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-gray-700">Snatch / C&J</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="w-3 h-3 rounded-full bg-orange-400"></span>
-                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.snatch, profile.one_rms.clean_and_jerk)}</span>
-                        </div>
-                      </div>
-                    </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-700">Power Clean / Clean</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-3 h-3 rounded-full bg-coral"></span>
+                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.power_clean, profile.one_rms.clean_only)}</span>
                   </div>
-
-                  {/* Strength Balance */}
-                  <div className="bg-ice-blue rounded-lg p-4">
-                    <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Strength Balance</h5>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-gray-700">Front Squat / Back Squat</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="w-3 h-3 rounded-full bg-orange-400"></span>
-                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.front_squat, profile.one_rms.back_squat)}</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-gray-700">Overhead Squat / Snatch</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="w-3 h-3 rounded-full bg-red-400"></span>
-                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.overhead_squat, profile.one_rms.snatch)}</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-gray-700">Push Press / Strict Press</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="w-3 h-3 rounded-full bg-red-400"></span>
-                          <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.push_press, profile.one_rms.strict_press)}</span>
-                        </div>
-                      </div>
-                    </div>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-700">Jerk / Clean</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-3 h-3 rounded-full bg-coral"></span>
+                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.jerk_only, profile.one_rms.clean_only)}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-700">Snatch / C&J</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-3 h-3 rounded-full bg-orange-400"></span>
+                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.snatch, profile.one_rms.clean_and_jerk)}</span>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Toggle Button */}
-            <button
-              onClick={() => setShowAllLifts(!showAllLifts)}
-              className="mt-6 text-coral hover:text-coral font-medium"
-            >
-              [{showAllLifts ? '- Hide Complete Details' : '+ View Complete Lift & Ratio Details'}]
-            </button>
+            {/* Strength Balance */}
+            <div className="bg-ice-blue rounded-lg p-4">
+              <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Strength Balance</h5>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-700">Front Squat / Back Squat</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-3 h-3 rounded-full bg-orange-400"></span>
+                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.front_squat, profile.one_rms.back_squat)}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-700">Overhead Squat / Snatch</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-3 h-3 rounded-full bg-coral"></span>
+                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.overhead_squat, profile.one_rms.snatch)}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-700">Push Press / Strict Press</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="w-3 h-3 rounded-full bg-coral"></span>
+                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.push_press, profile.one_rms.strict_press)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
