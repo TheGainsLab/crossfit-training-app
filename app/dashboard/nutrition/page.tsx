@@ -15,6 +15,9 @@ export default function NutritionPage() {
   const [selectedFood, setSelectedFood] = useState<any>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [showMealTypeSelection, setShowMealTypeSelection] = useState(false)
+  const [selectedMealType, setSelectedMealType] = useState<string | null>(null)
+  const [showSearch, setShowSearch] = useState(false)
 
   useEffect(() => {
     const loadUser = async () => {
@@ -94,6 +97,20 @@ export default function NutritionPage() {
     setModalOpen(false)
     setSelectedFood(null)
     setRefreshKey(prev => prev + 1) // Trigger refresh
+    // Reset the log flow after logging
+    handleResetLogFlow()
+  }
+
+  const handleMealTypeSelected = (mealType: string) => {
+    setSelectedMealType(mealType)
+    setShowMealTypeSelection(false)
+    setShowSearch(true)
+  }
+
+  const handleResetLogFlow = () => {
+    setShowMealTypeSelection(false)
+    setShowSearch(false)
+    setSelectedMealType(null)
   }
 
   const handleDeleteEntry = async (entryId: number) => {
@@ -135,10 +152,78 @@ export default function NutritionPage() {
       {/* Daily Summary Card */}
       <DailySummaryCard summary={dailySummary} />
 
-      {/* Food Search */}
+      {/* Log Foods Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Search Foods</h2>
-        <FoodSearch onFoodSelected={handleFoodSelected} userId={userId} />
+        {!showMealTypeSelection && !showSearch && (
+          <button
+            onClick={() => setShowMealTypeSelection(true)}
+            className="w-full px-6 py-4 bg-[#FE5858] text-white rounded-lg font-semibold text-lg hover:bg-[#ff6b6b] transition-colors"
+          >
+            Log Foods
+          </button>
+        )}
+
+        {showMealTypeSelection && !showSearch && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Select Meal Type</h2>
+              <button
+                onClick={handleResetLogFlow}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: 'breakfast', label: 'Breakfast' },
+                { value: 'lunch', label: 'Lunch' },
+                { value: 'dinner', label: 'Dinner' },
+                { value: 'pre_workout', label: 'Pre-Workout' },
+                { value: 'post_workout', label: 'Post-Workout' },
+                { value: 'snack', label: 'Snack' },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleMealTypeSelected(option.value)}
+                  className="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-[#F8FBFE] text-[#282B34] border border-[#FE5858] hover:bg-[#FE5858] hover:text-white"
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {showSearch && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Search Foods
+                {selectedMealType && (
+                  <span className="ml-2 text-sm font-normal text-gray-600">
+                    ({['breakfast', 'lunch', 'dinner', 'pre_workout', 'post_workout', 'snack'].includes(selectedMealType) 
+                      ? ['Breakfast', 'Lunch', 'Dinner', 'Pre-Workout', 'Post-Workout', 'Snack'][['breakfast', 'lunch', 'dinner', 'pre_workout', 'post_workout', 'snack'].indexOf(selectedMealType)]
+                      : selectedMealType})
+                  </span>
+                )}
+              </h2>
+              <button
+                onClick={handleResetLogFlow}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Start Over
+              </button>
+            </div>
+            <FoodSearch 
+              onFoodSelected={(food) => {
+                handleFoodSelected(food)
+              }} 
+              userId={userId} 
+            />
+          </div>
+        )}
       </div>
 
       {/* Today's Food Log */}
@@ -158,6 +243,7 @@ export default function NutritionPage() {
           }}
           onLogged={handleFoodLogged}
           userId={userId}
+          preselectedMealType={selectedMealType}
         />
       )}
     </div>

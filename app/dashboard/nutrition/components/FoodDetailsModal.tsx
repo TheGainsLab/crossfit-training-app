@@ -9,6 +9,7 @@ interface FoodDetailsModalProps {
   onClose: () => void
   onLogged: () => void
   userId: number
+  preselectedMealType?: string | null
 }
 
 export default function FoodDetailsModal({
@@ -17,6 +18,7 @@ export default function FoodDetailsModal({
   onClose,
   onLogged,
   userId,
+  preselectedMealType,
 }: FoodDetailsModalProps) {
   const [loading, setLoading] = useState(false)
   const [foodDetails, setFoodDetails] = useState<any>(null)
@@ -25,19 +27,24 @@ export default function FoodDetailsModal({
   const [mealType, setMealType] = useState<string>('other')
   const [error, setError] = useState<string | null>(null)
 
-  // Default meal type based on time of day
+  // Default meal type based on preselected value or time of day
   useEffect(() => {
     if (open) {
-      const hour = new Date().getHours()
-      if (hour < 11) {
-        setMealType('breakfast')
-      } else if (hour < 16) {
-        setMealType('lunch')
+      // Use preselected meal type if provided, otherwise default to time-based
+      if (preselectedMealType) {
+        setMealType(preselectedMealType)
       } else {
-        setMealType('dinner')
+        const hour = new Date().getHours()
+        if (hour < 11) {
+          setMealType('breakfast')
+        } else if (hour < 16) {
+          setMealType('lunch')
+        } else {
+          setMealType('dinner')
+        }
       }
     }
-  }, [open])
+  }, [open, preselectedMealType])
 
   useEffect(() => {
     if (open && food?.food_id) {
