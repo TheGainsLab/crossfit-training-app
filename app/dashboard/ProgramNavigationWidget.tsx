@@ -460,7 +460,8 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
         >
           Week Preview
         </Link>
-        {!isAppliedPower && (
+        {/* MetCon Preview - Hidden for MVP, functions kept for future use */}
+        {false && !isAppliedPower && (
           <button
             onClick={() => setMetconOpen(true)}
             className="px-4 py-2 rounded-lg border transition-colors"
@@ -472,8 +473,8 @@ const ProgramNavigationWidget: React.FC<NavigationProps> = ({
           </button>
         )}
       </div>
-      {/* Modal mount - only render if not Applied Power */}
-      {!isAppliedPower && (
+      {/* MetCon Preview Modal - Hidden for MVP, functions kept for future use */}
+      {false && !isAppliedPower && (
         <MetconPreviewModal open={metconOpen} onClose={() => setMetconOpen(false)} chart={metconChart} summary={domainSummary} />
       )}
     </div>
