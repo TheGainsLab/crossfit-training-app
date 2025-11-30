@@ -38,7 +38,7 @@ const exerciseDifficultyTiers = {
   highSkill: ['Snatch', 'Ring Muscle Ups', 'Handstand Push-ups', 'Rope Climbs', 'Legless Rope Climbs', 'Bar Muscle Ups'],
   highVolume: ['Double Unders', 'Wall Balls'],
   moderate: ['Deadlifts', 'Burpees', 'Pull-ups', 'Chest to Bar Pull-ups', 'Toes to Bar', 'Overhead Squats', 'Thrusters', 'Power Cleans', 'Clean and Jerks', 'GHD Sit-ups', 'Squat Cleans', 'Power Snatch', 'Push-ups', 'Strict Pull-ups'],
-  lowSkill: ['Box Jumps', 'Box Jump Overs', 'Burpee Box Jump Overs', 'Alternating Dumbbell Snatches', 'Dumbbell Thrusters', 'Dumbbell Clean and Jerk', 'Rowing Calories', 'Kettlebell Swings', 'Kettlebell Snatches', 'Bike Calories', 'Ski Calories', 'Dumbbell Box Step-Ups']
+  lowSkill: ['Box Jumps', 'Box Jump Overs', 'Burpee Box Jump Overs', 'Alternating Dumbbell Snatches', 'Dumbbell Thrusters', 'Dumbbell Clean and Jerk', 'Rowing Calories', 'Kettlebell Swings', 'Kettlebell Snatches', 'Bike Calories', 'Ski Calories']
 };
 
 // Pattern restrictions by exercise difficulty tier
@@ -94,7 +94,6 @@ const exerciseRates: { [key: string]: number } = {
   'Squat Snatch': 12.00,
   'Power Snatch': 15.00,
   'Bar Muscle Ups': 7.00,
-  'Dumbbell Box Step-Ups': 15.00,
   'Push-ups': 20.00,
   'Strict Pull-ups': 7.00
 };
@@ -975,10 +974,9 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     'Power Snatch': barbellTimeDomainOptions,
     'Dumbbell Thrusters': barbellTimeDomainOptions,
     'Dumbbell Clean and Jerk': barbellTimeDomainOptions,
-    'Dumbbell Box Step-Ups': barbellTimeDomainOptions,
   };
   
-  const isBarbellExerciseForReps = ['Snatch', 'Deadlifts', 'Overhead Squats', 'Thrusters', 'Dumbbell Thrusters', 'Power Cleans', 'Clean and Jerks', 'Dumbbell Clean and Jerk', 'Squat Cleans', 'Squat Snatch', 'Power Snatch', 'Dumbbell Box Step-Ups'].includes(exerciseName);
+  const isBarbellExerciseForReps = ['Snatch', 'Deadlifts', 'Overhead Squats', 'Thrusters', 'Dumbbell Thrusters', 'Power Cleans', 'Clean and Jerks', 'Dumbbell Clean and Jerk', 'Squat Cleans', 'Squat Snatch', 'Power Snatch'].includes(exerciseName);
   const isDoubleUnders = exerciseName === 'Double Unders';
   const isWallBalls = exerciseName === 'Wall Balls';
   const isBoxExercise = ['Burpee Box Jump Overs', 'Box Jumps', 'Box Jump Overs'].includes(exerciseName);
@@ -997,7 +995,6 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
   const isBikeCalories = exerciseName === 'Bike Calories';
   const isSkiCalories = exerciseName === 'Ski Calories';
   const isBarMuscleUps = exerciseName === 'Bar Muscle Ups';
-  const isDumbbellBoxStepUps = exerciseName === 'Dumbbell Box Step-Ups';
   const isPushups = exerciseName === 'Push-ups';
   const isStrictPullups = exerciseName === 'Strict Pull-ups';
   
@@ -1124,7 +1121,6 @@ function filterForbiddenPairs(exerciseTypes: string[]): string[] {
     ['Bike Calories', 'Ski Calories'],
     ['Ring Muscle Ups', 'Chest to Bar Pull-ups'],
     ['Legless Rope Climbs', 'Chest to Bar Pull-ups'],
-    ['Box Jump Overs', 'Dumbbell Box Step-Ups'],
     ['Ring Muscle Ups', 'Strict Pull-ups'],
     ['Bar Muscle Ups', 'Chest to Bar Pull-ups'],
     ['Ring Muscle Ups', 'Bar Muscle Ups'],
