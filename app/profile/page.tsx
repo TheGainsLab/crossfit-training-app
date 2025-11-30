@@ -333,6 +333,23 @@ export default function ProfilePage() {
     }
   }
 
+  // Helper to get ratio status with range-based color coding
+  const getRatioStatusWithRange = (numerator: number | null, denominator: number | null, minRange: number, maxRange: number): { color: string, status: string | null, value: string } => {
+    if (!numerator || !denominator || denominator === 0) {
+      return { color: 'bg-gray-400', status: null, value: 'N/A' }
+    }
+    const ratio = numerator / denominator
+    const value = `${Math.round(ratio * 100)}%`
+    
+    if (ratio >= minRange && ratio <= maxRange) {
+      return { color: 'bg-green-500', status: null, value }
+    } else if (ratio > maxRange) {
+      return { color: 'bg-red-500', status: 'high', value }
+    } else {
+      return { color: 'bg-red-500', status: 'low', value }
+    }
+  }
+
   // Helper to get bodyweight ratio status
   const getBodyweightRatioStatus = (lift: number | null, bodyweight: number | null, maleTarget: number, femaleTarget: number, gender: string) => {
     if (!lift || !bodyweight || bodyweight === 0) return { status: 'unknown', ratio: 'N/A' }
@@ -835,34 +852,58 @@ const loadProfile = async () => {
             <div className="mb-6 bg-ice-blue rounded-lg p-4">
               <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Olympic Lift Efficiency</h5>
               <div className="space-y-2">
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-700">Power Snatch / Snatch</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="w-3 h-3 rounded-full bg-coral"></span>
-                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.power_snatch, profile.one_rms.snatch)}</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-700">Power Clean / Clean</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="w-3 h-3 rounded-full bg-coral"></span>
-                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.power_clean, profile.one_rms.clean_only)}</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-700">Jerk / Clean</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="w-3 h-3 rounded-full bg-coral"></span>
-                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.jerk_only, profile.one_rms.clean_only)}</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-700">Snatch / C&J</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="w-3 h-3 rounded-full bg-orange-400"></span>
-                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.snatch, profile.one_rms.clean_and_jerk)}</span>
-                  </div>
-                </div>
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.power_snatch, profile.one_rms.snatch, 0.74, 0.80)
+                  return (
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-gray-700">Power Snatch to Snatch</span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`w-3 h-3 rounded-full ${status.color}`}></span>
+                        <span className="font-medium text-charcoal">{status.value}</span>
+                        {status.status && <span className="text-red-600 text-sm font-medium">{status.status}</span>}
+                      </div>
+                    </div>
+                  )
+                })()}
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.power_clean, profile.one_rms.clean_only, 0.79, 0.85)
+                  return (
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-gray-700">Power Clean to Clean</span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`w-3 h-3 rounded-full ${status.color}`}></span>
+                        <span className="font-medium text-charcoal">{status.value}</span>
+                        {status.status && <span className="text-red-600 text-sm font-medium">{status.status}</span>}
+                      </div>
+                    </div>
+                  )
+                })()}
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.jerk_only, profile.one_rms.clean_only, 0.975, 1.075)
+                  return (
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-gray-700">Jerk to Clean</span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`w-3 h-3 rounded-full ${status.color}`}></span>
+                        <span className="font-medium text-charcoal">{status.value}</span>
+                        {status.status && <span className="text-red-600 text-sm font-medium">{status.status}</span>}
+                      </div>
+                    </div>
+                  )
+                })()}
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.snatch, profile.one_rms.clean_and_jerk, 0.775, 0.825)
+                  return (
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-gray-700">Snatch to Clean and Jerk</span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`w-3 h-3 rounded-full ${status.color}`}></span>
+                        <span className="font-medium text-charcoal">{status.value}</span>
+                        {status.status && <span className="text-red-600 text-sm font-medium">{status.status}</span>}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             </div>
 
@@ -870,27 +911,45 @@ const loadProfile = async () => {
             <div className="bg-ice-blue rounded-lg p-4">
               <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Strength Balance</h5>
               <div className="space-y-2">
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-700">Front Squat / Back Squat</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="w-3 h-3 rounded-full bg-orange-400"></span>
-                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.front_squat, profile.one_rms.back_squat)}</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-700">Overhead Squat / Snatch</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="w-3 h-3 rounded-full bg-coral"></span>
-                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.overhead_squat, profile.one_rms.snatch)}</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-700">Push Press / Strict Press</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="w-3 h-3 rounded-full bg-coral"></span>
-                    <span className="font-medium text-charcoal">{safeRatio(profile.one_rms.push_press, profile.one_rms.strict_press)}</span>
-                  </div>
-                </div>
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.front_squat, profile.one_rms.back_squat, 0.8, 0.875)
+                  return (
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-gray-700">Front Squat to Back Squat</span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`w-3 h-3 rounded-full ${status.color}`}></span>
+                        <span className="font-medium text-charcoal">{status.value}</span>
+                        {status.status && <span className="text-red-600 text-sm font-medium">{status.status}</span>}
+                      </div>
+                    </div>
+                  )
+                })()}
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.overhead_squat, profile.one_rms.snatch, 1.05, 1.2)
+                  return (
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-gray-700">Overhead Squat to Snatch</span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`w-3 h-3 rounded-full ${status.color}`}></span>
+                        <span className="font-medium text-charcoal">{status.value}</span>
+                        {status.status && <span className="text-red-600 text-sm font-medium">{status.status}</span>}
+                      </div>
+                    </div>
+                  )
+                })()}
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.push_press, profile.one_rms.strict_press, 1.25, 1.45)
+                  return (
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-gray-700">Push Press to Strict Press</span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`w-3 h-3 rounded-full ${status.color}`}></span>
+                        <span className="font-medium text-charcoal">{status.value}</span>
+                        {status.status && <span className="text-red-600 text-sm font-medium">{status.status}</span>}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           </div>
