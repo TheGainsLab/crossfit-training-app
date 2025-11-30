@@ -96,38 +96,11 @@ export function HeartRateView({ heatmapData, baselineHeatmap, selection, searchP
   const equip = (searchParams.get('equip') || '').toLowerCase()
   const cells = heatmapData?.heatmapCells || []
   
-  // Calculate global HR
+  // Check if we have any HR data
   const validHR = cells.filter((c: any) => c.avg_heart_rate !== null && c.avg_heart_rate !== undefined)
-  const avgHR = validHR.length > 0 
-    ? Math.round(validHR.reduce((sum: number, c: any) => sum + (c.avg_heart_rate * c.session_count), 0) / 
-                 validHR.reduce((sum: number, c: any) => sum + c.session_count, 0))
-    : null
-  
-  const maxHR = validHR.length > 0
-    ? Math.round(Math.max(...validHR.map((c: any) => c.max_heart_rate || c.avg_heart_rate || 0)))
-    : null
   
   return (
     <div className="space-y-6">
-      {/* Summary Card */}
-      <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-semibold text-gray-900">Heart Rate Summary</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="text-xs text-gray-600">Avg HR</div>
-            <div className="text-2xl font-bold" style={{ color: '#FE5858' }}>{avgHR ?? '—'}</div>
-            <div className="text-xs text-gray-500 mt-1">bpm</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-600">Peak HR</div>
-            <div className="text-2xl font-bold" style={{ color: '#FE5858' }}>{maxHR ?? '—'}</div>
-            <div className="text-xs text-gray-500 mt-1">bpm</div>
-          </div>
-        </div>
-      </div>
-
       {/* Heatmap */}
       {validHR.length > 0 ? (
         <div className="bg-white rounded-lg shadow p-4 border border-gray-200">

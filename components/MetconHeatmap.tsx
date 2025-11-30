@@ -12,19 +12,6 @@ const GoldMedal = () => (
   </svg>
 )
 
-const SilverMedal = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="10" cy="10" r="9" fill="#C0C0C0" stroke="#808080" strokeWidth="1.5"/>
-    <path d="M10 6L11.5 9L15 9.5L12.5 12L13 15.5L10 14L7 15.5L7.5 12L5 9.5L8.5 9L10 6Z" fill="#808080"/>
-  </svg>
-)
-
-const BronzeMedal = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="10" cy="10" r="9" fill="#CD7F32" stroke="#8B4513" strokeWidth="1.5"/>
-    <path d="M10 6L11.5 9L15 9.5L12.5 12L13 15.5L10 14L7 15.5L7.5 12L5 9.5L8.5 9L10 6Z" fill="#8B4513"/>
-  </svg>
-)
 
 export default function MetconHeatmap({ 
   data, 
@@ -38,11 +25,10 @@ export default function MetconHeatmap({
   hideTitle?: boolean
 }) {
   // Get medal based on percentile (persists across all metric views)
-  const getMedal = (percentile: number | null): 'gold' | 'silver' | 'bronze' | null => {
+  // Only gold medals for 90%+
+  const getMedal = (percentile: number | null): 'gold' | null => {
     if (percentile === null) return null
     if (percentile >= 90) return 'gold'
-    if (percentile >= 80) return 'silver'
-    if (percentile >= 70) return 'bronze'
     return null
   }
 
@@ -53,9 +39,7 @@ export default function MetconHeatmap({
     
     return (
       <div className="absolute top-1 right-1">
-        {medal === 'gold' && <GoldMedal />}
-        {medal === 'silver' && <SilverMedal />}
-        {medal === 'bronze' && <BronzeMedal />}
+        <GoldMedal />
       </div>
     )
   }
@@ -150,6 +134,48 @@ export default function MetconHeatmap({
     return totalSessions > 0 ? Math.round((totalWeighted / totalSessions) * 10) / 10 : null
   }
 
+  // Calculate average peak HR for an exercise (weighted by session count)
+  const calculateExercisePeakHR = (exercise: string): number | null => {
+    if (!data?.heatmapCells) return null
+    const exerciseCells = data.heatmapCells.filter((cell: any) => 
+      cell.exercise_name === exercise && cell.max_heart_rate !== null && cell.max_heart_rate !== undefined
+    )
+    if (exerciseCells.length === 0) return null
+    
+    let totalWeighted = 0
+    let totalSessions = 0
+    
+    exerciseCells.forEach((cell: any) => {
+      if (cell.max_heart_rate !== null && cell.max_heart_rate !== undefined) {
+        totalWeighted += cell.max_heart_rate * cell.session_count
+        totalSessions += cell.session_count
+      }
+    })
+    
+    return totalSessions > 0 ? Math.round((totalWeighted / totalSessions)) : null
+  }
+
+  // Calculate average peak HR for a time domain (weighted by session count)
+  const calculateTimeDomainPeakHR = (timeDomain: string): number | null => {
+    if (!data?.heatmapCells) return null
+    const domainCells = data.heatmapCells.filter((cell: any) => 
+      cell.time_range === timeDomain && cell.max_heart_rate !== null && cell.max_heart_rate !== undefined
+    )
+    if (domainCells.length === 0) return null
+    
+    let totalWeighted = 0
+    let totalSessions = 0
+    
+    domainCells.forEach((cell: any) => {
+      if (cell.max_heart_rate !== null && cell.max_heart_rate !== undefined) {
+        totalWeighted += cell.max_heart_rate * cell.session_count
+        totalSessions += cell.session_count
+      }
+    })
+    
+    return totalSessions > 0 ? Math.round((totalWeighted / totalSessions)) : null
+  }
+
   const calculateTimeDomainAverage = (timeDomain: string, metricType: MetricType): number | null => {
     if (!data?.heatmapCells) return null
     const domainCells = data.heatmapCells.filter((cell: any) => 
@@ -216,6 +242,27 @@ export default function MetconHeatmap({
     })
     
     return totalSessions > 0 ? Math.round((totalWeighted / totalSessions) * 10) / 10 : null
+  }
+
+  // Calculate global average peak HR (weighted by session count)
+  const getGlobalPeakHR = (): number | null => {
+    if (!data?.heatmapCells) return null
+    const cells = data.heatmapCells.filter((cell: any) => 
+      cell.max_heart_rate !== null && cell.max_heart_rate !== undefined
+    )
+    if (cells.length === 0) return null
+    
+    let totalWeighted = 0
+    let totalSessions = 0
+    
+    cells.forEach((cell: any) => {
+      if (cell.max_heart_rate !== null && cell.max_heart_rate !== undefined) {
+        totalWeighted += cell.max_heart_rate * cell.session_count
+        totalSessions += cell.session_count
+      }
+    })
+    
+    return totalSessions > 0 ? Math.round((totalWeighted / totalSessions)) : null
   }
   
   const getMetricTitle = (metricType: MetricType): string => {
@@ -383,8 +430,23 @@ export default function MetconHeatmap({
                         {renderMedal(percentile)}
                         {cellValue !== null ? (
                           <div>
-                            <div className="text-lg">{formatCellValue(cellValue, metric)}</div>
-                            {sessions > 0 && (<div className="text-xs opacity-75">{sessions} {sessions === 1 ? 'workout' : 'workouts'}</div>)}
+                            {metric === 'heartrate' && hrData ? (
+                              <div>
+                                <div className="text-lg">
+                                  {Math.round(hrData.avgHR || 0)} / {Math.round(hrData.maxHR || 0)}
+                                </div>
+                                {sessions > 0 && (
+                                  <div className="text-xs opacity-75 mt-1">
+                                    {sessions} {sessions === 1 ? 'workout' : 'workouts'}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <>
+                                <div className="text-lg">{formatCellValue(cellValue, metric)}</div>
+                                {sessions > 0 && (<div className="text-xs opacity-75">{sessions} {sessions === 1 ? 'workout' : 'workouts'}</div>)}
+                              </>
+                            )}
                           </div>
                         ) : (
                           <div className="text-lg">—</div>
@@ -400,13 +462,24 @@ export default function MetconHeatmap({
                     const totalSessions = exerciseData?.total_sessions || 0
                     // Get percentile for medal (from exercise average)
                     const exercisePercentile = exerciseData?.overall_avg_percentile || null
+                    // For HR, also calculate average peak HR
+                    const avgPeakHR = metric === 'heartrate' ? calculateExercisePeakHR(exercise) : null
                     return (
                       <div className={`${getCellStyle(avgValue !== null)} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md relative`} style={{ minHeight: '60px' }}>
                         {renderMedal(exercisePercentile)}
                         {avgValue !== null ? (
                           <div style={{ color: '#FE5858' }}>
-                            <div className="text-lg font-bold">{formatAverageValue(avgValue, metric)}</div>
-                            <div className="text-xs opacity-75 font-medium">{totalSessions} {totalSessions === 1 ? 'workout' : 'workouts'}</div>
+                            {metric === 'heartrate' && avgPeakHR !== null ? (
+                              <>
+                                <div className="text-lg font-bold">{Math.round(avgValue)} / {avgPeakHR}</div>
+                                <div className="text-xs opacity-75 font-medium">{totalSessions} {totalSessions === 1 ? 'workout' : 'workouts'}</div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="text-lg font-bold">{formatAverageValue(avgValue, metric)}</div>
+                                <div className="text-xs opacity-75 font-medium">{totalSessions} {totalSessions === 1 ? 'workout' : 'workouts'}</div>
+                              </>
+                            )}
                           </div>
                         ) : (
                           <div className="text-lg font-bold">—</div>
@@ -432,14 +505,25 @@ export default function MetconHeatmap({
                       sum + (cell.avg_percentile * cell.session_count), 0) / 
                       domainCells.reduce((sum: number, cell: any) => sum + cell.session_count, 0))
                   : null
+                // For HR, also calculate average peak HR
+                const avgPeakHR = metric === 'heartrate' ? calculateTimeDomainPeakHR(domain) : null
                 return (
                   <td key={domain} className="p-1">
                     <div className={`${getCellStyle(avgValue !== null)} rounded p-3 text-center font-bold transition-all hover:scale-105 cursor-pointer shadow-md relative`} style={{ minHeight: '60px' }}>
                       {renderMedal(domainPercentile)}
                       {avgValue !== null ? (
                         <div style={{ color: '#FE5858' }}>
-                          <div className="text-lg font-bold">{formatAverageValue(avgValue, metric)}</div>
-                          <div className="text-xs opacity-75 font-medium">{totalWorkouts} {totalWorkouts === 1 ? 'workout' : 'workouts'}</div>
+                          {metric === 'heartrate' && avgPeakHR !== null ? (
+                            <>
+                              <div className="text-lg font-bold">{Math.round(avgValue)} / {avgPeakHR}</div>
+                              <div className="text-xs opacity-75 font-medium">{totalWorkouts} {totalWorkouts === 1 ? 'workout' : 'workouts'}</div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-lg font-bold">{formatAverageValue(avgValue, metric)}</div>
+                              <div className="text-xs opacity-75 font-medium">{totalWorkouts} {totalWorkouts === 1 ? 'workout' : 'workouts'}</div>
+                            </>
+                          )}
                         </div>
                       ) : (
                         <div className="text-lg font-bold">—</div>
@@ -451,6 +535,7 @@ export default function MetconHeatmap({
               <td className="p-1 border-l-2 border-[#282B34] bg-[#DAE2EA]">
                 {(() => {
                   const globalAvg = metric === 'percentile' ? globalFitnessScore : getGlobalAverage(metric)
+                  const globalPeakHR = metric === 'heartrate' ? getGlobalPeakHR() : null
                   const label = metric === 'percentile' ? 'FITNESS' : 
                                 metric === 'rpe' ? 'AVG RPE' :
                                 metric === 'quality' ? 'AVG QUALITY' : 'AVG HR'
@@ -459,7 +544,11 @@ export default function MetconHeatmap({
                       {renderMedal(globalFitnessScore)}
                       {globalAvg !== null ? (
                         <div>
-                          <div className="text-xl font-bold">{formatCellValue(globalAvg, metric)}</div>
+                          {metric === 'heartrate' && globalPeakHR !== null ? (
+                            <div className="text-xl font-bold">{Math.round(globalAvg)} / {globalPeakHR}</div>
+                          ) : (
+                            <div className="text-xl font-bold">{formatCellValue(globalAvg, metric)}</div>
+                          )}
                           <div className="text-xs opacity-75 font-bold">{label}</div>
                         </div>
                       ) : (
@@ -475,19 +564,11 @@ export default function MetconHeatmap({
       </div>
       <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
-          <span className="text-sm font-medium text-[#282B34]">Performance Medals:</span>
+          <span className="text-sm font-medium text-[#282B34]">Performance Medal:</span>
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-1">
               <GoldMedal />
               <span className="text-xs text-[#282B34]">90%+</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <SilverMedal />
-              <span className="text-xs text-[#282B34]">80-89%</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <BronzeMedal />
-              <span className="text-xs text-[#282B34]">70-79%</span>
             </div>
           </div>
         </div>
