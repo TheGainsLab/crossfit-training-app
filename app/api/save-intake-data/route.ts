@@ -373,7 +373,7 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify({ 
             user_id: effectiveUserId,
             sport_id: 1,
-            force_regenerate: false
+            force_regenerate: true  // Always regenerate after saving intake data
           })
         }
       )
@@ -418,7 +418,7 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify({ 
             user_id: effectiveUserId,
             sport_id: 1,
-            force_regenerate: false
+            force_regenerate: true  // Always regenerate after saving intake data
           })
         }
       )
