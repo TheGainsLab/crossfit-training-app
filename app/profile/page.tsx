@@ -313,6 +313,9 @@ export default function ProfilePage() {
   const [editingBenchmark, setEditingBenchmark] = useState<string | null>(null)
   const [benchmarkValues, setBenchmarkValues] = useState<{[key: string]: string}>({})
   const [savingBenchmark, setSavingBenchmark] = useState(false)
+  const [editingLift, setEditingLift] = useState<string | null>(null)
+  const [liftValues, setLiftValues] = useState<{[key: string]: string}>({})
+  const [savingLift, setSavingLift] = useState(false)
 
   // CRITICAL: Safe calculation helper to prevent null/undefined errors
   const safeRatio = (numerator: number | null, denominator: number | null, asPercent = true): string => {
@@ -461,6 +464,90 @@ export default function ProfilePage() {
       alert('Failed to save benchmark. Please try again.')
     } finally {
       setSavingBenchmark(false)
+    }
+  }
+
+  // Save oneRM function
+  const saveLift = async (field: string, value: string) => {
+    if (!user) return
+    
+    setSavingLift(true)
+    try {
+      const supabase = createClient()
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (!userData) throw new Error('User not found')
+
+      // Map profile field names to database structure
+      const liftMap: {[key: string]: {index: number, name: string}} = {
+        'snatch': { index: 0, name: 'Snatch' },
+        'power_snatch': { index: 1, name: 'Power Snatch' },
+        'clean_and_jerk': { index: 2, name: 'Clean and Jerk' },
+        'power_clean': { index: 3, name: 'Power Clean' },
+        'clean_only': { index: 4, name: 'Clean (clean only)' },
+        'jerk_only': { index: 5, name: 'Jerk (from rack or blocks, max Split or Power Jerk)' },
+        'back_squat': { index: 6, name: 'Back Squat' },
+        'front_squat': { index: 7, name: 'Front Squat' },
+        'overhead_squat': { index: 8, name: 'Overhead Squat' },
+        'deadlift': { index: 9, name: 'Deadlift' },
+        'bench_press': { index: 10, name: 'Bench Press' },
+        'push_press': { index: 11, name: 'Push Press' },
+        'strict_press': { index: 12, name: 'Strict Press' },
+        'weighted_pullup': { index: 13, name: 'Weighted Pullup (do not include body weight)' }
+      }
+
+      const liftInfo = liftMap[field]
+      if (!liftInfo) throw new Error('Invalid lift field')
+
+      const weightValue = value.trim() ? parseFloat(value.trim()) : null
+      
+      // Use upsert to update or insert
+      if (weightValue && !isNaN(weightValue) && weightValue > 0) {
+        const { error } = await supabase
+          .from('user_one_rms')
+          .upsert({
+            user_id: userData.id,
+            one_rm_index: liftInfo.index,
+            exercise_name: liftInfo.name,
+            one_rm: weightValue,
+            recorded_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,one_rm_index'
+          })
+
+        if (error) throw error
+      } else {
+        // Delete if value is empty or 0
+        const { error } = await supabase
+          .from('user_one_rms')
+          .delete()
+          .eq('user_id', userData.id)
+          .eq('one_rm_index', liftInfo.index)
+
+        if (error) throw error
+      }
+
+      // Update local state immediately
+      if (profile) {
+        setProfile({
+          ...profile,
+          one_rms: {
+            ...profile.one_rms,
+            [field]: weightValue
+          }
+        })
+      }
+      
+      setEditingLift(null)
+    } catch (error) {
+      console.error('Error saving lift:', error)
+      alert('Failed to save lift. Please try again.')
+    } finally {
+      setSavingLift(false)
     }
   }
 
@@ -752,6 +839,62 @@ const loadProfile = async () => {
     )
   }
 
+  // Mobile-optimized editable lift component
+  const EditableLift = ({ field, label, value }: { field: string, label: string, value: number | null }) => {
+    const isEditing = editingLift === field
+    const displayValue = liftValues[field] !== undefined ? liftValues[field] : (value ? value.toString() : '')
+    
+    return (
+      <div className="flex justify-between items-center py-2 -mx-2 px-2 rounded-lg active:bg-gray-50 touch-manipulation">
+        <span className="text-gray-700 text-base">{label}</span>
+        {isEditing ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              value={displayValue}
+              onChange={(e) => setLiftValues({...liftValues, [field]: e.target.value})}
+              onBlur={(e) => {
+                const trimmed = e.target.value.trim()
+                setLiftValues({...liftValues, [field]: trimmed})
+                saveLift(field, trimmed)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur()
+                }
+                if (e.key === 'Escape') {
+                  setEditingLift(null)
+                  setLiftValues({...liftValues, [field]: value ? value.toString() : ''})
+                }
+              }}
+              autoFocus
+              className="w-24 sm:w-20 px-3 py-2 border-2 border-coral rounded-md text-base font-semibold text-charcoal focus:outline-none focus:ring-2 focus:ring-coral"
+              disabled={savingLift}
+              placeholder="0"
+              style={{ fontSize: '16px' }} // Prevents zoom on iOS
+            />
+            <span className="text-sm text-gray-500">{profile?.user_summary.units.includes('kg') ? 'kg' : 'lbs'}</span>
+            {savingLift && (
+              <span className="text-sm text-gray-500">Saving...</span>
+            )}
+          </div>
+        ) : (
+          <span 
+            className="font-semibold text-charcoal text-base cursor-pointer hover:text-coral active:text-coral transition-colors min-h-[44px] flex items-center justify-end"
+            onClick={() => {
+              setEditingLift(field)
+              setLiftValues({...liftValues, [field]: value ? value.toString() : ''})
+            }}
+            style={{ minWidth: '44px' }} // Minimum touch target size
+          >
+            {value ? formatWeight(value) : 'Not recorded'}
+          </span>
+        )}
+      </div>
+    )
+  }
+
 // Main render
   return (
     <div className="min-h-screen bg-ice-blue py-8">
@@ -922,112 +1065,42 @@ const loadProfile = async () => {
             {/* Olympic Lifts */}
             <div className="mb-6">
               <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Olympic Lifts</h5>
-              <div className="space-y-2">
-                {profile.one_rms.snatch && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Snatch</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.snatch)}</span>
-                  </div>
-                )}
-                {profile.one_rms.clean_and_jerk && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Clean and Jerk</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.clean_and_jerk)}</span>
-                  </div>
-                )}
-                {profile.one_rms.power_snatch && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Power Snatch</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.power_snatch)}</span>
-                  </div>
-                )}
-                {profile.one_rms.power_clean && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Power Clean</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.power_clean)}</span>
-                  </div>
-                )}
-                {profile.one_rms.clean_only && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Clean Only</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.clean_only)}</span>
-                  </div>
-                )}
-                {profile.one_rms.jerk_only && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Jerk Only</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.jerk_only)}</span>
-                  </div>
-                )}
+              <div className="space-y-1">
+                <EditableLift field="snatch" label="Snatch" value={profile.one_rms.snatch} />
+                <EditableLift field="clean_and_jerk" label="Clean and Jerk" value={profile.one_rms.clean_and_jerk} />
+                <EditableLift field="power_snatch" label="Power Snatch" value={profile.one_rms.power_snatch} />
+                <EditableLift field="power_clean" label="Power Clean" value={profile.one_rms.power_clean} />
+                <EditableLift field="clean_only" label="Clean Only" value={profile.one_rms.clean_only} />
+                <EditableLift field="jerk_only" label="Jerk Only" value={profile.one_rms.jerk_only} />
               </div>
             </div>
 
             {/* Squatting */}
             <div className="mb-6">
               <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Squatting</h5>
-              <div className="space-y-2">
-                {profile.one_rms.back_squat && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Back Squat</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.back_squat)}</span>
-                  </div>
-                )}
-                {profile.one_rms.front_squat && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Front Squat</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.front_squat)}</span>
-                  </div>
-                )}
-                {profile.one_rms.overhead_squat && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Overhead Squat</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.overhead_squat)}</span>
-                  </div>
-                )}
+              <div className="space-y-1">
+                <EditableLift field="back_squat" label="Back Squat" value={profile.one_rms.back_squat} />
+                <EditableLift field="front_squat" label="Front Squat" value={profile.one_rms.front_squat} />
+                <EditableLift field="overhead_squat" label="Overhead Squat" value={profile.one_rms.overhead_squat} />
               </div>
             </div>
 
             {/* Pressing */}
             <div className="mb-6">
               <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Pressing</h5>
-              <div className="space-y-2">
-                {profile.one_rms.bench_press && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Bench Press</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.bench_press)}</span>
-                  </div>
-                )}
-                {profile.one_rms.push_press && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Push Press</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.push_press)}</span>
-                  </div>
-                )}
-                {profile.one_rms.strict_press && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Strict Press</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.strict_press)}</span>
-                  </div>
-                )}
+              <div className="space-y-1">
+                <EditableLift field="bench_press" label="Bench Press" value={profile.one_rms.bench_press} />
+                <EditableLift field="push_press" label="Push Press" value={profile.one_rms.push_press} />
+                <EditableLift field="strict_press" label="Strict Press" value={profile.one_rms.strict_press} />
               </div>
             </div>
 
             {/* Pulling */}
             <div className="mb-6">
               <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Pulling</h5>
-              <div className="space-y-2">
-                {profile.one_rms.deadlift && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Deadlift</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.deadlift)}</span>
-                  </div>
-                )}
-                {profile.one_rms.weighted_pullup && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-700">Weighted Pullup</span>
-                    <span className="font-medium text-charcoal">{formatWeight(profile.one_rms.weighted_pullup)}</span>
-                  </div>
-                )}
+              <div className="space-y-1">
+                <EditableLift field="deadlift" label="Deadlift" value={profile.one_rms.deadlift} />
+                <EditableLift field="weighted_pullup" label="Weighted Pullup" value={profile.one_rms.weighted_pullup} />
               </div>
             </div>
               </>
