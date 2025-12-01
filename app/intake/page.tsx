@@ -21,15 +21,15 @@ interface IntakeFormData {
   
   // Section 3: Conditioning Benchmarks
   conditioningBenchmarks: {
-    mileRun: string
-    fiveKRun: string
-    tenKRun: string
-    oneKRow: string
-    twoKRow: string
-    fiveKRow: string
-    airBike10MinCalories: string
-    enteredTimeTrial: 'Y' | 'N' | ''
-    airBikeType: string
+    mile_run: string
+    five_k_run: string
+    ten_k_run: string
+    one_k_row: string
+    two_k_row: string
+    five_k_row: string
+    ten_min_air_bike: string
+    entered_time_trial: 'Y' | 'N' | ''
+    air_bike_type: string
   }
   
   // Section 4: 1RM Lifts (14 lifts, 0-13 index)
@@ -289,15 +289,15 @@ const [currentSection, setCurrentSection] = useState<number>(1)
     equipment: [],
     skills: new Array(26).fill("Don't have it"),
     conditioningBenchmarks: {
-      mileRun: '',
-      fiveKRun: '',
-      tenKRun: '',
-      oneKRow: '',
-      twoKRow: '',
-      fiveKRow: '',
-      airBike10MinCalories: '',
-      enteredTimeTrial: '',
-      airBikeType: ''
+      mile_run: '',
+      five_k_run: '',
+      ten_k_run: '',
+      one_k_row: '',
+      two_k_row: '',
+      five_k_row: '',
+      ten_min_air_bike: '',
+      entered_time_trial: '',
+      air_bike_type: ''
     },
     oneRMs: new Array(14).fill(''),
     password: '',
@@ -468,9 +468,9 @@ setSubscriptionStatus(subscription.status)
             height: userData.height?.toString() || '',
             age: userData.age?.toString() || '',
             conditioningBenchmarks: userData.conditioning_benchmarks || {
-              mileRun: '', fiveKRun: '', tenKRun: '',
-              oneKRow: '', twoKRow: '', fiveKRow: '',
-              airBike10MinCalories: '', enteredTimeTrial: '', airBikeType: ''
+              mile_run: '', five_k_run: '', ten_k_run: '',
+              one_k_row: '', two_k_row: '', five_k_row: '',
+              ten_min_air_bike: '', entered_time_trial: '', air_bike_type: ''
             }
           }
           
@@ -942,17 +942,8 @@ setSubscriptionStatus(subscription.status)
 
     console.log(`💾 Saving profile for user ${dbUser.id}`)
     
-    // Convert conditioning benchmarks from camelCase to snake_case
-    const snakeBenchmarks = formData.conditioningBenchmarks ? {
-      mile_run: formData.conditioningBenchmarks.mileRun || null,
-      five_k_run: formData.conditioningBenchmarks.fiveKRun || null,
-      ten_k_run: formData.conditioningBenchmarks.tenKRun || null,
-      one_k_row: formData.conditioningBenchmarks.oneKRow || null,
-      two_k_row: formData.conditioningBenchmarks.twoKRow || null,
-      five_k_row: formData.conditioningBenchmarks.fiveKRow || null,
-      ten_min_air_bike: formData.conditioningBenchmarks.airBike10MinCalories || null,
-      air_bike_type: formData.conditioningBenchmarks.airBikeType || null
-    } : {}
+    // Conditioning benchmarks are already in snake_case format
+    const snakeBenchmarks = formData.conditioningBenchmarks || {}
     
     // Update user record using numeric ID
     const { error: userError } = await supabase
@@ -1081,10 +1072,10 @@ const saveUserData = async (userId: number) => {
         return true // Skills are optional with defaults
       case 3:
         if (
-          formData.conditioningBenchmarks.airBike10MinCalories &&
-          formData.conditioningBenchmarks.airBike10MinCalories.trim() !== ''
+          formData.conditioningBenchmarks.ten_min_air_bike &&
+          formData.conditioningBenchmarks.ten_min_air_bike.trim() !== ''
         ) {
-          return formData.conditioningBenchmarks.airBikeType !== ''
+          return formData.conditioningBenchmarks.air_bike_type !== ''
         }
         return true
 
@@ -1636,9 +1627,9 @@ const saveUserData = async (userId: number) => {
                         <label className="block text-sm text-gray-700 mb-2">1 Mile Run (MM:SS)</label>
                         <input
                           type="text"
-                          value={formData.conditioningBenchmarks.mileRun || ''}
-                          onChange={(e) => updateConditioning('mileRun', e.target.value)}
-                          onBlur={(e) => formatTimeOnBlur('mileRun', e.target.value)}
+                          value={formData.conditioningBenchmarks.mile_run || ''}
+                          onChange={(e) => updateConditioning('mile_run', e.target.value)}
+                          onBlur={(e) => formatTimeOnBlur('mile_run', e.target.value)}
                           placeholder="MM:SS"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
                         />
@@ -1647,9 +1638,9 @@ const saveUserData = async (userId: number) => {
                         <label className="block text-sm text-gray-700 mb-2">5K Run (MM:SS)</label>
                         <input
                           type="text"
-                          value={formData.conditioningBenchmarks.fiveKRun || ''}
-                          onChange={(e) => updateConditioning('fiveKRun', e.target.value)}
-                          onBlur={(e) => formatTimeOnBlur('fiveKRun', e.target.value)}
+                          value={formData.conditioningBenchmarks.five_k_run || ''}
+                          onChange={(e) => updateConditioning('five_k_run', e.target.value)}
+                          onBlur={(e) => formatTimeOnBlur('five_k_run', e.target.value)}
                           placeholder="MM:SS"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
                         />
@@ -1658,9 +1649,9 @@ const saveUserData = async (userId: number) => {
                         <label className="block text-sm text-gray-700 mb-2">10K Run (MM:SS)</label>
                         <input
                           type="text"
-                          value={formData.conditioningBenchmarks.tenKRun || ''}
-                          onChange={(e) => updateConditioning('tenKRun', e.target.value)}
-                          onBlur={(e) => formatTimeOnBlur('tenKRun', e.target.value)}
+                          value={formData.conditioningBenchmarks.ten_k_run || ''}
+                          onChange={(e) => updateConditioning('ten_k_run', e.target.value)}
+                          onBlur={(e) => formatTimeOnBlur('ten_k_run', e.target.value)}
                           placeholder="MM:SS"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
                         />
@@ -1678,9 +1669,9 @@ const saveUserData = async (userId: number) => {
                         <label className="block text-sm text-gray-700 mb-2">1K Row (MM:SS)</label>
                         <input
                           type="text"
-                          value={formData.conditioningBenchmarks.oneKRow || ''}
-                          onChange={(e) => updateConditioning('oneKRow', e.target.value)}
-                          onBlur={(e) => formatTimeOnBlur('oneKRow', e.target.value)}
+                          value={formData.conditioningBenchmarks.one_k_row || ''}
+                          onChange={(e) => updateConditioning('one_k_row', e.target.value)}
+                          onBlur={(e) => formatTimeOnBlur('one_k_row', e.target.value)}
                           placeholder="MM:SS"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
                         />
@@ -1689,9 +1680,9 @@ const saveUserData = async (userId: number) => {
                         <label className="block text-sm text-gray-700 mb-2">2K Row (MM:SS)</label>
                         <input
                           type="text"
-                          value={formData.conditioningBenchmarks.twoKRow || ''}
-                          onChange={(e) => updateConditioning('twoKRow', e.target.value)}
-                          onBlur={(e) => formatTimeOnBlur('twoKRow', e.target.value)}
+                          value={formData.conditioningBenchmarks.two_k_row || ''}
+                          onChange={(e) => updateConditioning('two_k_row', e.target.value)}
+                          onBlur={(e) => formatTimeOnBlur('two_k_row', e.target.value)}
                           placeholder="MM:SS"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
                         />
@@ -1700,9 +1691,9 @@ const saveUserData = async (userId: number) => {
                         <label className="block text-sm text-gray-700 mb-2">5K Row (MM:SS)</label>
                         <input
                           type="text"
-                          value={formData.conditioningBenchmarks.fiveKRow || ''}
-                          onChange={(e) => updateConditioning('fiveKRow', e.target.value)}
-                          onBlur={(e) => formatTimeOnBlur('fiveKRow', e.target.value)}
+                          value={formData.conditioningBenchmarks.five_k_row || ''}
+                          onChange={(e) => updateConditioning('five_k_row', e.target.value)}
+                          onBlur={(e) => formatTimeOnBlur('five_k_row', e.target.value)}
                           placeholder="MM:SS"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
                         />
@@ -1719,9 +1710,9 @@ const saveUserData = async (userId: number) => {
                       <div>
                         <label className="block text-sm text-gray-700 mb-2">10-Minute Air Bike (calories)</label>
                         <div className="grid grid-cols-1 gap-2">
-                          <input type="number" placeholder="185" value={formData.conditioningBenchmarks.airBike10MinCalories} onChange={(e) => updateConditioning('airBike10MinCalories', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                          {formData.conditioningBenchmarks.airBike10MinCalories?.trim() && (
-                            <select value={formData.conditioningBenchmarks.airBikeType} onChange={(e) => updateConditioning('airBikeType', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" required>
+                          <input type="number" placeholder="185" value={formData.conditioningBenchmarks.ten_min_air_bike} onChange={(e) => updateConditioning('ten_min_air_bike', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                          {formData.conditioningBenchmarks.ten_min_air_bike?.trim() && (
+                            <select value={formData.conditioningBenchmarks.air_bike_type} onChange={(e) => updateConditioning('air_bike_type', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" required>
                               <option value="">Select an Air Bike Type</option>
                               {airBikeTypes.map((type) => (
                                 <option key={type} value={type}>{type}</option>

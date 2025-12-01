@@ -78,17 +78,8 @@ export async function POST(request: NextRequest) {
     const parsedWeight = typeof bodyWeight === 'number' ? bodyWeight : (bodyWeight ? parseFloat(bodyWeight) : null)
     const parsedHeight = typeof height === 'number' ? height : (height ? parseFloat(height) : null)
     const parsedAge = typeof age === 'number' ? age : (age ? parseInt(age) : null)
-    // Normalize conditioning benchmarks keys to snake_case expected by downstream functions
-    const snakeBenchmarks: any = benchmarks ? {
-      mile_run: benchmarks.mileRun || null,
-      five_k_run: benchmarks.fiveKRun || null,
-      ten_k_run: benchmarks.tenKRun || null,
-      one_k_row: benchmarks.oneKRow || null,
-      two_k_row: benchmarks.twoKRow || null,
-      five_k_row: benchmarks.fiveKRow || null,
-      ten_min_air_bike: benchmarks.airBike10MinCalories || null,
-      air_bike_type: benchmarks.airBikeType || null
-    } : {}
+    // Conditioning benchmarks are already in snake_case format
+    const snakeBenchmarks = benchmarks || {}
     const { error: userUpdateError } = await supabaseAdmin
       .from('users')
       .update({
