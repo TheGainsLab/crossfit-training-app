@@ -723,11 +723,21 @@ const loadProfile = async () => {
 
           {/* Card 2: All Max Lifts */}
           <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
-            <div className="mb-6">              
-              <h2 className="text-xl font-bold text-charcoal mb-2">MAX LIFTS</h2>
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-bold text-charcoal">MAX LIFTS</h2>
+                <button
+                  onClick={() => toggleCategory('max-lifts')}
+                  className="text-coral hover:text-coral text-sm font-medium"
+                >
+                  [{expandedCategories.includes('max-lifts') ? '- Hide' : '+ View'}]
+                </button>
+              </div>
               <div className="w-full h-0.5 bg-coral"></div>
             </div>
             
+            {expandedCategories.includes('max-lifts') && (
+              <>
             {/* Olympic Lifts */}
             <div className="mb-6">
               <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide border-b border-slate-blue pb-1">Olympic Lifts</h5>
@@ -839,15 +849,27 @@ const loadProfile = async () => {
                 )}
               </div>
             </div>
+              </>
+            )}
           </div>
 
           {/* Card 3: Strength Ratios */}
           <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
-            <div className="mb-6">              
-              <h2 className="text-xl font-bold text-charcoal mb-2">STRENGTH RATIOS</h2>
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-bold text-charcoal">STRENGTH RATIOS</h2>
+                <button
+                  onClick={() => toggleCategory('strength-ratios')}
+                  className="text-coral hover:text-coral text-sm font-medium"
+                >
+                  [{expandedCategories.includes('strength-ratios') ? '- Hide' : '+ View'}]
+                </button>
+              </div>
               <div className="w-full h-0.5 bg-coral"></div>
             </div>
             
+            {expandedCategories.includes('strength-ratios') && (
+              <>
             {/* Olympic Lift Efficiency */}
             <div className="mb-6 bg-ice-blue rounded-lg p-4">
               <h5 className="text-sm font-semibold text-charcoal mb-3 uppercase tracking-wide">Olympic Lift Efficiency</h5>
@@ -952,6 +974,8 @@ const loadProfile = async () => {
                 })()}
               </div>
             </div>
+              </>
+            )}
           </div>
         </div>
 
