@@ -1033,9 +1033,21 @@ const loadProfile = async () => {
           
           {/* Accessory Needs Section */}
           <div className="mb-8">
-            <h3 className="font-semibold text-charcoal mb-4">Accessory Needs</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-charcoal">Accessory Needs</h3>
+              <button
+                onClick={() => setExpandedCategories(prev => 
+                  prev.includes('accessory-needs') 
+                    ? prev.filter(name => name !== 'accessory-needs')
+                    : [...prev, 'accessory-needs']
+                )}
+                className="text-coral hover:text-coral text-sm font-medium"
+              >
+                [{expandedCategories.includes('accessory-needs') ? '- Hide' : '+ View'}]
+              </button>
+            </div>
             
-            {(() => {
+            {expandedCategories.includes('accessory-needs') && (() => {
               // Calculate actual accessory needs using real logic
               const needsUpperBack = profile.one_rms.front_squat && profile.one_rms.back_squat ? 
                 (profile.one_rms.front_squat / profile.one_rms.back_squat) < 0.85 : false
@@ -1059,44 +1071,32 @@ const loadProfile = async () => {
                 <>
                   {/* Summary View */}
                   <div className="space-y-2 mb-4">
-                    <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center py-2">
                       <div className="flex items-center space-x-3">
-                        <span className={`w-3 h-3 rounded-full ${needsUpperBodyPulling ? 'bg-red-500' : 'bg-coral'}`}></span>
+                        <span className={`w-3 h-3 rounded-full ${needsUpperBodyPulling ? 'bg-red-500' : 'bg-green-500'}`}></span>
                         <span className="text-gray-700">Upper Body Pulling</span>
                       </div>
-                      <span className={`text-sm font-medium ${needsUpperBodyPulling ? 'text-red-600' : 'text-coral'}`}>
-                        {needsUpperBodyPulling ? 'Target' : 'Maintain'}
-                      </span>
                     </div>
                     
-                    <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center py-2">
                       <div className="flex items-center space-x-3">
-                        <span className={`w-3 h-3 rounded-full ${needsUpperBodyPressing ? 'bg-red-500' : 'bg-coral'}`}></span>
+                        <span className={`w-3 h-3 rounded-full ${needsUpperBodyPressing ? 'bg-red-500' : 'bg-green-500'}`}></span>
                         <span className="text-gray-700">Upper Body Pressing</span>
                       </div>
-                      <span className={`text-sm font-medium ${needsUpperBodyPressing ? 'text-red-600' : 'text-coral'}`}>
-                        {needsUpperBodyPressing ? 'Target' : 'Maintain'}
-                      </span>
                     </div>
                     
-                    <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center py-2">
                       <div className="flex items-center space-x-3">
-                        <span className={`w-3 h-3 rounded-full ${needsUpperBack ? 'bg-red-500' : 'bg-coral'}`}></span>
+                        <span className={`w-3 h-3 rounded-full ${needsUpperBack ? 'bg-red-500' : 'bg-green-500'}`}></span>
                         <span className="text-gray-700">Upper Back</span>
                       </div>
-                      <span className={`text-sm font-medium ${needsUpperBack ? 'text-red-600' : 'text-coral'}`}>
-                        {needsUpperBack ? 'Target' : 'Maintain'}
-                      </span>
                     </div>
                     
-                    <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center py-2">
                       <div className="flex items-center space-x-3">
-                        <span className={`w-3 h-3 rounded-full ${needsPosteriorChain ? 'bg-red-500' : 'bg-coral'}`}></span>
+                        <span className={`w-3 h-3 rounded-full ${needsPosteriorChain ? 'bg-red-500' : 'bg-green-500'}`}></span>
                         <span className="text-gray-700">Posterior Chain</span>
                       </div>
-                      <span className={`text-sm font-medium ${needsPosteriorChain ? 'text-red-600' : 'text-coral'}`}>
-                        {needsPosteriorChain ? 'Target' : 'Maintain'}
-                      </span>
                     </div>
                   </div>
 
@@ -1118,9 +1118,9 @@ const loadProfile = async () => {
                       {/* Upper Body Pulling */}
                       <div className={`p-3 rounded-lg ${needsUpperBodyPulling ? 'bg-red-50 border border-red-200' : 'bg-coral/5 border border-coral/20'}`}>
                         <div className="flex items-start">
-                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsUpperBodyPulling ? 'bg-red-500' : 'bg-coral'}`}></span>
+                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsUpperBodyPulling ? 'bg-red-500' : 'bg-green-500'}`}></span>
                           <div className="flex-1">
-                            <div className="font-medium text-charcoal mb-1">Upper Body Pulling - {needsUpperBodyPulling ? 'Target' : 'Maintain'}</div>
+                            <div className="font-medium text-charcoal mb-1">Upper Body Pulling</div>
                             {needsUpperBodyPulling ? (
                               <div className="text-sm text-gray-600">
                                 <div className="mb-1">
@@ -1141,9 +1141,9 @@ const loadProfile = async () => {
                       {/* Upper Body Pressing */}
                       <div className={`p-3 rounded-lg ${needsUpperBodyPressing ? 'bg-red-50 border border-red-200' : 'bg-coral/5 border border-coral/20'}`}>
                         <div className="flex items-start">
-                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsUpperBodyPressing ? 'bg-red-500' : 'bg-coral'}`}></span>
+                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsUpperBodyPressing ? 'bg-red-500' : 'bg-green-500'}`}></span>
                           <div className="flex-1">
-                            <div className="font-medium text-charcoal mb-1">Upper Body Pressing - {needsUpperBodyPressing ? 'Target' : 'Maintain'}</div>
+                            <div className="font-medium text-charcoal mb-1">Upper Body Pressing</div>
                             {needsUpperBodyPressing ? (
                               <div className="text-sm text-gray-600">
                                 <div className="mb-1">
@@ -1169,9 +1169,9 @@ const loadProfile = async () => {
                       {/* Upper Back */}
                       <div className={`p-3 rounded-lg ${needsUpperBack ? 'bg-red-50 border border-red-200' : 'bg-coral/5 border border-coral/20'}`}>
                         <div className="flex items-start">
-                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsUpperBack ? 'bg-red-500' : 'bg-coral'}`}></span>
+                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsUpperBack ? 'bg-red-500' : 'bg-green-500'}`}></span>
                           <div className="flex-1">
-                            <div className="font-medium text-charcoal mb-1">Upper Back - {needsUpperBack ? 'Target' : 'Maintain'}</div>
+                            <div className="font-medium text-charcoal mb-1">Upper Back</div>
                             {needsUpperBack ? (
                               <div className="text-sm text-gray-600">
                                 <span className="font-medium">Why:</span> Front squat ({formatWeight(profile.one_rms.front_squat)}) is {Math.round((profile.one_rms.front_squat! / profile.one_rms.back_squat!) * 100)}% of back squat. Target: 85%+.
@@ -1188,9 +1188,9 @@ const loadProfile = async () => {
                       {/* Posterior Chain */}
                       <div className={`p-3 rounded-lg ${needsPosteriorChain ? 'bg-red-50 border border-red-200' : 'bg-coral/5 border border-coral/20'}`}>
                         <div className="flex items-start">
-                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsPosteriorChain ? 'bg-red-500' : 'bg-coral'}`}></span>
+                          <span className={`w-3 h-3 rounded-full mt-1 mr-3 flex-shrink-0 ${needsPosteriorChain ? 'bg-red-500' : 'bg-green-500'}`}></span>
                           <div className="flex-1">
-                            <div className="font-medium text-charcoal mb-1">Posterior Chain - {needsPosteriorChain ? 'Target' : 'Maintain'}</div>
+                            <div className="font-medium text-charcoal mb-1">Posterior Chain</div>
                             {needsPosteriorChain ? (
                               <div className="text-sm text-gray-600">
                                 <span className="font-medium">Why:</span> Deadlift ({formatWeight(profile.one_rms.deadlift)}) is {(profile.one_rms.deadlift! / profile.user_summary.body_weight!).toFixed(1)}x bodyweight. Target: 2.0x bodyweight.
