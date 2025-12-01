@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import engineDatabaseService from '@/lib/engine/databaseService';
-import ProgramSelection from './components/ProgramSelection';
 import Dashboard from './components/Dashboard';
 import TrainingDayComponent from './components/TrainingDayComponent';
 import Analytics from './components/Analytics';
@@ -27,7 +26,6 @@ export default function EnginePage() {
   const [user, setUser] = useState<any>(null)
   const [currentView, setCurrentView] = useState<EngineView>('dashboard')
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
-  const [needsProgramSelection, setNeedsProgramSelection] = useState<boolean | null>(null)
   const [initialized, setInitialized] = useState(false)
 
   // Check for view and day parameters in URL
@@ -89,7 +87,6 @@ export default function EnginePage() {
           if (!existingVersion) {
             await engineDatabaseService.saveProgramVersion('5-day')
           }
-          setNeedsProgramSelection(false)
         } else {
           // Standalone Engine users - load their saved version (chosen at signup)
           const programVersion = await engineDatabaseService.loadProgramVersion()
@@ -97,7 +94,6 @@ export default function EnginePage() {
           if (!programVersion) {
             await engineDatabaseService.saveProgramVersion('5-day')
           }
-          setNeedsProgramSelection(false)
         }
       }
     } catch (error) {
