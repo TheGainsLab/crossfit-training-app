@@ -537,15 +537,17 @@ function generateRecommendations(user: any, ratios: any, missingData: string[]) 
 async function storeUserProfile(supabase: any, userId: number, sportId: number, profile: any) {
   console.log(`💾 Storing profile for user ${userId}, sport ${sportId}`)
 
-  // Insert new profile record (historical tracking)
+  // Upsert profile (update if exists, insert if not)
   const { data, error } = await supabase
     .from('user_profiles')
-    .insert({
+    .upsert({
       user_id: userId,
       sport_id: sportId,
       profile_data: profile,
       generated_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id,sport_id'
     })
     .select()
 
