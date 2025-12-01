@@ -58,15 +58,22 @@ export default function Navigation() {
         if (!userId) return
 
         // Get latest program with JSON data
-        const { data: programRow } = await supabase
+        const { data: programRow, error: programError } = await supabase
           .from('programs')
           .select('id, program_data')
           .eq('user_id', userId)
           .order('id', { ascending: false })
           .limit(1)
-          .single()
-        const programId = programRow?.id
-        const programData: any = programRow?.program_data || {}
+          .maybeSingle() // Use maybeSingle() instead of single() - returns null if no rows
+
+        // Handle error or no program gracefully
+        if (programError || !programRow) {
+          setTodaysHref('/intake')
+          return
+        }
+
+        const programId = programRow.id
+        const programData: any = programRow.program_data || {}
         if (!programId || !programData?.weeks) {
           setTodaysHref('/intake')
           return
