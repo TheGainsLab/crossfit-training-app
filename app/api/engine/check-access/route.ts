@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { checkSubscriptionAccess } from '@/lib/subscription-check'
+import { checkSubscriptionAccess, checkPremiumAccess } from '@/lib/subscription-check'
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,10 +25,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ hasAccess: false, error: 'User not found' }, { status: 404 })
     }
 
-    // Check Engine subscription access
-    const accessStatus = await checkSubscriptionAccess(userData.id, 'engine')
+    // Check for Engine subscription (standalone Engine users)
+    const engineAccess = await checkSubscriptionAccess(userData.id, 'engine')
+    if (engineAccess.hasAccess) {
+      return NextResponse.json(engineAccess)
+    }
+    
+    // Check for Premium subscription (Premium users get Engine as part of their program)
+    const premiumAccess = await checkPremiumAccess(userData.id)
+    if (premiumAccess.hasAccess) {
+      return NextResponse.json(premiumAccess)
+    }
 
-    return NextResponse.json(accessStatus)
+    return NextResponse.json({ hasAccess: false })
   } catch (error) {
     console.error('Error checking Engine access:', error)
     return NextResponse.json({ hasAccess: false, error: 'Internal server error' }, { status: 500 })
