@@ -1000,9 +1000,18 @@ const loadProfile = async () => {
 
         {/* Enhanced Conditioning Benchmarks */}
         <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
-          <h2 className="text-xl font-bold text-charcoal mb-2">CONDITIONING BENCHMARKS</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-bold text-charcoal">CONDITIONING BENCHMARKS</h2>
+            <button
+              onClick={() => toggleCategory('conditioning-benchmarks')}
+              className="text-coral hover:text-coral text-sm font-medium"
+            >
+              [{expandedCategories.includes('conditioning-benchmarks') ? '- Hide' : '+ View'}]
+            </button>
+          </div>
           <div className="w-full h-0.5 bg-coral mb-6"></div>
           
+          {expandedCategories.includes('conditioning-benchmarks') && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Running Column */}
             <div>
@@ -1067,6 +1076,7 @@ const loadProfile = async () => {
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {/* Programming Focus Areas */}
@@ -1405,9 +1415,19 @@ const loadProfile = async () => {
 
         {/* Movement Skills Repository */}
         <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
-          <h2 className="text-xl font-bold text-charcoal mb-2">MOVEMENT SKILLS</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-bold text-charcoal">MOVEMENT SKILLS</h2>
+            <button
+              onClick={() => toggleCategory('movement-skills')}
+              className="text-coral hover:text-coral text-sm font-medium"
+            >
+              [{expandedCategories.includes('movement-skills') ? '- Hide' : '+ View'}]
+            </button>
+          </div>
           <div className="w-full h-0.5 bg-coral mb-4"></div>
           
+          {expandedCategories.includes('movement-skills') && (
+          <>
           {/* Skills Progress Bar */}
           <div className="mb-6">
             <div className="flex justify-between text-sm text-charcoal mb-2">
@@ -1492,6 +1512,8 @@ const loadProfile = async () => {
               }).filter(Boolean)
             })()}
           </div>
+          </>
+          )}
         </div>
 
         {/* Missing Data - Filter based on subscription tier */}
