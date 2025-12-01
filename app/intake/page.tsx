@@ -291,16 +291,18 @@ const [currentSection, setCurrentSection] = useState<number>(1)
     const { m, s } = getTimeParts(formData.conditioningBenchmarks[field] as string)
     const updateMinutes = (minStr: string) => {
       const min = (minStr || '').replace(/[^0-9]/g, '')
-      const sec = (s || '0').replace(/[^0-9]/g, '')
-      const paddedSec = String(Math.max(0, Math.min(59, parseInt(sec || '0')))).padStart(2, '0')
+      // Only pad seconds if there's already a seconds value, otherwise leave it empty
+      const sec = (s || '').replace(/[^0-9]/g, '')
+      const paddedSec = sec ? String(Math.max(0, Math.min(59, parseInt(sec || '0')))).padStart(2, '0') : ''
       const newVal = min ? `${parseInt(min)}:${paddedSec}` : ''
       updateFormData('conditioningBenchmarks', { ...formData.conditioningBenchmarks, [field]: newVal })
     }
     const updateSeconds = (secStr: string) => {
       const min = (m || '0').replace(/[^0-9]/g, '')
       const sec = (secStr || '').replace(/[^0-9]/g, '')
-      const secNum = String(Math.max(0, Math.min(59, parseInt(sec || '0')))).padStart(2, '0')
-      const newVal = min ? `${parseInt(min)}:${secNum}` : `0:${secNum}`
+      // Only pad if there's a value, don't force "00" when empty
+      const secNum = sec ? String(Math.max(0, Math.min(59, parseInt(sec || '0')))).padStart(2, '0') : ''
+      const newVal = min ? `${parseInt(min)}:${secNum || '00'}` : secNum ? `0:${secNum}` : ''
       updateFormData('conditioningBenchmarks', { ...formData.conditioningBenchmarks, [field]: newVal })
     }
     return (
