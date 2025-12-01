@@ -1488,7 +1488,7 @@ const saveUserData = async (userId: number) => {
                       <button
                         type="button"
                         onClick={handleQuickSave}
-                        disabled={isSubmitting || !isValidSection(currentSection)}
+                        disabled={isSubmitting}
                         className="px-8 py-3 font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
                       >
@@ -1593,7 +1593,7 @@ const saveUserData = async (userId: number) => {
                       <button
                         type="button"
                         onClick={handleQuickSave}
-                        disabled={isSubmitting || !isValidSection(currentSection)}
+                        disabled={isSubmitting}
                         className="px-8 py-3 font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
                       >
@@ -1764,7 +1764,7 @@ const saveUserData = async (userId: number) => {
                       <button
                         type="button"
                         onClick={handleQuickSave}
-                        disabled={isSubmitting || !isValidSection(currentSection)}
+                        disabled={isSubmitting}
                         className="px-8 py-3 font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
                       >
@@ -1922,7 +1922,7 @@ const saveUserData = async (userId: number) => {
                       <button
                         type="button"
                         onClick={handleQuickSave}
-                        disabled={isSubmitting || !isValidSection(currentSection)}
+                        disabled={isSubmitting}
                         className="px-8 py-3 font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         style={{ backgroundColor: '#FE5858', color: '#F8FBFE' }}
                       >
