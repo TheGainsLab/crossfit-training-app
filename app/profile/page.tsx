@@ -1236,9 +1236,21 @@ const loadProfile = async () => {
 
           {/* Technical Focus Section */}
           <div>
-            <h3 className="font-semibold text-charcoal mb-4">Technical Focus</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-charcoal">Technical Focus</h3>
+              <button
+                onClick={() => setExpandedCategories(prev => 
+                  prev.includes('technical-focus') 
+                    ? prev.filter(name => name !== 'technical-focus')
+                    : [...prev, 'technical-focus']
+                )}
+                className="text-coral hover:text-coral text-sm font-medium"
+              >
+                [{expandedCategories.includes('technical-focus') ? '- Hide' : '+ View'}]
+              </button>
+            </div>
             
-            {(() => {
+            {expandedCategories.includes('technical-focus') && (() => {
               // Calculate snatch deficits using actual logic
               const snatchStrengthDeficit = profile.one_rms.snatch && profile.one_rms.back_squat ? 
                 (profile.one_rms.snatch / profile.one_rms.back_squat) < 0.60 : true
