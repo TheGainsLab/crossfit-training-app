@@ -1241,13 +1241,13 @@ const loadProfile = async () => {
             {(() => {
               // Calculate snatch deficits using actual logic
               const snatchStrengthDeficit = profile.one_rms.snatch && profile.one_rms.back_squat ? 
-                (profile.one_rms.snatch / profile.one_rms.back_squat) < 0.62 : true
+                (profile.one_rms.snatch / profile.one_rms.back_squat) < 0.60 : true
               
               const snatchReceivingDeficit = profile.one_rms.power_snatch && profile.one_rms.snatch ?
                 (profile.one_rms.power_snatch / profile.one_rms.snatch) > 0.88 : true
               
-              const snatchOverheadDeficit = profile.one_rms.overhead_squat && profile.one_rms.back_squat ?
-                (profile.one_rms.overhead_squat / profile.one_rms.back_squat) < 0.65 : true
+              const snatchOverheadDeficit = profile.one_rms.overhead_squat && profile.one_rms.snatch ?
+                (profile.one_rms.overhead_squat / profile.one_rms.snatch) < 1.1 : true
 
               // Calculate C&J deficits using actual logic
               const cjStrengthDeficit = profile.one_rms.clean_and_jerk && profile.one_rms.back_squat ?
@@ -1316,7 +1316,7 @@ const loadProfile = async () => {
                           <div className={`flex items-center text-sm ${snatchStrengthDeficit ? 'text-red-600' : 'text-coral'}`}>
                             <span className="mr-2">{snatchStrengthDeficit ? '❌' : '✅'}</span>
                             <span>
-                              Strength Deficit: Snatch ({formatWeight(profile.one_rms.snatch)}) is {safeRatio(profile.one_rms.snatch, profile.one_rms.back_squat)} of back squat (target: 62%+)
+                              Strength Deficit: Snatch ({formatWeight(profile.one_rms.snatch)}) is {safeRatio(profile.one_rms.snatch, profile.one_rms.back_squat)} of back squat (target: 60%+)
                             </span>
                           </div>
                           
@@ -1330,7 +1330,7 @@ const loadProfile = async () => {
                           <div className={`flex items-center text-sm ${snatchOverheadDeficit ? 'text-red-600' : 'text-coral'}`}>
                             <span className="mr-2">{snatchOverheadDeficit ? '❌' : '✅'}</span>
                             <span>
-                              Overhead Stability: Overhead squat is {safeRatio(profile.one_rms.overhead_squat, profile.one_rms.back_squat)} of back squat (target: 65%+)
+                              Overhead Stability: Overhead squat is {safeRatio(profile.one_rms.overhead_squat, profile.one_rms.snatch)} of snatch (target: 110%+)
                             </span>
                           </div>
                         </div>
