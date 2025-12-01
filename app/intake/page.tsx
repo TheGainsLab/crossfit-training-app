@@ -278,67 +278,6 @@ const [currentSection, setCurrentSection] = useState<number>(1)
     return () => clearInterval(interval)
   }, [isSubmitting])
 
-  // Simple MM:SS time input component - works like 1RM fields
-  const TimeInput = ({ label, field } : { label: string, field: keyof IntakeFormData['conditioningBenchmarks'] }) => {
-    const value = formData.conditioningBenchmarks[field] as string || ''
-    
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      // Just update the value directly - no formatting while typing
-      updateConditioning(field, e.target.value)
-    }
-    
-    const handleBlur = () => {
-      // Only format on blur when user is done typing
-      let formatted = value.trim()
-      
-      // If empty, leave it empty
-      if (!formatted) {
-        return
-      }
-      
-      // If it's already in MM:SS format, just ensure seconds are 2 digits
-      if (formatted.includes(':')) {
-        const parts = formatted.split(':')
-        if (parts.length === 2) {
-          const minutes = parts[0] || '0'
-          const seconds = parts[1].padStart(2, '0').slice(0, 2) || '00'
-          // Limit seconds to 59
-          const secNum = parseInt(seconds)
-          if (!isNaN(secNum) && secNum > 59) {
-            formatted = `${minutes}:59`
-          } else {
-            formatted = `${minutes}:${seconds}`
-          }
-          updateConditioning(field, formatted)
-        }
-      } else if (/^\d+$/.test(formatted)) {
-        // If user entered just numbers, format it
-        if (formatted.length <= 2) {
-          formatted = `${formatted}:00`
-        } else if (formatted.length <= 4) {
-          formatted = `${formatted.slice(0, 2)}:${formatted.slice(2)}`
-        } else {
-          formatted = `${formatted.slice(0, 2)}:${formatted.slice(2, 4)}`
-        }
-        updateConditioning(field, formatted)
-      }
-    }
-    
-    return (
-      <div>
-        <label className="block text-sm text-gray-700 mb-2">{label}</label>
-        <input
-          type="text"
-          value={value}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          placeholder="MM:SS"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
-        />
-      </div>
-    )
-  }
-
   const [formData, setFormData] = useState<IntakeFormData>({
     name: '',
     email: '',
@@ -742,6 +681,36 @@ setSubscriptionStatus(subscription.status)
         [field]: value
       }
     }))
+  }
+
+  // Helper function to format time on blur
+  const formatTimeOnBlur = (field: string, value: string) => {
+    let formatted = value.trim()
+    if (!formatted) return
+    
+    if (formatted.includes(':')) {
+      const parts = formatted.split(':')
+      if (parts.length === 2) {
+        const minutes = parts[0] || '0'
+        const seconds = parts[1].padStart(2, '0').slice(0, 2) || '00'
+        const secNum = parseInt(seconds)
+        if (!isNaN(secNum) && secNum > 59) {
+          formatted = `${minutes}:59`
+        } else {
+          formatted = `${minutes}:${seconds}`
+        }
+        updateConditioning(field, formatted)
+      }
+    } else if (/^\d+$/.test(formatted)) {
+      if (formatted.length <= 2) {
+        formatted = `${formatted}:00`
+      } else if (formatted.length <= 4) {
+        formatted = `${formatted.slice(0, 2)}:${formatted.slice(2)}`
+      } else {
+        formatted = `${formatted.slice(0, 2)}:${formatted.slice(2, 4)}`
+      }
+      updateConditioning(field, formatted)
+    }
   }
 
   const toggleEquipment = (equipment: string) => {
@@ -1663,9 +1632,39 @@ const saveUserData = async (userId: number) => {
                       <h3 className="text-lg font-semibold text-gray-900">Running Benchmarks</h3>
                     </div>
                     <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <TimeInput label="1 Mile Run (MM:SS)" field="mileRun" />
-                      <TimeInput label="5K Run (MM:SS)" field="fiveKRun" />
-                      <TimeInput label="10K Run (MM:SS)" field="tenKRun" />
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-2">1 Mile Run (MM:SS)</label>
+                        <input
+                          type="text"
+                          value={formData.conditioningBenchmarks.mileRun || ''}
+                          onChange={(e) => updateConditioning('mileRun', e.target.value)}
+                          onBlur={(e) => formatTimeOnBlur('mileRun', e.target.value)}
+                          placeholder="MM:SS"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-2">5K Run (MM:SS)</label>
+                        <input
+                          type="text"
+                          value={formData.conditioningBenchmarks.fiveKRun || ''}
+                          onChange={(e) => updateConditioning('fiveKRun', e.target.value)}
+                          onBlur={(e) => formatTimeOnBlur('fiveKRun', e.target.value)}
+                          placeholder="MM:SS"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-2">10K Run (MM:SS)</label>
+                        <input
+                          type="text"
+                          value={formData.conditioningBenchmarks.tenKRun || ''}
+                          onChange={(e) => updateConditioning('tenKRun', e.target.value)}
+                          onBlur={(e) => formatTimeOnBlur('tenKRun', e.target.value)}
+                          placeholder="MM:SS"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -1675,9 +1674,39 @@ const saveUserData = async (userId: number) => {
                       <h3 className="text-lg font-semibold text-gray-900">Rowing Benchmarks</h3>
                     </div>
                     <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <TimeInput label="1K Row (MM:SS)" field="oneKRow" />
-                      <TimeInput label="2K Row (MM:SS)" field="twoKRow" />
-                      <TimeInput label="5K Row (MM:SS)" field="fiveKRow" />
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-2">1K Row (MM:SS)</label>
+                        <input
+                          type="text"
+                          value={formData.conditioningBenchmarks.oneKRow || ''}
+                          onChange={(e) => updateConditioning('oneKRow', e.target.value)}
+                          onBlur={(e) => formatTimeOnBlur('oneKRow', e.target.value)}
+                          placeholder="MM:SS"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-2">2K Row (MM:SS)</label>
+                        <input
+                          type="text"
+                          value={formData.conditioningBenchmarks.twoKRow || ''}
+                          onChange={(e) => updateConditioning('twoKRow', e.target.value)}
+                          onBlur={(e) => formatTimeOnBlur('twoKRow', e.target.value)}
+                          placeholder="MM:SS"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-2">5K Row (MM:SS)</label>
+                        <input
+                          type="text"
+                          value={formData.conditioningBenchmarks.fiveKRow || ''}
+                          onChange={(e) => updateConditioning('fiveKRow', e.target.value)}
+                          onBlur={(e) => formatTimeOnBlur('fiveKRow', e.target.value)}
+                          placeholder="MM:SS"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
+                        />
+                      </div>
                     </div>
                   </div>
 
