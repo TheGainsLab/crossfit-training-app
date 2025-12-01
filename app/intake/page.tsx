@@ -990,6 +990,18 @@ setSubscriptionStatus(subscription.status)
 
     console.log(`💾 Saving profile for user ${dbUser.id}`)
     
+    // Convert conditioning benchmarks from camelCase to snake_case
+    const snakeBenchmarks = formData.conditioningBenchmarks ? {
+      mile_run: formData.conditioningBenchmarks.mileRun || null,
+      five_k_run: formData.conditioningBenchmarks.fiveKRun || null,
+      ten_k_run: formData.conditioningBenchmarks.tenKRun || null,
+      one_k_row: formData.conditioningBenchmarks.oneKRow || null,
+      two_k_row: formData.conditioningBenchmarks.twoKRow || null,
+      five_k_row: formData.conditioningBenchmarks.fiveKRow || null,
+      ten_min_air_bike: formData.conditioningBenchmarks.airBike10MinCalories || null,
+      air_bike_type: formData.conditioningBenchmarks.airBikeType || null
+    } : {}
+    
     // Update user record using numeric ID
     const { error: userError } = await supabase
       .from('users')
@@ -1002,7 +1014,7 @@ setSubscriptionStatus(subscription.status)
         age: formData.age ? parseInt(formData.age) : null,
         units: formData.units,
         ability_level: 'Beginner',
-        conditioning_benchmarks: formData.conditioningBenchmarks,
+        conditioning_benchmarks: snakeBenchmarks,
         updated_at: new Date().toISOString()
       })
       .eq('id', dbUser.id)
