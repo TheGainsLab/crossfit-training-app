@@ -278,80 +278,67 @@ const [currentSection, setCurrentSection] = useState<number>(1)
     return () => clearInterval(interval)
   }, [isSubmitting])
 
-  // Helper: split MM:SS string into minutes/seconds numbers
-  const getTimeParts = (val?: string) => {
-    const str = (val || '').trim()
-    if (!str || !str.includes(':')) return { m: '', s: '' }
-    const [m, s] = str.split(':')
-    return { m: m || '', s: s || '' }
-  }
-
-  // Helper: render a MM:SS time input (two boxes with a fixed colon)
+  // Simple MM:SS time input component
   const TimeInput = ({ label, field } : { label: string, field: keyof IntakeFormData['conditioningBenchmarks'] }) => {
-    const { m: initialM, s: initialS } = getTimeParts(formData.conditioningBenchmarks[field] as string)
-    // Use local state - no parent re-renders while typing
-    const [localM, setLocalM] = useState(initialM)
-    const [localS, setLocalS] = useState(initialS)
+    const value = formData.conditioningBenchmarks[field] as string || ''
     
-    // Sync when formData changes externally
-    useEffect(() => {
-      const { m, s } = getTimeParts(formData.conditioningBenchmarks[field] as string)
-      setLocalM(m)
-      setLocalS(s)
-    }, [formData.conditioningBenchmarks[field], field])
-    
-    const handleMinutesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const min = e.target.value.replace(/[^0-9]/g, '')
-      setLocalM(min)
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      let input = e.target.value
+      
+      // Allow typing and auto-format as user types
+      // Remove any non-digit characters except colon
+      input = input.replace(/[^\d:]/g, '')
+      
+      // Auto-insert colon after 2+ digits if not present
+      if (input.length >= 2 && !input.includes(':')) {
+        input = input.slice(0, 2) + ':' + input.slice(2)
+      }
+      
+      // Limit to reasonable format (MM:SS)
+      const parts = input.split(':')
+      if (parts.length > 2) {
+        input = parts[0] + ':' + parts[1]
+      }
+      
+      // Limit seconds to 59
+      if (parts.length === 2 && parts[1].length > 0) {
+        const seconds = parseInt(parts[1])
+        if (!isNaN(seconds) && seconds > 59) {
+          input = parts[0] + ':59'
+        }
+      }
+      
+      updateFormData('conditioningBenchmarks', { 
+        ...formData.conditioningBenchmarks, 
+        [field]: input 
+      })
     }
     
-    const handleSecondsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const sec = e.target.value.replace(/[^0-9]/g, '')
-      setLocalS(sec)
-    }
-    
-    const handleMinutesBlur = () => {
-      const min = (localM || '').replace(/[^0-9]/g, '')
-      const sec = (localS || '').replace(/[^0-9]/g, '')
-      const formattedSec = sec ? String(Math.max(0, Math.min(59, parseInt(sec)))).padStart(2, '0') : ''
-      const newVal = min ? `${min}:${formattedSec}` : ''
-      updateFormData('conditioningBenchmarks', { ...formData.conditioningBenchmarks, [field]: newVal })
-    }
-    
-    const handleSecondsBlur = () => {
-      const min = (localM || '').replace(/[^0-9]/g, '')
-      const sec = (localS || '').replace(/[^0-9]/g, '')
-      const formattedSec = sec ? String(Math.max(0, Math.min(59, parseInt(sec)))).padStart(2, '0') : ''
-      const newVal = min ? `${min}:${formattedSec}` : formattedSec ? `0:${formattedSec}` : ''
-      updateFormData('conditioningBenchmarks', { ...formData.conditioningBenchmarks, [field]: newVal })
+    const handleBlur = () => {
+      // Format on blur: ensure proper MM:SS format
+      const parts = value.split(':')
+      if (parts.length === 2) {
+        const minutes = parts[0].padStart(1, '0') || '0'
+        const seconds = parts[1].padStart(2, '0').slice(0, 2) || '00'
+        const formatted = `${minutes}:${seconds}`
+        updateFormData('conditioningBenchmarks', { 
+          ...formData.conditioningBenchmarks, 
+          [field]: formatted 
+        })
+      }
     }
     
     return (
       <div>
         <label className="block text-sm text-gray-700 mb-2">{label}</label>
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={localM}
-            inputMode="numeric"
-            pattern="[0-9]*"
-            onChange={handleMinutesChange}
-            onBlur={handleMinutesBlur}
-            className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
-            placeholder="MM"
-          />
-          <span className="text-gray-700">:</span>
-          <input
-            type="text"
-            value={localS}
-            inputMode="numeric"
-            pattern="[0-9]*"
-            onChange={handleSecondsChange}
-            onBlur={handleSecondsBlur}
-            className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
-            placeholder="SS"
-          />
-        </div>
+        <input
+          type="text"
+          value={value}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          placeholder="MM:SS"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
+        />
       </div>
     )
   }
