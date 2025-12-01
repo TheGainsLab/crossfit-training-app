@@ -102,29 +102,35 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    // Save equipment
-    console.log('🔧 Saving equipment...')
-    await supabaseAdmin.from('user_equipment').delete().eq('user_id', effectiveUserId)
-    
-    if (equipment && equipment.length > 0) {
-      const equipmentRecords = equipment.map((equipmentName: string) => ({
-        user_id: effectiveUserId,
-        equipment_name: equipmentName
-      }))
+    // Save equipment - only update if provided
+    if (equipment !== undefined && equipment !== null && !isEngineUser) {
+      console.log('🔧 Saving equipment...')
+      await supabaseAdmin.from('user_equipment').delete().eq('user_id', effectiveUserId)
       
-      const { error: equipmentError } = await supabaseAdmin
-        .from('user_equipment')
-        .insert(equipmentRecords)
-      
-      if (equipmentError) {
-        console.error('❌ Equipment error:', equipmentError)
-        return NextResponse.json({ 
-          error: 'Equipment insertion failed', 
-          details: equipmentError.message 
-        }, { status: 500 })
+      if (equipment && equipment.length > 0) {
+        const equipmentRecords = equipment.map((equipmentName: string) => ({
+          user_id: effectiveUserId,
+          equipment_name: equipmentName
+        }))
+        
+        const { error: equipmentError } = await supabaseAdmin
+          .from('user_equipment')
+          .insert(equipmentRecords)
+        
+        if (equipmentError) {
+          console.error('❌ Equipment error:', equipmentError)
+          return NextResponse.json({ 
+            error: 'Equipment insertion failed', 
+            details: equipmentError.message 
+          }, { status: 500 })
+        }
+        
+        console.log('✅ Equipment saved:', equipment.length, 'items')
       }
-      
-      console.log('✅ Equipment saved:', equipment.length, 'items')
+    } else if (isEngineUser) {
+      console.log('⏭️ Skipping equipment save for Engine user')
+    } else {
+      console.log('⏭️ Skipping equipment update - not provided in request')
     }
 
     // Save user preferences (with fallback for older schema and missing unique constraints)
@@ -192,8 +198,8 @@ export async function POST(request: NextRequest) {
       console.log('⏭️ Skipping preferences save for Engine user')
     }
 
-  // Save skills (skip for Engine users)
-  if (!isEngineUser) {
+  // Save skills - only update if provided
+  if (skills !== undefined && skills !== null && !isEngineUser) {
     console.log('🎯 Saving skills...')
     await supabaseAdmin.from('user_skills').delete().eq('user_id', effectiveUserId)
 
@@ -271,12 +277,14 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-  } else {
+  } else if (isEngineUser) {
     console.log('⏭️ Skipping skills save for Engine user')
+  } else {
+    console.log('⏭️ Skipping skills update - not provided in request')
   }
 
-  // Save 1RMs (skip for Engine users)
-  if (!isEngineUser) {
+  // Save 1RMs - only update if provided
+  if (oneRMs !== undefined && oneRMs !== null && !isEngineUser) {
     console.log('💪 Saving 1RMs...')
     await supabaseAdmin.from('user_one_rms').delete().eq('user_id', effectiveUserId)
     
@@ -311,8 +319,10 @@ export async function POST(request: NextRequest) {
         console.log('✅ 1RMs saved:', oneRMRecords.length, 'records')
       }
     }
-  } else {
+  } else if (isEngineUser) {
     console.log('⏭️ Skipping 1RMs save for Engine user')
+  } else {
+    console.log('⏭️ Skipping 1RMs update - not provided in request')
   }
 
     console.log('🎉 All intake data saved successfully')

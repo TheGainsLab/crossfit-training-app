@@ -432,7 +432,8 @@ export default function ProfilePage() {
         [dbField]: value || null
       }
 
-      // Update database
+      // Update database directly - DO NOT call save-intake-data
+      // That route is for full form submissions and will delete oneRMs/equipment/skills if not provided
       const { error } = await supabase
         .from('users')
         .update({
@@ -443,24 +444,17 @@ export default function ProfilePage() {
 
       if (error) throw error
 
-      // Trigger profile regeneration
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        await fetch('/api/save-intake-data', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-          body: JSON.stringify({
-            userId: userData.id,
-            benchmarks: updatedBenchmarks
-          })
+      // Update local state immediately - no need to reload or call destructive route
+      if (profile) {
+        setProfile({
+          ...profile,
+          benchmarks: {
+            ...profile.benchmarks,
+            [field]: value || null
+          }
         })
       }
-
-      // Reload profile
-      await loadProfile()
+      
       setEditingBenchmark(null)
     } catch (error) {
       console.error('Error saving benchmark:', error)
