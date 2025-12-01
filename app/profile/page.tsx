@@ -636,13 +636,21 @@ const loadProfile = async () => {
           {/* Olympic Lift Performance Card */}
           <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
             <div className="mb-6">
-             
-<h2 className="text-xl font-bold text-charcoal mb-2">OLYMPIC LIFTS</h2>
-              
-<div className="w-full h-0.5 bg-coral"></div>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-bold text-charcoal">OLYMPIC LIFTS</h2>
+                <button
+                  onClick={() => toggleCategory('olympic-lifts')}
+                  className="text-coral hover:text-coral text-sm font-medium"
+                >
+                  [{expandedCategories.includes('olympic-lifts') ? '- Hide' : '+ View'}]
+                </button>
+              </div>
+              <div className="w-full h-0.5 bg-coral"></div>
               <p className="text-sm text-gray-600 mt-2">Balance assessment vs back squat strength</p>
             </div>
             
+            {expandedCategories.includes('olympic-lifts') && (
+              <>
             <OlympicProgress 
               lift="Snatch"
               weight={formatWeight(profile.one_rms.snatch)}
@@ -656,16 +664,28 @@ const loadProfile = async () => {
               current={profile.one_rms.clean_and_jerk && profile.one_rms.back_squat ? profile.one_rms.clean_and_jerk / profile.one_rms.back_squat : 0}
               target={0.75}
             />
+              </>
+            )}
           </div>
           
           {/* Card 1: Foundation Strength */}
           <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
-            <div className="mb-6">              
-              <h2 className="text-xl font-bold text-charcoal mb-2">FOUNDATION STRENGTH</h2>
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-bold text-charcoal">FOUNDATION STRENGTH</h2>
+                <button
+                  onClick={() => toggleCategory('foundation-strength')}
+                  className="text-coral hover:text-coral text-sm font-medium"
+                >
+                  [{expandedCategories.includes('foundation-strength') ? '- Hide' : '+ View'}]
+                </button>
+              </div>
               <div className="w-full h-0.5 bg-coral"></div>
               <p className="text-sm text-gray-600 mt-2">Progression levels relative to bodyweight ({formatWeight(profile.user_summary.body_weight)})</p>
             </div>
             
+            {expandedCategories.includes('foundation-strength') && (
+              <>
             <FoundationProgress 
               lift="Back Squat"
               weight={formatWeight(profile.one_rms.back_squat)}
@@ -716,6 +736,8 @@ const loadProfile = async () => {
                 elite: 1.7
               }}
             />
+              </>
+            )}
           </div>
 
           {/* Card 2: All Max Lifts */}
