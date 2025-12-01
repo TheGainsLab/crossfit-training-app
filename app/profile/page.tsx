@@ -1064,6 +1064,7 @@ const loadProfile = async () => {
                 </button>
               </div>
               <div className="w-full h-0.5 bg-coral"></div>
+              <p className="text-sm text-gray-600 mt-2">View and edit all of your 1RMs in one place.</p>
             </div>
             
             {expandedCategories.includes('max-lifts') && (
@@ -1126,6 +1127,7 @@ const loadProfile = async () => {
                 </button>
               </div>
               <div className="w-full h-0.5 bg-coral"></div>
+              <p className="text-sm text-gray-600 mt-2">Balance and efficiency among your key lifts.</p>
             </div>
             
             {expandedCategories.includes('strength-ratios') && (
@@ -1250,7 +1252,9 @@ const loadProfile = async () => {
               [{expandedCategories.includes('conditioning-benchmarks') ? '- Hide' : '+ View'}]
             </button>
           </div>
-          <div className="w-full h-0.5 bg-coral mb-6"></div>
+          <div className="w-full h-0.5 bg-coral"></div>
+          <p className="text-sm text-gray-600 mt-2">Fundamental engine metrics across times and modalities.</p>
+          <div className="mb-6"></div>
           
           {expandedCategories.includes('conditioning-benchmarks') && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1323,7 +1327,9 @@ const loadProfile = async () => {
         {/* Programming Focus Areas */}
         <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
           <h2 className="text-xl font-bold text-charcoal mb-2">FOCUS AREAS</h2>
-          <div className="w-full h-0.5 bg-coral mb-6"></div>
+          <div className="w-full h-0.5 bg-coral"></div>
+          <p className="text-sm text-gray-600 mt-2">Targets for technical improvements and accessory work.</p>
+          <div className="mb-6"></div>
           
           {/* Accessory Needs Section */}
           <div className="mb-8">
