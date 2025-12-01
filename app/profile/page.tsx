@@ -957,7 +957,7 @@ const loadProfile = async () => {
                 </button>
               </div>
               <div className="w-full h-0.5 bg-coral"></div>
-              <p className="text-sm text-gray-600 mt-2">Balance assessment vs back squat strength</p>
+              <p className="text-sm text-gray-600 mt-2">Key Olympic lifting ratios</p>
             </div>
             
             {expandedCategories.includes('olympic-lifts') && (
@@ -992,7 +992,7 @@ const loadProfile = async () => {
                 </button>
               </div>
               <div className="w-full h-0.5 bg-coral"></div>
-              <p className="text-sm text-gray-600 mt-2">Progression levels relative to bodyweight ({formatWeight(profile.user_summary.body_weight)})</p>
+              <p className="text-sm text-gray-600 mt-2">Primary strength to weight ratios</p>
             </div>
             
             {expandedCategories.includes('foundation-strength') && (
@@ -1654,10 +1654,10 @@ const loadProfile = async () => {
           </div>
         </div>
 
-        {/* Movement Skills Repository */}
+        {/* Skills Repository */}
         <div className="bg-white rounded-lg shadow border border-slate-blue p-6">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xl font-bold text-charcoal">MOVEMENT SKILLS</h2>
+            <h2 className="text-xl font-bold text-charcoal">SKILLS</h2>
             <button
               onClick={() => toggleCategory('movement-skills')}
               className="text-coral hover:text-coral text-sm font-medium"
