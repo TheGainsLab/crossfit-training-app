@@ -70,7 +70,7 @@ export default function WeekPreviewPage({ params }: { params: Promise<{ week: st
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-600">{error}</div>
 
   // Filter out SKILLS and METCONS for Applied Power users
-  const allBlockNames = ['All', 'SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS']
+  const allBlockNames = ['All', 'SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS', 'ENGINE']
   const blockNames = isAppliedPower 
     ? allBlockNames.filter(bn => bn !== 'SKILLS' && bn !== 'METCONS')
     : allBlockNames

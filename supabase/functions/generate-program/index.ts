@@ -58,7 +58,7 @@ serve(async (req) => {
     // Determine blocks based on program type
     const blocks = programType === 'applied_power'
       ? ['TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES']  // Applied Power: 3 blocks (no SKILLS, no METCONS)
-      : ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS']  // Full program: 5 blocks
+      : ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS', 'ENGINE']  // Full program: 6 blocks (added ENGINE)
 
     console.log(`🚀 Starting program generation for user ${user_id}, weeks: ${weeksToGenerate.join(', ')}, programType: ${programType}, blocks: ${blocks.join(', ')}`)
     
@@ -271,6 +271,9 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
   // Initialize frequency tracking
   const weeklySkills: Record<string, number> = {}
   const weeklyAccessories: Record<string, number> = {}
+  
+  // Initialize Engine day counter (1-720, wraps around)
+  let engineDayCounter = 1
 
   // Determine number of training days from preferences (3-6)
   const clampedDays = Math.max(3, Math.min(6, Number(user?.preferences?.trainingDaysPerWeek || 5)))
@@ -370,6 +373,64 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
             let errText = ''
             try { errText = await metconResponse.text() } catch (_) {}
             console.error(`    ↳ assign-metcon HTTP ${metconResponse.status}: ${errText}`)
+          }
+        } else if (block === 'ENGINE') {
+          // Fetch Engine workout from workouts table (sequential 1-720)
+          try {
+            const { data: engineWorkout, error: engineError } = await supabase
+              .from('workouts')
+              .select('*')
+              .eq('program_type', 'main_5day')
+              .eq('day_number', engineDayCounter)
+              .single()
+            
+            if (engineError || !engineWorkout) {
+              console.error(`    ↳ Engine workout fetch error for day ${engineDayCounter}:`, engineError?.message || 'Not found')
+              // Create placeholder if workout not found
+              blockExercises = [{
+                name: `Engine Day ${engineDayCounter}`,
+                sets: 1,
+                reps: 'N/A',
+                weightTime: '',
+                notes: 'Engine workout not available'
+              }]
+            } else {
+              // Format Engine workout as block exercise
+              const dayType = engineWorkout.day_type || 'conditioning'
+              const duration = engineWorkout.total_duration_minutes || 30
+              
+              blockExercises = [{
+                name: `Engine ${dayType.charAt(0).toUpperCase() + dayType.slice(1)}`,
+                sets: 1,
+                reps: `${duration} min`,
+                weightTime: '',
+                notes: `Day ${engineDayCounter}: ${dayType} workout`,
+                engineWorkoutId: engineWorkout.id,
+                engineDayNumber: engineDayCounter,
+                engineWorkoutData: engineWorkout
+              }]
+              
+              // Store Engine workout metadata (similar to metconData)
+              dayData.engineData = {
+                workoutId: engineWorkout.id,
+                dayNumber: engineDayCounter,
+                dayType: dayType,
+                duration: duration,
+                blockCount: engineWorkout.block_count || 1,
+                blockParams: {
+                  block1: engineWorkout.block_1_params,
+                  block2: engineWorkout.block_2_params,
+                  block3: engineWorkout.block_3_params,
+                  block4: engineWorkout.block_4_params
+                }
+              }
+              
+              // Increment Engine day counter (wrap at 720)
+              engineDayCounter = (engineDayCounter % 720) + 1
+            }
+          } catch (err) {
+            console.error(`    ↳ Engine workout error:`, err)
+            blockExercises = []
           }
         } else if (block === 'STRENGTH AND POWER') {
           // Determine how many separate strength blocks to emit

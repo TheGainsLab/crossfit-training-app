@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { use } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 interface Exercise {
   name: string
@@ -56,6 +58,19 @@ metconData?: {
   rxWeights: {
     male: string
     female: string
+  }
+}
+engineData?: {
+  workoutId: string
+  dayNumber: number
+  dayType: string
+  duration: number
+  blockCount: number
+  blockParams: {
+    block1: any
+    block2: any
+    block3: any
+    block4: any
   }
 } 
  totalExercises: number 
@@ -768,14 +783,19 @@ const calculateProgress = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm" style={{ color: '#282B34' }}>
-                    
-{block.exercises.filter(ex => {
-  const setMatch = ex.notes?.match(/Set (\d+)/);
-  const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
-  const exerciseKey = setNumber > 1 ? `${ex.name} - Set ${setNumber}` : ex.name;
-  return completions[exerciseKey] !== undefined;
-}).length}/{block.exercises.length} Complete
-
+                    {block.blockName === 'ENGINE' ? (
+                      // Engine blocks: always show 0/1 or 1/1 (handled by EngineBlockCard)
+                      '0/1 Complete'
+                    ) : (
+                      <>
+                        {block.exercises.filter(ex => {
+                          const setMatch = ex.notes?.match(/Set (\d+)/);
+                          const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+                          const exerciseKey = setNumber > 1 ? `${ex.name} - Set ${setNumber}` : ex.name;
+                          return completions[exerciseKey] !== undefined;
+                        }).length}/{block.exercises.length} Complete
+                      </>
+                    )}
                   </span>
                   <span className="text-gray-400">
                     {expandedBlocks[getBlockKey(block.blockName, blockIndex)] ? '▼' : '▶'}
@@ -820,6 +840,11 @@ block.blockName === 'METCONS' ? (
   }}
 />
 
+) : block.blockName === 'ENGINE' ? (
+  <EngineBlockCard
+    engineData={workout.engineData}
+    engineDayNumber={workout.engineData?.dayNumber || 0}
+  />
 ) : (
   block.exercises.map((exercise, exerciseIndex) => {
     console.log('Exercise object:', exercise);
@@ -1810,6 +1835,105 @@ function MetConCard({
           border: none;
         }
       `}</style>
+    </div>
+  )
+}
+
+function EngineBlockCard({
+  engineData,
+  engineDayNumber
+}: {
+  engineData?: {
+    workoutId: string
+    dayNumber: number
+    dayType: string
+    duration: number
+    blockCount: number
+    blockParams: {
+      block1: any
+      block2: any
+      block3: any
+      block4: any
+    }
+  }
+  engineDayNumber: number
+}) {
+  const router = useRouter()
+  const [isCompleted, setIsCompleted] = useState(false)
+
+  // Check if this Engine workout is completed
+  useEffect(() => {
+    const checkCompletion = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_id', user.id)
+          .single()
+
+        if (!userData) return
+
+        // Check workout_sessions for completion
+        const { data: session } = await supabase
+          .from('workout_sessions')
+          .select('id')
+          .eq('user_id', userData.id)
+          .eq('program_day_number', engineDayNumber)
+          .eq('completed', true)
+          .limit(1)
+          .maybeSingle()
+
+        setIsCompleted(!!session)
+      } catch (error) {
+        console.error('Error checking Engine completion:', error)
+      }
+    }
+
+    if (engineDayNumber) {
+      checkCompletion()
+    }
+  }, [engineDayNumber])
+
+  if (!engineData) return null
+
+  const handleStartWorkout = () => {
+    // Navigate to Engine UI with the specific day number
+    router.push(`/engine?day=${engineDayNumber}`)
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border-2 border-slate-blue">
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-xl font-bold text-charcoal">Engine Conditioning</h3>
+            <p className="text-sm text-gray-600">Day {engineData.dayNumber}</p>
+          </div>
+          {isCompleted && <span className="text-coral text-2xl">✅</span>}
+        </div>
+
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-charcoal">Type:</span>
+            <span className="text-sm text-gray-700 capitalize">{engineData.dayType}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-charcoal">Duration:</span>
+            <span className="text-sm text-gray-700">{engineData.duration} minutes</span>
+          </div>
+        </div>
+
+        <button
+          onClick={handleStartWorkout}
+          className="w-full bg-coral text-white py-3 px-6 rounded-lg hover:bg-coral/90 transition-colors font-semibold"
+        >
+          {isCompleted ? 'View Engine Workout' : 'Start Engine Workout'}
+        </button>
+      </div>
     </div>
   )
 }

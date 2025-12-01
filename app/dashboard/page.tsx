@@ -190,7 +190,7 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
   }
 
   // Define the desired order for blocks
-  const blockOrder = ['Skills', 'Technical', 'Strength', 'Accessories', 'MetCons']
+  const blockOrder = ['Skills', 'Technical', 'Strength', 'Accessories', 'MetCons', 'Engine']
   
   // Filter blocks for Applied Power users (exclude Skills and MetCons)
   const filteredBlockSummaries = isAppliedPower
@@ -216,14 +216,16 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
         '#10B981', // Green - Technical
         '#EF4444', // Red - Strength
         '#8B5CF6', // Purple - Accessories
-        '#F59E0B'  // Orange - MetCons
+        '#F59E0B', // Orange - MetCons
+        '#06B6D4'  // Cyan - Engine
       ],
       borderColor: [
         '#1D4ED8',
         '#059669',
         '#DC2626', 
         '#7C3AED',
-        '#D97706'
+        '#D97706',
+        '#0891B2'  // Engine border
       ],
       borderWidth: 2,
       hoverBorderWidth: 3
@@ -282,6 +284,7 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
     else if (name.includes('metcon')) route = '/dashboard/analytics/metcons'
     else if (name.includes('technical')) route = '/dashboard/analytics/technical'
     else if (name.includes('accessories')) route = '/dashboard/analytics/accessories'
+    else if (name.includes('engine')) route = '/engine?view=analytics'
     
     router.push(route)
   }
@@ -338,6 +341,7 @@ const TrainingBlocksWidget: React.FC<{ analytics: any; blockData: any }> = ({ an
           else if (name.includes('metcon')) href = '/dashboard/analytics/metcons'
           else if (name.includes('technical')) href = '/dashboard/analytics/technical'
           else if (name.includes('accessories')) href = '/dashboard/analytics/accessories'
+          else if (name.includes('engine')) href = '/engine?view=analytics'
           return (
             <Link
               key={block.blockName}

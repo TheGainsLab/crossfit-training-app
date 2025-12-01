@@ -30,13 +30,24 @@ export default function EnginePage() {
   const [needsProgramSelection, setNeedsProgramSelection] = useState<boolean | null>(null)
   const [initialized, setInitialized] = useState(false)
 
-  // Check for view parameter in URL
+  // Check for view and day parameters in URL
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const view = params.get('view')
+      const dayParam = params.get('day')
+      
       if (view === 'analytics') {
         setCurrentView('analytics')
+      }
+      
+      // If day parameter is present, automatically open that day
+      if (dayParam) {
+        const dayNumber = parseInt(dayParam, 10)
+        if (!isNaN(dayNumber) && dayNumber > 0) {
+          setSelectedDay(dayNumber)
+          setCurrentView('trainingday')
+        }
       }
     }
   }, [])

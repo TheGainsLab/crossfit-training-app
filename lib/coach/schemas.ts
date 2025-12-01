@@ -3,7 +3,7 @@
 
 export type Units = 'Metric (kg)' | 'Imperial (lbs)'
 export type Ability = 'Beginner' | 'Intermediate' | 'Advanced'
-export type BlockName = 'SKILLS' | 'TECHNICAL WORK' | 'STRENGTH AND POWER' | 'ACCESSORIES' | 'METCONS'
+export type BlockName = 'SKILLS' | 'TECHNICAL WORK' | 'STRENGTH AND POWER' | 'ACCESSORIES' | 'METCONS' | 'ENGINE'
 export type TimeDomain = '1-5' | '5-10' | '10-15' | '15-20' | '20+'
 export type MetconLevel = 'Open' | 'Quarterfinals' | 'Regionals' | 'Games'
 

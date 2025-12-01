@@ -563,6 +563,9 @@ export async function POST(request: NextRequest) {
           }
         } catch (_) {}
 
+        const workoutRows: any[] = []  // For program_workouts
+        const engineRows: any[] = []   // For program_metcons (Engine workouts)
+        
         for (const w of weeks) {
           const weekNum = w.week
           const daysArr = w.days || []
@@ -570,27 +573,62 @@ export async function POST(request: NextRequest) {
             if (typeof d.day === 'number' && d.day > dayLimit) continue
             const blocksArr = d.blocks || []
             for (const b of blocksArr) {
-              const exercises = b.exercises || []
-              for (const ex of exercises) {
-                rows.push({
+              // Handle ENGINE block separately - save to program_metcons
+              if (b.blockName === 'ENGINE' && d.engineData) {
+                const engineData = d.engineData
+                engineRows.push({
                   program_id: programId,
                   week: weekNum,
                   day: d.day,
-                  block: b.blockName,
-                  exercise_name: ex.name,
-                  main_lift: d.mainLift || null,
-                  is_deload: !!d.isDeload
+                  workout_type: 'conditioning',
+                  engine_workout_id: engineData.workoutId,
+                  program_day_number: engineData.dayNumber,
+                  program_version: '5-day',
+                  day_type: engineData.dayType,
+                  workout_data: {
+                    block_count: engineData.blockCount,
+                    block_params: engineData.blockParams,
+                    duration: engineData.duration
+                  }
                 })
+              } else {
+                // Regular blocks - save to program_workouts
+                const exercises = b.exercises || []
+                for (const ex of exercises) {
+                  workoutRows.push({
+                    program_id: programId,
+                    week: weekNum,
+                    day: d.day,
+                    block: b.blockName,
+                    exercise_name: ex.name,
+                    main_lift: d.mainLift || null,
+                    is_deload: !!d.isDeload
+                  })
+                }
               }
             }
           }
         }
-        if (rows.length > 0) {
+        
+        // Insert program_workouts
+        if (workoutRows.length > 0) {
           const { error: pwErr } = await supabaseAdmin
             .from('program_workouts')
-            .insert(rows)
+            .insert(workoutRows)
           if (pwErr) {
             console.warn('program_workouts insert warning:', pwErr.message)
+          }
+        }
+        
+        // Insert Engine workouts to program_metcons
+        if (engineRows.length > 0) {
+          const { error: engineErr } = await supabaseAdmin
+            .from('program_metcons')
+            .insert(engineRows)
+          if (engineErr) {
+            console.warn('program_metcons (Engine) insert warning:', engineErr.message)
+          } else {
+            console.log(`✅ Saved ${engineRows.length} Engine workouts to program_metcons`)
           }
         }
       }

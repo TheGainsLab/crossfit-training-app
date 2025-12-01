@@ -70,7 +70,8 @@ function AnalyticsSubnav() {
     { href: '/dashboard/analytics/strength', label: 'Strength' },
     { href: '/dashboard/analytics/technical', label: 'Technical Work' },
     { href: '/dashboard/analytics/accessories', label: 'Accessories' },
-    { href: '/dashboard/analytics/metcons', label: 'Metcons' }
+    { href: '/dashboard/analytics/metcons', label: 'Metcons' },
+    { href: '/engine?view=analytics', label: 'Engine Analytics' }
   ]), [])
   
   // Filter tabs based on subscription tier
@@ -82,12 +83,14 @@ function AnalyticsSubnav() {
       ]
     }
     if (isAppliedPower) {
-      // Applied Power: filter out Skills and Metcons
+      // Applied Power: filter out Skills, Metcons, and Engine Analytics
       return allTabs.filter(tab => 
         tab.href !== '/dashboard/analytics/skills' && 
-        tab.href !== '/dashboard/analytics/metcons'
+        tab.href !== '/dashboard/analytics/metcons' &&
+        tab.href !== '/engine?view=analytics'
       )
     }
+    // Premium users see all tabs including Engine Analytics
     return allTabs
   }, [isAppliedPower, isEngine, allTabs])
   
