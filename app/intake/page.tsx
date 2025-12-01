@@ -288,47 +288,42 @@ const [currentSection, setCurrentSection] = useState<number>(1)
 
   // Helper: render a MM:SS time input (two boxes with a fixed colon)
   const TimeInput = ({ label, field } : { label: string, field: keyof IntakeFormData['conditioningBenchmarks'] }) => {
-    const { m, s } = getTimeParts(formData.conditioningBenchmarks[field] as string)
-    const minutesRef = useRef<HTMLInputElement>(null)
-    const secondsRef = useRef<HTMLInputElement>(null)
+    const { m: initialM, s: initialS } = getTimeParts(formData.conditioningBenchmarks[field] as string)
+    // Use local state - no parent re-renders while typing
+    const [localM, setLocalM] = useState(initialM)
+    const [localS, setLocalS] = useState(initialS)
     
-    const updateMinutes = (minStr: string) => {
-      // Just store the raw input, no formatting while typing
-      const min = (minStr || '').replace(/[^0-9]/g, '')
-      const sec = (s || '').replace(/[^0-9]/g, '')
-      // Only format seconds if it exists, otherwise leave empty
-      const formattedSec = sec ? String(Math.max(0, Math.min(59, parseInt(sec)))).padStart(2, '0') : ''
-      const newVal = min ? `${min}:${formattedSec}` : ''
-      updateFormData('conditioningBenchmarks', { ...formData.conditioningBenchmarks, [field]: newVal })
+    // Sync when formData changes externally
+    useEffect(() => {
+      const { m, s } = getTimeParts(formData.conditioningBenchmarks[field] as string)
+      setLocalM(m)
+      setLocalS(s)
+    }, [formData.conditioningBenchmarks[field], field])
+    
+    const handleMinutesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const min = e.target.value.replace(/[^0-9]/g, '')
+      setLocalM(min)
     }
     
-    const updateSeconds = (secStr: string) => {
-      // Just store the raw input, no formatting while typing
-      const min = (m || '').replace(/[^0-9]/g, '')
-      const sec = (secStr || '').replace(/[^0-9]/g, '')
-      // Store raw seconds value while typing
-      const newVal = min ? `${min}:${sec}` : sec ? `0:${sec}` : ''
-      updateFormData('conditioningBenchmarks', { ...formData.conditioningBenchmarks, [field]: newVal })
+    const handleSecondsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const sec = e.target.value.replace(/[^0-9]/g, '')
+      setLocalS(sec)
     }
     
     const handleMinutesBlur = () => {
-      // Format on blur
-      const min = (m || '').replace(/[^0-9]/g, '')
-      const sec = (s || '').replace(/[^0-9]/g, '')
+      const min = (localM || '').replace(/[^0-9]/g, '')
+      const sec = (localS || '').replace(/[^0-9]/g, '')
       const formattedSec = sec ? String(Math.max(0, Math.min(59, parseInt(sec)))).padStart(2, '0') : ''
       const newVal = min ? `${min}:${formattedSec}` : ''
       updateFormData('conditioningBenchmarks', { ...formData.conditioningBenchmarks, [field]: newVal })
     }
     
     const handleSecondsBlur = () => {
-      // Format on blur - pad to 2 digits
-      const min = (m || '').replace(/[^0-9]/g, '')
-      const sec = (s || '').replace(/[^0-9]/g, '')
-      if (sec) {
-        const formattedSec = String(Math.max(0, Math.min(59, parseInt(sec)))).padStart(2, '0')
-        const newVal = min ? `${min}:${formattedSec}` : `0:${formattedSec}`
-        updateFormData('conditioningBenchmarks', { ...formData.conditioningBenchmarks, [field]: newVal })
-      }
+      const min = (localM || '').replace(/[^0-9]/g, '')
+      const sec = (localS || '').replace(/[^0-9]/g, '')
+      const formattedSec = sec ? String(Math.max(0, Math.min(59, parseInt(sec)))).padStart(2, '0') : ''
+      const newVal = min ? `${min}:${formattedSec}` : formattedSec ? `0:${formattedSec}` : ''
+      updateFormData('conditioningBenchmarks', { ...formData.conditioningBenchmarks, [field]: newVal })
     }
     
     return (
@@ -336,24 +331,22 @@ const [currentSection, setCurrentSection] = useState<number>(1)
         <label className="block text-sm text-gray-700 mb-2">{label}</label>
         <div className="flex items-center gap-2">
           <input
-            ref={minutesRef}
             type="text"
-            value={m}
+            value={localM}
             inputMode="numeric"
             pattern="[0-9]*"
-            onChange={(e) => updateMinutes(e.target.value)}
+            onChange={handleMinutesChange}
             onBlur={handleMinutesBlur}
             className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
             placeholder="MM"
           />
           <span className="text-gray-700">:</span>
           <input
-            ref={secondsRef}
             type="text"
-            value={s}
+            value={localS}
             inputMode="numeric"
             pattern="[0-9]*"
-            onChange={(e) => updateSeconds(e.target.value)}
+            onChange={handleSecondsChange}
             onBlur={handleSecondsBlur}
             className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
             placeholder="SS"
