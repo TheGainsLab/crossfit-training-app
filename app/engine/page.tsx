@@ -78,10 +78,27 @@ export default function EnginePage() {
       
       setSubscriptionStatus(data)
 
-      // If user has access, check if they need program selection
+      // If user has access, set program version automatically
       if (data.hasAccess && connected) {
-        const programVersion = await engineDatabaseService.loadProgramVersion()
-        setNeedsProgramSelection(!programVersion)
+        // Check if this is a Premium user (not standalone Engine user)
+        const isPremiumUser = data.subscriptionData?.plan === 'premium' || data.subscriptionData?.plan === 'full-program'
+        
+        if (isPremiumUser) {
+          // Premium users get 5-day program by default
+          const existingVersion = await engineDatabaseService.loadProgramVersion()
+          if (!existingVersion) {
+            await engineDatabaseService.saveProgramVersion('5-day')
+          }
+          setNeedsProgramSelection(false)
+        } else {
+          // Standalone Engine users - load their saved version (chosen at signup)
+          const programVersion = await engineDatabaseService.loadProgramVersion()
+          // If they somehow don't have one, default to 5-day
+          if (!programVersion) {
+            await engineDatabaseService.saveProgramVersion('5-day')
+          }
+          setNeedsProgramSelection(false)
+        }
       }
     } catch (error) {
       console.error('Error checking access:', error)
@@ -132,29 +149,6 @@ export default function EnginePage() {
     )
   }
 
-  // Show program selection if needed
-  if (subscriptionStatus.hasAccess && needsProgramSelection === true) {
-    return (
-      <ProgramSelection 
-        onComplete={async () => {
-          setNeedsProgramSelection(false)
-          setCurrentView('dashboard')
-        }} 
-      />
-    )
-  }
-
-  // Show loading while checking program selection
-  if (subscriptionStatus.hasAccess && needsProgramSelection === null) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FE5858] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
-  }
 
   // User has access - show Engine app with routing
   if (subscriptionStatus.hasAccess) {
