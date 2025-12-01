@@ -26,7 +26,22 @@ export async function GET(req: Request, context: any) {
     } catch {}
     if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
 
-    // Get latest program for user
+    // Check user's subscription tier
+    const { data: userData } = await supabase
+      .from('users')
+      .select('subscription_tier')
+      .eq('id', userId)
+      .single()
+
+    const isBTN = userData?.subscription_tier === 'BTN'
+    const isEngine = userData?.subscription_tier === 'ENGINE'
+
+    // BTN and Engine users don't have programs - return empty
+    if (isBTN || isEngine) {
+      return NextResponse.json({ success: true, days: [] })
+    }
+
+    // Get latest program for user (only for Applied Power users)
     const { data: prog } = await supabase
       .from('programs')
       .select('id, program_data')
