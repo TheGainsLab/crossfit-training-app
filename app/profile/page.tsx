@@ -161,8 +161,11 @@ const skillCategories = [
 
 // Olympic Lift Progress Bar Component
 const OlympicProgress = ({ lift, weight, current, target, unit = "%" }: OlympicProgressProps) => {
-  // Position marker at the actual ratio percentage (0-100), independent of target
-  const position = Math.max(0, Math.min(current * 100, 100))
+  // Position marker relative to target: if current exceeds target, position at 100% (end of bar)
+  // Otherwise, position at (current / target) * 100% of the bar
+  // Example: 30% current with 60% target = 30/60 = 50% of bar
+  // Example: 62% current with 60% target = min(62/60, 1) = 100% of bar (at end)
+  const position = Math.min((current / target), 1) * 100
   
   return (
     <div className="mb-4">
