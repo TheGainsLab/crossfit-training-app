@@ -1671,7 +1671,9 @@ const loadProfile = async () => {
               [{expandedCategories.includes('movement-skills') ? '- Hide' : '+ View'}]
             </button>
           </div>
-          <div className="w-full h-0.5 bg-coral mb-4"></div>
+          <div className="w-full h-0.5 bg-coral"></div>
+          <p className="text-sm text-gray-600 mt-2">Your skill level at 26 key movements.</p>
+          <div className="mb-4"></div>
           
           {expandedCategories.includes('movement-skills') && (
           <>
