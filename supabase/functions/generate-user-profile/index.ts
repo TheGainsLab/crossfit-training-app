@@ -218,13 +218,13 @@ async function fetchCompleteUserData(supabase: any, user_id: number) {
 // Convert benchmarks from JSONB to array format (7 benchmarks)
 const benchmarks = user.conditioning_benchmarks || {}
 const benchmarksArray = [
-  benchmarks.mileRun || '',           // FIXED: was mile_run
-  benchmarks.fiveKRun || '',          // FIXED: was five_k_run  
-  benchmarks.tenKRun || '',           // FIXED: was ten_k_run
-  benchmarks.oneKRow || '',           // FIXED: was one_k_row
-  benchmarks.twoKRow || '',           // FIXED: was two_k_row
-  benchmarks.fiveKRow || '',          // FIXED: was five_k_row
-  benchmarks.airBike10MinCalories || '' // FIXED: was ten_min_air_bike
+  benchmarks.mile_run || '',           // Use snake_case to match database
+  benchmarks.five_k_run || '',          // Use snake_case to match database
+  benchmarks.ten_k_run || '',           // Use snake_case to match database
+  benchmarks.one_k_row || '',           // Use snake_case to match database
+  benchmarks.two_k_row || '',           // Use snake_case to match database
+  benchmarks.five_k_row || '',          // Use snake_case to match database
+  benchmarks.ten_min_air_bike || ''     // Use snake_case to match database
 ];
 
 // DEBUG: Add this to verify the fix works
