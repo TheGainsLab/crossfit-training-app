@@ -300,11 +300,33 @@ const [currentSection, setCurrentSection] = useState<number>(1)
     const updateSeconds = (secStr: string) => {
       const min = (m || '0').replace(/[^0-9]/g, '')
       const sec = (secStr || '').replace(/[^0-9]/g, '')
-      // Only pad if there's a value, don't force "00" when empty
-      const secNum = sec ? String(Math.max(0, Math.min(59, parseInt(sec || '0')))).padStart(2, '0') : ''
+      // Don't pad while typing - only format when they've entered 2 digits or on blur
+      // Allow free typing up to 2 digits
+      let secNum = sec
+      if (sec.length === 2) {
+        // Only pad when they've entered 2 complete digits
+        secNum = String(Math.max(0, Math.min(59, parseInt(sec || '0')))).padStart(2, '0')
+      } else if (sec.length === 0) {
+        secNum = ''
+      } else {
+        // While typing (1 digit), keep it as-is without padding
+        secNum = sec
+      }
       const newVal = min ? `${parseInt(min)}:${secNum || '00'}` : secNum ? `0:${secNum}` : ''
       updateFormData('conditioningBenchmarks', { ...formData.conditioningBenchmarks, [field]: newVal })
     }
+    
+    const handleSecondsBlur = () => {
+      // Pad on blur if there's a value
+      const sec = (s || '').replace(/[^0-9]/g, '')
+      if (sec) {
+        const secNum = String(Math.max(0, Math.min(59, parseInt(sec || '0')))).padStart(2, '0')
+        const min = (m || '0').replace(/[^0-9]/g, '')
+        const newVal = min ? `${parseInt(min)}:${secNum}` : `0:${secNum}`
+        updateFormData('conditioningBenchmarks', { ...formData.conditioningBenchmarks, [field]: newVal })
+      }
+    }
+    
     return (
       <div>
         <label className="block text-sm text-gray-700 mb-2">{label}</label>
@@ -328,6 +350,7 @@ const [currentSection, setCurrentSection] = useState<number>(1)
             inputMode="numeric"
             pattern="[0-9]*"
             onChange={(e) => updateSeconds(e.target.value)}
+            onBlur={handleSecondsBlur}
             className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FE5858]"
             placeholder="SS"
           />
