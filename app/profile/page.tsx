@@ -1059,7 +1059,7 @@ const loadProfile = async () => {
                 profile.one_rms.bench_press / profile.user_summary.body_weight : 0
               const pushPressStrictRatio = profile.one_rms.push_press && profile.one_rms.strict_press ?
                 profile.one_rms.push_press / profile.one_rms.strict_press : 0
-              const needsUpperBodyPressing = benchBodyweightRatio < 0.9 || pushPressStrictRatio > 1.5
+              const needsUpperBodyPressing = benchBodyweightRatio < 0.9 || pushPressStrictRatio > 1.45
               
               const pullupBenchRatio = profile.one_rms.weighted_pullup && profile.one_rms.bench_press ?
                 profile.one_rms.weighted_pullup / profile.one_rms.bench_press : 0
@@ -1147,19 +1147,19 @@ const loadProfile = async () => {
                             {needsUpperBodyPressing ? (
                               <div className="text-sm text-gray-600">
                                 <div className="mb-1">
-                                  <span className="font-medium">Why:</span> {benchBodyweightRatio < 0.9 && pushPressStrictRatio > 1.5 ? (
-                                    <>Bench press is {benchBodyweightRatio.toFixed(1)}x bodyweight (target: 0.9x) and push press is {Math.round(pushPressStrictRatio * 100)}% of strict press (target: &lt;150%).</>
+                                  <span className="font-medium">Why:</span> {benchBodyweightRatio < 0.9 && pushPressStrictRatio > 1.45 ? (
+                                    <>Bench press is {benchBodyweightRatio.toFixed(1)}x bodyweight (target: 0.9x) and push press is {Math.round(pushPressStrictRatio * 100)}% of strict press (target: &lt;145%).</>
                                   ) : benchBodyweightRatio < 0.9 ? (
                                     <>Bench press ({formatWeight(profile.one_rms.bench_press)}) is {benchBodyweightRatio.toFixed(1)}x bodyweight. Target: 0.9x bodyweight.</>
                                   ) : (
-                                    <>Push press is {Math.round(pushPressStrictRatio * 100)}% of strict press, indicating leg compensation. Target: &lt;150%.</>
+                                    <>Push press is {Math.round(pushPressStrictRatio * 100)}% of strict press, indicating leg compensation. Target: &lt;145%.</>
                                   )}
                                 </div>
                               </div>
                             ) : (
                               <div className="text-sm text-gray-600">
                                 <div>Bench press is {benchBodyweightRatio.toFixed(1)}x bodyweight (target: 0.9x+)</div>
-                                <div>Push press is {Math.round(pushPressStrictRatio * 100)}% of strict press (target: &lt;150%)</div>
+                                <div>Push press is {Math.round(pushPressStrictRatio * 100)}% of strict press (target: &lt;145%)</div>
                               </div>
                             )}
                           </div>

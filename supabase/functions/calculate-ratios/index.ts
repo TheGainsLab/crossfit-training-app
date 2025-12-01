@@ -210,7 +210,7 @@ function calculateUserRatios(user: any) {
   const needsLegStrength = deadliftBackSquatRatio >= 1.15
   const needsPosteriorChain = !needsLegStrength // Mutually exclusive
   
-  const needsUpperBodyPressing = (ratios.bench_press_body_weight < 0.9) || (ratios.push_press_strict_press > 1.5)
+  const needsUpperBodyPressing = (ratios.bench_press_body_weight < 0.9) || (ratios.push_press_strict_press > 1.45)
   const needsUpperBodyPulling = (ratios.weighted_pullup_bench_press < 0.4) || (ratios.weighted_pullup_body_weight < 0.33)
   const needsCore = true // Always needed - everyone gets Core
   
