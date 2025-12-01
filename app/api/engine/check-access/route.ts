@@ -36,6 +36,12 @@ export async function GET(request: NextRequest) {
     if (premiumAccess.hasAccess) {
       return NextResponse.json(premiumAccess)
     }
+    
+    // Also check for 'full-program' - these are Premium users (8900 price) with wrong plan name
+    const fullProgramAccess = await checkSubscriptionAccess(userData.id, 'full-program')
+    if (fullProgramAccess.hasAccess) {
+      return NextResponse.json(fullProgramAccess)
+    }
 
     return NextResponse.json({ hasAccess: false })
   } catch (error) {
