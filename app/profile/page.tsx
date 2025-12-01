@@ -1251,7 +1251,7 @@ const loadProfile = async () => {
 
               // Calculate C&J deficits using actual logic
               const cjStrengthDeficit = profile.one_rms.clean_and_jerk && profile.one_rms.back_squat ?
-                (profile.one_rms.clean_and_jerk / profile.one_rms.back_squat) < 0.74 : true
+                (profile.one_rms.clean_and_jerk / profile.one_rms.back_squat) < 0.75 : true
                 
               const cjReceivingDeficit = profile.one_rms.power_clean && profile.one_rms.clean_only ?
                 (profile.one_rms.power_clean / profile.one_rms.clean_only) > 0.88 : true
@@ -1345,7 +1345,7 @@ const loadProfile = async () => {
                           <div className={`flex items-center text-sm ${cjStrengthDeficit ? 'text-red-600' : 'text-coral'}`}>
                             <span className="mr-2">{cjStrengthDeficit ? '❌' : '✅'}</span>
                             <span>
-                              Overall Strength: C&J ({formatWeight(profile.one_rms.clean_and_jerk)}) is {safeRatio(profile.one_rms.clean_and_jerk, profile.one_rms.back_squat)} of back squat (target: 74%+)
+                              Overall Strength: C&J ({formatWeight(profile.one_rms.clean_and_jerk)}) is {safeRatio(profile.one_rms.clean_and_jerk, profile.one_rms.back_squat)} of back squat (target: 75%+)
                             </span>
                           </div>
                           
