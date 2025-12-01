@@ -310,6 +310,9 @@ export default function ProfilePage() {
   const [height, setHeight] = useState<number | null>(null)
   const [age, setAge] = useState<number | null>(null)
   const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null)
+  const [editingBenchmark, setEditingBenchmark] = useState<string | null>(null)
+  const [benchmarkValues, setBenchmarkValues] = useState<{[key: string]: string}>({})
+  const [savingBenchmark, setSavingBenchmark] = useState(false)
 
   // CRITICAL: Safe calculation helper to prevent null/undefined errors
   const safeRatio = (numerator: number | null, denominator: number | null, asPercent = true): string => {
@@ -356,6 +359,114 @@ export default function ProfilePage() {
       status: ratio >= target ? 'good' : ratio >= (target * 0.8) ? 'okay' : 'needs_work',
       ratio: `${ratio.toFixed(1)}x`,
       target: `${target}x`
+    }
+  }
+
+  // Helper function for time formatting
+  const formatTimeOnBlur = (value: string) => {
+    let formatted = value.trim()
+    if (!formatted) return ''
+    
+    if (formatted.includes(':')) {
+      const parts = formatted.split(':')
+      if (parts.length === 2) {
+        const minutes = parts[0] || '0'
+        const seconds = parts[1].padStart(2, '0').slice(0, 2) || '00'
+        const secNum = parseInt(seconds)
+        if (!isNaN(secNum) && secNum > 59) {
+          formatted = `${minutes}:59`
+        } else {
+          formatted = `${minutes}:${seconds}`
+        }
+      }
+    } else if (/^\d+$/.test(formatted)) {
+      if (formatted.length <= 2) {
+        formatted = `${formatted}:00`
+      } else if (formatted.length <= 4) {
+        formatted = `${formatted.slice(0, 2)}:${formatted.slice(2)}`
+      } else {
+        formatted = `${formatted.slice(0, 2)}:${formatted.slice(2, 4)}`
+      }
+    }
+    return formatted
+  }
+
+  // Save benchmark function
+  const saveBenchmark = async (field: string, value: string) => {
+    if (!user) return
+    
+    setSavingBenchmark(true)
+    try {
+      const supabase = createClient()
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (!userData) throw new Error('User not found')
+
+      // Get current benchmarks
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('conditioning_benchmarks')
+        .eq('id', userData.id)
+        .single()
+
+      const currentBenchmarks = currentUser?.conditioning_benchmarks || {}
+      
+      // Map profile field names to database field names
+      const dbFieldMap: {[key: string]: string} = {
+        'mile_run': 'mile_run',
+        'five_k_run': 'five_k_run',
+        'ten_k_run': 'ten_k_run',
+        'one_k_row': 'one_k_row',
+        'two_k_row': 'two_k_row',
+        'five_k_row': 'five_k_row',
+        'air_bike_10_min': 'ten_min_air_bike'
+      }
+      
+      const dbField = dbFieldMap[field] || field
+      const updatedBenchmarks = {
+        ...currentBenchmarks,
+        [dbField]: value || null
+      }
+
+      // Update database
+      const { error } = await supabase
+        .from('users')
+        .update({
+          conditioning_benchmarks: updatedBenchmarks,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userData.id)
+
+      if (error) throw error
+
+      // Trigger profile regeneration
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        await fetch('/api/save-intake-data', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({
+            userId: userData.id,
+            benchmarks: updatedBenchmarks
+          })
+        })
+      }
+
+      // Reload profile
+      await loadProfile()
+      setEditingBenchmark(null)
+    } catch (error) {
+      console.error('Error saving benchmark:', error)
+      alert('Failed to save benchmark. Please try again.')
+    } finally {
+      setSavingBenchmark(false)
     }
   }
 
@@ -586,6 +697,63 @@ const loadProfile = async () => {
             <p className="text-yellow-700">Profile data not found. Please contact support.</p>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  // Mobile-optimized editable benchmark component
+  const EditableBenchmark = ({ field, label, value, isTime = true }: { field: string, label: string, value: string | null, isTime?: boolean }) => {
+    if (!value) return null
+    
+    const isEditing = editingBenchmark === field
+    const displayValue = benchmarkValues[field] !== undefined ? benchmarkValues[field] : (value || '')
+    
+    return (
+      <div className="flex justify-between items-center py-2 -mx-2 px-2 rounded-lg active:bg-gray-50 touch-manipulation">
+        <span className="text-gray-700 text-base">{label}</span>
+        {isEditing ? (
+          <div className="flex items-center gap-2">
+            <input
+              type={isTime ? "text" : "number"}
+              inputMode={isTime ? "numeric" : "numeric"}
+              value={displayValue}
+              onChange={(e) => setBenchmarkValues({...benchmarkValues, [field]: e.target.value})}
+              onBlur={(e) => {
+                const formatted = isTime ? formatTimeOnBlur(e.target.value) : e.target.value.trim()
+                setBenchmarkValues({...benchmarkValues, [field]: formatted})
+                saveBenchmark(field, formatted)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur()
+                }
+                if (e.key === 'Escape') {
+                  setEditingBenchmark(null)
+                  setBenchmarkValues({...benchmarkValues, [field]: value || ''})
+                }
+              }}
+              autoFocus
+              className="w-24 sm:w-20 px-3 py-2 border-2 border-coral rounded-md text-base font-semibold text-charcoal focus:outline-none focus:ring-2 focus:ring-coral"
+              disabled={savingBenchmark}
+              placeholder={isTime ? "MM:SS" : ""}
+              style={{ fontSize: '16px' }} // Prevents zoom on iOS
+            />
+            {savingBenchmark && (
+              <span className="text-sm text-gray-500">Saving...</span>
+            )}
+          </div>
+        ) : (
+          <span 
+            className="font-semibold text-charcoal text-base cursor-pointer hover:text-coral active:text-coral transition-colors min-h-[44px] flex items-center justify-end"
+            onClick={() => {
+              setEditingBenchmark(field)
+              setBenchmarkValues({...benchmarkValues, [field]: value || ''})
+            }}
+            style={{ minWidth: '44px' }} // Minimum touch target size
+          >
+            {value}
+          </span>
+        )}
       </div>
     )
   }
@@ -1016,63 +1184,63 @@ const loadProfile = async () => {
             {/* Running Column */}
             <div>
               <h3 className="font-semibold text-charcoal mb-3">RUNNING</h3>
-              <div className="space-y-2">
-                {profile.benchmarks.mile_run && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">Mile</span>
-                    <span className="font-semibold text-charcoal">{profile.benchmarks.mile_run}</span>
-                  </div>
-                )}
-                {profile.benchmarks.five_k_run && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">5K</span>
-                    <span className="font-semibold text-charcoal">{profile.benchmarks.five_k_run}</span>
-                  </div>
-                )}
-                {profile.benchmarks.ten_k_run && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">10K</span>
-                    <span className="font-semibold text-charcoal">{profile.benchmarks.ten_k_run}</span>
-                  </div>
-                )}
+              <div className="space-y-1">
+                <EditableBenchmark 
+                  field="mile_run" 
+                  label="Mile" 
+                  value={profile.benchmarks.mile_run} 
+                  isTime={true}
+                />
+                <EditableBenchmark 
+                  field="five_k_run" 
+                  label="5K" 
+                  value={profile.benchmarks.five_k_run} 
+                  isTime={true}
+                />
+                <EditableBenchmark 
+                  field="ten_k_run" 
+                  label="10K" 
+                  value={profile.benchmarks.ten_k_run} 
+                  isTime={true}
+                />
               </div>
             </div>
 
             {/* Rowing Column */}
             <div>
               <h3 className="font-semibold text-charcoal mb-3">ROWING</h3>
-              <div className="space-y-2">
-                {profile.benchmarks.one_k_row && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">1K</span>
-                    <span className="font-semibold text-charcoal">{profile.benchmarks.one_k_row}</span>
-                  </div>
-                )}
-                {profile.benchmarks.two_k_row && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">2K</span>
-                    <span className="font-semibold text-charcoal">{profile.benchmarks.two_k_row}</span>
-                  </div>
-                )}
-                {profile.benchmarks.five_k_row && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">5K</span>
-                    <span className="font-semibold text-charcoal">{profile.benchmarks.five_k_row}</span>
-                  </div>
-                )}
+              <div className="space-y-1">
+                <EditableBenchmark 
+                  field="one_k_row" 
+                  label="1K" 
+                  value={profile.benchmarks.one_k_row} 
+                  isTime={true}
+                />
+                <EditableBenchmark 
+                  field="two_k_row" 
+                  label="2K" 
+                  value={profile.benchmarks.two_k_row} 
+                  isTime={true}
+                />
+                <EditableBenchmark 
+                  field="five_k_row" 
+                  label="5K" 
+                  value={profile.benchmarks.five_k_row} 
+                  isTime={true}
+                />
               </div>
             </div>
 
             {/* Bike Column */}
             <div>
               <h3 className="font-semibold text-charcoal mb-3">BIKE</h3>
-              <div className="space-y-2">
-                {profile.benchmarks.air_bike_10_min && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">10min</span>
-                    <span className="font-semibold text-charcoal">{profile.benchmarks.air_bike_10_min}</span>
-                  </div>
-                )}
+              <div className="space-y-1">
+                <EditableBenchmark 
+                  field="air_bike_10_min" 
+                  label="10min" 
+                  value={profile.benchmarks.air_bike_10_min} 
+                  isTime={false}
+                />
               </div>
             </div>
           </div>
