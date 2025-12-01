@@ -245,7 +245,9 @@ blocks: targetDay.blocks.map((block: any) => ({
 
 
       // Include MetCon metadata if available
-metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData) : null,
+      metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData) : null,
+      // Include Engine metadata if available
+      engineData: targetDay.engineData || null,
       // Summary information (will be recalculated after modifications if needed)
       totalExercises: targetDay.blocks.reduce((sum: number, block: any) => sum + (block.exercises?.length || 0), 0),
       totalBlocks: targetDay.blocks.length
@@ -314,6 +316,10 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
                       } else if (originalBlock.blockName === 'METCONS') {
                         // METCONS: No modifications allowed - return original
                         console.warn(`⚠️ AI attempted to modify METCONS block, using original structure`)
+                        return originalBlock.exercises
+                      } else if (originalBlock.blockName === 'ENGINE') {
+                        // ENGINE: No modifications allowed - return original
+                        console.warn(`⚠️ AI attempted to modify ENGINE block, using original structure`)
                         return originalBlock.exercises
                       }
                       
@@ -415,6 +421,7 @@ metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData)
               }
             }),
             ...(ai.program.metconData && { metconData: ai.program.metconData }),
+            engineData: workout.engineData, // Preserve engineData - AI cannot modify Engine workouts
             ...(ai.source && { source: ai.source }),
             ...(ai.rationale && { rationale: ai.rationale })
           }
