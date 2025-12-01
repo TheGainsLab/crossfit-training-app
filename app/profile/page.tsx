@@ -505,18 +505,24 @@ export default function ProfilePage() {
 
       const weightValue = value.trim() ? parseFloat(value.trim()) : null
       
-      // Use upsert to update or insert
+      // Use delete-then-insert (no unique constraint exists on user_id,one_rm_index)
       if (weightValue && !isNaN(weightValue) && weightValue > 0) {
+        // Delete existing record first (if any)
+        await supabase
+          .from('user_one_rms')
+          .delete()
+          .eq('user_id', userData.id)
+          .eq('one_rm_index', liftInfo.index)
+
+        // Then insert the new value
         const { error } = await supabase
           .from('user_one_rms')
-          .upsert({
+          .insert({
             user_id: userData.id,
             one_rm_index: liftInfo.index,
             exercise_name: liftInfo.name,
             one_rm: weightValue,
             recorded_at: new Date().toISOString()
-          }, {
-            onConflict: 'user_id,one_rm_index'
           })
 
         if (error) throw error
