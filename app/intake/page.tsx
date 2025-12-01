@@ -278,53 +278,49 @@ const [currentSection, setCurrentSection] = useState<number>(1)
     return () => clearInterval(interval)
   }, [isSubmitting])
 
-  // Simple MM:SS time input component
+  // Simple MM:SS time input component - works like 1RM fields
   const TimeInput = ({ label, field } : { label: string, field: keyof IntakeFormData['conditioningBenchmarks'] }) => {
     const value = formData.conditioningBenchmarks[field] as string || ''
     
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      let input = e.target.value
-      
-      // Allow typing and auto-format as user types
-      // Remove any non-digit characters except colon
-      input = input.replace(/[^\d:]/g, '')
-      
-      // Auto-insert colon after 2+ digits if not present
-      if (input.length >= 2 && !input.includes(':')) {
-        input = input.slice(0, 2) + ':' + input.slice(2)
-      }
-      
-      // Limit to reasonable format (MM:SS)
-      const parts = input.split(':')
-      if (parts.length > 2) {
-        input = parts[0] + ':' + parts[1]
-      }
-      
-      // Limit seconds to 59
-      if (parts.length === 2 && parts[1].length > 0) {
-        const seconds = parseInt(parts[1])
-        if (!isNaN(seconds) && seconds > 59) {
-          input = parts[0] + ':59'
-        }
-      }
-      
-      updateFormData('conditioningBenchmarks', { 
-        ...formData.conditioningBenchmarks, 
-        [field]: input 
-      })
+      // Just update the value directly - no formatting while typing
+      updateConditioning(field, e.target.value)
     }
     
     const handleBlur = () => {
-      // Format on blur: ensure proper MM:SS format
-      const parts = value.split(':')
-      if (parts.length === 2) {
-        const minutes = parts[0].padStart(1, '0') || '0'
-        const seconds = parts[1].padStart(2, '0').slice(0, 2) || '00'
-        const formatted = `${minutes}:${seconds}`
-        updateFormData('conditioningBenchmarks', { 
-          ...formData.conditioningBenchmarks, 
-          [field]: formatted 
-        })
+      // Only format on blur when user is done typing
+      let formatted = value.trim()
+      
+      // If empty, leave it empty
+      if (!formatted) {
+        return
+      }
+      
+      // If it's already in MM:SS format, just ensure seconds are 2 digits
+      if (formatted.includes(':')) {
+        const parts = formatted.split(':')
+        if (parts.length === 2) {
+          const minutes = parts[0] || '0'
+          const seconds = parts[1].padStart(2, '0').slice(0, 2) || '00'
+          // Limit seconds to 59
+          const secNum = parseInt(seconds)
+          if (!isNaN(secNum) && secNum > 59) {
+            formatted = `${minutes}:59`
+          } else {
+            formatted = `${minutes}:${seconds}`
+          }
+          updateConditioning(field, formatted)
+        }
+      } else if (/^\d+$/.test(formatted)) {
+        // If user entered just numbers, format it
+        if (formatted.length <= 2) {
+          formatted = `${formatted}:00`
+        } else if (formatted.length <= 4) {
+          formatted = `${formatted.slice(0, 2)}:${formatted.slice(2)}`
+        } else {
+          formatted = `${formatted.slice(0, 2)}:${formatted.slice(2, 4)}`
+        }
+        updateConditioning(field, formatted)
       }
     }
     
