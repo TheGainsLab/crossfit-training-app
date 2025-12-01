@@ -262,12 +262,6 @@ const FoundationProgress = ({ lift, weight, ratio, thresholds }: FoundationProgr
   className="absolute top-0 left-0 h-4 rounded-full transition-all duration-500 bg-slate-blue"
   style={{ width: `${position}%` }}
 />
-          
-          {/* Current Position Marker */}
-          <div 
-            className="absolute top-0 w-0.5 h-4 bg-charcoal"
-            style={{ left: `${position}%` }}
-          />
         </div>
         
         {/* Level Labels (gender-specific thresholds) */}
