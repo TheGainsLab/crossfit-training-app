@@ -67,22 +67,27 @@ export default function Dashboard() {
       setUserName(userData.email?.split('@')[0] || 'User')
       setSubscriptionTier(userData.subscription_tier || 'Premium')
 
-      // Get programs
-      const { data: programsData } = await supabase
-        .from('programs')
-        .select('id, user_id, generated_at, weeks_generated')
+      // For FULL-PROGRAM users, we'll use programId=1 and show current week
+      // Query workout_days directly to find available workouts
+      const { data: workoutDays, error: workoutError } = await supabase
+        .from('workout_days')
+        .select('program_id, week_number, day_number')
         .eq('user_id', userData.id)
-        .order('generated_at', { ascending: false })
+        .order('week_number', { ascending: false })
+        .order('day_number', { ascending: true })
+        .limit(5)
 
-      if (programsData && programsData.length > 0) {
-        setPrograms(programsData)
+      if (workoutError) {
+        console.error('Error fetching workout days:', workoutError)
+      }
 
-        // Get the most recent program and week
-        const latestProgram = programsData[0]
-        const latestWeek = Math.max(...latestProgram.weeks_generated)
+      if (workoutDays && workoutDays.length > 0) {
+        // Get the most recent week
+        const latestWeek = workoutDays[0].week_number
+        const programId = workoutDays[0].program_id
 
-        // Load workout data for the current week
-        await loadWeekWorkouts(latestProgram.id, latestWeek, userData.id)
+        // Load workouts for this week
+        await loadWeekWorkouts(programId, latestWeek, userData.id)
       }
     } catch (error) {
       console.error('Error loading dashboard:', error)
