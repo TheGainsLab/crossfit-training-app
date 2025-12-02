@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { createClient } from '@/lib/supabase/client'
+import { fetchWorkout, type WorkoutData } from '@/lib/api/workouts'
 import ExerciseCard from '@/components/ExerciseCard'
 import MetConCard from '@/components/MetConCard'
 import EngineBlockCard from '@/components/EngineBlockCard'
@@ -81,26 +81,16 @@ export default function WorkoutPage() {
   const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    const fetchWorkout = async () => {
+    const loadWorkout = async () => {
       try {
         setLoading(true)
         setError(null)
 
-        // TODO: Replace with actual API endpoint when backend is ready
-        // For now, we'll use the Supabase client directly
-        const supabase = createClient()
-
-        // This is a placeholder - you'll need to implement the actual data fetching
-        // based on your backend API structure
-        const response = await fetch(
-          `${process.env.EXPO_PUBLIC_API_URL}/api/workouts/${programId}/week/${week}/day/${day}`
+        const data = await fetchWorkout(
+          parseInt(programId),
+          parseInt(week),
+          parseInt(day)
         )
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch workout')
-        }
-
-        const data = await response.json()
 
         if (data.success && data.workout) {
           setWorkout(data.workout)
@@ -132,7 +122,7 @@ export default function WorkoutPage() {
       }
     }
 
-    fetchWorkout()
+    loadWorkout()
   }, [programId, week, day])
 
   const toggleBlock = (blockName: string, index: number) => {
