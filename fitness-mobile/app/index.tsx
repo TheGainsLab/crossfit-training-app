@@ -44,7 +44,7 @@ export default function Index() {
             .single()
 
           if (programData) {
-            router.replace('/dashboard')
+            router.replace('/(tabs)')
           } else {
             router.replace('/auth/signin')
           }
