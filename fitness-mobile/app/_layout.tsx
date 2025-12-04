@@ -56,7 +56,7 @@ function RootLayoutNav() {
         <Stack.Screen name="auth/signin" options={{ headerShown: false }} />
         <Stack.Screen name="dashboard/index" options={{ headerShown: false }} />
         <Stack.Screen name="workout/[programId]/week/[week]/day/[day]" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="engine" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>

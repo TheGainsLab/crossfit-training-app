@@ -1,0 +1,1961 @@
+import React, { useState, useEffect } from 'react'
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  TextInput,
+  StyleSheet
+} from 'react-native'
+import { useRouter } from 'expo-router'
+import { createClient } from '@/lib/supabase/client'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { SectionHeader } from '@/components/ui/SectionHeader'
+
+interface ProfileData {
+  user_summary: {
+    name: string
+    email: string
+    gender: string
+    units: string
+    body_weight: number | null
+    equipment: string[]
+    ability_level: string
+  }
+  one_rms: {
+    snatch: number | null
+    clean_and_jerk: number | null
+    power_snatch: number | null
+    power_clean: number | null
+    clean_only: number | null
+    jerk_only: number | null
+    back_squat: number | null
+    front_squat: number | null
+    overhead_squat: number | null
+    deadlift: number | null
+    bench_press: number | null
+    push_press: number | null
+    strict_press: number | null
+    weighted_pullup: number | null
+  }
+  benchmarks: {
+    mile_run: string | null
+    five_k_run: string | null
+    ten_k_run: string | null
+    one_k_row: string | null
+    two_k_row: string | null
+    five_k_row: string | null
+    air_bike_10_min: string | null
+  }
+  skills_assessment: {
+    dont_have: string[]
+    beginner: string[]
+    intermediate: string[]
+    advanced: string[]
+    advanced_count: number
+    total_skills_assessed: number
+  }
+  technical_focus?: {
+    snatch_technical_count: number
+    clean_jerk_technical_count: number
+  }
+  accessory_needs?: {
+    needs_upper_back: boolean
+    needs_leg_strength: boolean
+    needs_posterior_chain: boolean
+    needs_upper_body_pressing: boolean
+    needs_upper_body_pulling: boolean
+    needs_core: boolean
+  }
+  generated_at: string
+}
+
+interface FoundationProgressProps {
+  lift: string
+  weight: string
+  ratio: number
+  thresholds: {
+    beginner: number
+    intermediate: number
+    advanced: number
+    elite: number
+  }
+  field: string
+  isEditing?: boolean
+  displayValue?: string
+  onPress?: () => void
+  onBlur?: () => void
+  onChangeText?: (text: string) => void
+  saving?: boolean
+  unit?: string
+}
+
+interface OlympicProgressProps {
+  lift: string
+  weight: string
+  current: number
+  target: number
+  field: string
+  isEditing?: boolean
+  displayValue?: string
+  onPress?: () => void
+  onBlur?: () => void
+  onChangeText?: (text: string) => void
+  saving?: boolean
+  unit?: string
+}
+
+const OlympicProgress = ({ lift, weight, current, target, field, isEditing, displayValue, onPress, onBlur, onChangeText, saving, unit }: OlympicProgressProps) => {
+  const position = Math.min((current / target), 1) * 100
+  
+  return (
+    <View style={progressStyles.container}>
+      <View style={progressStyles.header}>
+        <Text style={progressStyles.liftLabel}>{lift}:</Text>
+        {isEditing ? (
+          <View style={progressStyles.editingContainer}>
+            <TextInput
+              value={displayValue}
+              onChangeText={onChangeText}
+              onBlur={onBlur}
+              keyboardType="numeric"
+              placeholder="0"
+              style={progressStyles.editingInput}
+              autoFocus
+              editable={!saving}
+            />
+            {unit && <Text style={progressStyles.unitText}>{unit}</Text>}
+            {saving && <Text style={progressStyles.savingText}>Saving...</Text>}
+          </View>
+        ) : (
+          <TouchableOpacity onPress={onPress}>
+            <Text style={progressStyles.weightText}>{weight}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      
+      {/* Progress Bar Container */}
+      <View style={progressStyles.progressBarContainer}>
+        {/* Background Bar */}
+        <View style={progressStyles.progressBarBackground} />
+        
+        {/* Progress Fill */}
+        <View
+          style={[progressStyles.progressBarFill, { width: `${position}%` }]}
+        />
+      </View>
+      
+      {/* Target Label */}
+      <View style={progressStyles.targetContainer}>
+        <View style={progressStyles.targetBadge}>
+          <Text style={progressStyles.targetText}>{Math.round(current)}% / {Math.round(target)}% target</Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+const FoundationProgress = ({ lift, weight, ratio, thresholds, field, isEditing, displayValue, onPress, onBlur, onChangeText, saving, unit }: FoundationProgressProps) => {
+  const maxValue = thresholds.elite
+  const position = Math.min((ratio / maxValue) * 100, 100)
+  
+  // Determine current level
+  let currentLevel = 'Beginner'
+  if (ratio >= thresholds.elite * 0.9) currentLevel = 'Elite'
+  else if (ratio >= thresholds.advanced * 0.9) currentLevel = 'Advanced'
+  else if (ratio >= thresholds.intermediate * 0.9) currentLevel = 'Intermediate'
+
+  return (
+    <View style={progressStyles.container}>
+      <View style={progressStyles.header}>
+        <Text style={progressStyles.liftLabel}>{lift}:</Text>
+        {isEditing ? (
+          <View style={progressStyles.editingContainer}>
+            <TextInput
+              value={displayValue}
+              onChangeText={onChangeText}
+              onBlur={onBlur}
+              keyboardType="numeric"
+              placeholder="0"
+              style={progressStyles.editingInput}
+              autoFocus
+              editable={!saving}
+            />
+            {unit && <Text style={progressStyles.unitText}>{unit}</Text>}
+            {saving && <Text style={progressStyles.savingText}>Saving...</Text>}
+          </View>
+        ) : (
+          <TouchableOpacity onPress={onPress}>
+            <Text style={progressStyles.weightText}>{weight}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      
+      {/* Progress Bar Container */}
+      <View style={progressStyles.progressBarContainer}>
+        {/* Background Bar with Level Sections */}
+        <View style={progressStyles.foundationBarBackground}>
+          <View style={[progressStyles.foundationBarSection, { backgroundColor: '#D1D5DB', borderRightWidth: 1, borderRightColor: '#FFFFFF' }]} />
+          <View style={[progressStyles.foundationBarSection, { backgroundColor: 'rgba(218, 226, 234, 0.5)', borderRightWidth: 1, borderRightColor: '#FFFFFF' }]} />
+          <View style={[progressStyles.foundationBarSection, { backgroundColor: 'rgba(254, 88, 88, 0.2)', borderRightWidth: 1, borderRightColor: '#FFFFFF' }]} />
+          <View style={[progressStyles.foundationBarSection, { backgroundColor: 'rgba(40, 43, 52, 0.2)' }]} />
+        </View>
+        
+        {/* Progress Fill */}
+        <View
+          style={[progressStyles.foundationProgressFill, { width: `${position}%` }]}
+        />
+      </View>
+      
+      {/* Level Labels */}
+      <View style={progressStyles.levelLabels}>
+        <View style={progressStyles.levelLabel}>
+          <Text style={progressStyles.levelValue}>{thresholds.beginner}</Text>
+          <Text style={progressStyles.levelText}>Beginner</Text>
+        </View>
+        <View style={[progressStyles.levelLabel, progressStyles.levelLabelCenter]}>
+          <Text style={progressStyles.levelValue}>{thresholds.intermediate}</Text>
+          <Text style={progressStyles.levelText}>Intermediate</Text>
+        </View>
+        <View style={[progressStyles.levelLabel, progressStyles.levelLabelCenter]}>
+          <Text style={progressStyles.levelValue}>{thresholds.advanced}</Text>
+          <Text style={progressStyles.levelText}>Advanced</Text>
+        </View>
+        <View style={[progressStyles.levelLabel, progressStyles.levelLabelEnd]}>
+          <Text style={progressStyles.levelValue}>{thresholds.elite}</Text>
+          <Text style={progressStyles.levelText}>Elite</Text>
+        </View>
+      </View>
+      
+      {/* Current Value */}
+      <View style={progressStyles.currentValueContainer}>
+        <View style={progressStyles.currentValueBadge}>
+          <Text style={progressStyles.currentValueText}>{ratio.toFixed(1)}x</Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+const progressStyles = StyleSheet.create({
+  container: {
+    marginBottom: 24,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  liftLabel: {
+    fontWeight: '600',
+    color: '#282B34',
+    fontSize: 16,
+  },
+  editingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editingInput: {
+    width: 96,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 2,
+    borderColor: '#FE5858',
+    borderRadius: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#282B34',
+  },
+  unitText: {
+    fontSize: 14,
+    color: '#4B5563',
+  },
+  savingText: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  weightText: {
+    fontWeight: '600',
+    color: '#282B34',
+    fontSize: 16,
+  },
+  progressBarContainer: {
+    position: 'relative',
+    marginBottom: 8,
+  },
+  progressBarBackground: {
+    width: '100%',
+    height: 16,
+    backgroundColor: '#DAE2EA',
+    borderRadius: 999,
+  },
+  progressBarFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: 16,
+    borderRadius: 999,
+    backgroundColor: '#FE5858',
+  },
+  foundationBarBackground: {
+    width: '100%',
+    height: 16,
+    backgroundColor: '#DAE2EA',
+    borderRadius: 999,
+    overflow: 'hidden',
+    flexDirection: 'row',
+  },
+  foundationBarSection: {
+    flex: 1,
+  },
+  foundationProgressFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: 16,
+    borderRadius: 999,
+    backgroundColor: '#DAE2EA',
+  },
+  targetContainer: {
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  targetBadge: {
+    backgroundColor: '#DAE2EA',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  targetText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  levelLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  levelLabel: {
+    alignItems: 'flex-start',
+  },
+  levelLabelCenter: {
+    alignItems: 'center',
+  },
+  levelLabelEnd: {
+    alignItems: 'flex-end',
+  },
+  levelValue: {
+    fontSize: 12,
+    color: '#282B34',
+  },
+  levelText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#282B34',
+  },
+  currentValueContainer: {
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  currentValueBadge: {
+    backgroundColor: '#FE5858',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  currentValueText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+})
+
+const skillCategories = [
+  {
+    name: 'Basic CrossFit skills',
+    skills: ['Double Unders', 'Wall Balls']
+  },
+  {
+    name: 'Upper Body Pulling',
+    skills: ['Toes to Bar', 'Pull-ups (kipping or butterfly)', 'Chest to Bar Pull-ups', 'Strict Pull-ups']
+  },
+  {
+    name: 'Upper Body Pressing',
+    skills: ['Push-ups', 'Ring Dips', 'Strict Ring Dips', 'Strict Handstand Push-ups', 'Wall Facing Handstand Push-ups', 'Deficit Handstand Push-ups (4")']
+  },
+  {
+    name: 'Additional Common Skills',
+    skills: ['Alternating Pistols', 'GHD Sit-ups', 'Wall Walks']
+  },
+  {
+    name: 'Advanced Upper Body Pulling',
+    skills: ['Ring Muscle Ups', 'Bar Muscle Ups', 'Rope Climbs']
+  },
+  {
+    name: 'Holds',
+    skills: ['Wall Facing Handstand Hold', 'Freestanding Handstand Hold']
+  },
+  {
+    name: 'Advanced Gymnastics',
+    skills: ['Legless Rope Climbs', 'Pegboard Ascent', 'Handstand Walk (10m or 25\')', 'Seated Legless Rope Climbs', 'Strict Ring Muscle Ups', 'Handstand Walk Obstacle Crossings']
+  }
+]
+
+export default function ProfilePage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [profile, setProfile] = useState<ProfileData | null>(null)
+  const [height, setHeight] = useState<number | null>(null)
+  const [age, setAge] = useState<number | null>(null)
+  const [expandedCategories, setExpandedCategories] = useState<string[]>(['foundation-strength'])
+  const [userSkills, setUserSkills] = useState<{[key: string]: string}>({})
+  const [editingBenchmark, setEditingBenchmark] = useState<string | null>(null)
+  const [benchmarkValues, setBenchmarkValues] = useState<{[key: string]: string}>({})
+  const [savingBenchmark, setSavingBenchmark] = useState(false)
+  const [editingLift, setEditingLift] = useState<string | null>(null)
+  const [liftValues, setLiftValues] = useState<{[key: string]: string}>({})
+  const [savingLift, setSavingLift] = useState(false)
+
+  useEffect(() => {
+    loadProfile()
+  }, [])
+
+  const loadProfile = async () => {
+    try {
+      const supabase = createClient()
+      setLoading(true)
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setError('Not authenticated')
+        setLoading(false)
+        return
+      }
+
+      // Get user data for height/age
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id, height, age')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (userData) {
+        setHeight(userData.height)
+        setAge(userData.age)
+      }
+
+      // Get profile data
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userData?.id)
+        .order('generated_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (!profileData) {
+        setError('No profile found. Please complete the intake assessment.')
+        setLoading(false)
+        return
+      }
+
+      setProfile(profileData.profile_data)
+
+      // Load user skills
+      const { data: skillsData } = await supabase
+        .from('user_skills')
+        .select('skill_name, skill_level')
+        .eq('user_id', userData?.id)
+
+      if (skillsData) {
+        const skillsMap: {[key: string]: string} = {}
+        skillsData.forEach((skill: { skill_name: string; skill_level: string }) => {
+          skillsMap[skill.skill_name] = skill.skill_level
+        })
+        setUserSkills(skillsMap)
+      }
+
+      setLoading(false)
+    } catch (err) {
+      console.error('Error loading profile:', err)
+      setError('Failed to load profile')
+      setLoading(false)
+    }
+  }
+
+  const formatWeight = (weight: number | null) => {
+    if (!weight) return 'Not recorded'
+    const unit = profile?.user_summary.units.includes('kg') ? 'kg' : 'lbs'
+    return `${weight} ${unit}`
+  }
+
+  const calculateBMI = (): number | null => {
+    if (!profile?.user_summary.body_weight || !height) return null
+    const weight = profile.user_summary.body_weight
+    const isMetric = profile.user_summary.units.includes('kg')
+    
+    const weightKg = isMetric ? weight : weight * 0.453592
+    const heightM = isMetric ? height / 100 : height * 0.0254
+    
+    if (heightM === 0) return null
+    return parseFloat((weightKg / (heightM * heightM)).toFixed(1))
+  }
+
+  const calculateBMR = (): number | null => {
+    if (!profile?.user_summary.body_weight || !height || !age) return null
+    const weight = profile.user_summary.body_weight
+    const isMetric = profile.user_summary.units.includes('kg')
+    const gender = profile.user_summary.gender
+    
+    const weightKg = isMetric ? weight : weight * 0.453592
+    const heightCm = isMetric ? height : height * 2.54
+    
+    const s = gender === 'Male' ? 5 : -161
+    const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + s
+    
+    return Math.round(bmr)
+  }
+
+  const getSkillLevel = (skillName: string): string => {
+    if (userSkills[skillName]) {
+      return userSkills[skillName]
+    }
+    if (profile?.skills_assessment.advanced.includes(skillName)) return 'Advanced'
+    if (profile?.skills_assessment.intermediate.includes(skillName)) return 'Intermediate'
+    if (profile?.skills_assessment.beginner.includes(skillName)) return 'Beginner'
+    return "Don't have it"
+  }
+
+  const getCategoryStats = (skills: string[]): string => {
+    const completed = skills.filter(skill => {
+      const level = getSkillLevel(skill)
+      return level === 'Advanced' || level === 'Intermediate' || level === 'Beginner'
+    }).length
+    return `${completed}/${skills.length}`
+  }
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(name => name !== category)
+        : [...prev, category]
+    )
+  }
+
+  const saveBenchmark = async (field: string, value: string) => {
+    setSavingBenchmark(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (!userData) throw new Error('User not found')
+
+      // Get current benchmarks
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('conditioning_benchmarks')
+        .eq('id', userData.id)
+        .single()
+
+      const currentBenchmarks = currentUser?.conditioning_benchmarks || {}
+      
+      // Map profile field names to database field names
+      const dbFieldMap: {[key: string]: string} = {
+        'mile_run': 'mile_run',
+        'five_k_run': 'five_k_run',
+        'ten_k_run': 'ten_k_run',
+        'one_k_row': 'one_k_row',
+        'two_k_row': 'two_k_row',
+        'five_k_row': 'five_k_row',
+        'air_bike_10_min': 'ten_min_air_bike'
+      }
+      
+      const dbField = dbFieldMap[field] || field
+      const updatedBenchmarks = {
+        ...currentBenchmarks,
+        [dbField]: value || null
+      }
+
+      const { error } = await supabase
+        .from('users')
+        .update({
+          conditioning_benchmarks: updatedBenchmarks,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userData.id)
+
+      if (error) throw error
+
+      // Update local state
+      if (profile) {
+        setProfile({
+          ...profile,
+          benchmarks: {
+            ...profile.benchmarks,
+            [field]: value || null
+          }
+        })
+      }
+      
+      setEditingBenchmark(null)
+    } catch (error) {
+      console.error('Error saving benchmark:', error)
+      Alert.alert('Error', 'Failed to save benchmark. Please try again.')
+    } finally {
+      setSavingBenchmark(false)
+    }
+  }
+
+  const saveLift = async (field: string, value: string) => {
+    setSavingLift(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (!userData) throw new Error('User not found')
+
+      // Map profile field names to database structure
+      const liftMap: {[key: string]: {index: number, name: string}} = {
+        'snatch': { index: 0, name: 'Snatch' },
+        'clean_and_jerk': { index: 1, name: 'Clean and Jerk' },
+        'power_snatch': { index: 2, name: 'Power Snatch' },
+        'power_clean': { index: 3, name: 'Power Clean' },
+        'clean_only': { index: 4, name: 'Clean (clean only)' },
+        'jerk_only': { index: 5, name: 'Jerk (from rack or blocks, max Split or Power Jerk)' },
+        'back_squat': { index: 6, name: 'Back Squat' },
+        'front_squat': { index: 7, name: 'Front Squat' },
+        'overhead_squat': { index: 8, name: 'Overhead Squat' },
+        'deadlift': { index: 9, name: 'Deadlift' },
+        'bench_press': { index: 10, name: 'Bench Press' },
+        'push_press': { index: 11, name: 'Push Press' },
+        'strict_press': { index: 12, name: 'Strict Press' },
+        'weighted_pullup': { index: 13, name: 'Weighted Pullup (do not include body weight)' }
+      }
+
+      const liftInfo = liftMap[field]
+      if (!liftInfo) throw new Error('Invalid lift field')
+
+      const weightValue = value.trim() ? parseFloat(value.trim()) : null
+      
+      if (weightValue && !isNaN(weightValue) && weightValue > 0) {
+        // Delete existing record first
+        await supabase
+          .from('user_one_rms')
+          .delete()
+          .eq('user_id', userData.id)
+          .eq('one_rm_index', liftInfo.index)
+
+        // Then insert the new value
+        const { error } = await supabase
+          .from('user_one_rms')
+          .insert({
+            user_id: userData.id,
+            one_rm_index: liftInfo.index,
+            exercise_name: liftInfo.name,
+            one_rm: weightValue,
+            recorded_at: new Date().toISOString()
+          })
+
+        if (error) throw error
+      } else {
+        // Delete if value is empty or 0
+        const { error } = await supabase
+          .from('user_one_rms')
+          .delete()
+          .eq('user_id', userData.id)
+          .eq('one_rm_index', liftInfo.index)
+
+        if (error) throw error
+      }
+
+      // Update local state
+      if (profile) {
+        setProfile({
+          ...profile,
+          one_rms: {
+            ...profile.one_rms,
+            [field]: weightValue
+          }
+        })
+      }
+      
+      setEditingLift(null)
+    } catch (error) {
+      console.error('Error saving lift:', error)
+      Alert.alert('Error', 'Failed to save lift. Please try again.')
+    } finally {
+      setSavingLift(false)
+    }
+  }
+
+  // Helper functions for ratios
+  const safeRatio = (numerator: number | null, denominator: number | null, asPercent = true): string => {
+    if (!numerator || !denominator || denominator === 0) return 'N/A'
+    const ratio = numerator / denominator
+    return asPercent ? `${Math.round(ratio * 100)}%` : ratio.toFixed(1) + 'x'
+  }
+
+  const getRatioStatusWithRange = (numerator: number | null, denominator: number | null, minRange: number, maxRange: number): { backgroundColor: string, status: string | null, value: string } => {
+    if (!numerator || !denominator || denominator === 0) {
+      return { backgroundColor: '#9CA3AF', status: null, value: 'N/A' }
+    }
+    const ratio = numerator / denominator
+    const value = `${Math.round(ratio * 100)}%`
+    
+    if (ratio >= minRange && ratio <= maxRange) {
+      return { backgroundColor: '#10B981', status: null, value }
+    } else if (ratio > maxRange) {
+      return { backgroundColor: '#EF4444', status: 'high', value }
+    } else {
+      return { backgroundColor: '#EF4444', status: 'low', value }
+    }
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FE5858" />
+        <Text style={styles.loadingText}>Loading your profile...</Text>
+      </View>
+    )
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.errorButton}
+        >
+          <Text style={styles.errorButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.noProfileText}>No profile data found. Please complete the intake assessment.</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.errorButton}
+        >
+          <Text style={styles.errorButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.headerTitle}>Athlete Profile</Text>
+            <Text style={styles.headerSubtitle}>
+              {profile.user_summary.name} • {new Date(profile.generated_at).toLocaleDateString()}
+            </Text>
+            {(calculateBMI() !== null || calculateBMR() !== null) && (
+              <View style={styles.bmiBmrContainer}>
+                {calculateBMI() !== null && (
+                  <Text style={styles.bmiBmrText}>
+                    <Text style={styles.bmiBmrLabel}>BMI:</Text> {calculateBMI()}
+                  </Text>
+                )}
+                {calculateBMR() !== null && (
+                  <Text style={styles.bmiBmrText}>
+                    <Text style={styles.bmiBmrLabel}>BMR:</Text> {calculateBMR()} kcal/day
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+          <Button
+            variant="primary"
+            size="sm"
+            onPress={() => router.push('/settings')}
+          >
+            Settings
+          </Button>
+        </View>
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+      >
+        {/* Foundation Strength */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>FOUNDATION STRENGTH</Text>
+            <TouchableOpacity onPress={() => toggleCategory('foundation-strength')}>
+              <Text style={styles.toggleText}>
+                [{expandedCategories.includes('foundation-strength') ? '- Hide' : '+ View'}]
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sectionDivider} />
+          <Text style={styles.sectionDescription}>Primary strength to weight ratios</Text>
+          
+          {expandedCategories.includes('foundation-strength') && (
+            <>
+              <FoundationProgress
+                lift="Back Squat"
+                weight={formatWeight(profile.one_rms.back_squat)}
+                ratio={profile.one_rms.back_squat && profile.user_summary.body_weight
+                  ? parseFloat((profile.one_rms.back_squat / profile.user_summary.body_weight).toFixed(1))
+                  : 0}
+                thresholds={profile.user_summary.gender === 'Female' ? {
+                  beginner: 0.9,
+                  intermediate: 1.2,
+                  advanced: 1.5,
+                  elite: 1.9
+                } : {
+                  beginner: 1.0,
+                  intermediate: 1.4,
+                  advanced: 1.8,
+                  elite: 2.4
+                }}
+                field="back_squat"
+                isEditing={editingLift === 'back_squat'}
+                displayValue={liftValues['back_squat'] !== undefined ? liftValues['back_squat'] : (profile.one_rms.back_squat ? profile.one_rms.back_squat.toString() : '')}
+                onPress={() => {
+                  setEditingLift('back_squat')
+                  setLiftValues({...liftValues, back_squat: profile.one_rms.back_squat ? profile.one_rms.back_squat.toString() : ''})
+                }}
+                onBlur={() => {
+                  const value = liftValues['back_squat'] || (profile.one_rms.back_squat ? profile.one_rms.back_squat.toString() : '')
+                  saveLift('back_squat', value)
+                }}
+                onChangeText={(text) => setLiftValues({...liftValues, back_squat: text})}
+                saving={savingLift}
+                unit={profile.user_summary.units.includes('kg') ? 'kg' : 'lbs'}
+              />
+              
+              <FoundationProgress
+                lift="Deadlift"
+                weight={formatWeight(profile.one_rms.deadlift)}
+                ratio={profile.one_rms.deadlift && profile.user_summary.body_weight
+                  ? parseFloat((profile.one_rms.deadlift / profile.user_summary.body_weight).toFixed(1))
+                  : 0}
+                thresholds={profile.user_summary.gender === 'Female' ? {
+                  beginner: 1.1,
+                  intermediate: 1.3,
+                  advanced: 1.7,
+                  elite: 2.1
+                } : {
+                  beginner: 1.3,
+                  intermediate: 1.6,
+                  advanced: 2.2,
+                  elite: 2.7
+                }}
+                field="deadlift"
+                isEditing={editingLift === 'deadlift'}
+                displayValue={liftValues['deadlift'] !== undefined ? liftValues['deadlift'] : (profile.one_rms.deadlift ? profile.one_rms.deadlift.toString() : '')}
+                onPress={() => {
+                  setEditingLift('deadlift')
+                  setLiftValues({...liftValues, deadlift: profile.one_rms.deadlift ? profile.one_rms.deadlift.toString() : ''})
+                }}
+                onBlur={() => {
+                  const value = liftValues['deadlift'] || (profile.one_rms.deadlift ? profile.one_rms.deadlift.toString() : '')
+                  saveLift('deadlift', value)
+                }}
+                onChangeText={(text) => setLiftValues({...liftValues, deadlift: text})}
+                saving={savingLift}
+                unit={profile.user_summary.units.includes('kg') ? 'kg' : 'lbs'}
+              />
+              
+              <FoundationProgress
+                lift="Bench Press"
+                weight={formatWeight(profile.one_rms.bench_press)}
+                ratio={profile.one_rms.bench_press && profile.user_summary.body_weight
+                  ? parseFloat((profile.one_rms.bench_press / profile.user_summary.body_weight).toFixed(1))
+                  : 0}
+                thresholds={profile.user_summary.gender === 'Female' ? {
+                  beginner: 0.6,
+                  intermediate: 0.8,
+                  advanced: 1.0,
+                  elite: 1.3
+                } : {
+                  beginner: 0.8,
+                  intermediate: 1.1,
+                  advanced: 1.4,
+                  elite: 1.7
+                }}
+                field="bench_press"
+                isEditing={editingLift === 'bench_press'}
+                displayValue={liftValues['bench_press'] !== undefined ? liftValues['bench_press'] : (profile.one_rms.bench_press ? profile.one_rms.bench_press.toString() : '')}
+                onPress={() => {
+                  setEditingLift('bench_press')
+                  setLiftValues({...liftValues, bench_press: profile.one_rms.bench_press ? profile.one_rms.bench_press.toString() : ''})
+                }}
+                onBlur={() => {
+                  const value = liftValues['bench_press'] || (profile.one_rms.bench_press ? profile.one_rms.bench_press.toString() : '')
+                  saveLift('bench_press', value)
+                }}
+                onChangeText={(text) => setLiftValues({...liftValues, bench_press: text})}
+                saving={savingLift}
+                unit={profile.user_summary.units.includes('kg') ? 'kg' : 'lbs'}
+              />
+            </>
+          )}
+        </View>
+
+        {/* Olympic Lifts */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>OLYMPIC LIFTS</Text>
+            <TouchableOpacity onPress={() => toggleCategory('olympic-lifts')}>
+              <Text style={styles.toggleText}>
+                [{expandedCategories.includes('olympic-lifts') ? '- Hide' : '+ View'}]
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sectionDivider} />
+          <Text style={styles.sectionDescription}>Primary Olympic lifts with bodyweight ratio targets</Text>
+          
+          {expandedCategories.includes('olympic-lifts') && (
+            <>
+              <OlympicProgress
+                lift="Snatch"
+                weight={formatWeight(profile.one_rms.snatch)}
+                current={profile.one_rms.snatch && profile.user_summary.body_weight
+                  ? Math.round((profile.one_rms.snatch / profile.user_summary.body_weight) * 100)
+                  : 0}
+                target={profile.user_summary.gender === 'Female' ? 60 : 75}
+                field="snatch"
+                isEditing={editingLift === 'snatch'}
+                displayValue={liftValues['snatch'] !== undefined ? liftValues['snatch'] : (profile.one_rms.snatch ? profile.one_rms.snatch.toString() : '')}
+                onPress={() => {
+                  setEditingLift('snatch')
+                  setLiftValues({...liftValues, snatch: profile.one_rms.snatch ? profile.one_rms.snatch.toString() : ''})
+                }}
+                onBlur={() => {
+                  const value = liftValues['snatch'] || (profile.one_rms.snatch ? profile.one_rms.snatch.toString() : '')
+                  saveLift('snatch', value)
+                }}
+                onChangeText={(text) => setLiftValues({...liftValues, snatch: text})}
+                saving={savingLift}
+                unit={profile.user_summary.units.includes('kg') ? 'kg' : 'lbs'}
+              />
+              
+              <OlympicProgress
+                lift="Clean & Jerk"
+                weight={formatWeight(profile.one_rms.clean_and_jerk)}
+                current={profile.one_rms.clean_and_jerk && profile.user_summary.body_weight
+                  ? Math.round((profile.one_rms.clean_and_jerk / profile.user_summary.body_weight) * 100)
+                  : 0}
+                target={profile.user_summary.gender === 'Female' ? 75 : 95}
+                field="clean_and_jerk"
+                isEditing={editingLift === 'clean_and_jerk'}
+                displayValue={liftValues['clean_and_jerk'] !== undefined ? liftValues['clean_and_jerk'] : (profile.one_rms.clean_and_jerk ? profile.one_rms.clean_and_jerk.toString() : '')}
+                onPress={() => {
+                  setEditingLift('clean_and_jerk')
+                  setLiftValues({...liftValues, clean_and_jerk: profile.one_rms.clean_and_jerk ? profile.one_rms.clean_and_jerk.toString() : ''})
+                }}
+                onBlur={() => {
+                  const value = liftValues['clean_and_jerk'] || (profile.one_rms.clean_and_jerk ? profile.one_rms.clean_and_jerk.toString() : '')
+                  saveLift('clean_and_jerk', value)
+                }}
+                onChangeText={(text) => setLiftValues({...liftValues, clean_and_jerk: text})}
+                saving={savingLift}
+                unit={profile.user_summary.units.includes('kg') ? 'kg' : 'lbs'}
+              />
+            </>
+          )}
+        </View>
+
+        {/* Strength Ratios */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>STRENGTH RATIOS</Text>
+            <TouchableOpacity onPress={() => toggleCategory('strength-ratios')}>
+              <Text style={styles.toggleText}>
+                [{expandedCategories.includes('strength-ratios') ? '- Hide' : '+ View'}]
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sectionDivider} />
+          <Text style={styles.sectionDescription}>Lift-to-lift ratios for technical balance</Text>
+          
+          {expandedCategories.includes('strength-ratios') && (
+            <View>
+              {/* Olympic Balance */}
+              <View style={styles.ratioSubsection}>
+                <Text style={styles.ratioSubsectionTitle}>OLYMPIC BALANCE</Text>
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.power_snatch, profile.one_rms.snatch, 0.74, 0.80)
+                  return (
+                    <View style={styles.ratioRow}>
+                      <Text style={styles.ratioLabel}>Power Snatch to Snatch</Text>
+                      <View style={styles.ratioValueContainer}>
+                        <View style={[styles.ratioIndicator, { backgroundColor: status.backgroundColor }]} />
+                        <Text style={styles.ratioValue}>{status.value}</Text>
+                        {status.status && <Text style={styles.ratioStatus}>{status.status}</Text>}
+                      </View>
+                    </View>
+                  )
+                })()}
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.power_clean, profile.one_rms.clean_only, 0.79, 0.85)
+                  return (
+                    <View style={styles.ratioRow}>
+                      <Text style={styles.ratioLabel}>Power Clean to Clean</Text>
+                      <View style={styles.ratioValueContainer}>
+                        <View style={[styles.ratioIndicator, { backgroundColor: status.backgroundColor }]} />
+                        <Text style={styles.ratioValue}>{status.value}</Text>
+                        {status.status && <Text style={styles.ratioStatus}>{status.status}</Text>}
+                      </View>
+                    </View>
+                  )
+                })()}
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.jerk_only, profile.one_rms.clean_only, 0.975, 1.075)
+                  return (
+                    <View style={styles.ratioRow}>
+                      <Text style={styles.ratioLabel}>Jerk to Clean</Text>
+                      <View style={styles.ratioValueContainer}>
+                        <View style={[styles.ratioIndicator, { backgroundColor: status.backgroundColor }]} />
+                        <Text style={styles.ratioValue}>{status.value}</Text>
+                        {status.status && <Text style={styles.ratioStatus}>{status.status}</Text>}
+                      </View>
+                    </View>
+                  )
+                })()}
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.snatch, profile.one_rms.clean_and_jerk, 0.775, 0.825)
+                  return (
+                    <View style={styles.ratioRow}>
+                      <Text style={styles.ratioLabel}>Snatch to Clean and Jerk</Text>
+                      <View style={styles.ratioValueContainer}>
+                        <View style={[styles.ratioIndicator, { backgroundColor: status.backgroundColor }]} />
+                        <Text style={styles.ratioValue}>{status.value}</Text>
+                        {status.status && <Text style={styles.ratioStatus}>{status.status}</Text>}
+                      </View>
+                    </View>
+                  )
+                })()}
+              </View>
+
+              {/* Strength Balance */}
+              <View>
+                <Text style={styles.ratioSubsectionTitle}>STRENGTH BALANCE</Text>
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.front_squat, profile.one_rms.back_squat, 0.8, 0.875)
+                  return (
+                    <View style={styles.ratioRow}>
+                      <Text style={styles.ratioLabel}>Front Squat to Back Squat</Text>
+                      <View style={styles.ratioValueContainer}>
+                        <View style={[styles.ratioIndicator, { backgroundColor: status.backgroundColor }]} />
+                        <Text style={styles.ratioValue}>{status.value}</Text>
+                        {status.status && <Text style={styles.ratioStatus}>{status.status}</Text>}
+                      </View>
+                    </View>
+                  )
+                })()}
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.overhead_squat, profile.one_rms.snatch, 1.05, 1.2)
+                  return (
+                    <View style={styles.ratioRow}>
+                      <Text style={styles.ratioLabel}>Overhead Squat to Snatch</Text>
+                      <View style={styles.ratioValueContainer}>
+                        <View style={[styles.ratioIndicator, { backgroundColor: status.backgroundColor }]} />
+                        <Text style={styles.ratioValue}>{status.value}</Text>
+                        {status.status && <Text style={styles.ratioStatus}>{status.status}</Text>}
+                      </View>
+                    </View>
+                  )
+                })()}
+                {(() => {
+                  const status = getRatioStatusWithRange(profile.one_rms.push_press, profile.one_rms.strict_press, 1.25, 1.45)
+                  return (
+                    <View style={styles.ratioRow}>
+                      <Text style={styles.ratioLabel}>Push Press to Strict Press</Text>
+                      <View style={styles.ratioValueContainer}>
+                        <View style={[styles.ratioIndicator, { backgroundColor: status.backgroundColor }]} />
+                        <Text style={styles.ratioValue}>{status.value}</Text>
+                        {status.status && <Text style={styles.ratioStatus}>{status.status}</Text>}
+                      </View>
+                    </View>
+                  )
+                })()}
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Technical Focus */}
+        {profile.technical_focus && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>TECHNICAL FOCUS</Text>
+              <TouchableOpacity onPress={() => toggleCategory('technical-focus')}>
+                <Text style={styles.toggleText}>
+                  [{expandedCategories.includes('technical-focus') ? '- Hide' : '+ View'}]
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.sectionDivider} />
+            <Text style={styles.sectionDescription}>Targets for technical improvements</Text>
+            
+            {expandedCategories.includes('technical-focus') && (() => {
+              const snatchStrengthDeficit = profile.one_rms.snatch && profile.one_rms.back_squat
+                ? (profile.one_rms.snatch / profile.one_rms.back_squat) < 0.6
+                : false
+              const snatchReceivingDeficit = profile.one_rms.power_snatch && profile.one_rms.snatch
+                ? (profile.one_rms.power_snatch / profile.one_rms.snatch) >= 0.88
+                : false
+              const snatchOverheadDeficit = profile.one_rms.overhead_squat && profile.one_rms.snatch
+                ? (profile.one_rms.overhead_squat / profile.one_rms.snatch) < 1.1
+                : false
+              const snatchDeficits = [snatchStrengthDeficit, snatchReceivingDeficit, snatchOverheadDeficit].filter(Boolean).length
+              const snatchStrong = 3 - snatchDeficits
+
+              const cjStrengthDeficit = profile.one_rms.clean_and_jerk && profile.one_rms.back_squat
+                ? (profile.one_rms.clean_and_jerk / profile.one_rms.back_squat) < 0.75
+                : false
+              const cjReceivingDeficit = profile.one_rms.power_clean && profile.one_rms.clean_only
+                ? (profile.one_rms.power_clean / profile.one_rms.clean_only) >= 0.88
+                : false
+              const cjJerkDeficit = profile.one_rms.jerk_only && profile.one_rms.clean_only
+                ? (profile.one_rms.jerk_only / profile.one_rms.clean_only) < 0.9
+                : false
+              const cjDeficits = [cjStrengthDeficit, cjReceivingDeficit, cjJerkDeficit].filter(Boolean).length
+              const cjStrong = 3 - cjDeficits
+
+              return (
+                <View>
+                  <View style={styles.technicalCard}>
+                    <Text style={styles.technicalTitle}>
+                      🎯 Snatch Technical Work: {profile.technical_focus.snatch_technical_count} exercises/day
+                    </Text>
+                    <Text style={styles.technicalSubtitle}>
+                      {snatchDeficits} area{snatchDeficits !== 1 ? 's' : ''} need work, {snatchStrong} area{snatchStrong !== 1 ? 's' : ''} strong
+                    </Text>
+                    <View style={styles.technicalItems}>
+                      <View style={[styles.technicalItem, snatchStrengthDeficit && styles.technicalItemError]}>
+                        <Text style={styles.technicalIcon}>{snatchStrengthDeficit ? '❌' : '✅'}</Text>
+                        <Text style={[styles.technicalItemText, snatchStrengthDeficit && styles.technicalItemTextError]}>
+                          Strength Deficit: Snatch ({formatWeight(profile.one_rms.snatch)}) is {safeRatio(profile.one_rms.snatch, profile.one_rms.back_squat)} of back squat (target: 60%+)
+                        </Text>
+                      </View>
+                      <View style={[styles.technicalItem, snatchReceivingDeficit && styles.technicalItemError]}>
+                        <Text style={styles.technicalIcon}>{snatchReceivingDeficit ? '❌' : '✅'}</Text>
+                        <Text style={[styles.technicalItemText, snatchReceivingDeficit && styles.technicalItemTextError]}>
+                          Receiving Position: Power snatch is {safeRatio(profile.one_rms.power_snatch, profile.one_rms.snatch)} of snatch (target: &lt;88%)
+                        </Text>
+                      </View>
+                      <View style={[styles.technicalItem, snatchOverheadDeficit && styles.technicalItemError]}>
+                        <Text style={styles.technicalIcon}>{snatchOverheadDeficit ? '❌' : '✅'}</Text>
+                        <Text style={[styles.technicalItemText, snatchOverheadDeficit && styles.technicalItemTextError]}>
+                          Overhead Stability: Overhead squat is {safeRatio(profile.one_rms.overhead_squat, profile.one_rms.snatch)} of snatch (target: 110%+)
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.technicalCard}>
+                    <Text style={styles.technicalTitle}>
+                      🎯 Clean & Jerk Technical Work: {profile.technical_focus.clean_jerk_technical_count} exercises/day
+                    </Text>
+                    <Text style={styles.technicalSubtitle}>
+                      {cjDeficits} area{cjDeficits !== 1 ? 's' : ''} need work, {cjStrong} area{cjStrong !== 1 ? 's' : ''} strong
+                    </Text>
+                    <View style={styles.technicalItems}>
+                      <View style={[styles.technicalItem, cjStrengthDeficit && styles.technicalItemError]}>
+                        <Text style={styles.technicalIcon}>{cjStrengthDeficit ? '❌' : '✅'}</Text>
+                        <Text style={[styles.technicalItemText, cjStrengthDeficit && styles.technicalItemTextError]}>
+                          Overall Strength: C&J ({formatWeight(profile.one_rms.clean_and_jerk)}) is {safeRatio(profile.one_rms.clean_and_jerk, profile.one_rms.back_squat)} of back squat (target: 75%+)
+                        </Text>
+                      </View>
+                      <View style={[styles.technicalItem, cjReceivingDeficit && styles.technicalItemError]}>
+                        <Text style={styles.technicalIcon}>{cjReceivingDeficit ? '❌' : '✅'}</Text>
+                        <Text style={[styles.technicalItemText, cjReceivingDeficit && styles.technicalItemTextError]}>
+                          Receiving Position: Power clean is {safeRatio(profile.one_rms.power_clean, profile.one_rms.clean_only)} of clean (target: &lt;88%)
+                        </Text>
+                      </View>
+                      <View style={[styles.technicalItem, cjJerkDeficit && styles.technicalItemError]}>
+                        <Text style={styles.technicalIcon}>{cjJerkDeficit ? '❌' : '✅'}</Text>
+                        <Text style={[styles.technicalItemText, cjJerkDeficit && styles.technicalItemTextError]}>
+                          Jerk Performance: Jerk is {safeRatio(profile.one_rms.jerk_only, profile.one_rms.clean_only)} of clean (target: 90%+)
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              )
+            })()}
+          </View>
+        )}
+
+        {/* Accessory Needs */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>ACCESSORY NEEDS</Text>
+            <TouchableOpacity onPress={() => toggleCategory('accessory-needs')}>
+              <Text style={styles.toggleText}>
+                [{expandedCategories.includes('accessory-needs') ? '- Hide' : '+ View'}]
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sectionDivider} />
+          <Text style={styles.sectionDescription}>Targets for accessory work</Text>
+          
+          {expandedCategories.includes('accessory-needs') && (() => {
+            const needsUpperBack = profile.one_rms.front_squat && profile.one_rms.back_squat ? 
+              (profile.one_rms.front_squat / profile.one_rms.back_squat) < 0.85 : false
+            
+            const needsPosteriorChain = profile.one_rms.deadlift && profile.user_summary.body_weight ?
+              (profile.one_rms.deadlift / profile.user_summary.body_weight) < 2.0 : false
+            
+            const benchBodyweightRatio = profile.one_rms.bench_press && profile.user_summary.body_weight ?
+              profile.one_rms.bench_press / profile.user_summary.body_weight : 0
+            const pushPressStrictRatio = profile.one_rms.push_press && profile.one_rms.strict_press ?
+              profile.one_rms.push_press / profile.one_rms.strict_press : 0
+            const needsUpperBodyPressing = benchBodyweightRatio < 0.9 || pushPressStrictRatio > 1.45
+            
+            const pullupBenchRatio = profile.one_rms.weighted_pullup && profile.one_rms.bench_press ?
+              profile.one_rms.weighted_pullup / profile.one_rms.bench_press : 0
+            const pullupBodyweightRatio = profile.one_rms.weighted_pullup && profile.user_summary.body_weight ?
+              profile.one_rms.weighted_pullup / profile.user_summary.body_weight : 0
+            const needsUpperBodyPulling = pullupBenchRatio < 0.4 || pullupBodyweightRatio < 0.33
+
+            return (
+              <View style={styles.accessoryContainer}>
+                <View style={[styles.accessoryCard, needsUpperBodyPulling ? styles.accessoryCardNeeds : styles.accessoryCardGood]}>
+                  <View style={styles.accessoryCardContent}>
+                    <View style={[styles.accessoryIndicator, { backgroundColor: needsUpperBodyPulling ? '#EF4444' : '#10B981' }]} />
+                    <View style={styles.accessoryTextContainer}>
+                      <Text style={styles.accessoryTitle}>Upper Body Pulling</Text>
+                      {needsUpperBodyPulling ? (
+                        <Text style={styles.accessoryText}>
+                          Weighted pullup ({formatWeight(profile.one_rms.weighted_pullup)}) is {Math.round(pullupBenchRatio * 100)}% of bench press and {pullupBodyweightRatio.toFixed(2)}x bodyweight. Target: 40% of bench OR 0.33x bodyweight.
+                        </Text>
+                      ) : (
+                        <Text style={styles.accessoryText}>
+                          Weighted pullup is {Math.round(pullupBenchRatio * 100)}% of bench press (target: 40%+) and {pullupBodyweightRatio.toFixed(2)}x bodyweight (target: 0.33x+)
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                <View style={[styles.accessoryCard, needsUpperBodyPressing ? styles.accessoryCardNeeds : styles.accessoryCardGood]}>
+                  <View style={styles.accessoryCardContent}>
+                    <View style={[styles.accessoryIndicator, { backgroundColor: needsUpperBodyPressing ? '#EF4444' : '#10B981' }]} />
+                    <View style={styles.accessoryTextContainer}>
+                      <Text style={styles.accessoryTitle}>Upper Body Pressing</Text>
+                      {needsUpperBodyPressing ? (
+                        <Text style={styles.accessoryText}>
+                          {benchBodyweightRatio < 0.9 && pushPressStrictRatio > 1.45 ? (
+                            <>Bench press is {benchBodyweightRatio.toFixed(1)}x bodyweight (target: 0.9x) and push press is {Math.round(pushPressStrictRatio * 100)}% of strict press (target: &lt;145%).</>
+                          ) : benchBodyweightRatio < 0.9 ? (
+                            <>Bench press ({formatWeight(profile.one_rms.bench_press)}) is {benchBodyweightRatio.toFixed(1)}x bodyweight. Target: 0.9x bodyweight.</>
+                          ) : (
+                            <>Push press is {Math.round(pushPressStrictRatio * 100)}% of strict press, indicating leg compensation. Target: &lt;145%.</>
+                          )}
+                        </Text>
+                      ) : (
+                        <Text style={styles.accessoryText}>
+                          Bench press is {benchBodyweightRatio.toFixed(1)}x bodyweight (target: 0.9x+) and push press is {Math.round(pushPressStrictRatio * 100)}% of strict press (target: &lt;145%)
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                <View style={[styles.accessoryCard, needsUpperBack ? styles.accessoryCardNeeds : styles.accessoryCardGood]}>
+                  <View style={styles.accessoryCardContent}>
+                    <View style={[styles.accessoryIndicator, { backgroundColor: needsUpperBack ? '#EF4444' : '#10B981' }]} />
+                    <View style={styles.accessoryTextContainer}>
+                      <Text style={styles.accessoryTitle}>Upper Back</Text>
+                      {needsUpperBack ? (
+                        <Text style={styles.accessoryText}>
+                          Front squat ({formatWeight(profile.one_rms.front_squat)}) is {Math.round((profile.one_rms.front_squat! / profile.one_rms.back_squat!) * 100)}% of back squat. Target: 85%+.
+                        </Text>
+                      ) : (
+                        <Text style={styles.accessoryText}>
+                          Front squat ({formatWeight(profile.one_rms.front_squat)}) is {Math.round((profile.one_rms.front_squat! / profile.one_rms.back_squat!) * 100)}% of back squat (target: 85%+)
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                <View style={[styles.accessoryCard, needsPosteriorChain ? styles.accessoryCardNeeds : styles.accessoryCardGood]}>
+                  <View style={styles.accessoryCardContent}>
+                    <View style={[styles.accessoryIndicator, { backgroundColor: needsPosteriorChain ? '#EF4444' : '#10B981' }]} />
+                    <View style={styles.accessoryTextContainer}>
+                      <Text style={styles.accessoryTitle}>Posterior Chain</Text>
+                      {needsPosteriorChain ? (
+                        <Text style={styles.accessoryText}>
+                          Deadlift ({formatWeight(profile.one_rms.deadlift)}) is {(profile.one_rms.deadlift! / profile.user_summary.body_weight!).toFixed(1)}x bodyweight. Target: 2.0x bodyweight.
+                        </Text>
+                      ) : (
+                        <Text style={styles.accessoryText}>
+                          Deadlift ({formatWeight(profile.one_rms.deadlift)}) is {(profile.one_rms.deadlift! / profile.user_summary.body_weight!).toFixed(1)}x bodyweight (target: 2.0x+)
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )
+          })()}
+        </View>
+
+        {/* Conditioning Benchmarks */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>CONDITIONING BENCHMARKS</Text>
+            <TouchableOpacity onPress={() => toggleCategory('conditioning-benchmarks')}>
+              <Text style={styles.toggleText}>
+                [{expandedCategories.includes('conditioning-benchmarks') ? '- Hide' : '+ View'}]
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sectionDivider} />
+          <Text style={styles.sectionDescription}>Fundamental engine metrics</Text>
+          
+          {expandedCategories.includes('conditioning-benchmarks') && (
+            <View>
+              {/* Running */}
+              <View style={styles.benchmarkSubsection}>
+                <Text style={styles.benchmarkSubsectionTitle}>RUNNING</Text>
+                {profile.benchmarks.mile_run && (
+                  <View style={styles.benchmarkRow}>
+                    <Text style={styles.benchmarkLabel}>Mile</Text>
+                    {editingBenchmark === 'mile_run' ? (
+                      <View style={styles.benchmarkEditingContainer}>
+                        <TextInput
+                          value={benchmarkValues['mile_run'] !== undefined ? benchmarkValues['mile_run'] : (profile.benchmarks.mile_run || '')}
+                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, mile_run: value})}
+                          onBlur={() => {
+                            const value = benchmarkValues['mile_run'] || profile.benchmarks.mile_run || ''
+                            saveBenchmark('mile_run', value)
+                          }}
+                          placeholder="MM:SS"
+                          style={styles.benchmarkInput}
+                          autoFocus
+                          editable={!savingBenchmark}
+                        />
+                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                      </View>
+                    ) : (
+                      <TouchableOpacity onPress={() => {
+                        setEditingBenchmark('mile_run')
+                        setBenchmarkValues({...benchmarkValues, mile_run: profile.benchmarks.mile_run || ''})
+                      }}>
+                        <Text style={styles.benchmarkValue}>{profile.benchmarks.mile_run}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+                {profile.benchmarks.five_k_run && (
+                  <View style={styles.benchmarkRow}>
+                    <Text style={styles.benchmarkLabel}>5K</Text>
+                    {editingBenchmark === 'five_k_run' ? (
+                      <View style={styles.benchmarkEditingContainer}>
+                        <TextInput
+                          value={benchmarkValues['five_k_run'] !== undefined ? benchmarkValues['five_k_run'] : (profile.benchmarks.five_k_run || '')}
+                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, five_k_run: value})}
+                          onBlur={() => {
+                            const value = benchmarkValues['five_k_run'] || profile.benchmarks.five_k_run || ''
+                            saveBenchmark('five_k_run', value)
+                          }}
+                          placeholder="MM:SS"
+                          style={styles.benchmarkInput}
+                          autoFocus
+                          editable={!savingBenchmark}
+                        />
+                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                      </View>
+                    ) : (
+                      <TouchableOpacity onPress={() => {
+                        setEditingBenchmark('five_k_run')
+                        setBenchmarkValues({...benchmarkValues, five_k_run: profile.benchmarks.five_k_run || ''})
+                      }}>
+                        <Text style={styles.benchmarkValue}>{profile.benchmarks.five_k_run}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+                {profile.benchmarks.ten_k_run && (
+                  <View style={styles.benchmarkRow}>
+                    <Text style={styles.benchmarkLabel}>10K</Text>
+                    {editingBenchmark === 'ten_k_run' ? (
+                      <View style={styles.benchmarkEditingContainer}>
+                        <TextInput
+                          value={benchmarkValues['ten_k_run'] !== undefined ? benchmarkValues['ten_k_run'] : (profile.benchmarks.ten_k_run || '')}
+                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, ten_k_run: value})}
+                          onBlur={() => {
+                            const value = benchmarkValues['ten_k_run'] || profile.benchmarks.ten_k_run || ''
+                            saveBenchmark('ten_k_run', value)
+                          }}
+                          placeholder="MM:SS"
+                          style={styles.benchmarkInput}
+                          autoFocus
+                          editable={!savingBenchmark}
+                        />
+                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                      </View>
+                    ) : (
+                      <TouchableOpacity onPress={() => {
+                        setEditingBenchmark('ten_k_run')
+                        setBenchmarkValues({...benchmarkValues, ten_k_run: profile.benchmarks.ten_k_run || ''})
+                      }}>
+                        <Text style={styles.benchmarkValue}>{profile.benchmarks.ten_k_run}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              </View>
+
+              {/* Rowing */}
+              <View style={styles.benchmarkSubsection}>
+                <Text style={styles.benchmarkSubsectionTitle}>ROWING</Text>
+                {profile.benchmarks.one_k_row && (
+                  <View style={styles.benchmarkRow}>
+                    <Text style={styles.benchmarkLabel}>1K</Text>
+                    {editingBenchmark === 'one_k_row' ? (
+                      <View style={styles.benchmarkEditingContainer}>
+                        <TextInput
+                          value={benchmarkValues['one_k_row'] !== undefined ? benchmarkValues['one_k_row'] : (profile.benchmarks.one_k_row || '')}
+                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, one_k_row: value})}
+                          onBlur={() => {
+                            const value = benchmarkValues['one_k_row'] || profile.benchmarks.one_k_row || ''
+                            saveBenchmark('one_k_row', value)
+                          }}
+                          placeholder="MM:SS"
+                          style={styles.benchmarkInput}
+                          autoFocus
+                          editable={!savingBenchmark}
+                        />
+                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                      </View>
+                    ) : (
+                      <TouchableOpacity onPress={() => {
+                        setEditingBenchmark('one_k_row')
+                        setBenchmarkValues({...benchmarkValues, one_k_row: profile.benchmarks.one_k_row || ''})
+                      }}>
+                        <Text style={styles.benchmarkValue}>{profile.benchmarks.one_k_row}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+                {profile.benchmarks.two_k_row && (
+                  <View style={styles.benchmarkRow}>
+                    <Text style={styles.benchmarkLabel}>2K</Text>
+                    {editingBenchmark === 'two_k_row' ? (
+                      <View style={styles.benchmarkEditingContainer}>
+                        <TextInput
+                          value={benchmarkValues['two_k_row'] !== undefined ? benchmarkValues['two_k_row'] : (profile.benchmarks.two_k_row || '')}
+                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, two_k_row: value})}
+                          onBlur={() => {
+                            const value = benchmarkValues['two_k_row'] || profile.benchmarks.two_k_row || ''
+                            saveBenchmark('two_k_row', value)
+                          }}
+                          placeholder="MM:SS"
+                          style={styles.benchmarkInput}
+                          autoFocus
+                          editable={!savingBenchmark}
+                        />
+                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                      </View>
+                    ) : (
+                      <TouchableOpacity onPress={() => {
+                        setEditingBenchmark('two_k_row')
+                        setBenchmarkValues({...benchmarkValues, two_k_row: profile.benchmarks.two_k_row || ''})
+                      }}>
+                        <Text style={styles.benchmarkValue}>{profile.benchmarks.two_k_row}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+                {profile.benchmarks.five_k_row && (
+                  <View style={styles.benchmarkRow}>
+                    <Text style={styles.benchmarkLabel}>5K</Text>
+                    {editingBenchmark === 'five_k_row' ? (
+                      <View style={styles.benchmarkEditingContainer}>
+                        <TextInput
+                          value={benchmarkValues['five_k_row'] !== undefined ? benchmarkValues['five_k_row'] : (profile.benchmarks.five_k_row || '')}
+                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, five_k_row: value})}
+                          onBlur={() => {
+                            const value = benchmarkValues['five_k_row'] || profile.benchmarks.five_k_row || ''
+                            saveBenchmark('five_k_row', value)
+                          }}
+                          placeholder="MM:SS"
+                          style={styles.benchmarkInput}
+                          autoFocus
+                          editable={!savingBenchmark}
+                        />
+                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                      </View>
+                    ) : (
+                      <TouchableOpacity onPress={() => {
+                        setEditingBenchmark('five_k_row')
+                        setBenchmarkValues({...benchmarkValues, five_k_row: profile.benchmarks.five_k_row || ''})
+                      }}>
+                        <Text style={styles.benchmarkValue}>{profile.benchmarks.five_k_row}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              </View>
+
+              {/* Bike */}
+              {profile.benchmarks.air_bike_10_min && (
+                <View>
+                  <Text style={styles.benchmarkSubsectionTitle}>BIKE</Text>
+                  <View style={styles.benchmarkRow}>
+                    <Text style={styles.benchmarkLabel}>10-Minute Air Bike</Text>
+                    {editingBenchmark === 'air_bike_10_min' ? (
+                      <View style={styles.benchmarkEditingContainer}>
+                        <TextInput
+                          value={benchmarkValues['air_bike_10_min'] !== undefined ? benchmarkValues['air_bike_10_min'] : (profile.benchmarks.air_bike_10_min || '')}
+                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, air_bike_10_min: value})}
+                          onBlur={() => {
+                            const value = benchmarkValues['air_bike_10_min'] || profile.benchmarks.air_bike_10_min || ''
+                            saveBenchmark('air_bike_10_min', value)
+                          }}
+                          keyboardType="numeric"
+                          placeholder="185"
+                          style={styles.benchmarkInput}
+                          autoFocus
+                          editable={!savingBenchmark}
+                        />
+                        <Text style={styles.unitText}>cal</Text>
+                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                      </View>
+                    ) : (
+                      <TouchableOpacity onPress={() => {
+                        setEditingBenchmark('air_bike_10_min')
+                        setBenchmarkValues({...benchmarkValues, air_bike_10_min: profile.benchmarks.air_bike_10_min || ''})
+                      }}>
+                        <Text style={styles.benchmarkValue}>{profile.benchmarks.air_bike_10_min} cal</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Skills Assessment */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>SKILLS ASSESSMENT</Text>
+            <TouchableOpacity onPress={() => toggleCategory('skills')}>
+              <Text style={styles.toggleText}>
+                [{expandedCategories.includes('skills') ? '- Hide' : '+ View'}]
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sectionDivider} />
+          <Text style={styles.sectionDescription}>
+            {profile.skills_assessment.advanced_count} advanced • {profile.skills_assessment.total_skills_assessed} total assessed
+          </Text>
+          
+          {expandedCategories.includes('skills') && (
+            <View>
+              {skillCategories.map((category) => (
+                <View key={category.name} style={styles.skillCategoryCard}>
+                  <View style={styles.skillCategoryHeader}>
+                    <Text style={styles.skillCategoryTitle}>{category.name}</Text>
+                    <Text style={styles.skillCategoryStats}>{getCategoryStats(category.skills)}</Text>
+                  </View>
+                  {category.skills.map((skill) => {
+                    const level = getSkillLevel(skill)
+                    return (
+                      <View key={skill} style={styles.skillRow}>
+                        <Text style={styles.skillName}>{skill}</Text>
+                        <Text style={[
+                          styles.skillLevel,
+                          level === 'Advanced' && styles.skillLevelAdvanced,
+                          level === 'Intermediate' && styles.skillLevelIntermediate,
+                          level === 'Beginner' && styles.skillLevelBeginner,
+                          (level === "Don't have it") && styles.skillLevelNone
+                        ]}>
+                          {level}
+                        </Text>
+                      </View>
+                    )
+                  })}
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FBFE',
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#F8FBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: '#282B34',
+    marginTop: 16,
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    backgroundColor: '#F8FBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  errorText: {
+    color: '#DC2626',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontSize: 16,
+  },
+  noProfileText: {
+    color: '#92400E',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontSize: 16,
+  },
+  errorButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FE5858',
+    borderRadius: 8,
+  },
+  errorButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  header: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    paddingHorizontal: 16,
+    paddingTop: 48,
+    paddingBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#282B34',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#282B34',
+    fontWeight: '600',
+  },
+  bmiBmrContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    gap: 16,
+  },
+  bmiBmrText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  bmiBmrLabel: {
+    fontWeight: '700',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 100,
+  },
+  sectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 24,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#DAE2EA',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#282B34',
+  },
+  toggleText: {
+    color: '#FE5858',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  sectionDivider: {
+    width: '100%',
+    height: 2,
+    backgroundColor: '#FE5858',
+    marginBottom: 16,
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#4B5563',
+    marginBottom: 16,
+  },
+  ratioSubsection: {
+    marginBottom: 16,
+  },
+  ratioSubsectionTitle: {
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 12,
+    fontSize: 16,
+  },
+  ratioRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  ratioLabel: {
+    color: '#374151',
+    fontSize: 16,
+  },
+  ratioValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  ratioIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  ratioValue: {
+    fontWeight: '500',
+    color: '#282B34',
+    fontSize: 16,
+  },
+  ratioStatus: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  technicalCard: {
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#DAE2EA',
+    borderRadius: 8,
+    padding: 16,
+  },
+  technicalTitle: {
+    fontWeight: '500',
+    color: '#282B34',
+    marginBottom: 8,
+    fontSize: 16,
+  },
+  technicalSubtitle: {
+    fontSize: 14,
+    color: '#4B5563',
+    marginBottom: 12,
+  },
+  technicalItems: {
+    gap: 8,
+  },
+  technicalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  technicalItemError: {
+    // Error state styling handled by text color
+  },
+  technicalIcon: {
+    marginRight: 8,
+    fontSize: 16,
+  },
+  technicalItemText: {
+    fontSize: 14,
+    color: '#FE5858',
+    flex: 1,
+  },
+  technicalItemTextError: {
+    color: '#DC2626',
+  },
+  accessoryContainer: {
+    gap: 12,
+  },
+  accessoryCard: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  accessoryCardNeeds: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FCA5A5',
+  },
+  accessoryCardGood: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#86EFAC',
+  },
+  accessoryCardContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  accessoryIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginTop: 4,
+    marginRight: 12,
+  },
+  accessoryTextContainer: {
+    flex: 1,
+  },
+  accessoryTitle: {
+    fontWeight: '500',
+    color: '#282B34',
+    marginBottom: 4,
+    fontSize: 16,
+  },
+  accessoryText: {
+    fontSize: 14,
+    color: '#4B5563',
+  },
+  benchmarkSubsection: {
+    marginBottom: 16,
+  },
+  benchmarkSubsectionTitle: {
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 8,
+    fontSize: 16,
+  },
+  benchmarkRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  benchmarkLabel: {
+    color: '#374151',
+    fontSize: 16,
+  },
+  benchmarkEditingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  benchmarkInput: {
+    width: 96,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 2,
+    borderColor: '#FE5858',
+    borderRadius: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#282B34',
+  },
+  benchmarkValue: {
+    fontWeight: '500',
+    color: '#282B34',
+    fontSize: 16,
+  },
+  skillCategoryCard: {
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#DAE2EA',
+    borderRadius: 8,
+    padding: 16,
+  },
+  skillCategoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  skillCategoryTitle: {
+    fontWeight: '600',
+    color: '#282B34',
+    fontSize: 16,
+  },
+  skillCategoryStats: {
+    fontSize: 14,
+    color: '#4B5563',
+  },
+  skillRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  skillName: {
+    color: '#374151',
+    fontSize: 14,
+  },
+  skillLevel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  skillLevelAdvanced: {
+    color: '#FE5858',
+  },
+  skillLevelIntermediate: {
+    color: '#DAE2EA',
+  },
+  skillLevelBeginner: {
+    color: '#4B5563',
+  },
+  skillLevelNone: {
+    color: '#9CA3AF',
+  },
+})

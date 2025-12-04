@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
 import { createClient } from '@/lib/supabase/client'
 
@@ -71,32 +71,32 @@ export default function EngineBlockCard({
   }
 
   return (
-    <View className="bg-white rounded-xl shadow-sm border-2 border-slate-blue mb-4">
-      <View className="p-6">
-        <View className="flex-row items-center justify-between mb-4">
+    <View style={styles.card}>
+      <View style={styles.content}>
+        <View style={styles.header}>
           <View>
-            <Text className="text-xl font-bold text-charcoal">Engine Conditioning</Text>
-            <Text className="text-sm text-gray-600">Day {engineData.dayNumber}</Text>
+            <Text style={styles.title}>Engine Conditioning</Text>
+            <Text style={styles.subtitle}>Day {engineData.dayNumber}</Text>
           </View>
-          {isCompleted && <Text className="text-coral text-2xl">✅</Text>}
+          {isCompleted && <Text style={styles.checkmark}>✅</Text>}
         </View>
 
-        <View className="mb-4">
-          <View className="flex-row items-center mb-3">
-            <Text className="text-sm font-medium text-charcoal">Type: </Text>
-            <Text className="text-sm text-gray-700 capitalize">{engineData.dayType}</Text>
+        <View style={styles.info}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Type: </Text>
+            <Text style={styles.infoValue}>{engineData.dayType}</Text>
           </View>
-          <View className="flex-row items-center">
-            <Text className="text-sm font-medium text-charcoal">Duration: </Text>
-            <Text className="text-sm text-gray-700">{engineData.duration} minutes</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Duration: </Text>
+            <Text style={styles.infoValue}>{engineData.duration} minutes</Text>
           </View>
         </View>
 
         <TouchableOpacity
           onPress={handleStartWorkout}
-          className="w-full bg-coral py-3 px-6 rounded-lg"
+          style={styles.button}
         >
-          <Text className="text-white text-center font-semibold">
+          <Text style={styles.buttonText}>
             {isCompleted ? 'View Engine Workout' : 'Start Engine Workout'}
           </Text>
         </TouchableOpacity>
@@ -104,3 +104,72 @@ export default function EngineBlockCard({
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    borderWidth: 2,
+    borderColor: '#DAE2EA',
+  },
+  content: {
+    padding: 24,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#282B34',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#4B5563',
+    marginTop: 4,
+  },
+  checkmark: {
+    color: '#FE5858',
+    fontSize: 24,
+  },
+  info: {
+    marginBottom: 16,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  infoLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#282B34',
+  },
+  infoValue: {
+    fontSize: 14,
+    color: '#374151',
+    textTransform: 'capitalize',
+  },
+  button: {
+    width: '100%',
+    backgroundColor: '#FE5858',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+})

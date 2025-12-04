@@ -8,7 +8,8 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-  Alert
+  Alert,
+  StyleSheet
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { createClient } from '@/lib/supabase/client'
@@ -96,19 +97,19 @@ export default function SignIn() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-ice-blue"
+      style={styles.container}
     >
       <ScrollView
-        contentContainerClassName="flex-grow justify-center px-6 py-12"
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="max-w-md w-full mx-auto">
+        <View style={styles.formContainer}>
           {/* Header */}
-          <View className="mb-8">
-            <Text className="text-3xl font-bold text-charcoal text-center mb-2">
+          <View style={styles.header}>
+            <Text style={styles.title}>
               Sign in to your account
             </Text>
-            <Text className="text-sm text-gray-600 text-center">
+            <Text style={styles.subtitle}>
               Welcome back to your training
             </Text>
           </View>
@@ -116,16 +117,18 @@ export default function SignIn() {
           {/* Message */}
           {message && (
             <View
-              className={`p-4 rounded-lg mb-6 border ${
+              style={[
+                styles.messageContainer,
                 message.startsWith('✅')
-                  ? 'bg-green-50 border-green-200'
-                  : 'bg-red-50 border-red-200'
-              }`}
+                  ? styles.messageSuccess
+                  : styles.messageError
+              ]}
             >
               <Text
-                className={
-                  message.startsWith('✅') ? 'text-green-800' : 'text-red-800'
-                }
+                style={[
+                  styles.messageText,
+                  message.startsWith('✅') ? styles.messageTextSuccess : styles.messageTextError
+                ]}
               >
                 {message}
               </Text>
@@ -133,9 +136,9 @@ export default function SignIn() {
           )}
 
           {/* Form */}
-          <View className="space-y-4">
+          <View style={styles.form}>
             <View>
-              <Text className="text-sm font-medium text-charcoal mb-2">
+              <Text style={styles.label}>
                 Email address
               </Text>
               <TextInput
@@ -145,12 +148,12 @@ export default function SignIn() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
-                className="w-full px-4 py-3 border border-slate-blue rounded-lg bg-white text-charcoal"
+                style={styles.input}
               />
             </View>
 
             <View>
-              <Text className="text-sm font-medium text-charcoal mb-2">
+              <Text style={styles.label}>
                 Password
               </Text>
               <TextInput
@@ -160,33 +163,34 @@ export default function SignIn() {
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="password"
-                className="w-full px-4 py-3 border border-slate-blue rounded-lg bg-white text-charcoal"
+                style={styles.input}
               />
             </View>
 
             <TouchableOpacity
               onPress={handleSignIn}
               disabled={loading}
-              className={`w-full py-4 rounded-lg ${
-                loading ? 'bg-gray-400' : 'bg-coral'
-              }`}
+              style={[
+                styles.button,
+                loading && styles.buttonDisabled
+              ]}
             >
               {loading ? (
-                <View className="flex-row items-center justify-center">
+                <View style={styles.buttonContent}>
                   <ActivityIndicator color="white" />
-                  <Text className="text-white font-semibold ml-2">
+                  <Text style={styles.buttonText}>
                     Signing in...
                   </Text>
                 </View>
               ) : (
-                <Text className="text-white text-center font-semibold text-base">
+                <Text style={styles.buttonText}>
                   Sign in
                 </Text>
               )}
             </TouchableOpacity>
 
-            <View className="mt-4">
-              <Text className="text-sm text-gray-600 text-center">
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
                 Just completed a purchase? Access your intake form on the web app
               </Text>
             </View>
@@ -196,3 +200,108 @@ export default function SignIn() {
     </KeyboardAvoidingView>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FBFE',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 48,
+  },
+  formContainer: {
+    maxWidth: 448,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  header: {
+    marginBottom: 32,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: '#282B34',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#4B5563',
+    textAlign: 'center',
+  },
+  messageContainer: {
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 24,
+    borderWidth: 1,
+  },
+  messageSuccess: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#86EFAC',
+  },
+  messageError: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FCA5A5',
+  },
+  messageText: {
+    fontSize: 14,
+  },
+  messageTextSuccess: {
+    color: '#166534',
+  },
+  messageTextError: {
+    color: '#991B1B',
+  },
+  form: {
+    gap: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#282B34',
+    marginBottom: 8,
+  },
+  input: {
+    width: '100%',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#DAE2EA',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    color: '#282B34',
+    fontSize: 16,
+  },
+  button: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 8,
+    backgroundColor: '#FE5858',
+  },
+  buttonDisabled: {
+    backgroundColor: '#9CA3AF',
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  footer: {
+    marginTop: 16,
+  },
+  footerText: {
+    fontSize: 14,
+    color: '#4B5563',
+    textAlign: 'center',
+  },
+})

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { fetchWorkout, type WorkoutData } from '@/lib/api/workouts'
+import { createClient } from '@/lib/supabase/client'
+import { fetchWorkout } from '@/lib/api/workouts'
+import { logExerciseCompletion } from '@/lib/api/completions'
 import ExerciseCard from '@/components/ExerciseCard'
 import MetConCard from '@/components/MetConCard'
 import EngineBlockCard from '@/components/EngineBlockCard'
@@ -79,12 +81,43 @@ export default function WorkoutPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({})
+  const [allPrograms, setAllPrograms] = useState<Array<{ id: number; weeks_generated: number[] }>>([])
 
   useEffect(() => {
     const loadWorkout = async () => {
       try {
         setLoading(true)
         setError(null)
+
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          router.replace('/auth/signin')
+          return
+        }
+
+        // Get user ID
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_id', user.id)
+          .single()
+
+        if (!userData) {
+          setError('User not found')
+          return
+        }
+
+        // Fetch all programs for navigation
+        const { data: programs } = await supabase
+          .from('programs')
+          .select('id, weeks_generated')
+          .eq('user_id', userData.id)
+          .order('generated_at', { ascending: true })
+
+        if (programs) {
+          setAllPrograms(programs)
+        }
 
         const data = await fetchWorkout(
           parseInt(programId),
@@ -129,8 +162,116 @@ export default function WorkoutPage() {
     const key = `${blockName}-${index}`
     setExpandedBlocks(prev => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: prev[key] === true ? false : true // Toggle, default to collapsed (undefined = collapsed)
     }))
+  }
+
+  const navigateToPrevDay = () => {
+    const currentDay = parseInt(day)
+    const currentWeek = parseInt(week)
+    const currentProgramId = parseInt(programId)
+
+    if (allPrograms.length === 0) return
+
+    // Find current program index (1-based)
+    const currentProgramIndex = allPrograms.findIndex(p => p.id === currentProgramId)
+    if (currentProgramIndex === -1) return
+
+    const programIndex = currentProgramIndex + 1 // 1-based
+    const globalWeek = 4 * (programIndex - 1) + currentWeek
+
+    if (currentDay > 1) {
+      // Same week, previous day
+      router.push(`/workout/${programId}/week/${currentWeek}/day/${currentDay - 1}`)
+    } else if (globalWeek > 1) {
+      // Previous week, day 5
+      const prevGlobalWeek = globalWeek - 1
+      const prevProgramIndex = Math.ceil(prevGlobalWeek / 4)
+      const prevProgramWeek = ((prevGlobalWeek - 1) % 4) + 1
+      const prevProgram = allPrograms[prevProgramIndex - 1]
+      
+      if (prevProgram && prevProgram.weeks_generated.includes(prevProgramWeek)) {
+        router.push(`/workout/${prevProgram.id}/week/${prevProgramWeek}/day/5`)
+      }
+    }
+  }
+
+  const navigateToNextDay = () => {
+    const currentDay = parseInt(day)
+    const currentWeek = parseInt(week)
+    const currentProgramId = parseInt(programId)
+
+    if (allPrograms.length === 0) return
+
+    // Find current program index (1-based)
+    const currentProgramIndex = allPrograms.findIndex(p => p.id === currentProgramId)
+    if (currentProgramIndex === -1) return
+
+    const programIndex = currentProgramIndex + 1 // 1-based
+    const globalWeek = 4 * (programIndex - 1) + currentWeek
+
+    if (currentDay < 5) {
+      // Same week, next day
+      router.push(`/workout/${programId}/week/${currentWeek}/day/${currentDay + 1}`)
+    } else {
+      // Next week, day 1
+      const nextGlobalWeek = globalWeek + 1
+      const nextProgramIndex = Math.ceil(nextGlobalWeek / 4)
+      const nextProgramWeek = ((nextGlobalWeek - 1) % 4) + 1
+      const nextProgram = allPrograms[nextProgramIndex - 1]
+      
+      if (nextProgram && nextProgram.weeks_generated.includes(nextProgramWeek)) {
+        router.push(`/workout/${nextProgram.id}/week/${nextProgramWeek}/day/1`)
+      }
+    }
+  }
+
+  const canNavigatePrev = (): boolean => {
+    const currentDay = parseInt(day)
+    const currentWeek = parseInt(week)
+    const currentProgramId = parseInt(programId)
+
+    if (allPrograms.length === 0) return false
+
+    const currentProgramIndex = allPrograms.findIndex(p => p.id === currentProgramId)
+    if (currentProgramIndex === -1) return false
+
+    const programIndex = currentProgramIndex + 1
+    const globalWeek = 4 * (programIndex - 1) + currentWeek
+
+    if (currentDay > 1) return true
+    if (currentDay === 1 && globalWeek > 1) {
+      const prevGlobalWeek = globalWeek - 1
+      const prevProgramIndex = Math.ceil(prevGlobalWeek / 4)
+      const prevProgramWeek = ((prevGlobalWeek - 1) % 4) + 1
+      const prevProgram = allPrograms[prevProgramIndex - 1]
+      return prevProgram !== undefined && prevProgram.weeks_generated.includes(prevProgramWeek)
+    }
+    return false
+  }
+
+  const canNavigateNext = (): boolean => {
+    const currentDay = parseInt(day)
+    const currentWeek = parseInt(week)
+    const currentProgramId = parseInt(programId)
+
+    if (allPrograms.length === 0) return false
+
+    const currentProgramIndex = allPrograms.findIndex(p => p.id === currentProgramId)
+    if (currentProgramIndex === -1) return false
+
+    const programIndex = currentProgramIndex + 1
+    const globalWeek = 4 * (programIndex - 1) + currentWeek
+
+    if (currentDay < 5) return true
+    if (currentDay === 5) {
+      const nextGlobalWeek = globalWeek + 1
+      const nextProgramIndex = Math.ceil(nextGlobalWeek / 4)
+      const nextProgramWeek = ((nextGlobalWeek - 1) % 4) + 1
+      const nextProgram = allPrograms[nextProgramIndex - 1]
+      return nextProgram !== undefined && nextProgram.weeks_generated.includes(nextProgramWeek)
+    }
+    return false
   }
 
   const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
@@ -147,7 +288,7 @@ export default function WorkoutPage() {
         [exerciseName]: { exerciseName, ...completion }
       }))
 
-      const requestBody = {
+      await logExerciseCompletion({
         programId: parseInt(programId),
         userId,
         week: parseInt(week),
@@ -156,27 +297,7 @@ export default function WorkoutPage() {
         exerciseName: cleanExerciseName,
         setNumber,
         ...completion
-      }
-
-      const response = await fetch(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/workouts/complete`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody)
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-
-      const data = await response.json()
-      if (!data.success) {
-        throw new Error('Server returned unsuccessful response')
-      }
+      })
     } catch (err) {
       console.error('Failed to log completion:', err)
       // Rollback on failure
@@ -185,7 +306,9 @@ export default function WorkoutPage() {
         delete updated[exerciseName]
         return updated
       })
-      alert('Failed to save completion. Please try again.')
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      console.error('Completion error details:', errorMessage)
+      alert(`Failed to save completion: ${errorMessage}`)
     }
   }
 
@@ -193,51 +316,102 @@ export default function WorkoutPage() {
     workoutScore: string,
     taskCompletions: { exerciseName: string, rpe: number, quality: string }[],
     avgHR?: string,
-    peakHR?: string
+    peakHR?: string,
+    notes?: string
   ) => {
     try {
       const userId = await getCurrentUserId()
+      const supabase = createClient()
 
-      // Log each task
-      const taskPromises = taskCompletions.map(task =>
-        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/workouts/complete`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            programId: parseInt(programId),
-            userId,
+      // 1. Log each task to performance_logs (direct Supabase)
+      console.log('📝 Saving', taskCompletions.length, 'MetCon tasks to performance_logs')
+      
+      const taskResults = await Promise.all(
+        taskCompletions.map(async (task) => {
+          // Check if log already exists
+          const { data: existingLog } = await supabase
+            .from('performance_logs')
+            .select('id')
+            .eq('program_id', parseInt(programId))
+            .eq('user_id', userId)
+            .eq('week', parseInt(week))
+            .eq('day', parseInt(day))
+            .eq('exercise_name', task.exerciseName)
+            .eq('set_number', 1)
+            .maybeSingle()
+
+          const perfLogData: any = {
+            program_id: parseInt(programId),
+            user_id: userId,
             week: parseInt(week),
             day: parseInt(day),
             block: 'METCONS',
-            exerciseName: task.exerciseName,
-            repsCompleted: '',
+            exercise_name: task.exerciseName,
+            set_number: 1,
+            reps: null,
             rpe: task.rpe,
-            quality: task.quality,
-            notes: `Part of ${workout?.metconData?.workoutId}`
-          })
+            completion_quality: task.quality ? { 'A': 4, 'B': 3, 'C': 2, 'D': 1 }[task.quality] : null,
+            quality_grade: task.quality,
+            logged_at: new Date().toISOString()
+          }
+
+          let data: any, error: any
+          if (existingLog && (existingLog as any).id) {
+            // Update existing
+            const result = await (supabase
+              .from('performance_logs') as any)
+              .update(perfLogData)
+              .eq('id', (existingLog as any).id)
+              .select()
+            data = result.data
+            error = result.error
+          } else {
+            // Insert new
+            const result = await (supabase
+              .from('performance_logs') as any)
+              .insert(perfLogData)
+              .select()
+            data = result.data
+            error = result.error
+          }
+          
+          if (error) {
+            console.error(`❌ Failed to save task "${task.exerciseName}":`, error)
+            throw error
+          }
+          
+          console.log(`✅ Saved task "${task.exerciseName}"`)
+          return data
         })
       )
+      
+      console.log('✅ Successfully saved', taskResults.length, 'tasks to performance_logs')
 
-      // Log overall workout
-      const metconPromise = fetch(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/metcons/complete`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            programId: parseInt(programId),
-            userId,
-            week: parseInt(week),
-            day: parseInt(day),
-            workoutScore,
-            metconId: workout?.metconData?.id,
-            avgHR: avgHR ? parseInt(avgHR) : undefined,
-            peakHR: peakHR ? parseInt(peakHR) : undefined
-          })
+      // 2. Call Edge Function for MetCon completion
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not authenticated')
+
+      const { data, error } = await supabase.functions.invoke('complete-metcon', {
+        body: {
+          programId: parseInt(programId),
+          userId,
+          week: parseInt(week),
+          day: parseInt(day),
+          workoutScore,
+          metconId: workout?.metconData?.id,
+          avgHR: avgHR ? parseInt(avgHR) : undefined,
+          peakHR: peakHR ? parseInt(peakHR) : undefined,
+          notes: notes || undefined
         }
-      )
+      })
 
-      await Promise.all([...taskPromises, metconPromise])
+      if (error) {
+        throw error
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'MetCon completion failed')
+      }
 
       // Update local state
       setCompletions(prev => {
@@ -254,8 +428,10 @@ export default function WorkoutPage() {
         })
         return updated
       })
+
+      console.log('✅ MetCon completion logged successfully!')
     } catch (error) {
-      console.error('Failed to log MetCon completion:', error)
+      console.error('❌ Failed to log MetCon completion:', error)
       alert('Failed to save MetCon completion. Please try again.')
     }
   }
@@ -272,24 +448,24 @@ export default function WorkoutPage() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-ice-blue items-center justify-center">
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FE5858" />
-        <Text className="text-charcoal mt-4">Loading workout...</Text>
+        <Text style={styles.loadingText}>Loading workout...</Text>
       </View>
     )
   }
 
   if (error || !workout) {
     return (
-      <View className="flex-1 bg-ice-blue items-center justify-center px-6">
-        <Text className="text-red-600 text-5xl mb-4">⚠️</Text>
-        <Text className="text-xl font-semibold text-charcoal mb-2">Workout Not Found</Text>
-        <Text className="text-charcoal mb-4">{error || 'Workout data is missing'}</Text>
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorIcon}>⚠️</Text>
+        <Text style={styles.errorTitle}>Workout Not Found</Text>
+        <Text style={styles.errorMessage}>{error || 'Workout data is missing'}</Text>
         <TouchableOpacity
-          className="bg-coral px-4 py-2 rounded-lg"
+          style={styles.errorButton}
           onPress={() => router.back()}
         >
-          <Text className="text-white">Go Back</Text>
+          <Text style={styles.errorButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
     )
@@ -298,32 +474,31 @@ export default function WorkoutPage() {
   const progress = calculateProgress()
 
   return (
-    <View className="flex-1 bg-ice-blue">
+    <View style={styles.container}>
       {/* Header */}
-      <View className="bg-white border-b border-gray-200 px-4 py-4">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center space-x-4">
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
             <TouchableOpacity onPress={() => router.back()}>
-              <Text className="text-coral text-lg">← Back</Text>
+              <Text style={styles.backButton}>← Back</Text>
             </TouchableOpacity>
-            <View>
-              <Text className="text-xl font-bold text-charcoal">
+            <View style={{ marginLeft: 16 }}>
+              <Text style={styles.headerTitle}>
                 Week {workout.week}, Day {workout.day}
               </Text>
               {workout.isDeload && (
-                <Text className="text-sm text-yellow-600">Deload Week</Text>
+                <Text style={styles.deloadLabel}>Deload Week</Text>
               )}
             </View>
           </View>
 
-          <View className="flex-row items-center space-x-2">
-            <View className="w-24 bg-slate-blue rounded-full h-2">
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBarContainer}>
               <View
-                className="h-2 rounded-full bg-coral"
-                style={{ width: `${progress}%` }}
+                style={[styles.progressBar, { width: `${progress}%` }]}
               />
             </View>
-            <Text className="text-sm font-medium text-charcoal">
+            <Text style={[styles.progressText, { marginLeft: 8 }]}>
               {Math.round(progress)}%
             </Text>
           </View>
@@ -331,37 +506,64 @@ export default function WorkoutPage() {
       </View>
 
       {/* Main Content */}
-      <ScrollView className="flex-1 px-4 py-6">
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {workout.blocks.map((block, blockIndex) => {
           const key = `${block.blockName}-${blockIndex}`
-          const isExpanded = expandedBlocks[key]
+          
+          const completedCount = block.exercises.filter(ex => {
+            const setMatch = ex.notes?.match(/Set (\d+)/)
+            const setNumber = setMatch ? parseInt(setMatch[1]) : 1
+            const exerciseKey = setNumber > 1 ? `${ex.name} - Set ${setNumber}` : ex.name
+            return completions[exerciseKey] !== undefined
+          }).length
+          
+          const totalCount = block.exercises.length
+          const isBlockComplete = completedCount === totalCount && totalCount > 0
+          
+          // Blocks default to collapsed. Only expanded if user explicitly expands them.
+          // This ensures complete blocks are collapsed by default.
+          const isExpanded = expandedBlocks[key] === true
+
+          // Format block name
+          let displayBlockName = block.blockName.toUpperCase()
+          if (block.blockName === 'STRENGTH AND POWER') {
+            const strengthBlocks = workout.blocks.filter(b => b.blockName === 'STRENGTH AND POWER')
+            if (strengthBlocks.length > 1) {
+              const idx = strengthBlocks.indexOf(block)
+              displayBlockName = `STRENGTH AND POWER (${idx + 1}/${strengthBlocks.length})`
+            }
+          }
 
           return (
             <View
               key={blockIndex}
-              className="mb-6 rounded-lg border-2 border-slate-blue bg-slate-blue"
+              style={[
+                styles.blockContainer,
+                isBlockComplete ? styles.blockContainerComplete : styles.blockContainerDefault
+              ]}
             >
               {/* Block Header */}
               <TouchableOpacity
                 onPress={() => toggleBlock(block.blockName, blockIndex)}
-                className="p-4"
+                style={styles.blockHeader}
+                activeOpacity={0.7}
               >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center space-x-3">
-                    <Text className="text-xl font-bold text-charcoal">
-                      {block.blockName.toUpperCase()}
-                    </Text>
+                <View style={styles.blockHeaderContent}>
+                  <View style={styles.blockHeaderLeft}>
+                    {isBlockComplete ? (
+                      <Text style={styles.blockCompleteIcon}>✓</Text>
+                    ) : null}
+                    <View style={{ marginLeft: isBlockComplete ? 12 : 0 }}>
+                      <Text style={styles.blockTitle}>
+                        {displayBlockName}
+                      </Text>
+                    </View>
                   </View>
-                  <View className="flex-row items-center space-x-2">
-                    <Text className="text-sm text-charcoal">
-                      {block.exercises.filter(ex => {
-                        const setMatch = ex.notes?.match(/Set (\d+)/)
-                        const setNumber = setMatch ? parseInt(setMatch[1]) : 1
-                        const exerciseKey = setNumber > 1 ? `${ex.name} - Set ${setNumber}` : ex.name
-                        return completions[exerciseKey] !== undefined
-                      }).length}/{block.exercises.length} Complete
+                  <View style={styles.blockHeaderRight}>
+                    <Text style={styles.blockProgress}>
+                      {completedCount}/{totalCount} Complete
                     </Text>
-                    <Text className="text-gray-400">
+                    <Text style={[styles.expandIcon, { marginLeft: 8 }]}>
                       {isExpanded ? '▼' : '▶'}
                     </Text>
                   </View>
@@ -369,13 +571,13 @@ export default function WorkoutPage() {
               </TouchableOpacity>
 
               {/* Block Content */}
-              {isExpanded && (
-                <View className="px-4 pb-4">
+              {isExpanded ? (
+                <View style={styles.blockContent}>
                   {block.blockName === 'METCONS' ? (
                     <MetConCard
                       metconData={workout.metconData}
-                      onComplete={(workoutScore, taskCompletions, avgHR, peakHR) => {
-                        logMetConCompletion(workoutScore, taskCompletions, avgHR, peakHR)
+                      onComplete={(workoutScore, taskCompletions, avgHR, peakHR, notes) => {
+                        logMetConCompletion(workoutScore, taskCompletions, avgHR, peakHR, notes)
                       }}
                     />
                   ) : block.blockName === 'ENGINE' ? (
@@ -405,39 +607,238 @@ export default function WorkoutPage() {
                     })
                   )}
                 </View>
-              )}
+              ) : null}
             </View>
           )
         })}
 
         {/* Navigation */}
-        <View className="flex-row items-center justify-between mt-8 pt-6 border-t border-slate-blue">
+        <View style={styles.navigation}>
           <TouchableOpacity
-            className="px-4 py-2 rounded-lg bg-slate-blue"
-            onPress={() => {
-              // TODO: Implement prev/next navigation
-            }}
+            style={[styles.navButton, !canNavigatePrev() && styles.navButtonDisabled]}
+            onPress={navigateToPrevDay}
+            disabled={!canNavigatePrev()}
           >
-            <Text className="text-charcoal">← Prev</Text>
+            <Text style={[styles.navButtonText, !canNavigatePrev() && styles.navButtonTextDisabled]}>
+              ← Prev
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="px-4 py-2 bg-coral rounded-lg"
+            style={styles.navButtonPrimary}
             onPress={() => router.back()}
           >
-            <Text className="text-white">Dashboard</Text>
+            <Text style={styles.navButtonTextPrimary}>Dashboard</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="px-4 py-2 rounded-lg bg-slate-blue"
-            onPress={() => {
-              // TODO: Implement prev/next navigation
-            }}
+            style={[styles.navButton, !canNavigateNext() && styles.navButtonDisabled]}
+            onPress={navigateToNextDay}
+            disabled={!canNavigateNext()}
           >
-            <Text className="text-charcoal">Next →</Text>
+            <Text style={[styles.navButtonText, !canNavigateNext() && styles.navButtonTextDisabled]}>
+              Next →
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FBFE',
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#F8FBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: '#282B34',
+    marginTop: 16,
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    backgroundColor: '#F8FBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  errorIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 8,
+  },
+  errorMessage: {
+    color: '#282B34',
+    marginBottom: 16,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  errorButton: {
+    backgroundColor: '#FE5858',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  errorButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  header: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    color: '#FE5858',
+    fontSize: 18,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#282B34',
+  },
+  deloadLabel: {
+    fontSize: 14,
+    color: '#D97706',
+    marginTop: 2,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  progressBarContainer: {
+    width: 96,
+    backgroundColor: '#DAE2EA',
+    borderRadius: 999,
+    height: 8,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#FE5858',
+  },
+  progressText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#282B34',
+  },
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+  },
+  scrollContent: {
+    paddingBottom: 24,
+  },
+  blockContainer: {
+    marginBottom: 24,
+    borderRadius: 8,
+    borderWidth: 2,
+    backgroundColor: '#FFFFFF',
+  },
+  blockContainerDefault: {
+    borderColor: '#DAE2EA',
+  },
+  blockContainerComplete: {
+    borderColor: '#FE5858',
+    backgroundColor: '#FFF5F5',
+  },
+  blockHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  blockHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  blockHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  blockCompleteIcon: {
+    fontSize: 24,
+    color: '#FE5858',
+  },
+  blockTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#282B34',
+  },
+  blockHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  blockProgress: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#282B34',
+  },
+  expandIcon: {
+    color: '#9CA3AF',
+    fontSize: 18,
+  },
+  blockContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  navigation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 32,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#DAE2EA',
+  },
+  navButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#DAE2EA',
+  },
+  navButtonPrimary: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FE5858',
+    borderRadius: 8,
+  },
+  navButtonText: {
+    color: '#282B34',
+    fontSize: 16,
+  },
+  navButtonTextPrimary: {
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  navButtonDisabled: {
+    opacity: 0.5,
+  },
+  navButtonTextDisabled: {
+    color: '#9CA3AF',
+  },
+})

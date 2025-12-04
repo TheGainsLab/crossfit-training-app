@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native'
 import Slider from '@react-native-community/slider'
 
 interface Exercise {
@@ -107,20 +107,21 @@ export default function ExerciseCard({
     return (
       <TouchableOpacity
         onPress={onPress}
-        className={`flex-1 py-3 rounded-lg border-2 ${
-          isSelected
-            ? 'bg-coral border-coral'
-            : 'bg-white border-gray-300'
-        }`}
+        style={[
+          styles.qualityButton,
+          isSelected ? styles.qualityButtonSelected : styles.qualityButtonUnselected
+        ]}
       >
-        <Text className={`text-center text-lg font-bold ${
-          isSelected ? 'text-white' : 'text-gray-700'
-        }`}>
+        <Text style={[
+          styles.qualityGrade,
+          isSelected ? styles.qualityGradeSelected : styles.qualityGradeUnselected
+        ]}>
           {grade}
         </Text>
-        <Text className={`text-center text-xs ${
-          isSelected ? 'text-white opacity-75' : 'text-gray-700 opacity-75'
-        }`}>
+        <Text style={[
+          styles.qualityLabel,
+          isSelected ? styles.qualityLabelSelected : styles.qualityLabelUnselected
+        ]}>
           {getGradeLabel()}
         </Text>
       </TouchableOpacity>
@@ -129,65 +130,69 @@ export default function ExerciseCard({
 
   return (
     <View
-      className={`bg-white rounded-xl shadow-sm border-2 mb-4 ${
-        isCompleted
-          ? 'border-coral bg-coral/5'
-          : 'border-slate-blue'
-      }`}
+      style={[
+        styles.card,
+        isCompleted ? styles.cardCompleted : styles.cardDefault
+      ]}
     >
       {/* Exercise Header */}
       <TouchableOpacity
         onPress={() => setIsExpanded(!isExpanded)}
-        className="p-6"
+        style={styles.header}
+        activeOpacity={0.7}
       >
-        <View className="flex-row items-start justify-between">
-          <View className="flex-1">
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
             {/* Exercise Title */}
-            <View className="flex-row items-center mb-4">
-              <Text className="text-xl font-bold text-charcoal">{exercise.name}</Text>
-              {exercise.notes && (
+            <View style={styles.titleRow}>
+              <Text style={styles.exerciseTitle}>{exercise.name}</Text>
+              {exercise.notes ? (
                 <TouchableOpacity
                   onPress={(e) => {
                     e.stopPropagation()
                     setShowCues(!showCues)
                   }}
-                  className="w-6 h-6 bg-coral rounded-full ml-3 items-center justify-center"
+                  style={styles.infoButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Text className="text-white text-xs">i</Text>
+                  <Text style={styles.infoText}>i</Text>
                 </TouchableOpacity>
-              )}
-              {isCompleted && <Text className="text-coral text-xl ml-2">✓</Text>}
+              ) : null}
+              {isCompleted ? <Text style={styles.checkmark}>✓</Text> : null}
             </View>
 
             {/* Performance Cues */}
-            {showCues && exercise.notes && (
-              <View className="mb-4 bg-coral/10 rounded-lg p-3">
-                <Text className="text-charcoal text-sm">{exercise.notes}</Text>
+            {showCues && exercise.notes ? (
+              <View style={styles.cuesContainer}>
+                <Text style={styles.cuesText}>{exercise.notes}</Text>
               </View>
-            )}
+            ) : null}
 
-            {/* Exercise Specs */}
-            <View className={`flex-row gap-6 ${exercise.weightTime && exercise.weightTime !== 'BW' ? 'justify-between' : 'justify-start'}`}>
-              <View className="flex-row items-center">
-                <Text className="text-gray-500 font-medium">Sets: </Text>
-                <Text className="text-charcoal font-semibold text-base">{exercise.sets || '-'}</Text>
+            {/* Exercise Specs - Grid Layout */}
+            <View style={[
+              styles.specsGrid,
+              exercise.weightTime && exercise.weightTime !== 'BW' ? styles.specsGridThree : styles.specsGridTwo
+            ]}>
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>Sets:</Text>
+                <Text style={[styles.specValue, { marginLeft: 8 }]}>{exercise.sets || '-'}</Text>
               </View>
-              <View className="flex-row items-center">
-                <Text className="text-gray-500 font-medium">Reps: </Text>
-                <Text className="text-charcoal font-semibold text-base">{exercise.reps || '-'}</Text>
+              <View style={[styles.specItem, { marginLeft: 24 }]}>
+                <Text style={styles.specLabel}>Reps:</Text>
+                <Text style={[styles.specValue, { marginLeft: 8 }]}>{exercise.reps || '-'}</Text>
               </View>
-              {exercise.weightTime && exercise.weightTime !== 'BW' && (
-                <View className="flex-row items-center">
-                  <Text className="text-gray-500 font-medium">Weight: </Text>
-                  <Text className="text-charcoal font-semibold text-base">{exercise.weightTime}</Text>
+              {exercise.weightTime && exercise.weightTime !== 'BW' ? (
+                <View style={[styles.specItem, { marginLeft: 24 }]}>
+                  <Text style={styles.specLabel}>Weight:</Text>
+                  <Text style={[styles.specValue, { marginLeft: 8 }]}>{exercise.weightTime}</Text>
                 </View>
-              )}
+              ) : null}
             </View>
           </View>
 
           {/* Chevron */}
-          <View className="ml-4">
-            <Text className="text-gray-400 text-xl">
+          <View style={styles.chevronContainer}>
+            <Text style={styles.chevron}>
               {isExpanded ? '▼' : '▶'}
             </Text>
           </View>
@@ -195,146 +200,152 @@ export default function ExerciseCard({
       </TouchableOpacity>
 
       {/* Completion Form */}
-      {isExpanded && (
-        <View className="px-6 pb-6">
+      {isExpanded ? (
+        <View style={styles.formContainer}>
           {/* Completion Type Selection */}
-          <View className="bg-ice-blue rounded-lg p-4 mb-3">
+          <View style={styles.section}>
             <TouchableOpacity
               onPress={() => setCompletionType('asRx')}
-              className="flex-row items-center mb-3"
+              style={styles.radioOption}
+              activeOpacity={0.7}
             >
-              <View className={`w-4 h-4 rounded-full border-2 mr-3 items-center justify-center ${
-                completionType === 'asRx' ? 'border-coral' : 'border-gray-300'
-              }`}>
-                {completionType === 'asRx' && (
-                  <View className="w-2 h-2 rounded-full bg-coral" />
-                )}
+              <View style={styles.radioContainer}>
+                <View style={[
+                  styles.radioOuter,
+                  completionType === 'asRx' ? styles.radioOuterSelected : null
+                ]}>
+                  {completionType === 'asRx' ? <View style={styles.radioInner} /> : null}
+                </View>
+                <Text style={styles.radioLabel}>As Prescribed (As Rx)</Text>
               </View>
-              <Text className="text-base font-medium text-charcoal">
-                As Prescribed (As Rx)
-              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setCompletionType('modified')}
-              className="flex-row items-center"
+              style={[styles.radioOption, styles.radioOptionLast]}
+              activeOpacity={0.7}
             >
-              <View className={`w-4 h-4 rounded-full border-2 mr-3 items-center justify-center ${
-                completionType === 'modified' ? 'border-coral' : 'border-gray-300'
-              }`}>
-                {completionType === 'modified' && (
-                  <View className="w-2 h-2 rounded-full bg-coral" />
-                )}
+              <View style={styles.radioContainer}>
+                <View style={[
+                  styles.radioOuter,
+                  completionType === 'modified' ? styles.radioOuterSelected : null
+                ]}>
+                  {completionType === 'modified' ? <View style={styles.radioInner} /> : null}
+                </View>
+                <Text style={styles.radioLabel}>Modified Workout</Text>
               </View>
-              <Text className="text-base font-medium text-charcoal">
-                Modified Workout
-              </Text>
             </TouchableOpacity>
           </View>
 
           {/* Performance Inputs - Only show for Modified */}
-          {completionType === 'modified' && (
-            <View className="bg-ice-blue rounded-lg p-4 mb-3">
-              <Text className="text-sm font-semibold text-charcoal mb-3 uppercase">
-                Performance
-              </Text>
-              <View className={`flex-row gap-3 ${exercise.weightTime === 'BW' ? '' : ''}`}>
-                <View className="flex-1">
-                  <Text className="text-xs font-medium text-charcoal mb-1">Sets</Text>
+          {completionType === 'modified' ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>PERFORMANCE</Text>
+              <View style={[
+                styles.inputGrid,
+                exercise.weightTime === 'BW' ? styles.inputGridTwo : styles.inputGridThree
+              ]}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Sets</Text>
                   <TextInput
                     value={formData.setsCompleted.toString()}
                     onChangeText={(text) => setFormData(prev => ({ ...prev, setsCompleted: text }))}
                     keyboardType="number-pad"
-                    className="w-full p-2 border border-slate-blue rounded-lg bg-white"
+                    style={styles.input}
                     placeholder="0"
                   />
                 </View>
-                <View className="flex-1">
-                  <Text className="text-xs font-medium text-charcoal mb-1">Reps</Text>
+                <View style={[styles.inputGroup, { marginLeft: 12 }]}>
+                  <Text style={styles.inputLabel}>Reps</Text>
                   <TextInput
                     value={formData.repsCompleted.toString()}
                     onChangeText={(text) => setFormData(prev => ({ ...prev, repsCompleted: text }))}
-                    className="w-full p-2 border border-slate-blue rounded-lg bg-white"
+                    keyboardType="default"
+                    style={styles.input}
                     placeholder="0"
                   />
                 </View>
-                {exercise.weightTime !== 'BW' && (
-                  <View className="flex-1">
-                    <Text className="text-xs font-medium text-charcoal mb-1">Weight</Text>
+                {exercise.weightTime !== 'BW' ? (
+                  <View style={[styles.inputGroup, { marginLeft: 12 }]}>
+                    <Text style={styles.inputLabel}>Weight</Text>
                     <TextInput
                       value={formData.weightUsed.toString()}
                       onChangeText={(text) => setFormData(prev => ({ ...prev, weightUsed: text }))}
                       keyboardType="decimal-pad"
-                      className="w-full p-2 border border-slate-blue rounded-lg bg-white"
+                      style={styles.input}
                       placeholder="lbs"
                     />
                   </View>
-                )}
+                ) : null}
               </View>
             </View>
-          )}
+          ) : null}
 
           {/* RPE Section */}
-          <View className="bg-ice-blue rounded-lg p-4 mb-3">
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-sm font-semibold text-charcoal uppercase">RPE</Text>
-              <Text className="text-lg font-bold text-coral">{formData.rpe}/10</Text>
+          <View style={[styles.section, { marginTop: 12 }]}>
+            <View style={styles.rpeHeader}>
+              <Text style={styles.sectionTitle}>RPE</Text>
+              <Text style={styles.rpeValue}>{Math.round(formData.rpe)}/10</Text>
             </View>
-            <Slider
-              minimumValue={1}
-              maximumValue={10}
-              step={1}
-              value={formData.rpe}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, rpe: value }))}
-              minimumTrackTintColor="#FE5858"
-              maximumTrackTintColor="#DAE2EA"
-              thumbTintColor="#FE5858"
-            />
-            <View className="flex-row justify-between">
-              <Text className="text-xs text-gray-500">1 - Very Easy</Text>
-              <Text className="text-xs text-gray-500">10 - Max Effort</Text>
+            <View style={styles.sliderContainer}>
+              <Slider
+                minimumValue={1}
+                maximumValue={10}
+                step={1}
+                value={formData.rpe}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, rpe: value }))}
+                minimumTrackTintColor="#FE5858"
+                maximumTrackTintColor="#DAE2EA"
+                thumbTintColor="#FE5858"
+                style={styles.slider}
+              />
+            </View>
+            <View style={styles.sliderLabels}>
+              <Text style={styles.sliderLabel}>1 - Very Easy</Text>
+              <Text style={styles.sliderLabel}>10 - Max Effort</Text>
             </View>
           </View>
 
           {/* Quality Section */}
-          <View className="bg-ice-blue rounded-lg p-4 mb-3">
-            <Text className="text-sm font-semibold text-charcoal mb-3 uppercase">
-              Quality
-            </Text>
-            <View className="flex-row gap-2">
-              {['A', 'B', 'C', 'D'].map((grade) => (
-                <QualityButton
-                  key={grade}
-                  grade={grade}
-                  isSelected={formData.quality === grade}
-                  onPress={() => setFormData(prev => ({
-                    ...prev,
-                    quality: prev.quality === grade ? '' : grade
-                  }))}
-                />
+          <View style={[styles.section, { marginTop: 12 }]}>
+            <Text style={styles.sectionTitle}>QUALITY</Text>
+            <View style={styles.qualityGrid}>
+              {['A', 'B', 'C', 'D'].map((grade, index) => (
+                <View key={grade} style={index > 0 ? { marginLeft: 8 } : undefined}>
+                  <QualityButton
+                    grade={grade}
+                    isSelected={formData.quality === grade}
+                    onPress={() => setFormData(prev => ({
+                      ...prev,
+                      quality: prev.quality === grade ? '' : grade
+                    }))}
+                  />
+                </View>
               ))}
             </View>
           </View>
 
           {/* Notes Section */}
           {!showNotes ? (
-            <View className="bg-ice-blue rounded-lg p-4 mb-3">
-              <TouchableOpacity onPress={() => setShowNotes(true)}>
-                <Text className="text-sm font-semibold text-charcoal uppercase">
-                  + Add Notes
-                </Text>
+            <View style={[styles.section, { marginTop: 12 }]}>
+              <TouchableOpacity
+                onPress={() => setShowNotes(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.addNotesText}>+ Add Notes</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <View className="bg-ice-blue rounded-lg p-4 mb-3">
-              <View className="flex-row items-center justify-between mb-3">
-                <Text className="text-sm font-semibold text-charcoal uppercase">Notes</Text>
+            <View style={[styles.section, { marginTop: 12 }]}>
+              <View style={styles.notesHeader}>
+                <Text style={styles.sectionTitle}>NOTES</Text>
                 <TouchableOpacity
                   onPress={() => {
                     setShowNotes(false)
                     setFormData(prev => ({ ...prev, notes: '' }))
                   }}
+                  activeOpacity={0.7}
                 >
-                  <Text className="text-xs text-gray-500">Remove</Text>
+                  <Text style={styles.removeNotesText}>Remove</Text>
                 </TouchableOpacity>
               </View>
               <TextInput
@@ -342,7 +353,8 @@ export default function ExerciseCard({
                 onChangeText={(text) => setFormData(prev => ({ ...prev, notes: text }))}
                 multiline
                 numberOfLines={3}
-                className="w-full p-3 border border-slate-blue rounded-lg bg-white"
+                style={styles.notesInput}
+                placeholder="Add your notes here..."
               />
             </View>
           )}
@@ -350,14 +362,316 @@ export default function ExerciseCard({
           {/* Submit Button */}
           <TouchableOpacity
             onPress={handleDetailedSubmit}
-            className="w-full bg-coral py-4 px-6 rounded-lg"
+            style={[styles.submitButton, { marginTop: 12 }]}
+            activeOpacity={0.8}
           >
-            <Text className="text-white text-center font-semibold text-base">
+            <Text style={styles.submitButtonText}>
               {isCompleted ? 'Update Exercise' : 'Mark Exercise Complete'}
             </Text>
           </TouchableOpacity>
         </View>
-      )}
+      ) : null}
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  cardDefault: {
+    borderColor: '#DAE2EA',
+  },
+  cardCompleted: {
+    borderColor: '#FE5858',
+    backgroundColor: '#FFF5F5',
+  },
+  header: {
+    padding: 24,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    flexWrap: 'wrap',
+  },
+  exerciseTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1F2E',
+  },
+  infoButton: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#FE5858',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  infoText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  checkmark: {
+    color: '#FE5858',
+    fontSize: 20,
+    marginLeft: 8,
+  },
+  cuesContainer: {
+    backgroundColor: '#FFF5F5',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  cuesText: {
+    color: '#1A1F2E',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  specsGrid: {
+    flexDirection: 'row',
+  },
+  specsGridTwo: {
+    justifyContent: 'flex-start',
+  },
+  specsGridThree: {
+    justifyContent: 'space-between',
+  },
+  specItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  specLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  specValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1F2E',
+  },
+  chevronContainer: {
+    marginLeft: 16,
+  },
+  chevron: {
+    fontSize: 20,
+    color: '#9CA3AF',
+  },
+  formContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  section: {
+    backgroundColor: '#F0F4F8',
+    borderRadius: 8,
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1A1F2E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  radioOption: {
+    marginBottom: 12,
+  },
+  radioOptionLast: {
+    marginBottom: 0,
+  },
+  radioContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  radioOuterSelected: {
+    borderColor: '#FE5858',
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FE5858',
+  },
+  radioLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1A1F2E',
+  },
+  inputGrid: {
+    flexDirection: 'row',
+  },
+  inputGridTwo: {
+    // Two columns
+  },
+  inputGridThree: {
+    // Three columns
+  },
+  inputGroup: {
+    flex: 1,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#1A1F2E',
+    marginBottom: 4,
+  },
+  input: {
+    width: '100%',
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#DAE2EA',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    fontSize: 14,
+    color: '#1A1F2E',
+  },
+  rpeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  rpeValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FE5858',
+  },
+  sliderContainer: {
+    marginBottom: 8,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+  },
+  sliderLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  sliderLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  qualityGrid: {
+    flexDirection: 'row',
+  },
+  qualityButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qualityButtonSelected: {
+    backgroundColor: '#FE5858',
+    borderColor: '#FE5858',
+    shadowColor: '#FE5858',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  qualityButtonUnselected: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#D1D5DB',
+  },
+  qualityGrade: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  qualityGradeSelected: {
+    color: '#FFFFFF',
+  },
+  qualityGradeUnselected: {
+    color: '#374151',
+  },
+  qualityLabel: {
+    fontSize: 11,
+    opacity: 0.75,
+  },
+  qualityLabelSelected: {
+    color: '#FFFFFF',
+  },
+  qualityLabelUnselected: {
+    color: '#374151',
+  },
+  addNotesText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1A1F2E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  notesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  removeNotesText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  notesInput: {
+    width: '100%',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#DAE2EA',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    fontSize: 14,
+    color: '#1A1F2E',
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  submitButton: {
+    width: '100%',
+    backgroundColor: '#FE5858',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FE5858',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+})

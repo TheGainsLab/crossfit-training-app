@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, StyleSheet } from 'react-native'
 import Slider from '@react-native-community/slider'
 
 interface MetConCardProps {
@@ -25,7 +25,8 @@ interface MetConCardProps {
     workoutScore: string,
     taskCompletions: { exerciseName: string, rpe: number, quality: string }[],
     avgHR?: string,
-    peakHR?: string
+    peakHR?: string,
+    notes?: string
   ) => void
 }
 
@@ -63,7 +64,7 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
         quality: taskQualities[task.exercise] || 'C'
       })) || []
 
-      await onComplete(workoutScore, taskCompletions, avgHR || undefined, peakHR || undefined)
+      await onComplete(workoutScore, taskCompletions, avgHR || undefined, peakHR || undefined, notes || undefined)
 
       setIsCompleted(true)
       setIsExpanded(false)
@@ -96,20 +97,21 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
     return (
       <TouchableOpacity
         onPress={onPress}
-        className={`flex-1 py-3 rounded-lg border-2 ${
-          isSelected
-            ? 'bg-coral border-coral'
-            : 'bg-white border-gray-300'
-        }`}
+        style={[
+          styles.qualityButton,
+          isSelected ? styles.qualityButtonSelected : styles.qualityButtonUnselected
+        ]}
       >
-        <Text className={`text-center text-lg font-bold ${
-          isSelected ? 'text-white' : 'text-gray-700'
-        }`}>
+        <Text style={[
+          styles.qualityGrade,
+          isSelected ? styles.qualityGradeSelected : styles.qualityGradeUnselected
+        ]}>
           {grade}
         </Text>
-        <Text className={`text-center text-xs ${
-          isSelected ? 'text-white opacity-75' : 'text-gray-700 opacity-75'
-        }`}>
+        <Text style={[
+          styles.qualityLabel,
+          isSelected ? styles.qualityLabelSelected : styles.qualityLabelUnselected
+        ]}>
           {getGradeLabel()}
         </Text>
       </TouchableOpacity>
@@ -118,48 +120,45 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
 
   if (!metconData) return null
 
-  const currentBenchmarks = metconData.percentileGuidance[gender]
-  const currentRxWeight = metconData.rxWeights[gender]
+  const currentBenchmarks = metconData.percentileGuidance?.[gender]
+  const currentRxWeight = metconData.rxWeights?.[gender]
 
   return (
-    <View
-      className={`bg-white rounded-xl shadow-sm border-2 mb-4 ${
-        isCompleted
-          ? 'border-coral bg-coral/5'
-          : 'border-slate-blue'
-      }`}
-    >
+    <View style={[
+      styles.card,
+      isCompleted ? styles.cardCompleted : styles.cardDefault
+    ]}>
       {/* MetCon Header */}
       <TouchableOpacity
         onPress={() => setIsExpanded(!isExpanded)}
-        className="p-6"
+        style={styles.header}
       >
-        <View className="flex-row items-start justify-between">
-          <View className="flex-1">
-            <View className="flex-row items-center mb-4">
-              <Text className="text-xl font-bold text-charcoal">
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>
                 {metconData.workoutId || 'MetCon'}
               </Text>
-              {isCompleted && <Text className="text-coral text-xl ml-2">✅</Text>}
+              {isCompleted && <Text style={styles.checkmark}>✅</Text>}
             </View>
 
             {metconData.workoutNotes && (
-              <Text className="text-sm text-charcoal mb-4">
+              <Text style={styles.notes}>
                 {metconData.workoutNotes}
               </Text>
             )}
 
             {isCompleted && !isExpanded && (
-              <View className="mt-4 pt-4 border-t border-gray-200">
-                <Text className="text-sm text-charcoal">
-                  Score: <Text className="font-semibold text-coral">{workoutScore}</Text>
+              <View style={styles.completedScoreContainer}>
+                <Text style={styles.completedScoreLabel}>
+                  Score: <Text style={styles.completedScoreValue}>{workoutScore}</Text>
                 </Text>
               </View>
             )}
           </View>
 
-          <View className="ml-4">
-            <Text className="text-gray-400 text-xl">
+          <View style={styles.expandIcon}>
+            <Text style={styles.expandIconText}>
               {isExpanded ? '▼' : '▶'}
             </Text>
           </View>
@@ -168,36 +167,36 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
 
       {/* Completion Form */}
       {isExpanded && !isCompleted && (
-        <View className="px-6 pb-6">
+        <View style={styles.form}>
           {/* Gender Selection */}
-          <View className="bg-ice-blue rounded-lg p-4 mb-3">
-            <View className="flex-row justify-center">
-              <View className="flex-row bg-white rounded-lg p-1 border gap-1">
+          <View style={styles.section}>
+            <View style={styles.genderContainer}>
+              <View style={styles.genderToggle}>
                 <TouchableOpacity
                   onPress={() => setGender('male')}
-                  className={`px-4 py-2 rounded-md ${
-                    gender === 'male'
-                      ? 'bg-coral'
-                      : 'bg-transparent'
-                  }`}
+                  style={[
+                    styles.genderButton,
+                    gender === 'male' ? styles.genderButtonActive : styles.genderButtonInactive
+                  ]}
                 >
-                  <Text className={`text-sm font-medium ${
-                    gender === 'male' ? 'text-white' : 'text-charcoal'
-                  }`}>
+                  <Text style={[
+                    styles.genderButtonText,
+                    gender === 'male' ? styles.genderButtonTextActive : styles.genderButtonTextInactive
+                  ]}>
                     Male
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setGender('female')}
-                  className={`px-4 py-2 rounded-md ${
-                    gender === 'female'
-                      ? 'bg-coral'
-                      : 'bg-transparent'
-                  }`}
+                  style={[
+                    styles.genderButton,
+                    gender === 'female' ? styles.genderButtonActive : styles.genderButtonInactive
+                  ]}
                 >
-                  <Text className={`text-sm font-medium ${
-                    gender === 'female' ? 'text-white' : 'text-charcoal'
-                  }`}>
+                  <Text style={[
+                    styles.genderButtonText,
+                    gender === 'female' ? styles.genderButtonTextActive : styles.genderButtonTextInactive
+                  ]}>
                     Female
                   </Text>
                 </TouchableOpacity>
@@ -206,62 +205,60 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
           </View>
 
           {/* Benchmarks */}
-          <View className="bg-ice-blue rounded-lg p-4 mb-3">
-            <View className="flex-row gap-3">
-              <View className="flex-1 bg-white rounded-lg p-3 border border-slate-blue">
-                <Text className="text-xs text-charcoal font-medium text-center">Excellent</Text>
-                <Text className="font-bold text-charcoal text-center">{currentBenchmarks.excellentScore}</Text>
-              </View>
-              <View className="flex-1 bg-white rounded-lg p-3 border border-slate-blue">
-                <Text className="text-xs text-charcoal font-medium text-center">Median</Text>
-                <Text className="font-bold text-charcoal text-center">{currentBenchmarks.medianScore}</Text>
-              </View>
-              <View className="flex-1 bg-white rounded-lg p-3 border border-slate-blue">
-                <Text className="text-xs text-charcoal font-medium text-center">Rx Weight</Text>
-                <Text className="font-bold text-charcoal text-center">{currentRxWeight}</Text>
+          {currentBenchmarks && currentRxWeight && (
+            <View style={styles.section}>
+              <View style={styles.benchmarksRow}>
+                <View style={styles.benchmarkCard}>
+                  <Text style={styles.benchmarkLabel}>Excellent</Text>
+                  <Text style={styles.benchmarkValue}>{currentBenchmarks.excellentScore}</Text>
+                </View>
+                <View style={styles.benchmarkCard}>
+                  <Text style={styles.benchmarkLabel}>Median</Text>
+                  <Text style={styles.benchmarkValue}>{currentBenchmarks.medianScore}</Text>
+                </View>
+                <View style={styles.benchmarkCard}>
+                  <Text style={styles.benchmarkLabel}>Rx Weight</Text>
+                  <Text style={styles.benchmarkValue}>{currentRxWeight}</Text>
+                </View>
               </View>
             </View>
-          </View>
+          )}
 
           {/* Your Score */}
-          <View className="bg-ice-blue rounded-lg p-4 mb-3">
-            <Text className="text-sm font-semibold text-charcoal mb-3 uppercase">
-              Your Score
-            </Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Score</Text>
             <TextInput
               placeholder="e.g., 12:34, 8 rounds + 15 reps, 674 total reps"
               value={workoutScore}
               onChangeText={setWorkoutScore}
-              className="w-full p-3 border border-slate-blue rounded-lg bg-white"
+              style={styles.input}
               editable={!isSubmitting}
             />
           </View>
 
           {/* Heart Rate */}
-          <View className="bg-ice-blue rounded-lg p-4 mb-3">
-            <Text className="text-sm font-semibold text-charcoal mb-3 uppercase">
-              Heart Rate (Optional)
-            </Text>
-            <View className="flex-row gap-4">
-              <View className="flex-1">
-                <Text className="text-xs font-medium text-charcoal mb-1">Avg HR (bpm)</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Heart Rate (Optional)</Text>
+            <View style={styles.hrRow}>
+              <View style={styles.hrInputContainer}>
+                <Text style={styles.hrLabel}>Avg HR (bpm)</Text>
                 <TextInput
                   keyboardType="number-pad"
-                  placeholder="e.g., 145"
+                  placeholder=""
                   value={avgHR}
                   onChangeText={setAvgHR}
-                  className="w-full p-3 border border-slate-blue rounded-lg bg-white"
+                  style={styles.input}
                   editable={!isSubmitting}
                 />
               </View>
-              <View className="flex-1">
-                <Text className="text-xs font-medium text-charcoal mb-1">Peak HR (bpm)</Text>
+              <View style={styles.hrInputContainer}>
+                <Text style={styles.hrLabel}>Peak HR (bpm)</Text>
                 <TextInput
                   keyboardType="number-pad"
-                  placeholder="e.g., 180"
+                  placeholder=""
                   value={peakHR}
                   onChangeText={setPeakHR}
-                  className="w-full p-3 border border-slate-blue rounded-lg bg-white"
+                  style={styles.input}
                   editable={!isSubmitting}
                 />
               </View>
@@ -270,24 +267,22 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
 
           {/* Notes */}
           {!showNotes ? (
-            <View className="bg-ice-blue rounded-lg p-4 mb-3">
+            <View style={styles.section}>
               <TouchableOpacity onPress={() => setShowNotes(true)}>
-                <Text className="text-sm font-semibold text-charcoal uppercase">
-                  + Add Notes
-                </Text>
+                <Text style={styles.addNotesText}>+ Add Notes</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <View className="bg-ice-blue rounded-lg p-4 mb-3">
-              <View className="flex-row items-center justify-between mb-3">
-                <Text className="text-sm font-semibold text-charcoal uppercase">Notes</Text>
+            <View style={styles.section}>
+              <View style={styles.notesHeader}>
+                <Text style={styles.sectionTitle}>Notes</Text>
                 <TouchableOpacity
                   onPress={() => {
                     setShowNotes(false)
                     setNotes('')
                   }}
                 >
-                  <Text className="text-xs text-gray-500">Remove</Text>
+                  <Text style={styles.removeNotesText}>Remove</Text>
                 </TouchableOpacity>
               </View>
               <TextInput
@@ -295,31 +290,30 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
                 onChangeText={setNotes}
                 multiline
                 numberOfLines={3}
-                className="w-full p-3 border border-slate-blue rounded-lg bg-white"
+                style={styles.textArea}
               />
             </View>
           )}
 
           {/* Task Performance */}
-          <View className="bg-ice-blue rounded-lg p-4 mb-3">
-            <Text className="text-sm font-semibold text-charcoal mb-3 uppercase">
-              Task Performance
-            </Text>
-            {metconData.tasks.map((task, index) => (
-              <View key={index} className="bg-white rounded-lg p-4 border border-slate-blue mb-4">
+          {metconData.tasks && metconData.tasks.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Task Performance</Text>
+              {metconData.tasks.map((task, index) => (
+              <View key={index} style={styles.taskCard}>
                 {/* Task Header */}
-                <View className="mb-3">
-                  <Text className="font-semibold text-charcoal">{task.exercise}</Text>
-                  <Text className="text-sm text-charcoal">
-                    {task.reps} reps {task.weight_male && `@ ${gender === 'male' ? task.weight_male : task.weight_female} lbs`}
+                <View style={styles.taskHeader}>
+                  <Text style={styles.taskExercise}>{task.exercise}</Text>
+                  <Text style={styles.taskReps}>
+                    {task.reps} reps{task.weight_male ? ` @ ${gender === 'male' ? task.weight_male : task.weight_female} lbs` : ''}
                   </Text>
                 </View>
 
                 {/* RPE */}
-                <View className="mb-4">
-                  <View className="flex-row items-center justify-between mb-2">
-                    <Text className="text-xs font-medium text-charcoal uppercase">RPE</Text>
-                    <Text className="text-sm font-bold text-coral">
+                <View style={styles.rpeContainer}>
+                  <View style={styles.rpeHeader}>
+                    <Text style={styles.rpeLabel}>RPE</Text>
+                    <Text style={styles.rpeValue}>
                       {taskRPEs[task.exercise] || 5}/10
                     </Text>
                   </View>
@@ -334,16 +328,16 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
                     thumbTintColor="#FE5858"
                     disabled={isSubmitting}
                   />
-                  <View className="flex-row justify-between">
-                    <Text className="text-xs text-gray-500">1 - Very Easy</Text>
-                    <Text className="text-xs text-gray-500">10 - Max Effort</Text>
+                  <View style={styles.rpeLabels}>
+                    <Text style={styles.rpeLabelText}>1 - Very Easy</Text>
+                    <Text style={styles.rpeLabelText}>10 - Max Effort</Text>
                   </View>
                 </View>
 
                 {/* Quality */}
                 <View>
-                  <Text className="text-xs font-medium text-charcoal mb-2 uppercase">Quality</Text>
-                  <View className="flex-row gap-2">
+                  <Text style={styles.qualityTitle}>Quality</Text>
+                  <View style={styles.qualityButtons}>
                     {['A', 'B', 'C', 'D'].map((grade) => (
                       <QualityButton
                         key={grade}
@@ -361,25 +355,27 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
                 </View>
               </View>
             ))}
-          </View>
+            </View>
+          )}
 
           {/* Submit Button */}
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={!workoutScore.trim() || isSubmitting}
-            className={`w-full py-4 px-6 rounded-lg ${
-              !workoutScore.trim() || isSubmitting ? 'bg-gray-400' : 'bg-coral'
-            }`}
+            style={[
+              styles.submitButton,
+              (!workoutScore.trim() || isSubmitting) && styles.submitButtonDisabled
+            ]}
           >
             {isSubmitting ? (
-              <View className="flex-row items-center justify-center">
+              <View style={styles.submitButtonContent}>
                 <ActivityIndicator color="white" />
-                <Text className="text-white text-center font-semibold text-base ml-2">
+                <Text style={styles.submitButtonText}>
                   Logging MetCon...
                 </Text>
               </View>
             ) : (
-              <Text className="text-white text-center font-semibold text-base">
+              <Text style={styles.submitButtonText}>
                 Mark Exercise Complete
               </Text>
             )}
@@ -389,3 +385,320 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  cardDefault: {
+    borderWidth: 2,
+    borderColor: '#DAE2EA',
+  },
+  cardCompleted: {
+    borderWidth: 2,
+    borderColor: '#FE5858',
+    backgroundColor: '#FFF5F5',
+  },
+  header: {
+    padding: 24,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#282B34',
+  },
+  checkmark: {
+    color: '#FE5858',
+    fontSize: 20,
+    marginLeft: 8,
+  },
+  notes: {
+    fontSize: 14,
+    color: '#282B34',
+    marginBottom: 16,
+  },
+  completedScoreContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  completedScoreLabel: {
+    fontSize: 14,
+    color: '#282B34',
+  },
+  completedScoreValue: {
+    fontWeight: '600',
+    color: '#FE5858',
+  },
+  expandIcon: {
+    marginLeft: 16,
+  },
+  expandIconText: {
+    color: '#9CA3AF',
+    fontSize: 20,
+  },
+  form: {
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  section: {
+    backgroundColor: '#F8FBFE',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+  },
+  genderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  genderToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 4,
+  },
+  genderButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  genderButtonActive: {
+    backgroundColor: '#FE5858',
+  },
+  genderButtonInactive: {
+    backgroundColor: 'transparent',
+  },
+  genderButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  genderButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  genderButtonTextInactive: {
+    color: '#282B34',
+  },
+  benchmarksRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  benchmarkCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#DAE2EA',
+  },
+  benchmarkLabel: {
+    fontSize: 12,
+    color: '#282B34',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  benchmarkValue: {
+    fontWeight: '700',
+    color: '#282B34',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  input: {
+    width: '100%',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#DAE2EA',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    fontSize: 16,
+  },
+  hrRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  hrInputContainer: {
+    flex: 1,
+  },
+  hrLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#282B34',
+    marginBottom: 4,
+  },
+  addNotesText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#282B34',
+    textTransform: 'uppercase',
+  },
+  notesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  removeNotesText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  textArea: {
+    width: '100%',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#DAE2EA',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    fontSize: 16,
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  taskCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#DAE2EA',
+    marginBottom: 16,
+  },
+  taskHeader: {
+    marginBottom: 12,
+  },
+  taskExercise: {
+    fontWeight: '600',
+    color: '#282B34',
+    fontSize: 16,
+  },
+  taskReps: {
+    fontSize: 14,
+    color: '#282B34',
+    marginTop: 4,
+  },
+  rpeContainer: {
+    marginBottom: 16,
+  },
+  rpeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  rpeLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#282B34',
+    textTransform: 'uppercase',
+  },
+  rpeValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FE5858',
+  },
+  rpeLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  rpeLabelText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  qualityTitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#282B34',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  qualityButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  qualityButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+  },
+  qualityButtonSelected: {
+    backgroundColor: '#FE5858',
+    borderColor: '#FE5858',
+  },
+  qualityButtonUnselected: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#D1D5DB',
+  },
+  qualityGrade: {
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  qualityGradeSelected: {
+    color: '#FFFFFF',
+  },
+  qualityGradeUnselected: {
+    color: '#374151',
+  },
+  qualityLabel: {
+    textAlign: 'center',
+    fontSize: 12,
+    opacity: 0.75,
+  },
+  qualityLabelSelected: {
+    color: '#FFFFFF',
+  },
+  qualityLabelUnselected: {
+    color: '#374151',
+  },
+  submitButton: {
+    width: '100%',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    backgroundColor: '#FE5858',
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+  },
+  submitButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 16,
+    marginLeft: 8,
+  },
+})
