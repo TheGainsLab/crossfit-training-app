@@ -400,41 +400,54 @@ export default function NutritionTab() {
         <DailySummaryCard summary={dailySummary} />
 
         {/* Quick Log - Meal Templates */}
-        {mealTemplates.length > 0 && (
-          <Card style={styles.card}>
-            <Text style={styles.sectionTitle}>⭐ Quick Log</Text>
-            {templatesLoading ? (
-              <ActivityIndicator size="small" color="#FE5858" />
-            ) : (
-              <View style={styles.templatesList}>
-                {mealTemplates.map((template) => (
-                  <View key={template.id} style={styles.templateItem}>
-                    <View style={styles.templateInfo}>
-                      <Text style={styles.templateName}>
-                        {template.meal_type === 'breakfast' ? '☀️' : 
-                         template.meal_type === 'lunch' ? '🌮' : 
-                         template.meal_type === 'dinner' ? '🍽️' : 
-                         template.meal_type === 'pre_workout' ? '💪' :
-                         template.meal_type === 'post_workout' ? '🥤' : '🍎'}{' '}
-                        {template.template_name}
-                      </Text>
-                      <Text style={styles.templateDetails}>
-                        {Math.round(template.total_calories)} cal • {Math.round(template.total_protein)}g protein
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.logTemplateButton}
-                      onPress={() => handleLogTemplate(template.id!)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.logTemplateButtonText}>Log</Text>
-                    </TouchableOpacity>
+        <Card style={styles.card}>
+          <Text style={styles.sectionTitle}>⭐ Quick Log</Text>
+          {templatesLoading ? (
+            <ActivityIndicator size="small" color="#FE5858" />
+          ) : mealTemplates.length === 0 ? (
+            <View style={styles.emptyTemplatesContainer}>
+              <Text style={styles.emptyTemplatesText}>
+                Set up your favorite meals for one-tap logging!
+              </Text>
+              <Text style={styles.emptyTemplatesSubtext}>
+                Most people eat the same things regularly. Add 3-5 meals and log your day in seconds.
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyTemplatesButton}
+                onPress={() => router.push('/profile')}
+              >
+                <Text style={styles.emptyTemplatesButtonText}>Set Up My Meals</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.templatesList}>
+              {mealTemplates.map((template) => (
+                <View key={template.id} style={styles.templateItem}>
+                  <View style={styles.templateInfo}>
+                    <Text style={styles.templateName}>
+                      {template.meal_type === 'breakfast' ? '☀️' : 
+                       template.meal_type === 'lunch' ? '🌮' : 
+                       template.meal_type === 'dinner' ? '🍽️' : 
+                       template.meal_type === 'pre_workout' ? '💪' :
+                       template.meal_type === 'post_workout' ? '🥤' : '🍎'}{' '}
+                      {template.template_name}
+                    </Text>
+                    <Text style={styles.templateDetails}>
+                      {Math.round(template.total_calories)} cal • {Math.round(template.total_protein)}g protein
+                    </Text>
                   </View>
-                ))}
-              </View>
-            )}
-          </Card>
-        )}
+                  <TouchableOpacity
+                    style={styles.logTemplateButton}
+                    onPress={() => handleLogTemplate(template.id!)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.logTemplateButtonText}>Log</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+        </Card>
 
         {/* Something Else - Photo/Search */}
         <Card style={styles.card}>
@@ -605,10 +618,31 @@ function DailySummaryCard({ summary }: { summary: any }) {
   const carbs = summary.total_carbohydrate || 0
   const fat = summary.total_fat || 0
   const surplusDeficit = summary.surplus_deficit || 0
+  const tdee = summary.tdee_estimate || 0
+
+  const percentageOfTDEE = tdee > 0 ? Math.round((calories / tdee) * 100) : 0
 
   return (
     <Card style={styles.card}>
       <Text style={styles.sectionTitle}>Today's Summary</Text>
+      
+      {/* TDEE Progress Bar */}
+      {tdee > 0 && (
+        <View style={styles.tdeeProgressContainer}>
+          <View style={styles.tdeeProgressHeader}>
+            <Text style={styles.tdeeProgressLabel}>Daily Target: {Math.round(tdee)} cal</Text>
+            <Text style={styles.tdeeProgressPercentage}>{percentageOfTDEE}%</Text>
+          </View>
+          <View style={styles.progressBarContainer}>
+            <View style={[styles.progressBarFill, { width: `${Math.min(percentageOfTDEE, 100)}%` }]} />
+          </View>
+          <Text style={styles.tdeeProgressSubtext}>
+            {Math.round(calories)} cal logged
+            {percentageOfTDEE < 100 && ` • ${Math.round(tdee - calories)} cal remaining`}
+          </Text>
+        </View>
+      )}
+
       <View style={styles.summaryGrid}>
         <View style={styles.summaryItem}>
           <Text style={styles.summaryLabel}>Calories</Text>
@@ -1518,6 +1552,72 @@ const styles = StyleSheet.create({
   alternativeButtonText: {
     fontSize: 14,
     color: '#282B34',
+    fontWeight: '600',
+  },
+  // TDEE Progress
+  tdeeProgressContainer: {
+    marginBottom: 20,
+  },
+  tdeeProgressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tdeeProgressLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#282B34',
+  },
+  tdeeProgressPercentage: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FE5858',
+  },
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 4,
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#FE5858',
+    borderRadius: 4,
+  },
+  tdeeProgressSubtext: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  // Empty Templates State
+  emptyTemplatesContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  emptyTemplatesText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#282B34',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyTemplatesSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 20,
+  },
+  emptyTemplatesButton: {
+    backgroundColor: '#FE5858',
+    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  emptyTemplatesButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '600',
   },
 })
