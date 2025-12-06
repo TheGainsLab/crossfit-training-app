@@ -500,6 +500,16 @@ export default function NutritionTab() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.alternativeButton}
+                onPress={() => {
+                  // TODO: Wire up barcode scanning
+                  Alert.alert('Coming Soon', 'Barcode scanning will be available soon!')
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.alternativeButtonText}>📱 Scan Barcode</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.alternativeButton}
                 onPress={() => setShowSearch(true)}
                 activeOpacity={0.8}
               >
