@@ -223,9 +223,6 @@ export default function MealSetupWizard({ userId, onComplete, onSkip }: MealSetu
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Text style={styles.title}>🍽️ Your Favorite Meals</Text>
-          <Text style={styles.subtitle}>
-            Let's add what you typically eat. This makes daily logging super fast.
-          </Text>
           <Text style={styles.description}>
             You can skip this and add meals later from your Profile.
           </Text>
