@@ -244,7 +244,7 @@ export default function MealSetupWizard({ userId, onComplete, onSkip }: MealSetu
               setTemplateName(getDefaultTemplateName('breakfast'))
             }}
           >
-            <Text style={styles.primaryButtonText}>Set Up My Meals</Text>
+            <Text style={styles.primaryButtonText}>Add Favorites</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.secondaryButton} onPress={onSkip}>
