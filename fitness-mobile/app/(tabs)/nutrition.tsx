@@ -418,7 +418,7 @@ export default function NutritionTab() {
                 style={styles.emptyTemplatesButton}
                 onPress={() => setShowMealSetupWizard(true)}
               >
-                <Text style={styles.emptyTemplatesButtonText}>Set Up My Meals</Text>
+                <Text style={styles.emptyTemplatesButtonText}>Add Favorites</Text>
               </TouchableOpacity>
             </View>
           ) : (
