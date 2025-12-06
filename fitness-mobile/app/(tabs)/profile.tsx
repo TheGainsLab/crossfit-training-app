@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
+  Modal,
   StyleSheet
 } from 'react-native'
 import { useRouter } from 'expo-router'
@@ -14,6 +15,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { SectionHeader } from '@/components/ui/SectionHeader'
+import { getMealTemplates, deleteMealTemplate, MealTemplate } from '@/lib/api/mealTemplates'
+import MealSetupWizard from '@/components/nutrition/MealSetupWizard'
 
 interface ProfileData {
   user_summary: {
@@ -422,10 +425,19 @@ export default function ProfilePage() {
   const [editingLift, setEditingLift] = useState<string | null>(null)
   const [liftValues, setLiftValues] = useState<{[key: string]: string}>({})
   const [savingLift, setSavingLift] = useState(false)
+  const [mealTemplates, setMealTemplates] = useState<MealTemplate[]>([])
+  const [templatesLoading, setTemplatesLoading] = useState(false)
+  const [showMealSetupWizard, setShowMealSetupWizard] = useState(false)
 
   useEffect(() => {
     loadProfile()
   }, [])
+
+  useEffect(() => {
+    if (profile) {
+      loadMealTemplates()
+    }
+  }, [profile])
 
   const loadProfile = async () => {
     try {
@@ -488,6 +500,57 @@ export default function ProfilePage() {
       setError('Failed to load profile')
       setLoading(false)
     }
+  }
+
+  const loadMealTemplates = async () => {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (!userData) return
+
+      setTemplatesLoading(true)
+      const templates = await getMealTemplates((userData as any).id)
+      setMealTemplates(templates)
+    } catch (error) {
+      console.error('Error loading meal templates:', error)
+    } finally {
+      setTemplatesLoading(false)
+    }
+  }
+
+  const handleDeleteTemplate = async (templateId: number, templateName: string) => {
+    Alert.alert(
+      'Delete Meal Template',
+      `Are you sure you want to delete "${templateName}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const result = await deleteMealTemplate(templateId)
+              if (!result.success) {
+                throw new Error(result.error || 'Failed to delete template')
+              }
+              Alert.alert('Success', 'Meal template deleted')
+              loadMealTemplates() // Reload templates
+            } catch (error: any) {
+              console.error('Error deleting template:', error)
+              Alert.alert('Error', error.message || 'Failed to delete template')
+            }
+          },
+        },
+      ]
+    )
   }
 
   const formatWeight = (weight: number | null) => {
@@ -1612,7 +1675,101 @@ export default function ProfilePage() {
             </View>
           )}
         </View>
+
+        {/* My Favorite Meals */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>MY FAVORITE MEALS</Text>
+            <TouchableOpacity onPress={() => toggleCategory('favorite-meals')}>
+              <Text style={styles.toggleText}>
+                [{expandedCategories.includes('favorite-meals') ? '- Hide' : '+ View'}]
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sectionDivider} />
+          <Text style={styles.sectionDescription}>
+            Your go-to meals for quick daily logging ({mealTemplates.length} saved)
+          </Text>
+          
+          {expandedCategories.includes('favorite-meals') && (
+            <View>
+              {templatesLoading ? (
+                <View style={styles.loadingSection}>
+                  <ActivityIndicator size="small" color="#FE5858" />
+                </View>
+              ) : mealTemplates.length === 0 ? (
+                <View style={styles.emptySection}>
+                  <Text style={styles.emptyText}>
+                    No favorite meals yet. Set them up to make daily logging super fast!
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.setupButton}
+                    onPress={() => setShowMealSetupWizard(true)}
+                  >
+                    <Text style={styles.setupButtonText}>🔄 Set Up My Meals</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  {mealTemplates.map((template) => (
+                    <View key={template.id} style={styles.templateRow}>
+                      <View style={styles.templateRowInfo}>
+                        <Text style={styles.templateRowName}>
+                          {template.meal_type === 'breakfast' ? '☀️' : 
+                           template.meal_type === 'lunch' ? '🌮' : 
+                           template.meal_type === 'dinner' ? '🍽️' : 
+                           template.meal_type === 'pre_workout' ? '💪' :
+                           template.meal_type === 'post_workout' ? '🥤' : '🍎'}{' '}
+                          {template.template_name}
+                        </Text>
+                        <Text style={styles.templateRowDetails}>
+                          {Math.round(template.total_calories)} cal • {Math.round(template.total_protein)}g protein
+                        </Text>
+                        {template.log_count && template.log_count > 0 && (
+                          <Text style={styles.templateRowUsage}>
+                            Logged {template.log_count} time{template.log_count !== 1 ? 's' : ''}
+                          </Text>
+                        )}
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteTemplate(template.id!, template.template_name)}
+                        style={styles.deleteTemplateButton}
+                      >
+                        <Text style={styles.deleteTemplateText}>Delete</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  
+                  <TouchableOpacity
+                    style={styles.setupButton}
+                    onPress={() => setShowMealSetupWizard(true)}
+                  >
+                    <Text style={styles.setupButtonText}>🔄 Re-do Meal Setup</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          )}
+        </View>
       </ScrollView>
+
+      {/* Meal Setup Wizard Modal */}
+      <Modal
+        visible={showMealSetupWizard}
+        animationType="slide"
+        onRequestClose={() => setShowMealSetupWizard(false)}
+      >
+        <MealSetupWizard
+          userId={profile?.user_summary ? (profile.user_summary as any).id || 0 : 0}
+          onComplete={() => {
+            setShowMealSetupWizard(false)
+            loadMealTemplates()
+          }}
+          onSkip={() => {
+            setShowMealSetupWizard(false)
+          }}
+        />
+      </Modal>
     </View>
   )
 }
@@ -1965,5 +2122,68 @@ const styles = StyleSheet.create({
   unitText: {
     fontSize: 14,
     color: '#4B5563',
+  },
+  // Meal Templates Section
+  loadingSection: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  emptySection: {
+    paddingVertical: 20,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  templateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  templateRowInfo: {
+    flex: 1,
+  },
+  templateRowName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 4,
+  },
+  templateRowDetails: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  templateRowUsage: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  deleteTemplateButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  deleteTemplateText: {
+    fontSize: 14,
+    color: '#EF4444',
+    fontWeight: '600',
+  },
+  setupButton: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  setupButtonText: {
+    fontSize: 14,
+    color: '#282B34',
+    fontWeight: '600',
   },
 })
