@@ -1932,7 +1932,7 @@ function EngineTab({ engineData, userId }: { engineData: any; userId: number | n
     { id: 'history', title: 'My History', description: 'Performance trends by day type and modality', icon: '📈' },
     { id: 'comparisons', title: 'Comparisons', description: 'Side by side day type analysis', icon: '⚖️' },
     { id: 'time-trials', title: 'My Time Trials', description: 'Detailed time trial tracking', icon: '🎯' },
-    { id: 'targets', title: 'Targets vs Actual', description: 'Compare performance against targets', icon: '🎪' },
+    { id: 'targets', title: 'Targets vs Actual', description: 'Compare performance against targets', icon: '🎯' },
     { id: 'records', title: 'Personal Records', description: 'Best performances by day type', icon: '🏆' },
     { id: 'heart-rate', title: 'HR Analytics', description: 'Heart rate analysis and efficiency', icon: '❤️' },
     { id: 'work-rest', title: 'Work:Rest Ratio', description: 'Interval structure analysis', icon: '⏱️' },
@@ -2103,22 +2103,367 @@ function EngineOverviewView({ engineData }: { engineData: any }) {
   )
 }
 
-// Placeholder views for other analytics (to be implemented)
+// My History View - Performance trends by day type and modality
 function EngineHistoryView({ engineData }: { engineData: any }) {
+  const [selectedDayType, setSelectedDayType] = useState('')
+  const [selectedModality, setSelectedModality] = useState('')
+
+  // Get available day types from sessions
+  const availableDayTypes = React.useMemo(() => {
+    const dayTypes = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (s.day_type) dayTypes.add(s.day_type)
+    })
+    return Array.from(dayTypes).sort()
+  }, [engineData.sessions])
+
+  // Get available modalities for selected day type
+  const availableModalities = React.useMemo(() => {
+    const modalities = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (!selectedDayType || s.day_type === selectedDayType) {
+        if (s.modality) modalities.add(s.modality)
+      }
+    })
+    return Array.from(modalities).sort()
+  }, [engineData.sessions, selectedDayType])
+
+  // Filter sessions
+  const filteredSessions = React.useMemo(() => {
+    if (!selectedDayType || !selectedModality) return []
+    
+    return engineData.sessions?.filter((s: any) => 
+      s.day_type === selectedDayType && 
+      s.modality === selectedModality
+    ).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()) || []
+  }, [engineData.sessions, selectedDayType, selectedModality])
+
+  const formatModality = (modality: string) => {
+    return modality.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  const formatDayType = (dayType: string) => {
+    return dayType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
   return (
-    <Card>
-      <SectionHeader title="My History" />
-      <Text style={styles.noDataText}>Performance history view coming soon!</Text>
-    </Card>
+    <View style={styles.sectionGap}>
+      {/* Day Type Filter */}
+      <Card>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+          Select Day Type
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {availableDayTypes.map((dayType) => (
+              <TouchableOpacity
+                key={dayType}
+                onPress={() => {
+                  setSelectedDayType(dayType)
+                  setSelectedModality('') // Reset modality
+                }}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  borderWidth: 2,
+                  borderColor: selectedDayType === dayType ? '#FE5858' : '#E5E7EB',
+                  backgroundColor: '#DAE2EA',
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{
+                  color: '#282B34',
+                  fontWeight: '600',
+                  fontSize: 13,
+                }}>
+                  {formatDayType(dayType)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </Card>
+
+      {/* Modality Filter */}
+      {selectedDayType && (
+        <Card>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+            Select Modality
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {availableModalities.map((modality) => (
+                <TouchableOpacity
+                  key={modality}
+                  onPress={() => setSelectedModality(modality)}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    borderWidth: 2,
+                    borderColor: selectedModality === modality ? '#FE5858' : '#E5E7EB',
+                    backgroundColor: '#DAE2EA',
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{
+                    color: '#282B34',
+                    fontWeight: '600',
+                    fontSize: 13,
+                  }}>
+                    {formatModality(modality)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </Card>
+      )}
+
+      {/* Results */}
+      {selectedDayType && selectedModality && (
+        <>
+          <SectionHeader title={`Performance History (${filteredSessions.length} sessions)`} />
+          
+          {filteredSessions.length === 0 ? (
+            <Card>
+              <Text style={styles.noDataText}>
+                No sessions found for {formatDayType(selectedDayType)} with {formatModality(selectedModality)}
+              </Text>
+            </Card>
+          ) : (
+            <View style={styles.activityList}>
+              {filteredSessions.map((session: any, index: number) => (
+                <Card key={session.id || index}>
+                  <View style={styles.activityCardHeader}>
+                    <Text style={styles.activityMeta}>{formatDate(session.date)}</Text>
+                    <Text style={styles.activityMeta}>Day {session.program_day_number}</Text>
+                  </View>
+                  <Text style={styles.activityExercisesText}>
+                    Output: {session.total_output} {session.units || ''}
+                  </Text>
+                  {session.actual_pace && (
+                    <Text style={styles.activityExercisesText}>
+                      Pace: {Math.round(session.actual_pace)} {session.units}/min
+                    </Text>
+                  )}
+                  {session.performance_ratio && (
+                    <Text style={[
+                      styles.activityExercisesText,
+                      { 
+                        color: parseFloat(session.performance_ratio) >= 1.0 ? '#10B981' : 
+                               parseFloat(session.performance_ratio) >= 0.9 ? '#3B82F6' : '#F59E0B',
+                        fontWeight: '600'
+                      }
+                    ]}>
+                      Performance: {(parseFloat(session.performance_ratio) * 100).toFixed(0)}%
+                    </Text>
+                  )}
+                </Card>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+    </View>
   )
 }
 
 function EngineComparisonsView({ engineData }: { engineData: any }) {
+  const [selectedModality, setSelectedModality] = useState('')
+  const [selectedDayTypes, setSelectedDayTypes] = useState<string[]>([])
+
+  // Get available modalities
+  const availableModalities = React.useMemo(() => {
+    const modalities = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (s.modality && s.day_type !== 'time_trial') modalities.add(s.modality)
+    })
+    return Array.from(modalities).sort()
+  }, [engineData.sessions])
+
+  // Get available day types for selected modality
+  const availableDayTypes = React.useMemo(() => {
+    if (!selectedModality) return []
+    const dayTypes = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (s.modality === selectedModality && s.day_type && s.day_type !== 'time_trial') {
+        dayTypes.add(s.day_type)
+      }
+    })
+    return Array.from(dayTypes).sort()
+  }, [engineData.sessions, selectedModality])
+
+  // Calculate comparison data
+  const comparisonData = React.useMemo(() => {
+    if (!selectedModality || selectedDayTypes.length === 0) return []
+    
+    return selectedDayTypes.map((dayType) => {
+      const sessions = engineData.sessions?.filter((s: any) => 
+        s.modality === selectedModality && 
+        s.day_type === dayType &&
+        s.total_output
+      ) || []
+      
+      if (sessions.length === 0) return null
+      
+      const avgOutput = sessions.reduce((sum: number, s: any) => sum + parseFloat(s.total_output), 0) / sessions.length
+      const maxOutput = Math.max(...sessions.map((s: any) => parseFloat(s.total_output)))
+      const avgPace = sessions.filter((s: any) => s.actual_pace).reduce((sum: number, s: any) => sum + parseFloat(s.actual_pace), 0) / sessions.filter((s: any) => s.actual_pace).length
+      
+      return {
+        dayType,
+        sessionCount: sessions.length,
+        avgOutput: Math.round(avgOutput),
+        maxOutput: Math.round(maxOutput),
+        avgPace: Math.round(avgPace),
+        units: sessions[0].units
+      }
+    }).filter(Boolean)
+  }, [engineData.sessions, selectedModality, selectedDayTypes])
+
+  const formatModality = (modality: string) => {
+    return modality.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  const formatDayType = (dayType: string) => {
+    return dayType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  const toggleDayType = (dayType: string) => {
+    if (selectedDayTypes.includes(dayType)) {
+      setSelectedDayTypes(selectedDayTypes.filter(dt => dt !== dayType))
+    } else {
+      setSelectedDayTypes([...selectedDayTypes, dayType])
+    }
+  }
+
   return (
-    <Card>
-      <SectionHeader title="Comparisons" />
-      <Text style={styles.noDataText}>Comparison analytics coming soon!</Text>
-    </Card>
+    <View style={styles.sectionGap}>
+      {/* Modality Filter */}
+      <Card>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+          Select Modality
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {availableModalities.map((modality) => (
+              <TouchableOpacity
+                key={modality}
+                onPress={() => {
+                  setSelectedModality(modality)
+                  setSelectedDayTypes([]) // Reset day types
+                }}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  borderWidth: 2,
+                  borderColor: selectedModality === modality ? '#FE5858' : '#E5E7EB',
+                  backgroundColor: '#DAE2EA',
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{
+                  color: '#282B34',
+                  fontWeight: '600',
+                  fontSize: 13,
+                }}>
+                  {formatModality(modality)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </Card>
+
+      {/* Day Type Selection */}
+      {selectedModality && (
+        <Card>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+            Select Day Types to Compare (tap multiple)
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {availableDayTypes.map((dayType) => (
+              <TouchableOpacity
+                key={dayType}
+                onPress={() => toggleDayType(dayType)}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  borderWidth: 2,
+                  borderColor: selectedDayTypes.includes(dayType) ? '#FE5858' : '#E5E7EB',
+                  backgroundColor: selectedDayTypes.includes(dayType) ? '#FE5858' : '#DAE2EA',
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{
+                  color: selectedDayTypes.includes(dayType) ? '#FFFFFF' : '#282B34',
+                  fontWeight: '600',
+                  fontSize: 13,
+                }}>
+                  {formatDayType(dayType)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Card>
+      )}
+
+      {/* Comparison Results */}
+      {comparisonData.length > 0 && (
+        <>
+          <SectionHeader title="Comparison Results" />
+          <View style={styles.activityList}>
+            {comparisonData.map((data: any) => (
+              <Card key={data.dayType}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: '#333333', marginBottom: 12 }}>
+                  {formatDayType(data.dayType)}
+                </Text>
+                <View style={styles.statsRow}>
+                  <View style={styles.statCardWrapper}>
+                    <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>SESSIONS</Text>
+                    <Text style={{ fontSize: 24, fontWeight: '700', color: '#3B82F6' }}>
+                      {data.sessionCount}
+                    </Text>
+                  </View>
+                  <View style={styles.statCardWrapper}>
+                    <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>AVG OUTPUT</Text>
+                    <Text style={{ fontSize: 20, fontWeight: '600', color: '#333333' }}>
+                      {data.avgOutput}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#6B7280' }}>{data.units}</Text>
+                  </View>
+                </View>
+                <View style={styles.statsRow}>
+                  <View style={styles.statCardWrapper}>
+                    <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>MAX OUTPUT</Text>
+                    <Text style={{ fontSize: 20, fontWeight: '600', color: '#10B981' }}>
+                      {data.maxOutput}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#6B7280' }}>{data.units}</Text>
+                  </View>
+                  <View style={styles.statCardWrapper}>
+                    <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>AVG PACE</Text>
+                    <Text style={{ fontSize: 20, fontWeight: '600', color: '#F59E0B' }}>
+                      {data.avgPace}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#6B7280' }}>{data.units}/min</Text>
+                  </View>
+                </View>
+              </Card>
+            ))}
+          </View>
+        </>
+      )}
+    </View>
   )
 }
 
@@ -2168,46 +2513,910 @@ function EngineTimeTrialsView({ engineData }: { engineData: any }) {
 }
 
 function EngineTargetsView({ engineData }: { engineData: any }) {
+  const [selectedDayType, setSelectedDayType] = useState('')
+  const [selectedModality, setSelectedModality] = useState('')
+
+  // Get available day types (exclude time trials)
+  const availableDayTypes = React.useMemo(() => {
+    const dayTypes = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (s.day_type && s.day_type !== 'time_trial') dayTypes.add(s.day_type)
+    })
+    return Array.from(dayTypes).sort()
+  }, [engineData.sessions])
+
+  // Get available modalities for selected day type
+  const availableModalities = React.useMemo(() => {
+    const modalities = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if ((!selectedDayType || s.day_type === selectedDayType) && s.day_type !== 'time_trial') {
+        if (s.modality) modalities.add(s.modality)
+      }
+    })
+    return Array.from(modalities).sort()
+  }, [engineData.sessions, selectedDayType])
+
+  // Filter sessions with target data
+  const filteredSessions = React.useMemo(() => {
+    if (!selectedDayType || !selectedModality) return []
+    
+    return engineData.sessions?.filter((s: any) => 
+      s.day_type === selectedDayType && 
+      s.modality === selectedModality &&
+      s.target_pace && s.actual_pace
+    ).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()) || []
+  }, [engineData.sessions, selectedDayType, selectedModality])
+
+  // Calculate statistics
+  const stats = React.useMemo(() => {
+    if (filteredSessions.length === 0) return null
+    
+    const avgTarget = filteredSessions.reduce((sum: number, s: any) => sum + parseFloat(s.target_pace), 0) / filteredSessions.length
+    const avgActual = filteredSessions.reduce((sum: number, s: any) => sum + parseFloat(s.actual_pace), 0) / filteredSessions.length
+    const avgRatio = filteredSessions.reduce((sum: number, s: any) => sum + parseFloat(s.performance_ratio || 0), 0) / filteredSessions.length
+    
+    return {
+      avgTarget: Math.round(avgTarget),
+      avgActual: Math.round(avgActual),
+      avgRatio: (avgRatio * 100).toFixed(0)
+    }
+  }, [filteredSessions])
+
+  const formatModality = (modality: string) => {
+    return modality.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  const formatDayType = (dayType: string) => {
+    return dayType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
   return (
-    <Card>
-      <SectionHeader title="Targets vs Actual" />
-      <Text style={styles.noDataText}>Target analysis coming soon!</Text>
-    </Card>
+    <View style={styles.sectionGap}>
+      {/* Day Type Filter */}
+      <Card>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+          Select Day Type
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {availableDayTypes.map((dayType) => (
+              <TouchableOpacity
+                key={dayType}
+                onPress={() => {
+                  setSelectedDayType(dayType)
+                  setSelectedModality('') // Reset modality
+                }}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  borderWidth: 2,
+                  borderColor: selectedDayType === dayType ? '#FE5858' : '#E5E7EB',
+                  backgroundColor: '#DAE2EA',
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{
+                  color: '#282B34',
+                  fontWeight: '600',
+                  fontSize: 13,
+                }}>
+                  {formatDayType(dayType)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </Card>
+
+      {/* Modality Filter */}
+      {selectedDayType && (
+        <Card>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+            Select Modality
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {availableModalities.map((modality) => (
+                <TouchableOpacity
+                  key={modality}
+                  onPress={() => setSelectedModality(modality)}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    borderWidth: 2,
+                    borderColor: selectedModality === modality ? '#FE5858' : '#E5E7EB',
+                    backgroundColor: '#DAE2EA',
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{
+                    color: '#282B34',
+                    fontWeight: '600',
+                    fontSize: 13,
+                  }}>
+                    {formatModality(modality)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </Card>
+      )}
+
+      {/* Results */}
+      {selectedDayType && selectedModality && (
+        <>
+          {/* Summary Stats */}
+          {stats && (
+            <Card>
+              <SectionHeader title="Average Performance" />
+              <View style={styles.statsRow}>
+                <View style={styles.statCardWrapper}>
+                  <StatCard label="Target Pace" value={`${stats.avgTarget}`} />
+                </View>
+                <View style={styles.statCardWrapper}>
+                  <StatCard label="Actual Pace" value={`${stats.avgActual}`} />
+                </View>
+                <View style={styles.statCardWrapper}>
+                  <StatCard label="Performance" value={`${stats.avgRatio}%`} />
+                </View>
+              </View>
+            </Card>
+          )}
+
+          <SectionHeader title={`Sessions (${filteredSessions.length})`} />
+          
+          {filteredSessions.length === 0 ? (
+            <Card>
+              <Text style={styles.noDataText}>
+                No sessions with target data found for {formatDayType(selectedDayType)} with {formatModality(selectedModality)}
+              </Text>
+            </Card>
+          ) : (
+            <View style={styles.activityList}>
+              {filteredSessions.map((session: any, index: number) => (
+                <Card key={session.id || index}>
+                  <View style={styles.activityCardHeader}>
+                    <Text style={styles.activityMeta}>{formatDate(session.date)}</Text>
+                    <Text style={styles.activityMeta}>Day {session.program_day_number}</Text>
+                  </View>
+                  <View style={styles.statsRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>TARGET</Text>
+                      <Text style={{ fontSize: 18, fontWeight: '600', color: '#6B7280' }}>
+                        {Math.round(parseFloat(session.target_pace))}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF' }}>{session.units}/min</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>ACTUAL</Text>
+                      <Text style={{ fontSize: 18, fontWeight: '600', color: '#333333' }}>
+                        {Math.round(parseFloat(session.actual_pace))}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF' }}>{session.units}/min</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>RATIO</Text>
+                      <Text style={{
+                        fontSize: 18,
+                        fontWeight: '700',
+                        color: parseFloat(session.performance_ratio) >= 1.0 ? '#10B981' : 
+                               parseFloat(session.performance_ratio) >= 0.9 ? '#3B82F6' : '#F59E0B'
+                      }}>
+                        {(parseFloat(session.performance_ratio) * 100).toFixed(0)}%
+                      </Text>
+                    </View>
+                  </View>
+                </Card>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+    </View>
   )
 }
 
 function EngineRecordsView({ engineData }: { engineData: any }) {
+  const [selectedModality, setSelectedModality] = useState('')
+
+  // Get available modalities
+  const availableModalities = React.useMemo(() => {
+    const modalities = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (s.modality) modalities.add(s.modality)
+    })
+    return Array.from(modalities).sort()
+  }, [engineData.sessions])
+
+  // Calculate personal records by day type for selected modality
+  const personalRecords = React.useMemo(() => {
+    if (!selectedModality) return {}
+    
+    const records: Record<string, any> = {}
+    
+    engineData.sessions?.forEach((session: any) => {
+      if (session.modality !== selectedModality) return
+      if (!session.day_type || !session.total_output) return
+      
+      const dayType = session.day_type
+      const output = parseFloat(session.total_output)
+      
+      if (!records[dayType] || output > records[dayType].total_output) {
+        records[dayType] = {
+          ...session,
+          total_output: output
+        }
+      }
+    })
+    
+    return records
+  }, [engineData.sessions, selectedModality])
+
+  const formatModality = (modality: string) => {
+    return modality.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  const formatDayType = (dayType: string) => {
+    return dayType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
   return (
-    <Card>
-      <SectionHeader title="Personal Records" />
-      <Text style={styles.noDataText}>Personal records view coming soon!</Text>
-    </Card>
+    <View style={styles.sectionGap}>
+      {/* Modality Filter */}
+      <Card>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+          Select Modality
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {availableModalities.map((modality) => (
+              <TouchableOpacity
+                key={modality}
+                onPress={() => setSelectedModality(modality)}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  borderWidth: 2,
+                  borderColor: selectedModality === modality ? '#FE5858' : '#E5E7EB',
+                  backgroundColor: '#DAE2EA',
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{
+                  color: '#282B34',
+                  fontWeight: '600',
+                  fontSize: 13,
+                }}>
+                  {formatModality(modality)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </Card>
+
+      {/* Personal Records */}
+      {selectedModality && (
+        <>
+          <SectionHeader title={`Personal Records - ${formatModality(selectedModality)}`} />
+          
+          {Object.keys(personalRecords).length === 0 ? (
+            <Card>
+              <Text style={styles.noDataText}>
+                No records found for {formatModality(selectedModality)}
+              </Text>
+            </Card>
+          ) : (
+            <View style={styles.activityList}>
+              {Object.entries(personalRecords).map(([dayType, record]: [string, any]) => (
+                <Card key={dayType}>
+                  <View style={{ marginBottom: 12 }}>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#333333', marginBottom: 4 }}>
+                      🏆 {formatDayType(dayType)}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                      {formatDate(record.date)} • Day {record.program_day_number}
+                    </Text>
+                  </View>
+                  <View style={styles.statsRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>TOTAL OUTPUT</Text>
+                      <Text style={{ fontSize: 24, fontWeight: '700', color: '#FE5858' }}>
+                        {record.total_output}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: '#6B7280' }}>{record.units}</Text>
+                    </View>
+                    {record.actual_pace && (
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>AVG PACE</Text>
+                        <Text style={{ fontSize: 20, fontWeight: '600', color: '#333333' }}>
+                          {Math.round(record.actual_pace)}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#6B7280' }}>{record.units}/min</Text>
+                      </View>
+                    )}
+                  </View>
+                  {record.average_heart_rate && (
+                    <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
+                      <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                        Avg HR: {record.average_heart_rate} bpm • Peak HR: {record.peak_heart_rate || '--'} bpm
+                      </Text>
+                    </View>
+                  )}
+                </Card>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+    </View>
   )
 }
 
 function EngineHeartRateView({ engineData }: { engineData: any }) {
+  const [selectedDayType, setSelectedDayType] = useState('')
+
+  // Get available day types with HR data
+  const availableDayTypes = React.useMemo(() => {
+    const dayTypes = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (s.day_type && (s.average_heart_rate || s.peak_heart_rate)) {
+        dayTypes.add(s.day_type)
+      }
+    })
+    return Array.from(dayTypes).sort()
+  }, [engineData.sessions])
+
+  // Calculate HR stats for selected day type
+  const hrStats = React.useMemo(() => {
+    if (!selectedDayType) return null
+    
+    const sessions = engineData.sessions?.filter((s: any) => 
+      s.day_type === selectedDayType && 
+      (s.average_heart_rate || s.peak_heart_rate)
+    ) || []
+    
+    if (sessions.length === 0) return null
+    
+    const avgHRs = sessions.filter((s: any) => s.average_heart_rate).map((s: any) => parseFloat(s.average_heart_rate))
+    const peakHRs = sessions.filter((s: any) => s.peak_heart_rate).map((s: any) => parseFloat(s.peak_heart_rate))
+    
+    return {
+      sessionCount: sessions.length,
+      avgAvgHR: avgHRs.length > 0 ? Math.round(avgHRs.reduce((a: number, b: number) => a + b, 0) / avgHRs.length) : null,
+      avgPeakHR: peakHRs.length > 0 ? Math.round(peakHRs.reduce((a: number, b: number) => a + b, 0) / peakHRs.length) : null,
+      maxPeakHR: peakHRs.length > 0 ? Math.max(...peakHRs) : null,
+      minAvgHR: avgHRs.length > 0 ? Math.min(...avgHRs) : null,
+      sessions
+    }
+  }, [engineData.sessions, selectedDayType])
+
+  const formatDayType = (dayType: string) => {
+    return dayType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
   return (
-    <Card>
-      <SectionHeader title="HR Analytics" />
-      <Text style={styles.noDataText}>Heart rate analytics coming soon!</Text>
-    </Card>
+    <View style={styles.sectionGap}>
+      {/* Day Type Filter */}
+      <Card>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+          Select Day Type
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {availableDayTypes.map((dayType) => (
+            <TouchableOpacity
+              key={dayType}
+              onPress={() => setSelectedDayType(dayType)}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderRadius: 8,
+                borderWidth: 2,
+                borderColor: selectedDayType === dayType ? '#FE5858' : '#E5E7EB',
+                backgroundColor: '#DAE2EA',
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={{
+                color: '#282B34',
+                fontWeight: '600',
+                fontSize: 13,
+              }}>
+                {formatDayType(dayType)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Card>
+
+      {/* HR Stats */}
+      {hrStats && (
+        <>
+          <Card>
+            <SectionHeader title={`Heart Rate Analysis - ${formatDayType(selectedDayType)}`} />
+            <View style={styles.statsRow}>
+              <View style={styles.statCardWrapper}>
+                <StatCard label="Sessions" value={hrStats.sessionCount} />
+              </View>
+              {hrStats.avgAvgHR && (
+                <View style={styles.statCardWrapper}>
+                  <StatCard label="Avg HR" value={`${hrStats.avgAvgHR} bpm`} />
+                </View>
+              )}
+            </View>
+            <View style={styles.statsRow}>
+              {hrStats.avgPeakHR && (
+                <View style={styles.statCardWrapper}>
+                  <StatCard label="Avg Peak HR" value={`${hrStats.avgPeakHR} bpm`} />
+                </View>
+              )}
+              {hrStats.maxPeakHR && (
+                <View style={styles.statCardWrapper}>
+                  <StatCard label="Max Peak HR" value={`${Math.round(hrStats.maxPeakHR)} bpm`} />
+                </View>
+              )}
+            </View>
+          </Card>
+
+          <SectionHeader title="Recent Sessions" />
+          <View style={styles.activityList}>
+            {hrStats.sessions.slice(0, 10).map((session: any, index: number) => (
+              <Card key={session.id || index}>
+                <View style={styles.activityCardHeader}>
+                  <Text style={styles.activityMeta}>{formatDate(session.date)}</Text>
+                  <Text style={styles.activityMeta}>Day {session.program_day_number}</Text>
+                </View>
+                <View style={styles.statsRow}>
+                  {session.average_heart_rate && (
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>AVG HR</Text>
+                      <Text style={{ fontSize: 18, fontWeight: '600', color: '#EF4444' }}>
+                        {session.average_heart_rate}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF' }}>bpm</Text>
+                    </View>
+                  )}
+                  {session.peak_heart_rate && (
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>PEAK HR</Text>
+                      <Text style={{ fontSize: 18, fontWeight: '600', color: '#DC2626' }}>
+                        {session.peak_heart_rate}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF' }}>bpm</Text>
+                    </View>
+                  )}
+                </View>
+                {session.total_output && (
+                  <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 8 }}>
+                    Output: {session.total_output} {session.units}
+                  </Text>
+                )}
+              </Card>
+            ))}
+          </View>
+        </>
+      )}
+    </View>
   )
 }
 
 function EngineWorkRestView({ engineData }: { engineData: any }) {
+  const [selectedDayType, setSelectedDayType] = useState('')
+
+  // Get available day types with work:rest ratio data
+  const availableDayTypes = React.useMemo(() => {
+    const dayTypes = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (s.day_type && s.day_type !== 'time_trial' && s.avg_work_rest_ratio) {
+        dayTypes.add(s.day_type)
+      }
+    })
+    return Array.from(dayTypes).sort()
+  }, [engineData.sessions])
+
+  // Filter sessions and calculate stats
+  const filteredData = React.useMemo(() => {
+    if (!selectedDayType) return null
+    
+    const sessions = engineData.sessions?.filter((s: any) => 
+      s.day_type === selectedDayType && 
+      s.avg_work_rest_ratio &&
+      s.actual_pace
+    ) || []
+    
+    if (sessions.length === 0) return null
+    
+    // Group by work:rest ratio ranges
+    const ratioGroups: Record<string, any[]> = {}
+    sessions.forEach((s: any) => {
+      const ratio = parseFloat(s.avg_work_rest_ratio)
+      let group = '1:1'
+      if (ratio < 0.8) group = '1:2+'
+      else if (ratio < 1.2) group = '1:1'
+      else if (ratio < 1.8) group = '1.5:1'
+      else group = '2:1+'
+      
+      if (!ratioGroups[group]) ratioGroups[group] = []
+      ratioGroups[group].push(s)
+    })
+    
+    const groupStats = Object.entries(ratioGroups).map(([group, sessions]) => ({
+      group,
+      sessionCount: sessions.length,
+      avgPace: Math.round(sessions.reduce((sum, s) => sum + parseFloat(s.actual_pace), 0) / sessions.length),
+      avgOutput: Math.round(sessions.reduce((sum, s) => sum + parseFloat(s.total_output), 0) / sessions.length),
+      units: sessions[0].units
+    })).sort((a, b) => a.group.localeCompare(b.group))
+    
+    return {
+      sessions,
+      groupStats
+    }
+  }, [engineData.sessions, selectedDayType])
+
+  const formatDayType = (dayType: string) => {
+    return dayType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
   return (
-    <Card>
-      <SectionHeader title="Work:Rest Ratio" />
-      <Text style={styles.noDataText}>Work:Rest analysis coming soon!</Text>
-    </Card>
+    <View style={styles.sectionGap}>
+      {/* Day Type Filter */}
+      <Card>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+          Select Day Type
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {availableDayTypes.map((dayType) => (
+            <TouchableOpacity
+              key={dayType}
+              onPress={() => setSelectedDayType(dayType)}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderRadius: 8,
+                borderWidth: 2,
+                borderColor: selectedDayType === dayType ? '#FE5858' : '#E5E7EB',
+                backgroundColor: '#DAE2EA',
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={{
+                color: '#282B34',
+                fontWeight: '600',
+                fontSize: 13,
+              }}>
+                {formatDayType(dayType)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Card>
+
+      {/* Results */}
+      {filteredData && (
+        <>
+          <Card>
+            <SectionHeader title="Work:Rest Ratio Analysis" />
+            <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 16 }}>
+              How pace varies with different work:rest structures
+            </Text>
+            
+            {filteredData.groupStats.map((stat: any) => (
+              <View key={stat.group} style={{ marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: '#333333', marginBottom: 8 }}>
+                  {stat.group} Work:Rest
+                </Text>
+                <View style={styles.statsRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 11, color: '#9CA3AF' }}>Sessions</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '600', color: '#3B82F6' }}>
+                      {stat.sessionCount}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 11, color: '#9CA3AF' }}>Avg Pace</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '600', color: '#333333' }}>
+                      {stat.avgPace}
+                    </Text>
+                    <Text style={{ fontSize: 10, color: '#9CA3AF' }}>{stat.units}/min</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 11, color: '#9CA3AF' }}>Avg Output</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '600', color: '#10B981' }}>
+                      {stat.avgOutput}
+                    </Text>
+                    <Text style={{ fontSize: 10, color: '#9CA3AF' }}>{stat.units}</Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </Card>
+
+          <SectionHeader title={`All Sessions (${filteredData.sessions.length})`} />
+          <View style={styles.activityList}>
+            {filteredData.sessions.slice(0, 15).map((session: any, index: number) => (
+              <Card key={session.id || index}>
+                <View style={styles.activityCardHeader}>
+                  <Text style={styles.activityMeta}>{formatDate(session.date)}</Text>
+                  <Text style={styles.activityMeta}>Ratio: {parseFloat(session.avg_work_rest_ratio).toFixed(1)}</Text>
+                </View>
+                <View style={styles.statsRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 11, color: '#9CA3AF' }}>PACE</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#333333' }}>
+                      {Math.round(parseFloat(session.actual_pace))}
+                    </Text>
+                    <Text style={{ fontSize: 10, color: '#9CA3AF' }}>{session.units}/min</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 11, color: '#9CA3AF' }}>OUTPUT</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#10B981' }}>
+                      {session.total_output}
+                    </Text>
+                    <Text style={{ fontSize: 10, color: '#9CA3AF' }}>{session.units}</Text>
+                  </View>
+                </View>
+              </Card>
+            ))}
+          </View>
+        </>
+      )}
+    </View>
   )
 }
 
 function EngineVariabilityView({ engineData }: { engineData: any }) {
+  const [selectedDayType, setSelectedDayType] = useState('')
+  const [selectedModality, setSelectedModality] = useState('')
+
+  // Get available day types
+  const availableDayTypes = React.useMemo(() => {
+    const dayTypes = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (s.day_type && s.day_type !== 'time_trial') dayTypes.add(s.day_type)
+    })
+    return Array.from(dayTypes).sort()
+  }, [engineData.sessions])
+
+  // Get available modalities for selected day type
+  const availableModalities = React.useMemo(() => {
+    const modalities = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if ((!selectedDayType || s.day_type === selectedDayType) && s.day_type !== 'time_trial') {
+        if (s.modality) modalities.add(s.modality)
+      }
+    })
+    return Array.from(modalities).sort()
+  }, [engineData.sessions, selectedDayType])
+
+  // Calculate variability stats
+  const variabilityData = React.useMemo(() => {
+    if (!selectedDayType || !selectedModality) return null
+    
+    const sessions = engineData.sessions?.filter((s: any) => 
+      s.day_type === selectedDayType && 
+      s.modality === selectedModality &&
+      s.actual_pace
+    ).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()) || []
+    
+    if (sessions.length < 2) return null
+    
+    const paces = sessions.map((s: any) => parseFloat(s.actual_pace))
+    const avgPace = paces.reduce((a: number, b: number) => a + b, 0) / paces.length
+    const variance = paces.reduce((sum: number, pace: number) => sum + Math.pow(pace - avgPace, 2), 0) / paces.length
+    const stdDev = Math.sqrt(variance)
+    const coefficientOfVariation = (stdDev / avgPace) * 100
+    
+    return {
+      sessions,
+      avgPace: Math.round(avgPace),
+      stdDev: Math.round(stdDev * 10) / 10,
+      coefficientOfVariation: Math.round(coefficientOfVariation * 10) / 10,
+      minPace: Math.min(...paces),
+      maxPace: Math.max(...paces)
+    }
+  }, [engineData.sessions, selectedDayType, selectedModality])
+
+  const formatModality = (modality: string) => {
+    return modality.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  const formatDayType = (dayType: string) => {
+    return dayType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
   return (
-    <Card>
-      <SectionHeader title="Variability Trend" />
-      <Text style={styles.noDataText}>Variability tracking coming soon!</Text>
-    </Card>
+    <View style={styles.sectionGap}>
+      {/* Day Type Filter */}
+      <Card>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+          Select Day Type
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {availableDayTypes.map((dayType) => (
+              <TouchableOpacity
+                key={dayType}
+                onPress={() => {
+                  setSelectedDayType(dayType)
+                  setSelectedModality('') // Reset modality
+                }}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  borderWidth: 2,
+                  borderColor: selectedDayType === dayType ? '#FE5858' : '#E5E7EB',
+                  backgroundColor: '#DAE2EA',
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{
+                  color: '#282B34',
+                  fontWeight: '600',
+                  fontSize: 13,
+                }}>
+                  {formatDayType(dayType)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </Card>
+
+      {/* Modality Filter */}
+      {selectedDayType && (
+        <Card>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+            Select Modality
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {availableModalities.map((modality) => (
+                <TouchableOpacity
+                  key={modality}
+                  onPress={() => setSelectedModality(modality)}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    borderWidth: 2,
+                    borderColor: selectedModality === modality ? '#FE5858' : '#E5E7EB',
+                    backgroundColor: '#DAE2EA',
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{
+                    color: '#282B34',
+                    fontWeight: '600',
+                    fontSize: 13,
+                  }}>
+                    {formatModality(modality)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </Card>
+      )}
+
+      {/* Variability Stats */}
+      {variabilityData && (
+        <>
+          <Card>
+            <SectionHeader title="Consistency Metrics" />
+            <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 16 }}>
+              Lower variability indicates more consistent performance
+            </Text>
+            
+            <View style={styles.statsRow}>
+              <View style={styles.statCardWrapper}>
+                <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>AVG PACE</Text>
+                <Text style={{ fontSize: 24, fontWeight: '700', color: '#3B82F6' }}>
+                  {variabilityData.avgPace}
+                </Text>
+                <Text style={{ fontSize: 11, color: '#6B7280' }}>
+                  {variabilityData.sessions[0].units}/min
+                </Text>
+              </View>
+              <View style={styles.statCardWrapper}>
+                <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>STD DEV</Text>
+                <Text style={{ fontSize: 24, fontWeight: '700', color: '#F59E0B' }}>
+                  ±{variabilityData.stdDev}
+                </Text>
+                <Text style={{ fontSize: 11, color: '#6B7280' }}>
+                  {variabilityData.sessions[0].units}/min
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.statsRow}>
+              <View style={styles.statCardWrapper}>
+                <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>VARIABILITY</Text>
+                <Text style={{ fontSize: 20, fontWeight: '600', color: '#8B5CF6' }}>
+                  {variabilityData.coefficientOfVariation}%
+                </Text>
+              </View>
+              <View style={styles.statCardWrapper}>
+                <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>RANGE</Text>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: '#6B7280' }}>
+                  {Math.round(variabilityData.minPace)} - {Math.round(variabilityData.maxPace)}
+                </Text>
+                <Text style={{ fontSize: 11, color: '#6B7280' }}>
+                  {variabilityData.sessions[0].units}/min
+                </Text>
+              </View>
+            </View>
+          </Card>
+
+          <SectionHeader title={`Session History (${variabilityData.sessions.length})`} />
+          <View style={styles.activityList}>
+            {variabilityData.sessions.map((session: any, index: number) => {
+              const pace = parseFloat(session.actual_pace)
+              const deviationFromAvg = pace - variabilityData.avgPace
+              const isAboveAvg = deviationFromAvg > 0
+              
+              return (
+                <Card key={session.id || index}>
+                  <View style={styles.activityCardHeader}>
+                    <Text style={styles.activityMeta}>{formatDate(session.date)}</Text>
+                    <Text style={styles.activityMeta}>Day {session.program_day_number}</Text>
+                  </View>
+                  <View style={styles.statsRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>PACE</Text>
+                      <Text style={{ fontSize: 18, fontWeight: '600', color: '#333333' }}>
+                        {Math.round(pace)}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF' }}>{session.units}/min</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>DEVIATION</Text>
+                      <Text style={{
+                        fontSize: 16,
+                        fontWeight: '600',
+                        color: isAboveAvg ? '#10B981' : '#EF4444'
+                      }}>
+                        {isAboveAvg ? '+' : ''}{Math.round(deviationFromAvg)}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF' }}>from avg</Text>
+                    </View>
+                  </View>
+                </Card>
+              )
+            })}
+          </View>
+        </>
+      )}
+    </View>
   )
 }
