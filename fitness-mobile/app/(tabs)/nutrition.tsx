@@ -453,7 +453,7 @@ export default function NutritionTab() {
 
         {/* Meal Type Selection */}
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>Select Meal Type</Text>
+          <Text style={styles.sectionTitle}>Select and Log Food</Text>
           <View style={styles.mealTypeContainer}>
             {mealTypes.map((meal) => (
               <TouchableOpacity
