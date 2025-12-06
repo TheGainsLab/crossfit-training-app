@@ -100,6 +100,8 @@ export interface DashboardData {
   completionRate: number
   weeksActive: number
   recentTrend: 'improving' | 'declining' | 'stable'
+  metconsCompleted: number
+  fitnessScore: number | null
 }
 
 export async function fetchDashboardData(
@@ -124,6 +126,8 @@ export async function fetchDashboardData(
       completionRate: 0,
       weeksActive: 0,
       recentTrend: 'stable',
+      metconsCompleted: 0,
+      fitnessScore: null,
     }
   }
 
@@ -155,12 +159,38 @@ export async function fetchDashboardData(
   // Determine trend (simplified - compare last 2 weeks vs previous 2 weeks)
   const recentTrend: 'improving' | 'declining' | 'stable' = 'stable'
 
+  // Fetch MetCons completed
+  const { data: metconData } = await supabase
+    .from('program_metcons')
+    .select('id')
+    .eq('user_id', userId)
+  
+  const metconsCompleted = metconData?.length || 0
+
+  // Fetch Fitness Score (average percentile from MetCons)
+  const { data: metconScoreData } = await supabase
+    .from('program_metcons')
+    .select('percentile')
+    .eq('user_id', userId)
+    .not('percentile', 'is', null)
+  
+  let fitnessScore = null
+  if (metconScoreData && metconScoreData.length > 0) {
+    const totalPercentile = metconScoreData.reduce(
+      (sum: number, m: any) => sum + (parseFloat(m.percentile) || 0),
+      0
+    )
+    fitnessScore = Math.round(totalPercentile / metconScoreData.length)
+  }
+
   return {
     totalWorkouts,
     totalExercises,
     completionRate,
     weeksActive,
     recentTrend,
+    metconsCompleted,
+    fitnessScore,
   }
 }
 
