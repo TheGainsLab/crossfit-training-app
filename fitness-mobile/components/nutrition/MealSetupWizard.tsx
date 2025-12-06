@@ -16,6 +16,7 @@ import {
   getCategoryNames,
   CommonFood,
 } from '@/lib/nutrition/commonFoods'
+import FoodSelectionModal from './FoodSelectionModal'
 
 interface MealSetupWizardProps {
   userId: number
@@ -36,6 +37,10 @@ export default function MealSetupWizard({ userId, onComplete, onSkip }: MealSetu
   const [saving, setSaving] = useState(false)
   const [completedMeals, setCompletedMeals] = useState<string[]>([])
   const [searchModalVisible, setSearchModalVisible] = useState(false)
+  const [selectedFoodForModal, setSelectedFoodForModal] = useState<{
+    foodId: string
+    foodName: string
+  } | null>(null)
 
   const getMealTypeLabel = (step: SetupStep): string => {
     const labels: Record<string, string> = {
@@ -80,20 +85,39 @@ export default function MealSetupWizard({ userId, onComplete, onSkip }: MealSetu
         return
       }
 
-      // Get the first result
+      // Get the first result and open modal
       const foundFood = data.data.foods[0]
-      
-      // For now, we'll need to open a modal to select serving size
-      // TODO: Implement FoodSelectionModal and use it here
-      Alert.alert(
-        'Add ' + foundFood.food_name,
-        'Food selection modal coming soon. For now, use search.',
-        [{ text: 'OK' }]
-      )
+      setSelectedFoodForModal({
+        foodId: foundFood.food_id,
+        foodName: foundFood.food_name,
+      })
     } catch (error) {
       console.error('Error adding common food:', error)
       Alert.alert('Error', 'Failed to add food')
     }
+  }
+
+  const handleFoodSelected = (foodData: any) => {
+    // Add food to current items
+    const tempId = Date.now().toString() + Math.random().toString()
+    const newItem: TempFoodItem = {
+      tempId,
+      food_id: foodData.food_id,
+      food_name: foodData.food_name,
+      serving_id: foodData.serving_id,
+      serving_description: foodData.serving_description,
+      number_of_units: foodData.number_of_units,
+      calories: foodData.calories,
+      protein: foodData.protein,
+      carbohydrate: foodData.carbohydrate,
+      fat: foodData.fat,
+      fiber: foodData.fiber || 0,
+      sugar: foodData.sugar || 0,
+      sodium: foodData.sodium || 0,
+      sort_order: currentItems.length,
+    }
+    setCurrentItems([...currentItems, newItem])
+    setSelectedFoodForModal(null)
   }
 
   const handleSaveMeal = async () => {
@@ -380,6 +404,16 @@ export default function MealSetupWizard({ userId, onComplete, onSkip }: MealSetu
           </Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Food Selection Modal */}
+      <FoodSelectionModal
+        visible={selectedFoodForModal !== null}
+        foodId={selectedFoodForModal?.foodId || null}
+        foodName={selectedFoodForModal?.foodName || null}
+        onClose={() => setSelectedFoodForModal(null)}
+        onAdd={handleFoodSelected}
+        preselectedMealType={currentStep}
+      />
     </View>
   )
 }
