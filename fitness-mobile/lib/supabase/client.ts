@@ -13,6 +13,14 @@ export function createClient() {
   const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
 
+  console.log('🔑 SUPABASE CLIENT INIT:', { 
+    url: supabaseUrl,
+    urlDefined: !!supabaseUrl,
+    keyDefined: !!supabaseAnonKey,
+    keyLength: supabaseAnonKey?.length,
+    keyPreview: supabaseAnonKey?.substring(0, 20) + '...'
+  })
+
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Supabase environment variables are not configured')
   }

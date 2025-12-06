@@ -205,20 +205,26 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
           </View>
 
           {/* Benchmarks */}
-          {currentBenchmarks && currentRxWeight && (
+          {currentBenchmarks && (
             <View style={styles.section}>
               <View style={styles.benchmarksRow}>
                 <View style={styles.benchmarkCard}>
                   <Text style={styles.benchmarkLabel}>Excellent</Text>
-                  <Text style={styles.benchmarkValue}>{currentBenchmarks.excellentScore}</Text>
+                  <Text style={styles.benchmarkValue}>
+                    {currentBenchmarks.excellentScore || 'N/A'}
+                  </Text>
                 </View>
                 <View style={styles.benchmarkCard}>
                   <Text style={styles.benchmarkLabel}>Median</Text>
-                  <Text style={styles.benchmarkValue}>{currentBenchmarks.medianScore}</Text>
+                  <Text style={styles.benchmarkValue}>
+                    {currentBenchmarks.medianScore || 'N/A'}
+                  </Text>
                 </View>
                 <View style={styles.benchmarkCard}>
                   <Text style={styles.benchmarkLabel}>Rx Weight</Text>
-                  <Text style={styles.benchmarkValue}>{currentRxWeight}</Text>
+                  <Text style={styles.benchmarkValue}>
+                    {currentRxWeight || 'N/A'}
+                  </Text>
                 </View>
               </View>
             </View>

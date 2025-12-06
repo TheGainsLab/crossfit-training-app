@@ -12,8 +12,8 @@ interface SectionHeaderProps {
 
 export function SectionHeader({ title, subtitle, action }: SectionHeaderProps) {
   return (
-    <View style={styles.container}>
-      <View style={styles.left}>
+    <View style={[styles.container, !action && styles.containerCentered]}>
+      <View style={[styles.left, !action && styles.leftCentered]}>
         <Text style={styles.title}>{title}</Text>
         {subtitle && (
           <Text style={styles.subtitle}>{subtitle}</Text>
@@ -38,8 +38,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
+  containerCentered: {
+    justifyContent: 'center',
+  },
   left: {
     flex: 1,
+  },
+  leftCentered: {
+    alignItems: 'center',
   },
   title: {
     fontSize: 20,

@@ -60,15 +60,26 @@ export async function fetchProgramSummaries(
             )
 
             // Fetch workout to get modified exercise count (accounts for AI modifications)
+            let hasEngineData = false
+            let engineDayNumber = 0
             try {
               const workoutResult = await fetchWorkout(p.id, weekNum, d.day)
               if (workoutResult.success && workoutResult.workout?.blocks) {
-                // Calculate total from modified blocks (after AI modifications applied)
+                // Calculate total from modified blocks, skip ENGINE (handled separately)
                 totalExercises = workoutResult.workout.blocks.reduce(
-                  (sum: number, block: any) =>
-                    sum + (Array.isArray(block.exercises) ? block.exercises.length : 0),
+                  (sum: number, block: any) => {
+                    if (block.blockName === 'ENGINE') return sum
+                    return sum + (Array.isArray(block.exercises) ? block.exercises.length : 0)
+                  },
                   0
                 )
+                
+                // Check if this workout has ENGINE data
+                if (workoutResult.workout.engineData) {
+                  hasEngineData = true
+                  engineDayNumber = workoutResult.workout.engineData.dayNumber
+                  totalExercises += 1  // Add 1 for ENGINE
+                }
               }
             } catch (err) {
               // If workout fetch fails, use original count from program_data
@@ -95,6 +106,22 @@ export async function fetchProgramSummaries(
                   completions.map((c: any) => `${c.exercise_name}-${c.set_number || 1}`)
                 )
                 completed = uniqueExercises.size
+              }
+              
+              // Check if ENGINE is completed
+              if (hasEngineData && engineDayNumber > 0) {
+                const { data: engineSession } = await supabase
+                  .from('workout_sessions')
+                  .select('id')
+                  .eq('user_id', userId)
+                  .eq('program_day_number', engineDayNumber)
+                  .eq('completed', true)
+                  .limit(1)
+                  .maybeSingle()
+                
+                if (engineSession) {
+                  completed += 1  // Add 1 for completed ENGINE
+                }
               }
             } catch (err) {
               console.warn('Failed to fetch completion count:', err)

@@ -150,13 +150,23 @@ export default function Dashboard() {
           const data = await fetchWorkout(program.id, week, day)
           
           if (data.success && data.workout) {
-            const totalExercises = data.workout.blocks.reduce(
-              (sum: number, block: any) => sum + (block.exercises?.length || 0),
+            // Calculate total exercises, skip ENGINE (handled separately)
+            let totalExercises = data.workout.blocks.reduce(
+              (sum: number, block: any) => {
+                if (block.blockName === 'ENGINE') return sum
+                return sum + (block.exercises?.length || 0)
+              },
               0
             )
+            
+            // Add 1 for ENGINE if it exists
+            const hasEngineData = !!data.workout.engineData
+            if (hasEngineData) {
+              totalExercises += 1
+            }
 
             if (totalExercises > 0) {
-              const completedExercises = new Set(
+              let completedExercises = new Set(
                 (data.completions || []).map((comp: any) => {
                   const setNumber = comp.set_number || 1
                   return setNumber > 1 
@@ -164,6 +174,33 @@ export default function Dashboard() {
                     : comp.exercise_name
                 })
               ).size
+              
+              // Check if ENGINE is completed
+              if (hasEngineData && data.workout.engineData?.dayNumber) {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (user) {
+                  const { data: userData } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('auth_id', user.id)
+                    .single()
+                  
+                  if (userData) {
+                    const { data: engineSession } = await supabase
+                      .from('workout_sessions')
+                      .select('id')
+                      .eq('user_id', (userData as any).id)
+                      .eq('program_day_number', data.workout.engineData.dayNumber)
+                      .eq('completed', true)
+                      .limit(1)
+                      .maybeSingle()
+                    
+                    if (engineSession) {
+                      completedExercises += 1
+                    }
+                  }
+                }
+              }
 
               const completionPercentage = Math.round((completedExercises / totalExercises) * 100)
               
@@ -207,64 +244,49 @@ export default function Dashboard() {
 
   const calculateCompletedWorkouts = async (userId: number, programs: Program[]) => {
     try {
-      // Use a more efficient approach: count days where all exercises are completed
-      // by checking performance_logs against expected exercise counts
       const supabase = createClient()
-      let totalCompleted = 0
+      // Use a Set to track unique training days (program_id-week-day)
+      const uniqueTrainingDays = new Set<string>()
 
-      // For each program, check completion status
+      // For each program, count days with at least one exercise completed
       for (const program of programs) {
-        const availableWeeks = program.weeks_generated || []
-        
-        // Fetch all completions for this program in one query
+        // Fetch all completions for this program
         const { data: completions } = await supabase
           .from('performance_logs')
-          .select('week, day, exercise_name, set_number')
+          .select('week, day')
           .eq('user_id', userId)
           .eq('program_id', program.id)
 
-        if (!completions) continue
-
-        // Group completions by week and day
-        const completionsByDay: Record<string, Set<string>> = {}
-        completions.forEach((comp: any) => {
-          const key = `${comp.week}-${comp.day}`
-          if (!completionsByDay[key]) {
-            completionsByDay[key] = new Set()
-          }
-          const setNumber = comp.set_number || 1
-          const exerciseKey = setNumber > 1 
-            ? `${comp.exercise_name}-${setNumber}`
-            : comp.exercise_name
-          completionsByDay[key].add(exerciseKey)
-        })
-
-        // Check each day for 100% completion
-        for (const week of availableWeeks) {
-          for (let day = 1; day <= 5; day++) {
-            const data = await fetchWorkout(program.id, week, day)
-            
-            if (data.success && data.workout) {
-              const totalExercises = data.workout.blocks.reduce(
-                (sum: number, block: any) => sum + (block.exercises?.length || 0),
-                0
-              )
-
-              if (totalExercises > 0) {
-                const key = `${week}-${day}`
-                const completedCount = completionsByDay[key]?.size || 0
-                const completionPercentage = Math.round((completedCount / totalExercises) * 100)
-                
-                if (completionPercentage === 100) {
-                  totalCompleted++
-                }
-              }
+        if (completions) {
+          // Add each unique day to the set
+          completions.forEach((comp: any) => {
+            if (comp.week && comp.day) {
+              const dayKey = `${program.id}-${comp.week}-${comp.day}`
+              uniqueTrainingDays.add(dayKey)
             }
-          }
+          })
+        }
+
+        // Also count completed metcons for this program
+        const { data: metcons } = await supabase
+          .from('program_metcons')
+          .select('week, day')
+          .eq('user_id', userId)
+          .eq('program_id', program.id)
+          .not('completed_at', 'is', null)
+
+        if (metcons) {
+          // Add each unique metcon day to the set
+          metcons.forEach((metcon: any) => {
+            if (metcon.week && metcon.day) {
+              const dayKey = `${program.id}-${metcon.week}-${metcon.day}`
+              uniqueTrainingDays.add(dayKey)
+            }
+          })
         }
       }
 
-      setTotalCompletedWorkouts(totalCompleted)
+      setTotalCompletedWorkouts(uniqueTrainingDays.size)
     } catch (error) {
       console.error('Error calculating completed workouts:', error)
       setTotalCompletedWorkouts(0)
@@ -280,13 +302,23 @@ export default function Dashboard() {
         const data = await fetchWorkout(programId, week, day)
 
         if (data.success && data.workout) {
-          const totalExercises = data.workout.blocks.reduce(
-            (sum: number, block: any) => sum + (block.exercises?.length || 0),
+          // Calculate total exercises, skip ENGINE (handled separately)
+          let totalExercises = data.workout.blocks.reduce(
+            (sum: number, block: any) => {
+              if (block.blockName === 'ENGINE') return sum
+              return sum + (block.exercises?.length || 0)
+            },
             0
           )
+          
+          // Add 1 for ENGINE if it exists
+          const hasEngineData = !!data.workout.engineData
+          if (hasEngineData) {
+            totalExercises += 1
+          }
 
           // Count unique completed exercises (handle set numbers)
-          const completedExercises = new Set(
+          let completedExercises = new Set(
             (data.completions || []).map((comp: any) => {
               const setNumber = comp.set_number || 1
               return setNumber > 1 
@@ -294,6 +326,34 @@ export default function Dashboard() {
                 : comp.exercise_name
             })
           ).size
+          
+          // Check if ENGINE is completed
+          if (hasEngineData && data.workout.engineData?.dayNumber) {
+            const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+              const { data: userData } = await supabase
+                .from('users')
+                .select('id')
+                .eq('auth_id', user.id)
+                .single()
+              
+              if (userData) {
+                const { data: engineSession } = await supabase
+                  .from('workout_sessions')
+                  .select('id')
+                  .eq('user_id', (userData as any).id)
+                  .eq('program_day_number', data.workout.engineData.dayNumber)
+                  .eq('completed', true)
+                  .limit(1)
+                  .maybeSingle()
+                
+                if (engineSession) {
+                  completedExercises += 1
+                }
+              }
+            }
+          }
 
           const completionPercentage = totalExercises > 0
             ? Math.round((completedExercises / totalExercises) * 100)
@@ -448,7 +508,7 @@ export default function Dashboard() {
             <Text style={styles.greetingSubtitle}>
               You've completed{' '}
               <Text style={styles.completedCount}>{totalCompletedWorkouts}</Text>
-              {' '}Workout{totalCompletedWorkouts !== 1 ? 's' : ''}
+              {' '}Training Day{totalCompletedWorkouts !== 1 ? 's' : ''}
             </Text>
           </View>
         </View>

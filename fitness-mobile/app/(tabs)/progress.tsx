@@ -21,6 +21,7 @@ import {
   fetchTechnicalWorkAnalytics,
   fetchAccessoriesAnalytics,
   fetchMetConAnalytics,
+  fetchEngineAnalytics,
   fetchMovementSessionHistory,
   RecentSession,
   SkillData,
@@ -34,7 +35,7 @@ import { Button } from '@/components/ui/Button'
 
 const screenWidth = Dimensions.get('window').width
 
-type TabType = 'overview' | 'skills' | 'strength' | 'technical' | 'accessories' | 'metcons'
+type TabType = 'overview' | 'skills' | 'strength' | 'technical' | 'accessories' | 'metcons' | 'engine'
 
 const styles = StyleSheet.create({
   container: {
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
   activityMeta: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#4B5563',
+    color: '#FE5858',
   },
   activityExercises: {
     marginBottom: 12,
@@ -410,25 +411,6 @@ const styles = StyleSheet.create({
   movementStatValueOrange: {
     fontWeight: '700',
     color: '#EA580C',
-  },
-  metconSummaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 24,
-  },
-  metconStat: {
-    alignItems: 'center',
-  },
-  metconStatValue: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#FE5858',
-    marginBottom: 4,
-  },
-  metconStatLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
   },
   noDataContainer: {
     paddingHorizontal: 16,
@@ -666,6 +648,7 @@ export default function ProgressPage() {
   const [technicalData, setTechnicalData] = useState<any>(null)
   const [accessoriesData, setAccessoriesData] = useState<any>(null)
   const [metconData, setMetconData] = useState<any>(null)
+  const [engineData, setEngineData] = useState<any>(null)
   const [activityFilter, setActivityFilter] = useState<number | null>(5)
 
   useEffect(() => {
@@ -730,6 +713,9 @@ export default function ProgressPage() {
       } else if (tab === 'metcons') {
         const data = await fetchMetConAnalytics(userId)
         setMetconData(data)
+      } else if (tab === 'engine') {
+        const data = await fetchEngineAnalytics(userId)
+        setEngineData(data)
       }
     } catch (error) {
       console.error(`Error loading ${tab} data:`, error)
@@ -787,7 +773,7 @@ export default function ProgressPage() {
 
       {/* Tabs */}
       <View style={styles.tabsContainer}>
-        {(['overview', 'skills', 'strength', 'technical', 'accessories', 'metcons'] as TabType[]).map((tab) => (
+        {(['overview', 'skills', 'strength', 'technical', 'accessories', 'metcons', 'engine'] as TabType[]).map((tab) => (
           <TouchableOpacity
             key={tab}
             onPress={() => setActiveTab(tab)}
@@ -843,6 +829,7 @@ export default function ProgressPage() {
           <AccessoriesTab accessoriesData={accessoriesData} userId={userId} />
         )}
         {activeTab === 'metcons' && <MetConTab metconData={metconData} />}
+        {activeTab === 'engine' && <EngineTab engineData={engineData} userId={userId} />}
       </ScrollView>
     </View>
   )
@@ -1020,26 +1007,26 @@ function OverviewTab({
           <View style={styles.statsRow}>
             <View style={styles.statCardWrapper}>
               <StatCard
-                label="Total Workouts"
+                label="Training Days"
                 value={dashboardData.totalWorkouts}
               />
             </View>
             <View style={styles.statCardWrapper}>
               <StatCard
-                label="Total Exercises"
+                label="Tasks Completed"
                 value={dashboardData.totalExercises}
               />
             </View>
             <View style={styles.statCardWrapper}>
               <StatCard
-                label="Completion Rate"
-                value={`${Math.round(dashboardData.completionRate)}%`}
+                label="MetCons Completed"
+                value={dashboardData.metconsCompleted}
               />
             </View>
             <View style={styles.statCardWrapper}>
               <StatCard
-                label="Weeks Active"
-                value={dashboardData.weeksActive}
+                label="Fitness Score"
+                value={dashboardData.fitnessScore !== null ? `${dashboardData.fitnessScore}%` : '—'}
               />
             </View>
           </View>
@@ -1047,96 +1034,91 @@ function OverviewTab({
       )}
 
       {/* Recent Activity */}
-      <Card>
-        <SectionHeader title="Recent Training Activity" />
-        
-        {/* Filter Buttons */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScrollContainer}
-        >
-          <View style={styles.filterRow}>
-            {[5, 10, 25, null].map((count) => (
-              <TouchableOpacity
-                key={count ?? 'all'}
-                onPress={() => setActivityFilter(count)}
-                activeOpacity={0.7}
+      <SectionHeader title="Recent Training Activity" />
+      
+      {/* Filter Buttons */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterScrollContainer}
+      >
+        <View style={styles.filterRow}>
+          {[5, 10, 25, null].map((count) => (
+            <TouchableOpacity
+              key={count ?? 'all'}
+              onPress={() => setActivityFilter(count)}
+              activeOpacity={0.7}
+              style={[
+                styles.filterButton,
+                activityFilter === count
+                  ? styles.filterButtonActive
+                  : styles.filterButtonInactive,
+              ]}
+            >
+              <Text
                 style={[
-                  styles.filterButton,
+                  styles.filterButtonText,
                   activityFilter === count
-                    ? styles.filterButtonActive
-                    : styles.filterButtonInactive,
+                    ? styles.filterButtonTextActive
+                    : styles.filterButtonTextInactive,
                 ]}
               >
-                <Text
-                  style={[
-                    styles.filterButtonText,
-                    activityFilter === count
-                      ? styles.filterButtonTextActive
-                      : styles.filterButtonTextInactive,
-                  ]}
-                >
-                  {count === null ? 'All Time' : `Last ${count}`}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+                {count === null ? 'All Time' : `Last ${count}`}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
 
-        {recentActivity.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>
-              No recent training sessions found. Complete some exercises to see
-              your activity here!
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.activityList}>
-            {recentActivity.map((session, index) => (
-              <TouchableOpacity
-                key={session.sessionKey || index}
-                onPress={() => {
-                  if (session.programId) {
-                    router.push(
-                      `/session-review/${userId}-${session.programId}-${session.week}-${session.day}`
-                    )
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Card>
-                  <View style={styles.activityCardHeader}>
-                    <Text style={styles.activityDate}>
-                      {formatDate(session.date)}
-                    </Text>
-                    <Text style={styles.activityMeta}>
-                      Week {session.week} • Day {session.day}
-                    </Text>
-                  </View>
-                  <View style={styles.activityExercises}>
-                    <Text style={styles.activityExercisesText}>
-                      {session.totalExercises} exercises completed
-                    </Text>
-                  </View>
-                  <View style={styles.activityBlocks}>
-                    {session.blocks.map((block, idx) => (
-                      <View
-                        key={idx}
-                        style={styles.blockBadge}
-                      >
-                        <Text style={styles.blockBadgeText}>
-                          {block.blockName} ({block.exerciseCount})
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                </Card>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </Card>
+      {recentActivity.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>
+            No recent training sessions found. Complete some exercises to see
+            your activity here!
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.activityList}>
+          {recentActivity.map((session, index) => (
+            <TouchableOpacity
+              key={session.sessionKey || index}
+              onPress={() => {
+                if (session.programId) {
+                  router.push(
+                    `/session-review/${userId}-${session.programId}-${session.week}-${session.day}`
+                  )
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <Card>
+                <View style={styles.activityCardHeader}>
+                  <Text style={styles.activityMeta}>
+                    Week {session.week} • Day {session.day}
+                  </Text>
+                </View>
+                <View style={styles.activityExercises}>
+                  <Text style={styles.activityExercisesText}>
+                    {session.totalExercises} exercises completed
+                  </Text>
+                </View>
+                <View style={styles.activityBlocks}>
+                  {session.blocks.map((block, idx) => (
+                    <View
+                      key={idx}
+                      style={styles.blockBadge}
+                    >
+                      <Text style={styles.blockBadgeText}>
+                        {block.blockName} ({block.exerciseCount})
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </Card>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
   )
 }
@@ -1703,24 +1685,6 @@ function MetConTab({ metconData }: { metconData: any }) {
 
   return (
     <View style={styles.sectionGap}>
-      <Card>
-        <SectionHeader title="MetCon Performance Overview" />
-        <View style={styles.metconSummaryRow}>
-          <View style={styles.metconStat}>
-            <Text style={styles.metconStatValue}>
-              {metconData.totalMetCons}
-            </Text>
-            <Text style={styles.metconStatLabel}>Total MetCons</Text>
-          </View>
-          <View style={styles.metconStat}>
-            <Text style={styles.metconStatValue}>
-              {metconData.avgPercentile}%
-            </Text>
-            <Text style={styles.metconStatLabel}>Avg Percentile</Text>
-          </View>
-        </View>
-      </Card>
-
       {/* Heatmap Grid */}
       {metconData.heatmapCells && metconData.heatmapCells.length > 0 ? (
         (() => {
@@ -1942,6 +1906,167 @@ function MetConTab({ metconData }: { metconData: any }) {
           )
         })()
       ) : null}
+    </View>
+  )
+}
+
+// Engine Tab Component
+function EngineTab({ engineData, userId }: { engineData: any; userId: number | null }) {
+  if (!engineData) {
+    return (
+      <View style={styles.sectionGap}>
+        <Card>
+          <SectionHeader title="Engine Analytics" />
+          <Text style={styles.noDataText}>Loading Engine data...</Text>
+        </Card>
+      </View>
+    )
+  }
+
+  if (engineData.totalSessions === 0 && engineData.totalTimeTrials === 0) {
+    return (
+      <View style={styles.sectionGap}>
+        <Card>
+          <SectionHeader title="Engine Analytics" />
+          <Text style={styles.noDataText}>
+            No Engine workout data yet. Complete Engine workouts to see detailed analytics!
+          </Text>
+        </Card>
+      </View>
+    )
+  }
+
+  const formatModality = (modality: string) => {
+    return modality
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  }
+
+  return (
+    <View style={styles.sectionGap}>
+      {/* Summary Stats */}
+      <Card>
+        <SectionHeader title="Engine Analytics" />
+        <View style={styles.statsRow}>
+          <View style={styles.statCardWrapper}>
+            <StatCard
+              label="Total Sessions"
+              value={engineData.totalSessions}
+            />
+          </View>
+          <View style={styles.statCardWrapper}>
+            <StatCard
+              label="Time Trials"
+              value={engineData.totalTimeTrials}
+            />
+          </View>
+          {engineData.avgPerformanceRatio !== null && (
+            <View style={styles.statCardWrapper}>
+              <StatCard
+                label="Avg Performance"
+                value={`${(engineData.avgPerformanceRatio * 100).toFixed(0)}%`}
+              />
+            </View>
+          )}
+        </View>
+      </Card>
+
+      {/* Modalities */}
+      {engineData.modalities.length > 0 && (
+        <Card>
+          <SectionHeader title="Modalities" />
+          <View style={styles.activityBlocks}>
+            {engineData.modalities.map((modality: string, idx: number) => (
+              <View key={idx} style={styles.blockBadge}>
+                <Text style={styles.blockBadgeText}>
+                  {formatModality(modality)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </Card>
+      )}
+
+      {/* Recent Sessions */}
+      {engineData.sessions.length > 0 && (
+        <View>
+          <SectionHeader title="Recent Sessions" />
+          <View style={styles.activityList}>
+            {engineData.sessions.slice(0, 10).map((session: any, index: number) => (
+              <Card key={session.id || index}>
+                <View style={styles.activityCardHeader}>
+                  <Text style={styles.activityMeta}>
+                    {formatDate(session.date)}
+                  </Text>
+                  {session.day_type && (
+                    <Text style={styles.activityMeta}>
+                      {session.day_type.charAt(0).toUpperCase() + session.day_type.slice(1)}
+                    </Text>
+                  )}
+                </View>
+                {session.modality && (
+                  <Text style={styles.activityExercisesText}>
+                    {formatModality(session.modality)}
+                  </Text>
+                )}
+                {session.total_output && (
+                  <Text style={styles.activityExercisesText}>
+                    Output: {session.total_output} {session.units || ''}
+                  </Text>
+                )}
+                {session.performance_ratio !== null && (
+                  <Text style={styles.activityExercisesText}>
+                    Performance: {(parseFloat(session.performance_ratio) * 100).toFixed(0)}%
+                  </Text>
+                )}
+              </Card>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Time Trials */}
+      {engineData.timeTrials.length > 0 && (
+        <View>
+          <SectionHeader title="Time Trials" />
+          <View style={styles.activityList}>
+            {engineData.timeTrials.slice(0, 10).map((trial: any, index: number) => (
+              <Card key={trial.id || index}>
+                <View style={styles.activityCardHeader}>
+                  <Text style={styles.activityMeta}>
+                    {formatDate(trial.date || trial.created_at)}
+                  </Text>
+                </View>
+                {trial.modality && (
+                  <Text style={styles.activityExercisesText}>
+                    {formatModality(trial.modality)}
+                  </Text>
+                )}
+                {trial.total_output && (
+                  <Text style={styles.activityExercisesText}>
+                    Output: {trial.total_output} {trial.units || ''}
+                  </Text>
+                )}
+                {trial.duration_seconds && (
+                  <Text style={styles.activityExercisesText}>
+                    Duration: {Math.floor(trial.duration_seconds / 60)}:{(trial.duration_seconds % 60).toString().padStart(2, '0')}
+                  </Text>
+                )}
+              </Card>
+            ))}
+          </View>
+        </View>
+      )}
     </View>
   )
 }

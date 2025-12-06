@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "fitness-mobile",
-    "slug": "fitness-mobile",
-    "version": "1.0.0",
+    "name": "gainsai",
+    "slug": "gainsai",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "gainsai",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
@@ -13,7 +13,13 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.thegainslab.gainsai",
+      "infoPlist": {
+        "NSCameraUsageDescription": "We need access to your camera to take photos of food for nutrition tracking.",
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to select food photos for nutrition tracking.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,10 +33,20 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "f0075d1b-fbc7-4ed0-bbe3-0ecf3298c081"
+      }
+    },
+    "owner": "thegainslab"
   }
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { createClient } from '@/lib/supabase/client'
 import { fetchWorkout } from '@/lib/api/workouts'
 import { logExerciseCompletion } from '@/lib/api/completions'
@@ -82,6 +82,8 @@ export default function WorkoutPage() {
   const [error, setError] = useState<string | null>(null)
   const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({})
   const [allPrograms, setAllPrograms] = useState<Array<{ id: number; weeks_generated: number[] }>>([])
+  const [isMetconCompleted, setIsMetconCompleted] = useState(false)
+  const [isEngineCompleted, setIsEngineCompleted] = useState(false)
 
   useEffect(() => {
     const loadWorkout = async () => {
@@ -144,6 +146,40 @@ export default function WorkoutPage() {
             })
             setCompletions(completionMap)
           }
+          
+          // Check if metcon is completed (all-or-nothing)
+          if (data.workout?.metconData?.id) {
+            const { data: metconCompletion } = await supabase
+              .from('program_metcons')
+              .select('id')
+              .eq('program_id', parseInt(programId))
+              .eq('week', parseInt(week))
+              .eq('day', parseInt(day))
+              .eq('user_id', userData.id)
+              .eq('metcon_id', data.workout.metconData.id)
+              .not('completed_at', 'is', null)
+              .single()
+            
+            setIsMetconCompleted(!!metconCompletion)
+          } else {
+            setIsMetconCompleted(false)
+          }
+
+          // Check if engine is completed
+          if (data.workout?.engineData?.dayNumber) {
+            const { data: engineSession } = await supabase
+              .from('workout_sessions')
+              .select('id')
+              .eq('user_id', userData.id)
+              .eq('program_day_number', data.workout.engineData.dayNumber)
+              .eq('completed', true)
+              .limit(1)
+              .maybeSingle()
+            
+            setIsEngineCompleted(!!engineSession)
+          } else {
+            setIsEngineCompleted(false)
+          }
         } else {
           throw new Error(data.error || 'Workout data is invalid or missing')
         }
@@ -157,6 +193,59 @@ export default function WorkoutPage() {
 
     loadWorkout()
   }, [programId, week, day])
+
+  // Re-check engine completion when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const checkEngineCompletion = async () => {
+        console.log('🔄 useFocusEffect running - checking engine completion')
+        
+        if (!workout?.engineData?.dayNumber) {
+          console.log('❌ No engine data found, skipping check')
+          return
+        }
+
+        console.log('✅ Engine data found, dayNumber:', workout.engineData.dayNumber)
+
+        try {
+          const supabase = createClient()
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) return
+
+          const { data: userData } = await supabase
+            .from('users')
+            .select('id')
+            .eq('auth_id', user.id)
+            .single()
+
+          if (!userData) return
+
+          console.log('🔍 Querying for engine session:', {
+            userId: (userData as any).id,
+            programDayNumber: workout.engineData.dayNumber
+          })
+
+          const { data: engineSession } = await supabase
+            .from('workout_sessions')
+            .select('id')
+            .eq('user_id', (userData as any).id)
+            .eq('program_day_number', workout.engineData.dayNumber)
+            .eq('completed', true)
+            .limit(1)
+            .maybeSingle()
+
+          console.log('🔍 Engine session result:', engineSession ? 'FOUND ✅' : 'NOT FOUND ❌')
+          console.log('🔍 Setting isEngineCompleted to:', !!engineSession)
+          
+          setIsEngineCompleted(!!engineSession)
+        } catch (error) {
+          console.error('Error checking engine completion:', error)
+        }
+      }
+
+      checkEngineCompletion()
+    }, [workout])
+  )
 
   const toggleBlock = (blockName: string, index: number) => {
     const key = `${blockName}-${index}`
@@ -414,6 +503,7 @@ export default function WorkoutPage() {
       }
 
       // Update local state
+      setIsMetconCompleted(true) // Mark metcon as completed (all tasks)
       setCompletions(prev => {
         const updated = { ...prev }
         taskCompletions.forEach(task => {
@@ -438,12 +528,47 @@ export default function WorkoutPage() {
 
   const calculateProgress = () => {
     if (!workout) return 0
-    const totalExercises = workout.blocks.reduce(
-      (sum, block) => sum + block.exercises.length,
-      0
-    )
-    const completedExercises = Object.keys(completions).length
-    return totalExercises > 0 ? Math.min(100, (completedExercises / totalExercises) * 100) : 0
+    
+    // Count exercises, but skip ENGINE block (it's handled separately)
+    let totalItems = 0
+    
+    console.log('🔢 COUNTING BLOCKS:')
+    workout.blocks.forEach((block, i) => {
+      if (block.blockName === 'ENGINE') {
+        console.log(`  Block ${i} (${block.blockName}): SKIPPED (counted separately)`)
+      } else {
+        console.log(`  Block ${i} (${block.blockName}): ${block.exercises.length} exercises`)
+        totalItems += block.exercises.length
+      }
+    })
+    
+    console.log('  Total from blocks (excluding ENGINE):', totalItems)
+    
+    // Add 1 for ENGINE if it exists
+    if (workout.engineData) {
+      totalItems += 1
+      console.log('  Added 1 for ENGINE, new total:', totalItems)
+    }
+    
+    // Count completed items (metcons already in completions)
+    let completedItems = Object.keys(completions).length
+    console.log('  Completions count:', completedItems)
+    
+    // Add 1 for ENGINE if completed
+    if (workout.engineData && isEngineCompleted) {
+      completedItems += 1
+      console.log('  Added 1 for ENGINE completion, new completed:', completedItems)
+    }
+    
+    console.log('📊 PROGRESS CALCULATION:', {
+      totalItems,
+      completedItems,
+      hasEngineData: !!workout.engineData,
+      isEngineCompleted,
+      percentage: Math.round((completedItems / totalItems) * 100)
+    })
+    
+    return totalItems > 0 ? Math.min(100, (completedItems / totalItems) * 100) : 0
   }
 
   if (loading) {
@@ -510,14 +635,31 @@ export default function WorkoutPage() {
         {workout.blocks.map((block, blockIndex) => {
           const key = `${block.blockName}-${blockIndex}`
           
-          const completedCount = block.exercises.filter(ex => {
-            const setMatch = ex.notes?.match(/Set (\d+)/)
-            const setNumber = setMatch ? parseInt(setMatch[1]) : 1
-            const exerciseKey = setNumber > 1 ? `${ex.name} - Set ${setNumber}` : ex.name
-            return completions[exerciseKey] !== undefined
-          }).length
+          // Special handling for METCONS blocks - all or nothing
+          let completedCount = 0
+          let totalCount = 0
           
-          const totalCount = block.exercises.length
+          if (block.blockName === 'METCONS') {
+            // Count tasks from metconData
+            totalCount = workout.metconData?.tasks?.length || 0
+            // Metcons are all-or-nothing: if completed, all tasks count as done
+            completedCount = isMetconCompleted ? totalCount : 0
+          } else if (block.blockName === 'ENGINE') {
+            // Engine workouts: single workout, check completion from database
+            totalCount = 1
+            completedCount = isEngineCompleted ? 1 : 0
+          } else {
+            // Regular exercise blocks (Skills, Technical, Strength, Accessories)
+            completedCount = block.exercises.filter(ex => {
+              const setMatch = ex.notes?.match(/Set (\d+)/)
+              const setNumber = setMatch ? parseInt(setMatch[1]) : 1
+              const exerciseKey = setNumber > 1 ? `${ex.name} - Set ${setNumber}` : ex.name
+              return completions[exerciseKey] !== undefined
+            }).length
+            
+            totalCount = block.exercises.length
+          }
+          
           const isBlockComplete = completedCount === totalCount && totalCount > 0
           
           // Blocks default to collapsed. Only expanded if user explicitly expands them.

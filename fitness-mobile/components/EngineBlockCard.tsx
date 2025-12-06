@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { createClient } from '@/lib/supabase/client'
 
 interface EngineBlockCardProps {
@@ -27,41 +27,81 @@ export default function EngineBlockCard({
   const router = useRouter()
   const [isCompleted, setIsCompleted] = useState(false)
 
-  useEffect(() => {
-    const checkCompletion = async () => {
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+  // Helper function to format dayType for display (convert snake_case to Title Case)
+  const getWorkoutTypeDisplayName = (dayType: string): string => {
+    const typeMap: Record<string, string> = {
+      'time_trial': 'Time Trial',
+      'endurance': 'Endurance',
+      'anaerobic': 'Anaerobic',
+      'max_aerobic_power': 'Max Aerobic Power',
+      'interval': 'Interval',
+      'polarized': 'Polarized',
+      'threshold': 'Threshold',
+      'tempo': 'Tempo',
+      'recovery': 'Recovery',
+      'flux': 'Flux',
+      'flux_stages': 'Flux Stages',
+      'devour': 'Devour',
+      'towers': 'Towers',
+      'afterburner': 'Afterburner',
+      'synthesis': 'Synthesis',
+      'hybrid_anaerobic': 'Hybrid Anaerobic',
+      'hybrid_aerobic': 'Hybrid Aerobic',
+      'ascending': 'Ascending',
+      'descending': 'Descending',
+      'ascending_devour': 'Ascending Devour',
+      'descending_devour': 'Descending Devour',
+      'infinity': 'Infinity',
+      'atomic': 'Atomic',
+      'rocket_races_a': 'Rocket Races A',
+      'rocket_races_b': 'Rocket Races B'
+    }
+    return typeMap[dayType] || dayType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Conditioning'
+  }
 
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id')
-          .eq('auth_id', user.id)
-          .single()
+  useFocusEffect(
+    React.useCallback(() => {
+      const checkCompletion = async () => {
+        console.log('🔍 ENGINE CHECK - dayNumber:', engineDayNumber)
+        
+        try {
+          const supabase = createClient()
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) return
 
-        if (!userData) return
+          const { data: userData } = await supabase
+            .from('users')
+            .select('id')
+            .eq('auth_id', user.id)
+            .single()
 
-        // Check workout_sessions for completion
-        const { data: session } = await supabase
-          .from('workout_sessions')
-          .select('id')
-          .eq('user_id', userData.id)
-          .eq('program_day_number', engineDayNumber)
-          .eq('completed', true)
-          .limit(1)
-          .maybeSingle()
+          if (!userData) return
 
-        setIsCompleted(!!session)
-      } catch (error) {
-        console.error('Error checking Engine completion:', error)
+          console.log('🔍 ENGINE CHECK - Querying for user_id:', (userData as any).id, 'program_day_number:', engineDayNumber)
+
+          // Check workout_sessions for completion
+          const { data: session } = await supabase
+            .from('workout_sessions')
+            .select('id')
+            .eq('user_id', (userData as any).id)
+            .eq('program_day_number', engineDayNumber)
+            .eq('completed', true)
+            .limit(1)
+            .maybeSingle()
+
+          console.log('🔍 ENGINE CHECK - Result:', session ? 'FOUND ✅' : 'NOT FOUND ❌', 'Session:', session)
+
+          setIsCompleted(!!session)
+        } catch (error) {
+          console.error('Error checking Engine completion:', error)
+        }
       }
-    }
 
-    if (engineDayNumber) {
-      checkCompletion()
-    }
-  }, [engineDayNumber])
+      if (engineDayNumber) {
+        checkCompletion()
+      }
+    }, [engineDayNumber])
+  )
 
   if (!engineData) return null
 
@@ -75,21 +115,10 @@ export default function EngineBlockCard({
       <View style={styles.content}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Engine Conditioning</Text>
+            <Text style={styles.title}>{getWorkoutTypeDisplayName(engineData.dayType)}</Text>
             <Text style={styles.subtitle}>Day {engineData.dayNumber}</Text>
           </View>
           {isCompleted && <Text style={styles.checkmark}>✅</Text>}
-        </View>
-
-        <View style={styles.info}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Type: </Text>
-            <Text style={styles.infoValue}>{engineData.dayType}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Duration: </Text>
-            <Text style={styles.infoValue}>{engineData.duration} minutes</Text>
-          </View>
         </View>
 
         <TouchableOpacity
@@ -140,24 +169,6 @@ const styles = StyleSheet.create({
   checkmark: {
     color: '#FE5858',
     fontSize: 24,
-  },
-  info: {
-    marginBottom: 16,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  infoLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#282B34',
-  },
-  infoValue: {
-    fontSize: 14,
-    color: '#374151',
-    textTransform: 'capitalize',
   },
   button: {
     width: '100%',
