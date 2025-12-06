@@ -17,6 +17,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { getMealTemplates, logMealTemplate, MealTemplate } from '@/lib/api/mealTemplates'
 
 const mealTypes = [
   { value: 'breakfast', label: 'Breakfast' },
@@ -44,6 +45,8 @@ export default function NutritionTab() {
   const [userId, setUserId] = useState<number | null>(null)
   const [dailySummary, setDailySummary] = useState<any>(null)
   const [todayLogs, setTodayLogs] = useState<any[]>([])
+  const [mealTemplates, setMealTemplates] = useState<MealTemplate[]>([])
+  const [templatesLoading, setTemplatesLoading] = useState(false)
   const [selectedMealType, setSelectedMealType] = useState<string | null>(null)
   const [showSearch, setShowSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -61,6 +64,7 @@ export default function NutritionTab() {
   useEffect(() => {
     if (userId) {
       loadDailyData()
+      loadMealTemplates()
     }
   }, [userId, refreshKey])
 
@@ -79,8 +83,8 @@ export default function NutritionTab() {
         .eq('auth_id', user.id)
         .single()
 
-      if (userData?.id) {
-        setUserId((userData as { id: number }).id)
+      if (userData) {
+        setUserId((userData as any).id)
       }
     } catch (error) {
       console.error('Error loading user:', error)
@@ -123,6 +127,37 @@ export default function NutritionTab() {
       setTodayLogs(logs || [])
     } catch (error) {
       console.error('Error loading daily data:', error)
+    }
+  }
+
+  const loadMealTemplates = async () => {
+    if (!userId) return
+
+    setTemplatesLoading(true)
+    try {
+      const templates = await getMealTemplates(userId)
+      setMealTemplates(templates)
+    } catch (error) {
+      console.error('Error loading meal templates:', error)
+    } finally {
+      setTemplatesLoading(false)
+    }
+  }
+
+  const handleLogTemplate = async (templateId: number) => {
+    if (!userId) return
+
+    try {
+      const result = await logMealTemplate(userId, templateId)
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to log meal')
+      }
+
+      Alert.alert('Success', 'Meal logged successfully!')
+      setRefreshKey(prev => prev + 1) // Trigger refresh of daily data
+    } catch (error: any) {
+      console.error('Error logging template:', error)
+      Alert.alert('Error', error.message || 'Failed to log meal')
     }
   }
 
@@ -364,23 +399,67 @@ export default function NutritionTab() {
         {/* Daily Summary Card */}
         <DailySummaryCard summary={dailySummary} />
 
-        {/* Image Recognition Button */}
-        <Card style={styles.card}>
-          <TouchableOpacity
-            style={styles.imageRecognitionButton}
-            onPress={handleImageRecognition}
-            disabled={imageRecognitionLoading}
-            activeOpacity={0.8}
-          >
-            {imageRecognitionLoading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+        {/* Quick Log - Meal Templates */}
+        {mealTemplates.length > 0 && (
+          <Card style={styles.card}>
+            <Text style={styles.sectionTitle}>⭐ Quick Log</Text>
+            {templatesLoading ? (
+              <ActivityIndicator size="small" color="#FE5858" />
             ) : (
-              <>
-                <Text style={styles.imageRecognitionIcon}>📷</Text>
-                <Text style={styles.imageRecognitionText}>Take Photo of Food</Text>
-              </>
+              <View style={styles.templatesList}>
+                {mealTemplates.map((template) => (
+                  <View key={template.id} style={styles.templateItem}>
+                    <View style={styles.templateInfo}>
+                      <Text style={styles.templateName}>
+                        {template.meal_type === 'breakfast' ? '☀️' : 
+                         template.meal_type === 'lunch' ? '🌮' : 
+                         template.meal_type === 'dinner' ? '🍽️' : 
+                         template.meal_type === 'pre_workout' ? '💪' :
+                         template.meal_type === 'post_workout' ? '🥤' : '🍎'}{' '}
+                        {template.template_name}
+                      </Text>
+                      <Text style={styles.templateDetails}>
+                        {Math.round(template.total_calories)} cal • {Math.round(template.total_protein)}g protein
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.logTemplateButton}
+                      onPress={() => handleLogTemplate(template.id!)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.logTemplateButtonText}>Log</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
             )}
-          </TouchableOpacity>
+          </Card>
+        )}
+
+        {/* Something Else - Photo/Search */}
+        <Card style={styles.card}>
+          <Text style={styles.sectionTitle}>📸 Something Else?</Text>
+          <View style={styles.alternativeButtonsRow}>
+            <TouchableOpacity
+              style={styles.alternativeButton}
+              onPress={handleImageRecognition}
+              disabled={imageRecognitionLoading}
+              activeOpacity={0.8}
+            >
+              {imageRecognitionLoading ? (
+                <ActivityIndicator size="small" color="#FE5858" />
+              ) : (
+                <Text style={styles.alternativeButtonText}>📷 Take Photo</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.alternativeButton}
+              onPress={() => setShowSearch(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.alternativeButtonText}>🔍 Search</Text>
+            </TouchableOpacity>
+          </View>
         </Card>
 
         {/* Meal Type Selection */}
@@ -1383,5 +1462,62 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
+  },
+  // Quick Log - Meal Templates
+  templatesList: {
+    gap: 12,
+  },
+  templateItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FBFE',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  templateInfo: {
+    flex: 1,
+  },
+  templateName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 4,
+  },
+  templateDetails: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  logTemplateButton: {
+    backgroundColor: '#FE5858',
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  logTemplateButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Alternative buttons (Photo/Search)
+  alternativeButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  alternativeButton: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  alternativeButtonText: {
+    fontSize: 14,
+    color: '#282B34',
+    fontWeight: '600',
   },
 })
