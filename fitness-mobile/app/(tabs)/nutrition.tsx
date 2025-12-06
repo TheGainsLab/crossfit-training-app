@@ -18,6 +18,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { getMealTemplates, logMealTemplate, MealTemplate } from '@/lib/api/mealTemplates'
+import MealSetupWizard from '@/components/nutrition/MealSetupWizard'
 
 const mealTypes = [
   { value: 'breakfast', label: 'Breakfast' },
@@ -56,6 +57,7 @@ export default function NutritionTab() {
   const [selectedFood, setSelectedFood] = useState<any>(null)
   const [foodDetailsModalOpen, setFoodDetailsModalOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [showMealSetupWizard, setShowMealSetupWizard] = useState(false)
 
   useEffect(() => {
     loadUser()
@@ -414,7 +416,7 @@ export default function NutritionTab() {
               </Text>
               <TouchableOpacity
                 style={styles.emptyTemplatesButton}
-                onPress={() => router.push('/profile')}
+                onPress={() => setShowMealSetupWizard(true)}
               >
                 <Text style={styles.emptyTemplatesButtonText}>Set Up My Meals</Text>
               </TouchableOpacity>
@@ -597,6 +599,26 @@ export default function NutritionTab() {
           userId={userId}
           preselectedMealType={selectedMealType}
         />
+      )}
+
+      {/* Meal Setup Wizard Modal */}
+      {userId && (
+        <Modal
+          visible={showMealSetupWizard}
+          animationType="slide"
+          onRequestClose={() => setShowMealSetupWizard(false)}
+        >
+          <MealSetupWizard
+            userId={userId}
+            onComplete={() => {
+              setShowMealSetupWizard(false)
+              loadMealTemplates()
+            }}
+            onSkip={() => {
+              setShowMealSetupWizard(false)
+            }}
+          />
+        </Modal>
       )}
     </View>
   )
