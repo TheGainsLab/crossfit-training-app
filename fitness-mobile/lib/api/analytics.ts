@@ -706,3 +706,47 @@ export async function fetchMetConAnalytics(
   }
 }
 
+// Fetch Engine Analytics
+export async function fetchEngineAnalytics(userId: number): Promise<any | null> {
+  const supabase = createClient()
+
+  try {
+    // Fetch workout sessions (engine workouts)
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('workout_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+
+    if (sessionsError) {
+      console.error('Error fetching engine sessions:', sessionsError)
+      return null
+    }
+
+    // Separate time trials from regular sessions
+    const timeTrials = sessions?.filter((s: any) => s.day_type === 'time_trial') || []
+    const regularSessions = sessions?.filter((s: any) => s.day_type !== 'time_trial') || []
+
+    // Get unique modalities
+    const modalities = [...new Set(sessions?.map((s: any) => s.modality).filter(Boolean))] as string[]
+
+    // Calculate average performance ratio
+    const sessionsWithRatio = regularSessions.filter((s: any) => s.performance_ratio !== null)
+    const avgPerformanceRatio = sessionsWithRatio.length > 0
+      ? sessionsWithRatio.reduce((sum: number, s: any) => sum + parseFloat(s.performance_ratio), 0) / sessionsWithRatio.length
+      : null
+
+    return {
+      totalSessions: regularSessions.length,
+      totalTimeTrials: timeTrials.length,
+      avgPerformanceRatio,
+      modalities,
+      sessions: regularSessions,
+      timeTrials,
+    }
+  } catch (error) {
+    console.error('Error in fetchEngineAnalytics:', error)
+    return null
+  }
+}
+

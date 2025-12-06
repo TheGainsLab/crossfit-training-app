@@ -1912,6 +1912,8 @@ function MetConTab({ metconData }: { metconData: any }) {
 
 // Engine Tab Component
 function EngineTab({ engineData, userId }: { engineData: any; userId: number | null }) {
+  const [currentView, setCurrentView] = useState('menu')
+  
   if (!engineData) {
     return (
       <View style={styles.sectionGap}>
@@ -1923,74 +1925,146 @@ function EngineTab({ engineData, userId }: { engineData: any; userId: number | n
     )
   }
 
-  if (engineData.totalSessions === 0 && engineData.totalTimeTrials === 0) {
+  const hasData = engineData.totalSessions > 0 || engineData.totalTimeTrials > 0
+
+  const analyticsOptions = [
+    { id: 'overview', title: 'Overview', description: 'Summary stats and recent activity', icon: '📊' },
+    { id: 'history', title: 'My History', description: 'Performance trends by day type and modality', icon: '📈' },
+    { id: 'comparisons', title: 'Comparisons', description: 'Side by side day type analysis', icon: '⚖️' },
+    { id: 'time-trials', title: 'My Time Trials', description: 'Detailed time trial tracking', icon: '🎯' },
+    { id: 'targets', title: 'Targets vs Actual', description: 'Compare performance against targets', icon: '🎪' },
+    { id: 'records', title: 'Personal Records', description: 'Best performances by day type', icon: '🏆' },
+    { id: 'heart-rate', title: 'HR Analytics', description: 'Heart rate analysis and efficiency', icon: '❤️' },
+    { id: 'work-rest', title: 'Work:Rest Ratio', description: 'Interval structure analysis', icon: '⏱️' },
+    { id: 'variability', title: 'Variability Trend', description: 'Consistency tracking', icon: '📉' },
+  ]
+
+  // Render menu view
+  if (currentView === 'menu') {
     return (
       <View style={styles.sectionGap}>
-        <Card>
-          <SectionHeader title="Engine Analytics" />
-          <Text style={styles.noDataText}>
-            No Engine workout data yet. Complete Engine workouts to see detailed analytics!
-          </Text>
-        </Card>
+        {/* Summary Stats */}
+        {hasData && (
+          <Card>
+            <SectionHeader title="Engine Analytics Summary" />
+            <View style={styles.statsRow}>
+              <View style={styles.statCardWrapper}>
+                <StatCard label="Workouts" value={engineData.totalSessions} />
+              </View>
+              <View style={styles.statCardWrapper}>
+                <StatCard label="Time Trials" value={engineData.totalTimeTrials} />
+              </View>
+              {engineData.avgPerformanceRatio !== null && (
+                <View style={styles.statCardWrapper}>
+                  <StatCard
+                    label="Avg Performance"
+                    value={`${(engineData.avgPerformanceRatio * 100).toFixed(0)}%`}
+                  />
+                </View>
+              )}
+            </View>
+          </Card>
+        )}
+
+        {/* No Data State */}
+        {!hasData && (
+          <Card>
+            <SectionHeader title="Engine Analytics" />
+            <Text style={styles.noDataText}>
+              No Engine workout data yet. Complete Engine workouts to see detailed analytics!
+            </Text>
+          </Card>
+        )}
+
+        {/* Analytics Menu */}
+        <SectionHeader title="Analytics" />
+        <View style={styles.activityList}>
+          {analyticsOptions.map((option) => (
+            <TouchableOpacity
+              key={option.id}
+              onPress={() => setCurrentView(option.id)}
+              activeOpacity={0.7}
+            >
+              <Card>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 32, marginRight: 12 }}>{option.icon}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#333333', marginBottom: 4 }}>
+                      {option.title}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: '#4B5563' }}>
+                      {option.description}
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 18, color: '#9CA3AF' }}>›</Text>
+                </View>
+              </Card>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
     )
   }
 
+  // Render detail views
+  return (
+    <View style={styles.sectionGap}>
+      {/* Back button */}
+      <TouchableOpacity
+        onPress={() => setCurrentView('menu')}
+        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
+        activeOpacity={0.7}
+      >
+        <Text style={{ fontSize: 16, color: '#FE5858', fontWeight: '600' }}>‹ Back to Menu</Text>
+      </TouchableOpacity>
+
+      {/* Render specific view content */}
+      {currentView === 'overview' && <EngineOverviewView engineData={engineData} />}
+      {currentView === 'history' && <EngineHistoryView engineData={engineData} />}
+      {currentView === 'comparisons' && <EngineComparisonsView engineData={engineData} />}
+      {currentView === 'time-trials' && <EngineTimeTrialsView engineData={engineData} />}
+      {currentView === 'targets' && <EngineTargetsView engineData={engineData} />}
+      {currentView === 'records' && <EngineRecordsView engineData={engineData} />}
+      {currentView === 'heart-rate' && <EngineHeartRateView engineData={engineData} />}
+      {currentView === 'work-rest' && <EngineWorkRestView engineData={engineData} />}
+      {currentView === 'variability' && <EngineVariabilityView engineData={engineData} />}
+    </View>
+  )
+}
+
+// Engine Overview View
+function EngineOverviewView({ engineData }: { engineData: any }) {
   const formatModality = (modality: string) => {
-    return modality
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ')
+    return modality.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
   }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
   return (
     <View style={styles.sectionGap}>
-      {/* Summary Stats */}
       <Card>
-        <SectionHeader title="Engine Analytics" />
+        <SectionHeader title="Overview" />
         <View style={styles.statsRow}>
           <View style={styles.statCardWrapper}>
-            <StatCard
-              label="Total Sessions"
-              value={engineData.totalSessions}
-            />
+            <StatCard label="Total Sessions" value={engineData.totalSessions} />
           </View>
           <View style={styles.statCardWrapper}>
-            <StatCard
-              label="Time Trials"
-              value={engineData.totalTimeTrials}
-            />
+            <StatCard label="Time Trials" value={engineData.totalTimeTrials} />
           </View>
-          {engineData.avgPerformanceRatio !== null && (
-            <View style={styles.statCardWrapper}>
-              <StatCard
-                label="Avg Performance"
-                value={`${(engineData.avgPerformanceRatio * 100).toFixed(0)}%`}
-              />
-            </View>
-          )}
         </View>
       </Card>
 
       {/* Modalities */}
-      {engineData.modalities.length > 0 && (
+      {engineData.modalities?.length > 0 && (
         <Card>
           <SectionHeader title="Modalities" />
           <View style={styles.activityBlocks}>
             {engineData.modalities.map((modality: string, idx: number) => (
               <View key={idx} style={styles.blockBadge}>
-                <Text style={styles.blockBadgeText}>
-                  {formatModality(modality)}
-                </Text>
+                <Text style={styles.blockBadgeText}>{formatModality(modality)}</Text>
               </View>
             ))}
           </View>
@@ -1998,16 +2072,14 @@ function EngineTab({ engineData, userId }: { engineData: any; userId: number | n
       )}
 
       {/* Recent Sessions */}
-      {engineData.sessions.length > 0 && (
+      {engineData.sessions?.length > 0 && (
         <View>
           <SectionHeader title="Recent Sessions" />
           <View style={styles.activityList}>
-            {engineData.sessions.slice(0, 10).map((session: any, index: number) => (
+            {engineData.sessions.slice(0, 5).map((session: any, index: number) => (
               <Card key={session.id || index}>
                 <View style={styles.activityCardHeader}>
-                  <Text style={styles.activityMeta}>
-                    {formatDate(session.date)}
-                  </Text>
+                  <Text style={styles.activityMeta}>{formatDate(session.date)}</Text>
                   {session.day_type && (
                     <Text style={styles.activityMeta}>
                       {session.day_type.charAt(0).toUpperCase() + session.day_type.slice(1)}
@@ -2015,18 +2087,11 @@ function EngineTab({ engineData, userId }: { engineData: any; userId: number | n
                   )}
                 </View>
                 {session.modality && (
-                  <Text style={styles.activityExercisesText}>
-                    {formatModality(session.modality)}
-                  </Text>
+                  <Text style={styles.activityExercisesText}>{formatModality(session.modality)}</Text>
                 )}
                 {session.total_output && (
                   <Text style={styles.activityExercisesText}>
                     Output: {session.total_output} {session.units || ''}
-                  </Text>
-                )}
-                {session.performance_ratio !== null && (
-                  <Text style={styles.activityExercisesText}>
-                    Performance: {(parseFloat(session.performance_ratio) * 100).toFixed(0)}%
                   </Text>
                 )}
               </Card>
@@ -2034,23 +2099,54 @@ function EngineTab({ engineData, userId }: { engineData: any; userId: number | n
           </View>
         </View>
       )}
+    </View>
+  )
+}
 
-      {/* Time Trials */}
-      {engineData.timeTrials.length > 0 && (
-        <View>
-          <SectionHeader title="Time Trials" />
+// Placeholder views for other analytics (to be implemented)
+function EngineHistoryView({ engineData }: { engineData: any }) {
+  return (
+    <Card>
+      <SectionHeader title="My History" />
+      <Text style={styles.noDataText}>Performance history view coming soon!</Text>
+    </Card>
+  )
+}
+
+function EngineComparisonsView({ engineData }: { engineData: any }) {
+  return (
+    <Card>
+      <SectionHeader title="Comparisons" />
+      <Text style={styles.noDataText}>Comparison analytics coming soon!</Text>
+    </Card>
+  )
+}
+
+function EngineTimeTrialsView({ engineData }: { engineData: any }) {
+  const formatModality = (modality: string) => {
+    return modality.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  return (
+    <View style={styles.sectionGap}>
+      <Card>
+        <SectionHeader title="My Time Trials" />
+        {engineData.timeTrials?.length === 0 ? (
+          <Text style={styles.noDataText}>No time trials completed yet.</Text>
+        ) : (
           <View style={styles.activityList}>
-            {engineData.timeTrials.slice(0, 10).map((trial: any, index: number) => (
+            {engineData.timeTrials.map((trial: any, index: number) => (
               <Card key={trial.id || index}>
                 <View style={styles.activityCardHeader}>
-                  <Text style={styles.activityMeta}>
-                    {formatDate(trial.date || trial.created_at)}
-                  </Text>
+                  <Text style={styles.activityMeta}>{formatDate(trial.date || trial.created_at)}</Text>
                 </View>
                 {trial.modality && (
-                  <Text style={styles.activityExercisesText}>
-                    {formatModality(trial.modality)}
-                  </Text>
+                  <Text style={styles.activityExercisesText}>{formatModality(trial.modality)}</Text>
                 )}
                 {trial.total_output && (
                   <Text style={styles.activityExercisesText}>
@@ -2065,8 +2161,53 @@ function EngineTab({ engineData, userId }: { engineData: any; userId: number | n
               </Card>
             ))}
           </View>
-        </View>
-      )}
+        )}
+      </Card>
     </View>
+  )
+}
+
+function EngineTargetsView({ engineData }: { engineData: any }) {
+  return (
+    <Card>
+      <SectionHeader title="Targets vs Actual" />
+      <Text style={styles.noDataText}>Target analysis coming soon!</Text>
+    </Card>
+  )
+}
+
+function EngineRecordsView({ engineData }: { engineData: any }) {
+  return (
+    <Card>
+      <SectionHeader title="Personal Records" />
+      <Text style={styles.noDataText}>Personal records view coming soon!</Text>
+    </Card>
+  )
+}
+
+function EngineHeartRateView({ engineData }: { engineData: any }) {
+  return (
+    <Card>
+      <SectionHeader title="HR Analytics" />
+      <Text style={styles.noDataText}>Heart rate analytics coming soon!</Text>
+    </Card>
+  )
+}
+
+function EngineWorkRestView({ engineData }: { engineData: any }) {
+  return (
+    <Card>
+      <SectionHeader title="Work:Rest Ratio" />
+      <Text style={styles.noDataText}>Work:Rest analysis coming soon!</Text>
+    </Card>
+  )
+}
+
+function EngineVariabilityView({ engineData }: { engineData: any }) {
+  return (
+    <Card>
+      <SectionHeader title="Variability Trend" />
+      <Text style={styles.noDataText}>Variability tracking coming soon!</Text>
+    </Card>
   )
 }
