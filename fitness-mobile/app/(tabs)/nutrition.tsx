@@ -403,7 +403,7 @@ export default function NutritionTab() {
 
         {/* Quick Log - Meal Templates */}
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>⭐ Quick Log</Text>
+          <Text style={styles.sectionTitle}>My Quick Log ({mealTemplates.length})</Text>
           {templatesLoading ? (
             <ActivityIndicator size="small" color="#FE5858" />
           ) : mealTemplates.length === 0 ? (
