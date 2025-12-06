@@ -451,32 +451,6 @@ export default function NutritionTab() {
           )}
         </Card>
 
-        {/* Something Else - Photo/Search */}
-        <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>📸 Something Else?</Text>
-          <View style={styles.alternativeButtonsRow}>
-            <TouchableOpacity
-              style={styles.alternativeButton}
-              onPress={handleImageRecognition}
-              disabled={imageRecognitionLoading}
-              activeOpacity={0.8}
-            >
-              {imageRecognitionLoading ? (
-                <ActivityIndicator size="small" color="#FE5858" />
-              ) : (
-                <Text style={styles.alternativeButtonText}>📷 Take Photo</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.alternativeButton}
-              onPress={() => setShowSearch(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.alternativeButtonText}>🔍 Search</Text>
-            </TouchableOpacity>
-          </View>
-        </Card>
-
         {/* Meal Type Selection */}
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>Select Meal Type</Text>
@@ -486,7 +460,7 @@ export default function NutritionTab() {
                 key={meal.value}
                 onPress={() => {
                   setSelectedMealType(meal.value)
-                  setShowSearch(true)
+                  setShowSearch(false) // Reset search when selecting meal type
                 }}
                 style={[
                   styles.mealTypeButton,
@@ -506,6 +480,34 @@ export default function NutritionTab() {
             ))}
           </View>
         </Card>
+
+        {/* How are we logging it? - Photo/Barcode/Search */}
+        {selectedMealType && (
+          <Card style={styles.card}>
+            <Text style={styles.sectionTitle}>How are we logging it?</Text>
+            <View style={styles.alternativeButtonsRow}>
+              <TouchableOpacity
+                style={styles.alternativeButton}
+                onPress={handleImageRecognition}
+                disabled={imageRecognitionLoading}
+                activeOpacity={0.8}
+              >
+                {imageRecognitionLoading ? (
+                  <ActivityIndicator size="small" color="#FE5858" />
+                ) : (
+                  <Text style={styles.alternativeButtonText}>📷 Take Photo</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.alternativeButton}
+                onPress={() => setShowSearch(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.alternativeButtonText}>🔍 Search</Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
+        )}
 
         {/* Food Search */}
         {showSearch && (
