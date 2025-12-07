@@ -453,12 +453,9 @@ class EngineDatabaseService {
         .eq('user_id', userId)
         .eq('day_type', dayType)
         .eq('modality', modality)
-        .single()
+        .maybeSingle()
       
       if (error) {
-        if (error.code === 'PGRST116') {
-          return null
-        }
         throw error
       }
       

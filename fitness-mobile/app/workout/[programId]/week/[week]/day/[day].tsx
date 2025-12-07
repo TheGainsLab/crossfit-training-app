@@ -162,7 +162,7 @@ export default function WorkoutPage() {
               .eq('user_id', userData.id)
               .eq('metcon_id', data.workout.metconData.id)
               .not('completed_at', 'is', null)
-              .single()
+              .maybeSingle()
             
             setIsMetconCompleted(!!metconCompletion)
           } else {
