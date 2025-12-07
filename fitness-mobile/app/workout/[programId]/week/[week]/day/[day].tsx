@@ -533,42 +533,58 @@ export default function WorkoutPage() {
   const calculateProgress = () => {
     if (!workout) return 0
 
-    // Count exercises, but skip ENGINE and METCONS blocks (handled separately)
+    // Helper to check if an exercise is completed (in any block)
+    const isExerciseCompleted = (exerciseName: string, setNumber: number = 1) => {
+      const setSuffix = setNumber > 1 ? ` - Set ${setNumber}` : ''
+      const exercisePattern = `:${exerciseName}${setSuffix}`
+      return Object.keys(completions).some(key =>
+        key.endsWith(exercisePattern) || key === exerciseName + setSuffix
+      )
+    }
+
+    // Count total and completed exercises
     let totalItems = 0
+    let completedItems = 0
 
     workout.blocks.forEach((block) => {
       const blockNameUpper = (block.blockName || '').toUpperCase().trim()
       if (blockNameUpper === 'ENGINE' || blockNameUpper === 'METCONS') {
         // Skip - these are counted separately
       } else {
-        totalItems += block.exercises.length
+        block.exercises.forEach((ex: any) => {
+          totalItems += 1
+          const setMatch = ex.notes?.match(/Set (\d+)/)
+          const setNumber = setMatch ? parseInt(setMatch[1]) : 1
+          if (isExerciseCompleted(ex.name, setNumber)) {
+            completedItems += 1
+          }
+        })
       }
     })
 
-    // Add metcon tasks count from metconData
-    const metconTasksCount = workout.metconData?.tasks?.length || 0
-    totalItems += metconTasksCount
+    // Add metcon tasks - check each task for completion
+    const metconTasks = workout.metconData?.tasks || []
+    metconTasks.forEach((task: any) => {
+      totalItems += 1
+      if (isExerciseCompleted(task.exercise, 1)) {
+        completedItems += 1
+      }
+    })
 
     // Add 1 for ENGINE if it exists
     if (workout.engineData) {
       totalItems += 1
-    }
-
-    // Count completed items from completions map
-    let completedItems = Object.keys(completions).length
-
-    // Add 1 for ENGINE if completed
-    if (workout.engineData && isEngineCompleted) {
-      completedItems += 1
+      if (isEngineCompleted) {
+        completedItems += 1
+      }
     }
 
     console.log('📊 PROGRESS CALCULATION:', {
       totalItems,
       completedItems,
-      metconTasksCount,
       hasEngineData: !!workout.engineData,
       isEngineCompleted,
-      percentage: Math.round((completedItems / totalItems) * 100)
+      percentage: totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0
     })
 
     return totalItems > 0 ? Math.min(100, (completedItems / totalItems) * 100) : 0
@@ -653,16 +669,17 @@ export default function WorkoutPage() {
             completedCount = isEngineCompleted ? 1 : 0
           } else {
             // Regular exercise blocks (Skills, Technical, Strength, Accessories)
+            // Check if exercise is completed in ANY block (same exercise name counts everywhere)
             completedCount = block.exercises.filter(ex => {
               const setMatch = ex.notes?.match(/Set (\d+)/)
               const setNumber = setMatch ? parseInt(setMatch[1]) : 1
-              // Include block in key to match how completions are stored
-              const baseKey = `${block.blockName}:${ex.name}`
-              const exerciseKey = setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
-              const found = completions[exerciseKey] !== undefined
-              if (block.blockName === 'SKILLS') {
-                console.log(`🔍 SKILLS check: "${exerciseKey}" -> ${found ? 'FOUND' : 'NOT FOUND'}`)
-              }
+              const setSuffix = setNumber > 1 ? ` - Set ${setNumber}` : ''
+
+              // Check if any completion key ends with this exercise name (with optional set suffix)
+              const exercisePattern = `:${ex.name}${setSuffix}`
+              const found = Object.keys(completions).some(key =>
+                key.endsWith(exercisePattern) || key === ex.name + setSuffix
+              )
               return found
             }).length
 
