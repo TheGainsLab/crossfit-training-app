@@ -9,7 +9,7 @@ import {
   Alert,
   StyleSheet
 } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { createClient } from '@/lib/supabase/client'
 import { fetchWorkout } from '@/lib/api/workouts'
 import { Card } from '@/components/ui/Card'
@@ -53,6 +53,13 @@ export default function Dashboard() {
   useEffect(() => {
     loadDashboard()
   }, [])
+
+  // Reload dashboard when screen comes into focus (after logging workouts)
+  useFocusEffect(
+    React.useCallback(() => {
+      loadDashboard()
+    }, [])
+  )
 
   const loadDashboard = async () => {
     try {
