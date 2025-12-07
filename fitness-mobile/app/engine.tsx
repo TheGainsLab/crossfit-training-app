@@ -767,8 +767,49 @@ export default function EnginePage() {
       const avgHR = averageHeartRate ? parseFloat(averageHeartRate) : null
       const peakHR = peakHeartRate ? parseFloat(peakHeartRate) : null
       
-      // Calculate average pace (simplified - would need baseline for actual calculation)
-      const avgPace = totalOutputNum / (sessionData.intervals.reduce((sum, int) => sum + int.duration, 0) / 60)
+      // Calculate average pace
+      const totalDuration = sessionData.intervals.reduce((sum, int) => sum + int.duration, 0)
+      const avgPace = totalOutputNum / (totalDuration / 60)
+      
+      // Calculate average target pace from intervals
+      let avgTargetPace = null
+      if (sessionData.intervals.length > 0 && baselines[selectedModality]?.baseline) {
+        const baseline = baselines[selectedModality].baseline
+        
+        let totalTargetPace = 0
+        let totalTargetDuration = 0
+        
+        sessionData.intervals.forEach(interval => {
+          const paceRange = interval.paceRange
+          const isMaxEffort = paceRange === 'max_effort' || 
+                              (typeof paceRange === 'string' && paceRange.toLowerCase().includes('max'))
+          
+          if (!isMaxEffort && paceRange && Array.isArray(paceRange) && paceRange.length >= 2) {
+            const intensityMultiplier = (paceRange[0] + paceRange[1]) / 2
+            let adjustedMultiplier = intensityMultiplier
+            
+            // Apply performance metrics if available (matches display logic)
+            if (performanceMetrics?.rolling_avg_ratio) {
+              adjustedMultiplier *= performanceMetrics.rolling_avg_ratio
+            }
+            
+            const targetPace = baseline * adjustedMultiplier
+            const duration = interval.duration || 0
+            totalTargetPace += targetPace * duration
+            totalTargetDuration += duration
+          }
+        })
+        
+        if (totalTargetDuration > 0) {
+          avgTargetPace = totalTargetPace / totalTargetDuration
+        }
+      }
+      
+      // Calculate performance ratio (actual / target)
+      let performanceRatio = null
+      if (avgTargetPace && avgTargetPace > 0 && avgPace > 0) {
+        performanceRatio = avgPace / avgTargetPace
+      }
       
       // Calculate total work and rest time
       const totalWorkTime = sessionData.intervals.reduce((sum, int) => sum + int.duration, 0)
@@ -786,8 +827,8 @@ export default function EnginePage() {
         total_output: totalOutputNum,
         actual_pace: avgPace,
         calculated_rpm: avgPace,
-        target_pace: null,
-        performance_ratio: null,
+        target_pace: avgTargetPace,
+        performance_ratio: performanceRatio,
         modality: selectedModality,
         units: timeTrialSelectedUnit,
         average_heart_rate: avgHR,
@@ -812,6 +853,30 @@ export default function EnginePage() {
         } as any)
 
       if (error) throw error
+
+      // Update performance metrics in database
+      if (workout?.day_type && selectedModality) {
+        try {
+          const userIdStr = userId.toString()
+          const isMaxEffort = ['time_trial', 'anaerobic', 'rocket_races_a', 'rocket_races_b'].includes(workout.day_type)
+          
+          // For max effort or when we have performance ratio
+          if (isMaxEffort || performanceRatio) {
+            await engineDatabaseService.updatePerformanceMetrics(
+              userIdStr,
+              workout.day_type,
+              selectedModality,
+              performanceRatio || 0,
+              avgPace,
+              isMaxEffort
+            )
+            console.log('✅ Performance metrics updated')
+          }
+        } catch (metricsError) {
+          console.error('⚠️ Error updating performance metrics:', metricsError)
+          // Don't fail the save if metrics update fails
+        }
+      }
 
       // Show success state
       setSaveSuccess(true)
