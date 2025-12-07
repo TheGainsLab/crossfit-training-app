@@ -177,6 +177,16 @@ export async function fetchWorkout(
       .eq('day', day)
       .eq('user_id', programTyped.user_id)
 
+    // Calculate total exercises, skip METCONS block (counted from metconData.tasks)
+    const blockExercises = (targetDay.blocks || []).reduce(
+      (sum: number, block: any) => {
+        if (block.blockName === 'METCONS') return sum
+        return sum + (block.exercises?.length || 0)
+      },
+      0
+    )
+    const metconTasksCount = targetDay.metconData?.tasks?.length || 0
+
     // Build workout response
     const workout: WorkoutData = {
       programId,
@@ -189,10 +199,7 @@ export async function fetchWorkout(
       blocks: targetDay.blocks || [],
       metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData) : undefined,
       engineData: targetDay.engineData,
-      totalExercises: (targetDay.blocks || []).reduce(
-        (sum: number, block: any) => sum + (block.exercises?.length || 0),
-        0
-      )
+      totalExercises: blockExercises + metconTasksCount
     }
 
     return {

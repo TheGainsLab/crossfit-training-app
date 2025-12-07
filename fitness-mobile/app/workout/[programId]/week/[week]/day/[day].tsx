@@ -528,46 +528,56 @@ export default function WorkoutPage() {
 
   const calculateProgress = () => {
     if (!workout) return 0
-    
-    // Count exercises, but skip ENGINE block (it's handled separately)
+
+    // Count exercises, but skip ENGINE and METCONS blocks (handled separately)
     let totalItems = 0
-    
+
     console.log('🔢 COUNTING BLOCKS:')
     workout.blocks.forEach((block, i) => {
       if (block.blockName === 'ENGINE') {
         console.log(`  Block ${i} (${block.blockName}): SKIPPED (counted separately)`)
+      } else if (block.blockName === 'METCONS') {
+        console.log(`  Block ${i} (${block.blockName}): SKIPPED (counted from metconData.tasks)`)
       } else {
         console.log(`  Block ${i} (${block.blockName}): ${block.exercises.length} exercises`)
         totalItems += block.exercises.length
       }
     })
-    
-    console.log('  Total from blocks (excluding ENGINE):', totalItems)
-    
+
+    console.log('  Total from blocks (excluding ENGINE and METCONS):', totalItems)
+
+    // Add metcon tasks count from metconData
+    const metconTasksCount = workout.metconData?.tasks?.length || 0
+    if (metconTasksCount > 0) {
+      totalItems += metconTasksCount
+      console.log(`  Added ${metconTasksCount} metcon tasks, new total:`, totalItems)
+    }
+
     // Add 1 for ENGINE if it exists
     if (workout.engineData) {
       totalItems += 1
       console.log('  Added 1 for ENGINE, new total:', totalItems)
     }
-    
+
     // Count completed items (metcons already in completions)
     let completedItems = Object.keys(completions).length
     console.log('  Completions count:', completedItems)
-    
+
     // Add 1 for ENGINE if completed
     if (workout.engineData && isEngineCompleted) {
       completedItems += 1
       console.log('  Added 1 for ENGINE completion, new completed:', completedItems)
     }
-    
+
     console.log('📊 PROGRESS CALCULATION:', {
       totalItems,
       completedItems,
+      metconTasksCount,
       hasEngineData: !!workout.engineData,
       isEngineCompleted,
       percentage: Math.round((completedItems / totalItems) * 100)
     })
-    
+
     return totalItems > 0 ? Math.min(100, (completedItems / totalItems) * 100) : 0
   }
 
