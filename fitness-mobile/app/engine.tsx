@@ -324,6 +324,16 @@ export default function EnginePage() {
         selectedModality
       )
       
+      console.log('📈 LOADED PERFORMANCE METRICS:', {
+        dayType: workout.day_type,
+        modality: selectedModality,
+        hasMetrics: !!metrics,
+        rollingAvgRatio: metrics?.rolling_avg_ratio,
+        rollingCount: metrics?.rolling_count,
+        learnedMaxPace: metrics?.learned_max_pace,
+        last4Ratios: metrics?.last_4_ratios
+      })
+      
       setPerformanceMetrics(metrics)
     } catch (error) {
       console.error('Error loading performance metrics:', error)
@@ -802,6 +812,13 @@ export default function EnginePage() {
         
         if (totalTargetDuration > 0) {
           avgTargetPace = totalTargetPace / totalTargetDuration
+          console.log('🎯 TARGET PACE CALCULATED:', {
+            baseline: baselines[selectedModality].baseline,
+            avgTargetPace: avgTargetPace,
+            hadPerformanceMetrics: !!performanceMetrics?.rolling_avg_ratio,
+            rollingAvgRatio: performanceMetrics?.rolling_avg_ratio,
+            totalIntervals: sessionData.intervals.length
+          })
         }
       }
       
@@ -809,6 +826,18 @@ export default function EnginePage() {
       let performanceRatio = null
       if (avgTargetPace && avgTargetPace > 0 && avgPace > 0) {
         performanceRatio = avgPace / avgTargetPace
+        console.log('📊 PERFORMANCE RATIO CALCULATED:', {
+          actualPace: avgPace,
+          targetPace: avgTargetPace,
+          performanceRatio: performanceRatio,
+          percentage: (performanceRatio * 100).toFixed(0) + '% of target'
+        })
+      } else {
+        console.warn('⚠️ PERFORMANCE RATIO NOT CALCULATED:', {
+          avgTargetPace,
+          avgPace,
+          reason: !avgTargetPace ? 'no target pace' : !avgPace ? 'no actual pace' : 'invalid values'
+        })
       }
       
       // Calculate total work and rest time
@@ -819,7 +848,7 @@ export default function EnginePage() {
       const sessionDataToSave = {
         program_day: parseInt(day || '1'),
         program_version: programVersion,
-        program_day_number: parseInt(day || '1'),
+        program_day_number: workout?.day_number || parseInt(day || '1'),
         workout_id: workout?.id,
         day_type: workout?.day_type,
         date: new Date().toISOString().split('T')[0],
@@ -844,6 +873,15 @@ export default function EnginePage() {
         total_work_seconds: totalWorkTime,
         total_rest_seconds: totalRestTime
       }
+
+      console.log('💾 SAVING WORKOUT SESSION:', {
+        target_pace: avgTargetPace,
+        actual_pace: avgPace,
+        performance_ratio: performanceRatio,
+        day_type: workout?.day_type,
+        modality: selectedModality,
+        program_day_number: sessionDataToSave.program_day_number
+      })
 
       const { error } = await supabase
         .from('workout_sessions')
@@ -870,7 +908,14 @@ export default function EnginePage() {
               avgPace,
               isMaxEffort
             )
-            console.log('✅ Performance metrics updated')
+            console.log('✅ PERFORMANCE METRICS UPDATED:', {
+              userId: userIdStr,
+              dayType: workout.day_type,
+              modality: selectedModality,
+              performanceRatio: performanceRatio,
+              actualPace: avgPace,
+              isMaxEffort: isMaxEffort
+            })
           }
         } catch (metricsError) {
           console.error('⚠️ Error updating performance metrics:', metricsError)
@@ -1161,6 +1206,12 @@ export default function EnginePage() {
                         let adjustedMultiplier = intensityMultiplier
                         if (performanceMetrics?.rolling_avg_ratio) {
                           adjustedMultiplier *= performanceMetrics.rolling_avg_ratio
+                          console.log('🔧 APPLYING PERFORMANCE ADJUSTMENT TO DISPLAY:', {
+                            baseIntensity: intensityMultiplier,
+                            rollingAvgRatio: performanceMetrics.rolling_avg_ratio,
+                            adjustedIntensity: adjustedMultiplier,
+                            percentChange: ((adjustedMultiplier / intensityMultiplier - 1) * 100).toFixed(1) + '%'
+                          })
                         }
                         const targetPace = baseline * adjustedMultiplier
                         targetDisplay = `Target: ${Math.round(targetPace)} ${timeTrialSelectedUnit}/min`
