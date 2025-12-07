@@ -656,14 +656,18 @@ export default function WorkoutPage() {
             completedCount = block.exercises.filter(ex => {
               const setMatch = ex.notes?.match(/Set (\d+)/)
               const setNumber = setMatch ? parseInt(setMatch[1]) : 1
-              // Include block in key to match how completions are stored
-              const baseKey = `${block.blockName}:${ex.name}`
-              const exerciseKey = setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
-              const found = completions[exerciseKey] !== undefined
+              const setSuffix = setNumber > 1 ? ` - Set ${setNumber}` : ''
+
+              // Check with block prefix (standard) and without (legacy)
+              const blockKey = `${block.blockName}:${ex.name}${setSuffix}`
+              const legacyKey = `${ex.name}${setSuffix}`
+              const foundBlock = completions[blockKey] !== undefined
+              const foundLegacy = completions[legacyKey] !== undefined
+
               if (block.blockName === 'SKILLS') {
-                console.log(`🔍 SKILLS check: "${exerciseKey}" -> ${found ? 'FOUND' : 'NOT FOUND'}`)
+                console.log(`🔍 SKILLS: "${ex.name}" blockKey="${blockKey}"(${foundBlock}) legacyKey="${legacyKey}"(${foundLegacy})`)
               }
-              return found
+              return foundBlock || foundLegacy
             }).length
 
             totalCount = block.exercises.length
