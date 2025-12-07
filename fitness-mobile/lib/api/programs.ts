@@ -62,17 +62,23 @@ export async function fetchProgramSummaries(
             // Fetch workout to get modified exercise count (accounts for AI modifications)
             let hasEngineData = false
             let engineDayNumber = 0
+            let metconTasksCount = 0
             try {
               const workoutResult = await fetchWorkout(p.id, weekNum, d.day)
               if (workoutResult.success && workoutResult.workout?.blocks) {
-                // Calculate total from modified blocks, skip ENGINE (handled separately)
+                // Calculate total from modified blocks, skip ENGINE and METCONS (handled separately)
                 totalExercises = workoutResult.workout.blocks.reduce(
                   (sum: number, block: any) => {
-                    if (block.blockName === 'ENGINE') return sum
+                    const blockNameUpper = block.blockName?.toUpperCase() || ''
+                    if (blockNameUpper === 'ENGINE' || blockNameUpper === 'METCONS') return sum
                     return sum + (Array.isArray(block.exercises) ? block.exercises.length : 0)
                   },
                   0
                 )
+                
+                // Add metcon tasks count from metconData
+                metconTasksCount = workoutResult.workout.metconData?.tasks?.length || 0
+                totalExercises += metconTasksCount
                 
                 // Check if this workout has ENGINE data
                 if (workoutResult.workout.engineData) {
@@ -94,16 +100,20 @@ export async function fetchProgramSummaries(
             try {
               const { data: completions } = await supabase
                 .from('performance_logs')
-                .select('exercise_name, set_number')
+                .select('block, exercise_name, set_number')
                 .eq('user_id', userId)
                 .eq('program_id', p.id)
                 .eq('week', weekNum)
                 .eq('day', d.day)
 
               if (completions) {
-                // Count unique exercises (handling set numbers)
+                // Count unique exercises (handling set numbers with block prefix)
                 const uniqueExercises = new Set(
-                  completions.map((c: any) => `${c.exercise_name}-${c.set_number || 1}`)
+                  completions.map((c: any) => {
+                    const setNumber = c.set_number || 1
+                    const baseKey = c.block ? `${c.block}:${c.exercise_name}` : c.exercise_name
+                    return setNumber > 1 ? `${baseKey}-${setNumber}` : baseKey
+                  })
                 )
                 completed = uniqueExercises.size
               }
