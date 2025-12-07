@@ -639,7 +639,7 @@ class EngineDatabaseService {
     
     try {
       const { data, error } = await this.supabase
-        .from('engine_user_performance_metrics')
+        .from('user_performance_metrics')
         .select('*')
         .eq('user_id', userId)
         .eq('day_type', dayType)

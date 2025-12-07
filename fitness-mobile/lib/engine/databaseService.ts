@@ -401,13 +401,54 @@ class EngineDatabaseService {
     }
   }
 
+  // Update performance metrics (calls PostgreSQL function)
+  async updatePerformanceMetrics(
+    userId: string,
+    dayType: string,
+    modality: string,
+    performanceRatio: number,
+    actualPace: number,
+    isMaxEffort: boolean
+  ) {
+    if (!this.supabase) {
+      throw new Error('Not connected')
+    }
+    
+    try {
+      console.log('🔄 databaseService.updatePerformanceMetrics called with:', {
+        userId,
+        dayType,
+        modality,
+        performanceRatio,
+        actualPace,
+        isMaxEffort
+      })
+      
+      const { error } = await this.supabase.rpc('update_engine_performance_metrics', {
+        p_user_id: userId,
+        p_day_type: dayType,
+        p_modality: modality,
+        p_performance_ratio: performanceRatio,
+        p_actual_pace: actualPace
+      })
+      
+      if (error) throw error
+      
+      console.log('✅ databaseService.updatePerformanceMetrics success')
+      return true
+    } catch (error) {
+      console.error('❌ Error calling update_engine_performance_metrics:', error)
+      throw error
+    }
+  }
+
   // Get rolling performance metrics for a user/day_type/modality
   async getPerformanceMetrics(userId: string, dayType: string, modality: string) {
     if (!this.supabase) return null
     
     try {
       const { data, error } = await this.supabase
-        .from('engine_user_performance_metrics')
+        .from('user_performance_metrics')
         .select('*')
         .eq('user_id', userId)
         .eq('day_type', dayType)
