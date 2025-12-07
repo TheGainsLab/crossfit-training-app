@@ -147,6 +147,7 @@ export default function WorkoutPage() {
               }
             })
             console.log('🔑 COMPLETION KEYS:', Object.keys(completionMap))
+            console.log('📦 RAW COMPLETIONS FROM DB:', data.completions.map((c: any) => ({ block: c.block, name: c.exercise_name })))
             setCompletions(completionMap)
           }
           
