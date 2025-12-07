@@ -43,7 +43,7 @@ export default function Dashboard() {
   const [userName, setUserName] = useState('')
   const [subscriptionTier, setSubscriptionTier] = useState('')
   const [userId, setUserId] = useState<number | null>(null)
-  const [totalCompletedWorkouts, setTotalCompletedWorkouts] = useState(0)
+  const [totalCompletedBlocks, setTotalCompletedBlocks] = useState(0)
   const [programName, setProgramName] = useState('')
   const [totalProgramDays, setTotalProgramDays] = useState(0)
   const [currentDay, setCurrentDay] = useState(0)
@@ -98,8 +98,8 @@ export default function Dashboard() {
         setPrograms(programs)
         setSelectedProgram(program)
 
-        // Calculate total completed workouts (days with 100% completion)
-        await calculateCompletedWorkouts(userData.id, programs)
+        // Calculate total completed blocks (training blocks at 100% completion)
+        await calculateCompletedBlocks(userData.id, programs)
 
         // Calculate program context (name, total days, current day, month progress)
         await calculateProgramContext(program, userData.subscription_tier || 'Premium', userData.id)
@@ -241,54 +241,102 @@ export default function Dashboard() {
     }
   }
 
-  const calculateCompletedWorkouts = async (userId: number, programs: Program[]) => {
+  const calculateCompletedBlocks = async (userId: number, programs: Program[]) => {
     try {
+      // Count individual training blocks (SKILLS, TECHNICAL, STRENGTH, ACCESSORIES, METCONS, ENGINE)
       const supabase = createClient()
-      // Use a Set to track unique training days (program_id-week-day)
-      const uniqueTrainingDays = new Set<string>()
+      let totalCompletedBlocks = 0
 
-      // For each program, count days with at least one exercise completed
+      // For each program, check block completion status
       for (const program of programs) {
-        // Fetch all completions for this program
+        const availableWeeks = program.weeks_generated || []
+        
+        // Fetch all completions for this program in one query
         const { data: completions } = await supabase
           .from('performance_logs')
-          .select('week, day')
+          .select('week, day, block, exercise_name, set_number')
           .eq('user_id', userId)
           .eq('program_id', program.id)
 
-        if (completions) {
-          // Add each unique day to the set
-          completions.forEach((comp: any) => {
-            if (comp.week && comp.day) {
-              const dayKey = `${program.id}-${comp.week}-${comp.day}`
-              uniqueTrainingDays.add(dayKey)
-            }
-          })
-        }
+        if (!completions) continue
 
-        // Also count completed metcons for this program
-        const { data: metcons } = await supabase
-          .from('program_metcons')
-          .select('week, day')
-          .eq('user_id', userId)
-          .eq('program_id', program.id)
-          .not('completed_at', 'is', null)
+        // Group completions by week, day, and block
+        const completionsByBlock: Record<string, Set<string>> = {}
+        completions.forEach((comp: any) => {
+          const key = `${comp.week}-${comp.day}-${comp.block || 'unknown'}`
+          if (!completionsByBlock[key]) {
+            completionsByBlock[key] = new Set()
+          }
+          const setNumber = comp.set_number || 1
+          const baseKey = comp.block ? `${comp.block}:${comp.exercise_name}` : comp.exercise_name
+          const exerciseKey = setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
+          completionsByBlock[key].add(exerciseKey)
+        })
 
-        if (metcons) {
-          // Add each unique metcon day to the set
-          metcons.forEach((metcon: any) => {
-            if (metcon.week && metcon.day) {
-              const dayKey = `${program.id}-${metcon.week}-${metcon.day}`
-              uniqueTrainingDays.add(dayKey)
+        // Check each day's blocks for 100% completion
+        for (const week of availableWeeks) {
+          for (let day = 1; day <= 5; day++) {
+            const data = await fetchWorkout(program.id, week, day)
+            
+            if (data.success && data.workout) {
+              // Check each regular block (not METCONS or ENGINE)
+              for (const block of data.workout.blocks) {
+                const blockNameUpper = (block.blockName || '').toUpperCase().trim()
+                
+                if (blockNameUpper === 'METCONS') {
+                  // Check METCONS completion via program_metcons table
+                  if (data.workout.metconData?.id) {
+                    const { data: metconCompletion } = await supabase
+                      .from('program_metcons')
+                      .select('id')
+                      .eq('program_id', program.id)
+                      .eq('week', week)
+                      .eq('day', day)
+                      .eq('user_id', userId)
+                      .eq('metcon_id', data.workout.metconData.id)
+                      .not('completed_at', 'is', null)
+                      .maybeSingle()
+                    
+                    if (metconCompletion) {
+                      totalCompletedBlocks++
+                    }
+                  }
+                } else if (blockNameUpper === 'ENGINE') {
+                  // Check ENGINE completion via workout_sessions table
+                  if (data.workout.engineData?.dayNumber) {
+                    const { data: engineSession } = await supabase
+                      .from('workout_sessions')
+                      .select('id')
+                      .eq('user_id', userId)
+                      .eq('program_day_number', data.workout.engineData.dayNumber)
+                      .eq('completed', true)
+                      .limit(1)
+                      .maybeSingle()
+                    
+                    if (engineSession) {
+                      totalCompletedBlocks++
+                    }
+                  }
+                } else {
+                  // Regular block - check if all exercises are completed
+                  const blockKey = `${week}-${day}-${block.blockName}`
+                  const completedInBlock = completionsByBlock[blockKey]?.size || 0
+                  const totalInBlock = block.exercises?.length || 0
+                  
+                  if (totalInBlock > 0 && completedInBlock >= totalInBlock) {
+                    totalCompletedBlocks++
+                  }
+                }
+              }
             }
-          })
+          }
         }
       }
 
-      setTotalCompletedWorkouts(uniqueTrainingDays.size)
+      setTotalCompletedBlocks(totalCompletedBlocks)
     } catch (error) {
-      console.error('Error calculating completed workouts:', error)
-      setTotalCompletedWorkouts(0)
+      console.error('Error calculating completed blocks:', error)
+      setTotalCompletedBlocks(0)
     }
   }
 
@@ -510,8 +558,8 @@ export default function Dashboard() {
             </Text>
             <Text style={styles.greetingSubtitle}>
               You've completed{' '}
-              <Text style={styles.completedCount}>{totalCompletedWorkouts}</Text>
-              {' '}Training Day{totalCompletedWorkouts !== 1 ? 's' : ''}
+              <Text style={styles.completedCount}>{totalCompletedBlocks}</Text>
+              {' '}Training Block{totalCompletedBlocks !== 1 ? 's' : ''}
             </Text>
           </View>
         </View>
