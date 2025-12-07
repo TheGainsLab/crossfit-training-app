@@ -177,10 +177,11 @@ export async function fetchWorkout(
       .eq('day', day)
       .eq('user_id', programTyped.user_id)
 
-    // Calculate total exercises, skip METCONS block (counted from metconData.tasks)
+    // Calculate total exercises, skip METCONS and ENGINE blocks (handled separately)
     const blockExercises = (targetDay.blocks || []).reduce(
       (sum: number, block: any) => {
-        if (block.blockName === 'METCONS') return sum
+        const blockNameUpper = block.blockName?.toUpperCase() || ''
+        if (blockNameUpper === 'METCONS' || blockNameUpper === 'ENGINE') return sum
         return sum + (block.exercises?.length || 0)
       },
       0

@@ -153,7 +153,8 @@ export default function Dashboard() {
             // Calculate total exercises, skip ENGINE and METCONS (handled separately)
             let totalExercises = data.workout.blocks.reduce(
               (sum: number, block: any) => {
-                if (block.blockName === 'ENGINE' || block.blockName === 'METCONS') return sum
+                const blockNameUpper = block.blockName?.toUpperCase() || ''
+                if (blockNameUpper === 'ENGINE' || blockNameUpper === 'METCONS') return sum
                 return sum + (block.exercises?.length || 0)
               },
               0
@@ -288,10 +289,11 @@ export default function Dashboard() {
             const data = await fetchWorkout(program.id, week, day)
             
             if (data.success && data.workout) {
-              // Calculate total exercises, skip METCONS block (counted from metconData.tasks)
+              // Calculate total exercises, skip METCONS and ENGINE blocks (handled separately)
               let totalExercises = data.workout.blocks.reduce(
                 (sum: number, block: any) => {
-                  if (block.blockName === 'METCONS') return sum
+                  const blockNameUpper = block.blockName?.toUpperCase() || ''
+                  if (blockNameUpper === 'METCONS' || blockNameUpper === 'ENGINE') return sum
                   return sum + (block.exercises?.length || 0)
                 },
                 0
@@ -300,6 +302,11 @@ export default function Dashboard() {
               // Add metcon tasks count from metconData
               const metconTasksCount = data.workout.metconData?.tasks?.length || 0
               totalExercises += metconTasksCount
+
+              // Add 1 for ENGINE if it exists
+              if (data.workout.engineData) {
+                totalExercises += 1
+              }
 
               if (totalExercises > 0) {
                 const key = `${week}-${day}`

@@ -534,9 +534,10 @@ export default function WorkoutPage() {
 
     console.log('🔢 COUNTING BLOCKS:')
     workout.blocks.forEach((block, i) => {
-      if (block.blockName === 'ENGINE') {
+      const blockNameUpper = block.blockName?.toUpperCase() || ''
+      if (blockNameUpper === 'ENGINE') {
         console.log(`  Block ${i} (${block.blockName}): SKIPPED (counted separately)`)
-      } else if (block.blockName === 'METCONS') {
+      } else if (blockNameUpper === 'METCONS') {
         console.log(`  Block ${i} (${block.blockName}): SKIPPED (counted from metconData.tasks)`)
       } else {
         console.log(`  Block ${i} (${block.blockName}): ${block.exercises.length} exercises`)
