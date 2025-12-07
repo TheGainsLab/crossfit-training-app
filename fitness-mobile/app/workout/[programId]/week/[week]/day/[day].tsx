@@ -133,7 +133,9 @@ export default function WorkoutPage() {
             const completionMap: Record<string, Completion> = {}
             data.completions.forEach((comp: any) => {
               const setNumber = comp.set_number || 1
-              const key = setNumber > 1 ? `${comp.exercise_name} - Set ${setNumber}` : comp.exercise_name
+              // Include block in key to avoid collisions between exercises with same name in different blocks
+              const baseKey = comp.block ? `${comp.block}:${comp.exercise_name}` : comp.exercise_name
+              const key = setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
               completionMap[key] = {
                 exerciseName: comp.exercise_name,
                 setsCompleted: comp.sets_completed,
@@ -532,46 +534,30 @@ export default function WorkoutPage() {
     // Count exercises, but skip ENGINE and METCONS blocks (handled separately)
     let totalItems = 0
 
-    console.log('🔢 COUNTING BLOCKS:')
-    const allExpectedExercises: string[] = []
-    workout.blocks.forEach((block, i) => {
+    workout.blocks.forEach((block) => {
       const blockNameUpper = (block.blockName || '').toUpperCase().trim()
-      if (blockNameUpper === 'ENGINE') {
-        console.log(`  Block ${i} (${block.blockName}): SKIPPED (counted separately)`)
-      } else if (blockNameUpper === 'METCONS') {
-        console.log(`  Block ${i} (${block.blockName}): SKIPPED (counted from metconData.tasks)`)
+      if (blockNameUpper === 'ENGINE' || blockNameUpper === 'METCONS') {
+        // Skip - these are counted separately
       } else {
-        block.exercises.forEach((ex: any) => allExpectedExercises.push(ex.name))
-        console.log(`  Block ${i} (${block.blockName}): ${block.exercises.length} exercises`)
         totalItems += block.exercises.length
       }
     })
-    console.log('  📋 ALL EXPECTED EXERCISES:', JSON.stringify(allExpectedExercises))
-
-    console.log('  Total from blocks (excluding ENGINE and METCONS):', totalItems)
 
     // Add metcon tasks count from metconData
     const metconTasksCount = workout.metconData?.tasks?.length || 0
-    if (metconTasksCount > 0) {
-      totalItems += metconTasksCount
-      console.log(`  Added ${metconTasksCount} metcon tasks, new total:`, totalItems)
-    }
+    totalItems += metconTasksCount
 
     // Add 1 for ENGINE if it exists
     if (workout.engineData) {
       totalItems += 1
-      console.log('  Added 1 for ENGINE, new total:', totalItems)
     }
 
-    // Count completed items (metcons already in completions)
+    // Count completed items from completions map
     let completedItems = Object.keys(completions).length
-    console.log('  Completions count:', completedItems)
-    console.log('  🔑 COMPLETION KEYS:', JSON.stringify(Object.keys(completions)))
 
     // Add 1 for ENGINE if completed
     if (workout.engineData && isEngineCompleted) {
       completedItems += 1
-      console.log('  Added 1 for ENGINE completion, new completed:', completedItems)
     }
 
     console.log('📊 PROGRESS CALCULATION:', {
@@ -668,10 +654,12 @@ export default function WorkoutPage() {
             completedCount = block.exercises.filter(ex => {
               const setMatch = ex.notes?.match(/Set (\d+)/)
               const setNumber = setMatch ? parseInt(setMatch[1]) : 1
-              const exerciseKey = setNumber > 1 ? `${ex.name} - Set ${setNumber}` : ex.name
+              // Include block in key to match how completions are stored
+              const baseKey = `${block.blockName}:${ex.name}`
+              const exerciseKey = setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
               return completions[exerciseKey] !== undefined
             }).length
-            
+
             totalCount = block.exercises.length
           }
           
