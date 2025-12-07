@@ -533,51 +533,29 @@ export default function WorkoutPage() {
   const calculateProgress = () => {
     if (!workout) return 0
 
-    // Collect all unique exercise names (deduplicate across blocks)
-    const allExercises = new Set<string>()
+    // Count exercises, but skip ENGINE and METCONS blocks (handled separately)
+    let totalItems = 0
 
     workout.blocks.forEach((block) => {
       const blockNameUpper = (block.blockName || '').toUpperCase().trim()
-      if (blockNameUpper === 'ENGINE') {
-        // Skip - handled separately
-      } else if (blockNameUpper === 'METCONS') {
-        // Skip - counted from metconData.tasks
+      if (blockNameUpper === 'ENGINE' || blockNameUpper === 'METCONS') {
+        // Skip - these are counted separately
       } else {
-        block.exercises.forEach((ex: any) => {
-          const setMatch = ex.notes?.match(/Set (\d+)/)
-          const setNumber = setMatch ? parseInt(setMatch[1]) : 1
-          const key = setNumber > 1 ? `${ex.name} - Set ${setNumber}` : ex.name
-          allExercises.add(key)
-        })
+        totalItems += block.exercises.length
       }
     })
 
-    // Add metcon tasks (also deduplicated)
-    const metconTasks = workout.metconData?.tasks || []
-    metconTasks.forEach((task: any) => {
-      allExercises.add(task.exercise)
-    })
+    // Add metcon tasks count from metconData
+    const metconTasksCount = workout.metconData?.tasks?.length || 0
+    totalItems += metconTasksCount
 
-    // Total unique exercises + 1 for ENGINE if exists
-    let totalItems = allExercises.size
+    // Add 1 for ENGINE if it exists
     if (workout.engineData) {
       totalItems += 1
     }
 
-    // Count completed: check each unique exercise against completions (any block)
-    let completedItems = 0
-    allExercises.forEach(exerciseName => {
-      // Check if this exercise is completed in ANY block
-      const isCompleted = Object.keys(completions).some(key => {
-        // Key format is "BLOCK:ExerciseName" or "BLOCK:ExerciseName - Set N"
-        const parts = key.split(':')
-        const completedExercise = parts.length > 1 ? parts.slice(1).join(':') : key
-        return completedExercise === exerciseName
-      })
-      if (isCompleted) {
-        completedItems += 1
-      }
-    })
+    // Count completed items from completions map
+    let completedItems = Object.keys(completions).length
 
     // Add 1 for ENGINE if completed
     if (workout.engineData && isEngineCompleted) {
@@ -587,10 +565,10 @@ export default function WorkoutPage() {
     console.log('📊 PROGRESS CALCULATION:', {
       totalItems,
       completedItems,
-      uniqueExercises: allExercises.size,
+      metconTasksCount,
       hasEngineData: !!workout.engineData,
       isEngineCompleted,
-      percentage: totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0
+      percentage: Math.round((completedItems / totalItems) * 100)
     })
 
     return totalItems > 0 ? Math.min(100, (completedItems / totalItems) * 100) : 0
