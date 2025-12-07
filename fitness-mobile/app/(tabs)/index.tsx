@@ -113,11 +113,28 @@ export default function Dashboard() {
         setPrograms(programs)
         setSelectedProgram(program)
 
+        // Batch fetch all completions for the program once
+        const supabase = createClient()
+        const { data: allCompletions } = await supabase
+          .from('performance_logs')
+          .select('program_id, week, day, block, exercise_name, set_number')
+          .eq('user_id', userData.id)
+          .in('program_id', programs.map(p => p.id))
+
+        // Fetch user gender once (needed for workout calculations)
+        const { data: userWithGender } = await supabase
+          .from('users')
+          .select('gender')
+          .eq('id', userData.id)
+          .single()
+
+        const userGender = userWithGender?.gender || 'male'
+
         // Calculate total completed blocks (training blocks at 100% completion)
-        await calculateCompletedBlocks(userData.id, programs)
+        await calculateCompletedBlocks(userData.id, programs, allCompletions || [])
 
         // Calculate program context (name, total days, current day, month progress)
-        await calculateProgramContext(program, userData.subscription_tier || 'Premium', userData.id)
+        await calculateProgramContext(program, userData.subscription_tier || 'Premium', userData.id, allCompletions || [], userGender)
 
         // Determine which week to show (use the first week that has been generated)
         const availableWeeks = program.weeks_generated || []
@@ -138,7 +155,7 @@ export default function Dashboard() {
     }
   }
 
-  const calculateProgramContext = async (program: any, subscriptionTier: string, userId: number) => {
+  const calculateProgramContext = async (program: any, subscriptionTier: string, userId: number, allCompletions: any[], userGender: string) => {
     try {
       // Determine program name based on subscription tier
       const programType = subscriptionTier === 'APPLIED_POWER' ? 'Applied Power' : 'Full Program'
@@ -162,83 +179,83 @@ export default function Dashboard() {
       let completedDays = 0
 
       // Batch fetch all ENGINE completions once
-      const { data: { user } } = await supabase.auth.getUser()
-      let engineCompletionSet = new Set<number>()
-      if (user) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id')
-          .eq('auth_id', user.id)
-          .single()
-        
-        if (userData) {
-          const { data: engineSessions } = await supabase
-            .from('workout_sessions')
-            .select('program_day_number')
-            .eq('user_id', (userData as any).id)
-            .eq('completed', true)
-          
-          if (engineSessions) {
-            engineSessions.forEach((es: any) => {
-              if (es.program_day_number) {
-                engineCompletionSet.add(es.program_day_number)
-              }
-            })
+      const { data: engineSessions } = await supabase
+        .from('workout_sessions')
+        .select('program_day_number')
+        .eq('user_id', userId)
+        .eq('completed', true)
+
+      const engineCompletionSet = new Set<number>()
+      if (engineSessions) {
+        engineSessions.forEach((es: any) => {
+          if (es.program_day_number) {
+            engineCompletionSet.add(es.program_day_number)
           }
-        }
+        })
       }
 
+      // Filter completions for this program
+      const programCompletions = allCompletions.filter((c: any) => c.program_id === program.id)
+
       // Check days sequentially, stop early once we find first incomplete day
+      // OPTIMIZED: Use program_data directly instead of calling fetchWorkout()
       for (const week of program.weeks_generated || []) {
+        const weekData = weeks.find((w: any) => w.week === week)
+        if (!weekData) continue
+
         for (let day = 1; day <= 5; day++) {
-          const data = await fetchWorkout(program.id, week, day)
-          
-          if (data.success && data.workout) {
-            // Calculate total exercises, skip ENGINE and METCONS (handled separately)
-            let totalExercises = data.workout.blocks.reduce(
-              (sum: number, block: any) => {
-                const blockNameUpper = block.blockName?.toUpperCase() || ''
-                if (blockNameUpper === 'ENGINE' || blockNameUpper === 'METCONS') return sum
-                return sum + (block.exercises?.length || 0)
-              },
-              0
-            )
+          const dayData = weekData.days?.find((d: any) => d.day === day)
+          if (!dayData) continue
 
-            // Add metcon tasks count from metconData
-            const metconTasksCount = data.workout.metconData?.tasks?.length || 0
-            totalExercises += metconTasksCount
+          // Get completions for this day
+          const dayCompletions = programCompletions.filter(
+            (c: any) => c.week === week && c.day === day
+          )
 
-            // Add 1 for ENGINE if it exists
-            const hasEngineData = !!data.workout.engineData
-            if (hasEngineData) {
-              totalExercises += 1
+          // Calculate total exercises from dayData (skip ENGINE and METCONS)
+          let totalExercises = (dayData.blocks || []).reduce(
+            (sum: number, block: any) => {
+              const blockNameUpper = (block.blockName || '').toUpperCase().trim()
+              if (blockNameUpper === 'ENGINE' || blockNameUpper === 'METCONS') return sum
+              return sum + (block.exercises?.length || 0)
+            },
+            0
+          )
+
+          // Add metcon tasks count from metconData
+          const metconTasksCount = dayData.metconData?.tasks?.length || 0
+          totalExercises += metconTasksCount
+
+          // Add 1 for ENGINE if it exists
+          const hasEngineData = !!dayData.engineData
+          if (hasEngineData) {
+            totalExercises += 1
+          }
+
+          if (totalExercises > 0) {
+            let completedExercises = new Set(
+              dayCompletions.map((comp: any) => {
+                const setNumber = comp.set_number || 1
+                const baseKey = comp.block ? `${comp.block}:${comp.exercise_name}` : comp.exercise_name
+                return setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
+              })
+            ).size
+            
+            // Check if ENGINE is completed (from batch query)
+            if (hasEngineData && dayData.engineData?.dayNumber) {
+              if (engineCompletionSet.has(dayData.engineData.dayNumber)) {
+                completedExercises += 1
+              }
             }
 
-            if (totalExercises > 0) {
-              let completedExercises = new Set(
-                (data.completions || []).map((comp: any) => {
-                  const setNumber = comp.set_number || 1
-                  const baseKey = comp.block ? `${comp.block}:${comp.exercise_name}` : comp.exercise_name
-                  return setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
-                })
-              ).size
-              
-              // Check if ENGINE is completed (from batch query)
-              if (hasEngineData && data.workout.engineData?.dayNumber) {
-                if (engineCompletionSet.has(data.workout.engineData.dayNumber)) {
-                  completedExercises += 1
-                }
-              }
-
-              const completionPercentage = Math.round((completedExercises / totalExercises) * 100)
-              
-              if (completionPercentage === 100) {
-                completedDays++
-              } else if (currentDayNum === 0 && completionPercentage < 100) {
-                // Found first incomplete day - can stop checking
-                currentDayNum = completedDays + 1
-                break // Exit inner loop
-              }
+            const completionPercentage = Math.round((completedExercises / totalExercises) * 100)
+            
+            if (completionPercentage === 100) {
+              completedDays++
+            } else if (currentDayNum === 0 && completionPercentage < 100) {
+              // Found first incomplete day - can stop checking
+              currentDayNum = completedDays + 1
+              break // Exit inner loop
             }
           }
         }
@@ -277,7 +294,7 @@ export default function Dashboard() {
     }
   }
 
-  const calculateCompletedBlocks = async (userId: number, programs: Program[]) => {
+  const calculateCompletedBlocks = async (userId: number, programs: Program[], allCompletions: any[]) => {
     try {
       // Count individual training blocks (SKILLS, TECHNICAL, STRENGTH, ACCESSORIES, METCONS, ENGINE)
       // OPTIMIZED: Only check the current/active program instead of all programs
@@ -292,28 +309,24 @@ export default function Dashboard() {
       }
 
       const availableWeeks = activeProgram.weeks_generated || []
+      const programData = activeProgram.program_data || {}
+      const weeks = programData.weeks || []
       
-      // Fetch all completions for this program in one query
-      const { data: completions } = await supabase
-        .from('performance_logs')
-        .select('week, day, block, exercise_name, set_number')
-        .eq('user_id', userId)
-        .eq('program_id', activeProgram.id)
+      // Filter completions for this program
+      const programCompletions = allCompletions.filter((c: any) => c.program_id === activeProgram.id)
 
       // Group completions by week, day, and block
       const completionsByBlock: Record<string, Set<string>> = {}
-      if (completions) {
-        completions.forEach((comp: any) => {
-          const key = `${comp.week}-${comp.day}-${comp.block || 'unknown'}`
-          if (!completionsByBlock[key]) {
-            completionsByBlock[key] = new Set()
-          }
-          const setNumber = comp.set_number || 1
-          const baseKey = comp.block ? `${comp.block}:${comp.exercise_name}` : comp.exercise_name
-          const exerciseKey = setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
-          completionsByBlock[key].add(exerciseKey)
-        })
-      }
+      programCompletions.forEach((comp: any) => {
+        const key = `${comp.week}-${comp.day}-${comp.block || 'unknown'}`
+        if (!completionsByBlock[key]) {
+          completionsByBlock[key] = new Set()
+        }
+        const setNumber = comp.set_number || 1
+        const baseKey = comp.block ? `${comp.block}:${comp.exercise_name}` : comp.exercise_name
+        const exerciseKey = setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
+        completionsByBlock[key].add(exerciseKey)
+      })
 
       // Batch fetch all METCONS completions for this program
       const { data: metconCompletions } = await supabase
@@ -347,39 +360,42 @@ export default function Dashboard() {
       }
 
       // Check each day's blocks for 100% completion (only current program)
+      // OPTIMIZED: Use program_data directly instead of calling fetchWorkout()
       for (const week of availableWeeks) {
+        const weekData = weeks.find((w: any) => w.week === week)
+        if (!weekData) continue
+
         for (let day = 1; day <= 5; day++) {
-          const data = await fetchWorkout(activeProgram.id, week, day)
-          
-          if (data.success && data.workout) {
-            // Check each regular block (not METCONS or ENGINE)
-            for (const block of data.workout.blocks) {
-              const blockNameUpper = (block.blockName || '').toUpperCase().trim()
-              
-              if (blockNameUpper === 'METCONS') {
-                // Check METCONS completion from batch query
-                if (data.workout.metconData?.id) {
-                  const metconKey = `${activeProgram.id}-${week}-${day}-${data.workout.metconData.id}`
-                  if (metconCompletionSet.has(metconKey)) {
-                    totalCompletedBlocks++
-                  }
-                }
-              } else if (blockNameUpper === 'ENGINE') {
-                // Check ENGINE completion from batch query
-                if (data.workout.engineData?.dayNumber) {
-                  if (engineCompletionSet.has(data.workout.engineData.dayNumber)) {
-                    totalCompletedBlocks++
-                  }
-                }
-              } else {
-                // Regular block - check if all exercises are completed
-                const blockKey = `${week}-${day}-${block.blockName}`
-                const completedInBlock = completionsByBlock[blockKey]?.size || 0
-                const totalInBlock = block.exercises?.length || 0
-                
-                if (totalInBlock > 0 && completedInBlock >= totalInBlock) {
+          const dayData = weekData.days?.find((d: any) => d.day === day)
+          if (!dayData) continue
+
+          // Check each regular block (not METCONS or ENGINE)
+          for (const block of dayData.blocks || []) {
+            const blockNameUpper = (block.blockName || '').toUpperCase().trim()
+            
+            if (blockNameUpper === 'METCONS') {
+              // Check METCONS completion from batch query
+              if (dayData.metconData?.id) {
+                const metconKey = `${activeProgram.id}-${week}-${day}-${dayData.metconData.id}`
+                if (metconCompletionSet.has(metconKey)) {
                   totalCompletedBlocks++
                 }
+              }
+            } else if (blockNameUpper === 'ENGINE') {
+              // Check ENGINE completion from batch query
+              if (dayData.engineData?.dayNumber) {
+                if (engineCompletionSet.has(dayData.engineData.dayNumber)) {
+                  totalCompletedBlocks++
+                }
+              }
+            } else {
+              // Regular block - check if all exercises are completed
+              const blockKey = `${week}-${day}-${block.blockName}`
+              const completedInBlock = completionsByBlock[blockKey]?.size || 0
+              const totalInBlock = block.exercises?.length || 0
+              
+              if (totalInBlock > 0 && completedInBlock >= totalInBlock) {
+                totalCompletedBlocks++
               }
             }
           }
