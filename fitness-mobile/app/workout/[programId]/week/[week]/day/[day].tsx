@@ -428,6 +428,7 @@ export default function WorkoutPage() {
             .eq('user_id', userId)
             .eq('week', parseInt(week))
             .eq('day', parseInt(day))
+            .eq('block', 'METCONS')
             .eq('exercise_name', task.exerciseName)
             .eq('set_number', 1)
             .maybeSingle()
