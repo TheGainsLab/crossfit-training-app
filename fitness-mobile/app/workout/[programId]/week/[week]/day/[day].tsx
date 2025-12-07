@@ -540,7 +540,8 @@ export default function WorkoutPage() {
       } else if (blockNameUpper === 'METCONS') {
         console.log(`  Block ${i} (${block.blockName}): SKIPPED (counted from metconData.tasks)`)
       } else {
-        console.log(`  Block ${i} (${block.blockName}): ${block.exercises.length} exercises`)
+        const exerciseNames = block.exercises.map((ex: any) => ex.name)
+        console.log(`  Block ${i} (${block.blockName}): ${block.exercises.length} exercises:`, exerciseNames)
         totalItems += block.exercises.length
       }
     })
@@ -563,6 +564,7 @@ export default function WorkoutPage() {
     // Count completed items (metcons already in completions)
     let completedItems = Object.keys(completions).length
     console.log('  Completions count:', completedItems)
+    console.log('  Completion keys:', Object.keys(completions))
 
     // Add 1 for ENGINE if completed
     if (workout.engineData && isEngineCompleted) {
