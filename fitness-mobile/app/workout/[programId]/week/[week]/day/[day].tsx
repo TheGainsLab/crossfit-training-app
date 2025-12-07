@@ -146,6 +146,7 @@ export default function WorkoutPage() {
                 wasRx: comp.was_rx
               }
             })
+            console.log('🔑 COMPLETION KEYS:', Object.keys(completionMap))
             setCompletions(completionMap)
           }
           
@@ -657,7 +658,11 @@ export default function WorkoutPage() {
               // Include block in key to match how completions are stored
               const baseKey = `${block.blockName}:${ex.name}`
               const exerciseKey = setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
-              return completions[exerciseKey] !== undefined
+              const found = completions[exerciseKey] !== undefined
+              if (block.blockName === 'SKILLS') {
+                console.log(`🔍 SKILLS check: "${exerciseKey}" -> ${found ? 'FOUND' : 'NOT FOUND'}`)
+              }
+              return found
             }).length
 
             totalCount = block.exercises.length
