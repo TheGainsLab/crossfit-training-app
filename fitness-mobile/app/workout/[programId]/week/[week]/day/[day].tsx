@@ -367,18 +367,17 @@ export default function WorkoutPage() {
     return false
   }
 
-  const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
-    const setMatch = exerciseName.match(/Set (\d+)$/)
-    const setNumber = setMatch ? parseInt(setMatch[1]) : 1
-    const cleanExerciseName = exerciseName.replace(/ - Set \d+$/, '')
+  const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>, setNumber: number = 1) => {
+    const setSuffix = setNumber > 1 ? ` - Set ${setNumber}` : ''
+    const completionKey = `${block}:${exerciseName}${setSuffix}`
 
     try {
       const userId = await getCurrentUserId()
 
-      // Optimistic update
+      // Optimistic update with block-prefixed key
       setCompletions(prev => ({
         ...prev,
-        [exerciseName]: { exerciseName, ...completion }
+        [completionKey]: { exerciseName, ...completion }
       }))
 
       await logExerciseCompletion({
@@ -387,7 +386,7 @@ export default function WorkoutPage() {
         week: parseInt(week),
         day: parseInt(day),
         block,
-        exerciseName: cleanExerciseName,
+        exerciseName,
         setNumber,
         ...completion
       })
@@ -396,7 +395,7 @@ export default function WorkoutPage() {
       // Rollback on failure
       setCompletions(prev => {
         const updated = { ...prev }
-        delete updated[exerciseName]
+        delete updated[completionKey]
         return updated
       })
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
@@ -744,18 +743,17 @@ export default function WorkoutPage() {
                     block.exercises.map((exercise, exerciseIndex) => {
                       const setMatch = exercise.notes?.match(/Set (\d+)/)
                       const setNumber = setMatch ? parseInt(setMatch[1]) : 1
-                      const exerciseKey = setNumber > 1
-                        ? `${exercise.name} - Set ${setNumber}`
-                        : exercise.name
+                      const setSuffix = setNumber > 1 ? ` - Set ${setNumber}` : ''
+                      const completionKey = `${block.blockName}:${exercise.name}${setSuffix}`
 
                       return (
                         <ExerciseCard
                           key={exerciseIndex}
                           exercise={exercise}
                           block={block.blockName}
-                          completion={completions[exerciseKey]}
+                          completion={completions[completionKey]}
                           onComplete={(completion) => {
-                            logCompletion(exerciseKey, block.blockName, completion)
+                            logCompletion(exercise.name, block.blockName, completion, setNumber)
                           }}
                         />
                       )
