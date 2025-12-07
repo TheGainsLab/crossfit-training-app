@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useRouter } from 'expo-router'
-import { View, ActivityIndicator } from 'react-native'
+import { View, ActivityIndicator, StyleSheet } from 'react-native'
 import { createClient } from '@/lib/supabase/client'
 
 export default function Index() {
@@ -62,8 +62,17 @@ export default function Index() {
   }
 
   return (
-    <View className="flex-1 bg-ice-blue items-center justify-center">
+    <View style={styles.container}>
       <ActivityIndicator size="large" color="#FE5858" />
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FBFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+})
