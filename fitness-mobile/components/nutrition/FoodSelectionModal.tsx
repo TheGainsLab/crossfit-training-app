@@ -214,7 +214,11 @@ export default function FoodSelectionModal({
               </TouchableOpacity>
             </View>
           ) : foodDetails ? (
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={true}>
+            <ScrollView 
+              style={styles.modalBody} 
+              contentContainerStyle={styles.modalBodyContent}
+              showsVerticalScrollIndicator={true}
+            >
               {/* Serving Selection */}
               {foodDetails.servings && foodDetails.servings.length > 0 && (
                 <View style={styles.modalSection}>
@@ -333,6 +337,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
+    flex: 1,
     paddingTop: 20,
   },
   modalHeader: {
@@ -384,6 +389,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalBody: {
+    flex: 1,
+  },
+  modalBodyContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 40,
