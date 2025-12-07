@@ -301,15 +301,20 @@ export default function Dashboard() {
         const data = await fetchWorkout(programId, week, day)
 
         if (data.success && data.workout) {
-          // Calculate total exercises, skip ENGINE (handled separately)
+          // Calculate total exercises, skip ENGINE and METCONS (handled separately)
           let totalExercises = data.workout.blocks.reduce(
             (sum: number, block: any) => {
-              if (block.blockName === 'ENGINE') return sum
+              const blockNameUpper = block.blockName?.toUpperCase() || ''
+              if (blockNameUpper === 'ENGINE' || blockNameUpper === 'METCONS') return sum
               return sum + (block.exercises?.length || 0)
             },
             0
           )
           
+          // Add metcon tasks count from metconData
+          const metconTasksCount = data.workout.metconData?.tasks?.length || 0
+          totalExercises += metconTasksCount
+
           // Add 1 for ENGINE if it exists
           const hasEngineData = !!data.workout.engineData
           if (hasEngineData) {
