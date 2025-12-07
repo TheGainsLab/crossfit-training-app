@@ -169,9 +169,8 @@ export default function Dashboard() {
               let completedExercises = new Set(
                 (data.completions || []).map((comp: any) => {
                   const setNumber = comp.set_number || 1
-                  return setNumber > 1 
-                    ? `${comp.exercise_name}-${setNumber}`
-                    : comp.exercise_name
+                  const baseKey = comp.block ? `${comp.block}:${comp.exercise_name}` : comp.exercise_name
+                  return setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
                 })
               ).size
               
@@ -321,9 +320,8 @@ export default function Dashboard() {
           let completedExercises = new Set(
             (data.completions || []).map((comp: any) => {
               const setNumber = comp.set_number || 1
-              return setNumber > 1 
-                ? `${comp.exercise_name}-${setNumber}`
-                : comp.exercise_name
+              const baseKey = comp.block ? `${comp.block}:${comp.exercise_name}` : comp.exercise_name
+              return setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
             })
           ).size
           
