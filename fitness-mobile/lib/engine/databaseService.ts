@@ -407,7 +407,7 @@ class EngineDatabaseService {
     
     try {
       const { data, error } = await this.supabase
-        .from('user_performance_metrics')
+        .from('engine_user_performance_metrics')
         .select('*')
         .eq('user_id', userId)
         .eq('day_type', dayType)
