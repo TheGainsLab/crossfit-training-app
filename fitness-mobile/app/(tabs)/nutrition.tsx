@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   View,
   Text,
@@ -58,6 +58,7 @@ export default function NutritionTab() {
   const [foodDetailsModalOpen, setFoodDetailsModalOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [showMealSetupWizard, setShowMealSetupWizard] = useState(false)
+  const [showFavoritesModal, setShowFavoritesModal] = useState(false)
 
   useEffect(() => {
     loadUser()
@@ -341,6 +342,17 @@ export default function NutritionTab() {
   }
 
   const handleDeleteEntry = async (entryId: number) => {
+    console.log('[DELETE] handleDeleteEntry called with entryId:', entryId)
+    console.log('[DELETE] userId:', userId)
+    
+    if (!userId) {
+      Alert.alert('Error', 'Please sign in to delete entries.')
+      return
+    }
+
+    const toDelete = todayLogs.find(log => log.id === entryId)
+    console.log('[DELETE] Found entry to delete:', toDelete)
+
     Alert.alert(
       'Delete Entry',
       'Are you sure you want to delete this food entry?',
@@ -350,18 +362,45 @@ export default function NutritionTab() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            console.log('[DELETE] User confirmed deletion')
+            
+            // Optimistic update
+            if (toDelete) {
+              console.log('[DELETE] Applying optimistic update')
+              setTodayLogs(prev => prev.filter(log => log.id !== entryId))
+              setDailySummary((prevSummary: any) => {
+                if (!prevSummary) return prevSummary
+                return {
+                  ...prevSummary,
+                  total_calories: (prevSummary.total_calories || 0) - (toDelete.calories || 0),
+                  total_protein: (prevSummary.total_protein || 0) - (toDelete.protein || 0),
+                  total_carbohydrate: (prevSummary.total_carbohydrate || 0) - (toDelete.carbohydrate || 0),
+                  total_fat: (prevSummary.total_fat || 0) - (toDelete.fat || 0),
+                }
+              })
+            }
+
             try {
+              console.log('[DELETE] Calling Supabase delete for entryId:', entryId, 'userId:', userId)
               const supabase = createClient()
-              const { error } = await supabase
+              const { error, data } = await supabase
                 .from('food_entries')
                 .delete()
                 .eq('id', entryId)
+                .eq('user_id', userId)
+                .select()
+
+              console.log('[DELETE] Supabase response - data:', data, 'error:', error)
 
               if (error) throw error
+              
+              console.log('[DELETE] Success! Triggering refresh')
               setRefreshKey(prev => prev + 1)
             } catch (error) {
-              console.error('Error deleting entry:', error)
-              Alert.alert('Error', 'Failed to delete entry')
+              console.error('[DELETE] Error deleting entry:', error)
+              Alert.alert('Error', `Failed to delete entry: ${error.message || 'Unknown error'}`)
+              // Re-fetch to restore state if optimistic update was applied
+              setRefreshKey(prev => prev + 1)
             }
           },
         },
@@ -399,11 +438,24 @@ export default function NutritionTab() {
         <Text style={styles.headerTitle}>Nutrition</Text>
 
         {/* Daily Summary Card */}
-        <DailySummaryCard summary={dailySummary} />
+        <DailySummaryCard
+          summary={dailySummary}
+          logs={todayLogs}
+          onDelete={handleDeleteEntry}
+        />
 
         {/* Quick Log - Meal Templates */}
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>My Favorites ({mealTemplates.length})</Text>
+          <View style={styles.templatesHeader}>
+            <Text style={styles.sectionTitle}>My Favorites ({mealTemplates.length})</Text>
+            <TouchableOpacity
+              style={styles.addFavoriteButton}
+              onPress={() => setShowMealSetupWizard(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.addFavoriteButtonText}>Add Favorite</Text>
+            </TouchableOpacity>
+          </View>
           {templatesLoading ? (
             <ActivityIndicator size="small" color="#FE5858" />
           ) : mealTemplates.length === 0 ? (
@@ -438,13 +490,6 @@ export default function NutritionTab() {
                       {Math.round(template.total_calories)} cal • {Math.round(template.total_protein)}g protein
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    style={styles.logTemplateButton}
-                    onPress={() => handleLogTemplate(template.id!)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.logTemplateButtonText}>Log</Text>
-                  </TouchableOpacity>
                 </View>
               ))}
             </View>
@@ -481,7 +526,7 @@ export default function NutritionTab() {
           </View>
         </Card>
 
-        {/* How are we logging it? - Photo/Barcode/Search */}
+        {/* How are we logging it? - Photo/Barcode/Search/Favorites */}
         {selectedMealType && (
           <Card style={styles.card}>
             <Text style={styles.sectionTitle}>How are we logging it?</Text>
@@ -514,6 +559,13 @@ export default function NutritionTab() {
                 activeOpacity={0.8}
               >
                 <Text style={styles.alternativeButtonText}>🔍 Search</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.alternativeButton}
+                onPress={() => setShowFavoritesModal(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.alternativeButtonText}>⭐ Favorites</Text>
               </TouchableOpacity>
             </View>
           </Card>
@@ -591,11 +643,6 @@ export default function NutritionTab() {
           </Card>
         )}
 
-        {/* Today's Food Log */}
-        <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>Today's Food Log</Text>
-          <FoodLogList logs={todayLogs} onDelete={handleDeleteEntry} />
-        </Card>
       </ScrollView>
 
       {/* Food Details Modal */}
@@ -622,9 +669,9 @@ export default function NutritionTab() {
         >
           <MealSetupWizard
             userId={userId}
-            onComplete={() => {
+            onComplete={async () => {
+              await loadMealTemplates()
               setShowMealSetupWizard(false)
-              loadMealTemplates()
             }}
             onSkip={() => {
               setShowMealSetupWizard(false)
@@ -632,35 +679,168 @@ export default function NutritionTab() {
           />
         </Modal>
       )}
+
+      {/* Favorites Selection Modal */}
+      {userId && (
+        <FavoritesModal
+          visible={showFavoritesModal}
+          mealTemplates={mealTemplates}
+          templatesLoading={templatesLoading}
+          selectedMealType={selectedMealType}
+          onClose={() => setShowFavoritesModal(false)}
+          onLogTemplate={async (templateId: number) => {
+            await handleLogTemplate(templateId)
+            setShowFavoritesModal(false)
+            setSelectedMealType(null)
+          }}
+        />
+      )}
     </View>
   )
 }
 
+// Favorites Selection Modal Component
+function FavoritesModal({
+  visible,
+  mealTemplates,
+  templatesLoading,
+  selectedMealType,
+  onClose,
+  onLogTemplate,
+}: {
+  visible: boolean
+  mealTemplates: MealTemplate[]
+  templatesLoading: boolean
+  selectedMealType: string | null
+  onClose: () => void
+  onLogTemplate: (templateId: number) => Promise<void>
+}) {
+  // Filter favorites by selected meal type if one is selected
+  const filteredTemplates = selectedMealType
+    ? mealTemplates.filter(t => t.meal_type === selectedMealType)
+    : mealTemplates
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>
+              {selectedMealType ? `Favorites - ${mealTypeLabels[selectedMealType]}` : 'My Favorites'}
+            </Text>
+            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
+              <Text style={styles.modalClose}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={true}>
+            {templatesLoading ? (
+              <View style={styles.modalLoading}>
+                <ActivityIndicator size="large" color="#FE5858" />
+                <Text style={styles.modalLoadingText}>Loading favorites...</Text>
+              </View>
+            ) : filteredTemplates.length === 0 ? (
+              <View style={styles.modalLoading}>
+                <Text style={styles.emptyText}>
+                  {selectedMealType
+                    ? `No favorites for ${mealTypeLabels[selectedMealType]}. Add some from your Profile!`
+                    : 'No favorites yet. Add some from your Profile!'}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.favoritesModalList}>
+                {filteredTemplates.map((template) => (
+                  <TouchableOpacity
+                    key={template.id}
+                    style={styles.favoriteModalItem}
+                    onPress={() => onLogTemplate(template.id!)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.favoriteModalInfo}>
+                      <Text style={styles.favoriteModalName}>
+                        {template.meal_type === 'breakfast' ? '☀️' : 
+                         template.meal_type === 'lunch' ? '🌮' : 
+                         template.meal_type === 'dinner' ? '🍽️' : 
+                         template.meal_type === 'pre_workout' ? '💪' :
+                         template.meal_type === 'post_workout' ? '🥤' : '🍎'}{' '}
+                        {template.template_name}
+                      </Text>
+                      <Text style={styles.favoriteModalDetails}>
+                        {Math.round(template.total_calories)} cal • {Math.round(template.total_protein)}g protein
+                      </Text>
+                    </View>
+                    <Text style={styles.favoriteModalArrow}>→</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  )
+}
+
 // Daily Summary Card Component
-function DailySummaryCard({ summary }: { summary: any }) {
-  if (!summary) {
-    return (
-      <Card style={styles.card}>
-        <Text style={styles.sectionTitle}>Today's Summary</Text>
-        <Text style={styles.emptyText}>No data for today yet. Log some foods to get started!</Text>
-      </Card>
-    )
-  }
+function DailySummaryCard({
+  summary,
+  logs,
+  onDelete,
+}: {
+  summary: any
+  logs: any[]
+  onDelete: (id: number) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
 
-  const calories = summary.total_calories || 0
-  const protein = summary.total_protein || 0
-  const carbs = summary.total_carbohydrate || 0
-  const fat = summary.total_fat || 0
-  const surplusDeficit = summary.surplus_deficit || 0
-  const tdee = summary.tdee_estimate || 0
+  // Derive totals from summary if present, otherwise from logs
+  const calories =
+    (summary?.total_calories ?? 0) ||
+    logs.reduce((sum, log) => sum + (log.calories || 0), 0)
+  const protein =
+    (summary?.total_protein ?? 0) ||
+    logs.reduce((sum, log) => sum + (log.protein || 0), 0)
+  const carbs =
+    (summary?.total_carbohydrate ?? 0) ||
+    logs.reduce((sum, log) => sum + (log.carbohydrate || 0), 0)
+  const fat =
+    (summary?.total_fat ?? 0) ||
+    logs.reduce((sum, log) => sum + (log.fat || 0), 0)
 
+  const tdee = summary?.tdee_estimate || 0
+  const surplusDeficit = summary?.surplus_deficit || 0
   const percentageOfTDEE = tdee > 0 ? Math.round((calories / tdee) * 100) : 0
+
+  // Pass a combined summary down to FoodLogList for TDEE display
+  const effectiveSummary = {
+    total_calories: calories,
+    total_protein: protein,
+    total_carbohydrate: carbs,
+    total_fat: fat,
+    tdee_estimate: tdee || null,
+    surplus_deficit: surplusDeficit || null,
+  }
 
   return (
     <Card style={styles.card}>
-      <Text style={styles.sectionTitle}>Today's Summary</Text>
-      
-      {/* TDEE Progress Bar */}
+      <View style={styles.summaryHeaderRow}>
+        <Text style={styles.sectionTitle}>Today's Summary</Text>
+        <TouchableOpacity
+          onPress={() => setExpanded(!expanded)}
+          style={styles.summaryToggle}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.summaryToggleText}>
+            {expanded ? 'Hide log' : 'Show log'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {tdee > 0 && (
         <View style={styles.tdeeProgressContainer}>
           <View style={styles.tdeeProgressHeader}>
@@ -695,7 +875,8 @@ function DailySummaryCard({ summary }: { summary: any }) {
           <Text style={styles.summaryValue}>{Math.round(fat)}g</Text>
         </View>
       </View>
-      {summary.tdee_estimate && (
+
+      {summary?.tdee_estimate && (
         <View style={styles.tdeeContainer}>
           <View style={styles.tdeeRow}>
             <Text style={styles.tdeeLabel}>TDEE Estimate</Text>
@@ -711,24 +892,56 @@ function DailySummaryCard({ summary }: { summary: any }) {
           )}
         </View>
       )}
+
+      {expanded && (
+        <View style={styles.summaryLogContainer}>
+          <Text style={styles.sectionTitle}>Today's Food Log</Text>
+          <FoodLogList
+            logs={logs}
+            onDelete={onDelete}
+            dailySummary={effectiveSummary}
+          />
+        </View>
+      )}
     </Card>
   )
 }
 
 // Food Log List Component
-function FoodLogList({ logs, onDelete }: { logs: any[]; onDelete: (id: number) => void }) {
+function FoodLogList({ logs, onDelete, dailySummary }: { logs: any[]; onDelete: (id: number) => void; dailySummary: any }) {
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
 
-  const filteredLogs = selectedFilter === 'all'
-    ? logs
-    : logs.filter(log => (log.meal_type || 'other') === selectedFilter)
+  const filteredLogs = useMemo(() => (
+    selectedFilter === 'all'
+      ? logs
+      : logs.filter(log => (log.meal_type || 'other') === selectedFilter)
+  ), [logs, selectedFilter])
 
-  const grouped = filteredLogs.reduce((acc, log) => {
-    const mealType = log.meal_type || 'other'
-    if (!acc[mealType]) acc[mealType] = []
-    acc[mealType].push(log)
-    return acc
-  }, {} as Record<string, any[]>)
+  const grouped = useMemo(() => (
+    filteredLogs.reduce((acc, log) => {
+      const mealType = log.meal_type || 'other'
+      if (!acc[mealType]) acc[mealType] = []
+      acc[mealType].push(log)
+      return acc
+    }, {} as Record<string, any[]>)
+  ), [filteredLogs])
+
+  // Initialize all sections as collapsed by default
+  useEffect(() => {
+    const initialExpanded: Record<string, boolean> = {}
+    Object.keys(grouped).forEach(mealType => {
+      initialExpanded[mealType] = false
+    })
+    setExpandedSections(initialExpanded)
+  }, [filteredLogs])
+
+  const toggleSection = (mealType: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [mealType]: !prev[mealType]
+    }))
+  }
 
   if (logs.length === 0) {
     return (
@@ -739,6 +952,7 @@ function FoodLogList({ logs, onDelete }: { logs: any[]; onDelete: (id: number) =
   }
 
   const mealTypes = ['all', 'breakfast', 'lunch', 'dinner', 'pre_workout', 'post_workout', 'snack', 'other']
+  const tdee = dailySummary?.tdee || null
 
   return (
     <View style={styles.logListContainer}>
@@ -777,33 +991,60 @@ function FoodLogList({ logs, onDelete }: { logs: any[]; onDelete: (id: number) =
         <View style={styles.logGroupsContainer}>
           {Object.entries(grouped).map(([mealType, mealLogs]) => {
             const typedMealLogs = mealLogs as any[]
+            const isExpanded = expandedSections[mealType] !== false
+            
+            // Calculate totals for this meal group
+            const calories = typedMealLogs.reduce((sum, log) => sum + (log.calories || 0), 0)
+            const protein = typedMealLogs.reduce((sum, log) => sum + (log.protein || 0), 0)
+            
             return (
               <View key={mealType} style={styles.logGroup}>
-                <Text style={styles.logGroupTitle}>
-                  {mealTypeLabels[mealType] || mealType}
-                </Text>
-                {typedMealLogs.map((log: any) => (
-                <View key={log.id} style={styles.logItem}>
-                  <View style={styles.logItemContent}>
-                    <Text style={styles.logItemName}>{log.food_name}</Text>
-                    <Text style={styles.logItemDetails}>
-                      {log.serving_description && `${log.number_of_units} × ${log.serving_description}`}
-                      {log.calories && ` • ${Math.round(log.calories)} kcal`}
-                      {log.protein && ` • ${Math.round(log.protein)}g protein`}
+                <TouchableOpacity
+                  onPress={() => toggleSection(mealType)}
+                  style={styles.logGroupHeader}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.logGroupHeaderContent}>
+                    <Text style={styles.logGroupTitle}>
+                      {mealTypeLabels[mealType] || mealType}
                     </Text>
-                    <Text style={styles.logItemTime}>
-                      {new Date(log.logged_at).toLocaleTimeString()}
+                    <Text style={styles.logGroupTotals}>
+                      {Math.round(calories)} cal{tdee ? ` / ${Math.round(tdee)} cal` : ''}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => onDelete(log.id)}
-                    style={styles.deleteButton}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.deleteButtonText}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
+                  <Text style={styles.logGroupChevron}>
+                    {isExpanded ? '▼' : '▶'}
+                  </Text>
+                </TouchableOpacity>
+                {isExpanded && (
+                  <View style={styles.logGroupItems}>
+                    {typedMealLogs.map((log: any) => (
+                      <View key={log.id} style={styles.logItem}>
+                        <View style={styles.logItemContent}>
+                          <Text style={styles.logItemName}>{log.food_name}</Text>
+                          <Text style={styles.logItemDetails}>
+                            {log.serving_description && `${log.number_of_units} × ${log.serving_description}`}
+                            {log.calories && ` • ${Math.round(log.calories)} kcal`}
+                            {log.protein && ` • ${Math.round(log.protein)}g protein`}
+                          </Text>
+                          <Text style={styles.logItemTime}>
+                            {new Date(log.logged_at).toLocaleTimeString()}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => {
+                            console.log('[DELETE] Delete button clicked for log.id:', log.id)
+                            onDelete(log.id)
+                          }}
+                          style={styles.deleteButton}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.deleteButtonText}>Delete</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             )
           })}
@@ -1276,6 +1517,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
+  summaryHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  summaryToggle: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  summaryToggleText: {
+    color: '#FE5858',
+    fontWeight: '600',
+  },
+  summaryLogContainer: {
+    marginTop: 12,
+  },
   summaryItem: {
     width: '48%',
     marginBottom: 16,
@@ -1348,12 +1605,43 @@ const styles = StyleSheet.create({
   },
   logGroup: {
     marginTop: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
+  },
+  logGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    backgroundColor: '#F9FAFB',
+  },
+  logGroupHeaderContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   logGroupTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#374151',
-    marginBottom: 8,
+  },
+  logGroupTotals: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6B7280',
+    marginLeft: 12,
+  },
+  logGroupChevron: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginLeft: 8,
+  },
+  logGroupItems: {
+    paddingHorizontal: 4,
   },
   logItem: {
     flexDirection: 'row',
@@ -1363,6 +1651,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
+    marginHorizontal: 4,
   },
   logItemContent: {
     flex: 1,
@@ -1569,13 +1858,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  // Alternative buttons (Photo/Search)
+  // Alternative buttons (Photo/Search/Favorites)
   alternativeButtonsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   alternativeButton: {
     flex: 1,
+    minWidth: '22%',
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
     paddingVertical: 14,
@@ -1652,6 +1943,57 @@ const styles = StyleSheet.create({
   emptyTemplatesButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  templatesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  addFavoriteButton: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  addFavoriteButtonText: {
+    color: '#FE5858',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  // Favorites Modal Styles
+  favoritesModalList: {
+    gap: 12,
+  },
+  favoriteModalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FBFE',
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  favoriteModalInfo: {
+    flex: 1,
+  },
+  favoriteModalName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 4,
+  },
+  favoriteModalDetails: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  favoriteModalArrow: {
+    fontSize: 20,
+    color: '#FE5858',
     fontWeight: '600',
   },
 })
