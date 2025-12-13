@@ -227,13 +227,22 @@ export default function IntakePage() {
       setActiveSections(config.sections)
       // Reset to first active section
       setCurrentSection(config.sections[0])
-      // Update form arrays to match sport config
+      // Update form arrays to match sport config (only if size doesn't match)
       const totalSkills = config.skillCategories.reduce((sum, cat) => sum + cat.skills.length, 0)
-      setFormData(prev => ({
-        ...prev,
-        skills: new Array(totalSkills).fill("Don't have it"),
-        oneRMs: new Array(config.oneRMLifts.length).fill('')
-      }))
+      
+      setFormData(prev => {
+        // Only reset if array size doesn't match (sport actually changed)
+        const needsSkillsReset = prev.skills.length !== totalSkills
+        const needsOneRMsReset = prev.oneRMs.length !== config.oneRMLifts.length
+        
+        if (!needsSkillsReset && !needsOneRMsReset) return prev
+        
+        return {
+          ...prev,
+          skills: needsSkillsReset ? new Array(totalSkills).fill("Don't have it") : prev.skills,
+          oneRMs: needsOneRMsReset ? new Array(config.oneRMLifts.length).fill('') : prev.oneRMs
+        }
+      })
     }
   }, [sportId])
 
