@@ -220,12 +220,20 @@ export default function IntakePage() {
     loadUserData()
   }, [])
 
-  // Update active sections when sport changes
+  // Update active sections and form arrays when sport changes
   useEffect(() => {
     if (sportId && SPORT_CONFIGS[sportId]) {
-      setActiveSections(SPORT_CONFIGS[sportId].sections)
+      const config = SPORT_CONFIGS[sportId]
+      setActiveSections(config.sections)
       // Reset to first active section
-      setCurrentSection(SPORT_CONFIGS[sportId].sections[0])
+      setCurrentSection(config.sections[0])
+      // Update form arrays to match sport config
+      const totalSkills = config.skillCategories.reduce((sum, cat) => sum + cat.skills.length, 0)
+      setFormData(prev => ({
+        ...prev,
+        skills: new Array(totalSkills).fill("Don't have it"),
+        oneRMs: new Array(config.oneRMLifts.length).fill('')
+      }))
     }
   }, [sportId])
 
@@ -500,7 +508,8 @@ export default function IntakePage() {
     }
 
     draftSaveTimeoutRef.current = setTimeout(() => {
-      if (userId && currentSection > 1) { // Don't auto-save on first section
+      // Auto-save after user has visited section 2+ (indicates they're actively filling out the form)
+      if (userId && currentSection > 1) {
         saveDraft()
       }
     }, 2000) // 2 second debounce
@@ -513,11 +522,30 @@ export default function IntakePage() {
   }, [formData, userId, currentSection])
 
   // ============================================
+  // VALIDATION
+  // ============================================
+  const validateIntake = (): string | null => {
+    if (!formData.name.trim()) return 'Name is required'
+    if (!formData.email.trim()) return 'Email is required'
+    if (!formData.gender) return 'Gender is required'
+    if (!formData.units) return 'Units are required'
+    if (!formData.bodyWeight.trim()) return 'Body weight is required'
+    return null
+  }
+
+  // ============================================
   // COMPLETE INTAKE
   // ============================================
   const completeIntake = async () => {
     if (!userId) {
       Alert.alert('Error', 'User ID not found')
+      return
+    }
+
+    // Validate required fields
+    const validationError = validateIntake()
+    if (validationError) {
+      Alert.alert('Missing Information', validationError)
       return
     }
 
@@ -529,6 +557,7 @@ export default function IntakePage() {
 
       if (!session) {
         Alert.alert('Error', 'Not authenticated')
+        setCompleting(false)
         return
       }
 
@@ -562,6 +591,7 @@ export default function IntakePage() {
       const result = await response.json()
       setIntakeStatus('generating')
       setIsGenerating(true)
+      setCompleting(false) // Reset completing state after successful submission
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to complete intake')
       setCompleting(false)
@@ -655,7 +685,7 @@ export default function IntakePage() {
           <ActivityIndicator size="large" color="#FE5858" />
           <Text style={styles.generatingTitle}>Generating Your Program</Text>
           <Text style={styles.generatingSubtitle}>
-            This takes about 60 seconds. Hang tight while we personalize everything for you.
+            This usually takes 3-5 minutes. Hang tight while we personalize everything for you.
           </Text>
           {draftSaving && (
             <Text style={styles.savingText}>Saving draft...</Text>
