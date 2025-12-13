@@ -16,7 +16,6 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { getMealTemplates, deleteMealTemplate, MealTemplate } from '@/lib/api/mealTemplates'
-import MealSetupWizard from '@/components/nutrition/MealSetupWizard'
 
 interface ProfileData {
   user_summary: {
@@ -149,13 +148,23 @@ const OlympicProgress = ({ lift, weight, current, target, field, isEditing, disp
         <View
           style={[progressStyles.progressBarFill, { width: `${position}%` }]}
         />
+        
+        {/* Current Value Badge - Positioned on bar at current percentage */}
+        {current > 0 && (
+          <View style={[progressStyles.currentValueBadge, { 
+            position: 'absolute',
+            left: `${position}%`,
+            top: -12,
+            marginLeft: -25, // Center the badge
+          }]}>
+            <Text style={progressStyles.currentValueText}>{Math.round(current)}%</Text>
+          </View>
+        )}
       </View>
       
-      {/* Target Label */}
+      {/* Target Label - Below bar on the right */}
       <View style={progressStyles.targetContainer}>
-        <View style={progressStyles.targetBadge}>
-          <Text style={progressStyles.targetText}>{Math.round(current)}% / {Math.round(target)}% target</Text>
-        </View>
+        <Text style={progressStyles.targetText}>{Math.round(target)}%</Text>
       </View>
     </View>
   )
@@ -211,6 +220,16 @@ const FoundationProgress = ({ lift, weight, ratio, thresholds, field, isEditing,
         <View
           style={[progressStyles.foundationProgressFill, { width: `${position}%` }]}
         />
+        
+        {/* Current Value Badge - Positioned on bar at ratio value */}
+        <View style={[progressStyles.currentValueBadge, { 
+          position: 'absolute',
+          left: `${position}%`,
+          top: -12,
+          marginLeft: -25, // Center the badge (approximately half of badge width)
+        }]}>
+          <Text style={progressStyles.currentValueText}>{ratio.toFixed(1)}x</Text>
+        </View>
       </View>
       
       {/* Level Labels */}
@@ -230,13 +249,6 @@ const FoundationProgress = ({ lift, weight, ratio, thresholds, field, isEditing,
         <View style={[progressStyles.levelLabel, progressStyles.levelLabelEnd]}>
           <Text style={progressStyles.levelValue}>{thresholds.elite}</Text>
           <Text style={progressStyles.levelText}>Elite</Text>
-        </View>
-      </View>
-      
-      {/* Current Value */}
-      <View style={progressStyles.currentValueContainer}>
-        <View style={progressStyles.currentValueBadge}>
-          <Text style={progressStyles.currentValueText}>{ratio.toFixed(1)}x</Text>
         </View>
       </View>
     </View>
@@ -303,7 +315,7 @@ const progressStyles = StyleSheet.create({
     left: 0,
     height: 16,
     borderRadius: 999,
-    backgroundColor: '#FE5858',
+    backgroundColor: '#D1D5DB', // Light gray instead of coral
   },
   foundationBarBackground: {
     width: '100%',
@@ -325,18 +337,12 @@ const progressStyles = StyleSheet.create({
     backgroundColor: '#DAE2EA',
   },
   targetContainer: {
-    marginTop: 8,
-    alignItems: 'center',
-  },
-  targetBadge: {
-    backgroundColor: '#DAE2EA',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 4,
+    marginTop: 4,
+    alignItems: 'flex-end', // Align target to the right
   },
   targetText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+    color: '#6B7280', // Lighter gray for target
+    fontSize: 12,
     fontWeight: '500',
   },
   levelLabels: {
@@ -362,15 +368,12 @@ const progressStyles = StyleSheet.create({
     fontWeight: '500',
     color: '#282B34',
   },
-  currentValueContainer: {
-    marginTop: 8,
-    alignItems: 'center',
-  },
   currentValueBadge: {
     backgroundColor: '#FE5858',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 4,
+    minWidth: 50,
   },
   currentValueText: {
     color: '#FFFFFF',
@@ -417,6 +420,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [height, setHeight] = useState<number | null>(null)
   const [age, setAge] = useState<number | null>(null)
+  const [intakeStatus, setIntakeStatus] = useState<string | null>(null)
   const [expandedCategories, setExpandedCategories] = useState<string[]>(['foundation-strength'])
   const [userSkills, setUserSkills] = useState<{[key: string]: string}>({})
   const [editingBenchmark, setEditingBenchmark] = useState<string | null>(null)
@@ -427,7 +431,6 @@ export default function ProfilePage() {
   const [savingLift, setSavingLift] = useState(false)
   const [mealTemplates, setMealTemplates] = useState<MealTemplate[]>([])
   const [templatesLoading, setTemplatesLoading] = useState(false)
-  const [showMealSetupWizard, setShowMealSetupWizard] = useState(false)
 
   useEffect(() => {
     loadProfile()
@@ -451,16 +454,17 @@ export default function ProfilePage() {
         return
       }
 
-      // Get user data for height/age
+      // Get user data for height/age AND intake_status
       const { data: userData } = await supabase
         .from('users')
-        .select('id, height, age')
+        .select('id, height, age, intake_status')
         .eq('auth_id', user.id)
         .single()
 
       if (userData) {
         setHeight(userData.height)
         setAge(userData.age)
+        setIntakeStatus(userData.intake_status)
       }
 
       // Get profile data
@@ -594,6 +598,50 @@ export default function ProfilePage() {
     if (profile?.skills_assessment.intermediate.includes(skillName)) return 'Intermediate'
     if (profile?.skills_assessment.beginner.includes(skillName)) return 'Beginner'
     return "Don't have it"
+  }
+
+  const getSkillDisplayName = (skillName: string): string => {
+    const displayNameMap: { [key: string]: string } = {
+      'Strict Handstand Push-ups': 'Strict H S P U',
+      'Wall Facing Handstand Push-ups': 'Wall Facing H S P U',
+      'Deficit Handstand Push-ups (4")': 'Deficit H S P U (4")',
+      'Pull-ups (kipping or butterfly)': 'Pullups',
+      'Wall Facing Handstand Hold': 'Wall Facing HS Hold',
+      'Freestanding Handstand Hold': 'Freestanding HS Hold',
+      'Handstand Walk (10m or 25\')': 'Handstand Walk',
+      'Handstand Walk Obstacle Crossings': 'HS Walk Obstacle',
+      'Seated Legless Rope Climbs': 'Seated Legless'
+    }
+    return displayNameMap[skillName] || skillName
+  }
+
+  const renderSkillLevelIndicator = (level: string) => {
+    const getFilledCount = (level: string): number => {
+      if (level === 'Advanced') return 3
+      if (level === 'Intermediate') return 2
+      if (level === 'Beginner') return 1
+      return 0 // "Don't have it"
+    }
+
+    const filledCount = getFilledCount(level)
+    
+    return (
+      <View style={{ flexDirection: 'row', gap: 4 }}>
+        {[0, 1, 2].map((index) => (
+          <View
+            key={index}
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              borderWidth: 1,
+              borderColor: '#DAE2EA',
+              backgroundColor: index < filledCount ? '#FE5858' : 'transparent'
+            }}
+          />
+        ))}
+      </View>
+    )
   }
 
   const getCategoryStats = (skills: string[]): string => {
@@ -872,10 +920,55 @@ export default function ProfilePage() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={true}
       >
-        {/* Foundation Strength */}
+        {/* Intake Status Banner */}
+        {(intakeStatus === 'draft' || intakeStatus === null || intakeStatus === 'generating' || intakeStatus === 'failed') && (
+          <Card style={styles.intakeBanner}>
+            {intakeStatus === 'draft' || intakeStatus === null ? (
+              <>
+                <Text style={styles.intakeBannerTitle}>Complete Your Intake</Text>
+                <Text style={styles.intakeBannerText}>
+                  Finish your intake assessment to generate your personalized program.
+                </Text>
+                <Button
+                  variant="primary"
+                  size="md"
+                  onPress={() => router.push('/intake')}
+                  style={styles.intakeBannerButton}
+                >
+                  Complete Intake
+                </Button>
+              </>
+            ) : intakeStatus === 'generating' ? (
+              <>
+                <Text style={styles.intakeBannerTitle}>Generating Your Program</Text>
+                <Text style={styles.intakeBannerText}>
+                  Your personalized program is being created. This usually takes about 60 seconds.
+                </Text>
+                <ActivityIndicator size="small" color="#FE5858" style={{ marginTop: 8 }} />
+              </>
+            ) : intakeStatus === 'failed' ? (
+              <>
+                <Text style={styles.intakeBannerTitle}>Program Generation Failed</Text>
+                <Text style={styles.intakeBannerText}>
+                  There was an error generating your program. Please try completing your intake again.
+                </Text>
+                <Button
+                  variant="primary"
+                  size="md"
+                  onPress={() => router.push('/intake')}
+                  style={styles.intakeBannerButton}
+                >
+                  Retry Intake
+                </Button>
+              </>
+            ) : null}
+          </Card>
+        )}
+
+        {/* BW Strength Ratios */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>FOUNDATION STRENGTH</Text>
+            <Text style={styles.sectionTitle}>BW STRENGTH RATIOS</Text>
             <TouchableOpacity onPress={() => toggleCategory('foundation-strength')}>
               <Text style={styles.toggleText}>
                 [{expandedCategories.includes('foundation-strength') ? '- Hide' : '+ View'}]
@@ -1000,17 +1093,17 @@ export default function ProfilePage() {
             </TouchableOpacity>
           </View>
           <View style={styles.sectionDivider} />
-          <Text style={styles.sectionDescription}>Primary Olympic lifts with bodyweight ratio targets</Text>
+          <Text style={styles.sectionDescription}>Key Olympic lifting ratios</Text>
           
           {expandedCategories.includes('olympic-lifts') && (
             <>
               <OlympicProgress
                 lift="Snatch"
                 weight={formatWeight(profile.one_rms.snatch)}
-                current={profile.one_rms.snatch && profile.user_summary.body_weight
-                  ? Math.round((profile.one_rms.snatch / profile.user_summary.body_weight) * 100)
+                current={profile.one_rms.snatch && profile.one_rms.back_squat
+                  ? Math.round((profile.one_rms.snatch / profile.one_rms.back_squat) * 100)
                   : 0}
-                target={profile.user_summary.gender === 'Female' ? 60 : 75}
+                target={60}
                 field="snatch"
                 isEditing={editingLift === 'snatch'}
                 displayValue={liftValues['snatch'] !== undefined ? liftValues['snatch'] : (profile.one_rms.snatch ? profile.one_rms.snatch.toString() : '')}
@@ -1030,10 +1123,10 @@ export default function ProfilePage() {
               <OlympicProgress
                 lift="Clean & Jerk"
                 weight={formatWeight(profile.one_rms.clean_and_jerk)}
-                current={profile.one_rms.clean_and_jerk && profile.user_summary.body_weight
-                  ? Math.round((profile.one_rms.clean_and_jerk / profile.user_summary.body_weight) * 100)
+                current={profile.one_rms.clean_and_jerk && profile.one_rms.back_squat
+                  ? Math.round((profile.one_rms.clean_and_jerk / profile.one_rms.back_squat) * 100)
                   : 0}
-                target={profile.user_summary.gender === 'Female' ? 75 : 95}
+                target={76}
                 field="clean_and_jerk"
                 isEditing={editingLift === 'clean_and_jerk'}
                 displayValue={liftValues['clean_and_jerk'] !== undefined ? liftValues['clean_and_jerk'] : (profile.one_rms.clean_and_jerk ? profile.one_rms.clean_and_jerk.toString() : '')}
@@ -1211,63 +1304,95 @@ export default function ProfilePage() {
               const cjDeficits = [cjStrengthDeficit, cjReceivingDeficit, cjJerkDeficit].filter(Boolean).length
               const cjStrong = 3 - cjDeficits
 
+              // Create and sort Snatch items (checkmarks first, then X's)
+              const snatchItems = [
+                {
+                  hasDeficit: snatchStrengthDeficit,
+                  title: 'Strength Deficit:',
+                  description: `Snatch (${formatWeight(profile.one_rms.snatch)}) is ${safeRatio(profile.one_rms.snatch, profile.one_rms.back_squat)} of back squat (target: 60%+)`
+                },
+                {
+                  hasDeficit: snatchReceivingDeficit,
+                  title: 'Receiving Position:',
+                  description: `Power snatch is ${safeRatio(profile.one_rms.power_snatch, profile.one_rms.snatch)} of snatch (target: <88%)`
+                },
+                {
+                  hasDeficit: snatchOverheadDeficit,
+                  title: 'Overhead Stability:',
+                  description: `Overhead squat is ${safeRatio(profile.one_rms.overhead_squat, profile.one_rms.snatch)} of snatch (target: 110%+)`
+                }
+              ].sort((a, b) => (a.hasDeficit ? 1 : 0) - (b.hasDeficit ? 1 : 0))
+
+              // Create and sort Clean & Jerk items (checkmarks first, then X's)
+              const cjItems = [
+                {
+                  hasDeficit: cjStrengthDeficit,
+                  title: 'Overall Strength:',
+                  description: `C&J (${formatWeight(profile.one_rms.clean_and_jerk)}) is ${safeRatio(profile.one_rms.clean_and_jerk, profile.one_rms.back_squat)} of back squat (target: 75%+)`
+                },
+                {
+                  hasDeficit: cjReceivingDeficit,
+                  title: 'Receiving Position:',
+                  description: `Power clean is ${safeRatio(profile.one_rms.power_clean, profile.one_rms.clean_only)} of clean (target: <88%)`
+                },
+                {
+                  hasDeficit: cjJerkDeficit,
+                  title: 'Jerk Performance:',
+                  description: `Jerk is ${safeRatio(profile.one_rms.jerk_only, profile.one_rms.clean_only)} of clean (target: 90%+)`
+                }
+              ].sort((a, b) => (a.hasDeficit ? 1 : 0) - (b.hasDeficit ? 1 : 0))
+
               return (
                 <View>
                   <View style={styles.technicalCard}>
                     <Text style={styles.technicalTitle}>
-                      🎯 Snatch Technical Work: {profile.technical_focus.snatch_technical_count} exercises/day
-                    </Text>
-                    <Text style={styles.technicalSubtitle}>
-                      {snatchDeficits} area{snatchDeficits !== 1 ? 's' : ''} need work, {snatchStrong} area{snatchStrong !== 1 ? 's' : ''} strong
+                      Snatch Technical Work
                     </Text>
                     <View style={styles.technicalItems}>
-                      <View style={[styles.technicalItem, snatchStrengthDeficit && styles.technicalItemError]}>
-                        <Text style={styles.technicalIcon}>{snatchStrengthDeficit ? '❌' : '✅'}</Text>
-                        <Text style={[styles.technicalItemText, snatchStrengthDeficit && styles.technicalItemTextError]}>
-                          Strength Deficit: Snatch ({formatWeight(profile.one_rms.snatch)}) is {safeRatio(profile.one_rms.snatch, profile.one_rms.back_squat)} of back squat (target: 60%+)
-                        </Text>
-                      </View>
-                      <View style={[styles.technicalItem, snatchReceivingDeficit && styles.technicalItemError]}>
-                        <Text style={styles.technicalIcon}>{snatchReceivingDeficit ? '❌' : '✅'}</Text>
-                        <Text style={[styles.technicalItemText, snatchReceivingDeficit && styles.technicalItemTextError]}>
-                          Receiving Position: Power snatch is {safeRatio(profile.one_rms.power_snatch, profile.one_rms.snatch)} of snatch (target: &lt;88%)
-                        </Text>
-                      </View>
-                      <View style={[styles.technicalItem, snatchOverheadDeficit && styles.technicalItemError]}>
-                        <Text style={styles.technicalIcon}>{snatchOverheadDeficit ? '❌' : '✅'}</Text>
-                        <Text style={[styles.technicalItemText, snatchOverheadDeficit && styles.technicalItemTextError]}>
-                          Overhead Stability: Overhead squat is {safeRatio(profile.one_rms.overhead_squat, profile.one_rms.snatch)} of snatch (target: 110%+)
-                        </Text>
-                      </View>
+                      {snatchItems.map((item, index) => (
+                        <View key={index} style={[styles.technicalItem, item.hasDeficit && styles.technicalItemError]}>
+                          <Text style={styles.technicalIcon}>{item.hasDeficit ? '❌' : '✅'}</Text>
+                          <Text style={styles.technicalItemText}>
+                            {item.hasDeficit ? (
+                              <>
+                                <Text style={{ color: '#FE5858', fontWeight: 'bold' }}>{item.title} </Text>
+                                <Text style={{ color: '#282B34' }}>{item.description}</Text>
+                              </>
+                            ) : (
+                              <>
+                                <Text style={{ fontWeight: 'bold' }}>{item.title} </Text>
+                                <Text>{item.description}</Text>
+                              </>
+                            )}
+                          </Text>
+                        </View>
+                      ))}
                     </View>
                   </View>
 
                   <View style={styles.technicalCard}>
                     <Text style={styles.technicalTitle}>
-                      🎯 Clean & Jerk Technical Work: {profile.technical_focus.clean_jerk_technical_count} exercises/day
-                    </Text>
-                    <Text style={styles.technicalSubtitle}>
-                      {cjDeficits} area{cjDeficits !== 1 ? 's' : ''} need work, {cjStrong} area{cjStrong !== 1 ? 's' : ''} strong
+                      Clean & Jerk Technical Work
                     </Text>
                     <View style={styles.technicalItems}>
-                      <View style={[styles.technicalItem, cjStrengthDeficit && styles.technicalItemError]}>
-                        <Text style={styles.technicalIcon}>{cjStrengthDeficit ? '❌' : '✅'}</Text>
-                        <Text style={[styles.technicalItemText, cjStrengthDeficit && styles.technicalItemTextError]}>
-                          Overall Strength: C&J ({formatWeight(profile.one_rms.clean_and_jerk)}) is {safeRatio(profile.one_rms.clean_and_jerk, profile.one_rms.back_squat)} of back squat (target: 75%+)
-                        </Text>
-                      </View>
-                      <View style={[styles.technicalItem, cjReceivingDeficit && styles.technicalItemError]}>
-                        <Text style={styles.technicalIcon}>{cjReceivingDeficit ? '❌' : '✅'}</Text>
-                        <Text style={[styles.technicalItemText, cjReceivingDeficit && styles.technicalItemTextError]}>
-                          Receiving Position: Power clean is {safeRatio(profile.one_rms.power_clean, profile.one_rms.clean_only)} of clean (target: &lt;88%)
-                        </Text>
-                      </View>
-                      <View style={[styles.technicalItem, cjJerkDeficit && styles.technicalItemError]}>
-                        <Text style={styles.technicalIcon}>{cjJerkDeficit ? '❌' : '✅'}</Text>
-                        <Text style={[styles.technicalItemText, cjJerkDeficit && styles.technicalItemTextError]}>
-                          Jerk Performance: Jerk is {safeRatio(profile.one_rms.jerk_only, profile.one_rms.clean_only)} of clean (target: 90%+)
-                        </Text>
-                      </View>
+                      {cjItems.map((item, index) => (
+                        <View key={index} style={[styles.technicalItem, item.hasDeficit && styles.technicalItemError]}>
+                          <Text style={styles.technicalIcon}>{item.hasDeficit ? '❌' : '✅'}</Text>
+                          <Text style={styles.technicalItemText}>
+                            {item.hasDeficit ? (
+                              <>
+                                <Text style={{ color: '#FE5858', fontWeight: 'bold' }}>{item.title} </Text>
+                                <Text style={{ color: '#282B34' }}>{item.description}</Text>
+                              </>
+                            ) : (
+                              <>
+                                <Text style={{ fontWeight: 'bold' }}>{item.title} </Text>
+                                <Text>{item.description}</Text>
+                              </>
+                            )}
+                          </Text>
+                        </View>
+                      ))}
                     </View>
                   </View>
                 </View>
@@ -1308,84 +1433,90 @@ export default function ProfilePage() {
               profile.one_rms.weighted_pullup / profile.user_summary.body_weight : 0
             const needsUpperBodyPulling = pullupBenchRatio < 0.4 || pullupBodyweightRatio < 0.33
 
+            // Build text for Upper Body Pulling
+            let upperBodyPullingText = ''
+            if (needsUpperBodyPulling) {
+              upperBodyPullingText = `Weighted pullup (${formatWeight(profile.one_rms.weighted_pullup)}) is ${Math.round(pullupBenchRatio * 100)}% of bench press and ${pullupBodyweightRatio.toFixed(2)}x bodyweight. Target: 40% of bench OR 0.33x bodyweight.`
+            } else {
+              upperBodyPullingText = `Weighted pullup is ${Math.round(pullupBenchRatio * 100)}% of bench press (target: 40%+) and ${pullupBodyweightRatio.toFixed(2)}x bodyweight (target: 0.33x+)`
+            }
+
+            // Build text for Upper Body Pressing
+            let upperBodyPressingText = ''
+            if (needsUpperBodyPressing) {
+              if (benchBodyweightRatio < 0.9 && pushPressStrictRatio > 1.45) {
+                upperBodyPressingText = `Bench press is ${benchBodyweightRatio.toFixed(1)}x bodyweight (target: 0.9x) and push press is ${Math.round(pushPressStrictRatio * 100)}% of strict press (target: <145%).`
+              } else if (benchBodyweightRatio < 0.9) {
+                upperBodyPressingText = `Bench press (${formatWeight(profile.one_rms.bench_press)}) is ${benchBodyweightRatio.toFixed(1)}x bodyweight. Target: 0.9x bodyweight.`
+              } else {
+                upperBodyPressingText = `Push press is ${Math.round(pushPressStrictRatio * 100)}% of strict press, indicating leg compensation. Target: <145%.`
+              }
+            } else {
+              upperBodyPressingText = `Bench press is ${benchBodyweightRatio.toFixed(1)}x bodyweight (target: 0.9x+) and push press is ${Math.round(pushPressStrictRatio * 100)}% of strict press (target: <145%)`
+            }
+
+            // Build text for Upper Back
+            const frontSquatRatio = profile.one_rms.front_squat && profile.one_rms.back_squat ?
+              (profile.one_rms.front_squat / profile.one_rms.back_squat) : 0
+            const upperBackText = needsUpperBack
+              ? `Front squat (${formatWeight(profile.one_rms.front_squat)}) is ${Math.round(frontSquatRatio * 100)}% of back squat. Target: 85%+.`
+              : `Front squat (${formatWeight(profile.one_rms.front_squat)}) is ${Math.round(frontSquatRatio * 100)}% of back squat (target: 85%+)`
+
+            // Build text for Posterior Chain
+            const deadliftBodyweightRatio = profile.one_rms.deadlift && profile.user_summary.body_weight ?
+              (profile.one_rms.deadlift / profile.user_summary.body_weight) : 0
+            const posteriorChainText = needsPosteriorChain
+              ? `Deadlift (${formatWeight(profile.one_rms.deadlift)}) is ${deadliftBodyweightRatio.toFixed(1)}x bodyweight. Target: 2.0x bodyweight.`
+              : `Deadlift (${formatWeight(profile.one_rms.deadlift)}) is ${deadliftBodyweightRatio.toFixed(1)}x bodyweight (target: 2.0x+)`
+
+            // Create and sort accessory items (checkmarks first, then X's)
+            const accessoryItems = [
+              {
+                hasDeficit: needsUpperBodyPulling,
+                title: 'Upper Body Pulling:',
+                description: upperBodyPullingText
+              },
+              {
+                hasDeficit: needsUpperBodyPressing,
+                title: 'Upper Body Pressing:',
+                description: upperBodyPressingText
+              },
+              {
+                hasDeficit: needsUpperBack,
+                title: 'Upper Back:',
+                description: upperBackText
+              },
+              {
+                hasDeficit: needsPosteriorChain,
+                title: 'Posterior Chain:',
+                description: posteriorChainText
+              }
+            ].sort((a, b) => (a.hasDeficit ? 1 : 0) - (b.hasDeficit ? 1 : 0))
+
             return (
-              <View style={styles.accessoryContainer}>
-                <View style={[styles.accessoryCard, needsUpperBodyPulling ? styles.accessoryCardNeeds : styles.accessoryCardGood]}>
-                  <View style={styles.accessoryCardContent}>
-                    <View style={[styles.accessoryIndicator, { backgroundColor: needsUpperBodyPulling ? '#EF4444' : '#10B981' }]} />
-                    <View style={styles.accessoryTextContainer}>
-                      <Text style={styles.accessoryTitle}>Upper Body Pulling</Text>
-                      {needsUpperBodyPulling ? (
-                        <Text style={styles.accessoryText}>
-                          Weighted pullup ({formatWeight(profile.one_rms.weighted_pullup)}) is {Math.round(pullupBenchRatio * 100)}% of bench press and {pullupBodyweightRatio.toFixed(2)}x bodyweight. Target: 40% of bench OR 0.33x bodyweight.
-                        </Text>
-                      ) : (
-                        <Text style={styles.accessoryText}>
-                          Weighted pullup is {Math.round(pullupBenchRatio * 100)}% of bench press (target: 40%+) and {pullupBodyweightRatio.toFixed(2)}x bodyweight (target: 0.33x+)
-                        </Text>
-                      )}
+              <View style={styles.technicalCard}>
+                <Text style={styles.technicalTitle}>
+                  Accessory Needs
+                </Text>
+                <View style={styles.technicalItems}>
+                  {accessoryItems.map((item, index) => (
+                    <View key={index} style={[styles.technicalItem, item.hasDeficit && styles.technicalItemError]}>
+                      <Text style={styles.technicalIcon}>{item.hasDeficit ? '❌' : '✅'}</Text>
+                      <Text style={styles.technicalItemText}>
+                        {item.hasDeficit ? (
+                          <>
+                            <Text style={{ color: '#FE5858', fontWeight: 'bold' }}>{item.title} </Text>
+                            <Text style={{ color: '#282B34' }}>{item.description}</Text>
+                          </>
+                        ) : (
+                          <>
+                            <Text style={{ fontWeight: 'bold' }}>{item.title} </Text>
+                            <Text>{item.description}</Text>
+                          </>
+                        )}
+                      </Text>
                     </View>
-                  </View>
-                </View>
-
-                <View style={[styles.accessoryCard, needsUpperBodyPressing ? styles.accessoryCardNeeds : styles.accessoryCardGood]}>
-                  <View style={styles.accessoryCardContent}>
-                    <View style={[styles.accessoryIndicator, { backgroundColor: needsUpperBodyPressing ? '#EF4444' : '#10B981' }]} />
-                    <View style={styles.accessoryTextContainer}>
-                      <Text style={styles.accessoryTitle}>Upper Body Pressing</Text>
-                      {needsUpperBodyPressing ? (
-                        <Text style={styles.accessoryText}>
-                          {benchBodyweightRatio < 0.9 && pushPressStrictRatio > 1.45 ? (
-                            <>Bench press is {benchBodyweightRatio.toFixed(1)}x bodyweight (target: 0.9x) and push press is {Math.round(pushPressStrictRatio * 100)}% of strict press (target: &lt;145%).</>
-                          ) : benchBodyweightRatio < 0.9 ? (
-                            <>Bench press ({formatWeight(profile.one_rms.bench_press)}) is {benchBodyweightRatio.toFixed(1)}x bodyweight. Target: 0.9x bodyweight.</>
-                          ) : (
-                            <>Push press is {Math.round(pushPressStrictRatio * 100)}% of strict press, indicating leg compensation. Target: &lt;145%.</>
-                          )}
-                        </Text>
-                      ) : (
-                        <Text style={styles.accessoryText}>
-                          Bench press is {benchBodyweightRatio.toFixed(1)}x bodyweight (target: 0.9x+) and push press is {Math.round(pushPressStrictRatio * 100)}% of strict press (target: &lt;145%)
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                </View>
-
-                <View style={[styles.accessoryCard, needsUpperBack ? styles.accessoryCardNeeds : styles.accessoryCardGood]}>
-                  <View style={styles.accessoryCardContent}>
-                    <View style={[styles.accessoryIndicator, { backgroundColor: needsUpperBack ? '#EF4444' : '#10B981' }]} />
-                    <View style={styles.accessoryTextContainer}>
-                      <Text style={styles.accessoryTitle}>Upper Back</Text>
-                      {needsUpperBack ? (
-                        <Text style={styles.accessoryText}>
-                          Front squat ({formatWeight(profile.one_rms.front_squat)}) is {Math.round((profile.one_rms.front_squat! / profile.one_rms.back_squat!) * 100)}% of back squat. Target: 85%+.
-                        </Text>
-                      ) : (
-                        <Text style={styles.accessoryText}>
-                          Front squat ({formatWeight(profile.one_rms.front_squat)}) is {Math.round((profile.one_rms.front_squat! / profile.one_rms.back_squat!) * 100)}% of back squat (target: 85%+)
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                </View>
-
-                <View style={[styles.accessoryCard, needsPosteriorChain ? styles.accessoryCardNeeds : styles.accessoryCardGood]}>
-                  <View style={styles.accessoryCardContent}>
-                    <View style={[styles.accessoryIndicator, { backgroundColor: needsPosteriorChain ? '#EF4444' : '#10B981' }]} />
-                    <View style={styles.accessoryTextContainer}>
-                      <Text style={styles.accessoryTitle}>Posterior Chain</Text>
-                      {needsPosteriorChain ? (
-                        <Text style={styles.accessoryText}>
-                          Deadlift ({formatWeight(profile.one_rms.deadlift)}) is {(profile.one_rms.deadlift! / profile.user_summary.body_weight!).toFixed(1)}x bodyweight. Target: 2.0x bodyweight.
-                        </Text>
-                      ) : (
-                        <Text style={styles.accessoryText}>
-                          Deadlift ({formatWeight(profile.one_rms.deadlift)}) is {(profile.one_rms.deadlift! / profile.user_summary.body_weight!).toFixed(1)}x bodyweight (target: 2.0x+)
-                        </Text>
-                      )}
-                    </View>
-                  </View>
+                  ))}
                 </View>
               </View>
             )
@@ -1395,7 +1526,7 @@ export default function ProfilePage() {
         {/* Conditioning Benchmarks */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>CONDITIONING BENCHMARKS</Text>
+            <Text style={styles.sectionTitle}>CONDITIONING</Text>
             <TouchableOpacity onPress={() => toggleCategory('conditioning-benchmarks')}>
               <Text style={styles.toggleText}>
                 [{expandedCategories.includes('conditioning-benchmarks') ? '- Hide' : '+ View'}]
@@ -1657,16 +1788,8 @@ export default function ProfilePage() {
                     const level = getSkillLevel(skill)
                     return (
                       <View key={skill} style={styles.skillRow}>
-                        <Text style={styles.skillName}>{skill}</Text>
-                        <Text style={[
-                          styles.skillLevel,
-                          level === 'Advanced' && styles.skillLevelAdvanced,
-                          level === 'Intermediate' && styles.skillLevelIntermediate,
-                          level === 'Beginner' && styles.skillLevelBeginner,
-                          (level === "Don't have it") && styles.skillLevelNone
-                        ]}>
-                          {level}
-                        </Text>
+                        <Text style={styles.skillName}>{getSkillDisplayName(skill)}</Text>
+                        {renderSkillLevelIndicator(level)}
                       </View>
                     )
                   })}
@@ -1704,9 +1827,9 @@ export default function ProfilePage() {
                   </Text>
                   <TouchableOpacity
                     style={styles.setupButton}
-                    onPress={() => setShowMealSetupWizard(true)}
+                    onPress={() => router.push('/nutrition?mode=create')}
                   >
-                    <Text style={styles.setupButtonText}>🔄 Set Up My Meals</Text>
+                    <Text style={styles.setupButtonText}>🍽️ Create Your Meals</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -1742,9 +1865,9 @@ export default function ProfilePage() {
                   
                   <TouchableOpacity
                     style={styles.setupButton}
-                    onPress={() => setShowMealSetupWizard(true)}
+                    onPress={() => router.push('/nutrition?mode=edit')}
                   >
-                    <Text style={styles.setupButtonText}>🔄 Re-do Meal Setup</Text>
+                    <Text style={styles.setupButtonText}>✏️ Manage My Meals</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -1753,23 +1876,6 @@ export default function ProfilePage() {
         </View>
       </ScrollView>
 
-      {/* Meal Setup Wizard Modal */}
-      <Modal
-        visible={showMealSetupWizard}
-        animationType="slide"
-        onRequestClose={() => setShowMealSetupWizard(false)}
-      >
-        <MealSetupWizard
-          userId={profile?.user_summary ? (profile.user_summary as any).id || 0 : 0}
-          onComplete={() => {
-            setShowMealSetupWizard(false)
-            loadMealTemplates()
-          }}
-          onSkip={() => {
-            setShowMealSetupWizard(false)
-          }}
-        />
-      </Modal>
     </View>
   )
 }
@@ -1982,11 +2088,11 @@ const styles = StyleSheet.create({
   },
   technicalItemText: {
     fontSize: 14,
-    color: '#FE5858',
+    color: '#282B34', // Dark gray for checkmark items
     flex: 1,
   },
   technicalItemTextError: {
-    color: '#DC2626',
+    color: '#FE5858', // Coral/red for deficit items
   },
   accessoryContainer: {
     gap: 12,
@@ -2185,5 +2291,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#282B34',
     fontWeight: '600',
+  },
+  intakeBanner: {
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FCD34D',
+    borderWidth: 2,
+  },
+  intakeBannerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#92400E',
+    marginBottom: 8,
+  },
+  intakeBannerText: {
+    fontSize: 14,
+    color: '#78350F',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  intakeBannerButton: {
+    alignSelf: 'flex-start',
   },
 })

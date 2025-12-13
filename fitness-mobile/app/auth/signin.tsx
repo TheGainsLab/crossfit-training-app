@@ -45,14 +45,21 @@ export default function SignIn() {
       if (data.user) {
         setMessage('✅ Signed in successfully!')
 
-        // Check user's subscription tier and program status
+        // Check user's subscription tier, intake_status, and program status
         const { data: userData } = await supabase
           .from('users')
-          .select('id, subscription_tier')
+          .select('id, subscription_tier, intake_status')
           .eq('auth_id', data.user.id)
           .single()
 
         if (userData) {
+          // Check intake_status first - redirect to intake if needed
+          const status = userData.intake_status
+          if (status === 'draft' || status === null || status === 'generating' || status === 'failed') {
+            router.replace('/intake')
+            return
+          }
+
           // BTN users should go to workout history
           if (userData.subscription_tier === 'BTN') {
             router.replace('/btn/workouts')
@@ -74,15 +81,11 @@ export default function SignIn() {
             .single()
 
           if (programData) {
-            // User has a program, go to dashboard
-            router.replace('/dashboard')
+            // User has a program, go to tabs (with bottom navigation)
+            router.replace('/(tabs)')
           } else {
-            // No program yet, show message
-            Alert.alert(
-              'No Program Found',
-              'Please complete your intake form on the web app first.',
-              [{ text: 'OK' }]
-            )
+            // No program yet, redirect to intake
+            router.replace('/intake')
           }
         }
       }
@@ -191,7 +194,7 @@ export default function SignIn() {
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>
-                Just completed a purchase? Access your intake form on the web app
+                Just completed a purchase? Complete your intake form to get started.
               </Text>
             </View>
           </View>
