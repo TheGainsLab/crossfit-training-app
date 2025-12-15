@@ -310,7 +310,7 @@ export default function ExerciseCard({
             <Text style={styles.sectionTitle}>QUALITY</Text>
             <View style={styles.qualityGrid}>
               {['A', 'B', 'C', 'D'].map((grade, index) => (
-                <View key={grade} style={index > 0 ? { marginLeft: 8 } : undefined}>
+                <View key={grade} style={[styles.qualityButtonWrapper, index > 0 && styles.qualityButtonSpacing]}>
                   <QualityButton
                     grade={grade}
                     isSelected={formData.quality === grade}
@@ -381,6 +381,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     borderWidth: 2,
+    borderColor: '#282B34',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -388,10 +389,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardDefault: {
-    borderColor: '#DAE2EA',
+    borderColor: '#282B34',
   },
   cardCompleted: {
-    borderColor: '#FE5858',
+    borderColor: '#282B34',
     backgroundColor: '#FFF5F5',
   },
   header: {
@@ -584,8 +585,14 @@ const styles = StyleSheet.create({
   qualityGrid: {
     flexDirection: 'row',
   },
-  qualityButton: {
+  qualityButtonWrapper: {
     flex: 1,
+  },
+  qualityButtonSpacing: {
+    marginLeft: 8,
+  },
+  qualityButton: {
+    width: '100%',
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 2,

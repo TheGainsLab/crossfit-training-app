@@ -737,15 +737,22 @@ export async function fetchMetConAnalytics(
 }
 
 // Fetch Engine Analytics
-export async function fetchEngineAnalytics(userId: number): Promise<any | null> {
+export async function fetchEngineAnalytics(userId: number, programId?: number): Promise<any | null> {
   const supabase = createClient()
 
   try {
     // Fetch workout sessions (engine workouts)
-    const { data: sessions, error: sessionsError } = await supabase
+    let query = supabase
       .from('workout_sessions')
       .select('*')
       .eq('user_id', userId)
+    
+    // Filter by program_id if provided (include old sessions with program_id IS NULL for backward compatibility)
+    if (programId) {
+      query = query.or(`program_id.eq.${programId},program_id.is.null`)
+    }
+    
+    const { data: sessions, error: sessionsError } = await query
       .order('date', { ascending: false })
 
     if (sessionsError) {

@@ -1,18 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClientForRequest } from '@/app/api/utils/create-client-mobile'
+
+// CORS headers helper
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { headers: corsHeaders })
+}
 
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
+    const supabase = await createClientForRequest(request)
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
       return NextResponse.json(
         { error: 'Not authenticated' }, 
-        { status: 401 }
+        { 
+          status: 401,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -26,7 +41,10 @@ export async function PATCH(
     if (userError || !userData) {
       return NextResponse.json(
         { error: 'User not found' }, 
-        { status: 404 }
+        { 
+          status: 404,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -35,7 +53,10 @@ export async function PATCH(
     if (isNaN(workoutId)) {
       return NextResponse.json(
         { error: 'Invalid workout ID' }, 
-        { status: 400 }
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -56,7 +77,10 @@ export async function PATCH(
     if (fetchError || !workout) {
       return NextResponse.json(
         { error: 'Workout not found or access denied' }, 
-        { status: 404 }
+        { 
+          status: 404,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -98,7 +122,10 @@ export async function PATCH(
       console.error('❌ Error updating BTN workout:', updateError)
       return NextResponse.json(
         { error: updateError.message }, 
-        { status: 500 }
+        { 
+          status: 500,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -107,12 +134,17 @@ export async function PATCH(
     return NextResponse.json({ 
       success: true,
       message: 'Result logged successfully'
+    }, {
+      headers: corsHeaders
     })
   } catch (error: any) {
     console.error('❌ Exception updating BTN workout:', error)
     return NextResponse.json(
       { error: error.message }, 
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders
+      }
     )
   }
 }
@@ -123,13 +155,16 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
+    const supabase = await createClientForRequest(request)
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
       return NextResponse.json(
         { error: 'Not authenticated' }, 
-        { status: 401 }
+        { 
+          status: 401,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -142,7 +177,10 @@ export async function DELETE(
     if (!userData) {
       return NextResponse.json(
         { error: 'User not found' }, 
-        { status: 404 }
+        { 
+          status: 404,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -151,7 +189,10 @@ export async function DELETE(
     if (isNaN(workoutId)) {
       return NextResponse.json(
         { error: 'Invalid workout ID' }, 
-        { status: 400 }
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -169,7 +210,10 @@ export async function DELETE(
       console.error('❌ Error deleting BTN workout:', error)
       return NextResponse.json(
         { error: error.message }, 
-        { status: 500 }
+        { 
+          status: 500,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -178,12 +222,17 @@ export async function DELETE(
     return NextResponse.json({ 
       success: true,
       message: 'Workout deleted successfully'
+    }, {
+      headers: corsHeaders
     })
   } catch (error: any) {
     console.error('❌ Exception deleting BTN workout:', error)
     return NextResponse.json(
       { error: error.message }, 
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders
+      }
     )
   }
 }

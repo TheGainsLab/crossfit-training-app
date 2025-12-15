@@ -8,11 +8,9 @@ import {
   ActivityIndicator,
   Alert,
   Switch,
-  Platform,
   StyleSheet
 } from 'react-native'
 import { useRouter } from 'expo-router'
-import { Picker } from '@react-native-picker/picker'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -46,6 +44,14 @@ const basicsEquipment = [
 
 const machinesEquipment = ['Rowing Machine', 'Air Bike', 'Ski Erg', 'Bike Erg']
 const lessCommonEquipment = ['GHD', 'Axle Bar', 'Climbing Rope', 'Pegboard', 'Parallettes', 'Dball', 'Dip Bar', 'Plyo Box', 'HS Walk Obstacle', 'Sandbag']
+
+const airBikeTypes = [
+  'Assault Bike', 'Rogue Echo Bike', 'Schwinn Airdyne',
+  'Concept2 BikeErg', 'Other'
+]
+
+const unitsOptions = ['Imperial (lbs)', 'Metric (kg)']
+const genderOptions = ['Male', 'Female', 'Prefer not to say']
 
 const skillCategories = [
   {
@@ -330,6 +336,25 @@ export default function SettingsPage() {
     }
   }
 
+  const handleSignOut = async () => {
+    console.log('Sign out button pressed') // Debug log
+    try {
+      console.log('Attempting sign out...') // Debug log
+      const supabase = createClient()
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Sign out error:', error)
+        Alert.alert('Error', 'Failed to sign out. Please try again.')
+        return
+      }
+      console.log('Sign out successful, navigating...') // Debug log
+      router.replace('/auth/signin')
+    } catch (err) {
+      console.error('Sign out exception:', err)
+      Alert.alert('Error', 'Failed to sign out. Please try again.')
+    }
+  }
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -431,54 +456,48 @@ export default function SettingsPage() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Units</Text>
-            {Platform.OS === 'ios' ? (
-              <Picker
-                selectedValue={settings.units}
-                onValueChange={(value) => handleSettingsChange('units', value)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Imperial (lbs)" value="Imperial (lbs)" />
-                <Picker.Item label="Metric (kg)" value="Metric (kg)" />
-              </Picker>
-            ) : (
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={settings.units}
-                  onValueChange={(value) => handleSettingsChange('units', value)}
+            <View style={styles.pickerRow}>
+              {unitsOptions.map((unit) => (
+                <TouchableOpacity
+                  key={unit}
+                  style={[
+                    styles.pickerOption,
+                    settings.units === unit && styles.pickerOptionSelected
+                  ]}
+                  onPress={() => handleSettingsChange('units', unit)}
                 >
-                  <Picker.Item label="Imperial (lbs)" value="Imperial (lbs)" />
-                  <Picker.Item label="Metric (kg)" value="Metric (kg)" />
-                </Picker>
-              </View>
-            )}
+                  <Text style={[
+                    styles.pickerOptionText,
+                    settings.units === unit && styles.pickerOptionTextSelected
+                  ]}>
+                    {unit}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Gender</Text>
-            {Platform.OS === 'ios' ? (
-              <Picker
-                selectedValue={settings.gender}
-                onValueChange={(value) => handleSettingsChange('gender', value)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Select gender" value="" />
-                <Picker.Item label="Male" value="Male" />
-                <Picker.Item label="Female" value="Female" />
-                <Picker.Item label="Prefer not to say" value="Prefer not to say" />
-              </Picker>
-            ) : (
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={settings.gender}
-                  onValueChange={(value) => handleSettingsChange('gender', value)}
+            <View style={styles.pickerRow}>
+              {genderOptions.map((gender) => (
+                <TouchableOpacity
+                  key={gender}
+                  style={[
+                    styles.pickerOption,
+                    settings.gender === gender && styles.pickerOptionSelected
+                  ]}
+                  onPress={() => handleSettingsChange('gender', gender)}
                 >
-                  <Picker.Item label="Select gender" value="" />
-                  <Picker.Item label="Male" value="Male" />
-                  <Picker.Item label="Female" value="Female" />
-                  <Picker.Item label="Prefer not to say" value="Prefer not to say" />
-                </Picker>
-              </View>
-            )}
+                  <Text style={[
+                    styles.pickerOptionText,
+                    settings.gender === gender && styles.pickerOptionTextSelected
+                  ]}>
+                    {gender}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </Card>
 
@@ -563,26 +582,67 @@ export default function SettingsPage() {
                     <View key={skill} style={styles.skillItem}>
                       <Text style={styles.skillName}>{skill}</Text>
                       <View style={styles.skillLevels}>
-                        {levels.map(level => {
-                          const isSelected = currentValue === level
-                          return (
+                        {/* First row: first two buttons side-by-side */}
+                        <View style={styles.skillLevelRow}>
+                          {levels.slice(0, 2).map((level) => {
+                            const isSelected = currentValue === level
+                            return (
+                              <TouchableOpacity
+                                key={level}
+                                onPress={() => handleSkillChange(globalIndex, level)}
+                                style={[
+                                  styles.skillLevelButton,
+                                  isSelected ? styles.skillLevelButtonSelected : styles.skillLevelButtonUnselected
+                                ]}
+                              >
+                                <Text style={[
+                                  styles.skillLevelText,
+                                  isSelected ? styles.skillLevelTextSelected : styles.skillLevelTextUnselected
+                                ]}>
+                                  {level}
+                                </Text>
+                              </TouchableOpacity>
+                            )
+                          })}
+                        </View>
+                        {/* Second row: third button alone */}
+                        {levels[2] && (
+                          <View style={styles.skillLevelRow}>
                             <TouchableOpacity
-                              key={level}
-                              onPress={() => handleSkillChange(globalIndex, level)}
+                              onPress={() => handleSkillChange(globalIndex, levels[2])}
                               style={[
                                 styles.skillLevelButton,
-                                isSelected ? styles.skillLevelButtonSelected : styles.skillLevelButtonUnselected
+                                currentValue === levels[2] ? styles.skillLevelButtonSelected : styles.skillLevelButtonUnselected
                               ]}
                             >
                               <Text style={[
                                 styles.skillLevelText,
-                                isSelected ? styles.skillLevelTextSelected : styles.skillLevelTextUnselected
+                                currentValue === levels[2] ? styles.skillLevelTextSelected : styles.skillLevelTextUnselected
                               ]}>
-                                {level}
+                                {levels[2]}
                               </Text>
                             </TouchableOpacity>
-                          )
-                        })}
+                          </View>
+                        )}
+                        {/* Third row: fourth button alone */}
+                        {levels[3] && (
+                          <View style={styles.skillLevelRow}>
+                            <TouchableOpacity
+                              onPress={() => handleSkillChange(globalIndex, levels[3])}
+                              style={[
+                                styles.skillLevelButton,
+                                currentValue === levels[3] ? styles.skillLevelButtonSelected : styles.skillLevelButtonUnselected
+                              ]}
+                            >
+                              <Text style={[
+                                styles.skillLevelText,
+                                currentValue === levels[3] ? styles.skillLevelTextSelected : styles.skillLevelTextUnselected
+                              ]}>
+                                {levels[3]}
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     </View>
                   )
@@ -687,18 +747,26 @@ export default function SettingsPage() {
               />
               {settings.conditioning_benchmarks?.ten_min_air_bike?.trim() && (
                 <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={settings.conditioning_benchmarks?.air_bike_type || ''}
-                    onValueChange={(value) => handleBenchmarkChange('air_bike_type', value)}
-                  >
-                    <Picker.Item label="Select an Air Bike Type" value="" />
-                    <Picker.Item label="Assault Bike" value="Assault Bike" />
-                    <Picker.Item label="Rogue Echo Bike" value="Rogue Echo Bike" />
-                    <Picker.Item label="Schwinn Airdyne" value="Schwinn Airdyne" />
-                    <Picker.Item label="Concept2 BikeErg" value="Concept2 BikeErg" />
-                    <Picker.Item label="Other" value="Other" />
-                    <Picker.Item label="Did not use Air Bike" value="Did not use Air Bike" />
-                  </Picker>
+                  <Text style={styles.benchmarkLabel}>Air Bike Type</Text>
+                  <View style={styles.pickerRow}>
+                    {airBikeTypes.map((type) => (
+                      <TouchableOpacity
+                        key={type}
+                        style={[
+                          styles.pickerOption,
+                          settings.conditioning_benchmarks?.air_bike_type === type && styles.pickerOptionSelected
+                        ]}
+                        onPress={() => handleBenchmarkChange('air_bike_type', type)}
+                      >
+                        <Text style={[
+                          styles.pickerOptionText,
+                          settings.conditioning_benchmarks?.air_bike_type === type && styles.pickerOptionTextSelected
+                        ]}>
+                          {type}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 </View>
               )}
             </View>
@@ -801,6 +869,16 @@ export default function SettingsPage() {
         >
           Save All Changes
         </Button>
+
+        {/* Sign Out Section */}
+        <View style={styles.sectionCard}>
+          <TouchableOpacity
+            style={styles.signOutButton}
+            onPress={handleSignOut}
+          >
+            <Text style={styles.signOutButtonText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   )
@@ -936,10 +1014,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   pickerContainer: {
+    marginTop: 8,
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  pickerOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#D1D5DB',
-    borderRadius: 8,
     backgroundColor: '#FFFFFF',
+    minWidth: 100,
+  },
+  pickerOptionSelected: {
+    backgroundColor: '#FE5858',
+    borderColor: '#FE5858',
+  },
+  pickerOptionText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  pickerOptionTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   sectionTitle: {
     fontSize: 20,
@@ -996,8 +1098,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   skillLevels: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  skillLevelRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
   },
   skillLevelButton: {
@@ -1098,5 +1203,17 @@ const styles = StyleSheet.create({
   saveButton: {
     width: '100%',
     marginBottom: 24,
+  },
+  signOutButton: {
+    backgroundColor: '#FE5858',
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signOutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 })

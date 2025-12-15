@@ -26,12 +26,12 @@ export default function Index() {
         if (userData) {
           // Check subscription tier routing
           if (userData.subscription_tier === 'BTN') {
-            router.replace('/btn/workouts')
+            router.replace('/btn/generate')
             return
           }
 
           if (userData.subscription_tier === 'ENGINE') {
-            router.replace('/engine')
+            router.replace('/engine/training')
             return
           }
 

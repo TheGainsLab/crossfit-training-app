@@ -8,7 +8,9 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
-  Platform
+  Platform,
+  Switch,
+  KeyboardAvoidingView
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { createClient } from '@/lib/supabase/client'
@@ -130,8 +132,18 @@ const SPORT_CONFIGS: Record<number, {
 
 const airBikeTypes = [
   'Assault Bike', 'Rogue Echo Bike', 'Schwinn Airdyne',
-  'Concept2 BikeErg', 'Other', 'Did not use Air Bike'
+  'Concept2 BikeErg', 'Other'
 ]
+
+// Equipment categories (matching settings page)
+const basicsEquipment = [
+  'Barbell', 'Dumbbells', 'Kettlebells', 'Pullup Bar or Rig', 'High Rings', 'Low or Adjustable Rings',
+  'Bench', 'Squat Rack', 'Open Space', 'Wall Space', 'Jump Rope', 'Wall Ball'
+]
+
+const machinesEquipment = ['Rowing Machine', 'Air Bike', 'Ski Erg', 'Bike Erg']
+
+const lessCommonEquipment = ['GHD', 'Axle Bar', 'Climbing Rope', 'Pegboard', 'Parallettes', 'Dball', 'Dip Bar', 'Plyo Box', 'HS Walk Obstacle', 'Sandbag']
 
 // ============================================
 // INTERFACES
@@ -183,6 +195,7 @@ export default function IntakePage() {
   const [intakeStatus, setIntakeStatus] = useState<string | null>(null) // 'draft' | 'generating' | 'complete' | 'failed'
   const [isGenerating, setIsGenerating] = useState(false)
   const [userId, setUserId] = useState<number | null>(null)
+  const [hasExistingProgram, setHasExistingProgram] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const draftSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -335,6 +348,9 @@ export default function IntakePage() {
 
       const userSportId = programData?.sport_id || 1
       setSportId(userSportId)
+      
+      // Check if user has existing program (for generating message)
+      setHasExistingProgram(!!programData)
 
       // Load existing data
       setFormData(prev => ({
@@ -610,12 +626,12 @@ export default function IntakePage() {
   // ============================================
   // FORM HANDLERS
   // ============================================
-  const handleEquipmentToggle = (equipment: string) => {
+  const handleEquipmentToggle = (equipment: string, checked: boolean) => {
     setFormData(prev => ({
       ...prev,
-      equipment: prev.equipment.includes(equipment)
-        ? prev.equipment.filter(e => e !== equipment)
-        : [...prev.equipment, equipment]
+      equipment: checked
+        ? [...prev.equipment, equipment]
+        : prev.equipment.filter(e => e !== equipment)
     }))
   }
 
@@ -632,41 +648,80 @@ export default function IntakePage() {
   }
 
   const handleBenchmarkChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      conditioningBenchmarks: {
-        ...prev.conditioningBenchmarks,
-        [field]: value
+    // For time fields (MM:SS format), validate during input
+    const timeFields = ['mile_run', 'five_k_run', 'ten_k_run', 'one_k_row', 'two_k_row', 'five_k_row']
+    if (timeFields.includes(field)) {
+      // Allow empty, digits, and colon for MM:SS format
+      // Prevent invalid characters
+      if (value === '' || /^[\d:]*$/.test(value)) {
+        setFormData(prev => ({
+          ...prev,
+          conditioningBenchmarks: {
+            ...prev.conditioningBenchmarks,
+            [field]: value
+          }
+        }))
       }
-    }))
+    } else {
+      // Non-time fields - allow any value
+      setFormData(prev => ({
+        ...prev,
+        conditioningBenchmarks: {
+          ...prev.conditioningBenchmarks,
+          [field]: value
+        }
+      }))
+    }
   }
 
   const formatTimeOnBlur = (field: string, value: string) => {
     let formatted = value.trim()
-    if (!formatted) return
+    if (!formatted) {
+      handleBenchmarkChange(field, '')
+      return
+    }
 
     if (formatted.includes(':')) {
       const parts = formatted.split(':')
       if (parts.length === 2) {
-        const minutes = parts[0] || '0'
-        const seconds = parts[1].padStart(2, '0').slice(0, 2) || '00'
-        const secNum = parseInt(seconds)
-        if (!isNaN(secNum) && secNum > 59) {
-          formatted = `${minutes}:59`
-        } else {
-          formatted = `${minutes}:${seconds}`
-        }
+        let minutes = parseInt(parts[0] || '0')
+        let seconds = parseInt(parts[1] || '0')
+        
+        // Enforce range: 00:00 to 59:59
+        if (isNaN(minutes)) minutes = 0
+        if (isNaN(seconds)) seconds = 0
+        
+        // Clamp minutes to 0-59
+        minutes = Math.max(0, Math.min(59, minutes))
+        // Clamp seconds to 0-59
+        seconds = Math.max(0, Math.min(59, seconds))
+        
+        formatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
         handleBenchmarkChange(field, formatted)
       }
     } else if (/^\d+$/.test(formatted)) {
+      // Handle numeric input (e.g., "615" becomes "06:15")
       if (formatted.length <= 2) {
-        formatted = `${formatted}:00`
+        const num = parseInt(formatted) || 0
+        const clamped = Math.max(0, Math.min(59, num))
+        formatted = `${clamped.toString().padStart(2, '0')}:00`
       } else if (formatted.length <= 4) {
-        formatted = `${formatted.slice(0, 2)}:${formatted.slice(2)}`
+        const mins = parseInt(formatted.slice(0, 2)) || 0
+        const secs = parseInt(formatted.slice(2)) || 0
+        const clampedMins = Math.max(0, Math.min(59, mins))
+        const clampedSecs = Math.max(0, Math.min(59, secs))
+        formatted = `${clampedMins.toString().padStart(2, '0')}:${clampedSecs.toString().padStart(2, '0')}`
       } else {
-        formatted = `${formatted.slice(0, 2)}:${formatted.slice(2, 4)}`
+        const mins = parseInt(formatted.slice(0, 2)) || 0
+        const secs = parseInt(formatted.slice(2, 4)) || 0
+        const clampedMins = Math.max(0, Math.min(59, mins))
+        const clampedSecs = Math.max(0, Math.min(59, secs))
+        formatted = `${clampedMins.toString().padStart(2, '0')}:${clampedSecs.toString().padStart(2, '0')}`
       }
       handleBenchmarkChange(field, formatted)
+    } else {
+      // Invalid format - clear it
+      handleBenchmarkChange(field, '')
     }
   }
 
@@ -692,9 +747,13 @@ export default function IntakePage() {
       <View style={styles.container}>
         <View style={styles.generatingContainer}>
           <ActivityIndicator size="large" color="#FE5858" />
-          <Text style={styles.generatingTitle}>Generating Your Program</Text>
+          <Text style={styles.generatingTitle}>
+            {hasExistingProgram ? 'Updating Your Profile' : 'Generating Your Program'}
+          </Text>
           <Text style={styles.generatingSubtitle}>
-            This usually takes 3-5 minutes. Hang tight while we personalize everything for you.
+            {hasExistingProgram 
+              ? 'This usually takes less than a minute. We\'re updating your profile with your latest information.'
+              : 'This usually takes 3-5 minutes. Hang tight while we personalize everything for you.'}
           </Text>
           {draftSaving && (
             <Text style={styles.savingText}>Saving draft...</Text>
@@ -742,8 +801,17 @@ export default function IntakePage() {
   const progress = ((currentSectionIndex + 1) / activeSections.length) * 100
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Athlete Intake</Text>
@@ -765,108 +833,169 @@ export default function IntakePage() {
           <Card style={styles.sectionCard}>
             <SectionHeader title="Section 1: Personal Information" />
             
-            <TextInput
-              style={styles.input}
-              placeholder="Name *"
-              value={formData.name}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
-            />
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Name *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Name *"
+                value={formData.name}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+              />
+            </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Email *"
-              value={formData.email}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Email *"
+                value={formData.email}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
 
-            <Text style={styles.label}>Gender *</Text>
-            <View style={styles.buttonRow}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Gender *</Text>
+            <View style={styles.pickerRow}>
               {['Male', 'Female', 'Prefer not to say'].map((option) => (
                 <TouchableOpacity
                   key={option}
                   style={[
-                    styles.optionButton,
-                    formData.gender === option && styles.optionButtonSelected
+                    styles.pickerOption,
+                    formData.gender === option && styles.pickerOptionSelected
                   ]}
                   onPress={() => setFormData(prev => ({ ...prev, gender: option as any }))}
                 >
                   <Text style={[
-                    styles.optionButtonText,
-                    formData.gender === option && styles.optionButtonTextSelected
+                    styles.pickerOptionText,
+                    formData.gender === option && styles.pickerOptionTextSelected
                   ]}>
                     {option}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
+            </View>
 
-            <Text style={styles.label}>Units *</Text>
-            <View style={styles.buttonRow}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Units *</Text>
+              <View style={styles.pickerRow}>
               {['Imperial (lbs)', 'Metric (kg)'].map((option) => (
                 <TouchableOpacity
                   key={option}
                   style={[
-                    styles.optionButton,
-                    formData.units === option && styles.optionButtonSelected
+                    styles.pickerOption,
+                    formData.units === option && styles.pickerOptionSelected
                   ]}
                   onPress={() => setFormData(prev => ({ ...prev, units: option as any }))}
                 >
                   <Text style={[
-                    styles.optionButtonText,
-                    formData.units === option && styles.optionButtonTextSelected
+                    styles.pickerOptionText,
+                    formData.units === option && styles.pickerOptionTextSelected
                   ]}>
                     {option}
                   </Text>
                 </TouchableOpacity>
               ))}
+              </View>
             </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder={`Body Weight (${formData.units === 'Metric (kg)' ? 'kg' : 'lbs'}) *`}
-              value={formData.bodyWeight}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, bodyWeight: text }))}
-              keyboardType="decimal-pad"
-            />
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Body Weight ({formData.units === 'Metric (kg)' ? 'kg' : 'lbs'}) *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={`Body Weight (${formData.units === 'Metric (kg)' ? 'kg' : 'lbs'}) *`}
+                value={formData.bodyWeight}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, bodyWeight: text }))}
+                keyboardType="decimal-pad"
+              />
+            </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder={`Height (${formData.units === 'Metric (kg)' ? 'cm' : 'inches'})`}
-              value={formData.height}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, height: text }))}
-              keyboardType="decimal-pad"
-            />
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Height ({formData.units === 'Metric (kg)' ? 'cm' : 'inches'})</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={`Height (${formData.units === 'Metric (kg)' ? 'cm' : 'inches'})`}
+                value={formData.height}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, height: text }))}
+                keyboardType="decimal-pad"
+              />
+            </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Age"
-              value={formData.age}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, age: text }))}
-              keyboardType="number-pad"
-            />
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Age</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Age"
+                value={formData.age}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, age: text }))}
+                keyboardType="number-pad"
+              />
+            </View>
 
             <Text style={styles.label}>Equipment Available</Text>
-            <ScrollView style={styles.equipmentScroll} nestedScrollEnabled>
-              {currentSportConfig.equipmentOptions.map((item) => (
-                <TouchableOpacity
-                  key={item}
-                  style={[
-                    styles.equipmentItem,
-                    formData.equipment.includes(item) && styles.equipmentItemSelected
-                  ]}
-                  onPress={() => handleEquipmentToggle(item)}
-                >
-                  <Text style={[
-                    styles.equipmentText,
-                    formData.equipment.includes(item) && styles.equipmentTextSelected
-                  ]}>
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            
+            {/* The Basics */}
+            <View style={styles.equipmentSection}>
+              <Text style={styles.equipmentCategoryTitle}>The Basics</Text>
+              <View style={styles.equipmentGrid}>
+                {basicsEquipment.map(eq => (
+                  <View key={eq} style={styles.equipmentItem}>
+                    <View style={styles.equipmentRow}>
+                      <Switch
+                        value={formData.equipment.includes(eq)}
+                        onValueChange={(checked) => handleEquipmentToggle(eq, checked)}
+                        trackColor={{ false: '#DAE2EA', true: '#FE5858' }}
+                        thumbColor={formData.equipment.includes(eq) ? '#fff' : '#f4f3f4'}
+                      />
+                      <Text style={styles.equipmentLabel}>{eq}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* The Machines */}
+            <View style={styles.equipmentSection}>
+              <Text style={styles.equipmentCategoryTitle}>The Machines</Text>
+              <View style={styles.equipmentGrid}>
+                {machinesEquipment.map(eq => (
+                  <View key={eq} style={styles.equipmentItem}>
+                    <View style={styles.equipmentRow}>
+                      <Switch
+                        value={formData.equipment.includes(eq)}
+                        onValueChange={(checked) => handleEquipmentToggle(eq, checked)}
+                        trackColor={{ false: '#DAE2EA', true: '#FE5858' }}
+                        thumbColor={formData.equipment.includes(eq) ? '#fff' : '#f4f3f4'}
+                      />
+                      <Text style={styles.equipmentLabel}>{eq}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Less Common Equipment */}
+            <View style={styles.equipmentSection}>
+              <Text style={styles.equipmentCategoryTitle}>Less Common Equipment</Text>
+              <View style={styles.equipmentGrid}>
+                {lessCommonEquipment.map(eq => (
+                  <View key={eq} style={styles.equipmentItem}>
+                    <View style={styles.equipmentRow}>
+                      <Switch
+                        value={formData.equipment.includes(eq)}
+                        onValueChange={(checked) => handleEquipmentToggle(eq, checked)}
+                        trackColor={{ false: '#DAE2EA', true: '#FE5858' }}
+                        thumbColor={formData.equipment.includes(eq) ? '#fff' : '#f4f3f4'}
+                      />
+                      <Text style={styles.equipmentLabel}>{eq}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+
             <Text style={styles.equipmentCount}>
               {formData.equipment.length} items selected
             </Text>
@@ -885,38 +1014,79 @@ export default function IntakePage() {
               {currentSportConfig.skillCategories.map((category) => (
                 <View key={category.name} style={styles.skillCategory}>
                   <Text style={styles.skillCategoryTitle}>{category.name}</Text>
-                  {category.skills.map((skill) => (
-                    <View key={skill.name} style={styles.skillItem}>
-                      <Text style={styles.skillName}>{skill.name}</Text>
-                      <View style={styles.skillLevels}>
-                        {category.levels.map((level) => {
-                          const levelName = level.split(' (')[0]
-                          const currentValue = formData.skills[skill.index]
-                          const currentValueName = currentValue?.split(' (')[0]
-                          const selected = currentValueName === levelName
-                          const short = level.includes('(') ? level.substring(level.indexOf('(') + 1, level.indexOf(')')) : level
-
-                          return (
-                            <TouchableOpacity
-                              key={level}
-                              style={[
-                                styles.skillLevelButton,
-                                selected && styles.skillLevelButtonSelected
-                              ]}
-                              onPress={() => handleSkillChange(skill.index, level)}
-                            >
-                              <Text style={[
-                                styles.skillLevelText,
-                                selected && styles.skillLevelTextSelected
-                              ]}>
-                                {short}
-                              </Text>
-                            </TouchableOpacity>
-                          )
-                        })}
+                  {category.skills.map((skill) => {
+                    const currentValue = formData.skills[skill.index]
+                    const levels = category.levels
+                    
+                    return (
+                      <View key={skill.name} style={styles.skillItem}>
+                        <Text style={styles.skillName}>{skill.name}</Text>
+                        <View style={styles.skillLevels}>
+                          {/* First row: first two buttons side-by-side */}
+                          <View style={styles.skillLevelRow}>
+                            {levels.slice(0, 2).map((level) => {
+                              const isSelected = currentValue === level
+                              return (
+                                <TouchableOpacity
+                                  key={level}
+                                  style={[
+                                    styles.skillLevelButton,
+                                    isSelected ? styles.skillLevelButtonSelected : styles.skillLevelButtonUnselected
+                                  ]}
+                                  onPress={() => handleSkillChange(skill.index, level)}
+                                >
+                                  <Text style={[
+                                    styles.skillLevelText,
+                                    isSelected ? styles.skillLevelTextSelected : styles.skillLevelTextUnselected
+                                  ]}>
+                                    {level}
+                                  </Text>
+                                </TouchableOpacity>
+                              )
+                            })}
+                          </View>
+                          {/* Second row: third button alone */}
+                          {levels[2] && (
+                            <View style={styles.skillLevelRow}>
+                              <TouchableOpacity
+                                style={[
+                                  styles.skillLevelButton,
+                                  currentValue === levels[2] ? styles.skillLevelButtonSelected : styles.skillLevelButtonUnselected
+                                ]}
+                                onPress={() => handleSkillChange(skill.index, levels[2])}
+                              >
+                                <Text style={[
+                                  styles.skillLevelText,
+                                  currentValue === levels[2] ? styles.skillLevelTextSelected : styles.skillLevelTextUnselected
+                                ]}>
+                                  {levels[2]}
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                          {/* Third row: fourth button alone */}
+                          {levels[3] && (
+                            <View style={styles.skillLevelRow}>
+                              <TouchableOpacity
+                                style={[
+                                  styles.skillLevelButton,
+                                  currentValue === levels[3] ? styles.skillLevelButtonSelected : styles.skillLevelButtonUnselected
+                                ]}
+                                onPress={() => handleSkillChange(skill.index, levels[3])}
+                              >
+                                <Text style={[
+                                  styles.skillLevelText,
+                                  currentValue === levels[3] ? styles.skillLevelTextSelected : styles.skillLevelTextUnselected
+                                ]}>
+                                  {levels[3]}
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
                       </View>
-                    </View>
-                  ))}
+                    )
+                  })}
                 </View>
               ))}
             </ScrollView>
@@ -931,84 +1101,123 @@ export default function IntakePage() {
               Enter times in MM:SS format. Leave blank if not recently performed.
             </Text>
 
-            <Text style={styles.benchmarkGroupTitle}>Running</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="1 Mile Run (MM:SS)"
-              value={formData.conditioningBenchmarks.mile_run}
-              onChangeText={(text) => handleBenchmarkChange('mile_run', text)}
-              onBlur={(e) => formatTimeOnBlur('mile_run', e.nativeEvent.text)}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="5K Run (MM:SS)"
-              value={formData.conditioningBenchmarks.five_k_run}
-              onChangeText={(text) => handleBenchmarkChange('five_k_run', text)}
-              onBlur={(e) => formatTimeOnBlur('five_k_run', e.nativeEvent.text)}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="10K Run (MM:SS)"
-              value={formData.conditioningBenchmarks.ten_k_run}
-              onChangeText={(text) => handleBenchmarkChange('ten_k_run', text)}
-              onBlur={(e) => formatTimeOnBlur('ten_k_run', e.nativeEvent.text)}
-            />
-
-            <Text style={styles.benchmarkGroupTitle}>Rowing</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="1K Row (MM:SS)"
-              value={formData.conditioningBenchmarks.one_k_row}
-              onChangeText={(text) => handleBenchmarkChange('one_k_row', text)}
-              onBlur={(e) => formatTimeOnBlur('one_k_row', e.nativeEvent.text)}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="2K Row (MM:SS)"
-              value={formData.conditioningBenchmarks.two_k_row}
-              onChangeText={(text) => handleBenchmarkChange('two_k_row', text)}
-              onBlur={(e) => formatTimeOnBlur('two_k_row', e.nativeEvent.text)}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="5K Row (MM:SS)"
-              value={formData.conditioningBenchmarks.five_k_row}
-              onChangeText={(text) => handleBenchmarkChange('five_k_row', text)}
-              onBlur={(e) => formatTimeOnBlur('five_k_row', e.nativeEvent.text)}
-            />
-
-            <Text style={styles.benchmarkGroupTitle}>Air Bike</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="10-Minute Air Bike (calories)"
-              value={formData.conditioningBenchmarks.ten_min_air_bike}
-              onChangeText={(text) => handleBenchmarkChange('ten_min_air_bike', text)}
-              keyboardType="number-pad"
-            />
-            {formData.conditioningBenchmarks.ten_min_air_bike && (
-              <View style={styles.pickerContainer}>
-                <Text style={styles.label}>Air Bike Type</Text>
-                <ScrollView style={styles.pickerScroll}>
-                  {airBikeTypes.map((type) => (
-                    <TouchableOpacity
-                      key={type}
-                      style={[
-                        styles.pickerOption,
-                        formData.conditioningBenchmarks.air_bike_type === type && styles.pickerOptionSelected
-                      ]}
-                      onPress={() => handleBenchmarkChange('air_bike_type', type)}
-                    >
-                      <Text style={[
-                        styles.pickerOptionText,
-                        formData.conditioningBenchmarks.air_bike_type === type && styles.pickerOptionTextSelected
-                      ]}>
-                        {type}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+            <View style={styles.benchmarkGroup}>
+              <View style={styles.benchmarkHeader}>
+                <Text style={styles.benchmarkHeaderText}>Running Benchmarks</Text>
               </View>
-            )}
+              <View>
+                <View style={styles.benchmarkInputGroup}>
+                  <Text style={styles.benchmarkLabel}>1 Mile Run (MM:SS)</Text>
+                  <TextInput
+                    style={styles.benchmarkInput}
+                    placeholder="1 Mile Run (MM:SS)"
+                    value={formData.conditioningBenchmarks.mile_run}
+                    onChangeText={(text) => handleBenchmarkChange('mile_run', text)}
+                    onBlur={(e) => formatTimeOnBlur('mile_run', e.nativeEvent.text)}
+                  />
+                </View>
+                <View style={styles.benchmarkInputGroup}>
+                  <Text style={styles.benchmarkLabel}>5K Run (MM:SS)</Text>
+                  <TextInput
+                    style={styles.benchmarkInput}
+                    placeholder="5K Run (MM:SS)"
+                    value={formData.conditioningBenchmarks.five_k_run}
+                    onChangeText={(text) => handleBenchmarkChange('five_k_run', text)}
+                    onBlur={(e) => formatTimeOnBlur('five_k_run', e.nativeEvent.text)}
+                  />
+                </View>
+                <View style={styles.benchmarkInputGroup}>
+                  <Text style={styles.benchmarkLabel}>10K Run (MM:SS)</Text>
+                  <TextInput
+                    style={styles.benchmarkInput}
+                    placeholder="10K Run (MM:SS)"
+                    value={formData.conditioningBenchmarks.ten_k_run}
+                    onChangeText={(text) => handleBenchmarkChange('ten_k_run', text)}
+                    onBlur={(e) => formatTimeOnBlur('ten_k_run', e.nativeEvent.text)}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.benchmarkGroup}>
+              <View style={styles.benchmarkHeader}>
+                <Text style={styles.benchmarkHeaderText}>Rowing Benchmarks</Text>
+              </View>
+              <View>
+                <View style={styles.benchmarkInputGroup}>
+                  <Text style={styles.benchmarkLabel}>1K Row (MM:SS)</Text>
+                  <TextInput
+                    style={styles.benchmarkInput}
+                    placeholder="1K Row (MM:SS)"
+                    value={formData.conditioningBenchmarks.one_k_row}
+                    onChangeText={(text) => handleBenchmarkChange('one_k_row', text)}
+                    onBlur={(e) => formatTimeOnBlur('one_k_row', e.nativeEvent.text)}
+                  />
+                </View>
+                <View style={styles.benchmarkInputGroup}>
+                  <Text style={styles.benchmarkLabel}>2K Row (MM:SS)</Text>
+                  <TextInput
+                    style={styles.benchmarkInput}
+                    placeholder="2K Row (MM:SS)"
+                    value={formData.conditioningBenchmarks.two_k_row}
+                    onChangeText={(text) => handleBenchmarkChange('two_k_row', text)}
+                    onBlur={(e) => formatTimeOnBlur('two_k_row', e.nativeEvent.text)}
+                  />
+                </View>
+                <View style={styles.benchmarkInputGroup}>
+                  <Text style={styles.benchmarkLabel}>5K Row (MM:SS)</Text>
+                  <TextInput
+                    style={styles.benchmarkInput}
+                    placeholder="5K Row (MM:SS)"
+                    value={formData.conditioningBenchmarks.five_k_row}
+                    onChangeText={(text) => handleBenchmarkChange('five_k_row', text)}
+                    onBlur={(e) => formatTimeOnBlur('five_k_row', e.nativeEvent.text)}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.benchmarkGroup}>
+              <View style={styles.benchmarkHeader}>
+                <Text style={styles.benchmarkHeaderText}>Bike Benchmarks</Text>
+              </View>
+              <View>
+                <View style={styles.benchmarkInputGroup}>
+                  <Text style={styles.benchmarkLabel}>10-Minute Air Bike (calories)</Text>
+                  <TextInput
+                    style={styles.benchmarkInput}
+                    placeholder="10-Minute Air Bike (calories)"
+                    value={formData.conditioningBenchmarks.ten_min_air_bike}
+                    onChangeText={(text) => handleBenchmarkChange('ten_min_air_bike', text)}
+                    keyboardType="number-pad"
+                  />
+                </View>
+                {formData.conditioningBenchmarks.ten_min_air_bike && (
+                  <View style={styles.benchmarkInputGroup}>
+                    <Text style={styles.benchmarkLabel}>Air Bike Type</Text>
+                    <View style={styles.pickerRow}>
+                      {airBikeTypes.map((type) => (
+                        <TouchableOpacity
+                          key={type}
+                          style={[
+                            styles.pickerOption,
+                            formData.conditioningBenchmarks.air_bike_type === type && styles.pickerOptionSelected
+                          ]}
+                          onPress={() => handleBenchmarkChange('air_bike_type', type)}
+                        >
+                          <Text style={[
+                            styles.pickerOptionText,
+                            formData.conditioningBenchmarks.air_bike_type === type && styles.pickerOptionTextSelected
+                          ]}>
+                            {type}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+            </View>
           </Card>
         )}
 
@@ -1021,20 +1230,100 @@ export default function IntakePage() {
               For Weighted Pullup, enter added weight only.
             </Text>
 
-            <ScrollView style={styles.oneRMScroll} nestedScrollEnabled>
-              {currentSportConfig.oneRMLifts.map((lift, index) => (
-                <View key={lift} style={styles.oneRMItem}>
-                  <Text style={styles.oneRMLabel}>{lift}</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder={formData.units === 'Metric (kg)' ? 'e.g., 100.5' : 'e.g., 225.5'}
-                    value={formData.oneRMs[index]}
-                    onChangeText={(text) => handleOneRMChange(index, text)}
-                    keyboardType="decimal-pad"
-                  />
-                </View>
-              ))}
-            </ScrollView>
+            <View style={styles.liftGroup}>
+              <Text style={styles.liftGroupTitle}>Snatch</Text>
+              {['Snatch', 'Power Snatch'].map((ex) => {
+                const index = currentSportConfig.oneRMLifts.indexOf(ex)
+                return (
+                  <View key={ex} style={styles.liftInputGroup}>
+                    <Text style={styles.liftLabel}>{ex}</Text>
+                    <TextInput
+                      style={styles.liftInput}
+                      placeholder=""
+                      value={formData.oneRMs[index]}
+                      onChangeText={(text) => handleOneRMChange(index, text)}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                )
+              })}
+            </View>
+
+            <View style={styles.liftGroup}>
+              <Text style={styles.liftGroupTitle}>Clean and Jerk</Text>
+              {['Clean and Jerk', 'Power Clean', 'Clean (clean only)', 'Jerk (from rack or blocks, max Split or Power Jerk)'].map((ex) => {
+                const index = currentSportConfig.oneRMLifts.indexOf(ex)
+                return (
+                  <View key={ex} style={styles.liftInputGroup}>
+                    <Text style={styles.liftLabel}>{ex}</Text>
+                    <TextInput
+                      style={styles.liftInput}
+                      placeholder=""
+                      value={formData.oneRMs[index]}
+                      onChangeText={(text) => handleOneRMChange(index, text)}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                )
+              })}
+            </View>
+
+            <View style={styles.liftGroup}>
+              <Text style={styles.liftGroupTitle}>Squats</Text>
+              {['Back Squat', 'Front Squat', 'Overhead Squat'].map((ex) => {
+                const index = currentSportConfig.oneRMLifts.indexOf(ex)
+                return (
+                  <View key={ex} style={styles.liftInputGroup}>
+                    <Text style={styles.liftLabel}>{ex}</Text>
+                    <TextInput
+                      style={styles.liftInput}
+                      placeholder=""
+                      value={formData.oneRMs[index]}
+                      onChangeText={(text) => handleOneRMChange(index, text)}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                )
+              })}
+            </View>
+
+            <View style={styles.liftGroup}>
+              <Text style={styles.liftGroupTitle}>Pulling</Text>
+              {['Weighted Pullup (do not include body weight)', 'Deadlift'].map((ex) => {
+                const index = currentSportConfig.oneRMLifts.indexOf(ex)
+                return (
+                  <View key={ex} style={styles.liftInputGroup}>
+                    <Text style={styles.liftLabel}>{ex}</Text>
+                    <TextInput
+                      style={styles.liftInput}
+                      placeholder=""
+                      value={formData.oneRMs[index]}
+                      onChangeText={(text) => handleOneRMChange(index, text)}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                )
+              })}
+            </View>
+
+            <View style={styles.liftGroup}>
+              <Text style={styles.liftGroupTitle}>Presses</Text>
+              {['Bench Press', 'Push Press', 'Strict Press'].map((ex) => {
+                const index = currentSportConfig.oneRMLifts.indexOf(ex)
+                return (
+                  <View key={ex} style={styles.liftInputGroup}>
+                    <Text style={styles.liftLabel}>{ex}</Text>
+                    <TextInput
+                      style={styles.liftInput}
+                      placeholder=""
+                      value={formData.oneRMs[index]}
+                      onChangeText={(text) => handleOneRMChange(index, text)}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                )
+              })}
+            </View>
           </Card>
         )}
 
@@ -1074,7 +1363,7 @@ export default function IntakePage() {
           <Text style={styles.draftSavingText}>Saving draft...</Text>
         )}
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -1137,73 +1426,50 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     lineHeight: 20
   },
+  inputGroup: {
+    marginBottom: 16,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 8,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     fontSize: 16,
     backgroundColor: '#FFFFFF',
-    marginBottom: 16
+    width: '100%'
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#374151',
-    marginBottom: 8,
-    marginTop: 8
+    marginBottom: 8
   },
-  buttonRow: {
+  equipmentSection: {
+    marginBottom: 24,
+  },
+  equipmentCategoryTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 12,
+  },
+  equipmentGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16
-  },
-  optionButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
-    minWidth: 100
-  },
-  optionButtonSelected: {
-    backgroundColor: '#FE5858',
-    borderColor: '#FE5858'
-  },
-  optionButtonText: {
-    fontSize: 14,
-    color: '#374151',
-    textAlign: 'center'
-  },
-  optionButtonTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '600'
-  },
-  equipmentScroll: {
-    maxHeight: 200,
-    marginBottom: 8
   },
   equipmentItem: {
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
-    marginBottom: 8
+    width: '50%',
+    marginBottom: 12,
   },
-  equipmentItemSelected: {
-    backgroundColor: '#FE5858',
-    borderColor: '#FE5858'
+  equipmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  equipmentText: {
+  equipmentLabel: {
+    marginLeft: 8,
     fontSize: 14,
-    color: '#374151'
-  },
-  equipmentTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '600'
+    color: '#374151',
   },
   equipmentCount: {
     fontSize: 12,
@@ -1217,81 +1483,113 @@ const styles = StyleSheet.create({
   skillCategory: {
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#DAE2EA',
     borderRadius: 8,
     padding: 16,
-    backgroundColor: '#FFFFFF'
   },
   skillCategoryTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#282B34',
-    marginBottom: 16,
-    backgroundColor: '#DAE2EA',
-    padding: 12,
-    borderRadius: 8
+    marginBottom: 12,
   },
   skillItem: {
-    marginBottom: 16
+    marginBottom: 16,
   },
   skillName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#1F2937',
     marginBottom: 8,
-    textAlign: 'center'
   },
   skillLevels: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     gap: 8,
-    justifyContent: 'center'
+  },
+  skillLevelRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
   skillLevelButton: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
-    minWidth: 70
   },
   skillLevelButtonSelected: {
     backgroundColor: '#FE5858',
-    borderColor: '#FE5858'
+    borderColor: '#FE5858',
+  },
+  skillLevelButtonUnselected: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#D1D5DB',
   },
   skillLevelText: {
-    fontSize: 12,
-    color: '#374151',
-    textAlign: 'center'
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   skillLevelTextSelected: {
     color: '#FFFFFF',
-    fontWeight: '600'
+    fontWeight: '600',
   },
-  benchmarkGroupTitle: {
-    fontSize: 16,
+  skillLevelTextUnselected: {
+    color: '#374151',
+  },
+  benchmarkGroup: {
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#DAE2EA',
+    borderRadius: 8,
+    padding: 16,
+  },
+  benchmarkHeader: {
+    marginBottom: 12,
+  },
+  benchmarkHeaderText: {
+    fontSize: 18,
     fontWeight: '600',
     color: '#282B34',
-    marginTop: 16,
-    marginBottom: 12,
-    backgroundColor: '#DAE2EA',
-    padding: 12,
-    borderRadius: 8
+  },
+  benchmarkInputGroup: {
+    marginBottom: 16,
+  },
+  benchmarkLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  benchmarkInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    backgroundColor: '#FFFFFF',
+    width: '100%'
+  },
+  benchmarkInputWithMargin: {
+    marginBottom: 16,
   },
   pickerContainer: {
     marginTop: 8
   },
-  pickerScroll: {
-    maxHeight: 150
+  pickerRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8
   },
   pickerOption: {
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
-    marginBottom: 8
+    minWidth: 100
   },
   pickerOptionSelected: {
     backgroundColor: '#FE5858',
@@ -1305,17 +1603,37 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600'
   },
-  oneRMScroll: {
-    maxHeight: 500
+  liftGroup: {
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#DAE2EA',
+    borderRadius: 8,
+    padding: 16,
   },
-  oneRMItem: {
-    marginBottom: 16
-  },
-  oneRMLabel: {
-    fontSize: 14,
+  liftGroupTitle: {
+    fontSize: 18,
     fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 12,
+  },
+  liftInputGroup: {
+    marginBottom: 16,
+  },
+  liftLabel: {
+    fontSize: 14,
+    fontWeight: '500',
     color: '#374151',
-    marginBottom: 8
+    marginBottom: 8,
+  },
+  liftInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    backgroundColor: '#FFFFFF',
+    width: '100%'
   },
   navigationContainer: {
     flexDirection: 'row',

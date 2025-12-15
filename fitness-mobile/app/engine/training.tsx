@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Alert, StatusBar, Dimensions } from 'react-native'
 import { useRouter, useLocalSearchParams } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { createClient } from '@/lib/supabase/client'
 import Svg, { Circle, Text as SvgText, G } from 'react-native-svg'
 import { Ionicons } from '@expo/vector-icons'
 import engineDatabaseService from '@/lib/engine/databaseService'
+import { fetchWorkout } from '@/lib/api/workouts'
 
 interface Interval {
   id: number
@@ -30,12 +32,30 @@ interface SessionData {
 
 export default function EnginePage() {
   const router = useRouter()
-  const { day } = useLocalSearchParams<{ day?: string }>()
+  const insets = useSafeAreaInsets()
+  const { day, programId, week, programDay } = useLocalSearchParams<{ 
+    day?: string
+    programId?: string
+    week?: string
+    programDay?: string
+  }>()
   const [loading, setLoading] = useState(true)
   const [workout, setWorkout] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [userId, setUserId] = useState<number | null>(null)
   const [programVersion, setProgramVersion] = useState<string>('5-day')
+  const [currentProgramId, setCurrentProgramId] = useState<number | null>(null)
+  
+  // Navigation view state (months -> weeks -> days -> workout)
+  const [navigationView, setNavigationView] = useState<'months' | 'weeks' | 'days' | 'workout'>('months')
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null)
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null)
+  
+  // Dashboard data
+  const [user, setUser] = useState<any>(null)
+  const [workouts, setWorkouts] = useState<any[]>([])
+  const [completedSessions, setCompletedSessions] = useState<any[]>([])
+  const [loadingDashboard, setLoadingDashboard] = useState(false)
   
   // View state (equipment -> preview -> active)
   const [currentView, setCurrentView] = useState<'equipment' | 'preview' | 'active'>('equipment')
@@ -130,20 +150,76 @@ export default function EnginePage() {
   ]
 
   const scoreUnits = [
-    { value: 'cal', label: 'Calories' },
-    { value: 'meters', label: 'Meters' },
-    { value: 'kilometers', label: 'Kilometers' },
     { value: 'watts', label: 'Watts' },
-    { value: 'miles', label: 'Miles' }
+    { value: 'meters', label: 'Meters' },
+    { value: 'miles', label: 'Miles' },
+    { value: 'cal', label: 'Calories' },
+    { value: 'kilometers', label: 'Kilometers' }
   ]
+
+  // Helper function to navigate back with proper route isolation and refresh trigger
+  const navigateBack = () => {
+    // If we have program context, navigate to the workout page with refresh parameter
+    if (programId && week && programDay) {
+      const refreshParam = Date.now() // Timestamp to force refresh
+      router.push(`/workout/${programId}/week/${week}/day/${programDay}?refresh=${refreshParam}`)
+    } else {
+      // Fallback for standalone Engine access - stay within engine tabs
+      router.push('/engine/training')
+    }
+  }
 
   useEffect(() => {
     initializeDatabase()
   }, [])
 
   useEffect(() => {
+    // Extract and store programId from URL params, or fetch latest program if not provided
+    const fetchProgramId = async () => {
+      if (programId) {
+        setCurrentProgramId(parseInt(programId))
+      } else if (userId) {
+        // If programId not in URL, fetch user's latest program
+        try {
+          const supabase = createClient()
+          const { data: programs, error } = await supabase
+            .from('programs')
+            .select('id')
+            .eq('user_id', userId)
+            .order('generated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          
+          if (!error && programs) {
+            const programIdValue = (programs as any).id
+            if (programIdValue) {
+              setCurrentProgramId(programIdValue)
+              console.log('📋 Inferred program_id from latest program:', programIdValue)
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching latest program:', error)
+        }
+      }
+    }
+    
+    fetchProgramId()
+  }, [programId, userId])
+
+  // Determine initial navigation view based on day parameter
+  useEffect(() => {
+    if (day) {
+      setNavigationView('workout')
+    } else {
+      setNavigationView('months')
+    }
+  }, [day])
+
+  useEffect(() => {
     if (connected && day) {
       loadWorkout()
+    } else if (connected && !day) {
+      loadDashboardData()
     }
   }, [day, connected])
 
@@ -216,6 +292,56 @@ export default function EnginePage() {
     } catch (error) {
       console.error('Error initializing database:', error)
       setConnected(false)
+    }
+  }
+
+  const loadDashboardData = async () => {
+    if (!connected) return
+    
+    setLoadingDashboard(true)
+    try {
+      const version = await engineDatabaseService.loadProgramVersion()
+      const userProgramVersion = version || '5-day'
+      setProgramVersion(userProgramVersion)
+
+      const [progress, allWorkoutsData] = await Promise.all([
+        engineDatabaseService.loadUserProgress(),
+        engineDatabaseService.getWorkoutsForProgram(userProgramVersion)
+      ])
+
+      if (progress.user) {
+        setUser(progress.user)
+      }
+
+      const allSessions = progress.completedSessions || []
+      const filteredSessions = allSessions.filter((session: any) => {
+        const sessionProgramVersion = session.program_version || '5-day'
+        return sessionProgramVersion === userProgramVersion
+      })
+
+      // Filter workouts by program_type and add program_day_number
+      const programType = userProgramVersion === '3-day' ? 'main_3day' : 'main_5day'
+      const filteredWorkouts = (allWorkoutsData || []).map((workout: any) => {
+        // For 5-day, program_day_number = day_number
+        // For 3-day, we'd need mapping, but for now use day_number
+        return {
+          ...workout,
+          program_day_number: workout.program_day_number || workout.day_number,
+          day_number: workout.day_number
+        }
+      }).filter((workout: any) => {
+        // Filter by program_type if available, otherwise include all
+        return !workout.program_type || workout.program_type === programType
+      })
+
+      setCompletedSessions(filteredSessions)
+      setWorkouts(filteredWorkouts)
+      setLoading(false)
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error)
+      setError('Failed to load dashboard data')
+    } finally {
+      setLoadingDashboard(false)
     }
   }
 
@@ -384,6 +510,48 @@ export default function EnginePage() {
     }
   }, [isActive, timeRemaining, currentPhase, currentInterval])
 
+  // Helper function to construct workout object from engineData
+  const constructWorkoutFromEngineData = (engineData: any): any => {
+    // Calculate total work time from block params
+    const calculateTotalWorkTime = (blockParams: any): number => {
+      let totalSeconds = 0
+      if (blockParams.block1) {
+        const workDuration = blockParams.block1.workDuration || 0
+        const rounds = blockParams.block1.rounds || 1
+        totalSeconds += workDuration * rounds
+      }
+      if (blockParams.block2) {
+        const workDuration = blockParams.block2.workDuration || 0
+        const rounds = blockParams.block2.rounds || 1
+        totalSeconds += workDuration * rounds
+      }
+      if (blockParams.block3) {
+        const workDuration = blockParams.block3.workDuration || 0
+        const rounds = blockParams.block3.rounds || 1
+        totalSeconds += workDuration * rounds
+      }
+      if (blockParams.block4) {
+        const workDuration = blockParams.block4.workDuration || 0
+        const rounds = blockParams.block4.rounds || 1
+        totalSeconds += workDuration * rounds
+      }
+      return totalSeconds
+    }
+
+    return {
+      id: engineData.workoutId,
+      day_number: engineData.dayNumber,
+      day_type: engineData.dayType,
+      total_duration_minutes: engineData.duration,
+      block_count: engineData.blockCount,
+      block_1_params: engineData.blockParams.block1 || null,
+      block_2_params: engineData.blockParams.block2 || null,
+      block_3_params: engineData.blockParams.block3 || null,
+      block_4_params: engineData.blockParams.block4 || null,
+      total_work_time: calculateTotalWorkTime(engineData.blockParams)
+    }
+  }
+
   const loadWorkout = async () => {
     try {
       setLoading(true)
@@ -413,8 +581,52 @@ export default function EnginePage() {
       setUserId(userDataTyped.id)
       const version = userDataTyped.current_program === '3-day' ? '3-day' : '5-day'
       setProgramVersion(version)
+
+      // PATH 1: If we have program context, use engineData from program structure
+      if (programId && week && programDay) {
+        try {
+          console.log('📋 Loading workout from program structure:', { programId, week, programDay })
+          
+          // Fetch workout data (includes engineData)
+          const workoutResponse = await fetchWorkout(
+            parseInt(programId),
+            parseInt(week),
+            parseInt(programDay)
+          )
+          
+          if (workoutResponse.success && workoutResponse.workout?.engineData) {
+            const engineData = workoutResponse.workout.engineData
+            
+            // Construct workout object from engineData
+            const workoutFromEngineData = constructWorkoutFromEngineData(engineData)
+            
+            console.log('✅ Loaded workout from engineData:', workoutFromEngineData)
+            
+            setWorkout(workoutFromEngineData)
+            
+            // Parse intervals from block params (works with block_1_params, block_2_params, etc.)
+            const intervals = parseWorkoutIntervals(workoutFromEngineData)
+            setSessionData(prev => ({
+              ...prev,
+              intervals
+            }))
+            
+            return // Success - exit early
+          } else {
+            console.warn('⚠️ No engineData found in program, falling back to workouts table')
+            // Fall through to PATH 2
+          }
+        } catch (error) {
+          console.warn('⚠️ Failed to load from program structure, falling back to workouts table:', error)
+          // Fall through to PATH 2
+        }
+      }
+
+      // PATH 2: Fallback - Load from workouts table (for Engine-only subscribers or when program fetch fails)
       const programType = version === '3-day' ? 'main_3day' : 'main_5day'
       const dayNumber = day ? parseInt(day) : 1
+
+      console.log('📋 Loading workout from workouts table:', { programType, dayNumber })
 
       // Load workout from workouts table
       const { data: workoutData, error: workoutError } = await supabase
@@ -848,7 +1060,8 @@ export default function EnginePage() {
       const sessionDataToSave = {
         program_day: parseInt(day || '1'),
         program_version: programVersion,
-        program_day_number: workout?.day_number || parseInt(day || '1'),
+        program_day_number: parseInt(day || '1'), // Use day parameter (engineData.dayNumber) as source of truth, not workout?.day_number
+        program_id: currentProgramId || (programId ? parseInt(programId) : null),
         workout_id: workout?.id,
         day_type: workout?.day_type,
         date: new Date().toISOString().split('T')[0],
@@ -880,17 +1093,27 @@ export default function EnginePage() {
         performance_ratio: performanceRatio,
         day_type: workout?.day_type,
         modality: selectedModality,
-        program_day_number: sessionDataToSave.program_day_number
+        program_day_number: sessionDataToSave.program_day_number,
+        program_id: sessionDataToSave.program_id
       })
 
-      const { error } = await supabase
+      const { error, data: insertedData } = await supabase
         .from('workout_sessions')
         .insert({
           ...sessionDataToSave,
           user_id: userId
         } as any)
+        .select()
 
       if (error) throw error
+
+      // Verify the insert was successful
+      if (!insertedData || insertedData.length === 0) {
+        throw new Error('Failed to save workout session')
+      }
+
+      // Small delay to ensure database consistency before navigation
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Update performance metrics in database
       if (workout?.day_type && selectedModality) {
@@ -928,7 +1151,7 @@ export default function EnginePage() {
       
       // Auto-navigate back after showing success
       setTimeout(() => {
-        router.back()
+        navigateBack()
       }, 1500)
     } catch (err) {
       console.error('Error saving workout:', err)
@@ -938,6 +1161,265 @@ export default function EnginePage() {
     }
   }
 
+  // Helper functions for navigation views
+  const getDaysPerMonth = () => {
+    return programVersion === '3-day' ? 12 : 20
+  }
+
+  const getDaysPerWeek = () => {
+    return programVersion === '3-day' ? 3 : 5
+  }
+
+  const getMonthAccess = (monthNumber: number) => {
+    const daysPerMonth = getDaysPerMonth()
+    if (!user) return monthNumber === 1
+    if (user.months_unlocked >= 36) return true
+    if (user.subscription_status === 'trial') return monthNumber === 1
+    if (user.subscription_status === 'active') {
+      const maxMonth = Math.ceil((user.current_day || 1) / daysPerMonth)
+      return monthNumber <= maxMonth
+    }
+    return monthNumber === 1
+  }
+
+  const getMonthCompletionRatio = (monthNumber: number) => {
+    const daysPerMonth = getDaysPerMonth()
+    const startDay = (monthNumber - 1) * daysPerMonth + 1
+    const endDay = monthNumber * daysPerMonth
+
+    const completedDays = completedSessions.filter(session => {
+      const dayNumber = session.program_day_number || session.program_day || session.day_number || session.workout_day
+      return dayNumber >= startDay && dayNumber <= endDay
+    }).length
+
+    return `${completedDays}/${daysPerMonth}`
+  }
+
+  const getDayStatus = (workout: any) => {
+    if (!workout) return 'locked'
+    const dayNumber = workout.program_day_number || workout.day_number
+    const completedDays = completedSessions.map(session =>
+      session.program_day_number || session.program_day || session.day_number || session.workout_day
+    )
+
+    if (completedDays.includes(dayNumber)) return 'completed'
+    const currentDay = user?.current_day || 1
+    if (dayNumber === currentDay) return 'current'
+    if (dayNumber < currentDay) return 'available'
+    
+    const maxUnlockedDay = user?.subscription_status === 'trial' 
+      ? getDaysPerMonth()
+      : (user?.current_day || 0) + getDaysPerMonth()
+
+    if (dayNumber <= maxUnlockedDay) return 'available'
+    return 'locked'
+  }
+
+
+  const handleDayClick = (dayNumber: number) => {
+    router.push(`/engine/training?day=${dayNumber}`)
+  }
+
+  const handleMonthClick = (monthNumber: number) => {
+    if (!getMonthAccess(monthNumber)) return
+    setSelectedMonth(monthNumber)
+    setNavigationView('weeks')
+  }
+
+  const handleWeekClick = (weekNumber: number) => {
+    setSelectedWeek(weekNumber)
+    setNavigationView('days')
+  }
+
+  // Render navigation views
+  if (navigationView !== 'workout') {
+    if (loading || loadingDashboard) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FE5858" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      )
+    }
+
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+          {navigationView !== 'months' && (
+            <TouchableOpacity onPress={() => {
+              if (navigationView === 'days') {
+                setNavigationView('weeks')
+                setSelectedWeek(null)
+              } else if (navigationView === 'weeks') {
+                setNavigationView('months')
+                setSelectedMonth(null)
+              }
+            }}>
+              <Text style={styles.backButton}>← Back</Text>
+            </TouchableOpacity>
+          )}
+          {navigationView === 'months' && <View style={{ width: 60 }} />}
+          <Text style={styles.headerTitle}>
+            {navigationView === 'months' ? 'Select a Month' : 
+             navigationView === 'weeks' ? `Month ${selectedMonth} - Days ${(selectedMonth! - 1) * getDaysPerMonth() + 1} to ${selectedMonth! * getDaysPerMonth()}` :
+             `Week ${selectedWeek}`}
+          </Text>
+          <View style={{ width: 60 }} />
+        </View>
+
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          {/* Program Header */}
+          {navigationView === 'months' && (
+            <View style={styles.card}>
+              <Text style={styles.programHeader}>Engine {programVersion === '3-day' ? '3 Day' : '5 Day'}</Text>
+            </View>
+          )}
+
+          {/* Months View */}
+          {navigationView === 'months' && (
+            <View style={styles.monthsContainer}>
+              {Array.from({ length: 36 }, (_, i) => i + 1).map(monthNum => {
+                const hasAccess = getMonthAccess(monthNum)
+                if (!hasAccess) return null
+                
+                const completion = getMonthCompletionRatio(monthNum)
+                return (
+                  <TouchableOpacity
+                    key={monthNum}
+                    style={styles.monthCard}
+                    onPress={() => handleMonthClick(monthNum)}
+                  >
+                    <Text style={styles.monthCardTitle}>Month {monthNum}</Text>
+                    <Text style={styles.monthCardCompletion}>{completion} completed</Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          )}
+
+          {/* Weeks View */}
+          {navigationView === 'weeks' && selectedMonth && (
+            <View>
+              <View style={styles.weeksContainer}>
+                {Array.from({ length: 4 }, (_, i) => i + 1).map(weekNum => {
+                  const daysPerMonth = getDaysPerMonth()
+                  const daysPerWeek = getDaysPerWeek()
+                  const startDay = (selectedMonth - 1) * daysPerMonth + (weekNum - 1) * daysPerWeek + 1
+                  const endDay = Math.min(startDay + daysPerWeek - 1, selectedMonth * daysPerMonth)
+                  
+                  const weekWorkouts = workouts.filter(w => {
+                    const dayNum = w.program_day_number || w.day_number
+                    return dayNum >= startDay && dayNum <= endDay
+                  })
+                  
+                  const completedCount = weekWorkouts.filter(w => {
+                    const dayNum = w.program_day_number || w.day_number
+                    return getDayStatus(w) === 'completed'
+                  }).length
+
+                  return (
+                    <TouchableOpacity
+                      key={weekNum}
+                      style={[
+                        styles.weekTab,
+                        selectedWeek === weekNum && styles.weekTabActive
+                      ]}
+                      onPress={() => handleWeekClick(weekNum)}
+                    >
+                      <Text style={[
+                        styles.weekTabText,
+                        selectedWeek === weekNum && styles.weekTabTextActive
+                      ]}>Week {weekNum}</Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+
+              {selectedWeek && (
+                <View style={styles.weekHeader}>
+                  <View style={styles.weekHeaderBar} />
+                  <Text style={styles.weekHeaderText}>Week {selectedWeek}</Text>
+                  <View style={styles.weekCompletionBadge}>
+                    <Text style={styles.weekCompletionText}>
+                      {(() => {
+                        const daysPerMonth = getDaysPerMonth()
+                        const daysPerWeek = getDaysPerWeek()
+                        const startDay = (selectedMonth - 1) * daysPerMonth + (selectedWeek - 1) * daysPerWeek + 1
+                        const endDay = Math.min(startDay + daysPerWeek - 1, selectedMonth * daysPerMonth)
+                        const weekWorkouts = workouts.filter(w => {
+                          const dayNum = w.program_day_number || w.day_number
+                          return dayNum >= startDay && dayNum <= endDay
+                        })
+                        const completedCount = weekWorkouts.filter(w => {
+                          const dayNum = w.program_day_number || w.day_number
+                          return getDayStatus(w) === 'completed'
+                        }).length
+                        return `${completedCount}/${weekWorkouts.length} completed`
+                      })()}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Days View */}
+          {navigationView === 'days' && selectedMonth && selectedWeek && (
+            <View style={styles.daysContainer}>
+              {(() => {
+                const daysPerMonth = getDaysPerMonth()
+                const daysPerWeek = getDaysPerWeek()
+                const startDay = (selectedMonth - 1) * daysPerMonth + (selectedWeek - 1) * daysPerWeek + 1
+                const endDay = Math.min(startDay + daysPerWeek - 1, selectedMonth * daysPerMonth)
+                
+                const weekWorkouts = workouts
+                  .filter(w => {
+                    const dayNum = w.program_day_number || w.day_number
+                    return dayNum >= startDay && dayNum <= endDay
+                  })
+                  .sort((a, b) => {
+                    const dayA = a.program_day_number || a.day_number
+                    const dayB = b.program_day_number || b.day_number
+                    return dayA - dayB
+                  })
+
+                return weekWorkouts.map(workout => {
+                  const dayNumber = workout.program_day_number || workout.day_number
+                  const status = getDayStatus(workout)
+                  const daysPerMonth = getDaysPerMonth()
+                  const isTimeTrialDay = dayNumber % daysPerMonth === 1 || (programVersion === '3-day' && dayNumber % 12 === 1)
+                  const dayType = workout.day_type || (isTimeTrialDay ? 'time_trial' : undefined)
+
+                  if (status === 'locked') return null
+
+                  return (
+                    <TouchableOpacity
+                      key={dayNumber}
+                      style={styles.dayCard}
+                      onPress={() => handleDayClick(dayNumber)}
+                    >
+                      <Text style={styles.dayCardTitle}>Day {dayNumber}</Text>
+                      <Text style={styles.dayCardType}>
+                        {isTimeTrialDay ? 'Time Trial' : getWorkoutTypeDisplayName(dayType || 'conditioning')}
+                      </Text>
+                      <Text style={styles.dayCardStatus}>
+                        {status === 'completed' ? 'Completed' : 
+                         status === 'current' ? 'Current' : 
+                         'Ready to start'}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })
+              })()}
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    )
+  }
+
+  // Workout view (existing code)
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -955,7 +1437,11 @@ export default function EnginePage() {
         <Text style={styles.errorMessage}>{error || 'Workout data is missing'}</Text>
         <TouchableOpacity
           style={styles.errorButton}
-          onPress={() => router.back()}
+          onPress={() => {
+            setNavigationView('months')
+            setSelectedMonth(null)
+            setSelectedWeek(null)
+          }}
         >
           <Text style={styles.errorButtonText}>Go Back</Text>
         </TouchableOpacity>
@@ -970,9 +1456,16 @@ export default function EnginePage() {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={() => {
+          // Clear day param and return to months view
+          router.push('/engine/training')
+          setNavigationView('months')
+          setSelectedMonth(null)
+          setSelectedWeek(null)
+        }}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{getWorkoutTypeDisplayName(workout?.day_type || 'conditioning')}</Text>
@@ -1044,7 +1537,7 @@ export default function EnginePage() {
                       styles.categoryButtonText,
                       (isSelected || isExpanded) && styles.categoryButtonTextActive
                     ]}>
-                      {category === 'Rowing' ? 'Row' : category === 'Cycling' ? 'Cycle' : category}
+                      {category === 'Rowing' ? 'Row' : category === 'Cycling' ? 'Bike' : category === 'Running' ? 'Run' : category}
                     </Text>
                     {isSelected && <Ionicons name="checkmark-circle" size={16} color="#FE5858" />}
                   </TouchableOpacity>
@@ -1167,7 +1660,7 @@ export default function EnginePage() {
               <Ionicons
                 name={expandedBreakdown ? 'chevron-up' : 'chevron-down'}
                 size={24}
-                color="#3B82F6"
+                color="#FE5858"
               />
             </TouchableOpacity>
             
@@ -1300,21 +1793,20 @@ export default function EnginePage() {
                             <View style={styles.roundDetails}>
                               <View style={styles.roundDetailRow}>
                                 <View style={styles.roundDetailItem}>
-                                  <Text style={styles.roundDetailLabel}>⏱️ Work</Text>
+                                  <Text style={styles.roundDetailLabel}>Work</Text>
                                   <Text style={styles.roundDetailValue}>{formatTime(workDuration)}</Text>
                                 </View>
+                                {restDuration > 0 && (
+                                  <View style={styles.roundDetailItem}>
+                                    <Text style={styles.roundDetailLabel}>Rest</Text>
+                                    <Text style={styles.roundDetailValue}>{formatTime(restDuration)}</Text>
+                                  </View>
+                                )}
                                 <View style={styles.roundDetailItem}>
-                                  <Text style={styles.roundDetailLabel}>🎯 Goal</Text>
+                                  <Text style={styles.roundDetailLabel}>Goal</Text>
                                   <Text style={styles.roundGoalValue}>{goalDisplay}</Text>
                                 </View>
                               </View>
-                              
-                              {restDuration > 0 && (
-                                <View style={styles.roundRestRow}>
-                                  <Text style={styles.roundRestLabel}>⏸️ Rest</Text>
-                                  <Text style={styles.roundRestValue}>{formatTime(restDuration)}</Text>
-                                </View>
-                              )}
                             </View>
                           </View>
                         )
@@ -1335,7 +1827,7 @@ export default function EnginePage() {
               <Ionicons
                 name={expandedHistory ? 'chevron-up' : 'chevron-down'}
                 size={24}
-                color="#3B82F6"
+                color="#FE5858"
               />
             </TouchableOpacity>
             
@@ -1478,55 +1970,65 @@ export default function EnginePage() {
             )}
 
             {/* Ring Timer */}
-            <View style={styles.timerContainer}>
-              <Svg width={192} height={192} viewBox="0 0 192 192">
-                <G transform="rotate(-90 96 96)">
-                  {/* Background circle */}
-                  <Circle
-                    cx="96"
-                    cy="96"
-                    r="88"
-                    stroke="#E5E7EB"
-                    strokeWidth="8"
-                    fill="none"
-                  />
-                  {/* Progress circle */}
-                  {(() => {
-                    const totalDuration = currentInt?.duration || 600
-                    const progress = totalDuration > 0 ? ((totalDuration - timeRemaining) / totalDuration) * 100 : 0
-                    const circumference = 2 * Math.PI * 88
-                    const offset = circumference - (progress / 100) * circumference
-                    // Use green for work phase, gray for rest/completed
-                    const strokeColor = isCompleted ? '#10B981' : (currentPhase === 'work' && isActive) ? '#10B981' : '#6B7280'
-                    
-                    return (
+            {(() => {
+              const screenWidth = Dimensions.get('window').width
+              const buttonWidth = screenWidth - 48 // 24px padding on each side
+              const timerSize = buttonWidth
+              const center = timerSize / 2
+              const radius = (timerSize - 24) / 2 // Account for stroke width
+              const circumference = 2 * Math.PI * radius
+              
+              return (
+                <View style={[styles.timerContainer, { width: timerSize, height: timerSize }]}>
+                  <Svg width={timerSize} height={timerSize} viewBox={`0 0 ${timerSize} ${timerSize}`}>
+                    <G transform={`rotate(-90 ${center} ${center})`}>
+                      {/* Background circle */}
                       <Circle
-                        cx="96"
-                        cy="96"
-                        r="88"
-                        stroke={strokeColor}
-                        strokeWidth="8"
+                        cx={center}
+                        cy={center}
+                        r={radius}
+                        stroke="#E5E7EB"
+                        strokeWidth="12"
                         fill="none"
-                        strokeLinecap="round"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={offset}
                       />
-                    )
-                  })()}
-                </G>
-                {/* Timer Display - Only time */}
-                <SvgText
-                  x="96"
-                  y="110"
-                  textAnchor="middle"
-                  fontSize="48"
-                  fontWeight={700}
-                  fill="#111827"
-                >
-                  {formatTime(timeRemaining)}
-                </SvgText>
-              </Svg>
-            </View>
+                      {/* Progress circle */}
+                      {(() => {
+                        const totalDuration = currentInt?.duration || 600
+                        const progress = totalDuration > 0 ? ((totalDuration - timeRemaining) / totalDuration) * 100 : 0
+                        const offset = circumference - (progress / 100) * circumference
+                        // Use green for work phase, gray for rest/completed
+                        const strokeColor = isCompleted ? '#10B981' : (currentPhase === 'work' && isActive) ? '#10B981' : '#6B7280'
+                        
+                        return (
+                          <Circle
+                            cx={center}
+                            cy={center}
+                            r={radius}
+                            stroke={strokeColor}
+                            strokeWidth="12"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={offset}
+                          />
+                        )
+                      })()}
+                    </G>
+                    {/* Timer Display - Only time */}
+                    <SvgText
+                      x={center}
+                      y={center + 20}
+                      textAnchor="middle"
+                      fontSize={timerSize * 0.24}
+                      fontWeight={700}
+                      fill="#111827"
+                    >
+                      {formatTime(timeRemaining)}
+                    </SvgText>
+                  </Svg>
+                </View>
+              )
+            })()}
 
             {/* Controls - Circular buttons at bottom */}
             {(isActive || isPaused) && (
@@ -1952,9 +2454,7 @@ const styles = StyleSheet.create({
   timerContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 24,
-    width: 192,
-    height: 192,
+    marginVertical: 32,
     alignSelf: 'center',
   },
   controlsStack: {
@@ -2193,10 +2693,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#D1D5DB',
-    backgroundColor: '#DAE2EA',
+    backgroundColor: '#FFFFFF',
   },
   equipmentButtonActive: {
     borderColor: '#FE5858',
+    backgroundColor: '#FE5858',
   },
   equipmentButtonText: {
     fontSize: 14,
@@ -2204,7 +2705,7 @@ const styles = StyleSheet.create({
     color: '#282B34',
   },
   equipmentButtonTextActive: {
-    color: '#282B34',
+    color: '#FFFFFF',
   },
   unitSelectionCard: {
     backgroundColor: '#F8FBFE',
@@ -2233,22 +2734,22 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 6,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#D1D5DB',
-    backgroundColor: '#DAE2EA',
+    backgroundColor: '#FFFFFF',
   },
   unitButtonActive: {
     borderColor: '#FE5858',
     backgroundColor: '#FE5858',
   },
   unitButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#282B34',
     textAlign: 'center',
   },
   unitButtonTextActive: {
-    color: '#F8FBFE',
+    color: '#FFFFFF',
   },
   baselineWarning: {
     backgroundColor: '#FEF3C7',
@@ -2345,7 +2846,7 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#FFFFFF',
     borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
+    borderLeftColor: '#FE5858',
     borderRadius: 8,
     marginBottom: 16,
     shadowColor: '#000',
@@ -2431,7 +2932,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   roundBadge: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#FE5858',
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 6,
@@ -2471,25 +2972,24 @@ const styles = StyleSheet.create({
   roundGoalValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#3B82F6',
+    color: '#FE5858',
   },
-  roundRestRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+  roundRestItem: {
+    backgroundColor: '#F8FBFE',
+    padding: 10,
+    borderRadius: 6,
+    marginTop: 8,
   },
   roundRestLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6B7280',
+    marginBottom: 4,
     fontWeight: '500',
   },
   roundRestValue: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#111827',
   },
   effortBadge: {
     fontSize: 14,
@@ -2564,6 +3064,120 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
+  },
+  programHeader: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  monthsContainer: {
+    gap: 16,
+    marginTop: 16,
+  },
+  monthCard: {
+    backgroundColor: '#DAE2EA',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#FE5858',
+  },
+  monthCardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  monthCardCompletion: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  weeksContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  weekTab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#FE5858',
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+  },
+  weekTabActive: {
+    backgroundColor: '#DAE2EA',
+  },
+  weekTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  weekTabTextActive: {
+    fontWeight: '700',
+  },
+  weekHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  weekHeaderBar: {
+    width: 4,
+    height: 24,
+    backgroundColor: '#FE5858',
+    borderRadius: 2,
+  },
+  weekHeaderText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    flex: 1,
+  },
+  weekCompletionBadge: {
+    backgroundColor: '#FE5858',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+  },
+  weekCompletionText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  daysContainer: {
+    gap: 12,
+    marginTop: 16,
+  },
+  dayCard: {
+    backgroundColor: '#DAE2EA',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#FE5858',
+  },
+  dayCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  dayCardType: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  dayCardStatus: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#111827',
   },
 })
 

@@ -983,7 +983,7 @@ const loadProfile = async () => {
           <div className="bg-white rounded-xl shadow-lg border border-slate-blue p-6">
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xl font-bold text-charcoal">FOUNDATION STRENGTH</h2>
+                <h2 className="text-xl font-bold text-charcoal">BW STRENGTH RATIOS</h2>
                 <button
                   onClick={() => toggleCategory('foundation-strength')}
                   className="text-coral hover:text-coral text-sm font-medium"

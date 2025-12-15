@@ -7,9 +7,11 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
-  StyleSheet
+  StyleSheet,
+  StatusBar
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -409,6 +411,7 @@ const skillCategories = [
 
 export default function ProfilePage() {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [profile, setProfile] = useState<ProfileData | null>(null)
@@ -771,8 +774,9 @@ export default function ProfilePage() {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <Text style={styles.headerTitle}>Athlete Profile</Text>
@@ -809,10 +813,10 @@ export default function ProfilePage() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={true}
       >
-        {/* Foundation Strength */}
+        {/* BW Strength Ratios */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>FOUNDATION STRENGTH</Text>
+            <Text style={styles.sectionTitle}>BW STRENGTH RATIOS</Text>
             <TouchableOpacity onPress={() => toggleCategory('foundation-strength')}>
               <Text style={styles.toggleText}>
                 [{expandedCategories.includes('foundation-strength') ? '- Hide' : '+ View'}]

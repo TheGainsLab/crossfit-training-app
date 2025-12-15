@@ -40,7 +40,7 @@ type TabType = 'overview' | 'skills' | 'strength' | 'technical' | 'accessories' 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E8F4F8',
+    backgroundColor: '#F8FBFE',
   },
   loadingContainer: {
     flex: 1,
@@ -65,10 +65,26 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
+  headerWithBack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  backButton: {
+    paddingVertical: 4,
+    paddingRight: 8,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#FE5858',
+    fontWeight: '600',
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
     color: '#333333',
+    flex: 1,
   },
   tabsContainer: {
     backgroundColor: '#FFFFFF',
@@ -104,6 +120,59 @@ const styles = StyleSheet.create({
   tabTextInactive: {
     color: '#4B5563',
   },
+  categoryGridContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 16,
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  categoryColumn: {
+    flex: 1,
+    gap: 8,
+  },
+  categoryCard: {
+    backgroundColor: '#F8FBFE',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#282B34',
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  categoryCardActive: {
+    borderColor: '#FE5858',
+    borderWidth: 2,
+  },
+  categoryCardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#282B34',
+    marginBottom: 2,
+  },
+  categoryCardCount: {
+    fontSize: 16,
+    color: '#282B34',
+  },
+  categoryCardCountNumber: {
+    color: '#FE5858',
+    fontWeight: '700',
+  },
+  contentBackButton: {
+    marginBottom: 16,
+    paddingVertical: 8,
+  },
+  contentBackButtonText: {
+    fontSize: 16,
+    color: '#FE5858',
+    fontWeight: '600',
+  },
   contentContainer: {
     padding: 16,
     paddingBottom: 100,
@@ -114,10 +183,11 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: 8,
   },
   statCardWrapper: {
-    width: '48%',
+    flex: 1,
+    minWidth: 0,
     marginBottom: 16,
   },
   trendSection: {
@@ -173,8 +243,9 @@ const styles = StyleSheet.create({
   },
   activityCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 12,
     marginBottom: 12,
   },
   activityDate: {
@@ -184,7 +255,17 @@ const styles = StyleSheet.create({
   },
   activityMeta: {
     fontSize: 14,
+    fontWeight: '700',
+    color: '#282B34',
+  },
+  activityCount: {
+    fontSize: 14,
     fontWeight: '500',
+    color: '#FE5858',
+  },
+  activitySessionType: {
+    fontSize: 14,
+    fontWeight: '600',
     color: '#FE5858',
   },
   activityExercises: {
@@ -193,15 +274,18 @@ const styles = StyleSheet.create({
   activityExercisesText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: '#6B7280',
   },
   activityBlocks: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
   },
   blockBadge: {
-    backgroundColor: '#6B8FA3',
+    backgroundColor: '#F3F4F6',
+    borderWidth: 0,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -209,7 +293,12 @@ const styles = StyleSheet.create({
   blockBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#333333',
+    color: '#282B34',
+  },
+  blockBadgeCount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FE5858',
   },
   skillsSummaryRow: {
     flexDirection: 'row',
@@ -247,19 +336,27 @@ const styles = StyleSheet.create({
   },
   skillCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'flex-start',
     marginBottom: 12,
+    position: 'relative',
   },
   skillCardTitle: {
     flex: 1,
     marginRight: 8,
+    alignItems: 'center',
   },
   skillName: {
     fontWeight: '700',
     color: '#333333',
     fontSize: 16,
     marginBottom: 4,
+    textAlign: 'center',
+  },
+  skillRepCount: {
+    fontWeight: '700',
+    color: '#FE5858',
+    fontSize: 16,
   },
   skillIntakeLevel: {
     fontSize: 14,
@@ -270,6 +367,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 9999,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   repBadgeBlue: {
     backgroundColor: '#DBEAFE',
@@ -631,6 +731,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
+  engineAnalyticsCard: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#FE5858',
+    padding: 16,
+  },
+  engineAnalyticsCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#282B34',
+    marginBottom: 8,
+  },
+  engineAnalyticsCardDescription: {
+    fontSize: 14,
+    color: '#282B34',
+  },
 })
 
 export default function ProgressPage() {
@@ -660,6 +776,24 @@ export default function ProgressPage() {
       loadTabData(activeTab)
     }
   }, [userId, activeTab])
+
+  // Reload recent activity when filter changes (only on overview tab)
+  useEffect(() => {
+    if (userId && activeTab === 'overview') {
+      const loadRecentActivity = async () => {
+        try {
+          const activity = await fetchRecentActivity(
+            userId, 
+            activityFilter === null ? 100 : activityFilter
+          )
+          setRecentActivity(activity)
+        } catch (error) {
+          console.error('Error reloading recent activity:', error)
+        }
+      }
+      loadRecentActivity()
+    }
+  }, [activityFilter, userId, activeTab])
 
   const loadUser = async () => {
     try {
@@ -692,30 +826,56 @@ export default function ProgressPage() {
 
     try {
       if (tab === 'overview') {
-        const [activity, dashboard] = await Promise.all([
+        // Preload all category data so task counts are available immediately
+        const [activity, dashboard, skills, strength, technical, accessories, metcons, engine] = await Promise.all([
           fetchRecentActivity(userId, activityFilter === null ? 100 : activityFilter),
           fetchDashboardData(userId),
+          fetchSkillsAnalytics(userId, 90),
+          fetchStrengthAnalytics(userId, 90),
+          fetchTechnicalWorkAnalytics(userId, 90),
+          fetchAccessoriesAnalytics(userId, 90),
+          fetchMetConAnalytics(userId),
+          fetchEngineAnalytics(userId),
         ])
         setRecentActivity(activity)
         setDashboardData(dashboard)
+        setSkillsData(skills)
+        setStrengthData(strength)
+        setTechnicalData(technical)
+        setAccessoriesData(accessories)
+        setMetconData(metcons)
+        setEngineData(engine)
       } else if (tab === 'skills') {
-        const data = await fetchSkillsAnalytics(userId, 90)
-        setSkillsData(data)
+        // Only load if not already loaded
+        if (!skillsData) {
+          const data = await fetchSkillsAnalytics(userId, 90)
+          setSkillsData(data)
+        }
       } else if (tab === 'strength') {
-        const data = await fetchStrengthAnalytics(userId, 90)
-        setStrengthData(data)
+        if (!strengthData) {
+          const data = await fetchStrengthAnalytics(userId, 90)
+          setStrengthData(data)
+        }
       } else if (tab === 'technical') {
-        const data = await fetchTechnicalWorkAnalytics(userId, 90)
-        setTechnicalData(data)
+        if (!technicalData) {
+          const data = await fetchTechnicalWorkAnalytics(userId, 90)
+          setTechnicalData(data)
+        }
       } else if (tab === 'accessories') {
-        const data = await fetchAccessoriesAnalytics(userId, 90)
-        setAccessoriesData(data)
+        if (!accessoriesData) {
+          const data = await fetchAccessoriesAnalytics(userId, 90)
+          setAccessoriesData(data)
+        }
       } else if (tab === 'metcons') {
-        const data = await fetchMetConAnalytics(userId)
-        setMetconData(data)
+        if (!metconData) {
+          const data = await fetchMetConAnalytics(userId)
+          setMetconData(data)
+        }
       } else if (tab === 'engine') {
-        const data = await fetchEngineAnalytics(userId)
-        setEngineData(data)
+        if (!engineData) {
+          const data = await fetchEngineAnalytics(userId)
+          setEngineData(data)
+        }
       }
     } catch (error) {
       console.error(`Error loading ${tab} data:`, error)
@@ -755,6 +915,28 @@ export default function ProgressPage() {
     }
   }
 
+  // Calculate task counts for each category
+  const getTaskCount = (category: TabType): number => {
+    switch (category) {
+      case 'skills':
+        return skillsData?.skillsAnalysis?.skills ? Object.keys(skillsData.skillsAnalysis.skills).length : 0
+      case 'strength':
+        return strengthData?.strengthAnalysis?.movements ? Object.keys(strengthData.strengthAnalysis.movements).length : 0
+      case 'technical':
+        return technicalData?.technicalWorkAnalysis?.movements ? Object.keys(technicalData.technicalWorkAnalysis.movements).length : 0
+      case 'accessories':
+        return accessoriesData?.accessoriesAnalysis?.movements ? Object.keys(accessoriesData.accessoriesAnalysis.movements).length : 0
+      case 'metcons':
+        if (!metconData?.heatmapCells) return 0
+        const uniqueExercises = new Set(metconData.heatmapCells.map((c: any) => c.exercise_name))
+        return uniqueExercises.size
+      case 'engine':
+        return engineData?.sessions?.length || 0
+      default:
+        return 0
+    }
+  }
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -764,37 +946,20 @@ export default function ProgressPage() {
     )
   }
 
+  // Helper function to get category display name
+  const getCategoryName = (tab: TabType): string => {
+    switch (tab) {
+      case 'technical':
+        return 'Technical Work'
+      case 'metcons':
+        return 'MetCons'
+      default:
+        return tab.charAt(0).toUpperCase() + tab.slice(1)
+    }
+  }
+
   return (
     <View style={[styles.container, { flex: 1 }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Progress & Analytics</Text>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabsContainer}>
-        {(['overview', 'skills', 'strength', 'technical', 'accessories', 'metcons', 'engine'] as TabType[]).map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            activeOpacity={0.7}
-            style={[
-              styles.tab,
-              activeTab === tab ? styles.tabActive : styles.tabInactive,
-            ]}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === tab ? styles.tabTextActive : styles.tabTextInactive,
-              ]}
-            >
-              {tab === 'technical' ? 'Technical Work' : tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
       {/* Content */}
       <ScrollView
         style={{ flex: 1 }}
@@ -804,7 +969,19 @@ export default function ProgressPage() {
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* Back button - only show when NOT on overview */}
+        {activeTab !== 'overview' && (
+          <TouchableOpacity 
+            onPress={() => setActiveTab('overview')}
+            style={styles.contentBackButton}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.contentBackButtonText}>← Back to Overview</Text>
+          </TouchableOpacity>
+        )}
+        
         {activeTab === 'overview' && (
+          <>
           <OverviewTab
             recentActivity={recentActivity}
             dashboardData={dashboardData}
@@ -815,6 +992,78 @@ export default function ProgressPage() {
             userId={userId}
             router={router}
           />
+            
+            {/* Category Cards Grid - Only show on overview */}
+            <View style={styles.categoryGridContainer}>
+              <View style={styles.categoryGrid}>
+                {/* Left Column */}
+                <View style={styles.categoryColumn}>
+                  <TouchableOpacity
+                    style={styles.categoryCard}
+                    onPress={() => setActiveTab('skills')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.categoryCardCount}>
+                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('skills')}</Text> Skills
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={styles.categoryCard}
+                    onPress={() => setActiveTab('technical')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.categoryCardCount}>
+                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('technical')}</Text> Technical
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={styles.categoryCard}
+                    onPress={() => setActiveTab('strength')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.categoryCardCount}>
+                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('strength')}</Text> Strength
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                
+                {/* Right Column */}
+                <View style={styles.categoryColumn}>
+                  <TouchableOpacity
+                    style={styles.categoryCard}
+                    onPress={() => setActiveTab('accessories')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.categoryCardCount}>
+                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('accessories')}</Text> Accessories
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={styles.categoryCard}
+                    onPress={() => setActiveTab('metcons')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.categoryCardCount}>
+                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('metcons')}</Text> MetCons
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={styles.categoryCard}
+                    onPress={() => setActiveTab('engine')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.categoryCardCount}>
+                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('engine')}</Text> Engine
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </>
         )}
         {activeTab === 'skills' && (
           <SkillsTab skillsData={skillsData} userId={userId} />
@@ -1002,25 +1251,19 @@ function OverviewTab({
     <View style={styles.sectionGap}>
       {/* Dashboard Stats */}
       {dashboardData && (
-        <Card>
+        <Card style={{ paddingTop: 16 }}>
           <SectionHeader title="Overview" />
-          <View style={styles.statsRow}>
+          <View style={[styles.statsRow, { paddingHorizontal: 16 }]}>
             <View style={styles.statCardWrapper}>
               <StatCard
-                label="Training Days"
-                value={dashboardData.totalWorkouts}
-              />
-            </View>
-            <View style={styles.statCardWrapper}>
-              <StatCard
-                label="Tasks Completed"
-                value={dashboardData.totalExercises}
-              />
-            </View>
-            <View style={styles.statCardWrapper}>
-              <StatCard
-                label="MetCons Completed"
+                label="MetCons Complete"
                 value={dashboardData.metconsCompleted}
+              />
+            </View>
+            <View style={styles.statCardWrapper}>
+              <StatCard
+                label="Tasks Complete"
+                value={dashboardData.totalExercises}
               />
             </View>
             <View style={styles.statCardWrapper}>
@@ -1094,12 +1337,8 @@ function OverviewTab({
               <Card>
                 <View style={styles.activityCardHeader}>
                   <Text style={styles.activityMeta}>
-                    Week {session.week} • Day {session.day}
-                  </Text>
-                </View>
-                <View style={styles.activityExercises}>
-                  <Text style={styles.activityExercisesText}>
-                    {session.totalExercises} exercises completed
+                    Week {session.week} • Day {session.day}{' '}
+                    <Text style={styles.activityCount}>({session.totalExercises})</Text>
                   </Text>
                 </View>
                 <View style={styles.activityBlocks}>
@@ -1109,7 +1348,7 @@ function OverviewTab({
                       style={styles.blockBadge}
                     >
                       <Text style={styles.blockBadgeText}>
-                        {block.blockName} ({block.exerciseCount})
+                        {block.blockName} <Text style={styles.blockBadgeCount}>({block.exerciseCount})</Text>
                       </Text>
                     </View>
                   ))}
@@ -1154,31 +1393,23 @@ function SkillsTab({
       {/* Summary Stats */}
       <Card>
         <SectionHeader title="Skills Development Overview" />
-        <View style={styles.skillsSummaryRow}>
-          <View style={styles.skillsStat}>
-            <Text style={styles.skillsStatValue}>
-              {skillsArray.length}
-            </Text>
-            <Text style={styles.skillsStatLabel}>Skills Practiced</Text>
+        <View style={[styles.statsRow, { paddingHorizontal: 16 }]}>
+          <View style={styles.statCardWrapper}>
+            <StatCard label="Skills Practiced" value={skillsArray.length} />
           </View>
-          <View style={styles.skillsStat}>
-            <Text style={styles.skillsStatValue}>
-              {skillsArray.filter((s) => s.qualityGrade === 'A').length}
-            </Text>
-            <Text style={styles.skillsStatLabel}>Grade A Skills</Text>
+          <View style={styles.statCardWrapper}>
+            <StatCard label="Grade A Skills" value={skillsArray.filter((s) => s.qualityGrade === 'A').length} />
           </View>
         </View>
       </Card>
 
       {/* Skills List */}
-      <Card>
         <SectionHeader title="Individual Skills Progress" />
         <View style={styles.skillsList}>
           {skillsArray.map((skill, index) => (
             <SkillCard key={skill.name || index} skill={skill} />
           ))}
         </View>
-      </Card>
     </View>
   )
 }
@@ -1198,11 +1429,11 @@ function SkillCard({ skill }: { skill: SkillData }) {
   const repBadge = getRepBadge(skill.totalReps)
 
   return (
-    <Card>
+    <Card style={{ padding: 16 }}>
       <View style={styles.skillCardHeader}>
         <View style={styles.skillCardTitle}>
           <Text style={styles.skillName}>
-            {skill.name}
+            {skill.name} <Text style={styles.skillRepCount}>({skill.totalReps.toLocaleString()})</Text>
           </Text>
           {skill.intakeLevel && (
             <Text style={styles.skillIntakeLevel}>
@@ -1223,10 +1454,6 @@ function SkillCard({ skill }: { skill: SkillData }) {
         <View style={styles.skillStatItem}>
           <Text style={styles.skillStatLabel}>Sessions</Text>
           <Text style={styles.skillStatValue}>{skill.sessions.length}</Text>
-        </View>
-        <View style={styles.skillStatItem}>
-          <Text style={styles.skillStatLabel}>Total Reps</Text>
-          <Text style={styles.skillStatValue}>{skill.totalReps.toLocaleString()}</Text>
         </View>
         <View style={styles.skillStatItem}>
           <Text style={styles.skillStatLabel}>Avg RPE</Text>
@@ -1341,15 +1568,11 @@ function StrengthTab({ strengthData, userId }: { strengthData: any; userId: numb
             onPress={() => handleCardPress(movement.name)}
             activeOpacity={0.7}
           >
-            <Card>
+            <Card style={{ padding: 16 }}>
               <Text style={styles.movementCardTitle}>
-                {movement.name}
+                {movement.name} ({movement.sessions.length})
               </Text>
               <View style={styles.movementStats}>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Sessions</Text>
-                  <Text style={styles.movementStatValue}>{movement.sessions.length}</Text>
-                </View>
                 <View style={styles.movementStatRow}>
                   <Text style={styles.movementStatLabel}>Max Weight</Text>
                   <Text style={styles.movementStatValueTeal}>
@@ -1449,15 +1672,11 @@ function TechnicalWorkTab({ technicalData, userId }: { technicalData: any; userI
             onPress={() => handleCardPress(movement.name)}
             activeOpacity={0.7}
           >
-            <Card>
+            <Card style={{ padding: 16 }}>
               <Text style={styles.movementCardTitle}>
-                {movement.name}
+                {movement.name} ({movement.sessions.length})
               </Text>
               <View style={styles.movementStats}>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Sessions</Text>
-                  <Text style={styles.movementStatValue}>{movement.sessions.length}</Text>
-                </View>
                 <View style={styles.movementStatRow}>
                   <Text style={styles.movementStatLabel}>Max Weight</Text>
                   <Text style={styles.movementStatValueTeal}>
@@ -1557,15 +1776,11 @@ function AccessoriesTab({ accessoriesData, userId }: { accessoriesData: any; use
             onPress={() => handleCardPress(movement.name)}
             activeOpacity={0.7}
           >
-            <Card>
+            <Card style={{ padding: 16 }}>
               <Text style={styles.movementCardTitle}>
-                {movement.name}
+                {movement.name} ({movement.sessions.length})
               </Text>
               <View style={styles.movementStats}>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Sessions</Text>
-                  <Text style={styles.movementStatValue}>{movement.sessions.length}</Text>
-                </View>
                 <View style={styles.movementStatRow}>
                   <Text style={styles.movementStatLabel}>Max Weight</Text>
                   <Text style={styles.movementStatValueTeal}>
@@ -1928,7 +2143,6 @@ function EngineTab({ engineData, userId }: { engineData: any; userId: number | n
   const hasData = engineData.totalSessions > 0 || engineData.totalTimeTrials > 0
 
   const analyticsOptions = [
-    { id: 'overview', title: 'Overview', description: 'Summary stats and recent activity', icon: '📊' },
     { id: 'history', title: 'My History', description: 'Performance trends by day type and modality', icon: '📈' },
     { id: 'comparisons', title: 'Comparisons', description: 'Side by side day type analysis', icon: '⚖️' },
     { id: 'time-trials', title: 'My Time Trials', description: 'Detailed time trial tracking', icon: '🎯' },
@@ -1947,33 +2161,25 @@ function EngineTab({ engineData, userId }: { engineData: any; userId: number | n
         {hasData && (
           <Card>
             <SectionHeader title="Engine Analytics Summary" />
-            <View style={styles.statsRow}>
+            <View style={[styles.statsRow, { paddingHorizontal: 16 }]}>
               <View style={styles.statCardWrapper}>
                 <StatCard label="Workouts" value={engineData.totalSessions} />
               </View>
               <View style={styles.statCardWrapper}>
                 <StatCard label="Time Trials" value={engineData.totalTimeTrials} />
               </View>
-              {engineData.avgPerformanceRatio !== null && (
-                <View style={styles.statCardWrapper}>
-                  <StatCard
-                    label="Avg Performance"
-                    value={`${(engineData.avgPerformanceRatio * 100).toFixed(0)}%`}
-                  />
-                </View>
-              )}
             </View>
           </Card>
         )}
 
         {/* No Data State */}
         {!hasData && (
-          <Card>
-            <SectionHeader title="Engine Analytics" />
-            <Text style={styles.noDataText}>
-              No Engine workout data yet. Complete Engine workouts to see detailed analytics!
-            </Text>
-          </Card>
+        <Card>
+          <SectionHeader title="Engine Analytics" />
+          <Text style={styles.noDataText}>
+            No Engine workout data yet. Complete Engine workouts to see detailed analytics!
+          </Text>
+        </Card>
         )}
 
         {/* Analytics Menu */}
@@ -1985,19 +2191,13 @@ function EngineTab({ engineData, userId }: { engineData: any; userId: number | n
               onPress={() => setCurrentView(option.id)}
               activeOpacity={0.7}
             >
-              <Card>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 32, marginRight: 12 }}>{option.icon}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#333333', marginBottom: 4 }}>
-                      {option.title}
-                    </Text>
-                    <Text style={{ fontSize: 13, color: '#4B5563' }}>
-                      {option.description}
-                    </Text>
-                  </View>
-                  <Text style={{ fontSize: 18, color: '#9CA3AF' }}>›</Text>
-                </View>
+              <Card style={styles.engineAnalyticsCard}>
+                <Text style={styles.engineAnalyticsCardTitle}>
+                  {option.title}
+                </Text>
+                <Text style={styles.engineAnalyticsCardDescription}>
+                  {option.description}
+                </Text>
               </Card>
             </TouchableOpacity>
           ))}
@@ -2019,7 +2219,6 @@ function EngineTab({ engineData, userId }: { engineData: any; userId: number | n
       </TouchableOpacity>
 
       {/* Render specific view content */}
-      {currentView === 'overview' && <EngineOverviewView engineData={engineData} />}
       {currentView === 'history' && <EngineHistoryView engineData={engineData} />}
       {currentView === 'comparisons' && <EngineComparisonsView engineData={engineData} />}
       {currentView === 'time-trials' && <EngineTimeTrialsView engineData={engineData} />}
@@ -2081,7 +2280,7 @@ function EngineOverviewView({ engineData }: { engineData: any }) {
                 <View style={styles.activityCardHeader}>
                   <Text style={styles.activityMeta}>{formatDate(session.date)}</Text>
                   {session.day_type && (
-                    <Text style={styles.activityMeta}>
+                    <Text style={styles.activitySessionType}>
                       {session.day_type.charAt(0).toUpperCase() + session.day_type.slice(1)}
                     </Text>
                   )}
@@ -2104,9 +2303,55 @@ function EngineOverviewView({ engineData }: { engineData: any }) {
 }
 
 // My History View - Performance trends by day type and modality
+// Horizontal Bar Chart Component
+function HorizontalBarChart({ 
+  data, 
+  labels, 
+  maxValue, 
+  unit = '', 
+  height = 32 
+}: { 
+  data: number[], 
+  labels: string[], 
+  maxValue: number,
+  unit?: string,
+  height?: number
+}) {
+  return (
+    <View>
+      {data.map((value, index) => {
+        const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0
+        return (
+          <View key={index} style={{ marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <Text style={{ fontSize: 12, color: '#6B7280', width: 60 }}>
+                {labels[index]}
+              </Text>
+              <View style={{ flex: 1, height, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden', marginHorizontal: 8 }}>
+                <View 
+                  style={{ 
+                    height: '100%', 
+                    width: `${percentage}%`, 
+                    backgroundColor: '#FE5858',
+                    borderRadius: 4
+                  }} 
+                />
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34', width: 70, textAlign: 'right' }}>
+                {Math.round(value)}{unit}
+              </Text>
+            </View>
+          </View>
+        )
+      })}
+    </View>
+  )
+}
+
 function EngineHistoryView({ engineData }: { engineData: any }) {
   const [selectedDayType, setSelectedDayType] = useState('')
   const [selectedModality, setSelectedModality] = useState('')
+  const [selectedMetric, setSelectedMetric] = useState<'output' | 'pace'>('output')
 
   // Get available day types from sessions
   const availableDayTypes = React.useMemo(() => {
@@ -2154,8 +2399,8 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
   return (
     <View style={styles.sectionGap}>
       {/* Day Type Filter */}
-      <Card>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+      <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
           Select Day Type
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -2173,7 +2418,7 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
                   borderRadius: 8,
                   borderWidth: 2,
                   borderColor: selectedDayType === dayType ? '#FE5858' : '#E5E7EB',
-                  backgroundColor: '#DAE2EA',
+                  backgroundColor: selectedDayType === dayType ? '#FFFFFF' : '#F3F4F6',
                 }}
                 activeOpacity={0.7}
               >
@@ -2192,8 +2437,8 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
 
       {/* Modality Filter */}
       {selectedDayType && (
-        <Card>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+        <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
             Select Modality
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -2208,7 +2453,7 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
                     borderRadius: 8,
                     borderWidth: 2,
                     borderColor: selectedModality === modality ? '#FE5858' : '#E5E7EB',
-                    backgroundColor: '#DAE2EA',
+                    backgroundColor: selectedModality === modality ? '#FFFFFF' : '#F3F4F6',
                   }}
                   activeOpacity={0.7}
                 >
@@ -2237,37 +2482,135 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
                 No sessions found for {formatDayType(selectedDayType)} with {formatModality(selectedModality)}
               </Text>
             </Card>
-          ) : (
-            <View style={styles.activityList}>
-              {filteredSessions.map((session: any, index: number) => (
-                <Card key={session.id || index}>
-                  <View style={styles.activityCardHeader}>
-                    <Text style={styles.activityMeta}>{formatDate(session.date)}</Text>
-                    <Text style={styles.activityMeta}>Day {session.program_day_number}</Text>
-                  </View>
+          ) : filteredSessions.length === 1 ? (
+            // Show single session as card if only one session
+            <Card>
+              <View style={styles.activityCardHeader}>
+                <Text style={styles.activityMeta}>{formatDate(filteredSessions[0].date)}</Text>
+                <Text style={styles.activityMeta}>Day {filteredSessions[0].program_day_number}</Text>
+              </View>
                   <Text style={styles.activityExercisesText}>
-                    Output: {session.total_output} {session.units || ''}
+                Output: {filteredSessions[0].total_output} {filteredSessions[0].units || ''}
+              </Text>
+              {filteredSessions[0].actual_pace && (
+                <Text style={styles.activityExercisesText}>
+                  Pace: {Math.round(filteredSessions[0].actual_pace)} {filteredSessions[0].units}/min
+                </Text>
+              )}
+              {filteredSessions[0].performance_ratio && (
+                <Text style={[
+                  styles.activityExercisesText,
+                  { 
+                    color: parseFloat(filteredSessions[0].performance_ratio) >= 1.0 ? '#10B981' : 
+                           parseFloat(filteredSessions[0].performance_ratio) >= 0.9 ? '#3B82F6' : '#F59E0B',
+                    fontWeight: '600'
+                  }
+                ]}>
+                  Performance: {(parseFloat(filteredSessions[0].performance_ratio) * 100).toFixed(0)}%
                   </Text>
-                  {session.actual_pace && (
-                    <Text style={styles.activityExercisesText}>
-                      Pace: {Math.round(session.actual_pace)} {session.units}/min
+                )}
+              </Card>
+          ) : (
+            <ScrollView>
+              {/* Metric Toggle */}
+              <Card style={{ padding: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
+                  Select Metric
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
+                  <TouchableOpacity
+                    onPress={() => setSelectedMetric('output')}
+                    style={{
+                      paddingHorizontal: 20,
+                      paddingVertical: 10,
+                      borderRadius: 8,
+                      borderWidth: 2,
+                      borderColor: selectedMetric === 'output' ? '#FE5858' : '#E5E7EB',
+                      backgroundColor: selectedMetric === 'output' ? '#FFFFFF' : '#F3F4F6',
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{
+                      color: '#282B34',
+                      fontWeight: '600',
+                      fontSize: 14,
+                    }}>
+                      Output
                     </Text>
+                  </TouchableOpacity>
+                  {filteredSessions.some((s: any) => s.actual_pace) && (
+                    <TouchableOpacity
+                      onPress={() => setSelectedMetric('pace')}
+                      style={{
+                        paddingHorizontal: 20,
+                        paddingVertical: 10,
+                        borderRadius: 8,
+                        borderWidth: 2,
+                        borderColor: selectedMetric === 'pace' ? '#FE5858' : '#E5E7EB',
+                        backgroundColor: selectedMetric === 'pace' ? '#FFFFFF' : '#F3F4F6',
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{
+                        color: '#282B34',
+                        fontWeight: '600',
+                        fontSize: 14,
+                      }}>
+                        Pace
+                      </Text>
+                    </TouchableOpacity>
                   )}
-                  {session.performance_ratio && (
-                    <Text style={[
-                      styles.activityExercisesText,
-                      { 
-                        color: parseFloat(session.performance_ratio) >= 1.0 ? '#10B981' : 
-                               parseFloat(session.performance_ratio) >= 0.9 ? '#3B82F6' : '#F59E0B',
-                        fontWeight: '600'
-                      }
-                    ]}>
-                      Performance: {(parseFloat(session.performance_ratio) * 100).toFixed(0)}%
-                    </Text>
-                  )}
+                </View>
+              </Card>
+
+              {/* Output Chart */}
+              {selectedMetric === 'output' && (
+                <Card style={{ padding: 16 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34', marginBottom: 16, textAlign: 'center' }}>
+                    Output Over Time
+                  </Text>
+                  <HorizontalBarChart
+                    data={filteredSessions.map((s: any) => parseFloat(s.total_output) || 0)}
+                    labels={filteredSessions.map((s: any) => formatDate(s.date))}
+                    maxValue={Math.max(...filteredSessions.map((s: any) => parseFloat(s.total_output) || 0))}
+                    unit={` ${filteredSessions[0]?.units || ''}`}
+                    height={32}
+                  />
                 </Card>
-              ))}
-            </View>
+              )}
+
+              {/* Pace Chart */}
+              {selectedMetric === 'pace' && filteredSessions.some((s: any) => s.actual_pace) && (
+                <Card style={{ padding: 16 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34', marginBottom: 16, textAlign: 'center' }}>
+                    Pace Over Time
+                  </Text>
+                  <HorizontalBarChart
+                    data={filteredSessions.map((s: any) => Math.round(parseFloat(s.actual_pace) || 0))}
+                    labels={filteredSessions.map((s: any) => formatDate(s.date))}
+                    maxValue={Math.max(...filteredSessions.map((s: any) => Math.round(parseFloat(s.actual_pace) || 0)))}
+                    unit={` ${filteredSessions[0]?.units || ''}/min`}
+                    height={32}
+                  />
+                </Card>
+              )}
+
+              {/* Performance Ratio Chart (if available) */}
+              {filteredSessions.some((s: any) => s.performance_ratio) && (
+                <Card style={{ padding: 16 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34', marginBottom: 16, textAlign: 'center' }}>
+                    Performance Ratio Over Time
+                  </Text>
+                  <HorizontalBarChart
+                    data={filteredSessions.map((s: any) => (parseFloat(s.performance_ratio) || 0) * 100)}
+                    labels={filteredSessions.map((s: any) => formatDate(s.date))}
+                    maxValue={Math.max(...filteredSessions.map((s: any) => (parseFloat(s.performance_ratio) || 0) * 100), 100)}
+                    unit="%"
+                    height={32}
+                  />
+                </Card>
+              )}
+            </ScrollView>
           )}
         </>
       )}
@@ -2278,6 +2621,7 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
 function EngineComparisonsView({ engineData }: { engineData: any }) {
   const [selectedModality, setSelectedModality] = useState('')
   const [selectedDayTypes, setSelectedDayTypes] = useState<string[]>([])
+  const [selectedMetric, setSelectedMetric] = useState<'pace' | 'output'>('output')
 
   // Get available modalities
   const availableModalities = React.useMemo(() => {
@@ -2347,8 +2691,8 @@ function EngineComparisonsView({ engineData }: { engineData: any }) {
   return (
     <View style={styles.sectionGap}>
       {/* Modality Filter */}
-      <Card>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+      <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
           Select Modality
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -2366,7 +2710,7 @@ function EngineComparisonsView({ engineData }: { engineData: any }) {
                   borderRadius: 8,
                   borderWidth: 2,
                   borderColor: selectedModality === modality ? '#FE5858' : '#E5E7EB',
-                  backgroundColor: '#DAE2EA',
+                  backgroundColor: selectedModality === modality ? '#FFFFFF' : '#F3F4F6',
                 }}
                 activeOpacity={0.7}
               >
@@ -2385,8 +2729,8 @@ function EngineComparisonsView({ engineData }: { engineData: any }) {
 
       {/* Day Type Selection */}
       {selectedModality && (
-        <Card>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+        <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
             Select Day Types to Compare (tap multiple)
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -2400,12 +2744,12 @@ function EngineComparisonsView({ engineData }: { engineData: any }) {
                   borderRadius: 8,
                   borderWidth: 2,
                   borderColor: selectedDayTypes.includes(dayType) ? '#FE5858' : '#E5E7EB',
-                  backgroundColor: selectedDayTypes.includes(dayType) ? '#FE5858' : '#DAE2EA',
+                  backgroundColor: selectedDayTypes.includes(dayType) ? '#FFFFFF' : '#F3F4F6',
                 }}
                 activeOpacity={0.7}
               >
                 <Text style={{
-                  color: selectedDayTypes.includes(dayType) ? '#FFFFFF' : '#282B34',
+                  color: '#282B34',
                   fontWeight: '600',
                   fontSize: 13,
                 }}>
@@ -2413,7 +2757,7 @@ function EngineComparisonsView({ engineData }: { engineData: any }) {
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
+        </View>
         </Card>
       )}
 
@@ -2421,46 +2765,83 @@ function EngineComparisonsView({ engineData }: { engineData: any }) {
       {comparisonData.length > 0 && (
         <>
           <SectionHeader title="Comparison Results" />
-          <View style={styles.activityList}>
-            {comparisonData.map((data: any) => (
-              <Card key={data.dayType}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#333333', marginBottom: 12 }}>
-                  {formatDayType(data.dayType)}
+          
+          {/* Metric Toggle */}
+          <Card style={{ padding: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
+              Select Metric
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
+              <TouchableOpacity
+                onPress={() => setSelectedMetric('output')}
+                style={{
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  borderWidth: 2,
+                  borderColor: selectedMetric === 'output' ? '#FE5858' : '#E5E7EB',
+                  backgroundColor: selectedMetric === 'output' ? '#FFFFFF' : '#F3F4F6',
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{
+                  color: '#282B34',
+                  fontWeight: '600',
+                  fontSize: 14,
+                }}>
+                  Avg Output
                 </Text>
-                <View style={styles.statsRow}>
-                  <View style={styles.statCardWrapper}>
-                    <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>SESSIONS</Text>
-                    <Text style={{ fontSize: 24, fontWeight: '700', color: '#3B82F6' }}>
-                      {data.sessionCount}
-                    </Text>
-                  </View>
-                  <View style={styles.statCardWrapper}>
-                    <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>AVG OUTPUT</Text>
-                    <Text style={{ fontSize: 20, fontWeight: '600', color: '#333333' }}>
-                      {data.avgOutput}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: '#6B7280' }}>{data.units}</Text>
-                  </View>
-                </View>
-                <View style={styles.statsRow}>
-                  <View style={styles.statCardWrapper}>
-                    <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>MAX OUTPUT</Text>
-                    <Text style={{ fontSize: 20, fontWeight: '600', color: '#10B981' }}>
-                      {data.maxOutput}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: '#6B7280' }}>{data.units}</Text>
-                  </View>
-                  <View style={styles.statCardWrapper}>
-                    <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>AVG PACE</Text>
-                    <Text style={{ fontSize: 20, fontWeight: '600', color: '#F59E0B' }}>
-                      {data.avgPace}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: '#6B7280' }}>{data.units}/min</Text>
-                  </View>
-                </View>
-              </Card>
-            ))}
-          </View>
+              </TouchableOpacity>
+              {comparisonData.some((d: any) => d.avgPace) && (
+                <TouchableOpacity
+                  onPress={() => setSelectedMetric('pace')}
+                  style={{
+                    paddingHorizontal: 20,
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    borderWidth: 2,
+                    borderColor: selectedMetric === 'pace' ? '#FE5858' : '#E5E7EB',
+                    backgroundColor: selectedMetric === 'pace' ? '#FFFFFF' : '#F3F4F6',
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{
+                    color: '#282B34',
+                    fontWeight: '600',
+                    fontSize: 14,
+                  }}>
+                    Avg Pace
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </Card>
+
+          {/* Single Chart with All Day Types */}
+          <Card style={{ padding: 16 }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34', marginBottom: 16, textAlign: 'center' }}>
+              {selectedMetric === 'output' ? 'Average Output Comparison' : 'Average Pace Comparison'}
+            </Text>
+            <HorizontalBarChart
+              data={comparisonData.map((data: any) => 
+                selectedMetric === 'output' 
+                  ? data.avgOutput 
+                  : (data.avgPace || 0)
+              )}
+              labels={comparisonData.map((data: any) => 
+                `${formatDayType(data.dayType)} (${data.sessionCount})`
+              )}
+              maxValue={Math.max(...comparisonData.map((data: any) => 
+                selectedMetric === 'output' 
+                  ? data.avgOutput 
+                  : (data.avgPace || 0)
+              ))}
+              unit={selectedMetric === 'output' 
+                ? ` ${comparisonData[0]?.units || ''}` 
+                : ` ${comparisonData[0]?.units || ''}/min`}
+              height={32}
+            />
+          </Card>
         </>
       )}
     </View>
@@ -2468,6 +2849,8 @@ function EngineComparisonsView({ engineData }: { engineData: any }) {
 }
 
 function EngineTimeTrialsView({ engineData }: { engineData: any }) {
+  const [selectedModality, setSelectedModality] = useState('')
+
   const formatModality = (modality: string) => {
     return modality.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
   }
@@ -2477,37 +2860,141 @@ function EngineTimeTrialsView({ engineData }: { engineData: any }) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
+  // Get available modalities from time trials
+  const availableModalities = React.useMemo(() => {
+    const modalities = new Set<string>()
+    engineData.timeTrials?.forEach((trial: any) => {
+      if (trial.modality) modalities.add(trial.modality)
+    })
+    return Array.from(modalities).sort()
+  }, [engineData.timeTrials])
+
+  // Filter and sort time trials by selected modality
+  const filteredTrials = React.useMemo(() => {
+    if (!selectedModality) return []
+    
+    const trials = engineData.timeTrials?.filter((trial: any) => 
+      trial.modality === selectedModality && trial.total_output
+    ) || []
+    
+    // Sort by date (most recent first)
+    return trials.sort((a: any, b: any) => {
+      const dateA = new Date(a.date || a.created_at).getTime()
+      const dateB = new Date(b.date || b.created_at).getTime()
+      return dateB - dateA
+    })
+  }, [engineData.timeTrials, selectedModality])
+
+  // Find the most recent trial (first in sorted array)
+  const mostRecentTrialId = filteredTrials.length > 0 ? (filteredTrials[0].id || filteredTrials[0].date || filteredTrials[0].created_at) : null
+
   return (
     <View style={styles.sectionGap}>
-      <Card>
-        <SectionHeader title="My Time Trials" />
-        {engineData.timeTrials?.length === 0 ? (
+      <SectionHeader title="My Time Trials" />
+      
+      {engineData.timeTrials?.length === 0 ? (
+        <Card>
           <Text style={styles.noDataText}>No time trials completed yet.</Text>
-        ) : (
-          <View style={styles.activityList}>
-            {engineData.timeTrials.map((trial: any, index: number) => (
-              <Card key={trial.id || index}>
-                <View style={styles.activityCardHeader}>
-                  <Text style={styles.activityMeta}>{formatDate(trial.date || trial.created_at)}</Text>
-                </View>
-                {trial.modality && (
-                  <Text style={styles.activityExercisesText}>{formatModality(trial.modality)}</Text>
-                )}
-                {trial.total_output && (
-                  <Text style={styles.activityExercisesText}>
-                    Output: {trial.total_output} {trial.units || ''}
-                  </Text>
-                )}
-                {trial.duration_seconds && (
-                  <Text style={styles.activityExercisesText}>
-                    Duration: {Math.floor(trial.duration_seconds / 60)}:{(trial.duration_seconds % 60).toString().padStart(2, '0')}
-                  </Text>
-                )}
-              </Card>
-            ))}
-          </View>
-        )}
-      </Card>
+        </Card>
+      ) : (
+        <>
+          {/* Modality Filter */}
+          <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
+              Select Modality
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {availableModalities.map((modality) => (
+                  <TouchableOpacity
+                    key={modality}
+                    onPress={() => setSelectedModality(modality)}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 10,
+                      borderRadius: 8,
+                      borderWidth: 2,
+                      borderColor: selectedModality === modality ? '#FE5858' : '#E5E7EB',
+                      backgroundColor: selectedModality === modality ? '#FFFFFF' : '#F3F4F6',
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{
+                      color: '#282B34',
+                      fontWeight: '600',
+                      fontSize: 13,
+                    }}>
+                      {formatModality(modality)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </Card>
+
+          {/* Results */}
+          {selectedModality && filteredTrials.length === 0 ? (
+            <Card>
+              <Text style={styles.noDataText}>
+                No time trials found for {formatModality(selectedModality)}
+              </Text>
+            </Card>
+          ) : selectedModality && filteredTrials.length > 0 ? (
+            <Card style={{ padding: 16 }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34', marginBottom: 16, textAlign: 'center' }}>
+                Time Trials - {formatModality(selectedModality)}
+              </Text>
+        <View>
+                {filteredTrials.map((trial: any, index: number) => {
+                  const isMostRecent = (trial.id || trial.date || trial.created_at) === mostRecentTrialId
+                  const trialDate = formatDate(trial.date || trial.created_at)
+                  const output = parseFloat(trial.total_output) || 0
+                  const maxOutput = Math.max(...filteredTrials.map((t: any) => parseFloat(t.total_output) || 0))
+                  const percentage = maxOutput > 0 ? (output / maxOutput) * 100 : 0
+
+                  return (
+                    <View key={trial.id || index} style={{ marginBottom: 12 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', width: 100 }}>
+                          <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                            {trialDate}
+                          </Text>
+                          {isMostRecent && (
+                            <View style={{ 
+                              marginLeft: 6,
+                              backgroundColor: '#10B981',
+                              borderRadius: 10,
+                              width: 20,
+                              height: 20,
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>✓</Text>
+                            </View>
+                          )}
+                        </View>
+                        <View style={{ flex: 1, height: 32, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden', marginHorizontal: 8 }}>
+                          <View 
+                            style={{ 
+                              height: '100%', 
+                              width: `${percentage}%`, 
+                              backgroundColor: isMostRecent ? '#10B981' : '#FE5858',
+                              borderRadius: 4
+                            }} 
+                          />
+                        </View>
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34', width: 70, textAlign: 'right' }}>
+                          {Math.round(output)} {trial.units || ''}
+                        </Text>
+                      </View>
+                    </View>
+                  )
+                })}
+              </View>
+            </Card>
+          ) : null}
+        </>
+      )}
     </View>
   )
 }
@@ -2555,10 +3042,16 @@ function EngineTargetsView({ engineData }: { engineData: any }) {
     const avgActual = filteredSessions.reduce((sum: number, s: any) => sum + parseFloat(s.actual_pace), 0) / filteredSessions.length
     const avgRatio = filteredSessions.reduce((sum: number, s: any) => sum + parseFloat(s.performance_ratio || 0), 0) / filteredSessions.length
     
+    // Calculate days where target was hit (performance_ratio >= 1.0)
+    const daysTargetHit = filteredSessions.filter((s: any) => parseFloat(s.performance_ratio || 0) >= 1.0).length
+    const totalDays = filteredSessions.length
+    
     return {
       avgTarget: Math.round(avgTarget),
       avgActual: Math.round(avgActual),
-      avgRatio: (avgRatio * 100).toFixed(0)
+      avgRatio: (avgRatio * 100).toFixed(0),
+      daysTargetHit,
+      totalDays
     }
   }, [filteredSessions])
 
@@ -2578,8 +3071,8 @@ function EngineTargetsView({ engineData }: { engineData: any }) {
   return (
     <View style={styles.sectionGap}>
       {/* Day Type Filter */}
-      <Card>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+      <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
           Select Day Type
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -2597,7 +3090,7 @@ function EngineTargetsView({ engineData }: { engineData: any }) {
                   borderRadius: 8,
                   borderWidth: 2,
                   borderColor: selectedDayType === dayType ? '#FE5858' : '#E5E7EB',
-                  backgroundColor: '#DAE2EA',
+                  backgroundColor: selectedDayType === dayType ? '#FFFFFF' : '#F3F4F6',
                 }}
                 activeOpacity={0.7}
               >
@@ -2616,8 +3109,8 @@ function EngineTargetsView({ engineData }: { engineData: any }) {
 
       {/* Modality Filter */}
       {selectedDayType && (
-        <Card>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+        <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
             Select Modality
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -2632,7 +3125,7 @@ function EngineTargetsView({ engineData }: { engineData: any }) {
                     borderRadius: 8,
                     borderWidth: 2,
                     borderColor: selectedModality === modality ? '#FE5858' : '#E5E7EB',
-                    backgroundColor: '#DAE2EA',
+                    backgroundColor: selectedModality === modality ? '#FFFFFF' : '#F3F4F6',
                   }}
                   activeOpacity={0.7}
                 >
@@ -2653,10 +3146,65 @@ function EngineTargetsView({ engineData }: { engineData: any }) {
       {/* Results */}
       {selectedDayType && selectedModality && (
         <>
+          {/* Target Hit Ratio Bar Chart */}
+          {stats && stats.totalDays > 0 && (
+            <Card style={{ padding: 16 }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34', marginBottom: 16, textAlign: 'center' }}>
+                Target Performance
+              </Text>
+              <View style={{ marginBottom: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                  <Text style={{ fontSize: 12, color: '#6B7280', width: 80 }}>
+                    Days Completed
+                  </Text>
+                  <View style={{ flex: 1, height: 40, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden', marginHorizontal: 8, position: 'relative' }}>
+                    {/* Background bar for total days */}
+                    <View 
+                      style={{ 
+                        height: '100%', 
+                        width: '100%', 
+                        backgroundColor: '#E5E7EB',
+                        position: 'absolute'
+                      }} 
+                    />
+                    {/* Green bar for days target hit */}
+                    <View 
+                      style={{ 
+                        height: '100%', 
+                        width: `${(stats.daysTargetHit / stats.totalDays) * 100}%`, 
+                        backgroundColor: '#10B981',
+                        borderRadius: 4
+                      }} 
+                    />
+                    {/* Red bar for days target not hit */}
+                    <View 
+                      style={{ 
+                        height: '100%', 
+                        width: `${((stats.totalDays - stats.daysTargetHit) / stats.totalDays) * 100}%`, 
+                        backgroundColor: '#FE5858',
+                        borderRadius: 4,
+                        position: 'absolute',
+                        left: `${(stats.daysTargetHit / stats.totalDays) * 100}%`
+                      }} 
+                    />
+                  </View>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#282B34', width: 60, textAlign: 'right' }}>
+                    {stats.daysTargetHit}/{stats.totalDays}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 11, color: '#9CA3AF', textAlign: 'center', marginTop: 8 }}>
+                  {stats.daysTargetHit} of {stats.totalDays} days target met
+                </Text>
+              </View>
+            </Card>
+          )}
+
           {/* Summary Stats */}
           {stats && (
-            <Card>
-              <SectionHeader title="Average Performance" />
+            <Card style={{ padding: 16 }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34', marginBottom: 16, textAlign: 'center' }}>
+                Average Performance
+              </Text>
               <View style={styles.statsRow}>
                 <View style={styles.statCardWrapper}>
                   <StatCard label="Target Pace" value={`${stats.avgTarget}`} />
@@ -2671,8 +3219,6 @@ function EngineTargetsView({ engineData }: { engineData: any }) {
             </Card>
           )}
 
-          <SectionHeader title={`Sessions (${filteredSessions.length})`} />
-          
           {filteredSessions.length === 0 ? (
             <Card>
               <Text style={styles.noDataText}>
@@ -2680,42 +3226,81 @@ function EngineTargetsView({ engineData }: { engineData: any }) {
               </Text>
             </Card>
           ) : (
-            <View style={styles.activityList}>
-              {filteredSessions.map((session: any, index: number) => (
-                <Card key={session.id || index}>
-                  <View style={styles.activityCardHeader}>
-                    <Text style={styles.activityMeta}>{formatDate(session.date)}</Text>
-                    <Text style={styles.activityMeta}>Day {session.program_day_number}</Text>
-                  </View>
-                  <View style={styles.statsRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>TARGET</Text>
-                      <Text style={{ fontSize: 18, fontWeight: '600', color: '#6B7280' }}>
-                        {Math.round(parseFloat(session.target_pace))}
+          <View style={styles.activityList}>
+              {filteredSessions.map((session: any, index: number) => {
+                const targetPace = Math.round(parseFloat(session.target_pace))
+                const actualPace = Math.round(parseFloat(session.actual_pace))
+                const performanceRatio = parseFloat(session.performance_ratio || 0)
+                const maxPace = Math.max(targetPace, actualPace)
+                const targetPercentage = maxPace > 0 ? (targetPace / maxPace) * 100 : 0
+                const actualPercentage = maxPace > 0 ? (actualPace / maxPace) * 100 : 0
+                
+                return (
+                  <Card key={session.id || index} style={{ padding: 16 }}>
+                    {/* Header */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34' }}>
+                        {formatDate(session.date)}
                       </Text>
-                      <Text style={{ fontSize: 11, color: '#9CA3AF' }}>{session.units}/min</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>ACTUAL</Text>
-                      <Text style={{ fontSize: 18, fontWeight: '600', color: '#333333' }}>
-                        {Math.round(parseFloat(session.actual_pace))}
+                      <Text style={{ fontSize: 14, color: '#6B7280' }}>
+                        Day {session.program_day_number}
                       </Text>
-                      <Text style={{ fontSize: 11, color: '#9CA3AF' }}>{session.units}/min</Text>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>RATIO</Text>
+
+                    {/* Target Bar */}
+                    <View style={{ marginBottom: 12 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                        <Text style={{ fontSize: 11, color: '#9CA3AF', width: 60 }}>TARGET</Text>
+                        <View style={{ flex: 1, height: 24, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden', marginHorizontal: 8 }}>
+                          <View 
+                            style={{ 
+                              height: '100%', 
+                              width: `${targetPercentage}%`, 
+                              backgroundColor: '#6B7280',
+                              borderRadius: 4
+                            }} 
+                          />
+                        </View>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', width: 60, textAlign: 'right' }}>
+                          {targetPace} {session.units}/min
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Actual Bar */}
+                    <View style={{ marginBottom: 12 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                        <Text style={{ fontSize: 11, color: '#9CA3AF', width: 60 }}>ACTUAL</Text>
+                        <View style={{ flex: 1, height: 24, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden', marginHorizontal: 8 }}>
+                          <View 
+                            style={{ 
+                              height: '100%', 
+                              width: `${actualPercentage}%`, 
+                              backgroundColor: performanceRatio >= 1.0 ? '#10B981' : performanceRatio >= 0.9 ? '#3B82F6' : '#F59E0B',
+                              borderRadius: 4
+                            }} 
+                          />
+                        </View>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', width: 60, textAlign: 'right' }}>
+                          {actualPace} {session.units}/min
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Performance Ratio */}
+                    <View style={{ alignItems: 'center', marginTop: 8 }}>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>PERFORMANCE</Text>
                       <Text style={{
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: '700',
-                        color: parseFloat(session.performance_ratio) >= 1.0 ? '#10B981' : 
-                               parseFloat(session.performance_ratio) >= 0.9 ? '#3B82F6' : '#F59E0B'
+                        color: performanceRatio >= 1.0 ? '#10B981' : performanceRatio >= 0.9 ? '#3B82F6' : '#F59E0B'
                       }}>
-                        {(parseFloat(session.performance_ratio) * 100).toFixed(0)}%
+                        {(performanceRatio * 100).toFixed(0)}%
                       </Text>
                     </View>
-                  </View>
-                </Card>
-              ))}
+                  </Card>
+                )
+              })}
             </View>
           )}
         </>
@@ -2776,8 +3361,8 @@ function EngineRecordsView({ engineData }: { engineData: any }) {
   return (
     <View style={styles.sectionGap}>
       {/* Modality Filter */}
-      <Card>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+      <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
           Select Modality
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -2792,7 +3377,7 @@ function EngineRecordsView({ engineData }: { engineData: any }) {
                   borderRadius: 8,
                   borderWidth: 2,
                   borderColor: selectedModality === modality ? '#FE5858' : '#E5E7EB',
-                  backgroundColor: '#DAE2EA',
+                  backgroundColor: selectedModality === modality ? '#FFFFFF' : '#F3F4F6',
                 }}
                 activeOpacity={0.7}
               >
@@ -2812,8 +3397,6 @@ function EngineRecordsView({ engineData }: { engineData: any }) {
       {/* Personal Records */}
       {selectedModality && (
         <>
-          <SectionHeader title={`Personal Records - ${formatModality(selectedModality)}`} />
-          
           {Object.keys(personalRecords).length === 0 ? (
             <Card>
               <Text style={styles.noDataText}>
@@ -2821,45 +3404,71 @@ function EngineRecordsView({ engineData }: { engineData: any }) {
               </Text>
             </Card>
           ) : (
-            <View style={styles.activityList}>
-              {Object.entries(personalRecords).map(([dayType, record]: [string, any]) => (
-                <Card key={dayType}>
-                  <View style={{ marginBottom: 12 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#333333', marginBottom: 4 }}>
-                      🏆 {formatDayType(dayType)}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                      {formatDate(record.date)} • Day {record.program_day_number}
-                    </Text>
+            <Card style={{ padding: 16 }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34', marginBottom: 16, textAlign: 'center' }}>
+                Personal Records ({Object.values(personalRecords).find((r: any) => r.actual_pace)?.units || 'cal'}/min)
+              </Text>
+              {Object.entries(personalRecords).filter(([_, record]: [string, any]) => record.actual_pace).length === 0 ? (
+                <Text style={styles.noDataText}>
+                  No pace data available for records
+                </Text>
+              ) : (
+                <>
+                  <View>
+                    {Object.entries(personalRecords)
+                      .filter(([_, record]: [string, any]) => record.actual_pace)
+                      .sort(([_, a]: [string, any], [__, b]: [string, any]) => 
+                        (parseFloat(b.actual_pace) || 0) - (parseFloat(a.actual_pace) || 0)
+                      )
+                      .map(([dayType, record]: [string, any], index: number) => {
+                        const pace = Math.round(parseFloat(record.actual_pace) || 0)
+                        const maxPace = Math.max(...Object.entries(personalRecords)
+                          .filter(([_, r]: [string, any]) => r.actual_pace)
+                          .map(([_, r]: [string, any]) => Math.round(parseFloat(r.actual_pace) || 0)), 1)
+                        const percentage = maxPace > 0 ? (pace / maxPace) * 100 : 0
+                        const units = record.units || ''
+                        
+                        return (
+                          <View key={dayType} style={{ marginBottom: 12 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              <View style={{ flex: 1, height: 32, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden', marginRight: 8, position: 'relative' }}>
+                                <View 
+                                  style={{ 
+                                    height: '100%', 
+                                    width: `${percentage}%`, 
+                                    backgroundColor: '#FE5858',
+                                    borderRadius: 4
+                                  }} 
+                                />
+                                {/* Label inside bar */}
+                                <View style={{ 
+                                  position: 'absolute', 
+                                  left: 8, 
+                                  top: 0, 
+                                  height: '100%', 
+                                  justifyContent: 'center',
+                                  zIndex: 1
+                                }}>
+                                  <Text style={{ 
+                                    fontSize: 12, 
+                                    fontWeight: '600', 
+                                    color: '#FFFFFF'
+                                  }}>
+                                    {formatDayType(dayType)}
+                                  </Text>
+                                </View>
+                              </View>
+                              <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', width: 70, textAlign: 'right' }}>
+                                {pace}
+                              </Text>
+                            </View>
+                          </View>
+                        )
+                      })}
                   </View>
-                  <View style={styles.statsRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>TOTAL OUTPUT</Text>
-                      <Text style={{ fontSize: 24, fontWeight: '700', color: '#FE5858' }}>
-                        {record.total_output}
-                      </Text>
-                      <Text style={{ fontSize: 12, color: '#6B7280' }}>{record.units}</Text>
-                    </View>
-                    {record.actual_pace && (
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>AVG PACE</Text>
-                        <Text style={{ fontSize: 20, fontWeight: '600', color: '#333333' }}>
-                          {Math.round(record.actual_pace)}
-                        </Text>
-                        <Text style={{ fontSize: 12, color: '#6B7280' }}>{record.units}/min</Text>
-                      </View>
-                    )}
-                  </View>
-                  {record.average_heart_rate && (
-                    <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
-                      <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                        Avg HR: {record.average_heart_rate} bpm • Peak HR: {record.peak_heart_rate || '--'} bpm
-                      </Text>
-                    </View>
-                  )}
-                </Card>
-              ))}
-            </View>
+                </>
+              )}
+            </Card>
           )}
         </>
       )}
@@ -2869,6 +3478,50 @@ function EngineRecordsView({ engineData }: { engineData: any }) {
 
 function EngineHeartRateView({ engineData }: { engineData: any }) {
   const [selectedDayType, setSelectedDayType] = useState('')
+
+  // Get baseline paces from time trials (most recent for each modality)
+  const baselines = React.useMemo(() => {
+    const baselineMap: Record<string, number> = {}
+    
+    if (!engineData.timeTrials || engineData.timeTrials.length === 0) {
+      return baselineMap
+    }
+    
+    // Get most recent time trial for each modality
+    const modalityTrials: Record<string, any> = {}
+    engineData.timeTrials.forEach((trial: any) => {
+      const modality = trial.modality || 'unknown'
+      if (!modalityTrials[modality]) {
+        modalityTrials[modality] = trial
+      } else {
+        const trialDate = trial.date ? new Date(trial.date) : new Date(0)
+        const existingDate = modalityTrials[modality].date ? new Date(modalityTrials[modality].date) : new Date(0)
+        if (trialDate > existingDate) {
+          modalityTrials[modality] = trial
+        }
+      }
+    })
+    
+    // Calculate baseline pace for each modality (output per minute)
+    Object.entries(modalityTrials).forEach(([modality, trial]: [string, any]) => {
+      if (trial.total_output && trial.duration_seconds) {
+        baselineMap[modality] = trial.total_output / (trial.duration_seconds / 60)
+      }
+    })
+    
+    return baselineMap
+  }, [engineData.timeTrials])
+
+  // Helper function to calculate pace from session
+  const calculatePace = (session: any): number | null => {
+    if (session.actual_pace) {
+      return parseFloat(session.actual_pace)
+    }
+    if (session.total_output && session.total_work_seconds) {
+      return session.total_output / (session.total_work_seconds / 60)
+    }
+    return null
+  }
 
   // Get available day types with HR data
   const availableDayTypes = React.useMemo(() => {
@@ -2895,15 +3548,53 @@ function EngineHeartRateView({ engineData }: { engineData: any }) {
     const avgHRs = sessions.filter((s: any) => s.average_heart_rate).map((s: any) => parseFloat(s.average_heart_rate))
     const peakHRs = sessions.filter((s: any) => s.peak_heart_rate).map((s: any) => parseFloat(s.peak_heart_rate))
     
+    // Calculate efficiency and training load for each session
+    const efficiencies: number[] = []
+    const trainingLoads: number[] = []
+    
+    sessions.forEach((session: any) => {
+      const pace = calculatePace(session)
+      const avgHR = session.average_heart_rate ? parseFloat(session.average_heart_rate) : null
+      const modality = session.modality || 'unknown'
+      const baseline = baselines[modality]
+      
+      // Get duration in minutes
+      let durationMinutes = 0
+      if (session.total_work_seconds) {
+        durationMinutes = session.total_work_seconds / 60
+      }
+      
+      if (pace !== null && avgHR !== null && avgHR > 0) {
+        let efficiency = 0
+        let trainingLoad = 0
+        
+        if (baseline && baseline > 0) {
+          // Normalized efficiency: (pace / baseline) / avgHR * 1000
+          efficiency = ((pace / baseline) / avgHR) * 1000
+          // Training load: (pace / baseline) × avgHR × durationMinutes
+          trainingLoad = (pace / baseline) * avgHR * durationMinutes
+        } else {
+          // Fallback calculation if no baseline
+          efficiency = (pace / avgHR) * 1000
+          trainingLoad = pace * avgHR * durationMinutes
+        }
+        
+        efficiencies.push(efficiency)
+        trainingLoads.push(trainingLoad)
+      }
+    })
+    
     return {
       sessionCount: sessions.length,
       avgAvgHR: avgHRs.length > 0 ? Math.round(avgHRs.reduce((a: number, b: number) => a + b, 0) / avgHRs.length) : null,
       avgPeakHR: peakHRs.length > 0 ? Math.round(peakHRs.reduce((a: number, b: number) => a + b, 0) / peakHRs.length) : null,
       maxPeakHR: peakHRs.length > 0 ? Math.max(...peakHRs) : null,
       minAvgHR: avgHRs.length > 0 ? Math.min(...avgHRs) : null,
+      avgEfficiency: efficiencies.length > 0 ? Math.round((efficiencies.reduce((a: number, b: number) => a + b, 0) / efficiencies.length) * 10) / 10 : null,
+      avgTrainingLoad: trainingLoads.length > 0 ? Math.round(trainingLoads.reduce((a: number, b: number) => a + b, 0) / trainingLoads.length) : null,
       sessions
     }
-  }, [engineData.sessions, selectedDayType])
+  }, [engineData.sessions, selectedDayType, baselines])
 
   const formatDayType = (dayType: string) => {
     return dayType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -2917,8 +3608,8 @@ function EngineHeartRateView({ engineData }: { engineData: any }) {
   return (
     <View style={styles.sectionGap}>
       {/* Day Type Filter */}
-      <Card>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+      <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
           Select Day Type
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -2932,7 +3623,7 @@ function EngineHeartRateView({ engineData }: { engineData: any }) {
                 borderRadius: 8,
                 borderWidth: 2,
                 borderColor: selectedDayType === dayType ? '#FE5858' : '#E5E7EB',
-                backgroundColor: '#DAE2EA',
+                backgroundColor: selectedDayType === dayType ? '#FFFFFF' : '#F3F4F6',
               }}
               activeOpacity={0.7}
             >
@@ -2975,43 +3666,103 @@ function EngineHeartRateView({ engineData }: { engineData: any }) {
                 </View>
               )}
             </View>
+            {(hrStats.avgEfficiency !== null || hrStats.avgTrainingLoad !== null) && (
+              <View style={styles.statsRow}>
+                {hrStats.avgEfficiency !== null && (
+                  <View style={styles.statCardWrapper}>
+                    <StatCard label="HR Efficiency" value={hrStats.avgEfficiency.toFixed(1)} />
+                  </View>
+                )}
+                {hrStats.avgTrainingLoad !== null && (
+                  <View style={styles.statCardWrapper}>
+                    <StatCard label="Training Load" value={hrStats.avgTrainingLoad.toFixed(0)} />
+                  </View>
+                )}
+              </View>
+            )}
           </Card>
 
           <SectionHeader title="Recent Sessions" />
           <View style={styles.activityList}>
-            {hrStats.sessions.slice(0, 10).map((session: any, index: number) => (
-              <Card key={session.id || index}>
-                <View style={styles.activityCardHeader}>
-                  <Text style={styles.activityMeta}>{formatDate(session.date)}</Text>
-                  <Text style={styles.activityMeta}>Day {session.program_day_number}</Text>
-                </View>
-                <View style={styles.statsRow}>
-                  {session.average_heart_rate && (
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>AVG HR</Text>
-                      <Text style={{ fontSize: 18, fontWeight: '600', color: '#EF4444' }}>
-                        {session.average_heart_rate}
-                      </Text>
-                      <Text style={{ fontSize: 11, color: '#9CA3AF' }}>bpm</Text>
+            {hrStats.sessions.slice(0, 10).map((session: any, index: number) => {
+              // Calculate efficiency and training load for this session
+              const pace = calculatePace(session)
+              const avgHR = session.average_heart_rate ? parseFloat(session.average_heart_rate) : null
+              const modality = session.modality || 'unknown'
+              const baseline = baselines[modality]
+              
+              let durationMinutes = 0
+              if (session.total_work_seconds) {
+                durationMinutes = session.total_work_seconds / 60
+              }
+              
+              let efficiency: number | null = null
+              let trainingLoad: number | null = null
+              
+              if (pace !== null && avgHR !== null && avgHR > 0) {
+                if (baseline && baseline > 0) {
+                  efficiency = ((pace / baseline) / avgHR) * 1000
+                  trainingLoad = (pace / baseline) * avgHR * durationMinutes
+                } else {
+                  efficiency = (pace / avgHR) * 1000
+                  trainingLoad = pace * avgHR * durationMinutes
+                }
+              }
+              
+              return (
+                <Card key={session.id || index}>
+                  <View style={styles.activityCardHeader}>
+                    <Text style={styles.activityMeta}>{formatDate(session.date)}</Text>
+                    <Text style={styles.activityMeta}>Day {session.program_day_number}</Text>
+                  </View>
+                  <View style={styles.statsRow}>
+                    {session.average_heart_rate && (
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>AVG HR</Text>
+                        <Text style={{ fontSize: 18, fontWeight: '600', color: '#EF4444' }}>
+                          {session.average_heart_rate}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#9CA3AF' }}>bpm</Text>
+                      </View>
+                    )}
+                    {session.peak_heart_rate && (
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>PEAK HR</Text>
+                        <Text style={{ fontSize: 18, fontWeight: '600', color: '#DC2626' }}>
+                          {session.peak_heart_rate}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#9CA3AF' }}>bpm</Text>
+                      </View>
+                    )}
+                  </View>
+                  {(efficiency !== null || trainingLoad !== null) && (
+                    <View style={[styles.statsRow, { marginTop: 8 }]}>
+                      {efficiency !== null && (
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>EFFICIENCY</Text>
+                          <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34' }}>
+                            {efficiency.toFixed(1)}
+                          </Text>
+                        </View>
+                      )}
+                      {trainingLoad !== null && trainingLoad > 0 && (
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>TRAINING LOAD</Text>
+                          <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34' }}>
+                            {Math.round(trainingLoad)}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   )}
-                  {session.peak_heart_rate && (
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>PEAK HR</Text>
-                      <Text style={{ fontSize: 18, fontWeight: '600', color: '#DC2626' }}>
-                        {session.peak_heart_rate}
-                      </Text>
-                      <Text style={{ fontSize: 11, color: '#9CA3AF' }}>bpm</Text>
-                    </View>
+                  {session.total_output && (
+                    <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 8 }}>
+                      Output: {session.total_output} {session.units}
+                    </Text>
                   )}
-                </View>
-                {session.total_output && (
-                  <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 8 }}>
-                    Output: {session.total_output} {session.units}
-                  </Text>
-                )}
-              </Card>
-            ))}
+                </Card>
+              )
+            })}
           </View>
         </>
       )}
@@ -3085,10 +3836,10 @@ function EngineWorkRestView({ engineData }: { engineData: any }) {
   return (
     <View style={styles.sectionGap}>
       {/* Day Type Filter */}
-      <Card>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+      <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
           Select Day Type
-        </Text>
+                  </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {availableDayTypes.map((dayType) => (
             <TouchableOpacity
@@ -3100,7 +3851,7 @@ function EngineWorkRestView({ engineData }: { engineData: any }) {
                 borderRadius: 8,
                 borderWidth: 2,
                 borderColor: selectedDayType === dayType ? '#FE5858' : '#E5E7EB',
-                backgroundColor: '#DAE2EA',
+                backgroundColor: selectedDayType === dayType ? '#FFFFFF' : '#F3F4F6',
               }}
               activeOpacity={0.7}
             >
@@ -3257,8 +4008,8 @@ function EngineVariabilityView({ engineData }: { engineData: any }) {
   return (
     <View style={styles.sectionGap}>
       {/* Day Type Filter */}
-      <Card>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+      <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
           Select Day Type
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -3276,7 +4027,7 @@ function EngineVariabilityView({ engineData }: { engineData: any }) {
                   borderRadius: 8,
                   borderWidth: 2,
                   borderColor: selectedDayType === dayType ? '#FE5858' : '#E5E7EB',
-                  backgroundColor: '#DAE2EA',
+                  backgroundColor: selectedDayType === dayType ? '#FFFFFF' : '#F3F4F6',
                 }}
                 activeOpacity={0.7}
               >
@@ -3291,12 +4042,12 @@ function EngineVariabilityView({ engineData }: { engineData: any }) {
             ))}
           </View>
         </ScrollView>
-      </Card>
+              </Card>
 
       {/* Modality Filter */}
       {selectedDayType && (
-        <Card>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12 }}>
+        <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
             Select Modality
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -3311,7 +4062,7 @@ function EngineVariabilityView({ engineData }: { engineData: any }) {
                     borderRadius: 8,
                     borderWidth: 2,
                     borderColor: selectedModality === modality ? '#FE5858' : '#E5E7EB',
-                    backgroundColor: '#DAE2EA',
+                    backgroundColor: selectedModality === modality ? '#FFFFFF' : '#F3F4F6',
                   }}
                   activeOpacity={0.7}
                 >
@@ -3323,8 +4074,8 @@ function EngineVariabilityView({ engineData }: { engineData: any }) {
                     {formatModality(modality)}
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </View>
+            ))}
+          </View>
           </ScrollView>
         </Card>
       )}
@@ -3347,7 +4098,7 @@ function EngineVariabilityView({ engineData }: { engineData: any }) {
                 <Text style={{ fontSize: 11, color: '#6B7280' }}>
                   {variabilityData.sessions[0].units}/min
                 </Text>
-              </View>
+        </View>
               <View style={styles.statCardWrapper}>
                 <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>STD DEV</Text>
                 <Text style={{ fontSize: 24, fontWeight: '700', color: '#F59E0B' }}>
@@ -3420,3 +4171,4 @@ function EngineVariabilityView({ engineData }: { engineData: any }) {
     </View>
   )
 }
+

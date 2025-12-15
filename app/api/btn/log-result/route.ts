@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClientForRequest } from '@/app/api/utils/create-client-mobile'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { populateExercisePercentileLog } from '@/app/api/utils/populate-exercise-percentile-log'
 
@@ -189,15 +189,30 @@ async function calculateBTNWorkoutRPEAndQuality(
 // MAIN API HANDLER
 // =============================================================================
 
+// CORS headers helper
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { headers: corsHeaders })
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = await createClientForRequest(request)
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
       return NextResponse.json(
         { error: 'Not authenticated' }, 
-        { status: 401 }
+        { 
+          status: 401,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -211,7 +226,10 @@ export async function POST(request: NextRequest) {
     if (userError || !userData) {
       return NextResponse.json(
         { error: 'User not found' }, 
-        { status: 404 }
+        { 
+          status: 404,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -223,7 +241,10 @@ export async function POST(request: NextRequest) {
     if (!workoutId || !userScore) {
       return NextResponse.json(
         { error: 'Missing required fields: workoutId, userScore' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -239,7 +260,10 @@ export async function POST(request: NextRequest) {
       console.error('❌ Workout not found:', workoutError)
       return NextResponse.json(
         { error: 'Workout not found' },
-        { status: 404 }
+        { 
+          status: 404,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -247,7 +271,10 @@ export async function POST(request: NextRequest) {
     if (workout.user_id !== userData.id) {
       return NextResponse.json(
         { error: 'Unauthorized - not your workout' },
-        { status: 403 }
+        { 
+          status: 403,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -255,7 +282,10 @@ export async function POST(request: NextRequest) {
     if (!workout.median_score || !workout.excellent_score) {
       return NextResponse.json(
         { error: 'Workout missing benchmark scores - cannot calculate percentile' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -271,7 +301,10 @@ export async function POST(request: NextRequest) {
       console.error('❌ Error parsing user score:', parseError)
       return NextResponse.json(
         { error: `Invalid score format: ${userScore}` },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -354,7 +387,10 @@ export async function POST(request: NextRequest) {
       console.error('❌ Update error details:', JSON.stringify(updateError, null, 2))
       return NextResponse.json(
         { error: 'Failed to save result', details: updateError.message },
-        { status: 500 }
+        { 
+          status: 500,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -488,13 +524,18 @@ export async function POST(request: NextRequest) {
         scoreType: parsedUserScore.type,
         lowerIsBetter
       }
+    }, {
+      headers: corsHeaders
     })
 
   } catch (error) {
     console.error('❌ BTN result logging error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders
+      }
     )
   }
 }

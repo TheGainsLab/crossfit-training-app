@@ -156,14 +156,18 @@ export async function getMealTemplateWithItems(
     const supabase = createClient()
 
     // Get template
-    const { data: template, error: templateError } = await supabase
+    console.log('🔍 getMealTemplateWithItems called with ID:', templateId)
+    const { data: templates, error: templateError } = await supabase
       .from('meal_templates')
       .select('*')
       .eq('id', templateId)
-      .single()
+
+    console.log('📋 Query result - templates:', templates, 'error:', templateError)
+    const template = templates?.[0] || null
+    console.log('📋 Selected template:', template)
 
     if (templateError || !template) {
-      console.error('Error fetching meal template:', templateError)
+      console.error('❌ Error fetching meal template:', templateError)
       return null
     }
 
@@ -199,14 +203,75 @@ export async function updateMealTemplate(
   try {
     const supabase = createClient()
 
-    const { error } = await supabase
-      .from('meal_templates')
-      .update(updates)
-      .eq('id', templateId)
+    // Extract items from updates (they're in a separate table)
+    const { items, ...templateUpdates } = updates
 
-    if (error) {
-      console.error('Error updating meal template:', error)
-      return { success: false, error: error.message }
+    // Update template fields only (exclude items, id, user_id, created_at, etc.)
+    const templateFieldsToUpdate: any = {}
+    if (templateUpdates.template_name !== undefined) templateFieldsToUpdate.template_name = templateUpdates.template_name
+    if (templateUpdates.meal_type !== undefined) templateFieldsToUpdate.meal_type = templateUpdates.meal_type
+    if (templateUpdates.total_calories !== undefined) templateFieldsToUpdate.total_calories = templateUpdates.total_calories
+    if (templateUpdates.total_protein !== undefined) templateFieldsToUpdate.total_protein = templateUpdates.total_protein
+    if (templateUpdates.total_carbohydrate !== undefined) templateFieldsToUpdate.total_carbohydrate = templateUpdates.total_carbohydrate
+    if (templateUpdates.total_fat !== undefined) templateFieldsToUpdate.total_fat = templateUpdates.total_fat
+    if (templateUpdates.total_fiber !== undefined) templateFieldsToUpdate.total_fiber = templateUpdates.total_fiber
+    if (templateUpdates.total_sugar !== undefined) templateFieldsToUpdate.total_sugar = templateUpdates.total_sugar
+    if (templateUpdates.total_sodium !== undefined) templateFieldsToUpdate.total_sodium = templateUpdates.total_sodium
+
+    // Update template
+    if (Object.keys(templateFieldsToUpdate).length > 0) {
+      const { error: templateError } = await supabase
+        .from('meal_templates')
+        .update(templateFieldsToUpdate)
+        .eq('id', templateId)
+
+      if (templateError) {
+        console.error('Error updating meal template:', templateError)
+        return { success: false, error: templateError.message }
+      }
+    }
+
+    // Update items if provided
+    if (items && Array.isArray(items)) {
+      // Delete existing items
+      const { error: deleteError } = await supabase
+        .from('meal_template_items')
+        .delete()
+        .eq('meal_template_id', templateId)
+
+      if (deleteError) {
+        console.error('Error deleting old meal template items:', deleteError)
+        return { success: false, error: deleteError.message }
+      }
+
+      // Insert new items
+      if (items.length > 0) {
+        const itemsToInsert = items.map((item, index) => ({
+          meal_template_id: templateId,
+          food_id: item.food_id,
+          food_name: item.food_name,
+          serving_id: item.serving_id || '',
+          serving_description: item.serving_description || null,
+          number_of_units: item.number_of_units,
+          calories: item.calories,
+          protein: item.protein,
+          carbohydrate: item.carbohydrate,
+          fat: item.fat,
+          fiber: item.fiber || 0,
+          sugar: item.sugar || 0,
+          sodium: item.sodium || 0,
+          sort_order: item.sort_order ?? index,
+        }))
+
+        const { error: itemsError } = await supabase
+          .from('meal_template_items')
+          .insert(itemsToInsert)
+
+        if (itemsError) {
+          console.error('Error inserting meal template items:', itemsError)
+          return { success: false, error: itemsError.message }
+        }
+      }
     }
 
     return { success: true }
@@ -248,7 +313,8 @@ export async function deleteMealTemplate(
  */
 export async function logMealTemplate(
   userId: number,
-  templateId: number
+  templateId: number,
+  mealType: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = createClient()
@@ -259,13 +325,9 @@ export async function logMealTemplate(
       return { success: false, error: 'Template not found or has no items' }
     }
 
-    // Determine meal type from current time if not set
-    let mealType = template.meal_type
+    // Use the provided meal type (user selects it when logging)
     if (!mealType) {
-      const hour = new Date().getHours()
-      if (hour < 11) mealType = 'breakfast'
-      else if (hour < 16) mealType = 'lunch'
-      else mealType = 'dinner'
+      return { success: false, error: 'Meal type is required' }
     }
 
     // Create food entries for each item

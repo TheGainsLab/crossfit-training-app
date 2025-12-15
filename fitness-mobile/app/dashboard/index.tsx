@@ -7,9 +7,11 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
-  StyleSheet
+  StyleSheet,
+  StatusBar
 } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { createClient } from '@/lib/supabase/client'
 import { fetchWorkout } from '@/lib/api/workouts'
 import { Card } from '@/components/ui/Card'
@@ -34,6 +36,7 @@ interface WorkoutDay {
 
 export default function Dashboard() {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [programs, setPrograms] = useState<Program[]>([])
@@ -196,6 +199,7 @@ export default function Dashboard() {
                       .from('workout_sessions')
                       .select('id')
                       .eq('user_id', (userData as any).id)
+                      .eq('program_id', program.id)
                       .eq('program_day_number', data.workout.engineData.dayNumber)
                       .eq('completed', true)
                       .limit(1)
@@ -315,6 +319,7 @@ export default function Dashboard() {
                       .from('workout_sessions')
                       .select('id')
                       .eq('user_id', userId)
+                      .eq('program_id', program.id)
                       .eq('program_day_number', data.workout.engineData.dayNumber)
                       .eq('completed', true)
                       .limit(1)
@@ -401,6 +406,7 @@ export default function Dashboard() {
                   .from('workout_sessions')
                   .select('id')
                   .eq('user_id', (userData as any).id)
+                  .eq('program_id', programId)
                   .eq('program_day_number', data.workout.engineData.dayNumber)
                   .eq('completed', true)
                   .limit(1)
@@ -551,8 +557,9 @@ export default function Dashboard() {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       {/* Top Greeting Card */}
-      <Card style={styles.greetingCard}>
+      <Card style={[styles.greetingCard, { paddingTop: insets.top + 16 }]}>
         <View style={styles.greetingContent}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>

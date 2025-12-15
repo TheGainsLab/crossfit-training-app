@@ -124,6 +124,7 @@ export async function fetchProgramSummaries(
                   .from('workout_sessions')
                   .select('id')
                   .eq('user_id', userId)
+                  .eq('program_id', p.id)
                   .eq('program_day_number', engineDayNumber)
                   .eq('completed', true)
                   .limit(1)

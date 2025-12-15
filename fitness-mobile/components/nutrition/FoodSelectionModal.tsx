@@ -95,9 +95,6 @@ export default function FoodSelectionModal({
 
       const { data, error: invokeError } = await supabase.functions.invoke('nutrition-food', {
         body: { foodId },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
       })
 
       if (invokeError) {

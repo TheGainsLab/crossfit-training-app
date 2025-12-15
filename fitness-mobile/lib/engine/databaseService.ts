@@ -505,6 +505,68 @@ class EngineDatabaseService {
       return null
     }
   }
+
+  // Load user progress (combined user data and completed sessions)
+  async loadUserProgress() {
+    try {
+      const [userData, completedSessions] = await Promise.all([
+        this.loadUserData(),
+        this.loadCompletedSessions()
+      ])
+
+      return {
+        user: userData,
+        completedSessions: completedSessions,
+        completedDays: completedSessions.map((session: any) => 
+          session.program_day_number || session.program_day || session.day_number || session.workout_day
+        )
+      }
+    } catch (error) {
+      console.error('Error in loadUserProgress:', error)
+      throw error
+    }
+  }
+
+  // Load workouts
+  async loadWorkouts() {
+    if (!this.supabase) return []
+    
+    try {
+      const { data, error } = await this.supabase
+        .from('workouts')
+        .select('*')
+        .order('day_number', { ascending: true })
+      
+      if (error) {
+        console.error('Error loading workouts:', error)
+        return []
+      }
+      
+      return data || []
+    } catch (error) {
+      console.error('Error loading workouts:', error)
+      return []
+    }
+  }
+
+  // Get workouts for program version
+  async getWorkoutsForProgram(programVersion: string) {
+    if (!this.supabase) return []
+    
+    if (programVersion === '5-day') {
+      // 5-day program: return all workouts
+      return await this.loadWorkouts()
+    }
+    
+    // For 3-day program, we need to filter workouts
+    // For now, return all workouts and let the component handle filtering
+    // This can be enhanced later with program mapping if needed
+    const allWorkouts = await this.loadWorkouts()
+    
+    // For 3-day, we'd typically filter based on program mapping
+    // For simplicity, return all workouts and filter by program_type in the component
+    return allWorkouts
+  }
 }
 
 // Create singleton instance

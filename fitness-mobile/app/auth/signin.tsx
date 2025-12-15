@@ -68,7 +68,7 @@ export default function SignIn() {
 
           // Engine users should go to Engine dashboard
           if (userData.subscription_tier === 'ENGINE') {
-            router.replace('/engine')
+            router.replace('/engine/training')
             return
           }
 

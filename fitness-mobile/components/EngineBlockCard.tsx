@@ -18,11 +18,19 @@ interface EngineBlockCardProps {
     }
   }
   engineDayNumber: number
+  programId?: number
+  week?: number
+  day?: number
+  refreshTrigger?: string
 }
 
 export default function EngineBlockCard({
   engineData,
-  engineDayNumber
+  engineDayNumber,
+  programId,
+  week,
+  day,
+  refreshTrigger
 }: EngineBlockCardProps) {
   const router = useRouter()
   const [isCompleted, setIsCompleted] = useState(false)
@@ -77,15 +85,22 @@ export default function EngineBlockCard({
 
           if (!userData) return
 
-          console.log('🔍 ENGINE CHECK - Querying for user_id:', (userData as any).id, 'program_day_number:', engineDayNumber)
+          console.log('🔍 ENGINE CHECK - Querying for user_id:', (userData as any).id, 'program_day_number:', engineDayNumber, 'program_id:', programId)
 
           // Check workout_sessions for completion
-          const { data: session } = await supabase
+          let query = supabase
             .from('workout_sessions')
             .select('id')
             .eq('user_id', (userData as any).id)
             .eq('program_day_number', engineDayNumber)
             .eq('completed', true)
+          
+          // Filter by program_id if provided
+          if (programId) {
+            query = query.eq('program_id', programId)
+          }
+          
+          const { data: session } = await query
             .limit(1)
             .maybeSingle()
 
@@ -100,14 +115,21 @@ export default function EngineBlockCard({
       if (engineDayNumber) {
         checkCompletion()
       }
-    }, [engineDayNumber])
+    }, [engineDayNumber, programId, refreshTrigger]) // Add refreshTrigger to dependencies to force refresh when returning from Engine
   )
 
   if (!engineData) return null
 
   const handleStartWorkout = () => {
-    // Navigate to Engine UI with the specific day number
-    router.push(`/engine?day=${engineDayNumber}`)
+    // Navigate to Engine UI with the specific day number and program context
+    const params = new URLSearchParams({
+      day: engineDayNumber.toString()
+    })
+    if (programId) params.append('programId', programId.toString())
+    if (week) params.append('week', week.toString())
+    if (day) params.append('programDay', day.toString())
+    
+    router.push(`/engine/training?${params.toString()}`)
   }
 
   return (

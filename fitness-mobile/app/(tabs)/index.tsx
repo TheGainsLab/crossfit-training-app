@@ -21,6 +21,7 @@ interface Program {
   user_id: number
   generated_at: string
   weeks_generated: number[]
+  program_data?: any
 }
 
 interface WorkoutDay {
@@ -48,6 +49,8 @@ export default function Dashboard() {
   const [totalProgramDays, setTotalProgramDays] = useState(0)
   const [currentDay, setCurrentDay] = useState(0)
   const [monthProgress, setMonthProgress] = useState(0)
+  const [totalTasksAssigned, setTotalTasksAssigned] = useState(0)
+  const [totalTasksCompleted, setTotalTasksCompleted] = useState(0)
   const [upcomingWorkoutType, setUpcomingWorkoutType] = useState('Training Day')
   const isLoadingRef = React.useRef(false)
 
@@ -173,16 +176,60 @@ export default function Dashboard() {
       })
       setTotalProgramDays(totalDays)
 
+      // Calculate total training blocks
+      let totalBlocks = 0
+      const blockBreakdown: any[] = []
+      
+      for (const week of program.weeks_generated || []) {
+        const weekData = weeks.find((w: any) => w.week === week)
+        if (!weekData) continue
+        
+        for (const dayData of weekData.days || []) {
+          const hasMetcon = !!dayData.metconData
+          const hasEngine = !!dayData.engineData
+          
+          // Don't count blocks that have separate data structures
+          const regularBlocks = (dayData.blocks || []).filter((b: any) => {
+            const blockNameUpper = (b.blockName || '').toUpperCase().trim()
+            if (blockNameUpper === 'METCONS' && hasMetcon) return false
+            if (blockNameUpper === 'ENGINE' && hasEngine) return false
+            return true
+          }).length
+          
+          const blockNames = (dayData.blocks || []).filter((b: any) => {
+            const blockNameUpper = (b.blockName || '').toUpperCase().trim()
+            if (blockNameUpper === 'METCONS' && hasMetcon) return false
+            if (blockNameUpper === 'ENGINE' && hasEngine) return false
+            return true
+          }).map((b: any) => b.blockName).join(', ')
+          
+          const dayTotal = regularBlocks + (hasMetcon ? 1 : 0) + (hasEngine ? 1 : 0)
+          
+          totalBlocks += dayTotal
+          
+          blockBreakdown.push({
+            week,
+            day: dayData.day,
+            regularBlocks,
+            blockNames,
+            hasMetcon,
+            hasEngine,
+            dayTotal
+          })
+        }
+      }
+
       // Calculate current day (first incomplete day, or last completed + 1)
       const supabase = createClient()
       let currentDayNum = 0
       let completedDays = 0
 
-      // Batch fetch all ENGINE completions once
+      // Batch fetch all ENGINE completions once for this program
       const { data: engineSessions } = await supabase
         .from('workout_sessions')
         .select('program_day_number')
         .eq('user_id', userId)
+        .eq('program_id', program.id)
         .eq('completed', true)
 
       const engineCompletionSet = new Set<number>()
@@ -197,8 +244,116 @@ export default function Dashboard() {
       // Filter completions for this program
       const programCompletions = allCompletions.filter((c: any) => c.program_id === program.id)
 
-      // Check days sequentially, stop early once we find first incomplete day
-      // OPTIMIZED: Use program_data directly instead of calling fetchWorkout()
+      // Initialize task totals
+      let totalTasksAssigned = 0
+      let totalTasksCompleted = 0
+      const dayBreakdown: any[] = []
+
+      // Collect all unique METCON workoutIds from program_data
+      const metconWorkoutIds = new Set<string>()
+      for (const week of program.weeks_generated || []) {
+        const weekData = weeks.find((w: any) => w.week === week)
+        if (!weekData) continue
+        
+        for (const dayData of weekData.days || []) {
+          if (dayData.metconData?.workoutId) {
+            metconWorkoutIds.add(dayData.metconData.workoutId)
+          }
+        }
+      }
+
+      // Batch fetch METCON data with tasks from database
+      const metconTasksMap = new Map<string, number>()
+      if (metconWorkoutIds.size > 0) {
+        const { data: metconsData } = await supabase
+          .from('metcons')
+          .select('workout_id, tasks')
+          .in('workout_id', Array.from(metconWorkoutIds))
+        
+        if (metconsData) {
+          metconsData.forEach((metcon: any) => {
+            const taskCount = Array.isArray(metcon.tasks) ? metcon.tasks.length : 0
+            metconTasksMap.set(metcon.workout_id, taskCount)
+          })
+        }
+      }
+
+      // First pass: Calculate task totals across ALL days (for progress bar)
+      for (const week of program.weeks_generated || []) {
+        const weekData = weeks.find((w: any) => w.week === week)
+        if (!weekData) continue
+
+        for (let day = 1; day <= 5; day++) {
+          const dayData = weekData.days?.find((d: any) => d.day === day)
+          if (!dayData) continue
+
+          // Get completions for this day
+          const dayCompletions = programCompletions.filter(
+            (c: any) => c.week === week && c.day === day
+          )
+
+          // Calculate total exercises from dayData (skip ENGINE and METCONS)
+          let regularBlockExercises = (dayData.blocks || []).reduce(
+            (sum: number, block: any) => {
+              const blockNameUpper = (block.blockName || '').toUpperCase().trim()
+              if (blockNameUpper === 'ENGINE' || blockNameUpper === 'METCONS') return sum
+              return sum + (block.exercises?.length || 0)
+            },
+            0
+          )
+
+          // Add metcon tasks count from database lookup
+          const metconWorkoutId = dayData.metconData?.workoutId
+          const metconTasksCount = metconWorkoutId 
+            ? (metconTasksMap.get(metconWorkoutId) || 0)
+            : 0
+
+          // Add 1 for ENGINE if it exists
+          const hasEngineData = !!dayData.engineData
+          const engineTask = hasEngineData ? 1 : 0
+
+          let totalExercises = regularBlockExercises + metconTasksCount + engineTask
+
+          if (totalExercises > 0) {
+            let completedExercises = new Set(
+              dayCompletions.map((comp: any) => {
+                const setNumber = comp.set_number || 1
+                const baseKey = comp.block ? `${comp.block}:${comp.exercise_name}` : comp.exercise_name
+                return setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
+              })
+            ).size
+            
+            // Check if ENGINE is completed (from batch query)
+            if (hasEngineData && dayData.engineData?.dayNumber) {
+              if (engineCompletionSet.has(dayData.engineData.dayNumber)) {
+                completedExercises += 1
+              }
+            }
+
+            // Accumulate task totals (for progress bar)
+            totalTasksAssigned += totalExercises
+            totalTasksCompleted += completedExercises
+
+            // Log breakdown for this day
+            dayBreakdown.push({
+              week,
+              day,
+              regularBlockExercises,
+              metconTasksCount,
+              engineTask,
+              totalExercises,
+              completedExercises,
+              dayTotalAssigned: totalExercises,
+              dayTotalCompleted: completedExercises
+            })
+          }
+        }
+      }
+
+      // Second pass: Find current day (first incomplete day, or last completed + 1)
+      // Reset for finding current day
+      currentDayNum = 0
+      completedDays = 0
       for (const week of program.weeks_generated || []) {
         const weekData = weeks.find((w: any) => w.week === week)
         if (!weekData) continue
@@ -222,9 +377,12 @@ export default function Dashboard() {
             0
           )
 
-          // Add metcon tasks count from metconData
-          const metconTasksCount = dayData.metconData?.tasks?.length || 0
-          totalExercises += metconTasksCount
+          // Add metcon tasks count from database lookup
+          const metconWorkoutId2 = dayData.metconData?.workoutId
+          const metconTasksCount2 = metconWorkoutId2 
+            ? (metconTasksMap.get(metconWorkoutId2) || 0)
+            : 0
+          totalExercises += metconTasksCount2
 
           // Add 1 for ENGINE if it exists
           const hasEngineData = !!dayData.engineData
@@ -285,12 +443,18 @@ export default function Dashboard() {
         ? Math.round((daysInMonth / monthTotalDays) * 100)
         : 0
       setMonthProgress(monthProgressPercent)
+
+      // Set task totals
+      setTotalTasksAssigned(totalTasksAssigned)
+      setTotalTasksCompleted(totalTasksCompleted)
     } catch (error) {
       console.error('Error calculating program context:', error)
       setProgramName('Program')
       setTotalProgramDays(0)
       setCurrentDay(0)
       setMonthProgress(0)
+      setTotalTasksAssigned(0)
+      setTotalTasksCompleted(0)
     }
   }
 
@@ -343,11 +507,12 @@ export default function Dashboard() {
         })
       }
 
-      // Batch fetch all ENGINE completions
+      // Batch fetch all ENGINE completions for this program
       const { data: engineSessions } = await supabase
         .from('workout_sessions')
         .select('program_day_number')
         .eq('user_id', userId)
+        .eq('program_id', activeProgram.id)
         .eq('completed', true)
 
       const engineCompletionSet = new Set<number>()
@@ -411,83 +576,151 @@ export default function Dashboard() {
 
   const loadWeekWorkouts = async (programId: number, week: number, userId: number) => {
     try {
-      // Fetch workout summaries for each day using direct Supabase calls
+      const supabase = createClient()
+      
+      // Fetch program data if not available in state
+      let programData: any = null
+      if (selectedProgram && selectedProgram.id === programId && selectedProgram.program_data) {
+        programData = selectedProgram.program_data
+      } else {
+        // Fetch program data from database
+        const { data: program } = await supabase
+          .from('programs')
+          .select('program_data')
+          .eq('id', programId)
+          .single()
+        
+        if (!program || !program.program_data) {
+          console.error('Program data not available')
+          setCurrentWeek([])
+          return
+        }
+        programData = program.program_data
+      }
+
+      const weeks = programData.weeks || []
+      const weekData = weeks.find((w: any) => w.week === week)
+
+      if (!weekData) {
+        console.error(`Week ${week} not found in program data`)
+        setCurrentWeek([])
+        return
+      }
+
+      // Batch fetch all completions for the week in one query
+      const { data: allCompletions } = await supabase
+        .from('performance_logs')
+        .select('week, day, block, exercise_name, set_number')
+        .eq('program_id', programId)
+        .eq('week', week)
+        .eq('user_id', userId)
+
+      // Batch fetch all ENGINE sessions for the week in one query
+      // Include both sessions with program_id (new) and without program_id (old for backward compatibility)
+      const { data: engineSessions } = await supabase
+        .from('workout_sessions')
+        .select('program_day_number, program_id')
+        .eq('user_id', userId)
+        .eq('completed', true)
+        .or(`program_id.eq.${programId},program_id.is.null`)
+
+      const engineCompletionSet = new Set<number>()
+      if (engineSessions) {
+        engineSessions.forEach((es: any) => {
+          // Only include if program_id matches OR is null (old sessions for backward compatibility)
+          if (es.program_day_number && (es.program_id === programId || es.program_id === null)) {
+            engineCompletionSet.add(es.program_day_number)
+          }
+        })
+      }
+
+      // Collect all unique METCON workoutIds from the week's days
+      const metconWorkoutIds = new Set<string>()
+      for (const dayData of weekData.days || []) {
+        if (dayData.metconData?.workoutId) {
+          metconWorkoutIds.add(dayData.metconData.workoutId)
+        }
+      }
+
+      // Batch fetch METCON data with tasks from database
+      const metconTasksMap = new Map<string, number>()
+      if (metconWorkoutIds.size > 0) {
+        const { data: metconsData } = await supabase
+          .from('metcons')
+          .select('workout_id, tasks')
+          .in('workout_id', Array.from(metconWorkoutIds))
+        
+        if (metconsData) {
+          metconsData.forEach((metcon: any) => {
+            const taskCount = Array.isArray(metcon.tasks) ? metcon.tasks.length : 0
+            metconTasksMap.set(metcon.workout_id, taskCount)
+          })
+        }
+      }
+
+      // Process all days in parallel (using Promise.all for any async operations)
       const workouts: WorkoutDay[] = []
 
       for (let day = 1; day <= 5; day++) {
-        const data = await fetchWorkout(programId, week, day)
+        const dayData = weekData.days?.find((d: any) => d.day === day)
+        if (!dayData) continue
 
-        if (data.success && data.workout) {
-          // Calculate total exercises, skip ENGINE and METCONS (handled separately)
-          let totalExercises = data.workout.blocks.reduce(
-            (sum: number, block: any) => {
-              const blockNameUpper = block.blockName?.toUpperCase() || ''
-              if (blockNameUpper === 'ENGINE' || blockNameUpper === 'METCONS') return sum
-              return sum + (block.exercises?.length || 0)
-            },
-            0
-          )
+        // Calculate total exercises, skip ENGINE and METCONS (handled separately)
+        let totalExercises = (dayData.blocks || []).reduce(
+          (sum: number, block: any) => {
+            const blockNameUpper = block.blockName?.toUpperCase() || ''
+            if (blockNameUpper === 'ENGINE' || blockNameUpper === 'METCONS') return sum
+            return sum + (block.exercises?.length || 0)
+          },
+          0
+        )
 
-          // Add metcon tasks count from metconData
-          const metconTasksCount = data.workout.metconData?.tasks?.length || 0
-          totalExercises += metconTasksCount
+        // Add metcon tasks count from database lookup
+        const metconWorkoutId = dayData.metconData?.workoutId
+        const metconTasksCount = metconWorkoutId 
+          ? (metconTasksMap.get(metconWorkoutId) || 0)
+          : 0
+        totalExercises += metconTasksCount
 
-          // Add 1 for ENGINE if it exists
-          const hasEngineData = !!data.workout.engineData
-          if (hasEngineData) {
-            totalExercises += 1
-          }
-
-          // Count unique completed exercises (handle set numbers with block prefix)
-          let completedExercises = new Set(
-            (data.completions || []).map((comp: any) => {
-              const setNumber = comp.set_number || 1
-              const baseKey = comp.block ? `${comp.block}:${comp.exercise_name}` : comp.exercise_name
-              return setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
-            })
-          ).size
-
-          // Check if ENGINE is completed
-          if (hasEngineData && data.workout.engineData?.dayNumber) {
-            const supabase = createClient()
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user) {
-              const { data: userData } = await supabase
-                .from('users')
-                .select('id')
-                .eq('auth_id', user.id)
-                .single()
-              
-              if (userData) {
-                const { data: engineSession } = await supabase
-                  .from('workout_sessions')
-                  .select('id')
-                  .eq('user_id', (userData as any).id)
-                  .eq('program_day_number', data.workout.engineData.dayNumber)
-                  .eq('completed', true)
-                  .limit(1)
-                  .maybeSingle()
-                
-                if (engineSession) {
-                  completedExercises += 1
-                }
-              }
-            }
-          }
-
-          const completionPercentage = totalExercises > 0
-            ? Math.round((completedExercises / totalExercises) * 100)
-            : 0
-
-          workouts.push({
-            programId,
-            week,
-            day,
-            dayName: data.workout.dayName || `Day ${day}`,
-            isDeload: data.workout.isDeload || false,
-            completionPercentage
-          })
+        // Add 1 for ENGINE if it exists
+        const hasEngineData = !!dayData.engineData
+        if (hasEngineData) {
+          totalExercises += 1
         }
+
+        // Get completions for this day from batch query
+        const dayCompletions = (allCompletions || []).filter(
+          (c: any) => c.day === day
+        )
+
+        // Count unique completed exercises (handle set numbers with block prefix)
+        let completedExercises = new Set(
+          dayCompletions.map((comp: any) => {
+            const setNumber = comp.set_number || 1
+            const baseKey = comp.block ? `${comp.block}:${comp.exercise_name}` : comp.exercise_name
+            return setNumber > 1 ? `${baseKey} - Set ${setNumber}` : baseKey
+          })
+        ).size
+
+        // Check if ENGINE is completed (from batch query)
+        if (hasEngineData && dayData.engineData?.dayNumber) {
+          if (engineCompletionSet.has(dayData.engineData.dayNumber)) {
+            completedExercises += 1
+          }
+        }
+
+        const completionPercentage = totalExercises > 0
+          ? Math.round((completedExercises / totalExercises) * 100)
+          : 0
+
+        workouts.push({
+          programId,
+          week,
+          day,
+          dayName: dayData.dayName || `Day ${day}`,
+          isDeload: dayData.isDeload || false,
+          completionPercentage
+        })
       }
 
       setCurrentWeek(workouts)
@@ -503,6 +736,7 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('Error loading week workouts:', error)
+      setCurrentWeek([])
     }
   }
 
@@ -625,11 +859,11 @@ export default function Dashboard() {
             <Text style={styles.greetingTitle}>
               Hello, {userName}!
             </Text>
-            <Text style={styles.greetingSubtitle}>
-              You've completed{' '}
-              <Text style={styles.completedCount}>{totalCompletedBlocks}</Text>
-              {' '}Training Block{totalCompletedBlocks !== 1 ? 's' : ''}
-            </Text>
+            {selectedProgram && programName && (
+              <Text style={styles.programNameInCard}>
+                Program • {programName}
+              </Text>
+            )}
           </View>
         </View>
       </Card>
@@ -637,26 +871,23 @@ export default function Dashboard() {
       {/* Program Context */}
       {selectedProgram && totalProgramDays > 0 && (
         <View style={styles.programContext}>
-          <Text style={styles.programName}>
-            Program • {programName}
-          </Text>
-          <Text style={styles.currentDay}>
-            Day {currentDay}/{totalProgramDays}
-          </Text>
-          <View style={styles.progressBarContainer}>
-            <View
-              style={[
-                styles.progressBar,
-                { width: `${(currentDay / totalProgramDays) * 100}%` }
-              ]}
-            />
-          </View>
-          <View style={styles.monthProgressRow}>
-            <Text style={styles.monthProgressLabel}>
-              Current month's progress
-            </Text>
-            <Text style={styles.monthProgressValue}>
-              {monthProgress}%
+          <View style={styles.progressBarWrapper}>
+            <View style={styles.progressBarContainer}>
+              <View
+                style={[
+                  styles.progressBar,
+                  { 
+                    width: totalTasksAssigned > 0 
+                      ? `${Math.min((totalTasksCompleted / totalTasksAssigned) * 100, 100)}%` 
+                      : '0%' 
+                  }
+                ]}
+              />
+            </View>
+            <Text style={styles.progressPercentage}>
+              {totalTasksAssigned > 0 
+                ? `${Math.round((totalTasksCompleted / totalTasksAssigned) * 100)}%`
+                : '0%'}
             </Text>
           </View>
         </View>
@@ -694,31 +925,6 @@ export default function Dashboard() {
           </Card>
         ) : (
           <>
-            {/* Upcoming Workout Card */}
-            {getTodaysWorkout() && (
-              <Card style={styles.upcomingWorkoutCard}>
-                <View style={styles.upcomingWorkoutHeader}>
-                  <Text style={styles.upcomingWorkoutSubtitle}>
-                    {getTodaysWorkout()!.dayName}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.letsGoButton}
-                  onPress={() => {
-                    const today = getTodaysWorkout()!
-                    router.push(
-                      `/workout/${today.programId}/week/${today.week}/day/${today.day}`
-                    )
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.letsGoButtonText}>
-                    Let's go!
-                  </Text>
-                </TouchableOpacity>
-              </Card>
-            )}
-
             {/* Week Navigation */}
             <Card style={styles.weekNavCard}>
               {currentWeek[0]?.isDeload && (
@@ -776,7 +982,6 @@ export default function Dashboard() {
                         <Text style={styles.workoutDayTitle}>
                           Day {workout.day}
                         </Text>
-                        <Text style={styles.workoutDayName}>{workout.dayName}</Text>
                       </View>
                       <View>
                         {workout.completionPercentage === 100 ? (
@@ -913,7 +1118,9 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   greetingCard: {
+    marginTop: 16,
     marginBottom: 16,
+    marginHorizontal: 16,
     padding: 20,
   },
   greetingContent: {
@@ -951,8 +1158,14 @@ const styles = StyleSheet.create({
     color: '#FE5858',
     fontWeight: '700',
   },
+  programNameInCard: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+  },
   programContext: {
     marginBottom: 16,
+    paddingHorizontal: 16,
   },
   programName: {
     fontSize: 14,
@@ -991,6 +1204,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: '#FFFFFF',
     marginBottom: 16,
+    marginHorizontal: 16,
   },
   viewScheduleIcon: {
     fontSize: 16,
@@ -1238,8 +1452,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 12,
   },
+  progressBarWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   progressBarContainer: {
-    width: '100%',
+    flex: 1,
     backgroundColor: '#E5E7EB',
     borderRadius: 999,
     height: 10,
@@ -1249,6 +1468,13 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 999,
     backgroundColor: '#FE5858',
+  },
+  progressPercentage: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#282B34',
+    minWidth: 45,
+    textAlign: 'right',
   },
   programSelectCard: {
     padding: 16,

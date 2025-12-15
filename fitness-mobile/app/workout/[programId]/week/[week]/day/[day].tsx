@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, StatusBar } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { createClient } from '@/lib/supabase/client'
 import { fetchWorkout } from '@/lib/api/workouts'
 import { logExerciseCompletion } from '@/lib/api/completions'
@@ -69,12 +70,14 @@ const getCurrentUserId = async () => {
 }
 
 export default function WorkoutPage() {
-  const { programId, week, day } = useLocalSearchParams<{
+  const { programId, week, day, refresh } = useLocalSearchParams<{
     programId: string
     week: string
     day: string
+    refresh?: string
   }>()
   const router = useRouter()
+  const insets = useSafeAreaInsets()
 
   const [workout, setWorkout] = useState<WorkoutData | null>(null)
   const [completions, setCompletions] = useState<Record<string, Completion>>({})
@@ -171,12 +174,19 @@ export default function WorkoutPage() {
 
           // Check if engine is completed
           if (data.workout?.engineData?.dayNumber) {
-            const { data: engineSession } = await supabase
+            let query = supabase
               .from('workout_sessions')
               .select('id')
               .eq('user_id', userData.id)
               .eq('program_day_number', data.workout.engineData.dayNumber)
               .eq('completed', true)
+            
+            // Filter by program_id if available
+            if (programId) {
+              query = query.eq('program_id', parseInt(programId))
+            }
+            
+            const { data: engineSession } = await query
               .limit(1)
               .maybeSingle()
             
@@ -229,12 +239,19 @@ export default function WorkoutPage() {
             programDayNumber: workout.engineData.dayNumber
           })
 
-          const { data: engineSession } = await supabase
+          let query = supabase
             .from('workout_sessions')
             .select('id')
             .eq('user_id', (userData as any).id)
             .eq('program_day_number', workout.engineData.dayNumber)
             .eq('completed', true)
+          
+          // Filter by program_id if available
+          if (programId) {
+            query = query.eq('program_id', parseInt(programId))
+          }
+          
+          const { data: engineSession } = await query
             .limit(1)
             .maybeSingle()
 
@@ -248,8 +265,59 @@ export default function WorkoutPage() {
       }
 
       checkEngineCompletion()
-    }, [workout])
+    }, [workout, refresh]) // Add refresh to dependencies to trigger check when returning from Engine
   )
+
+  // Automatically collapse completed blocks
+  useEffect(() => {
+    if (!workout) return
+
+    const blocksToCollapse: string[] = []
+    
+    workout.blocks.forEach((block, blockIndex) => {
+      const key = `${block.blockName}-${blockIndex}`
+      
+      // Calculate completion status
+      let completedCount = 0
+      let totalCount = 0
+      
+      if (block.blockName === 'METCONS') {
+        totalCount = workout.metconData?.tasks?.length || 0
+        completedCount = isMetconCompleted ? totalCount : 0
+      } else if (block.blockName === 'ENGINE') {
+        totalCount = 1
+        completedCount = isEngineCompleted ? 1 : 0
+      } else {
+        completedCount = block.exercises.filter(ex => {
+          const setMatch = ex.notes?.match(/Set (\d+)/)
+          const setNumber = setMatch ? parseInt(setMatch[1]) : 1
+          const setSuffix = setNumber > 1 ? ` - Set ${setNumber}` : ''
+          const blockKey = `${block.blockName}:${ex.name}${setSuffix}`
+          const legacyKey = `${ex.name}${setSuffix}`
+          return completions[blockKey] !== undefined || completions[legacyKey] !== undefined
+        }).length
+        totalCount = block.exercises.length
+      }
+      
+      const isBlockComplete = completedCount === totalCount && totalCount > 0
+      
+      // If block is complete, mark it for collapse
+      if (isBlockComplete) {
+        blocksToCollapse.push(key)
+      }
+    })
+    
+    // Collapse all completed blocks
+    if (blocksToCollapse.length > 0) {
+      setExpandedBlocks(prev => {
+        const updated = { ...prev }
+        blocksToCollapse.forEach(key => {
+          updated[key] = false
+        })
+        return updated
+      })
+    }
+  }, [workout, completions, isMetconCompleted, isEngineCompleted])
 
   const toggleBlock = (blockName: string, index: number) => {
     const key = `${blockName}-${index}`
@@ -603,8 +671,9 @@ export default function WorkoutPage() {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <TouchableOpacity onPress={() => router.back()}>
@@ -675,18 +744,23 @@ export default function WorkoutPage() {
           
           const isBlockComplete = completedCount === totalCount && totalCount > 0
           
-          // Blocks default to collapsed. Only expanded if user explicitly expands them.
-          // This ensures complete blocks are collapsed by default.
-          const isExpanded = expandedBlocks[key] === true
+          // Completed blocks default to collapsed unless explicitly expanded
+          const isExpanded = isBlockComplete ? false : (expandedBlocks[key] === true)
 
           // Format block name
           let displayBlockName = block.blockName.toUpperCase()
+          
+          // Map block names to display names
           if (block.blockName === 'STRENGTH AND POWER') {
             const strengthBlocks = workout.blocks.filter(b => b.blockName === 'STRENGTH AND POWER')
             if (strengthBlocks.length > 1) {
               const idx = strengthBlocks.indexOf(block)
-              displayBlockName = `STRENGTH AND POWER (${idx + 1}/${strengthBlocks.length})`
+              displayBlockName = `STRENGTH (${idx + 1}/${strengthBlocks.length})`
+            } else {
+              displayBlockName = 'STRENGTH'
             }
+          } else if (block.blockName === 'TECHNICAL WORK') {
+            displayBlockName = 'TECHNICAL'
           }
 
           return (
@@ -739,6 +813,10 @@ export default function WorkoutPage() {
                     <EngineBlockCard
                       engineData={workout.engineData}
                       engineDayNumber={workout.engineData?.dayNumber || 0}
+                      programId={programId ? parseInt(programId) : undefined}
+                      week={week ? parseInt(week) : undefined}
+                      day={day ? parseInt(day) : undefined}
+                      refreshTrigger={refresh}
                     />
                   ) : (
                     block.exercises.map((exercise, exerciseIndex) => {
@@ -780,7 +858,7 @@ export default function WorkoutPage() {
 
           <TouchableOpacity
             style={styles.navButtonPrimary}
-            onPress={() => router.back()}
+            onPress={() => router.push('/(tabs)/')}
           >
             <Text style={styles.navButtonTextPrimary}>Dashboard</Text>
           </TouchableOpacity>
@@ -854,7 +932,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingBottom: 16,
   },
   headerContent: {
     flexDirection: 'row',

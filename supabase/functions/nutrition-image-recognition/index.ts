@@ -39,7 +39,7 @@ If you cannot identify any food items, return an empty array [].`
       "anthropic-version": "2023-06-01"
     },
     body: JSON.stringify({
-      model: "claude-3-5-sonnet-20241022", // Using Sonnet for better vision capabilities
+      model: "claude-3-haiku-20240307", // Using Haiku for cost efficiency
       max_tokens: 2000,
       messages: [
         {
@@ -103,28 +103,33 @@ serve(async (req) => {
 
   try {
     // Verify authentication
-    const authHeader = req.headers.get('Authorization')
+    const authHeader = req.headers.get('authorization')
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Authorization header required' }),
+        JSON.stringify({ success: false, error: 'Missing Authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
-    )
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    // Verify user via Supabase - Direct token verification
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    
+    // Extract token from Authorization header (remove "Bearer " if present)
+    const token = authHeader.replace(/^Bearer\s+/i, '')
+    
+    // Create Supabase client
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    
+    // Pass token directly to getUser() - more reliable than relying on client auth state
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        JSON.stringify({ 
+          success: false, 
+          error: 'Unauthorized',
+          details: authError?.message || 'No user returned'
+        }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

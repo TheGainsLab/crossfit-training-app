@@ -320,6 +320,48 @@ function WorkoutPageClient({ programId, week, day }: { programId: string; week: 
     calculateNavigation()
   }, [programId, week, day])
 
+  // Automatically collapse completed blocks
+  useEffect(() => {
+    if (!workout) return
+
+    const blocksToCollapse: string[] = []
+    
+    workout.blocks.forEach((block, blockIndex) => {
+      const key = getBlockKey(block.blockName, blockIndex)
+      
+      // Skip METCONS and ENGINE blocks (they have different completion logic)
+      if (block.blockName === 'METCONS' || block.blockName === 'ENGINE') {
+        return
+      }
+      
+      // Calculate completion status for regular exercise blocks
+      const completedCount = block.exercises.filter(ex => {
+        const setMatch = ex.notes?.match(/Set (\d+)/);
+        const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+        const exerciseKey = setNumber > 1 ? `${ex.name} - Set ${setNumber}` : ex.name;
+        return completions[exerciseKey] !== undefined;
+      }).length;
+      
+      const totalCount = block.exercises.length
+      const isBlockComplete = completedCount === totalCount && totalCount > 0
+      
+      // If block is complete, mark it for collapse
+      if (isBlockComplete) {
+        blocksToCollapse.push(key)
+      }
+    })
+    
+    // Collapse all completed blocks
+    if (blocksToCollapse.length > 0) {
+      setExpandedBlocks(prev => {
+        const updated = { ...prev }
+        blocksToCollapse.forEach(key => {
+          updated[key] = false
+        })
+        return updated
+      })
+    }
+  }, [workout, completions])
 
 const logCompletion = async (exerciseName: string, block: string, completion: Partial<Completion>) => {
   console.log('🚀 logCompletion called for:', exerciseName)
@@ -772,9 +814,12 @@ const calculateProgress = () => {
                           const strengthBlocks = workout.blocks.filter(b => b.blockName === 'STRENGTH AND POWER')
                           if (strengthBlocks.length > 1) {
                             const idx = strengthBlocks.indexOf(block)
-                            return `STRENGTH AND POWER (${idx + 1}/${strengthBlocks.length})`
+                            return `STRENGTH (${idx + 1}/${strengthBlocks.length})`
                           }
-                          return 'STRENGTH AND POWER'
+                          return 'STRENGTH'
+                        }
+                        if (block.blockName === 'TECHNICAL WORK') {
+                          return 'TECHNICAL'
                         }
                         return (block.blockName || '').toUpperCase()
                       })()
@@ -805,7 +850,27 @@ const calculateProgress = () => {
             </button>
 
         {/* Block Content */}
-{expandedBlocks[getBlockKey(block.blockName, blockIndex)] && (
+{(() => {
+          // Check if block is complete
+          const isBlockComplete = (() => {
+            if (block.blockName === 'METCONS' || block.blockName === 'ENGINE') {
+              return false // Skip for METCONS and ENGINE
+            }
+            const completedCount = block.exercises.filter(ex => {
+              const setMatch = ex.notes?.match(/Set (\d+)/);
+              const setNumber = setMatch ? parseInt(setMatch[1]) : 1;
+              const exerciseKey = setNumber > 1 ? `${ex.name} - Set ${setNumber}` : ex.name;
+              return completions[exerciseKey] !== undefined;
+            }).length;
+            const totalCount = block.exercises.length;
+            return completedCount === totalCount && totalCount > 0;
+          })();
+          
+          // Completed blocks default to collapsed unless explicitly expanded
+          const blockKey = getBlockKey(block.blockName, blockIndex);
+          const shouldExpand = isBlockComplete ? false : expandedBlocks[blockKey];
+          return shouldExpand;
+        })() && (
   <div className="px-4 pb-4 space-y-4">
     {/* Intensity controls removed */}
     {block.exercises.length === 0 ? (
@@ -1179,9 +1244,10 @@ return (
   <div 
     className={`bg-white rounded-xl shadow-sm border-2 transition-all ${
       isCompleted
-        ? 'border-coral bg-coral/5'
-        : 'border-slate-blue hover:border-coral'
+        ? 'bg-coral/5'
+        : ''
     }`}
+    style={{ borderColor: '#282B34' }}
     data-exercise={exercise.name}
   >
     

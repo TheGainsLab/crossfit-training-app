@@ -1,15 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClientForRequest } from '@/app/api/utils/create-client-mobile'
+
+// CORS headers helper
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { headers: corsHeaders })
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = await createClientForRequest(request)
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
       return NextResponse.json(
         { error: 'Not authenticated' }, 
-        { status: 401 }
+        { 
+          status: 401,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -23,7 +38,10 @@ export async function GET(request: NextRequest) {
     if (userError || !userData) {
       return NextResponse.json(
         { error: 'User not found' }, 
-        { status: 404 }
+        { 
+          status: 404,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -75,7 +93,10 @@ export async function GET(request: NextRequest) {
       console.error('❌ Error fetching BTN workouts:', error)
       return NextResponse.json(
         { error: error.message }, 
-        { status: 500 }
+        { 
+          status: 500,
+          headers: corsHeaders
+        }
       )
     }
 
@@ -95,12 +116,17 @@ export async function GET(request: NextRequest) {
         incomplete: totalWorkouts - completedWorkouts,
         completionRate
       }
+    }, {
+      headers: corsHeaders
     })
   } catch (error: any) {
     console.error('❌ Exception fetching BTN workouts:', error)
     return NextResponse.json(
       { error: error.message }, 
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders
+      }
     )
   }
 }

@@ -34,7 +34,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "We need access to your camera to scan barcodes and take photos of food for nutrition tracking."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
