@@ -8,6 +8,7 @@ import {
   RefreshControl,
   StyleSheet,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { createClient } from '@/lib/supabase/client'
 import { fetchEngineAnalytics } from '@/lib/api/analytics'
 import { Card } from '@/components/ui/Card'
@@ -78,8 +79,8 @@ function EngineTab({ engineData, userId }: { engineData: any; userId: number | n
       <View style={styles.sectionGap}>
         {/* Summary Stats */}
         {hasData && (
-          <Card>
-            <SectionHeader title="Engine Analytics Summary" />
+          <Card style={{ paddingTop: 24 }}>
+            <SectionHeader title="Summary" />
             <View style={[styles.statsRow, { paddingHorizontal: 16 }]}>
               <View style={styles.statCardWrapper}>
                 <StatCard label="Workouts" value={engineData.totalSessions} />
@@ -102,7 +103,6 @@ function EngineTab({ engineData, userId }: { engineData: any; userId: number | n
         )}
 
         {/* Analytics Menu */}
-        <SectionHeader title="Analytics" />
         <View style={styles.activityList}>
           {analyticsOptions.map((option) => (
             <TouchableOpacity
@@ -131,10 +131,23 @@ function EngineTab({ engineData, userId }: { engineData: any; userId: number | n
       {/* Back button */}
       <TouchableOpacity
         onPress={() => setCurrentView('menu')}
-        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 16,
+          backgroundColor: '#FE5858',
+          borderWidth: 1,
+          borderColor: '#282B34',
+          borderRadius: 8,
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          alignSelf: 'flex-start',
+        }}
         activeOpacity={0.7}
       >
-        <Text style={{ fontSize: 16, color: '#FE5858', fontWeight: '600' }}>‹ Back to Menu</Text>
+        <Ionicons name="arrow-back" size={16} color="#F8FBFE" style={{ marginRight: 6 }} />
+        <Text style={{ fontSize: 16, color: '#F8FBFE', fontWeight: '600' }}>Back</Text>
       </TouchableOpacity>
 
       {/* Render specific view content */}
@@ -272,25 +285,25 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
   const [selectedModality, setSelectedModality] = useState('')
   const [selectedMetric, setSelectedMetric] = useState<'output' | 'pace'>('output')
 
-  // Get available day types from sessions
-  const availableDayTypes = React.useMemo(() => {
-    const dayTypes = new Set<string>()
-    engineData.sessions?.forEach((s: any) => {
-      if (s.day_type) dayTypes.add(s.day_type)
-    })
-    return Array.from(dayTypes).sort()
-  }, [engineData.sessions])
-
-  // Get available modalities for selected day type
+  // Get available modalities from sessions
   const availableModalities = React.useMemo(() => {
     const modalities = new Set<string>()
     engineData.sessions?.forEach((s: any) => {
-      if (!selectedDayType || s.day_type === selectedDayType) {
-        if (s.modality) modalities.add(s.modality)
-      }
+      if (s.modality) modalities.add(s.modality)
     })
     return Array.from(modalities).sort()
-  }, [engineData.sessions, selectedDayType])
+  }, [engineData.sessions])
+
+  // Get available day types for selected modality
+  const availableDayTypes = React.useMemo(() => {
+    const dayTypes = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (!selectedModality || s.modality === selectedModality) {
+        if (s.day_type) dayTypes.add(s.day_type)
+      }
+    })
+    return Array.from(dayTypes).sort()
+  }, [engineData.sessions, selectedModality])
 
   // Filter sessions
   const filteredSessions = React.useMemo(() => {
@@ -317,27 +330,27 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
 
   return (
     <View style={styles.sectionGap}>
-      {/* Day Type Filter */}
+      {/* Modality Filter */}
       <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
-          Select Day Type
+          Select Modality
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            {availableDayTypes.map((dayType) => (
+            {availableModalities.map((modality) => (
               <TouchableOpacity
-                key={dayType}
+                key={modality}
                 onPress={() => {
-                  setSelectedDayType(dayType)
-                  setSelectedModality('') // Reset modality
+                  setSelectedModality(modality)
+                  setSelectedDayType('') // Reset day type
                 }}
                 style={{
                   paddingHorizontal: 16,
                   paddingVertical: 10,
                   borderRadius: 8,
                   borderWidth: 2,
-                  borderColor: selectedDayType === dayType ? '#FE5858' : '#E5E7EB',
-                  backgroundColor: selectedDayType === dayType ? '#FFFFFF' : '#F3F4F6',
+                  borderColor: selectedModality === modality ? '#FE5858' : '#E5E7EB',
+                  backgroundColor: selectedModality === modality ? '#FFFFFF' : '#F3F4F6',
                 }}
                 activeOpacity={0.7}
               >
@@ -346,7 +359,7 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
                   fontWeight: '600',
                   fontSize: 13,
                 }}>
-                  {formatDayType(dayType)}
+                  {formatModality(modality)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -354,25 +367,25 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
         </ScrollView>
       </Card>
 
-      {/* Modality Filter */}
-      {selectedDayType && (
+      {/* Day Type Filter */}
+      {selectedModality && (
         <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
           <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
-            Select Modality
+            Select Day Type
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              {availableModalities.map((modality) => (
+              {availableDayTypes.map((dayType) => (
                 <TouchableOpacity
-                  key={modality}
-                  onPress={() => setSelectedModality(modality)}
+                  key={dayType}
+                  onPress={() => setSelectedDayType(dayType)}
                   style={{
                     paddingHorizontal: 16,
                     paddingVertical: 10,
                     borderRadius: 8,
                     borderWidth: 2,
-                    borderColor: selectedModality === modality ? '#FE5858' : '#E5E7EB',
-                    backgroundColor: selectedModality === modality ? '#FFFFFF' : '#F3F4F6',
+                    borderColor: selectedDayType === dayType ? '#FE5858' : '#E5E7EB',
+                    backgroundColor: selectedDayType === dayType ? '#FFFFFF' : '#F3F4F6',
                   }}
                   activeOpacity={0.7}
                 >
@@ -381,7 +394,7 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
                     fontWeight: '600',
                     fontSize: 13,
                   }}>
-                    {formatModality(modality)}
+                    {formatDayType(dayType)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -432,7 +445,7 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
           ) : (
             <ScrollView>
               {/* Metric Toggle */}
-              <Card style={{ padding: 16 }}>
+              <Card style={{ padding: 16, borderWidth: 1, borderColor: '#282B34', marginBottom: 16 }}>
                 <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
                   Select Metric
                 </Text>
@@ -484,7 +497,7 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
 
               {/* Output Chart */}
               {selectedMetric === 'output' && (
-                <Card style={{ padding: 16 }}>
+                <Card style={{ padding: 16, borderWidth: 1, borderColor: '#282B34', marginBottom: 16 }}>
                   <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34', marginBottom: 16, textAlign: 'center' }}>
                     Output Over Time
                   </Text>
@@ -500,7 +513,7 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
 
               {/* Pace Chart */}
               {selectedMetric === 'pace' && filteredSessions.some((s: any) => s.actual_pace) && (
-                <Card style={{ padding: 16 }}>
+                <Card style={{ padding: 16, borderWidth: 1, borderColor: '#282B34', marginBottom: 16 }}>
                   <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34', marginBottom: 16, textAlign: 'center' }}>
                     Pace Over Time
                   </Text>
@@ -516,7 +529,7 @@ function EngineHistoryView({ engineData }: { engineData: any }) {
 
               {/* Performance Ratio Chart (if available) */}
               {filteredSessions.some((s: any) => s.performance_ratio) && (
-                <Card style={{ padding: 16 }}>
+                <Card style={{ padding: 16, borderWidth: 1, borderColor: '#282B34', marginBottom: 16 }}>
                   <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34', marginBottom: 16, textAlign: 'center' }}>
                     Performance Ratio Over Time
                   </Text>
@@ -567,7 +580,7 @@ function EngineComparisonsView({ engineData }: { engineData: any }) {
   const comparisonData = React.useMemo(() => {
     if (!selectedModality || selectedDayTypes.length === 0) return []
     
-    return selectedDayTypes.map((dayType) => {
+    const data = selectedDayTypes.map((dayType) => {
       const sessions = engineData.sessions?.filter((s: any) => 
         s.modality === selectedModality && 
         s.day_type === dayType &&
@@ -589,7 +602,14 @@ function EngineComparisonsView({ engineData }: { engineData: any }) {
         units: sessions[0].units
       }
     }).filter(Boolean)
-  }, [engineData.sessions, selectedModality, selectedDayTypes])
+    
+    // Sort in descending order based on selected metric
+    return data.sort((a: any, b: any) => {
+      const aValue = selectedMetric === 'output' ? a.avgOutput : (a.avgPace || 0)
+      const bValue = selectedMetric === 'output' ? b.avgOutput : (b.avgPace || 0)
+      return bValue - aValue // Descending order
+    })
+  }, [engineData.sessions, selectedModality, selectedDayTypes, selectedMetric])
 
   const formatModality = (modality: string) => {
     return modality.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -860,12 +880,8 @@ function EngineTimeTrialsView({ engineData }: { engineData: any }) {
             </Card>
           ) : selectedModality && filteredTrials.length > 0 ? (
             <Card style={{ padding: 16 }}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34', marginBottom: 16, textAlign: 'center' }}>
-                Time Trials - {formatModality(selectedModality)}
-              </Text>
-        <View>
+              <View>
                 {filteredTrials.map((trial: any, index: number) => {
-                  const isMostRecent = (trial.id || trial.date || trial.created_at) === mostRecentTrialId
                   const trialDate = formatDate(trial.date || trial.created_at)
                   const output = parseFloat(trial.total_output) || 0
                   const maxOutput = Math.max(...filteredTrials.map((t: any) => parseFloat(t.total_output) || 0))
@@ -874,30 +890,17 @@ function EngineTimeTrialsView({ engineData }: { engineData: any }) {
                   return (
                     <View key={trial.id || index} style={{ marginBottom: 12 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', width: 100 }}>
+                        <View style={{ width: 100 }}>
                           <Text style={{ fontSize: 12, color: '#6B7280' }}>
                             {trialDate}
                           </Text>
-                          {isMostRecent && (
-                            <View style={{ 
-                              marginLeft: 6,
-                              backgroundColor: '#10B981',
-                              borderRadius: 10,
-                              width: 20,
-                              height: 20,
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}>
-                              <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>✓</Text>
-                            </View>
-                          )}
                         </View>
                         <View style={{ flex: 1, height: 32, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden', marginHorizontal: 8 }}>
                           <View 
                             style={{ 
                               height: '100%', 
                               width: `${percentage}%`, 
-                              backgroundColor: isMostRecent ? '#10B981' : '#FE5858',
+                              backgroundColor: '#FE5858',
                               borderRadius: 4
                             }} 
                           />

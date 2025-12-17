@@ -186,6 +186,10 @@ export default function Dashboard({
       'threshold': 'Threshold',
       'tempo': 'Tempo',
       'recovery': 'Recovery',
+      'anaerobic': 'Anaerobic',
+      'interval': 'Interval',
+      'polarized': 'Polarized',
+      'max_aerobic_power': 'Max Aerobic Power',
       'flux': 'Flux',
       'flux_stages': 'Flux Stages',
       'devour': 'Devour',
@@ -203,7 +207,21 @@ export default function Dashboard({
       'rocket_races_a': 'Rocket Races A',
       'rocket_races_b': 'Rocket Races B'
     }
-    return typeMap[dayType] || dayType?.replace('_', ' ') || 'Conditioning'
+    
+    // If in typeMap, return it
+    if (typeMap[dayType]) {
+      return typeMap[dayType]
+    }
+    
+    // Otherwise, format by replacing underscores with spaces and capitalizing words
+    if (dayType) {
+      return dayType
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ')
+    }
+    
+    return 'Conditioning'
   }
 
   const renderDayCard = (workout: any) => {
@@ -211,44 +229,28 @@ export default function Dashboard({
 
     const status = getDayStatus(workout)
     const dayNumber = workout.program_day_number || workout.day_number
-    const daysPerMonth = getDaysPerMonth()
-
-    let bgColor = '#f3f4f6' // upcoming
-    let textColor = '#6b7280'
-    let borderColor = '#d1d5db'
-
-    if (status === 'completed') {
-      bgColor = '#d1fae5'
-      textColor = '#065f46'
-      borderColor = '#10b981'
-    } else if (status === 'available') {
-      bgColor = '#dbeafe'
-      textColor = '#1e40af'
-      borderColor = '#3b82f6'
-    } else if (status === 'locked') {
-      bgColor = '#f9fafb'
-      textColor = '#9ca3af'
-      borderColor = '#e5e7eb'
-    }
+    
+    // Set background color based on completion status
+    const backgroundColor = status === 'completed' ? '#DAE2EA' : '#FFFFFF'
 
     return (
       <TouchableOpacity
         key={workout.id || dayNumber}
-        style={[styles.dayCard, { backgroundColor: bgColor, borderColor }]}
+        style={[styles.dayCard, { backgroundColor }]}
         onPress={() => handleDayClick(workout)}
         disabled={status === 'locked'}
       >
-        <Text style={[styles.dayNumber, { color: textColor }]}>
+        <Text style={styles.dayNumber}>
           Day {dayNumber}
         </Text>
-        <Text style={[styles.dayType, { color: textColor }]}>
+        <Text style={styles.dayType} numberOfLines={2}>
           {getWorkoutTypeDisplayName(workout.day_type || '')}
         </Text>
         {status === 'completed' && (
-          <Text style={styles.completedBadge}>✓</Text>
+          <Text style={styles.completedBadge}>Completed</Text>
         )}
         {status === 'locked' && (
-          <Ionicons name="lock-closed" size={16} color="#9ca3af" />
+          <Ionicons name="lock-closed" size={16} color="#282B34" />
         )}
       </TouchableOpacity>
     )
@@ -311,8 +313,8 @@ export default function Dashboard({
           style={styles.backButton}
           onPress={() => setInternalView('main')}
         >
-          <Ionicons name="arrow-back" size={20} color="#FE5858" />
-          <Text style={styles.backButtonText}>Back to Dashboard</Text>
+          <Ionicons name="arrow-back" size={16} color="#F8FBFE" style={{ marginRight: 6 }} />
+          <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Select a Month</Text>
       </View>
@@ -352,8 +354,8 @@ export default function Dashboard({
             style={styles.backButton}
             onPress={() => setInternalView('months')}
           >
-            <Ionicons name="arrow-back" size={20} color="#FE5858" />
-            <Text style={styles.backButtonText}>Back to Months</Text>
+            <Ionicons name="arrow-back" size={16} color="#F8FBFE" style={{ marginRight: 6 }} />
+            <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>
             Month {selectedMonth} - Days {(selectedMonth - 1) * daysPerMonth + 1} to {selectedMonth * daysPerMonth}
@@ -521,12 +523,19 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
+    backgroundColor: '#FE5858',
+    borderWidth: 1,
+    borderColor: '#282B34',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignSelf: 'flex-start',
   },
   backButtonText: {
-    marginLeft: 8,
     fontSize: 16,
-    color: '#FE5858',
+    color: '#F8FBFE',
     fontWeight: '600',
   },
   monthsGrid: {
@@ -570,34 +579,37 @@ const styles = StyleSheet.create({
   },
   daysRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   dayWrapper: {
-    flex: 1,
+    width: '48%',
   },
   dayCard: {
     padding: 12,
     borderRadius: 6,
     borderWidth: 1,
+    borderColor: '#FE5858',
     alignItems: 'center',
-    minHeight: 80,
+    minHeight: 90,
     justifyContent: 'center',
   },
   dayNumber: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 2,
+    marginBottom: 4,
+    color: '#282B34',
   },
   dayType: {
-    fontSize: 10,
+    fontSize: 11,
     textAlign: 'center',
+    color: '#282B34',
+    flexWrap: 'wrap',
   },
   completedBadge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    fontSize: 12,
-    color: '#10b981',
-    fontWeight: 'bold',
+    marginTop: 4,
+    fontSize: 10,
+    color: '#282B34',
+    fontWeight: '600',
   },
 })

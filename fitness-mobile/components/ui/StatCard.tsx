@@ -42,11 +42,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FE5858',
     marginBottom: 4,
+    textAlign: 'center',
   },
   label: {
     fontSize: 14,
     fontWeight: '500',
     color: '#374151',
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 12,

@@ -116,6 +116,18 @@ export default function EnginePage() {
     setSelectedDay(null)
     setCurrentView('dashboard')
     setWorkout(null)
+    // Reset form state when navigating back
+    setTotalOutput('')
+    setAverageHeartRate('')
+    setPeakHeartRate('')
+    setRpeValue(5)
+    setIsCompleted(false)
+    setSaveSuccess(false)
+    // Reset saved values
+    setSavedTotalOutput('')
+    setSavedAverageHeartRate('')
+    setSavedPeakHeartRate('')
+    setSavedRpeValue(5)
   }
 
   // Dashboard data
@@ -189,6 +201,11 @@ export default function EnginePage() {
   const [rpeValue, setRpeValue] = useState(5)
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  // Saved values for review card display
+  const [savedTotalOutput, setSavedTotalOutput] = useState('')
+  const [savedAverageHeartRate, setSavedAverageHeartRate] = useState('')
+  const [savedPeakHeartRate, setSavedPeakHeartRate] = useState('')
+  const [savedRpeValue, setSavedRpeValue] = useState(5)
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const currentPhaseRef = useRef<'work' | 'rest'>('work')
@@ -234,6 +251,10 @@ export default function EnginePage() {
       // Fallback for standalone Engine access - stay within engine tabs
       router.push('/engine/training')
     }
+  }
+
+  const navigateToAnalytics = () => {
+    router.push('/engine/analytics')
   }
 
   useEffect(() => {
@@ -282,10 +303,22 @@ export default function EnginePage() {
     }
   }, [day, connected])
 
-  // Set initial view to equipment selection when workout loads
+  // Set initial view to equipment selection when workout loads and reset form state
   useEffect(() => {
     if (workout) {
       setWorkoutView('equipment')
+      // Reset completion form state when loading a new workout
+      setTotalOutput('')
+      setAverageHeartRate('')
+      setPeakHeartRate('')
+      setRpeValue(5)
+      setIsCompleted(false)
+      setSaveSuccess(false)
+      // Reset saved values
+      setSavedTotalOutput('')
+      setSavedAverageHeartRate('')
+      setSavedPeakHeartRate('')
+      setSavedRpeValue(5)
     }
   }, [workout])
 
@@ -1347,7 +1380,21 @@ export default function EnginePage() {
       'rocket_races_a': 'Rocket Races A',
       'rocket_races_b': 'Rocket Races B'
     }
-    return typeMap[dayType] || dayType?.replace(/_/g, ' ') || 'Conditioning'
+    
+    // If in typeMap, return it
+    if (typeMap[dayType]) {
+      return typeMap[dayType]
+    }
+    
+    // Otherwise, format by replacing underscores with spaces and capitalizing words
+    if (dayType) {
+      return dayType
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ')
+    }
+    
+    return 'Conditioning'
   }
 
   const handlePhaseCompletion = () => {
@@ -1796,10 +1843,22 @@ export default function EnginePage() {
       const totalRestTime = sessionData.intervals.reduce((sum, int) => sum + (int.restDuration || 0), 0)
       const avgWorkRestRatio = totalRestTime > 0 ? totalWorkTime / totalRestTime : null
 
+      // Determine the correct day number to save
+      // Priority: selectedDay (from dashboard click) > workout.day_number > workout.program_day_number > fallback to 1
+      const dayNumberToSave = selectedDay || workout?.day_number || workout?.program_day_number || 1
+      
+      console.log('💾 SAVING WITH DAY NUMBER:', {
+        selectedDay,
+        workoutDayNumber: workout?.day_number,
+        workoutProgramDayNumber: workout?.program_day_number,
+        finalDayNumber: dayNumberToSave,
+        dayUrlParam: day // For debugging
+      })
+
       const sessionDataToSave = {
-        program_day: parseInt(day || '1'),
+        program_day: dayNumberToSave,
         program_version: programVersion,
-        program_day_number: parseInt(day || '1'), // Use day parameter (engineData.dayNumber) as source of truth, not workout?.day_number
+        program_day_number: dayNumberToSave,
         program_id: currentProgramId || (programId ? parseInt(programId) : null),
         workout_id: workout?.id,
         day_type: workout?.day_type,
@@ -1885,13 +1944,22 @@ export default function EnginePage() {
         }
       }
 
+      // Store saved values for review card display BEFORE resetting
+      setSavedTotalOutput(totalOutput)
+      setSavedAverageHeartRate(averageHeartRate)
+      setSavedPeakHeartRate(peakHeartRate)
+      setSavedRpeValue(rpeValue)
+      
       // Show success state
       setSaveSuccess(true)
       
-      // Auto-navigate back after showing success
-      setTimeout(() => {
-        navigateBack()
-      }, 1500)
+      // Reset form state after successful save (for next workout)
+      setTotalOutput('')
+      setAverageHeartRate('')
+      setPeakHeartRate('')
+      setRpeValue(5)
+      
+      // Don't auto-navigate - let user choose from review card
     } catch (err) {
       console.error('Error saving workout:', err)
       Alert.alert('Error', 'Failed to save workout. Please try again.')
@@ -1957,18 +2025,21 @@ export default function EnginePage() {
       <StatusBar barStyle="dark-content" />
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={handleBackToDashboard}>
-          <Text style={styles.backButton}>← Back</Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={handleBackToDashboard}
+        >
+          <Ionicons name="arrow-back" size={16} color="#F8FBFE" style={{ marginRight: 6 }} />
+          <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{getWorkoutTypeDisplayName(workout?.day_type || 'conditioning')}</Text>
-        <View style={{ width: 60 }} />
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Workout Info */}
         <View style={styles.card}>
-          <Text style={styles.dayLabel}>Day {workout.day_number}</Text>
-          <Text style={styles.dayType}>{getWorkoutTypeDisplayName(workout.day_type || 'conditioning')}</Text>
+          <Text style={styles.dayLabel}>
+            Day {workout.day_number} - {getWorkoutTypeDisplayName(workout.day_type || 'conditioning')}
+          </Text>
           
           {/* Equipment display - only show in preview view */}
           {workoutView === 'preview' && selectedModality && (
@@ -2108,10 +2179,7 @@ export default function EnginePage() {
             {/* Baseline Warning - show when unit selected but no matching baseline */}
             {selectedModality && timeTrialSelectedUnit && !hasMatchingBaseline && (
               <View style={styles.baselineWarning}>
-                <View style={styles.warningHeader}>
-                  <Ionicons name="warning" size={24} color="#F59E0B" />
-                  <Text style={styles.warningTitle}>No Time Trial Baseline</Text>
-                </View>
+                <Text style={styles.warningTitle}>No Time Trial Baseline</Text>
                 <Text style={styles.warningText}>
                   You haven't completed a time trial for {modalities.find(m => m.value === selectedModality)?.label} with {scoreUnits.find(u => u.value === timeTrialSelectedUnit)?.label}.
                 </Text>
@@ -2145,9 +2213,9 @@ export default function EnginePage() {
           <>
             {/* Training Summary Section - Only show when baseline exists */}
             {baselines[selectedModality] && (
-              <View style={styles.summaryCard}>
+              <>
                 <TouchableOpacity
-                  style={styles.collapsibleHeader}
+                  style={[styles.collapsibleHeader, { marginTop: 16 }]}
                   onPress={() => setExpandedSummary(!expandedSummary)}
                 >
                   <Text style={styles.collapsibleHeaderText}>Training Summary</Text>
@@ -2313,7 +2381,7 @@ export default function EnginePage() {
                     })()}
                   </View>
                 )}
-              </View>
+              </>
             )}
             
             {/* Workout Breakdown Section */}
@@ -2485,7 +2553,7 @@ export default function EnginePage() {
             
             {/* Workout History Section */}
             <TouchableOpacity
-              style={styles.collapsibleHeader}
+              style={[styles.collapsibleHeader, { marginTop: 16 }]}
               onPress={() => setExpandedHistory(!expandedHistory)}
             >
               <View style={styles.historyHeaderContent}>
@@ -2823,109 +2891,151 @@ export default function EnginePage() {
           </>
         )}
 
-        {/* Completion Form */}
+        {/* Completion Form or Review Card */}
         {isCompleted && (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Workout Complete!</Text>
             
-            {/* Success Banner */}
-            {saveSuccess && (
-              <View style={styles.successBanner}>
-                <Ionicons name="checkmark-circle" size={24} color="#10B981" />
-                <Text style={styles.successText}>Workout Saved Successfully!</Text>
-              </View>
-            )}
-            
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Score (required)</Text>
-              <TextInput
-                style={styles.input}
-                value={totalOutput}
-                onChangeText={setTotalOutput}
-                placeholder=""
-                keyboardType="numeric"
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <View style={styles.heartRateRow}>
-                <View style={styles.heartRateField}>
-                  <Text style={styles.label}>Avg HR</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={averageHeartRate}
-                    onChangeText={setAverageHeartRate}
-                    placeholder=""
-                    keyboardType="numeric"
-                  />
+            {saveSuccess ? (
+              /* Review Card - shown after successful save */
+              <>
+                {/* Success Banner */}
+                <View style={styles.successBanner}>
+                  <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                  <Text style={styles.successText}>Workout Saved Successfully!</Text>
                 </View>
+
+                {/* Workout Summary */}
+                <Text style={styles.summaryHeader}>Workout Summary</Text>
                 
-                <View style={styles.heartRateField}>
-                  <Text style={styles.label}>Peak HR</Text>
+                <View style={styles.summaryGrid}>
+                  <View style={styles.summaryStatCard}>
+                    <Text style={styles.summaryStatLabel}>Score</Text>
+                    <Text style={styles.summaryStatValue}>{savedTotalOutput || '—'}</Text>
+                  </View>
+                  
+                  <View style={styles.summaryStatCard}>
+                    <Text style={styles.summaryStatLabel}>Avg HR</Text>
+                    <Text style={styles.summaryStatValue}>{savedAverageHeartRate ? `${savedAverageHeartRate} bpm` : '—'}</Text>
+                  </View>
+                  
+                  <View style={styles.summaryStatCard}>
+                    <Text style={styles.summaryStatLabel}>Peak HR</Text>
+                    <Text style={styles.summaryStatValue}>{savedPeakHeartRate ? `${savedPeakHeartRate} bpm` : '—'}</Text>
+                  </View>
+                  
+                  <View style={styles.summaryStatCard}>
+                    <Text style={styles.summaryStatLabel}>RPE</Text>
+                    <Text style={styles.summaryStatValue}>{savedRpeValue}/10</Text>
+                  </View>
+                </View>
+
+                {/* Navigation Buttons */}
+                <TouchableOpacity
+                  style={styles.reviewNavButton}
+                  onPress={handleBackToDashboard}
+                >
+                  <Ionicons name="arrow-back" size={20} color="#F8FBFE" />
+                  <Text style={styles.reviewNavButtonText}>Back to Training</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.reviewNavButton, styles.reviewNavButtonSecondary]}
+                  onPress={navigateToAnalytics}
+                >
+                  <Ionicons name="stats-chart-outline" size={20} color="#282B34" />
+                  <Text style={styles.reviewNavButtonTextSecondary}>View Analytics</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              /* Form - shown before save */
+              <>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Score (required)</Text>
                   <TextInput
                     style={styles.input}
-                    value={peakHeartRate}
-                    onChangeText={setPeakHeartRate}
+                    value={totalOutput}
+                    onChangeText={setTotalOutput}
                     placeholder=""
                     keyboardType="numeric"
                   />
                 </View>
-              </View>
-            </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>RPE (1-10): {rpeValue}</Text>
-              <View style={styles.rpeContainer}>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => (
-                  <TouchableOpacity
-                    key={value}
-                    style={[
-                      styles.rpeButton,
-                      rpeValue === value && styles.rpeButtonActive
-                    ]}
-                    onPress={() => setRpeValue(value)}
-                  >
-                    <Text style={[
-                      styles.rpeButtonText,
-                      rpeValue === value && styles.rpeButtonTextActive
-                    ]}>
-                      {value}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.completionButtonsContainer}>
-              <TouchableOpacity
-                style={styles.discardButton}
-                onPress={discardWorkout}
-                disabled={saving}
-              >
-                <Text style={styles.discardButtonText}>Discard</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[
-                  styles.saveButton, 
-                  saving && styles.saveButtonDisabled,
-                  saveSuccess && styles.saveButtonSuccess
-                ]}
-                onPress={saveWorkout}
-                disabled={saving || saveSuccess}
-              >
-                {saving ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : saveSuccess ? (
-                  <View style={styles.saveButtonContent}>
-                    <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-                    <Text style={styles.saveButtonText}>Saved!</Text>
+                <View style={styles.formGroup}>
+                  <View style={styles.heartRateRow}>
+                    <View style={styles.heartRateField}>
+                      <Text style={styles.label}>Avg HR</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={averageHeartRate}
+                        onChangeText={setAverageHeartRate}
+                        placeholder=""
+                        keyboardType="numeric"
+                      />
+                    </View>
+                    
+                    <View style={styles.heartRateField}>
+                      <Text style={styles.label}>Peak HR</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={peakHeartRate}
+                        onChangeText={setPeakHeartRate}
+                        placeholder=""
+                        keyboardType="numeric"
+                      />
+                    </View>
                   </View>
-                ) : (
-                  <Text style={styles.saveButtonText}>Save Workout</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>RPE (1-10): {rpeValue}</Text>
+                  <View style={styles.rpeContainer}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => (
+                      <TouchableOpacity
+                        key={value}
+                        style={[
+                          styles.rpeButton,
+                          rpeValue === value && styles.rpeButtonActive
+                        ]}
+                        onPress={() => setRpeValue(value)}
+                      >
+                        <Text style={[
+                          styles.rpeButtonText,
+                          rpeValue === value && styles.rpeButtonTextActive
+                        ]}>
+                          {value}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.completionButtonsContainer}>
+                  <TouchableOpacity
+                    style={styles.discardButton}
+                    onPress={discardWorkout}
+                    disabled={saving}
+                  >
+                    <Text style={styles.discardButtonText}>Discard</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[
+                      styles.saveButton, 
+                      saving && styles.saveButtonDisabled
+                    ]}
+                    onPress={saveWorkout}
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.saveButtonText}>Save Workout</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
         )}
       </ScrollView>
@@ -3143,8 +3253,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   backButton: {
-    color: '#FE5858',
-    fontSize: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FE5858',
+    borderWidth: 1,
+    borderColor: '#282B34',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignSelf: 'flex-start',
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#F8FBFE',
+    fontWeight: '600',
   },
   headerTitle: {
     fontSize: 20,
@@ -3162,21 +3285,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 24,
     marginBottom: 16,
-    borderWidth: 2,
-    borderColor: '#DAE2EA',
+    borderWidth: 1,
+    borderColor: '#282B34',
   },
   dayLabel: {
     fontSize: 24,
     fontWeight: '700',
     color: '#282B34',
-    marginBottom: 8,
-  },
-  dayType: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FE5858',
     marginBottom: 16,
-    textTransform: 'capitalize',
   },
   equipmentText: {
     fontSize: 16,
@@ -3571,6 +3687,66 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  summaryHeader: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  summaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 20,
+  },
+  summaryStatCard: {
+    width: '48%',
+    backgroundColor: '#F8FBFE',
+    borderWidth: 1,
+    borderColor: '#DAE2EA',
+    borderRadius: 8,
+    padding: 12,
+  },
+  summaryStatLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontWeight: '600',
+  },
+  summaryStatValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#282B34',
+    marginTop: 4,
+  },
+  reviewNavButton: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#FE5858',
+    borderWidth: 1,
+    borderColor: '#282B34',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  reviewNavButtonSecondary: {
+    backgroundColor: '#FFFFFF',
+  },
+  reviewNavButtonText: {
+    color: '#F8FBFE',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  reviewNavButtonTextSecondary: {
+    color: '#282B34',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   categoryRow: {
     flexDirection: 'row',
     gap: 8,
@@ -3678,40 +3854,35 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   baselineWarning: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#DAE2EA',
     borderRadius: 12,
     padding: 16,
     marginTop: 16,
-    borderWidth: 2,
-    borderColor: '#F59E0B',
-  },
-  warningHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#FE5858',
   },
   warningTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#92400E',
+    color: '#282B34',
+    marginBottom: 8,
   },
   warningText: {
     fontSize: 14,
-    color: '#78350F',
+    color: '#282B34',
     marginBottom: 12,
     lineHeight: 20,
   },
   warningSubtext: {
     fontSize: 13,
-    color: '#78350F',
+    color: '#282B34',
     marginBottom: 12,
     lineHeight: 20,
   },
   warningCTA: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#92400E',
+    color: '#282B34',
   },
   nextButton: {
     backgroundColor: '#FE5858',
