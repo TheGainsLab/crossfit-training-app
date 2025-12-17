@@ -15,6 +15,10 @@ import { fetchWorkout } from '@/lib/api/workouts'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { StatCard } from '@/components/ui/StatCard'
+import { GeneratedWorkout, UserProfile } from '@/lib/btn/types'
+import { generateTestWorkouts } from '@/lib/btn/utils'
+import { exerciseEquipment } from '@/lib/btn/data'
+import { saveBTNWorkouts } from '@/lib/api/btn'
 
 interface Program {
   id: number
@@ -53,6 +57,24 @@ export default function Dashboard() {
   const [totalTasksCompleted, setTotalTasksCompleted] = useState(0)
   const [upcomingWorkoutType, setUpcomingWorkoutType] = useState('Training Day')
   const isLoadingRef = React.useRef(false)
+
+  // BTN Generator State
+  const [generatedWorkouts, setGeneratedWorkouts] = useState<GeneratedWorkout[]>([])
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [savedWorkouts, setSavedWorkouts] = useState<Set<number>>(new Set())
+  const [savingWorkouts, setSavingWorkouts] = useState<Set<number>>(new Set())
+  const [selectedDomains, setSelectedDomains] = useState<string[]>([])
+  const [equipmentFilter, setEquipmentFilter] = useState<'all' | 'barbell' | 'no_barbell' | 'gymnastics'>('all')
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [profileLoading, setProfileLoading] = useState(true)
+
+  const timeDomains = [
+    '1:00 - 5:00',
+    '5:00 - 10:00',
+    '10:00 - 15:00',
+    '15:00 - 20:00',
+    '20:00+'
+  ]
 
   useEffect(() => {
     loadDashboard()
@@ -100,7 +122,15 @@ export default function Dashboard() {
       setSubscriptionTier(userData.subscription_tier || 'Premium')
       setUserId(userData.id)
 
-      // Get user's programs
+      // Skip program loading for BTN users - they see generator instead
+      if (userData.subscription_tier === 'BTN') {
+        setLoading(false)
+        setRefreshing(false)
+        isLoadingRef.current = false
+        return
+      }
+
+      // Get user's programs (only for Premium/Applied Power)
       const { data: programs, error: programsError } = await supabase
         .from('programs')
         .select('id, weeks_generated, generated_at, program_data')
@@ -836,13 +866,169 @@ export default function Dashboard() {
     )
   }
 
+  // BTN Generator Functions
+  const fetchUserProfile = async () => {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (!userData) return
+
+      // Fetch user profile data
+      const [equipmentRes, skillsRes, oneRmsRes, userInfoRes] = await Promise.all([
+        supabase.from('user_equipment').select('equipment_name').eq('user_id', userData.id),
+        supabase.from('user_skills').select('skill_name, skill_level').eq('user_id', userData.id),
+        supabase.from('user_one_rms').select('exercise_name, one_rm').eq('user_id', userData.id),
+        supabase.from('users').select('gender, units').eq('id', userData.id).single()
+      ])
+
+      const equipment = equipmentRes.data?.map(e => e.equipment_name) || []
+      const skills: { [key: string]: string } = {}
+      skillsRes.data?.forEach(s => { skills[s.skill_name] = s.skill_level })
+      const oneRMs: { [key: string]: number } = {}
+      oneRmsRes.data?.forEach(r => { oneRMs[r.exercise_name] = r.one_rm })
+
+      setUserProfile({
+        equipment,
+        skills,
+        oneRMs,
+        gender: userInfoRes.data?.gender || 'Male',
+        units: userInfoRes.data?.units || 'lbs'
+      })
+    } catch (error) {
+      console.error('Error fetching user profile:', error)
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (subscriptionTier === 'BTN') {
+      fetchUserProfile()
+    }
+  }, [subscriptionTier])
+
+  const toggleDomain = (domain: string) => {
+    setSelectedDomains(prev => 
+      prev.includes(domain)
+        ? prev.filter(d => d !== domain)
+        : [...prev, domain]
+    )
+  }
+
+  const generateWorkouts = async () => {
+    setIsGenerating(true)
+    try {
+      // Determine requiredEquipment based on filter
+      let requiredEquipment: string[] | undefined
+      if (equipmentFilter === 'barbell') {
+        requiredEquipment = ['Barbell']
+      } else {
+        requiredEquipment = undefined
+      }
+      
+      const workouts = generateTestWorkouts(
+        selectedDomains.length > 0 ? selectedDomains : undefined,
+        userProfile || undefined,
+        requiredEquipment
+      )
+      
+      // Apply post-generation filtering for 'no_barbell' and 'gymnastics'
+      let filteredWorkouts = workouts
+      if (equipmentFilter === 'no_barbell' || equipmentFilter === 'gymnastics') {
+        filteredWorkouts = workouts.filter(workout => {
+          const equipmentSet = new Set<string>()
+          workout.exercises.forEach((exercise: any) => {
+            const exerciseName = exercise.name || exercise.exercise
+            const equipment = exerciseEquipment[exerciseName] || []
+            equipment.forEach(eq => equipmentSet.add(eq))
+          })
+          const reqEq = Array.from(equipmentSet)
+          
+          if (equipmentFilter === 'no_barbell') {
+            return !reqEq.includes('Barbell')
+          } else if (equipmentFilter === 'gymnastics') {
+            return reqEq.some(eq => 
+              eq === 'Pullup Bar or Rig' || 
+              eq === 'High Rings' || 
+              eq === 'Climbing Rope'
+            )
+          }
+          return true
+        })
+      }
+      
+      setGeneratedWorkouts(filteredWorkouts)
+      setSavedWorkouts(new Set())
+    } catch (error) {
+      console.error('Generation failed:', error)
+      Alert.alert('Error', 'Failed to generate workouts. Please try again.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const saveWorkout = async (workout: GeneratedWorkout, index: number) => {
+    setSavingWorkouts(prev => new Set(prev).add(index))
+    
+    try {
+      const result = await saveBTNWorkouts([workout])
+      if (result.success) {
+        setSavedWorkouts(prev => new Set(prev).add(index))
+        Alert.alert('Success', 'Workout saved!')
+      } else {
+        throw new Error('Failed to save workout')
+      }
+    } catch (error: any) {
+      console.error('Save failed:', error)
+      Alert.alert('Error', error.message || 'Failed to save workout')
+    } finally {
+      setSavingWorkouts(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(index)
+        return newSet
+      })
+    }
+  }
+
+  const discardWorkout = (index: number) => {
+    setGeneratedWorkouts(prev => prev.filter((_, i) => i !== index))
+  }
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FE5858" />
-        <Text style={styles.loadingText}>Loading dashboard...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     )
+  }
+
+  // BTN users see generator, Premium users see program dashboard
+  if (subscriptionTier === 'BTN') {
+    return <BTNWorkoutGeneratorView 
+      userName={userName}
+      generatedWorkouts={generatedWorkouts}
+      isGenerating={isGenerating}
+      savedWorkouts={savedWorkouts}
+      savingWorkouts={savingWorkouts}
+      selectedDomains={selectedDomains}
+      equipmentFilter={equipmentFilter}
+      timeDomains={timeDomains}
+      toggleDomain={toggleDomain}
+      setEquipmentFilter={setEquipmentFilter}
+      generateWorkouts={generateWorkouts}
+      saveWorkout={saveWorkout}
+      discardWorkout={discardWorkout}
+      router={router}
+    />
   }
 
   return (
@@ -1522,4 +1708,354 @@ const styles = StyleSheet.create({
   programItemSubtextInactive: {
     color: '#4B5563',
   },
+  // BTN Generator Styles
+  generatorCard: {
+    padding: 20,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#282B34',
+    marginBottom: 12,
+  },
+  domainRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  domainButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+  },
+  domainButtonSelected: {
+    borderColor: '#FE5858',
+    backgroundColor: '#FEE2E2',
+  },
+  domainButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  domainButtonTextSelected: {
+    color: '#FE5858',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 20,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+  },
+  filterButtonSelected: {
+    borderColor: '#FE5858',
+    backgroundColor: '#FEE2E2',
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  filterButtonTextSelected: {
+    color: '#FE5858',
+  },
+  generateButton: {
+    marginTop: 8,
+  },
+  workoutsSection: {
+    marginBottom: 16,
+  },
+  workoutsTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#282B34',
+    marginBottom: 16,
+  },
+  btnWorkoutCard: {
+    padding: 16,
+    marginBottom: 12,
+  },
+  workoutHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  workoutName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#282B34',
+    flex: 1,
+  },
+  workoutBadges: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    backgroundColor: '#F3F4F6',
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  exercisesContainer: {
+    marginBottom: 8,
+  },
+  exerciseText: {
+    fontSize: 14,
+    color: '#4B5563',
+    marginBottom: 4,
+  },
+  workoutMeta: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  workoutActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  savedBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    backgroundColor: '#D1FAE5',
+  },
+  savedText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#065F46',
+  },
+  linkCard: {
+    padding: 16,
+    marginBottom: 32,
+  },
+  linkButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  linkButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FE5858',
+  },
 })
+
+// BTN Workout Generator Component
+function BTNWorkoutGeneratorView({
+  userName,
+  generatedWorkouts,
+  isGenerating,
+  savedWorkouts,
+  savingWorkouts,
+  selectedDomains,
+  equipmentFilter,
+  timeDomains,
+  toggleDomain,
+  setEquipmentFilter,
+  generateWorkouts,
+  saveWorkout,
+  discardWorkout,
+  router
+}: {
+  userName: string
+  generatedWorkouts: GeneratedWorkout[]
+  isGenerating: boolean
+  savedWorkouts: Set<number>
+  savingWorkouts: Set<number>
+  selectedDomains: string[]
+  equipmentFilter: 'all' | 'barbell' | 'no_barbell' | 'gymnastics'
+  timeDomains: string[]
+  toggleDomain: (domain: string) => void
+  setEquipmentFilter: (filter: 'all' | 'barbell' | 'no_barbell' | 'gymnastics') => void
+  generateWorkouts: () => Promise<void>
+  saveWorkout: (workout: GeneratedWorkout, index: number) => Promise<void>
+  discardWorkout: (index: number) => void
+  router: any
+}) {
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      {/* Header */}
+      <Card style={styles.greetingCard}>
+        <View style={styles.greetingContent}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={styles.greetingText}>
+            <Text style={styles.greetingTitle}>Hello, {userName}!</Text>
+            <Text style={styles.programNameInCard}>BTN Workout Generator</Text>
+          </View>
+        </View>
+      </Card>
+
+      {/* Generator Card */}
+      <Card style={styles.generatorCard}>
+        <Text style={styles.sectionTitle}>Select Time Domains (Optional)</Text>
+        <View style={styles.domainRow}>
+          {timeDomains.map((domain) => (
+            <TouchableOpacity
+              key={domain}
+              onPress={() => toggleDomain(domain)}
+              style={[
+                styles.domainButton,
+                selectedDomains.includes(domain) && styles.domainButtonSelected
+              ]}
+            >
+              <Text style={[
+                styles.domainButtonText,
+                selectedDomains.includes(domain) && styles.domainButtonTextSelected
+              ]}>
+                {domain}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Text style={styles.helperText}>
+          {selectedDomains.length === 0 
+            ? 'No domains selected - will generate 5 random workouts'
+            : `Selected ${selectedDomains.length} domain(s)`
+          }
+        </Text>
+
+        <View style={styles.divider} />
+
+        <Text style={styles.sectionTitle}>Select Equipment</Text>
+        <View style={styles.filterRow}>
+          {(['all', 'barbell', 'no_barbell', 'gymnastics'] as const).map(filter => (
+            <TouchableOpacity
+              key={filter}
+              onPress={() => setEquipmentFilter(filter)}
+              style={[
+                styles.filterButton,
+                equipmentFilter === filter && styles.filterButtonSelected
+              ]}
+            >
+              <Text style={[
+                styles.filterButtonText,
+                equipmentFilter === filter && styles.filterButtonTextSelected
+              ]}>
+                {filter === 'all' ? 'All' : 
+                 filter === 'barbell' ? 'Barbell' :
+                 filter === 'no_barbell' ? 'No Barbell' :
+                 'Gymnastics'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Button
+          variant="primary"
+          size="lg"
+          onPress={generateWorkouts}
+          disabled={isGenerating}
+          style={styles.generateButton}
+        >
+          {isGenerating ? 'Generating...' : 'Generate 5 Workouts'}
+        </Button>
+      </Card>
+
+      {/* Generated Workouts */}
+      {generatedWorkouts.length > 0 && (
+        <View style={styles.workoutsSection}>
+          <Text style={styles.workoutsTitle}>
+            Generated Workouts ({generatedWorkouts.length})
+          </Text>
+          {generatedWorkouts.map((workout, index) => (
+            <Card key={index} style={styles.btnWorkoutCard}>
+              <View style={styles.workoutHeader}>
+                <Text style={styles.workoutName}>{workout.name}</Text>
+                <View style={styles.workoutBadges}>
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{workout.format}</Text>
+                  </View>
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{workout.timeDomain}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.exercisesContainer}>
+                {workout.exercises.map((exercise, exIndex) => (
+                  <Text key={exIndex} style={styles.exerciseText}>
+                    {exercise.reps} {exercise.name}
+                    {exercise.weight && ` @ ${exercise.weight}`}
+                  </Text>
+                ))}
+              </View>
+
+              {workout.rounds && (
+                <Text style={styles.workoutMeta}>Rounds: {workout.rounds}</Text>
+              )}
+              {workout.amrapTime && (
+                <Text style={styles.workoutMeta}>AMRAP: {workout.amrapTime} min</Text>
+              )}
+
+              <View style={styles.workoutActions}>
+                {savedWorkouts.has(index) ? (
+                  <View style={styles.savedBadge}>
+                    <Text style={styles.savedText}>✓ Saved</Text>
+                  </View>
+                ) : (
+                  <>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onPress={() => saveWorkout(workout, index)}
+                      disabled={savingWorkouts.has(index)}
+                    >
+                      {savingWorkouts.has(index) ? 'Saving...' : 'Save'}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onPress={() => discardWorkout(index)}
+                    >
+                      Discard
+                    </Button>
+                  </>
+                )}
+              </View>
+            </Card>
+          ))}
+        </View>
+      )}
+
+      {/* Link to Workouts */}
+      <Card style={styles.linkCard}>
+        <TouchableOpacity
+          onPress={() => router.push('/btn/workouts')}
+          style={styles.linkButton}
+        >
+          <Text style={styles.linkButtonText}>View My Workouts →</Text>
+        </TouchableOpacity>
+      </Card>
+    </ScrollView>
+  )
+}

@@ -26,7 +26,7 @@ export default function Index() {
         if (userData) {
           // Check subscription tier routing
           if (userData.subscription_tier === 'BTN') {
-            router.replace('/btn/generate')
+            router.replace('/(tabs)')  // BTN users go to Training tab (which shows generator)
             return
           }
 

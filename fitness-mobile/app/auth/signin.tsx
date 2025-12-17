@@ -60,9 +60,9 @@ export default function SignIn() {
             return
           }
 
-          // BTN users should go to workout history
+          // BTN users should go to main tabs (generator is in Training tab)
           if (userData.subscription_tier === 'BTN') {
-            router.replace('/btn/workouts')
+            router.replace('/(tabs)')
             return
           }
 

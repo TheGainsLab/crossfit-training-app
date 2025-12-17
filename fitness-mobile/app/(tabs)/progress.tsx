@@ -32,6 +32,8 @@ import { Card } from '@/components/ui/Card'
 import { StatCard } from '@/components/ui/StatCard'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { Button } from '@/components/ui/Button'
+import MovementAnalyticsChart from '@/components/analytics/MovementAnalyticsChart'
+import SkillsAnalyticsChart from '@/components/analytics/SkillsAnalyticsChart'
 
 const screenWidth = Dimensions.get('window').width
 
@@ -1140,148 +1142,6 @@ export default function ProgressPage() {
   )
 }
 
-// Session History Modal Component
-function SessionHistoryModal({
-  visible,
-  exerciseName,
-  sessionHistory,
-  loading,
-  onClose,
-}: {
-  visible: boolean
-  exerciseName: string
-  sessionHistory: SessionHistoryRow[]
-  loading?: boolean
-  onClose: () => void
-}) {
-  const formatDateCompact = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
-
-  const getQualityGrade = (quality: number | null) => {
-    if (quality === null) return ''
-    if (quality >= 4) return 'A'
-    if (quality >= 3) return 'B'
-    if (quality >= 2) return 'C'
-    return 'D'
-  }
-
-  return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              Session history: {exerciseName}
-            </Text>
-            <TouchableOpacity
-              onPress={onClose}
-              style={styles.modalCloseButton}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.modalCloseText}>×</Text>
-            </TouchableOpacity>
-          </View>
-
-          {loading ? (
-            <View style={styles.sessionHistoryEmpty}>
-              <ActivityIndicator size="large" color="#FE5858" />
-              <Text style={[styles.sessionHistoryEmptyText, { marginTop: 12 }]}>
-                Loading session history...
-              </Text>
-            </View>
-          ) : sessionHistory.length === 0 ? (
-            <View style={styles.sessionHistoryEmpty}>
-              <Text style={styles.sessionHistoryEmptyText}>
-                No entries for this range.
-              </Text>
-            </View>
-          ) : (
-            <ScrollView showsVerticalScrollIndicator={true}>
-              <View style={styles.sessionHistoryTable}>
-                {/* Header */}
-                <View style={styles.sessionHistoryHeader}>
-                  <View style={[styles.sessionHistoryHeaderCell, styles.sessionHistoryDateCell]}>
-                    <Text style={styles.sessionHistoryHeaderText}>Date</Text>
-                  </View>
-                  <View style={styles.sessionHistoryHeaderCell}>
-                    <Text style={styles.sessionHistoryHeaderText}>Sets</Text>
-                  </View>
-                  <View style={styles.sessionHistoryHeaderCell}>
-                    <Text style={styles.sessionHistoryHeaderText}>Reps</Text>
-                  </View>
-                  <View style={styles.sessionHistoryHeaderCell}>
-                    <Text style={styles.sessionHistoryHeaderText}>Wt/Time</Text>
-                  </View>
-                  <View style={styles.sessionHistoryHeaderCell}>
-                    <Text style={styles.sessionHistoryHeaderText}>RPE</Text>
-                  </View>
-                  <View style={styles.sessionHistoryHeaderCell}>
-                    <Text style={styles.sessionHistoryHeaderText}>Quality</Text>
-                  </View>
-                </View>
-
-                {/* Rows */}
-                {[...sessionHistory]
-                  .sort((a, b) => (a.training_date < b.training_date ? 1 : -1))
-                  .map((row, index) => (
-                    <View
-                      key={index}
-                      style={[
-                        styles.sessionHistoryRow,
-                        index % 2 === 1 ? styles.sessionHistoryRowOdd : null,
-                      ]}
-                    >
-                      <View style={[styles.sessionHistoryCell, styles.sessionHistoryDateCell]}>
-                        <Text style={styles.sessionHistoryDateText}>
-                          {formatDateCompact(row.training_date)}
-                        </Text>
-                      </View>
-                      <View style={styles.sessionHistoryCell}>
-                        <Text style={styles.sessionHistoryCellText}>
-                          {row.sets ?? ''}
-                        </Text>
-                      </View>
-                      <View style={styles.sessionHistoryCell}>
-                        <Text style={styles.sessionHistoryCellText}>
-                          {row.reps ?? ''}
-                        </Text>
-                      </View>
-                      <View style={styles.sessionHistoryCell}>
-                        <Text style={styles.sessionHistoryCellText}>
-                          {row.weight_time && row.weight_time !== 'NaN' ? row.weight_time : ''}
-                        </Text>
-                      </View>
-                      <View style={styles.sessionHistoryCell}>
-                        <Text style={styles.sessionHistoryCellText}>
-                          {row.rpe ?? ''}
-                        </Text>
-                      </View>
-                      <View style={styles.sessionHistoryCell}>
-                        <Text style={styles.sessionHistoryCellText}>
-                          {getQualityGrade(row.completion_quality)}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-              </View>
-            </ScrollView>
-          )}
-        </View>
-      </View>
-    </Modal>
-  )
-}
 
 // Overview Tab Component
 function OverviewTab({
@@ -1474,13 +1334,8 @@ function SkillsTab({
         </View>
       </Card>
 
-      {/* Skills List */}
-        <SectionHeader title="Individual Skills Progress" />
-        <View style={styles.skillsList}>
-          {skillsArray.map((skill, index) => (
-            <SkillCard key={skill.name || index} skill={skill} />
-          ))}
-        </View>
+      {/* Skills Chart */}
+      <SkillsAnalyticsChart skills={skillsArray} userId={userId} />
     </View>
   )
 }
@@ -1581,36 +1436,9 @@ function SkillCard({ skill }: { skill: SkillData }) {
   )
 }
 
+
 // Strength Tab Component
 function StrengthTab({ strengthData, userId }: { strengthData: any; userId: number | null }) {
-  const [modalVisible, setModalVisible] = useState(false)
-  const [selectedExercise, setSelectedExercise] = useState<string>('')
-  const [sessionHistory, setSessionHistory] = useState<SessionHistoryRow[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(false)
-
-  const handleCardPress = async (exerciseName: string) => {
-    if (!userId) return
-    
-    setSelectedExercise(exerciseName)
-    setLoadingHistory(true)
-    setModalVisible(true)
-
-    try {
-      const history = await fetchMovementSessionHistory(
-        userId,
-        exerciseName,
-        'STRENGTH AND POWER',
-        90
-      )
-      setSessionHistory(history)
-    } catch (error) {
-      console.error('Error fetching session history:', error)
-      setSessionHistory([])
-    } finally {
-      setLoadingHistory(false)
-    }
-  }
-
   if (!strengthData?.strengthAnalysis?.movements) {
     return (
       <View>
@@ -1630,91 +1458,16 @@ function StrengthTab({ strengthData, userId }: { strengthData: any; userId: numb
   ) as StrengthMovement[]
 
   return (
-    <View style={styles.sectionGap}>
-      {/* Movement Cards */}
-      <View style={styles.movementsList}>
-        {movementsArray.map((movement, index) => (
-          <TouchableOpacity
-            key={movement.name || index}
-            onPress={() => handleCardPress(movement.name)}
-            activeOpacity={0.7}
-          >
-            <Card style={{ padding: 16 }}>
-              <Text style={styles.movementCardTitle}>
-                {movement.name} ({movement.sessions.length})
-              </Text>
-              <View style={styles.movementStats}>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Max Weight</Text>
-                  <Text style={styles.movementStatValueTeal}>
-                    {isNaN(movement.maxWeight) ? '0' : movement.maxWeight} lbs
-                  </Text>
-                </View>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Avg Weight</Text>
-                  <Text style={styles.movementStatValueOrange}>
-                    {isNaN(movement.averageWeight) ? '0.0' : movement.averageWeight.toFixed(1)} lbs
-                  </Text>
-                </View>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Avg RPE</Text>
-                  <Text style={styles.movementStatValue}>
-                    {isNaN(movement.avgRPE) ? '0.0' : movement.avgRPE.toFixed(1)}
-                  </Text>
-                </View>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Total Volume</Text>
-                  <Text style={styles.movementStatValue}>
-                    {isNaN(movement.totalVolume) ? '0' : movement.totalVolume.toLocaleString()}
-                  </Text>
-                </View>
-              </View>
-            </Card>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <SessionHistoryModal
-        visible={modalVisible}
-        exerciseName={selectedExercise}
-        sessionHistory={sessionHistory}
-        loading={loadingHistory}
-        onClose={() => setModalVisible(false)}
-      />
-    </View>
+    <MovementAnalyticsChart 
+      movements={movementsArray} 
+      userId={userId} 
+      blockType="STRENGTH AND POWER"
+    />
   )
 }
 
 // Technical Work Tab Component
 function TechnicalWorkTab({ technicalData, userId }: { technicalData: any; userId: number | null }) {
-  const [modalVisible, setModalVisible] = useState(false)
-  const [selectedExercise, setSelectedExercise] = useState<string>('')
-  const [sessionHistory, setSessionHistory] = useState<SessionHistoryRow[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(false)
-
-  const handleCardPress = async (exerciseName: string) => {
-    if (!userId) return
-    
-    setSelectedExercise(exerciseName)
-    setLoadingHistory(true)
-    setModalVisible(true)
-
-    try {
-      const history = await fetchMovementSessionHistory(
-        userId,
-        exerciseName,
-        'TECHNICAL WORK',
-        90
-      )
-      setSessionHistory(history)
-    } catch (error) {
-      console.error('Error fetching session history:', error)
-      setSessionHistory([])
-    } finally {
-      setLoadingHistory(false)
-    }
-  }
-
   if (!technicalData?.technicalWorkAnalysis?.movements) {
     return (
       <View>
@@ -1734,91 +1487,16 @@ function TechnicalWorkTab({ technicalData, userId }: { technicalData: any; userI
   ) as StrengthMovement[]
 
   return (
-    <View style={styles.sectionGap}>
-      {/* Movement Cards */}
-      <View style={styles.movementsList}>
-        {movementsArray.map((movement, index) => (
-          <TouchableOpacity
-            key={movement.name || index}
-            onPress={() => handleCardPress(movement.name)}
-            activeOpacity={0.7}
-          >
-            <Card style={{ padding: 16 }}>
-              <Text style={styles.movementCardTitle}>
-                {movement.name} ({movement.sessions.length})
-              </Text>
-              <View style={styles.movementStats}>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Max Weight</Text>
-                  <Text style={styles.movementStatValueTeal}>
-                    {isNaN(movement.maxWeight) ? '0' : movement.maxWeight} lbs
-                  </Text>
-                </View>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Avg Weight</Text>
-                  <Text style={styles.movementStatValueOrange}>
-                    {isNaN(movement.averageWeight) ? '0.0' : movement.averageWeight.toFixed(1)} lbs
-                  </Text>
-                </View>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Avg RPE</Text>
-                  <Text style={styles.movementStatValue}>
-                    {isNaN(movement.avgRPE) ? '0.0' : movement.avgRPE.toFixed(1)}
-                  </Text>
-                </View>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Total Volume</Text>
-                  <Text style={styles.movementStatValue}>
-                    {isNaN(movement.totalVolume) ? '0' : movement.totalVolume.toLocaleString()}
-                  </Text>
-                </View>
-              </View>
-            </Card>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <SessionHistoryModal
-        visible={modalVisible}
-        exerciseName={selectedExercise}
-        sessionHistory={sessionHistory}
-        loading={loadingHistory}
-        onClose={() => setModalVisible(false)}
-      />
-    </View>
+    <MovementAnalyticsChart 
+      movements={movementsArray} 
+      userId={userId} 
+      blockType="TECHNICAL WORK"
+    />
   )
 }
 
 // Accessories Tab Component
 function AccessoriesTab({ accessoriesData, userId }: { accessoriesData: any; userId: number | null }) {
-  const [modalVisible, setModalVisible] = useState(false)
-  const [selectedExercise, setSelectedExercise] = useState<string>('')
-  const [sessionHistory, setSessionHistory] = useState<SessionHistoryRow[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(false)
-
-  const handleCardPress = async (exerciseName: string) => {
-    if (!userId) return
-    
-    setSelectedExercise(exerciseName)
-    setLoadingHistory(true)
-    setModalVisible(true)
-
-    try {
-      const history = await fetchMovementSessionHistory(
-        userId,
-        exerciseName,
-        'ACCESSORIES',
-        90
-      )
-      setSessionHistory(history)
-    } catch (error) {
-      console.error('Error fetching session history:', error)
-      setSessionHistory([])
-    } finally {
-      setLoadingHistory(false)
-    }
-  }
-
   if (!accessoriesData?.accessoriesAnalysis?.movements) {
     return (
       <View>
@@ -1838,58 +1516,11 @@ function AccessoriesTab({ accessoriesData, userId }: { accessoriesData: any; use
   ) as StrengthMovement[]
 
   return (
-    <View style={styles.sectionGap}>
-      {/* Movement Cards */}
-      <View style={styles.movementsList}>
-        {movementsArray.map((movement, index) => (
-          <TouchableOpacity
-            key={movement.name || index}
-            onPress={() => handleCardPress(movement.name)}
-            activeOpacity={0.7}
-          >
-            <Card style={{ padding: 16 }}>
-              <Text style={styles.movementCardTitle}>
-                {movement.name} ({movement.sessions.length})
-              </Text>
-              <View style={styles.movementStats}>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Max Weight</Text>
-                  <Text style={styles.movementStatValueTeal}>
-                    {isNaN(movement.maxWeight) ? '0' : movement.maxWeight} lbs
-                  </Text>
-                </View>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Avg Weight</Text>
-                  <Text style={styles.movementStatValueOrange}>
-                    {isNaN(movement.averageWeight) ? '0.0' : movement.averageWeight.toFixed(1)} lbs
-                  </Text>
-                </View>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Avg RPE</Text>
-                  <Text style={styles.movementStatValue}>
-                    {isNaN(movement.avgRPE) ? '0.0' : movement.avgRPE.toFixed(1)}
-                  </Text>
-                </View>
-                <View style={styles.movementStatRow}>
-                  <Text style={styles.movementStatLabel}>Total Volume</Text>
-                  <Text style={styles.movementStatValue}>
-                    {isNaN(movement.totalVolume) ? '0' : movement.totalVolume.toLocaleString()}
-                  </Text>
-                </View>
-              </View>
-            </Card>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <SessionHistoryModal
-        visible={modalVisible}
-        exerciseName={selectedExercise}
-        sessionHistory={sessionHistory}
-        loading={loadingHistory}
-        onClose={() => setModalVisible(false)}
-      />
-    </View>
+    <MovementAnalyticsChart 
+      movements={movementsArray} 
+      userId={userId} 
+      blockType="ACCESSORIES"
+    />
   )
 }
 

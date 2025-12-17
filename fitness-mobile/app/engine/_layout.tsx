@@ -78,11 +78,8 @@ export default function EngineTabLayout() {
 
       // 3. Redirect based on subscription
       if (!hasEngineAccess) {
-        if (subscriptionTier === 'BTN') {
-          router.replace('/btn/generate')
-        } else {
-          router.replace('/(tabs)')
-        }
+        // All non-Engine users go to main tabs
+        router.replace('/(tabs)')
         return
       }
 

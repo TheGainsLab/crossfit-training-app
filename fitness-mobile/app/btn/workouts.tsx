@@ -208,7 +208,7 @@ export default function BTNWorkoutsPage() {
             {filter === 'incomplete' || filter === 'all' ? (
               <TouchableOpacity
                 style={styles.emptyButton}
-                onPress={() => router.push('/btn/generate')}
+                onPress={() => router.push('/(tabs)')}
               >
                 <Text style={styles.emptyButtonText}>Generate Workouts</Text>
               </TouchableOpacity>
@@ -1226,6 +1226,8 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
 })
+
+
 
 
 
