@@ -165,3 +165,6 @@ function calculateForTimeBenchmarks(exercises: Exercise[], rounds: number, estim
     excellentScore: formatTime(excellentTime)
   };
 }
+
+
+

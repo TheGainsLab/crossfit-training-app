@@ -197,6 +197,8 @@ export default function IntakePage() {
   const [userId, setUserId] = useState<number | null>(null)
   const [hasExistingProgram, setHasExistingProgram] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const [isAppliedPower, setIsAppliedPower] = useState(false)
+  const [isEngine, setIsEngine] = useState(false)
   const draftSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const currentSportConfig = SPORT_CONFIGS[sportId] || SPORT_CONFIGS[1] // Fallback to CrossFit
@@ -336,6 +338,18 @@ export default function IntakePage() {
 
       setUserId(userData.id)
       setIntakeStatus(userData.intake_status || 'draft')
+
+      // Check subscription tier to determine active sections
+      const subscriptionTier = (userData as any).subscription_tier
+      if (subscriptionTier === 'APPLIED_POWER') {
+        setIsAppliedPower(true)
+        setActiveSections([1, 4]) // Personal Info + 1RM Lifts only
+      } else if (subscriptionTier === 'ENGINE') {
+        setIsEngine(true)
+        setActiveSections([1, 3]) // Personal Info + Conditioning only
+      } else {
+        setActiveSections([1, 2, 3, 4]) // All sections for Premium/BTN
+      }
 
       // Get sport_id from user's most recent program, or default to 1
       const { data: programData } = await supabase

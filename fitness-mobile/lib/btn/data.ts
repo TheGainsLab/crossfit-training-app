@@ -46,3 +46,6 @@ export const exerciseEquipment: { [key: string]: string[] } = {
   'Push-ups': [],
   'Strict Pull-ups': ['Pullup Bar or Rig', 'Low or Adjustable Rings']
 };
+
+
+

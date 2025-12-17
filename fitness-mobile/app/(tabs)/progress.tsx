@@ -755,6 +755,8 @@ export default function ProgressPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [userId, setUserId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>('overview')
+  const [isAppliedPower, setIsAppliedPower] = useState(false)
+  const [isEngine, setIsEngine] = useState(false)
 
   // Data states
   const [recentActivity, setRecentActivity] = useState<RecentSession[]>([])
@@ -776,6 +778,13 @@ export default function ProgressPage() {
       loadTabData(activeTab)
     }
   }, [userId, activeTab])
+
+  // Redirect Applied Power users away from invalid tabs
+  useEffect(() => {
+    if (isAppliedPower && (activeTab === 'skills' || activeTab === 'metcons' || activeTab === 'engine')) {
+      setActiveTab('overview')
+    }
+  }, [isAppliedPower, activeTab])
 
   // Reload recent activity when filter changes (only on overview tab)
   useEffect(() => {
@@ -806,12 +815,20 @@ export default function ProgressPage() {
 
       const { data: userData } = await supabase
         .from('users')
-        .select('id')
+        .select('id, subscription_tier')
         .eq('auth_id', user.id)
         .single()
 
       if (userData) {
         setUserId((userData as { id: number }).id)
+        
+        // Check subscription tier for analytics filtering
+        const subscriptionTier = (userData as any).subscription_tier
+        if (subscriptionTier === 'APPLIED_POWER') {
+          setIsAppliedPower(true)
+        } else if (subscriptionTier === 'ENGINE') {
+          setIsEngine(true)
+        }
       }
     } catch (error) {
       console.error('Error loading user:', error)
@@ -826,28 +843,46 @@ export default function ProgressPage() {
 
     try {
       if (tab === 'overview') {
-        // Preload all category data so task counts are available immediately
-        const [activity, dashboard, skills, strength, technical, accessories, metcons, engine] = await Promise.all([
+        // Preload category data based on subscription tier
+        const promises: Promise<any>[] = [
           fetchRecentActivity(userId, activityFilter === null ? 100 : activityFilter),
           fetchDashboardData(userId),
-          fetchSkillsAnalytics(userId, 90),
-          fetchStrengthAnalytics(userId, 90),
-          fetchTechnicalWorkAnalytics(userId, 90),
-          fetchAccessoriesAnalytics(userId, 90),
-          fetchMetConAnalytics(userId),
-          fetchEngineAnalytics(userId),
-        ])
-        setRecentActivity(activity)
-        setDashboardData(dashboard)
-        setSkillsData(skills)
-        setStrengthData(strength)
-        setTechnicalData(technical)
-        setAccessoriesData(accessories)
-        setMetconData(metcons)
-        setEngineData(engine)
+        ]
+        
+        // Applied Power: Only Strength, Technical, Accessories
+        if (!isAppliedPower) {
+          promises.push(fetchSkillsAnalytics(userId, 90))
+        }
+        promises.push(fetchStrengthAnalytics(userId, 90))
+        promises.push(fetchTechnicalWorkAnalytics(userId, 90))
+        promises.push(fetchAccessoriesAnalytics(userId, 90))
+        if (!isAppliedPower) {
+          promises.push(fetchMetConAnalytics(userId))
+        }
+        // Engine analytics only for Engine or Premium users (not Applied Power)
+        if (!isAppliedPower) {
+          promises.push(fetchEngineAnalytics(userId))
+        }
+        
+        const results = await Promise.all(promises)
+        let resultIndex = 0
+        
+        setRecentActivity(results[resultIndex++])
+        setDashboardData(results[resultIndex++])
+        
+        if (!isAppliedPower) {
+          setSkillsData(results[resultIndex++])
+        }
+        setStrengthData(results[resultIndex++])
+        setTechnicalData(results[resultIndex++])
+        setAccessoriesData(results[resultIndex++])
+        if (!isAppliedPower) {
+          setMetconData(results[resultIndex++])
+          setEngineData(results[resultIndex++])
+        }
       } else if (tab === 'skills') {
-        // Only load if not already loaded
-        if (!skillsData) {
+        // Applied Power users shouldn't access this tab, but handle gracefully
+        if (!isAppliedPower && !skillsData) {
           const data = await fetchSkillsAnalytics(userId, 90)
           setSkillsData(data)
         }
@@ -867,12 +902,14 @@ export default function ProgressPage() {
           setAccessoriesData(data)
         }
       } else if (tab === 'metcons') {
-        if (!metconData) {
+        // Applied Power users shouldn't access this tab, but handle gracefully
+        if (!isAppliedPower && !metconData) {
           const data = await fetchMetConAnalytics(userId)
           setMetconData(data)
         }
       } else if (tab === 'engine') {
-        if (!engineData) {
+        // Engine analytics only for Engine or Premium users (not Applied Power)
+        if (!isAppliedPower && !engineData) {
           const data = await fetchEngineAnalytics(userId)
           setEngineData(data)
         }
@@ -991,6 +1028,7 @@ export default function ProgressPage() {
             getTrendIcon={getTrendIcon}
             userId={userId}
             router={router}
+            isAppliedPower={isAppliedPower}
           />
             
             {/* Category Cards Grid - Only show on overview */}
@@ -998,74 +1036,92 @@ export default function ProgressPage() {
               <View style={styles.categoryGrid}>
                 {/* Left Column */}
                 <View style={styles.categoryColumn}>
-                  <TouchableOpacity
-                    style={styles.categoryCard}
-                    onPress={() => setActiveTab('skills')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.categoryCardCount}>
-                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('skills')}</Text> Skills
-                    </Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={styles.categoryCard}
-                    onPress={() => setActiveTab('technical')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.categoryCardCount}>
-                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('technical')}</Text> Technical
-                    </Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={styles.categoryCard}
-                    onPress={() => setActiveTab('strength')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.categoryCardCount}>
-                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('strength')}</Text> Strength
-                    </Text>
-                  </TouchableOpacity>
+                  {/* Skills button - hide for Applied Power and Engine users */}
+                  {!isAppliedPower && !isEngine && (
+                    <TouchableOpacity
+                      style={styles.categoryCard}
+                      onPress={() => setActiveTab('skills')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.categoryCardCount}>
+                        <Text style={styles.categoryCardCountNumber}>{getTaskCount('skills')}</Text> Skills
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Technical button - show for Applied Power and Premium, hide for Engine */}
+                  {!isEngine && (
+                    <TouchableOpacity
+                      style={styles.categoryCard}
+                      onPress={() => setActiveTab('technical')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.categoryCardCount}>
+                        <Text style={styles.categoryCardCountNumber}>{getTaskCount('technical')}</Text> Technical
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Strength button - show for Applied Power and Premium, hide for Engine */}
+                  {!isEngine && (
+                    <TouchableOpacity
+                      style={styles.categoryCard}
+                      onPress={() => setActiveTab('strength')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.categoryCardCount}>
+                        <Text style={styles.categoryCardCountNumber}>{getTaskCount('strength')}</Text> Strength
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
                 
                 {/* Right Column */}
                 <View style={styles.categoryColumn}>
-                  <TouchableOpacity
-                    style={styles.categoryCard}
-                    onPress={() => setActiveTab('accessories')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.categoryCardCount}>
-                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('accessories')}</Text> Accessories
-                    </Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={styles.categoryCard}
-                    onPress={() => setActiveTab('metcons')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.categoryCardCount}>
-                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('metcons')}</Text> MetCons
-                    </Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={styles.categoryCard}
-                    onPress={() => setActiveTab('engine')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.categoryCardCount}>
-                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('engine')}</Text> Engine
-                    </Text>
-                  </TouchableOpacity>
+                  {/* Accessories button - show for Applied Power and Premium, hide for Engine */}
+                  {!isEngine && (
+                    <TouchableOpacity
+                      style={styles.categoryCard}
+                      onPress={() => setActiveTab('accessories')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.categoryCardCount}>
+                        <Text style={styles.categoryCardCountNumber}>{getTaskCount('accessories')}</Text> Accessories
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* MetCons button - hide for Applied Power and Engine users */}
+                  {!isAppliedPower && !isEngine && (
+                    <TouchableOpacity
+                      style={styles.categoryCard}
+                      onPress={() => setActiveTab('metcons')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.categoryCardCount}>
+                        <Text style={styles.categoryCardCountNumber}>{getTaskCount('metcons')}</Text> MetCons
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Engine button - hide for Applied Power, show for Engine and Premium */}
+                  {!isAppliedPower && (
+                    <TouchableOpacity
+                      style={styles.categoryCard}
+                      onPress={() => setActiveTab('engine')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.categoryCardCount}>
+                        <Text style={styles.categoryCardCountNumber}>{getTaskCount('engine')}</Text> Engine
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             </View>
           </>
         )}
-        {activeTab === 'skills' && (
+        {activeTab === 'skills' && !isAppliedPower && (
           <SkillsTab skillsData={skillsData} userId={userId} />
         )}
         {activeTab === 'strength' && (
@@ -1077,8 +1133,8 @@ export default function ProgressPage() {
         {activeTab === 'accessories' && (
           <AccessoriesTab accessoriesData={accessoriesData} userId={userId} />
         )}
-        {activeTab === 'metcons' && <MetConTab metconData={metconData} />}
-        {activeTab === 'engine' && <EngineTab engineData={engineData} userId={userId} />}
+        {activeTab === 'metcons' && !isAppliedPower && <MetConTab metconData={metconData} />}
+        {activeTab === 'engine' && !isAppliedPower && <EngineTab engineData={engineData} userId={userId} />}
       </ScrollView>
     </View>
   )
@@ -1237,6 +1293,7 @@ function OverviewTab({
   getTrendIcon,
   userId,
   router,
+  isAppliedPower,
 }: {
   recentActivity: RecentSession[]
   dashboardData: any
@@ -1246,6 +1303,7 @@ function OverviewTab({
   getTrendIcon: (trend: string) => string
   userId: number | null
   router: any
+  isAppliedPower: boolean
 }) {
   return (
     <View style={styles.sectionGap}>
@@ -1253,26 +1311,39 @@ function OverviewTab({
       {dashboardData && (
         <Card style={{ paddingTop: 16 }}>
           <SectionHeader title="Overview" />
-          <View style={[styles.statsRow, { paddingHorizontal: 16 }]}>
-            <View style={styles.statCardWrapper}>
-              <StatCard
-                label="MetCons Complete"
-                value={dashboardData.metconsCompleted}
-              />
+          {isAppliedPower ? (
+            // Applied Power users: Only show Tasks Complete
+            <View style={[styles.statsRow, { paddingHorizontal: 16, justifyContent: 'center' }]}>
+              <View style={styles.statCardWrapper}>
+                <StatCard
+                  label="Tasks Complete"
+                  value={dashboardData.totalExercises}
+                />
+              </View>
             </View>
-            <View style={styles.statCardWrapper}>
-              <StatCard
-                label="Tasks Complete"
-                value={dashboardData.totalExercises}
-              />
+          ) : (
+            // Other users: Show all three stats
+            <View style={[styles.statsRow, { paddingHorizontal: 16 }]}>
+              <View style={styles.statCardWrapper}>
+                <StatCard
+                  label="MetCons Complete"
+                  value={dashboardData.metconsCompleted}
+                />
+              </View>
+              <View style={styles.statCardWrapper}>
+                <StatCard
+                  label="Tasks Complete"
+                  value={dashboardData.totalExercises}
+                />
+              </View>
+              <View style={styles.statCardWrapper}>
+                <StatCard
+                  label="Fitness Score"
+                  value={dashboardData.fitnessScore !== null ? `${dashboardData.fitnessScore}%` : '—'}
+                />
+              </View>
             </View>
-            <View style={styles.statCardWrapper}>
-              <StatCard
-                label="Fitness Score"
-                value={dashboardData.fitnessScore !== null ? `${dashboardData.fitnessScore}%` : '—'}
-              />
-            </View>
-          </View>
+          )}
         </Card>
       )}
 

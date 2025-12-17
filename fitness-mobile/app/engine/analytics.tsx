@@ -14,6 +14,36 @@ import { Card } from '@/components/ui/Card'
 import { StatCard } from '@/components/ui/StatCard'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 
+interface WorkoutSession {
+  id?: string
+  user_id?: string
+  workout_id?: string
+  date?: string
+  program_day?: number
+  program_day_number?: number
+  program_version?: string
+  user_phase?: number
+  modality?: string
+  time_trial_baseline_id?: string
+  day_type?: string
+  total_output?: number
+  actual_pace?: number
+  target_pace?: number
+  performance_ratio?: number
+  units?: string
+  average_heart_rate?: number
+  peak_heart_rate?: number
+  perceived_exertion?: number
+  completed?: boolean
+  workout_data?: any
+  created_at?: string
+  day_number?: number
+  workout_day?: number
+  duration_minutes?: number
+  duration_seconds?: number
+  avg_work_rest_ratio?: number | null
+}
+
 // Engine Tab Component
 function EngineTab({ engineData, userId }: { engineData: any; userId: number | null }) {
   const [currentView, setCurrentView] = useState('menu')

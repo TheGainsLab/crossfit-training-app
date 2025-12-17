@@ -52,3 +52,6 @@ export async function createClientForRequest(request: NextRequest) {
   // If neither works, return the server client anyway (will fail auth check)
   return await createServerClient()
 }
+
+
+

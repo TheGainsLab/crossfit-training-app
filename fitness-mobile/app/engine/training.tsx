@@ -7,18 +7,33 @@ import Svg, { Circle, Text as SvgText, G } from 'react-native-svg'
 import { Ionicons } from '@expo/vector-icons'
 import engineDatabaseService from '@/lib/engine/databaseService'
 import { fetchWorkout } from '@/lib/api/workouts'
+import Dashboard from '@/components/engine/Dashboard'
 
 interface Interval {
   id: number
   type: string
   duration: number
   restDuration?: number
+  targetPace: any
   description?: string
   blockNumber?: number | null
   roundNumber?: number | null
   paceRange?: any
+  paceProgression?: string | null
+  workProgression?: string
+  isMaxEffort?: boolean
   completed?: boolean
   workCompleted?: boolean
+  actualOutput?: number
+  fluxDuration?: number
+  baseDuration?: number
+  fluxStartIntensity?: number
+  fluxIncrement?: number
+  fluxIntensity?: number | null
+  burstTiming?: string
+  burstDuration?: number
+  burstIntensity?: string
+  basePace?: any
 }
 
 interface SessionData {
@@ -28,29 +43,81 @@ interface SessionData {
   averageHeartRate: number | null
   peakHeartRate: number | null
   perceivedExertion: number | null
+  rolling_avg_ratio?: number | null
+  learned_max_pace?: number | null
 }
+
+interface FluxPeriod {
+  index: number
+  type: 'base' | 'flux'
+  duration: number
+  startTime: number
+  intensity: number
+}
+
+interface BurstStatus {
+  inBurst: boolean
+  timeRemaining: number
+  nextBurstIn: number
+}
+
+interface PerformanceMetrics {
+  rolling_avg_ratio?: number | null
+  learned_max_pace?: number | null
+}
+
+type EngineView = 'dashboard' | 'workout'
 
 export default function EnginePage() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { day, programId, week, programDay } = useLocalSearchParams<{ 
+  const { day, programId, week, programDay, view } = useLocalSearchParams<{
     day?: string
     programId?: string
     week?: string
     programDay?: string
+    view?: string
   }>()
+
+  const [currentView, setCurrentView] = useState<EngineView>('dashboard')
   const [loading, setLoading] = useState(true)
   const [workout, setWorkout] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [userId, setUserId] = useState<number | null>(null)
   const [programVersion, setProgramVersion] = useState<string>('5-day')
   const [currentProgramId, setCurrentProgramId] = useState<number | null>(null)
+  const [selectedDay, setSelectedDay] = useState<number | null>(null)
   
-  // Navigation view state (months -> weeks -> days -> workout)
-  const [navigationView, setNavigationView] = useState<'months' | 'weeks' | 'days' | 'workout'>('months')
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null)
-  const [selectedWeek, setSelectedWeek] = useState<number | null>(null)
-  
+  // Handle URL view parameter
+  useEffect(() => {
+    if (view === 'workout' && day) {
+      const dayNumber = parseInt(day, 10)
+      if (!isNaN(dayNumber) && dayNumber > 0) {
+        setSelectedDay(dayNumber)
+        setCurrentView('workout')
+      }
+    } else {
+      setCurrentView('dashboard')
+    }
+  }, [view, day])
+
+  // Dashboard handlers
+  const handleDayClick = (dayNumber: number, dayType?: string) => {
+    setSelectedDay(dayNumber)
+    setCurrentView('workout')
+    // Load workout will be triggered by useEffect watching selectedDay
+  }
+
+  const handleAnalyticsClick = () => {
+    router.push('/engine/analytics')
+  }
+
+  const handleBackToDashboard = () => {
+    setSelectedDay(null)
+    setCurrentView('dashboard')
+    setWorkout(null)
+  }
+
   // Dashboard data
   const [user, setUser] = useState<any>(null)
   const [workouts, setWorkouts] = useState<any[]>([])
@@ -58,7 +125,7 @@ export default function EnginePage() {
   const [loadingDashboard, setLoadingDashboard] = useState(false)
   
   // View state (equipment -> preview -> active)
-  const [currentView, setCurrentView] = useState<'equipment' | 'preview' | 'active'>('equipment')
+  const [workoutView, setWorkoutView] = useState<'equipment' | 'preview' | 'active'>('equipment')
   
   // Modality selection
   const [selectedModality, setSelectedModality] = useState<string>('')
@@ -206,14 +273,6 @@ export default function EnginePage() {
     fetchProgramId()
   }, [programId, userId])
 
-  // Determine initial navigation view based on day parameter
-  useEffect(() => {
-    if (day) {
-      setNavigationView('workout')
-    } else {
-      setNavigationView('months')
-    }
-  }, [day])
 
   useEffect(() => {
     if (connected && day) {
@@ -226,7 +285,7 @@ export default function EnginePage() {
   // Set initial view to equipment selection when workout loads
   useEffect(() => {
     if (workout) {
-      setCurrentView('equipment')
+      setWorkoutView('equipment')
     }
   }, [workout])
 
@@ -253,11 +312,25 @@ export default function EnginePage() {
     }
   }, [connected, selectedModality])
 
+  // Reload baseline when unit is selected (to filter by units)
+  useEffect(() => {
+    if (connected && selectedModality && timeTrialSelectedUnit) {
+      loadBaselineForModality()
+    }
+  }, [connected, selectedModality, timeTrialSelectedUnit])
+
   // Check if baseline matches selected unit
   useEffect(() => {
     if (selectedModality && timeTrialSelectedUnit) {
       const baseline = baselines[selectedModality]
       const matches = baseline && baseline.units === timeTrialSelectedUnit
+      console.log('🔍 Baseline match check:', { 
+        baseline, 
+        selectedModality, 
+        timeTrialSelectedUnit, 
+        baselineUnits: baseline?.units,
+        matches 
+      })
       setHasMatchingBaseline(!!matches)
     } else {
       setHasMatchingBaseline(false)
@@ -363,7 +436,14 @@ export default function EnginePage() {
     
     setLoadingBaseline(true)
     try {
-      const baseline = await engineDatabaseService.loadTimeTrialBaselines(selectedModality) as any
+      // Pass selected unit if available to filter by units
+      const baseline = await engineDatabaseService.loadTimeTrialBaselines(
+        selectedModality,
+        timeTrialSelectedUnit || undefined
+      ) as any
+      
+      console.log('🔍 Baseline loaded:', { baseline, selectedModality, timeTrialSelectedUnit })
+      
       if (baseline && baseline.calculated_rpm) {
         setBaselines(prev => ({
           ...prev,
@@ -373,6 +453,13 @@ export default function EnginePage() {
             date: baseline.date
           }
         }))
+      } else {
+        // Clear baseline if not found
+        setBaselines(prev => {
+          const updated = { ...prev }
+          delete updated[selectedModality]
+          return updated
+        })
       }
     } catch (error) {
       console.error('Error loading baseline:', error)
@@ -552,7 +639,16 @@ export default function EnginePage() {
     }
   }
 
+  // Load workout when selectedDay changes
+  useEffect(() => {
+    if (selectedDay && currentView === 'workout') {
+      loadWorkout()
+    }
+  }, [selectedDay, currentView])
+
   const loadWorkout = async () => {
+    if (!selectedDay) return
+
     try {
       setLoading(true)
       setError(null)
@@ -624,7 +720,7 @@ export default function EnginePage() {
 
       // PATH 2: Fallback - Load from workouts table (for Engine-only subscribers or when program fetch fails)
       const programType = version === '3-day' ? 'main_3day' : 'main_5day'
-      const dayNumber = day ? parseInt(day) : 1
+      const dayNumber = selectedDay
 
       console.log('📋 Loading workout from workouts table:', { programType, dayNumber })
 
@@ -663,6 +759,7 @@ export default function EnginePage() {
         id: 1,
         type: 'Workout',
         duration: (workoutData?.duration || 20) * 60,
+        targetPace: null,
         description: workoutData?.description || 'Workout',
         blockNumber: null,
         roundNumber: null
@@ -673,7 +770,7 @@ export default function EnginePage() {
     const intervals: Interval[] = []
     let intervalId = 1
     
-    // Process all blocks
+    // Process all blocks (block_1, block_2, block_3, block_4)
     const blocks = [
       { params: workoutData.block_1_params, number: 1 },
       { params: workoutData.block_2_params, number: 2 },
@@ -689,20 +786,497 @@ export default function EnginePage() {
       const restDuration = blockParams.restDuration || 0
       const rounds = blockParams.rounds || 1
       const paceRange = blockParams.paceRange || null
+      const paceProgression = blockParams.paceProgression || null
 
-      // Handle different day types
-      if (dayType === 'endurance' || dayType === 'time_trial' || dayType === 'threshold') {
+      // Special handling for different day types
+      if (dayType === 'endurance' || dayType === 'time_trial') {
         // Single continuous interval
         intervals.push({
           id: intervalId++,
           type: dayType,
           duration: workDuration,
           restDuration: 0,
+          targetPace: null,
           description: getWorkoutTypeDisplayName(dayType),
           blockNumber: blockNumber,
           roundNumber: 1,
-          paceRange: paceRange
+          paceRange: paceRange,
+          isMaxEffort: dayType === 'time_trial' || dayType === 'anaerobic' || blockParams.isMaxEffort
         })
+      } else if (dayType === 'towers' || dayType === 'towers_block_1') {
+        // Towers: different parsing per block
+        const workProgression = blockParams.workProgression || 'consistent'
+        const paceProgression = blockParams.paceProgression || null
+        
+        if (blockNumber === 1) {
+          // Block 1: Continuous work with increasing pace, no rest
+          const basePace = paceRange && Array.isArray(paceRange) ? paceRange[0] : 0.75
+          const maxPace = paceRange && Array.isArray(paceRange) ? paceRange[1] : 0.9
+          
+          for (let i = 0; i < rounds; i++) {
+            // Calculate pace progression if specified
+            let currentPaceRange = paceRange
+            if (paceProgression === 'increasing' && rounds > 1) {
+              const progress = i / (rounds - 1)
+              const currentPaceMultiplier = basePace + (maxPace - basePace) * progress
+              currentPaceRange = [currentPaceMultiplier, currentPaceMultiplier]
+            }
+            
+            intervals.push({
+              id: intervalId++,
+              type: dayType,
+              duration: workDuration,
+              restDuration: 0, // Block 1 has no rest
+              targetPace: null,
+              description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
+              blockNumber: blockNumber,
+              roundNumber: i + 1,
+              paceRange: currentPaceRange,
+              paceProgression: paceProgression === 'increasing' ? 'increasing' : null,
+              workProgression: workProgression
+            })
+          }
+        } else if (blockNumber === 2) {
+          // Block 2: Single continuous interval
+          intervals.push({
+            id: intervalId++,
+            type: dayType,
+            duration: workDuration,
+            restDuration: 0,
+            targetPace: null,
+            description: getWorkoutTypeDisplayName(dayType),
+            blockNumber: blockNumber,
+            roundNumber: 1,
+            paceRange: paceRange,
+            paceProgression: null,
+            workProgression: workProgression
+          })
+        } else {
+          // Block 3+: Consistent work with rest, increasing pace
+          const basePace = paceRange && Array.isArray(paceRange) ? paceRange[0] : 0.8
+          const maxPace = paceRange && Array.isArray(paceRange) ? paceRange[1] : 1.05
+          
+          for (let i = 0; i < rounds; i++) {
+            // Calculate pace progression if specified
+            let currentPaceRange = paceRange
+            if (paceProgression === 'increasing' && rounds > 1) {
+              const progress = i / (rounds - 1)
+              const currentPaceMultiplier = basePace + (maxPace - basePace) * progress
+              currentPaceRange = [currentPaceMultiplier, currentPaceMultiplier]
+            }
+            
+            intervals.push({
+              id: intervalId++,
+              type: dayType,
+              duration: workDuration,
+              restDuration: restDuration,
+              targetPace: null,
+              description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
+              blockNumber: blockNumber,
+              roundNumber: i + 1,
+              paceRange: currentPaceRange,
+              paceProgression: paceProgression === 'increasing' ? 'increasing' : null,
+              workProgression: workProgression
+            })
+          }
+        }
+      } else if (dayType === 'atomic' || dayType === 'atomic_block_2') {
+        // Atomic: short burst intervals - use workDuration and restDuration directly from database
+        const workProgression = blockParams.workProgression || 'consistent'
+        const paceProgression = blockParams.paceProgression || null
+        
+        // Check if paceRange is "max_effort" (string) or numeric array
+        const isMaxEffort = paceRange === 'max_effort' || (typeof paceRange === 'string' && paceRange.toLowerCase().includes('max'))
+        
+        // For pace progression, extract base and max pace if available
+        const basePace = paceRange && Array.isArray(paceRange) ? paceRange[0] : null
+        const maxPace = paceRange && Array.isArray(paceRange) ? paceRange[1] : null
+        const hasPaceProgression = paceProgression === 'increasing' && basePace !== null && maxPace !== null
+        
+        for (let i = 0; i < rounds; i++) {
+          // Calculate pace progression if specified
+          let currentPaceRange = paceRange
+          if (hasPaceProgression && rounds > 1 && !isMaxEffort) {
+            const progress = i / (rounds - 1)
+            const currentPaceMultiplier = basePace + (maxPace - basePace) * progress
+            currentPaceRange = [currentPaceMultiplier, currentPaceMultiplier]
+          }
+          
+          intervals.push({
+            id: intervalId++,
+            type: dayType,
+            duration: workDuration,
+            restDuration: restDuration,
+            targetPace: null,
+            description: `${getWorkoutTypeDisplayName(dayType)} - Burst ${i + 1}`,
+            blockNumber: blockNumber,
+            roundNumber: i + 1,
+            paceRange: isMaxEffort ? null : currentPaceRange,
+            paceProgression: hasPaceProgression ? 'increasing' : paceProgression,
+            isMaxEffort: isMaxEffort
+          })
+        }
+      } else if ((dayType === 'infinity' || dayType === 'infinity_block_1' || dayType === 'infinity_block_2') && blockNumber !== 3) {
+        // Infinity blocks 1 and 2: progressive pace over rounds
+        const basePace = paceRange ? paceRange[0] : 0.85
+        const maxPace = paceRange ? paceRange[1] : 1.0
+        
+        for (let i = 0; i < rounds; i++) {
+          const progress = rounds > 1 ? i / (rounds - 1) : 0
+          const currentPaceMultiplier = basePace + (maxPace - basePace) * progress
+          
+          intervals.push({
+            id: intervalId++,
+            type: dayType,
+            duration: workDuration,
+            restDuration: restDuration,
+            targetPace: null,
+            description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
+            blockNumber: blockNumber,
+            roundNumber: i + 1,
+            paceRange: [currentPaceMultiplier, currentPaceMultiplier],
+            paceProgression: 'increasing'
+          })
+        }
+      } else if ((dayType === 'infinity' || dayType === 'infinity_block_1' || dayType === 'infinity_block_2' || dayType === 'infinity_block_3') && blockNumber === 3) {
+        // Infinity Block 3: constant pace (no progression)
+        for (let i = 0; i < rounds; i++) {
+          intervals.push({
+            id: intervalId++,
+            type: dayType,
+            duration: workDuration,
+            restDuration: restDuration,
+            targetPace: null,
+            description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
+            blockNumber: blockNumber,
+            roundNumber: i + 1,
+            paceRange: paceRange,
+            paceProgression: null
+          })
+        }
+      } else if (dayType === 'ascending') {
+        // Ascending: increasing work duration with optional pace progression
+        const workDurationIncrement = blockParams.workDurationIncrement ?? 30
+        const paceIncrement = blockParams.paceIncrement ?? 0
+        
+        // Calculate base and max pace if paceRange exists and paceIncrement is specified
+        const basePace = paceRange ? paceRange[0] : null
+        const maxPace = paceRange ? paceRange[1] : null
+        const hasPaceProgression = paceIncrement > 0 && basePace !== null && maxPace !== null
+        
+        for (let i = 0; i < rounds; i++) {
+          // Work duration increases each round
+          const currentWorkDuration = workDuration + (workDurationIncrement * i)
+          
+          // Calculate pace progression if specified
+          let currentPaceRange = paceRange
+          if (hasPaceProgression && rounds > 1) {
+            const progress = i / (rounds - 1)
+            const currentPaceMin = basePace + ((maxPace - basePace) * progress * (1 + paceIncrement))
+            const currentPaceMax = Math.min(maxPace, currentPaceMin + paceIncrement)
+            currentPaceRange = [currentPaceMin, currentPaceMax]
+          }
+          
+          intervals.push({
+            id: intervalId++,
+            type: dayType,
+            duration: currentWorkDuration,
+            restDuration: restDuration,
+            targetPace: null,
+            description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
+            blockNumber: blockNumber,
+            roundNumber: i + 1,
+            paceRange: currentPaceRange,
+            paceProgression: hasPaceProgression ? 'increasing' : paceProgression
+          })
+        }
+      } else if (dayType === 'descending_devour') {
+        // Descending devour: constant work, decreasing rest
+        const restDurationIncrement = Math.abs(blockParams.restDurationIncrement ?? 10)
+        
+        for (let i = 0; i < rounds; i++) {
+          intervals.push({
+            id: intervalId++,
+            type: dayType,
+            duration: workDuration,
+            restDuration: Math.max(0, restDuration - (restDurationIncrement * i)),
+            targetPace: null,
+            description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
+            blockNumber: blockNumber,
+            roundNumber: i + 1,
+            paceRange: paceRange
+          })
+        }
+      } else if (dayType === 'devour') {
+        // Devour: increasing work duration, decreasing rest duration
+        const workDurationIncrement = blockParams.workDurationIncrement ?? 15
+        const restDurationIncrement = blockParams.restDurationIncrement ?? 0
+        const restProgression = blockParams.restProgression ?? 'decreasing'
+        const paceIncrement = blockParams.paceIncrement ?? 0
+        
+        // Calculate base and max pace if paceRange exists and paceIncrement is specified
+        const basePace = paceRange ? paceRange[0] : null
+        const maxPace = paceRange ? paceRange[1] : null
+        const hasPaceProgression = paceIncrement > 0 && basePace !== null && maxPace !== null
+        
+        // Determine if rest should decrease
+        const shouldDecreaseRest = restDurationIncrement > 0 && restProgression !== 'consistent'
+        
+        for (let i = 0; i < rounds; i++) {
+          // Work duration increases each round
+          const currentWorkDuration = workDuration + (workDurationIncrement * i)
+          
+          // Rest duration: decrease only if configured, otherwise keep constant
+          const currentRestDuration = shouldDecreaseRest 
+            ? Math.max(0, restDuration - (Math.abs(restDurationIncrement) * i))
+            : restDuration
+          
+          // Calculate pace progression if specified
+          let currentPaceRange = paceRange
+          if (hasPaceProgression && rounds > 1) {
+            const progress = i / (rounds - 1)
+            const currentPaceMin = basePace + ((maxPace - basePace) * progress * (1 + paceIncrement))
+            const currentPaceMax = Math.min(maxPace, currentPaceMin + paceIncrement)
+            currentPaceRange = [currentPaceMin, currentPaceMax]
+          }
+          
+          intervals.push({
+            id: intervalId++,
+            type: dayType,
+            duration: currentWorkDuration,
+            restDuration: currentRestDuration,
+            targetPace: null,
+            description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
+            blockNumber: blockNumber,
+            roundNumber: i + 1,
+            paceRange: currentPaceRange,
+            paceProgression: hasPaceProgression ? 'increasing' : paceProgression
+          })
+        }
+      } else if (dayType === 'ascending_devour') {
+        // Ascending devour: more aggressive version
+        const workDurationIncrement = blockParams.workDurationIncrement ?? 20
+        const restDurationIncrement = blockParams.restDurationIncrement ?? 0
+        const restProgression = blockParams.restProgression ?? 'decreasing'
+        const paceIncrement = blockParams.paceIncrement ?? 0
+        
+        // Calculate base and max pace if paceRange exists and paceIncrement is specified
+        const basePace = paceRange ? paceRange[0] : null
+        const maxPace = paceRange ? paceRange[1] : null
+        const hasPaceProgression = paceIncrement > 0 && basePace !== null && maxPace !== null
+        
+        // Determine if rest should decrease
+        const shouldDecreaseRest = restDurationIncrement > 0 && restProgression !== 'consistent'
+        
+        for (let i = 0; i < rounds; i++) {
+          // Work duration increases more aggressively each round
+          const currentWorkDuration = workDuration + (workDurationIncrement * i)
+          
+          // Rest duration: decrease only if configured, otherwise keep constant
+          const currentRestDuration = shouldDecreaseRest 
+            ? Math.max(0, restDuration - (Math.abs(restDurationIncrement) * i))
+            : restDuration
+          
+          // Calculate pace progression if specified
+          let currentPaceRange = paceRange
+          if (hasPaceProgression && rounds > 1) {
+            const progress = i / (rounds - 1)
+            // More aggressive pace progression for ascending devour
+            const paceMultiplier = 1 + (paceIncrement * 1.5)
+            const currentPaceMin = basePace + ((maxPace - basePace) * progress * paceMultiplier)
+            const currentPaceMax = Math.min(maxPace, currentPaceMin + (paceIncrement * 1.5))
+            currentPaceRange = [currentPaceMin, currentPaceMax]
+          }
+          
+          intervals.push({
+            id: intervalId++,
+            type: dayType,
+            duration: currentWorkDuration,
+            restDuration: currentRestDuration,
+            targetPace: null,
+            description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
+            blockNumber: blockNumber,
+            roundNumber: i + 1,
+            paceRange: currentPaceRange,
+            paceProgression: hasPaceProgression ? 'increasing' : paceProgression
+          })
+        }
+      } else if (dayType === 'polarized') {
+        // Polarized: continuous work with periodic bursts
+        const basePace = blockParams.basePace || [0.7, 0.7]
+        const burstTiming = blockParams.burstTiming || 'every_7_minutes'
+        const burstDuration = blockParams.burstDuration || 7
+        const burstIntensity = blockParams.burstIntensity || 'max_effort'
+        
+        // Create a single continuous interval for the entire work duration
+        intervals.push({
+          id: intervalId++,
+          type: dayType,
+          duration: workDuration,
+          restDuration: 0,
+          targetPace: null,
+          description: getWorkoutTypeDisplayName(dayType),
+          blockNumber: blockNumber,
+          roundNumber: 1,
+          paceRange: basePace,
+          burstTiming: burstTiming,
+          burstDuration: burstDuration,
+          basePace: basePace,
+          workProgression: 'continuous_with_bursts'
+        })
+      } else if (dayType === 'flux' || dayType === 'flux_stages') {
+        // Flux: alternating base pace and flux periods
+        const baseDuration = blockParams.baseDuration || 300
+        const fluxDuration = blockParams.fluxDuration || 60
+        const fluxStartIntensity = blockParams.fluxStartIntensity || 0.75
+        const fluxIncrement = blockParams.fluxIncrement || 0.05
+        const basePace = paceRange || [0.7, 0.7]
+        
+        // Create a single continuous interval for the entire work duration
+        intervals.push({
+          id: intervalId++,
+          type: dayType,
+          duration: workDuration,
+          restDuration: 0,
+          targetPace: null,
+          description: getWorkoutTypeDisplayName(dayType),
+          blockNumber: blockNumber,
+          roundNumber: 1,
+          paceRange: basePace,
+          baseDuration: baseDuration,
+          fluxDuration: fluxDuration,
+          fluxStartIntensity: fluxStartIntensity,
+          fluxIncrement: fluxIncrement,
+          fluxIntensity: blockParams.fluxIntensity || null,
+          workProgression: blockParams.workProgression || 'alternating_paces'
+        })
+      } else if (dayType === 'afterburner') {
+        // Afterburner: each block has different parsing logic
+        if (blockNumber === 1) {
+          // Block 1: Max effort intervals with rest
+          for (let i = 0; i < rounds; i++) {
+            intervals.push({
+              id: intervalId++,
+              type: dayType,
+              duration: workDuration,
+              restDuration: restDuration,
+              targetPace: null,
+              description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
+              blockNumber: blockNumber,
+              roundNumber: i + 1,
+              paceRange: null,
+              paceProgression: null,
+              isMaxEffort: true
+            })
+          }
+        } else if (blockNumber === 2) {
+          // Block 2: Single continuous interval
+          intervals.push({
+            id: intervalId++,
+            type: dayType,
+            duration: workDuration,
+            restDuration: 0,
+            targetPace: null,
+            description: getWorkoutTypeDisplayName(dayType),
+            blockNumber: blockNumber,
+            roundNumber: 1,
+            paceRange: paceRange,
+            paceProgression: null,
+            workProgression: blockParams.workProgression || 'single'
+          })
+        } else if (blockNumber === 3) {
+          // Block 3: Intervals with progressive pace
+          const basePace = paceRange && Array.isArray(paceRange) ? paceRange[0] : 0.99
+          const maxPace = paceRange && Array.isArray(paceRange) ? paceRange[1] : 1.14
+          
+          for (let i = 0; i < rounds; i++) {
+            const progress = rounds > 1 ? i / (rounds - 1) : 0
+            const currentPaceMultiplier = basePace + (maxPace - basePace) * progress
+            
+            intervals.push({
+              id: intervalId++,
+              type: dayType,
+              duration: workDuration,
+              restDuration: restDuration,
+              targetPace: null,
+              description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
+              blockNumber: blockNumber,
+              roundNumber: i + 1,
+              paceRange: [currentPaceMultiplier, currentPaceMultiplier],
+              paceProgression: 'increasing',
+              workProgression: blockParams.workProgression || 'consistent'
+            })
+          }
+        } else {
+          // Additional blocks (4+) - use standard interval parsing
+          for (let i = 0; i < rounds; i++) {
+            intervals.push({
+              id: intervalId++,
+              type: dayType,
+              duration: workDuration,
+              restDuration: restDuration,
+              targetPace: null,
+              description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
+              blockNumber: blockNumber,
+              roundNumber: i + 1,
+              paceRange: paceRange,
+              paceProgression: paceProgression,
+              workProgression: blockParams.workProgression || 'consistent'
+            })
+          }
+        }
+      } else if (dayType === 'synthesis') {
+        // Synthesis: repeating pattern - blocks 1 & 3 are max effort, blocks 2 & 4 are continuous
+        if (blockNumber === 1 || blockNumber === 3) {
+          // Blocks 1 & 3: Max effort intervals with rest
+          for (let i = 0; i < rounds; i++) {
+            intervals.push({
+              id: intervalId++,
+              type: dayType,
+              duration: workDuration,
+              restDuration: restDuration,
+              targetPace: null,
+              description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
+              blockNumber: blockNumber,
+              roundNumber: i + 1,
+              paceRange: null,
+              paceProgression: null,
+              isMaxEffort: true
+            })
+          }
+        } else if (blockNumber === 2 || blockNumber === 4) {
+          // Blocks 2 & 4: Single continuous interval
+          intervals.push({
+            id: intervalId++,
+            type: dayType,
+            duration: workDuration,
+            restDuration: 0,
+            targetPace: null,
+            description: getWorkoutTypeDisplayName(dayType),
+            blockNumber: blockNumber,
+            roundNumber: 1,
+            paceRange: paceRange,
+            paceProgression: null,
+            workProgression: blockParams.workProgression || 'consistent'
+          })
+        } else {
+          // Additional blocks (5+) - use standard interval parsing
+          for (let i = 0; i < rounds; i++) {
+            intervals.push({
+              id: intervalId++,
+              type: dayType,
+              duration: workDuration,
+              restDuration: restDuration,
+              targetPace: null,
+              description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
+              blockNumber: blockNumber,
+              roundNumber: i + 1,
+              paceRange: paceRange,
+              paceProgression: paceProgression,
+              workProgression: blockParams.workProgression || 'consistent'
+            })
+          }
+        }
       } else {
         // Standard interval workout
         for (let i = 0; i < rounds; i++) {
@@ -711,21 +1285,25 @@ export default function EnginePage() {
             type: dayType,
             duration: workDuration,
             restDuration: restDuration,
+            targetPace: null,
             description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
             blockNumber: blockNumber,
             roundNumber: i + 1,
-            paceRange: paceRange
+            paceRange: paceRange,
+            paceProgression: paceProgression,
+            isMaxEffort: blockParams.isMaxEffort || false
           })
         }
       }
     })
     
-    // If no intervals created, create a default one
+    // If no intervals were created, create a default one
     if (intervals.length === 0) {
       intervals.push({
         id: 1,
         type: dayType,
         duration: workoutData.total_work_time || 1200,
+        targetPace: null,
         description: getWorkoutTypeDisplayName(dayType),
         blockNumber: null,
         roundNumber: null
@@ -736,20 +1314,40 @@ export default function EnginePage() {
   }
 
   const getWorkoutTypeDisplayName = (dayType: string): string => {
-    const displayNames: Record<string, string> = {
-      'endurance': 'Endurance',
+    if (!dayType) return 'Workout'
+    const typeMap: Record<string, string> = {
       'time_trial': 'Time Trial',
-      'threshold': 'Threshold',
-      'atomic': 'Atomic',
-      'towers': 'Towers',
+      'endurance': 'Endurance',
+      'anaerobic': 'Anaerobic',
+      'max_aerobic_power': 'Max Aerobic Power',
+      'interval': 'Interval',
       'polarized': 'Polarized',
+      'threshold': 'Threshold',
+      'tempo': 'Tempo',
+      'recovery': 'Recovery',
       'flux': 'Flux',
+      'flux_stages': 'Flux Stages',
       'devour': 'Devour',
-      'ascending': 'Ascending',
+      'towers': 'Towers',
+      'towers_block_1': 'Towers',
       'afterburner': 'Afterburner',
-      'max_aerobic_power': 'Max Aerobic Power'
+      'synthesis': 'Synthesis',
+      'hybrid_anaerobic': 'Hybrid Anaerobic',
+      'hybrid_aerobic': 'Hybrid Aerobic',
+      'ascending': 'Ascending',
+      'descending': 'Descending',
+      'ascending_devour': 'Ascending Devour',
+      'descending_devour': 'Descending Devour',
+      'infinity': 'Infinity',
+      'infinity_block_1': 'Infinity',
+      'infinity_block_2': 'Infinity',
+      'infinity_block_3': 'Infinity',
+      'atomic': 'Atomic',
+      'atomic_block_2': 'Atomic',
+      'rocket_races_a': 'Rocket Races A',
+      'rocket_races_b': 'Rocket Races B'
     }
-    return displayNames[dayType] || dayType.charAt(0).toUpperCase() + dayType.slice(1)
+    return typeMap[dayType] || dayType?.replace(/_/g, ' ') || 'Conditioning'
   }
 
   const handlePhaseCompletion = () => {
@@ -830,6 +1428,11 @@ export default function EnginePage() {
     setIsPaused(false)
   }
 
+  const completeWorkout = () => {
+    setIsActive(false)
+    setIsCompleted(true)
+  }
+
   const resetWorkout = () => {
     setIsActive(false)
     setIsPaused(false)
@@ -860,7 +1463,7 @@ export default function EnginePage() {
     }
     
     // Return to preview screen
-    setCurrentView('preview')
+    setWorkoutView('preview')
   }
 
   const formatTime = (seconds: number): string => {
@@ -868,6 +1471,142 @@ export default function EnginePage() {
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
+
+  // Check if Rocket Races A was completed
+  const rocketRacesACompleted = workoutHistory?.some((session: any) => 
+    session.day_type === 'rocket_races_a' && session.completed === true
+  ) ? true : (workoutHistory?.length > 0 ? false : null)
+
+  // Calculate target pace using baseline and performance metrics
+  // For flux days, this accepts an optional fluxIntensity parameter to calculate flux period pace
+  const calculateTargetPaceWithData = (interval: Interval, fluxIntensity: number | null = null): any => {
+    if (!selectedModality || !baselines[selectedModality]) {
+      return null;
+    }
+    
+    const baseline = baselines[selectedModality].baseline;
+    const units = baselines[selectedModality].units;
+    const dayType = workout?.day_type;
+
+    // Special handling for Rocket Races B: check if Rocket Races A was completed
+    if (dayType === 'rocket_races_b') {
+      if (rocketRacesACompleted === false) {
+        // Rocket Races A not completed - show message
+        return {
+          needsRocketRacesA: true,
+          message: 'Complete Rocket Races A',
+          units: units,
+          baseline: baseline
+        };
+      } else if (rocketRacesACompleted === true && performanceMetrics?.learned_max_pace) {
+        // Rocket Races A completed - use inherited pace
+        const calculatedIntensity = baseline > 0 
+          ? Math.round((performanceMetrics.learned_max_pace / baseline) * 100)
+          : 100;
+        
+        return {
+          pace: performanceMetrics.learned_max_pace,
+          units: units,
+          intensity: calculatedIntensity,
+          baseline: baseline,
+          source: 'inherited_from_rocket_races_a'
+        };
+      } else if (rocketRacesACompleted === true) {
+        // Rocket Races A completed but no metrics yet
+        return {
+          needsRocketRacesA: true,
+          message: 'Complete Rocket Races A',
+          units: units,
+          baseline: baseline
+        };
+      }
+      // If rocketRacesACompleted is null, we're still loading - return null
+      return null;
+    }
+
+    // For max effort days (time_trial, anaerobic, rocket races A), use learned_max_pace if available
+    const isMaxEffortDay = dayType === 'time_trial' || 
+                          dayType === 'anaerobic' || 
+                          dayType === 'rocket_races_a' || 
+                          interval.isMaxEffort;
+
+    if (isMaxEffortDay && performanceMetrics?.learned_max_pace) {
+      // Use learned max pace for max effort days
+      // Calculate intensity percentage compared to baseline (e.g., if learned_max_pace is 25 cal/min and baseline is 20 cal/min, that's 125% of baseline)
+      const calculatedIntensity = baseline > 0 
+        ? Math.round((performanceMetrics.learned_max_pace / baseline) * 100)
+        : 100;
+      
+      return {
+        pace: performanceMetrics.learned_max_pace,
+        units: units,
+        intensity: calculatedIntensity,
+        baseline: baseline,
+        source: 'learned_max'
+      };
+    }
+
+    // For max effort days without learned_max_pace, return max effort marker (no pace)
+    if (isMaxEffortDay) {
+      return {
+        isMaxEffort: true,
+        units: units,
+        intensity: 100,
+        baseline: baseline,
+        source: 'max_effort_no_pace'
+      };
+    }
+
+    // For non-max-effort days, check if paceRange is valid
+    if (!interval.paceRange || !Array.isArray(interval.paceRange) || interval.paceRange.length < 2) {
+      console.warn('Invalid paceRange for interval:', interval);
+      return null;
+    }
+
+    // Use paceRange from the interval data
+    // Use the midpoint of the range
+    let intensityMultiplier = (interval.paceRange[0] + interval.paceRange[1]) / 2;
+
+    // For flux days: if fluxIntensity is provided, multiply base intensity by flux intensity
+    // This allows calculating different paces for base vs flux periods
+    if (fluxIntensity !== null && typeof fluxIntensity === 'number' && fluxIntensity > 0) {
+      intensityMultiplier *= fluxIntensity;
+    }
+
+    // Apply performance metrics adjustment - direct multiplication
+    let metricsWereApplied = false;
+    if (performanceMetrics?.rolling_avg_ratio) {
+      intensityMultiplier *= performanceMetrics.rolling_avg_ratio;
+      metricsWereApplied = true;
+    }
+
+    return {
+      pace: baseline * intensityMultiplier,
+      units: units,
+      intensity: Math.round(intensityMultiplier * 100),
+      baseline: baseline,
+      source: metricsWereApplied ? 'metrics_adjusted' : 'baseline_only',
+      isFluxPace: fluxIntensity !== null // Mark if this is a flux period pace
+    };
+  };
+
+  const getCurrentTargetPace = (interval: Interval, fluxStatus: any) => {
+    if (!interval) return null;
+
+    // For flux days, calculate current pace based on flux status
+    if (interval.fluxDuration && fluxStatus) {
+      if (fluxStatus.isActive) {
+        // In flux period - use flux intensity
+        return calculateTargetPaceWithData(interval, fluxStatus.currentIntensity);
+      } else {
+        // In base period - use base pace
+        return calculateTargetPaceWithData(interval, null);
+      }
+    }
+
+    // For non-flux intervals, use base pace
+    return calculateTargetPaceWithData(interval);
+  };
 
   const validateWorkoutInput = (): boolean => {
     // Validate total output
@@ -965,7 +1704,7 @@ export default function EnginePage() {
     }))
     
     // Return to preview screen
-    setCurrentView('preview')
+    setWorkoutView('preview')
     
     Alert.alert('Workout Discarded', 'Your workout was not saved')
   }
@@ -1161,78 +1900,9 @@ export default function EnginePage() {
     }
   }
 
-  // Helper functions for navigation views
-  const getDaysPerMonth = () => {
-    return programVersion === '3-day' ? 12 : 20
-  }
 
-  const getDaysPerWeek = () => {
-    return programVersion === '3-day' ? 3 : 5
-  }
-
-  const getMonthAccess = (monthNumber: number) => {
-    const daysPerMonth = getDaysPerMonth()
-    if (!user) return monthNumber === 1
-    if (user.months_unlocked >= 36) return true
-    if (user.subscription_status === 'trial') return monthNumber === 1
-    if (user.subscription_status === 'active') {
-      const maxMonth = Math.ceil((user.current_day || 1) / daysPerMonth)
-      return monthNumber <= maxMonth
-    }
-    return monthNumber === 1
-  }
-
-  const getMonthCompletionRatio = (monthNumber: number) => {
-    const daysPerMonth = getDaysPerMonth()
-    const startDay = (monthNumber - 1) * daysPerMonth + 1
-    const endDay = monthNumber * daysPerMonth
-
-    const completedDays = completedSessions.filter(session => {
-      const dayNumber = session.program_day_number || session.program_day || session.day_number || session.workout_day
-      return dayNumber >= startDay && dayNumber <= endDay
-    }).length
-
-    return `${completedDays}/${daysPerMonth}`
-  }
-
-  const getDayStatus = (workout: any) => {
-    if (!workout) return 'locked'
-    const dayNumber = workout.program_day_number || workout.day_number
-    const completedDays = completedSessions.map(session =>
-      session.program_day_number || session.program_day || session.day_number || session.workout_day
-    )
-
-    if (completedDays.includes(dayNumber)) return 'completed'
-    const currentDay = user?.current_day || 1
-    if (dayNumber === currentDay) return 'current'
-    if (dayNumber < currentDay) return 'available'
-    
-    const maxUnlockedDay = user?.subscription_status === 'trial' 
-      ? getDaysPerMonth()
-      : (user?.current_day || 0) + getDaysPerMonth()
-
-    if (dayNumber <= maxUnlockedDay) return 'available'
-    return 'locked'
-  }
-
-
-  const handleDayClick = (dayNumber: number) => {
-    router.push(`/engine/training?day=${dayNumber}`)
-  }
-
-  const handleMonthClick = (monthNumber: number) => {
-    if (!getMonthAccess(monthNumber)) return
-    setSelectedMonth(monthNumber)
-    setNavigationView('weeks')
-  }
-
-  const handleWeekClick = (weekNumber: number) => {
-    setSelectedWeek(weekNumber)
-    setNavigationView('days')
-  }
-
-  // Render navigation views
-  if (navigationView !== 'workout') {
+  // Render dashboard or navigation views
+  if (currentView === 'dashboard') {
     if (loading || loadingDashboard) {
       return (
         <View style={styles.loadingContainer}>
@@ -1243,181 +1913,13 @@ export default function EnginePage() {
     }
 
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" />
-        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          {navigationView !== 'months' && (
-            <TouchableOpacity onPress={() => {
-              if (navigationView === 'days') {
-                setNavigationView('weeks')
-                setSelectedWeek(null)
-              } else if (navigationView === 'weeks') {
-                setNavigationView('months')
-                setSelectedMonth(null)
-              }
-            }}>
-              <Text style={styles.backButton}>← Back</Text>
-            </TouchableOpacity>
-          )}
-          {navigationView === 'months' && <View style={{ width: 60 }} />}
-          <Text style={styles.headerTitle}>
-            {navigationView === 'months' ? 'Select a Month' : 
-             navigationView === 'weeks' ? `Month ${selectedMonth} - Days ${(selectedMonth! - 1) * getDaysPerMonth() + 1} to ${selectedMonth! * getDaysPerMonth()}` :
-             `Week ${selectedWeek}`}
-          </Text>
-          <View style={{ width: 60 }} />
-        </View>
-
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          {/* Program Header */}
-          {navigationView === 'months' && (
-            <View style={styles.card}>
-              <Text style={styles.programHeader}>Engine {programVersion === '3-day' ? '3 Day' : '5 Day'}</Text>
-            </View>
-          )}
-
-          {/* Months View */}
-          {navigationView === 'months' && (
-            <View style={styles.monthsContainer}>
-              {Array.from({ length: 36 }, (_, i) => i + 1).map(monthNum => {
-                const hasAccess = getMonthAccess(monthNum)
-                if (!hasAccess) return null
-                
-                const completion = getMonthCompletionRatio(monthNum)
-                return (
-                  <TouchableOpacity
-                    key={monthNum}
-                    style={styles.monthCard}
-                    onPress={() => handleMonthClick(monthNum)}
-                  >
-                    <Text style={styles.monthCardTitle}>Month {monthNum}</Text>
-                    <Text style={styles.monthCardCompletion}>{completion} completed</Text>
-                  </TouchableOpacity>
-                )
-              })}
-            </View>
-          )}
-
-          {/* Weeks View */}
-          {navigationView === 'weeks' && selectedMonth && (
-            <View>
-              <View style={styles.weeksContainer}>
-                {Array.from({ length: 4 }, (_, i) => i + 1).map(weekNum => {
-                  const daysPerMonth = getDaysPerMonth()
-                  const daysPerWeek = getDaysPerWeek()
-                  const startDay = (selectedMonth - 1) * daysPerMonth + (weekNum - 1) * daysPerWeek + 1
-                  const endDay = Math.min(startDay + daysPerWeek - 1, selectedMonth * daysPerMonth)
-                  
-                  const weekWorkouts = workouts.filter(w => {
-                    const dayNum = w.program_day_number || w.day_number
-                    return dayNum >= startDay && dayNum <= endDay
-                  })
-                  
-                  const completedCount = weekWorkouts.filter(w => {
-                    const dayNum = w.program_day_number || w.day_number
-                    return getDayStatus(w) === 'completed'
-                  }).length
-
-                  return (
-                    <TouchableOpacity
-                      key={weekNum}
-                      style={[
-                        styles.weekTab,
-                        selectedWeek === weekNum && styles.weekTabActive
-                      ]}
-                      onPress={() => handleWeekClick(weekNum)}
-                    >
-                      <Text style={[
-                        styles.weekTabText,
-                        selectedWeek === weekNum && styles.weekTabTextActive
-                      ]}>Week {weekNum}</Text>
-                    </TouchableOpacity>
-                  )
-                })}
-              </View>
-
-              {selectedWeek && (
-                <View style={styles.weekHeader}>
-                  <View style={styles.weekHeaderBar} />
-                  <Text style={styles.weekHeaderText}>Week {selectedWeek}</Text>
-                  <View style={styles.weekCompletionBadge}>
-                    <Text style={styles.weekCompletionText}>
-                      {(() => {
-                        const daysPerMonth = getDaysPerMonth()
-                        const daysPerWeek = getDaysPerWeek()
-                        const startDay = (selectedMonth - 1) * daysPerMonth + (selectedWeek - 1) * daysPerWeek + 1
-                        const endDay = Math.min(startDay + daysPerWeek - 1, selectedMonth * daysPerMonth)
-                        const weekWorkouts = workouts.filter(w => {
-                          const dayNum = w.program_day_number || w.day_number
-                          return dayNum >= startDay && dayNum <= endDay
-                        })
-                        const completedCount = weekWorkouts.filter(w => {
-                          const dayNum = w.program_day_number || w.day_number
-                          return getDayStatus(w) === 'completed'
-                        }).length
-                        return `${completedCount}/${weekWorkouts.length} completed`
-                      })()}
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Days View */}
-          {navigationView === 'days' && selectedMonth && selectedWeek && (
-            <View style={styles.daysContainer}>
-              {(() => {
-                const daysPerMonth = getDaysPerMonth()
-                const daysPerWeek = getDaysPerWeek()
-                const startDay = (selectedMonth - 1) * daysPerMonth + (selectedWeek - 1) * daysPerWeek + 1
-                const endDay = Math.min(startDay + daysPerWeek - 1, selectedMonth * daysPerMonth)
-                
-                const weekWorkouts = workouts
-                  .filter(w => {
-                    const dayNum = w.program_day_number || w.day_number
-                    return dayNum >= startDay && dayNum <= endDay
-                  })
-                  .sort((a, b) => {
-                    const dayA = a.program_day_number || a.day_number
-                    const dayB = b.program_day_number || b.day_number
-                    return dayA - dayB
-                  })
-
-                return weekWorkouts.map(workout => {
-                  const dayNumber = workout.program_day_number || workout.day_number
-                  const status = getDayStatus(workout)
-                  const daysPerMonth = getDaysPerMonth()
-                  const isTimeTrialDay = dayNumber % daysPerMonth === 1 || (programVersion === '3-day' && dayNumber % 12 === 1)
-                  const dayType = workout.day_type || (isTimeTrialDay ? 'time_trial' : undefined)
-
-                  if (status === 'locked') return null
-
-                  return (
-                    <TouchableOpacity
-                      key={dayNumber}
-                      style={styles.dayCard}
-                      onPress={() => handleDayClick(dayNumber)}
-                    >
-                      <Text style={styles.dayCardTitle}>Day {dayNumber}</Text>
-                      <Text style={styles.dayCardType}>
-                        {isTimeTrialDay ? 'Time Trial' : getWorkoutTypeDisplayName(dayType || 'conditioning')}
-                      </Text>
-                      <Text style={styles.dayCardStatus}>
-                        {status === 'completed' ? 'Completed' : 
-                         status === 'current' ? 'Current' : 
-                         'Ready to start'}
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                })
-              })()}
-            </View>
-          )}
-        </ScrollView>
-      </View>
+      <Dashboard
+        onDayClick={handleDayClick}
+        onAnalyticsClick={handleAnalyticsClick}
+      />
     )
   }
+
 
   // Workout view (existing code)
   if (loading) {
@@ -1437,11 +1939,7 @@ export default function EnginePage() {
         <Text style={styles.errorMessage}>{error || 'Workout data is missing'}</Text>
         <TouchableOpacity
           style={styles.errorButton}
-          onPress={() => {
-            setNavigationView('months')
-            setSelectedMonth(null)
-            setSelectedWeek(null)
-          }}
+          onPress={handleBackToDashboard}
         >
           <Text style={styles.errorButtonText}>Go Back</Text>
         </TouchableOpacity>
@@ -1459,13 +1957,7 @@ export default function EnginePage() {
       <StatusBar barStyle="dark-content" />
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => {
-          // Clear day param and return to months view
-          router.push('/engine/training')
-          setNavigationView('months')
-          setSelectedMonth(null)
-          setSelectedWeek(null)
-        }}>
+        <TouchableOpacity onPress={handleBackToDashboard}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{getWorkoutTypeDisplayName(workout?.day_type || 'conditioning')}</Text>
@@ -1479,11 +1971,11 @@ export default function EnginePage() {
           <Text style={styles.dayType}>{getWorkoutTypeDisplayName(workout.day_type || 'conditioning')}</Text>
           
           {/* Equipment display - only show in preview view */}
-          {currentView === 'preview' && selectedModality && (
+          {workoutView === 'preview' && selectedModality && (
             <TouchableOpacity
               onPress={() => {
                 setSelectedModality('')
-                setCurrentView('equipment')
+                setWorkoutView('equipment')
               }}
               style={{ marginTop: 8 }}
             >
@@ -1501,7 +1993,7 @@ export default function EnginePage() {
         </View>
 
         {/* Equipment Selection View */}
-        {currentView === 'equipment' && (
+        {workoutView === 'equipment' && (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Select Modality</Text>
             {selectedModality && timeTrialSelectedUnit && (
@@ -1639,7 +2131,7 @@ export default function EnginePage() {
             {selectedModality && timeTrialSelectedUnit && (
               <TouchableOpacity
                 style={styles.nextButton}
-                onPress={() => setCurrentView('preview')}
+                onPress={() => setWorkoutView('preview')}
               >
                 <Text style={styles.nextButtonText}>Next</Text>
                 <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
@@ -1649,8 +2141,181 @@ export default function EnginePage() {
         )}
         
         {/* Preview View */}
-        {currentView === 'preview' && selectedModality && (
+        {workoutView === 'preview' && selectedModality && (
           <>
+            {/* Training Summary Section - Only show when baseline exists */}
+            {baselines[selectedModality] && (
+              <View style={styles.summaryCard}>
+                <TouchableOpacity
+                  style={styles.collapsibleHeader}
+                  onPress={() => setExpandedSummary(!expandedSummary)}
+                >
+                  <Text style={styles.collapsibleHeaderText}>Training Summary</Text>
+                  <Ionicons
+                    name={expandedSummary ? 'chevron-up' : 'chevron-down'}
+                    size={24}
+                    color="#FE5858"
+                  />
+                </TouchableOpacity>
+                
+                {expandedSummary && (
+                  <View style={styles.summaryContent}>
+                    {/* Work Duration and Total Work Goal - Side by side */}
+                    <View style={styles.summaryRow}>
+                      {/* Work Duration */}
+                      <View style={styles.summaryMetricCard}>
+                        <Text style={styles.summaryMetricLabel}>Work Duration</Text>
+                        <Text style={styles.summaryMetricValue}>
+                          {formatTime(sessionData.intervals.reduce((sum, interval) => sum + interval.duration, 0))}
+                        </Text>
+                      </View>
+                      
+                      {/* Total Work Goal */}
+                      {(() => {
+                        const totalGoal = (() => {
+                          if (!selectedModality || !baselines[selectedModality]) return null;
+                          
+                          // For anaerobic days, check if user has history
+                          if (workout?.day_type === 'anaerobic') {
+                            if (!workoutHistory || workoutHistory.length === 0) {
+                              return { isMaxEffort: true };
+                            }
+                          }
+                          
+                          // For Rocket Races A, always max effort
+                          if (workout?.day_type === 'rocket_races_a') {
+                            return { isMaxEffort: true };
+                          }
+                          
+                          // Calculate target pace for each interval and sum
+                          let totalGoal = 0;
+                          let hasValidTargets = false;
+                          
+                          sessionData.intervals.forEach(interval => {
+                            // For flux days, calculate weighted average
+                            if (interval.fluxDuration && interval.baseDuration) {
+                              // Calculate base pace using the function
+                              const basePaceData = calculateTargetPaceWithData(interval, null);
+                              if (basePaceData && basePaceData.pace && basePaceData.pace > 0) {
+                                const fluxPeriods = calculateFluxPeriods(interval.baseDuration, interval.fluxDuration, interval.duration);
+                                let intervalGoal = 0;
+                                
+                                fluxPeriods.forEach(period => {
+                                  const periodDurationInMinutes = (period.end - period.start) / 60;
+                                  if (period.type === 'flux') {
+                                    const fluxIntensity = interval.fluxIntensity !== null && interval.fluxIntensity !== undefined
+                                      ? interval.fluxIntensity
+                                      : (interval.fluxStartIntensity || 0.75) + (period.index * (interval.fluxIncrement || 0.05));
+                                    const fluxPaceData = calculateTargetPaceWithData(interval, fluxIntensity);
+                                    if (fluxPaceData && fluxPaceData.pace && fluxPaceData.pace > 0) {
+                                      intervalGoal += periodDurationInMinutes * fluxPaceData.pace;
+                                    }
+                                  } else {
+                                    intervalGoal += periodDurationInMinutes * basePaceData.pace;
+                                  }
+                                });
+                                
+                                if (intervalGoal > 0) {
+                                  totalGoal += intervalGoal;
+                                  hasValidTargets = true;
+                                }
+                              }
+                            } else {
+                              // Standard interval - use the function
+                              const targetPaceData = calculateTargetPaceWithData(interval);
+                              if (targetPaceData && targetPaceData.pace && targetPaceData.pace > 0 && !targetPaceData.isMaxEffort) {
+                                const durationInMinutes = interval.duration / 60;
+                                const intervalGoal = durationInMinutes * targetPaceData.pace;
+                                totalGoal += intervalGoal;
+                                hasValidTargets = true;
+                              }
+                            }
+                          });
+                          
+                          if (!hasValidTargets) return null;
+                          
+                          return {
+                            totalGoal: totalGoal,
+                            units: baselines[selectedModality].units
+                          };
+                        })();
+                        
+                        if (totalGoal?.isMaxEffort) {
+                          return (
+                            <View style={styles.summaryMetricCard}>
+                              <Text style={styles.summaryMetricLabel}>Total Work Goal</Text>
+                              <Text style={styles.summaryMetricValue}>Max Effort</Text>
+                            </View>
+                          );
+                        } else if (totalGoal) {
+                          return (
+                            <View style={styles.summaryMetricCard}>
+                              <Text style={styles.summaryMetricLabel}>Total Work Goal</Text>
+                              <Text style={styles.summaryMetricValue}>
+                                {Math.ceil(totalGoal.totalGoal)} <Text style={styles.summaryMetricUnits}>{totalGoal.units}</Text>
+                              </Text>
+                            </View>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </View>
+                    
+                    {/* Intensity Comparison - Baseline vs Target */}
+                    {(() => {
+                      // Get current target pace for first interval
+                      const firstInterval = sessionData.intervals[0];
+                      if (!firstInterval || !baselines[selectedModality]) return null;
+                      
+                      // Use the calculateTargetPaceWithData function
+                      const targetPaceData = calculateTargetPaceWithData(firstInterval);
+                      
+                      if (!targetPaceData || !targetPaceData.pace || targetPaceData.isMaxEffort) return null;
+                      
+                      const baselinePace = baselines[selectedModality].baseline;
+                      const targetPace = targetPaceData.pace;
+                      const baselineIntensity = 100;
+                      const targetIntensity = targetPaceData.intensity || 100;
+                      const maxScale = Math.max(baselineIntensity, targetIntensity) * 1.2;
+                      const baselineWidth = (baselineIntensity / maxScale) * 100;
+                      const targetWidth = (targetIntensity / maxScale) * 100;
+                      
+                      return (
+                        <View style={styles.intensityComparisonCard}>
+                          <Text style={styles.intensityComparisonLabel}>Intensity Comparison</Text>
+                          
+                          {/* Time Trial Baseline */}
+                          <View style={styles.intensityRow}>
+                            <Text style={styles.intensityLabel}>Time Trial</Text>
+                            <View style={styles.intensityBarContainer}>
+                              <View style={[styles.intensityBar, { width: `${baselineWidth}%`, backgroundColor: '#6b7280' }]}>
+                                <Text style={styles.intensityBarText}>
+                                  {Math.round(baselinePace)} {baselines[selectedModality].units}/min
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                          
+                          {/* Today's Target */}
+                          <View style={styles.intensityRow}>
+                            <Text style={styles.intensityLabel}>Today's Target</Text>
+                            <View style={styles.intensityBarContainer}>
+                              <View style={[styles.intensityBar, { width: `${targetWidth}%`, backgroundColor: '#FE5858' }]}>
+                                <Text style={styles.intensityBarText}>
+                                  {Math.round(targetPace)} {baselines[selectedModality].units}/min
+                                </Text>
+                                <Text style={styles.intensityPercentage}>{targetIntensity}%</Text>
+                              </View>
+                            </View>
+                          </View>
+                        </View>
+                      );
+                    })()}
+                  </View>
+                )}
+              </View>
+            )}
+            
             {/* Workout Breakdown Section */}
             <TouchableOpacity
               style={[styles.collapsibleHeader, { marginTop: 16 }]}
@@ -1823,7 +2488,16 @@ export default function EnginePage() {
               style={styles.collapsibleHeader}
               onPress={() => setExpandedHistory(!expandedHistory)}
             >
-              <Text style={styles.collapsibleHeaderText}>Workout History</Text>
+              <View style={styles.historyHeaderContent}>
+                <Text style={styles.collapsibleHeaderText}>
+                  {workout?.day_type ? `${getWorkoutTypeDisplayName(workout.day_type)} History` : 'Previous Sessions'}
+                </Text>
+                {workoutHistory.length > 0 && (
+                  <View style={styles.historyBadge}>
+                    <Text style={styles.historyBadgeText}>{workoutHistory.length}</Text>
+                  </View>
+                )}
+              </View>
               <Ionicons
                 name={expandedHistory ? 'chevron-up' : 'chevron-down'}
                 size={24}
@@ -1839,20 +2513,69 @@ export default function EnginePage() {
                     <Text style={styles.inlineLoadingText}>Loading workout history...</Text>
                   </View>
                 ) : workoutHistory.length > 0 ? (
-                  workoutHistory.map((session, index) => (
-                    <View key={index} style={styles.historyItem}>
-                      <Text style={styles.historyDate}>
-                        {session.date ? new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown Date'}
-                      </Text>
-                      {session.actual_pace && (
-                        <Text style={styles.historyPace}>
-                          {session.actual_pace.toFixed(1)} {session.units || 'units'}/min
-                        </Text>
-                      )}
-                    </View>
-                  ))
+                  <>
+                    {workoutHistory.slice(0, 5).map((session, index) => (
+                      <View key={index} style={styles.historyItem}>
+                        <View style={styles.historyItemContent}>
+                          <Text style={styles.historyDate}>
+                            {session.date ? new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown Date'}
+                          </Text>
+                          <View style={styles.historyMetrics}>
+                            {session.performance_ratio && (
+                              <View style={styles.performanceRatioBadge}>
+                                <Text style={styles.performanceRatioText}>
+                                  {(session.performance_ratio * 100).toFixed(1)}%
+                                </Text>
+                              </View>
+                            )}
+                            {session.actual_pace && (
+                              <View style={styles.actualPaceBadge}>
+                                <Text style={styles.actualPaceText}>
+                                  {session.actual_pace.toFixed(1)} {baselines[selectedModality]?.units || session.units || 'units'}/min
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                    
+                    {/* Performance Summary */}
+                    {selectedModality && baselines[selectedModality] && performanceMetrics?.rolling_avg_ratio && (() => {
+                      const sessionsWithPace = workoutHistory.filter((s: any) => s.actual_pace !== null && s.actual_pace !== undefined);
+                      const avgPace = sessionsWithPace.length > 0 
+                        ? sessionsWithPace.reduce((sum: number, s: any) => sum + s.actual_pace, 0) / sessionsWithPace.length 
+                        : null;
+                      
+                      return (
+                        <View style={styles.performanceSummaryCard}>
+                          <View style={styles.performanceSummaryContent}>
+                            <Text style={styles.performanceSummaryLabel}>
+                              {workout?.day_type ? `${getWorkoutTypeDisplayName(workout.day_type)} Summary` : 'Summary'}
+                            </Text>
+                            <View style={styles.performanceSummaryMetrics}>
+                              <View style={styles.performanceRatioBadge}>
+                                <Text style={styles.performanceRatioText}>
+                                  {(performanceMetrics.rolling_avg_ratio * 100).toFixed(1)}%
+                                </Text>
+                              </View>
+                              {avgPace && (
+                                <View style={styles.actualPaceBadge}>
+                                  <Text style={styles.actualPaceText}>
+                                    {avgPace.toFixed(1)} {baselines[selectedModality]?.units || 'units'}/min
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                          </View>
+                        </View>
+                      );
+                    })()}
+                  </>
                 ) : (
-                  <Text style={styles.noHistoryText}>No previous history</Text>
+                  <View style={styles.noHistoryContainer}>
+                    <Text style={styles.noHistoryText}>No previous sessions for this workout type</Text>
+                  </View>
                 )}
               </View>
             )}
@@ -1861,7 +2584,7 @@ export default function EnginePage() {
             <TouchableOpacity
               style={styles.startPreviewButton}
               onPress={() => {
-                setCurrentView('active')
+                setWorkoutView('active')
                 // Initialize timer state but don't start counting yet
                 if (sessionData.intervals.length > 0) {
                   setTimeRemaining(sessionData.intervals[0].duration)
@@ -1877,7 +2600,7 @@ export default function EnginePage() {
         )}
 
         {/* Workout Timer - Only show in active view */}
-        {selectedModality && currentView === 'active' && (
+        {selectedModality && workoutView === 'active' && (
           <>
             {/* DEV ONLY: Skip to End Button */}
             {__DEV__ && (isActive || isPaused) && (
@@ -1956,7 +2679,7 @@ export default function EnginePage() {
               <View style={styles.timerStartContainer}>
                 <TouchableOpacity 
                   style={styles.backToPreviewButton} 
-                  onPress={() => setCurrentView('preview')}
+                  onPress={() => setWorkoutView('preview')}
                 >
                   <Ionicons name="arrow-back" size={20} color="#282B34" />
                   <Text style={styles.backToPreviewButtonText}>Back to Preview</Text>
@@ -1967,6 +2690,59 @@ export default function EnginePage() {
                   <Text style={styles.startButtonFullText}>Start Workout</Text>
                 </TouchableOpacity>
               </View>
+            )}
+
+            {/* Advanced Status Displays */}
+            {isActive && !isCompleted && (
+              <>
+                {/* Flux Status Display */}
+                {currentInt?.fluxDuration && (
+                  <View style={styles.statusDisplay}>
+                    <Text style={styles.statusTitle}>FLUX TRAINING</Text>
+                    {(() => {
+                      const fluxStatus = getFluxStatus(currentInt, elapsedTime)
+                      if (fluxStatus?.isActive) {
+                        return (
+                          <Text style={styles.statusText}>
+                            Flux: {formatTime(fluxStatus.timeRemainingInFlux)} @ {(fluxStatus.currentIntensity * 100).toFixed(0)}%
+                          </Text>
+                        )
+                      } else if (fluxStatus?.nextFluxIn) {
+                        return (
+                          <Text style={styles.statusText}>
+                            Next flux: {formatTime(fluxStatus.nextFluxIn)}
+                          </Text>
+                        )
+                      }
+                      return null
+                    })()}
+                  </View>
+                )}
+
+                {/* Burst Status Display */}
+                {currentInt?.burstTiming && (
+                  <View style={styles.statusDisplay}>
+                    <Text style={styles.statusTitle}>POLARIZED TRAINING</Text>
+                    {(() => {
+                      const burstStatus = getBurstStatus(currentInt, elapsedTime)
+                      if (burstStatus?.isActive) {
+                        return (
+                          <Text style={styles.statusText}>
+                            Burst: {formatTime(burstStatus.timeRemainingInBurst)}
+                          </Text>
+                        )
+                      } else if (burstStatus?.nextBurstIn) {
+                        return (
+                          <Text style={styles.statusText}>
+                            Next burst: {formatTime(burstStatus.nextBurstIn)}
+                          </Text>
+                        )
+                      }
+                      return null
+                    })()}
+                  </View>
+                )}
+              </>
             )}
 
             {/* Ring Timer */}
@@ -2156,6 +2932,156 @@ export default function EnginePage() {
     </View>
   )
 }
+
+// Calculation functions from web app (adapted for mobile)
+
+const calculateFluxPeriods = (baseDuration: number, fluxDuration: number, totalDuration: number): any[] => {
+  if (!baseDuration || !fluxDuration || !totalDuration) return [];
+
+  const periods = [];
+  let currentTime = 0;
+  let periodIndex = 0;
+
+  // Pattern: Base -> Flux -> Base -> Flux -> ...
+  while (currentTime < totalDuration) {
+    const isBase = periodIndex % 2 === 0;
+    const periodDuration = isBase ? baseDuration : fluxDuration;
+    const periodEnd = Math.min(currentTime + periodDuration, totalDuration);
+
+    periods.push({
+      start: currentTime,
+      end: periodEnd,
+      type: isBase ? 'base' : 'flux',
+      index: Math.floor(periodIndex / 2) // Flux period index (0, 1, 2, ...)
+    });
+
+    currentTime = periodEnd;
+    periodIndex++;
+  }
+
+  return periods;
+};
+
+const calculateBurstTimes = (burstTiming: string | null, totalDuration: number, burstDuration: number): Array<{ start: number; end: number }> => {
+  if (!burstTiming || !totalDuration) return [];
+
+  // Parse interval from burstTiming (e.g., "every_5_minutes" -> 5)
+  const timingMap: Record<string, number> = {
+    'every_5_minutes': 5,
+    'every_7_minutes': 7,
+    'every_10_minutes': 10,
+    'every_15_minutes': 15
+  };
+
+  const intervalMinutes = timingMap[burstTiming] || 7;
+  const intervalSeconds = intervalMinutes * 60;
+
+  const burstTimes = [];
+  let currentTime = intervalSeconds; // First burst at intervalSeconds
+
+  while (currentTime <= totalDuration) {
+    burstTimes.push({
+      start: currentTime,
+      end: Math.min(currentTime + burstDuration, totalDuration)
+    });
+    currentTime += intervalSeconds;
+  }
+
+  return burstTimes;
+};
+
+const getFluxStatus = (interval: Interval, elapsedTime: number): any => {
+  if (!interval || !interval.fluxDuration || !interval.baseDuration) {
+    return null;
+  }
+
+  const totalDuration = interval.duration;
+  const fluxPeriods = calculateFluxPeriods(interval.baseDuration, interval.fluxDuration, totalDuration);
+
+  // Find current period
+  const currentPeriod = fluxPeriods.find(p => elapsedTime >= p.start && elapsedTime < p.end);
+
+  if (currentPeriod) {
+    const timeRemainingInPeriod = Math.ceil(currentPeriod.end - elapsedTime);
+
+    if (currentPeriod.type === 'flux') {
+      // In flux period - calculate current intensity
+      const fluxStartIntensity = interval.fluxStartIntensity || 1.0;
+      const fluxIncrement = interval.fluxIncrement || 0.1;
+      // Use fixed fluxIntensity if available, otherwise calculate progressively
+      const currentIntensity = interval.fluxIntensity !== null && interval.fluxIntensity !== undefined
+        ? interval.fluxIntensity
+        : fluxStartIntensity + (currentPeriod.index * fluxIncrement);
+
+      return {
+        isActive: true,
+        currentIntensity: currentIntensity,
+        timeRemainingInFlux: timeRemainingInPeriod,
+        nextFluxIn: null
+      };
+    } else {
+      // In base period - find next flux
+      const nextFluxPeriod = fluxPeriods.find(p => p.type === 'flux' && p.start > elapsedTime);
+
+      if (nextFluxPeriod) {
+        return {
+          isActive: false,
+          currentIntensity: null,
+          timeRemainingInFlux: null,
+          nextFluxIn: Math.ceil(nextFluxPeriod.start - elapsedTime)
+        };
+      }
+    }
+  }
+
+  // No current period found
+  return {
+    isActive: false,
+    currentIntensity: null,
+    timeRemainingInFlux: null,
+    nextFluxIn: null
+  };
+};
+
+const getBurstStatus = (interval: Interval, elapsedTime: number): any => {
+  if (!interval || !interval.burstTiming || !interval.burstDuration) {
+    return null;
+  }
+
+  const totalDuration = interval.duration;
+  const burstTimes = calculateBurstTimes(interval.burstTiming, totalDuration, interval.burstDuration);
+
+  // Find if currently in a burst
+  const activeBurst = burstTimes.find(bt => elapsedTime >= bt.start && elapsedTime < bt.end);
+
+  if (activeBurst) {
+    return {
+      isActive: true,
+      timeRemainingInBurst: Math.ceil(activeBurst.end - elapsedTime),
+      nextBurstIn: null
+    };
+  }
+
+  // Find next burst
+  const nextBurst = burstTimes.find(bt => elapsedTime < bt.start);
+
+  if (nextBurst) {
+    return {
+      isActive: false,
+      timeRemainingInBurst: null,
+      nextBurstIn: Math.ceil(nextBurst.start - elapsedTime)
+    };
+  }
+
+  // No more bursts remaining
+  return {
+    isActive: false,
+    timeRemainingInBurst: null,
+    nextBurstIn: null
+  };
+};
+
+// These functions will be defined inside the component to access state
 
 const styles = StyleSheet.create({
   container: {
@@ -3012,12 +3938,12 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    padding: 16,
+    backgroundColor: '#F8FBFE',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginBottom: 12,
   },
   historyDate: {
     fontSize: 14,
@@ -3041,6 +3967,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 12,
   },
+  noHistoryContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
+  },
   inlineLoadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -3052,6 +3983,185 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     fontStyle: 'italic',
+  },
+  summaryCard: {
+    backgroundColor: '#DAE2EA',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#282B34',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  summaryContent: {
+    marginTop: 12,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  summaryMetricCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#FE5858',
+  },
+  summaryMetricLabel: {
+    fontSize: 12,
+    color: '#282B34',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  summaryMetricValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#282B34',
+  },
+  summaryMetricUnits: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  intensityComparisonCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#FE5858',
+    marginTop: 12,
+  },
+  intensityComparisonLabel: {
+    fontSize: 12,
+    color: '#282B34',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+    fontWeight: '500',
+  },
+  intensityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  intensityLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#282B34',
+    width: 96,
+  },
+  intensityBarContainer: {
+    flex: 1,
+    height: 32,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  intensityBar: {
+    height: '100%',
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+  },
+  intensityBarText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  intensityPercentage: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  historyHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  historyBadge: {
+    backgroundColor: '#FE5858',
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  historyBadgeText: {
+    color: '#F8FBFE',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  historyItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
+    gap: 12,
+  },
+  historyMetrics: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  performanceRatioBadge: {
+    backgroundColor: '#FE5858',
+    borderRadius: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  performanceRatioText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#F8FBFE',
+  },
+  actualPaceBadge: {
+    backgroundColor: '#F8FBFE',
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#FE5858',
+  },
+  actualPaceText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#282B34',
+  },
+  performanceSummaryCard: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#DAE2EA',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#FE5858',
+  },
+  performanceSummaryContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  performanceSummaryLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  performanceSummaryMetrics: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   startPreviewButton: {
     backgroundColor: '#FE5858',

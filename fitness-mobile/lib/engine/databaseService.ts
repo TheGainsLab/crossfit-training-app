@@ -151,31 +151,81 @@ class EngineDatabaseService {
   }
 
   // Load time trial baselines
-  async loadTimeTrialBaselines(modality: string) {
+  async loadTimeTrialBaselines(modality: string, units?: string) {
     if (!this.userId || !this.supabase) return null
     
     try {
-      console.log('🔍 Loading baseline for:', { userId: this.userId, modality })
+      console.log('🔍 Loading baseline for:', { userId: this.userId, modality, units })
       
       // Check auth before query
       const { data: { session } } = await this.supabase.auth.getSession()
       console.log('🔍 Session in databaseService:', !!session)
       
-      // Query workout_sessions for time trials (not time_trials table)
-      const { data, error } = await this.supabase
+      // First try time_trials table (like web app)
+      // Try current baseline first
+      let currentQuery = this.supabase
+        .from('time_trials')
+        .select('*')
+        .eq('user_id', this.userId)
+        .eq('modality', modality)
+        .eq('is_current', true)
+      
+      if (units) {
+        currentQuery = currentQuery.eq('units', units)
+      }
+      
+      const { data: currentData, error: currentError } = await currentQuery
+        .limit(1)
+        .maybeSingle()
+      
+      if (!currentError && currentData) {
+        console.log('🔍 Found current baseline in time_trials:', currentData)
+        return currentData
+      }
+      
+      // Fallback: get most recent by date from time_trials
+      let recentQuery = this.supabase
+        .from('time_trials')
+        .select('*')
+        .eq('user_id', this.userId)
+        .eq('modality', modality)
+      
+      if (units) {
+        recentQuery = recentQuery.eq('units', units)
+      }
+      
+      const { data: recentData, error: recentError } = await recentQuery
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      
+      if (!recentError && recentData) {
+        console.log('🔍 Found recent baseline in time_trials:', recentData)
+        return recentData
+      }
+      
+      // Fallback: check workout_sessions table
+      let workoutQuery = this.supabase
         .from('workout_sessions')
         .select('*')
         .eq('user_id', this.userId)
         .eq('modality', modality)
         .eq('day_type', 'time_trial')
         .eq('completed', true)
+      
+      if (units) {
+        workoutQuery = workoutQuery.eq('units', units)
+      }
+      
+      const { data: workoutData, error: workoutError } = await workoutQuery
         .order('date', { ascending: false })
         .limit(1)
         .maybeSingle()
       
-      console.log('🔍 Baseline query result:', { data, error })
+      console.log('🔍 Baseline query result from workout_sessions:', { data: workoutData, error: workoutError })
       
-      return data
+      return workoutData || null
     } catch (error) {
       console.error('Error loading time trial baselines:', error)
       return null

@@ -40,3 +40,6 @@ export interface UserProfile {
   skills: { [exerciseName: string]: string };
   oneRMs: { [exerciseName: string]: number };
 }
+
+
+
