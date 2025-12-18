@@ -676,8 +676,11 @@ export default function WorkoutPage() {
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={styles.backButton}>← Back</Text>
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              style={styles.backButtonContainer}
+            >
+              <Text style={styles.backButtonText}>← Back</Text>
             </TouchableOpacity>
             <View style={{ marginLeft: 16 }}>
               <Text style={styles.headerTitle}>
@@ -860,7 +863,7 @@ export default function WorkoutPage() {
             style={styles.navButtonPrimary}
             onPress={() => router.push('/(tabs)/')}
           >
-            <Text style={styles.navButtonTextPrimary}>Dashboard</Text>
+            <Text style={styles.navButtonTextPrimary}>Training Home</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -943,9 +946,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  backButton: {
-    color: '#FE5858',
-    fontSize: 18,
+  backButtonContainer: {
+    backgroundColor: '#FE5858',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#282B34',
+  },
+  backButtonText: {
+    color: '#F8FBFE',
+    fontSize: 14,
+    fontWeight: '700',
   },
   headerTitle: {
     fontSize: 20,
@@ -1058,14 +1070,19 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: '#FE5858',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#282B34',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   navButtonText: {
     color: '#282B34',
     fontSize: 16,
   },
   navButtonTextPrimary: {
-    color: '#FFFFFF',
+    color: '#F8FBFE',
     fontSize: 16,
+    fontWeight: '700',
   },
   navButtonDisabled: {
     opacity: 0.5,

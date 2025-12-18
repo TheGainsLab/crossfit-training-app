@@ -34,7 +34,7 @@ export default function EngineTabLayout() {
   useEffect(() => {
     if (view === 'analytics') {
       setCurrentView('analytics')
-    } else if (view === 'trainingday' && day) {
+    } else if ((view === 'trainingday' || view === 'workout') && day) {
       setCurrentView('trainingday')
       setSelectedDay(parseInt(day))
     } else {
@@ -54,7 +54,7 @@ export default function EngineTabLayout() {
       // 1. Check authentication
       const supabase = createClient()
       const { data: { user: authUser } } = await supabase.auth.getUser()
-
+      
       if (!authUser) {
         router.replace('/auth/signin')
         return
@@ -68,8 +68,24 @@ export default function EngineTabLayout() {
         .eq('auth_id', authUser.id)
         .single()
 
-      const subscriptionTier = (userData as any)?.subscription_tier
-      const hasEngineAccess = ['ENGINE', 'PREMIUM'].includes(subscriptionTier || '')
+      const subscriptionTier = (userData as any)?.subscription_tier || ''
+      const upperTier = subscriptionTier.toUpperCase().trim()
+      
+      // Basic access list
+      const allowedTiers = ['ENGINE', 'PREMIUM', 'FULL-PROGRAM', 'FULL PROGRAM', 'FULL_PROGRAM', 'FULL', 'ALL ACCESS', 'ALL-ACCESS']
+      let hasEngineAccess = allowedTiers.includes(upperTier)
+
+      // Fallback: If they have a program generated, they likely should have access
+      if (!hasEngineAccess) {
+        const { count } = await supabase
+          .from('programs')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', (userData as any)?.id)
+        
+        if (count && count > 0) {
+          hasEngineAccess = true
+        }
+      }
 
       setSubscriptionStatus({
         hasAccess: hasEngineAccess,
@@ -79,7 +95,7 @@ export default function EngineTabLayout() {
       // 3. Redirect based on subscription
       if (!hasEngineAccess) {
         // All non-Engine users go to main tabs
-        router.replace('/(tabs)')
+          router.replace('/(tabs)')
         return
       }
 

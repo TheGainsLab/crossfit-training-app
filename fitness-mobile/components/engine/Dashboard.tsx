@@ -9,6 +9,7 @@ interface DashboardProps {
   showTrainingView?: boolean
   onTrainingViewShown?: () => void
   initialMonth?: number
+  onBackToWeekView?: () => void
 }
 
 type InternalView = 'main' | 'months' | 'month-days'
@@ -18,7 +19,8 @@ export default function Dashboard({
   onAnalyticsClick,
   showTrainingView = false,
   onTrainingViewShown,
-  initialMonth
+  initialMonth,
+  onBackToWeekView
 }: DashboardProps) {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -97,7 +99,7 @@ export default function Dashboard({
   }, [loadUserDataAndSessions, loadProgramVersion])
 
   useEffect(() => {
-    if (showTrainingView && internalView !== 'months') {
+    if (showTrainingView && internalView === 'main') {
       setInternalView('months')
       onTrainingViewShown?.()
     }
@@ -311,7 +313,13 @@ export default function Dashboard({
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => setInternalView('main')}
+          onPress={() => {
+            if (onBackToWeekView) {
+              onBackToWeekView()
+            } else {
+              setInternalView('main')
+            }
+          }}
         >
           <Ionicons name="arrow-back" size={16} color="#F8FBFE" style={{ marginRight: 6 }} />
           <Text style={styles.backButtonText}>Back</Text>

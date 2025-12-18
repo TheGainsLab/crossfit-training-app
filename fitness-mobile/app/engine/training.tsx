@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Alert, StatusBar, Dimensions } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Alert, StatusBar, Dimensions, RefreshControl } from 'react-native'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { createClient } from '@/lib/supabase/client'
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons'
 import engineDatabaseService from '@/lib/engine/databaseService'
 import { fetchWorkout } from '@/lib/api/workouts'
 import Dashboard from '@/components/engine/Dashboard'
+import { Card } from '@/components/ui/Card'
 
 interface Interval {
   id: number
@@ -90,11 +91,13 @@ export default function EnginePage() {
   
   // Handle URL view parameter
   useEffect(() => {
-    if (view === 'workout' && day) {
-      const dayNumber = parseInt(day, 10)
-      if (!isNaN(dayNumber) && dayNumber > 0) {
-        setSelectedDay(dayNumber)
-        setCurrentView('workout')
+    if (view === 'workout') {
+      setCurrentView('workout')
+      if (day) {
+        const dayNumber = parseInt(day, 10)
+        if (!isNaN(dayNumber) && dayNumber > 0) {
+          setSelectedDay(dayNumber)
+        }
       }
     } else {
       setCurrentView('dashboard')
@@ -113,6 +116,13 @@ export default function EnginePage() {
   }
 
   const handleBackToDashboard = () => {
+    // If we have program context, navigate back to the main program workout page
+    if (programId && week && programDay) {
+      const refreshParam = Date.now() // Timestamp to force refresh
+      router.push(`/workout/${programId}/week/${week}/day/${programDay}?refresh=${refreshParam}`)
+      return
+    }
+
     setSelectedDay(null)
     setCurrentView('dashboard')
     setWorkout(null)
@@ -123,18 +133,28 @@ export default function EnginePage() {
     setRpeValue(5)
     setIsCompleted(false)
     setSaveSuccess(false)
+    setIntervalScores({})
+    setCurrentIntervalScore('')
     // Reset saved values
     setSavedTotalOutput('')
     setSavedAverageHeartRate('')
     setSavedPeakHeartRate('')
     setSavedRpeValue(5)
   }
-
+  
   // Dashboard data
   const [user, setUser] = useState<any>(null)
   const [workouts, setWorkouts] = useState<any[]>([])
   const [completedSessions, setCompletedSessions] = useState<any[]>([])
   const [loadingDashboard, setLoadingDashboard] = useState(false)
+  
+  // Week-focused view state
+  const [currentMonth, setCurrentMonth] = useState<number>(1)
+  const [selectedWeek, setSelectedWeek] = useState<number>(1)
+  const [currentWeekWorkouts, setCurrentWeekWorkouts] = useState<any[]>([])
+  const [showMonthView, setShowMonthView] = useState<boolean>(false)
+  const [refreshing, setRefreshing] = useState<boolean>(false)
+  const [userName, setUserName] = useState<string>('')
   
   // View state (equipment -> preview -> active)
   const [workoutView, setWorkoutView] = useState<'equipment' | 'preview' | 'active'>('equipment')
@@ -164,7 +184,7 @@ export default function EnginePage() {
   const [loadingMetrics, setLoadingMetrics] = useState(false)
   
   // Collapsible sections
-  const [expandedBreakdown, setExpandedBreakdown] = useState(true)
+  const [expandedBreakdown, setExpandedBreakdown] = useState(false)
   const [expandedHistory, setExpandedHistory] = useState(false)
   const [expandedSummary, setExpandedSummary] = useState(false)
   
@@ -193,6 +213,10 @@ export default function EnginePage() {
     peakHeartRate: null,
     perceivedExertion: null
   })
+  
+  // Interval scoring
+  const [intervalScores, setIntervalScores] = useState<Record<number, string>>({})
+  const [currentIntervalScore, setCurrentIntervalScore] = useState('')
   
   // Completion form
   const [totalOutput, setTotalOutput] = useState('')
@@ -442,6 +466,64 @@ export default function EnginePage() {
 
       setCompletedSessions(filteredSessions)
       setWorkouts(filteredWorkouts)
+      
+      // Calculate current month and set up week view
+      if (progress.user) {
+        const userData = progress.user as any
+        const daysPerMonth = userProgramVersion === '3-day' ? 12 : 20
+        const currentDay = userData.current_day || 1
+        const calculatedMonth = Math.ceil(currentDay / daysPerMonth) || 1
+        setCurrentMonth(calculatedMonth)
+        setSelectedWeek(1) // Start with week 1
+        
+        // Filter workouts for current month and week 1
+        const monthStartDay = (calculatedMonth - 1) * daysPerMonth + 1
+        const weekStartDay = monthStartDay + (1 - 1) * (userProgramVersion === '3-day' ? 3 : 5)
+        const weekEndDay = weekStartDay + (userProgramVersion === '3-day' ? 3 : 5) - 1
+        
+        const weekWorkouts = filteredWorkouts.filter((w: any) => {
+          const dayNum = w.program_day_number || w.day_number
+          return dayNum >= weekStartDay && dayNum <= weekEndDay
+        }).sort((a: any, b: any) => {
+          const dayA = a.program_day_number || a.day_number
+          const dayB = b.program_day_number || b.day_number
+          return dayA - dayB
+        })
+        
+        setCurrentWeekWorkouts(weekWorkouts)
+      }
+      
+      // Load user name from Supabase
+      try {
+        const supabase = createClient()
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        if (authUser) {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('name, email, subscription_tier')
+            .eq('auth_id', authUser.id)
+            .single()
+          
+          if (profile?.name) {
+            setUserName(profile.name)
+          } else if (profile?.email) {
+            setUserName(profile.email.split('@')[0])
+          } else {
+            setUserName('User')
+          }
+
+          if (profile?.subscription_tier) {
+            const tier = profile.subscription_tier.toUpperCase()
+            if (tier === 'FULL-PROGRAM' || tier === 'PREMIUM') {
+              setProgramVersion('Premium')
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user name:', error)
+        setUserName('User')
+      }
+      
       setLoading(false)
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
@@ -449,6 +531,78 @@ export default function EnginePage() {
     } finally {
       setLoadingDashboard(false)
     }
+  }
+  
+  // Helper functions for week-focused view
+  const getDaysPerMonth = () => {
+    return programVersion === '3-day' ? 12 : 20
+  }
+  
+  const getDaysPerWeek = () => {
+    return programVersion === '3-day' ? 3 : 5
+  }
+  
+  const getWeekDays = (month: number, week: number) => {
+    const daysPerMonth = getDaysPerMonth()
+    const daysPerWeek = getDaysPerWeek()
+    const monthStartDay = (month - 1) * daysPerMonth + 1
+    const weekStartDay = monthStartDay + (week - 1) * daysPerWeek
+    const weekEndDay = weekStartDay + daysPerWeek - 1
+    return { startDay: weekStartDay, endDay: weekEndDay }
+  }
+  
+  const filterWorkoutsForWeek = (workouts: any[], month: number, week: number) => {
+    const { startDay, endDay } = getWeekDays(month, week)
+    return workouts.filter((w: any) => {
+      const dayNum = w.program_day_number || w.day_number
+      return dayNum >= startDay && dayNum <= endDay
+    }).sort((a: any, b: any) => {
+      const dayA = a.program_day_number || a.day_number
+      const dayB = b.program_day_number || b.day_number
+      return dayA - dayB
+    })
+  }
+  
+  const getDayCompletionStatus = (dayNumber: number) => {
+    const isCompleted = completedSessions.some((session: any) => {
+      const sessionDay = session.program_day_number || session.day_number
+      return sessionDay === dayNumber
+    })
+    return isCompleted ? 100 : 0
+  }
+  
+  const handleWeekChange = (week: number) => {
+    setSelectedWeek(week)
+    const weekWorkouts = filterWorkoutsForWeek(workouts, currentMonth, week)
+    setCurrentWeekWorkouts(weekWorkouts)
+  }
+  
+  const handleViewFullSchedule = () => {
+    setShowMonthView(true)
+  }
+  
+  const handleBackToWeekView = () => {
+    setShowMonthView(false)
+  }
+  
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await loadDashboardData()
+    setRefreshing(false)
+  }
+
+  const getMonthProgress = () => {
+    if (!user) return 0
+    const daysPerMonth = getDaysPerMonth()
+    const monthStartDay = (currentMonth - 1) * daysPerMonth + 1
+    const monthEndDay = currentMonth * daysPerMonth
+    
+    const completedDaysInMonth = completedSessions.filter((session: any) => {
+      const sessionDay = session.program_day_number || session.day_number
+      return sessionDay >= monthStartDay && sessionDay <= monthEndDay
+    }).length
+    
+    return Math.round((completedDaysInMonth / daysPerMonth) * 100)
   }
 
   const loadLastSelectedModality = async () => {
@@ -568,7 +722,7 @@ export default function EnginePage() {
         userIdStr,
         workout.day_type,
         selectedModality
-      )
+      ) as any
       
       console.log('📈 LOADED PERFORMANCE METRICS:', {
         dayType: workout.day_type,
@@ -608,6 +762,20 @@ export default function EnginePage() {
   useEffect(() => {
     currentIntervalRef.current = currentInterval
   }, [currentInterval])
+
+  // Auto-calculate total output from interval scores
+  useEffect(() => {
+    const scores = Object.values(intervalScores)
+    if (scores.length > 0) {
+      const sum = scores.reduce((acc, score) => {
+        const val = parseFloat(score)
+        return isNaN(val) ? acc : acc + val
+      }, 0)
+      if (sum > 0) {
+        setTotalOutput(sum.toString())
+      }
+    }
+  }, [intervalScores])
 
   // Timer effect
   useEffect(() => {
@@ -1037,8 +1205,8 @@ export default function EnginePage() {
             description: `${getWorkoutTypeDisplayName(dayType)} - Round ${i + 1}`,
             blockNumber: blockNumber,
             roundNumber: i + 1,
-            paceRange: paceRange
-          })
+          paceRange: paceRange
+        })
         }
       } else if (dayType === 'devour') {
         // Devour: increasing work duration, decreasing rest duration
@@ -1397,6 +1565,16 @@ export default function EnginePage() {
     return 'Conditioning'
   }
 
+  const saveCurrentIntervalScore = () => {
+    if (currentIntervalScore.trim()) {
+      setIntervalScores(prev => ({
+        ...prev,
+        [currentIntervalRef.current]: currentIntervalScore.trim()
+      }))
+      setCurrentIntervalScore('')
+    }
+  }
+
   const handlePhaseCompletion = () => {
     const phase = currentPhaseRef.current
     const intervalIndex = currentIntervalRef.current
@@ -1417,10 +1595,13 @@ export default function EnginePage() {
         })
       } else {
         // No rest period - move to next interval
+        // Since we are skipping rest, if they were typing something (unlikely but possible), save it
+        saveCurrentIntervalScore()
         completeCurrentInterval()
       }
     } else {
-      // Rest phase completed - move to next interval
+      // Rest phase completed - save score and move to next interval
+      saveCurrentIntervalScore()
       completeCurrentInterval()
     }
   }
@@ -1490,6 +1671,8 @@ export default function EnginePage() {
     setAverageHeartRate('')
     setPeakHeartRate('')
     setRpeValue(5)
+    setIntervalScores({})
+    setCurrentIntervalScore('')
     
     setSessionData(prev => ({
       ...prev,
@@ -1878,7 +2061,8 @@ export default function EnginePage() {
           intervals_completed: sessionData.intervals.filter(i => i.completed).length,
           total_intervals: sessionData.intervals.length,
           total_work_time: totalWorkTime,
-          total_rest_time: totalRestTime
+          total_rest_time: totalRestTime,
+          interval_scores: intervalScores
         },
         avg_work_rest_ratio: avgWorkRestRatio,
         total_work_seconds: totalWorkTime,
@@ -1949,7 +2133,7 @@ export default function EnginePage() {
       setSavedAverageHeartRate(averageHeartRate)
       setSavedPeakHeartRate(peakHeartRate)
       setSavedRpeValue(rpeValue)
-      
+
       // Show success state
       setSaveSuccess(true)
       
@@ -1980,11 +2164,193 @@ export default function EnginePage() {
       )
     }
 
+    // Show month view if requested
+    if (showMonthView) {
     return (
-      <Dashboard
-        onDayClick={handleDayClick}
-        onAnalyticsClick={handleAnalyticsClick}
-      />
+        <Dashboard
+          onDayClick={handleDayClick}
+          onAnalyticsClick={handleAnalyticsClick}
+          onBackToWeekView={handleBackToWeekView}
+          showTrainingView={true}
+        />
+      )
+    }
+
+    // Week-focused view (default)
+    const monthProgress = getMonthProgress()
+    const programName = programVersion === 'Premium' 
+      ? 'PREMIUM PROGRAM • Full Access'
+      : `ENGINE PROGRAM • ${programVersion === '3-day' ? '3-Day' : '5-Day'} Program`
+
+    return (
+      <View style={styles.container}>
+        {/* Header with Exit button for Program users */}
+        {programId && (
+          <View style={[styles.header, { paddingTop: insets.top + 8, paddingBottom: 8 }]}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={handleBackToDashboard}
+            >
+              <Ionicons name="arrow-back" size={16} color="#F8FBFE" style={{ marginRight: 6 }} />
+              <Text style={styles.backButtonText}>Back to Day Menu</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Greeting Card */}
+        <Card style={[styles.greetingCard, !programId && { marginTop: insets.top + 16 }]}>
+          <View style={styles.greetingContent}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {userName.charAt(0).toUpperCase()}
+          </Text>
+        </View>
+            <View style={styles.greetingText}>
+              <Text style={styles.greetingTitle}>
+                Hello, {userName}!
+              </Text>
+              <Text style={styles.programNameInCard}>
+                {programName}
+              </Text>
+            </View>
+          </View>
+        </Card>
+
+        {/* Month Progress Bar */}
+        <View style={styles.programContext}>
+          <View style={styles.progressBarWrapper}>
+            <View style={styles.dashboardProgressBarContainer}>
+              <View
+                style={[
+                  styles.dashboardProgressBar,
+                  { width: `${monthProgress}%` }
+                ]}
+              />
+            </View>
+            <Text style={styles.progressPercentage}>
+              {monthProgress}%
+            </Text>
+          </View>
+        </View>
+
+        {/* View Full Program Structure Button */}
+                  <TouchableOpacity
+          style={styles.viewScheduleButton}
+          onPress={handleViewFullSchedule}
+          activeOpacity={0.7}
+                  >
+          <Text style={styles.viewScheduleIcon}>📅</Text>
+          <Text style={styles.viewScheduleText}>
+            View full program structure
+          </Text>
+                  </TouchableOpacity>
+
+        <ScrollView
+          style={styles.dashboardScrollView}
+          contentContainerStyle={styles.dashboardScrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          {currentWeekWorkouts.length === 0 ? (
+            <Card style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>
+                No Workouts Found
+              </Text>
+              <Text style={styles.emptyText}>
+                Please check your program setup
+              </Text>
+            </Card>
+          ) : (
+            <>
+              {/* Week Navigation */}
+              <Card style={styles.weekNavCard}>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.weekSelectorContent}
+                >
+                  <View style={styles.weekSelector}>
+                    {[1, 2, 3, 4].map((week) => (
+                    <TouchableOpacity
+                        key={week}
+                        onPress={() => handleWeekChange(week)}
+                      style={[
+                          styles.weekButton,
+                          week === selectedWeek ? styles.weekButtonActive : styles.weekButtonInactive
+                      ]}
+                        activeOpacity={0.7}
+                    >
+                      <Text style={[
+                          styles.weekButtonText,
+                          week === selectedWeek ? styles.weekButtonTextActive : styles.weekButtonTextInactive
+                        ]}>
+                          Week {week}
+                        </Text>
+                    </TouchableOpacity>
+                    ))}
+              </View>
+                </ScrollView>
+              </Card>
+
+              {/* Workout Days */}
+              <View style={styles.workoutDays}>
+                {currentWeekWorkouts.map((workout) => {
+                  const dayNumber = workout.program_day_number || workout.day_number
+                  const completionPercentage = getDayCompletionStatus(dayNumber)
+                  const dayType = workout.day_type || ''
+
+                  return (
+                    <TouchableOpacity
+                      key={dayNumber}
+                      onPress={() => handleDayClick(dayNumber, dayType)}
+                      activeOpacity={0.7}
+                    >
+                      <Card style={styles.workoutCard}>
+                        <View style={styles.workoutCardHeader}>
+                          <View style={styles.workoutCardLeft}>
+                            <Text style={styles.workoutDayTitle}>
+                              Day {dayNumber}
+                      </Text>
+                            <Text style={styles.workoutDayType}>
+                              {getWorkoutTypeDisplayName(dayType)}
+                      </Text>
+                          </View>
+                          <View>
+                            {completionPercentage === 100 ? (
+                              <View style={styles.statusBadgeComplete}>
+                                <Text style={styles.statusBadgeTextComplete}>
+                                  ✓ Complete
+                                </Text>
+                              </View>
+                            ) : (
+                              <View style={styles.statusBadgeNotStarted}>
+                                <Text style={styles.statusBadgeTextNotStarted}>
+                                  Pending
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+
+                        {/* Progress Bar */}
+                        <View style={styles.dashboardProgressBarContainer}>
+                          <View
+                            style={[
+                              styles.dashboardProgressBar,
+                              { width: `${completionPercentage}%` }
+                            ]}
+                          />
+                        </View>
+                      </Card>
+                    </TouchableOpacity>
+                  )
+                })}
+            </View>
+            </>
+          )}
+        </ScrollView>
+      </View>
     )
   }
 
@@ -2009,7 +2375,7 @@ export default function EnginePage() {
           style={styles.errorButton}
           onPress={handleBackToDashboard}
         >
-          <Text style={styles.errorButtonText}>Go Back</Text>
+          <Text style={styles.errorButtonText}>{programId ? 'Back to Day Menu' : 'Go Back'}</Text>
         </TouchableOpacity>
       </View>
     )
@@ -2030,7 +2396,7 @@ export default function EnginePage() {
           onPress={handleBackToDashboard}
         >
           <Ionicons name="arrow-back" size={16} color="#F8FBFE" style={{ marginRight: 6 }} />
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={styles.backButtonText}>{programId ? 'Back to Day Menu' : 'Back'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -2052,6 +2418,7 @@ export default function EnginePage() {
             >
               <Text style={styles.equipmentText}>
                 {modalities.find(m => m.value === selectedModality)?.label || 'Not selected'}
+                <Text style={{ color: '#FE5858', fontWeight: '500' }}> (change)</Text>
               </Text>
             </TouchableOpacity>
           )}
@@ -2102,7 +2469,7 @@ export default function EnginePage() {
                     ]}>
                       {category === 'Rowing' ? 'Row' : category === 'Cycling' ? 'Bike' : category === 'Running' ? 'Run' : category}
                     </Text>
-                    {isSelected && <Ionicons name="checkmark-circle" size={16} color="#FE5858" />}
+                    {isSelected && <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />}
                   </TouchableOpacity>
                 )
               })}
@@ -2179,7 +2546,7 @@ export default function EnginePage() {
             {/* Baseline Warning - show when unit selected but no matching baseline */}
             {selectedModality && timeTrialSelectedUnit && !hasMatchingBaseline && (
               <View style={styles.baselineWarning}>
-                <Text style={styles.warningTitle}>No Time Trial Baseline</Text>
+                  <Text style={styles.warningTitle}>No Time Trial Baseline</Text>
                 <Text style={styles.warningText}>
                   You haven't completed a time trial for {modalities.find(m => m.value === selectedModality)?.label} with {scoreUnits.find(u => u.value === timeTrialSelectedUnit)?.label}.
                 </Text>
@@ -2320,7 +2687,7 @@ export default function EnginePage() {
                             <View style={styles.summaryMetricCard}>
                               <Text style={styles.summaryMetricLabel}>Total Work Goal</Text>
                               <Text style={styles.summaryMetricValue}>
-                                {Math.ceil(totalGoal.totalGoal)} <Text style={styles.summaryMetricUnits}>{totalGoal.units}</Text>
+                                {Math.ceil(totalGoal.totalGoal || 0)} <Text style={styles.summaryMetricUnits}>{totalGoal.units}</Text>
                               </Text>
                             </View>
                           );
@@ -2583,11 +2950,11 @@ export default function EnginePage() {
                 ) : workoutHistory.length > 0 ? (
                   <>
                     {workoutHistory.slice(0, 5).map((session, index) => (
-                      <View key={index} style={styles.historyItem}>
+                    <View key={index} style={styles.historyItem}>
                         <View style={styles.historyItemContent}>
-                          <Text style={styles.historyDate}>
-                            {session.date ? new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown Date'}
-                          </Text>
+                      <Text style={styles.historyDate}>
+                        {session.date ? new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown Date'}
+                      </Text>
                           <View style={styles.historyMetrics}>
                             {session.performance_ratio && (
                               <View style={styles.performanceRatioBadge}>
@@ -2596,14 +2963,14 @@ export default function EnginePage() {
                                 </Text>
                               </View>
                             )}
-                            {session.actual_pace && (
+                      {session.actual_pace && (
                               <View style={styles.actualPaceBadge}>
                                 <Text style={styles.actualPaceText}>
                                   {session.actual_pace.toFixed(1)} {baselines[selectedModality]?.units || session.units || 'units'}/min
-                                </Text>
+                        </Text>
                               </View>
-                            )}
-                          </View>
+                      )}
+                    </View>
                         </View>
                       </View>
                     ))}
@@ -2653,6 +3020,8 @@ export default function EnginePage() {
               style={styles.startPreviewButton}
               onPress={() => {
                 setWorkoutView('active')
+                setIntervalScores({})
+                setCurrentIntervalScore('')
                 // Initialize timer state but don't start counting yet
                 if (sessionData.intervals.length > 0) {
                   setTimeRemaining(sessionData.intervals[0].duration)
@@ -2670,21 +3039,8 @@ export default function EnginePage() {
         {/* Workout Timer - Only show in active view */}
         {selectedModality && workoutView === 'active' && (
           <>
-            {/* DEV ONLY: Skip to End Button */}
-            {__DEV__ && (isActive || isPaused) && (
-              <TouchableOpacity 
-                style={styles.devSkipButton} 
-                onPress={skipToEnd}
-              >
-                <Text style={styles.devSkipButtonText}>⚡ Skip to End (Testing)</Text>
-              </TouchableOpacity>
-            )}
-
             {/* Workout Info Above Timer */}
             <View style={styles.timerInfoContainer}>
-              <Text style={styles.timerWorkoutTitle}>
-                {getWorkoutTypeDisplayName(workout.day_type || 'conditioning')}
-              </Text>
               
               {/* Phase, Goal, and Round info - only show when workout has started */}
               {(isActive || isPaused || isCompleted) && (
@@ -2695,49 +3051,74 @@ export default function EnginePage() {
                   ]}>
                     {isPaused ? 'PAUSED' : currentPhase === 'work' ? 'Work' : 'Rest'}
                   </Text>
-                  {(() => {
-                    // Calculate goal for current interval
-                    let goalText = ''
-                    if (currentInt && currentPhase === 'work') {
-                      const paceRange = currentInt.paceRange
-                      const isMaxEffort = paceRange === 'max_effort' || 
-                                          (typeof paceRange === 'string' && paceRange.toLowerCase().includes('max'))
-                      
-                      if (isMaxEffort) {
-                        goalText = 'Max Effort'
-                      } else if (hasMatchingBaseline && baselines[selectedModality]?.baseline) {
-                        if (paceRange && Array.isArray(paceRange) && paceRange.length >= 2) {
-                          const baseline = baselines[selectedModality].baseline
-                          const intensityMultiplier = (paceRange[0] + paceRange[1]) / 2
-                          let adjustedMultiplier = intensityMultiplier
-                          if (performanceMetrics?.rolling_avg_ratio) {
-                            adjustedMultiplier *= performanceMetrics.rolling_avg_ratio
+                  
+                  {currentPhase === 'rest' && isActive && !isCompleted ? (
+                    <View style={styles.restScoreContainer}>
+                      <Text style={styles.restScoreLabel}>Log Last Interval Output:</Text>
+                      <View style={styles.restScoreInputWrapper}>
+                        <TextInput
+                          style={styles.restScoreInput}
+                          value={currentIntervalScore}
+                          onChangeText={setCurrentIntervalScore}
+                          placeholder={`Enter ${timeTrialSelectedUnit === 'cal' ? 'calories' : timeTrialSelectedUnit}`}
+                          keyboardType="numeric"
+                          placeholderTextColor="#9CA3AF"
+                        />
+                        <TouchableOpacity 
+                          style={styles.restScoreSaveButton}
+                          onPress={saveCurrentIntervalScore}
+                        >
+                          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <>
+                      {(() => {
+                        // Calculate goal for current interval
+                        let goalText = ''
+                        if (currentInt && currentPhase === 'work') {
+                          const paceRange = currentInt.paceRange
+                          const isMaxEffort = paceRange === 'max_effort' || 
+                                              (typeof paceRange === 'string' && paceRange.toLowerCase().includes('max'))
+                          
+                          if (isMaxEffort) {
+                            goalText = 'Max Effort'
+                          } else if (hasMatchingBaseline && baselines[selectedModality]?.baseline) {
+                            if (paceRange && Array.isArray(paceRange) && paceRange.length >= 2) {
+                              const baseline = baselines[selectedModality].baseline
+                              const intensityMultiplier = (paceRange[0] + paceRange[1]) / 2
+                              let adjustedMultiplier = intensityMultiplier
+                              if (performanceMetrics?.rolling_avg_ratio) {
+                                adjustedMultiplier *= performanceMetrics.rolling_avg_ratio
+                              }
+                              const targetPace = baseline * adjustedMultiplier
+                              const durationMinutes = (currentInt.duration || 0) / 60
+                              const goal = Math.round(targetPace * durationMinutes)
+                              goalText = `Goal: ${goal} ${timeTrialSelectedUnit === 'cal' ? 'calories' : timeTrialSelectedUnit}`
+                            }
                           }
-                          const targetPace = baseline * adjustedMultiplier
-                          const durationMinutes = (currentInt.duration || 0) / 60
-                          const goal = Math.round(targetPace * durationMinutes)
-                          goalText = `Goal: ${goal} ${timeTrialSelectedUnit === 'cal' ? 'calories' : timeTrialSelectedUnit}`
                         }
-                      }
-                    }
-                    return goalText ? <Text style={styles.timerGoal}>{goalText}</Text> : null
-                  })()}
-                  {(() => {
-                    // Calculate round information
-                    if (currentInt?.roundNumber) {
-                      // Find total rounds in the same block
-                      const blockNum = currentInt.blockNumber
-                      const roundsInBlock = sessionData.intervals.filter(
-                        (int: Interval) => int.blockNumber === blockNum
-                      ).length
-                      return (
-                        <Text style={styles.timerRound}>
-                          Round {currentInt.roundNumber} of {roundsInBlock}
-                        </Text>
-                      )
-                    }
-                    return null
-                  })()}
+                        return goalText ? <Text style={styles.timerGoal}>{goalText}</Text> : null
+                      })()}
+                      {(() => {
+                        // Calculate round information
+                        if (currentInt?.roundNumber) {
+                          // Find total rounds in the same block
+                          const blockNum = currentInt.blockNumber
+                          const roundsInBlock = sessionData.intervals.filter(
+                            (int: Interval) => int.blockNumber === blockNum
+                          ).length
+                          return (
+                            <Text style={styles.timerRound}>
+                              Round {currentInt.roundNumber} of {roundsInBlock}
+                            </Text>
+                          )
+                        }
+                        return null
+                      })()}
+                    </>
+                  )}
                 </>
               )}
             </View>
@@ -2768,6 +3149,8 @@ export default function EnginePage() {
                   <View style={styles.statusDisplay}>
                     <Text style={styles.statusTitle}>FLUX TRAINING</Text>
                     {(() => {
+                      const totalDuration = currentInt?.duration || 0
+                      const elapsedTime = totalDuration - timeRemaining
                       const fluxStatus = getFluxStatus(currentInt, elapsedTime)
                       if (fluxStatus?.isActive) {
                         return (
@@ -2792,6 +3175,8 @@ export default function EnginePage() {
                   <View style={styles.statusDisplay}>
                     <Text style={styles.statusTitle}>POLARIZED TRAINING</Text>
                     {(() => {
+                      const totalDuration = currentInt?.duration || 0
+                      const elapsedTime = totalDuration - timeRemaining
                       const burstStatus = getBurstStatus(currentInt, elapsedTime)
                       if (burstStatus?.isActive) {
                         return (
@@ -2886,6 +3271,11 @@ export default function EnginePage() {
                 >
                   <Ionicons name={isActive ? "pause" : "play"} size={24} color="#FFFFFF" />
                 </TouchableOpacity>
+                {__DEV__ && (
+                  <TouchableOpacity style={styles.devSkipRoundButton} onPress={skipToEnd}>
+                    <Ionicons name="play-skip-forward" size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </>
@@ -2899,11 +3289,11 @@ export default function EnginePage() {
             {saveSuccess ? (
               /* Review Card - shown after successful save */
               <>
-                {/* Success Banner */}
-                <View style={styles.successBanner}>
-                  <Ionicons name="checkmark-circle" size={24} color="#10B981" />
-                  <Text style={styles.successText}>Workout Saved Successfully!</Text>
-                </View>
+            {/* Success Banner */}
+              <View style={styles.successBanner}>
+                <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                <Text style={styles.successText}>Workout Saved Successfully!</Text>
+              </View>
 
                 {/* Workout Summary */}
                 <Text style={styles.summaryHeader}>Workout Summary</Text>
@@ -2936,7 +3326,7 @@ export default function EnginePage() {
                   onPress={handleBackToDashboard}
                 >
                   <Ionicons name="arrow-back" size={20} color="#F8FBFE" />
-                  <Text style={styles.reviewNavButtonText}>Back to Training</Text>
+                  <Text style={styles.reviewNavButtonText}>{programId ? 'Back to Day Menu' : 'Back to Training'}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -2950,90 +3340,124 @@ export default function EnginePage() {
             ) : (
               /* Form - shown before save */
               <>
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Score (required)</Text>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Score (required)</Text>
+              <TextInput
+                style={styles.input}
+                value={totalOutput}
+                onChangeText={setTotalOutput}
+                placeholder=""
+                keyboardType="numeric"
+              />
+            </View>
+
+            {/* Optional Interval Breakdown */}
+            {sessionData.intervals.length > 1 && (
+              <View style={styles.formGroup}>
+                <TouchableOpacity 
+                  style={styles.intervalToggle}
+                  onPress={() => setExpandedBreakdown(!expandedBreakdown)}
+                >
+                  <Text style={styles.intervalToggleText}>
+                    {expandedBreakdown ? 'Hide Interval Breakdown' : 'Log per Interval (Optional)'}
+                  </Text>
+                  <Ionicons name={expandedBreakdown ? "chevron-up" : "chevron-down"} size={16} color="#6B7280" />
+                </TouchableOpacity>
+                
+                {expandedBreakdown && (
+                  <View style={styles.intervalInputGrid}>
+                    {sessionData.intervals.map((interval, idx) => (
+                      <View key={idx} style={styles.intervalInputRow}>
+                        <Text style={styles.intervalInputLabel}>
+                          {interval.type === 'rest' ? 'Rest' : `Round ${interval.roundNumber || idx + 1}`}
+                        </Text>
+                        <TextInput
+                          style={styles.intervalInput}
+                          value={intervalScores[idx] || ''}
+                          onChangeText={(text) => setIntervalScores(prev => ({ ...prev, [idx]: text }))}
+                          placeholder="0"
+                          keyboardType="numeric"
+                        />
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
+            <View style={styles.formGroup}>
+              <View style={styles.heartRateRow}>
+                <View style={styles.heartRateField}>
+                  <Text style={styles.label}>Avg HR</Text>
                   <TextInput
                     style={styles.input}
-                    value={totalOutput}
-                    onChangeText={setTotalOutput}
+                    value={averageHeartRate}
+                    onChangeText={setAverageHeartRate}
                     placeholder=""
                     keyboardType="numeric"
                   />
                 </View>
-
-                <View style={styles.formGroup}>
-                  <View style={styles.heartRateRow}>
-                    <View style={styles.heartRateField}>
-                      <Text style={styles.label}>Avg HR</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={averageHeartRate}
-                        onChangeText={setAverageHeartRate}
-                        placeholder=""
-                        keyboardType="numeric"
-                      />
-                    </View>
-                    
-                    <View style={styles.heartRateField}>
-                      <Text style={styles.label}>Peak HR</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={peakHeartRate}
-                        onChangeText={setPeakHeartRate}
-                        placeholder=""
-                        keyboardType="numeric"
-                      />
-                    </View>
-                  </View>
+                
+                <View style={styles.heartRateField}>
+                  <Text style={styles.label}>Peak HR</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={peakHeartRate}
+                    onChangeText={setPeakHeartRate}
+                    placeholder=""
+                    keyboardType="numeric"
+                  />
                 </View>
+              </View>
+            </View>
 
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>RPE (1-10): {rpeValue}</Text>
-                  <View style={styles.rpeContainer}>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => (
-                      <TouchableOpacity
-                        key={value}
-                        style={[
-                          styles.rpeButton,
-                          rpeValue === value && styles.rpeButtonActive
-                        ]}
-                        onPress={() => setRpeValue(value)}
-                      >
-                        <Text style={[
-                          styles.rpeButtonText,
-                          rpeValue === value && styles.rpeButtonTextActive
-                        ]}>
-                          {value}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-
-                <View style={styles.completionButtonsContainer}>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>RPE (1-10): {rpeValue}</Text>
+              <View style={styles.rpeContainer}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => (
                   <TouchableOpacity
-                    style={styles.discardButton}
-                    onPress={discardWorkout}
-                    disabled={saving}
-                  >
-                    <Text style={styles.discardButtonText}>Discard</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
+                    key={value}
                     style={[
-                      styles.saveButton, 
-                      saving && styles.saveButtonDisabled
+                      styles.rpeButton,
+                      rpeValue === value && styles.rpeButtonActive
                     ]}
-                    onPress={saveWorkout}
-                    disabled={saving}
+                    onPress={() => setRpeValue(value)}
                   >
-                    {saving ? (
-                      <ActivityIndicator color="#FFFFFF" />
-                    ) : (
-                      <Text style={styles.saveButtonText}>Save Workout</Text>
-                    )}
+                    <Text style={[
+                      styles.rpeButtonText,
+                      rpeValue === value && styles.rpeButtonTextActive
+                    ]}>
+                      {value}
+                    </Text>
                   </TouchableOpacity>
-                </View>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.completionButtonsContainer}>
+              <TouchableOpacity
+                style={styles.discardButton}
+                onPress={discardWorkout}
+                disabled={saving}
+              >
+                <Text style={styles.discardButtonText}>Discard</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.saveButton, 
+                      saving && styles.saveButtonDisabled
+                ]}
+                onPress={saveWorkout}
+                    disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Workout</Text>
+                )}
+              </TouchableOpacity>
+            </View>
               </>
             )}
           </View>
@@ -3392,24 +3816,6 @@ const styles = StyleSheet.create({
     color: '#374151',
     textAlign: 'center',
   },
-  devSkipButton: {
-    backgroundColor: '#F59E0B',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    alignSelf: 'center',
-    marginTop: 16,
-    marginBottom: 8,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#D97706',
-  },
-  devSkipButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
   timerInfoContainer: {
     paddingHorizontal: 24,
     paddingTop: 16,
@@ -3467,6 +3873,90 @@ const styles = StyleSheet.create({
     gap: 24,
     paddingVertical: 24,
   },
+  restScoreContainer: {
+    marginTop: 8,
+    alignItems: 'center',
+    width: '100%',
+  },
+  restScoreLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  restScoreInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    width: '80%',
+  },
+  restScoreInput: {
+    flex: 1,
+    height: 40,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    color: '#282B34',
+    textAlign: 'center',
+  },
+  restScoreSaveButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  intervalToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  intervalToggleText: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  intervalInputGrid: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  intervalInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FBFE',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  intervalInputLabel: {
+    fontSize: 14,
+    color: '#4B5563',
+    fontWeight: '500',
+  },
+  intervalInput: {
+    width: 80,
+    height: 32,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    fontSize: 14,
+    color: '#282B34',
+    textAlign: 'center',
+  },
   stopButton: {
     width: 56,
     height: 56,
@@ -3492,6 +3982,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  devSkipRoundButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#F59E0B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#D97706',
   },
   timerContainer: {
     alignItems: 'center',
@@ -3757,9 +4263,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#DAE2EA',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -3767,6 +4273,7 @@ const styles = StyleSheet.create({
   },
   categoryButtonActive: {
     borderColor: '#FE5858',
+    backgroundColor: '#FE5858',
   },
   categoryButtonText: {
     fontSize: 14,
@@ -3774,7 +4281,7 @@ const styles = StyleSheet.create({
     color: '#282B34',
   },
   categoryButtonTextActive: {
-    color: '#282B34',
+    color: '#FFFFFF',
   },
   equipmentSubMenu: {
     backgroundColor: '#F8FBFE',
@@ -4459,6 +4966,226 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#111827',
+  },
+  // Week-focused view styles
+  greetingCard: {
+    marginTop: 16,
+    marginBottom: 16,
+    marginHorizontal: 16,
+    padding: 20,
+  },
+  greetingContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FE5858',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  avatarText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  greetingText: {
+    flex: 1,
+  },
+  greetingTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#282B34',
+    marginBottom: 4,
+  },
+  programNameInCard: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  programContext: {
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  progressBarWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  dashboardProgressBarContainer: {
+    flex: 1,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 999,
+    height: 10,
+    overflow: 'hidden',
+  },
+  dashboardProgressBar: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: '#FE5858',
+  },
+  progressPercentage: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#282B34',
+    minWidth: 45,
+    textAlign: 'right',
+  },
+  viewScheduleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FE5858',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    marginBottom: 16,
+    marginHorizontal: 16,
+  },
+  viewScheduleIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  viewScheduleText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FE5858',
+  },
+  dashboardScrollView: {
+    flex: 1,
+  },
+  dashboardScrollContent: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  statusDisplay: {
+    backgroundColor: 'rgba(254, 88, 88, 0.1)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  statusTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FE5858',
+    marginBottom: 4,
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#282B34',
+  },
+  emptyCard: {
+    padding: 32,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#282B34',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: '#4B5563',
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  weekNavCard: {
+    marginBottom: 16,
+    padding: 16,
+  },
+  weekSelectorContent: {
+    paddingRight: 8,
+  },
+  weekSelector: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  weekButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  weekButtonActive: {
+    backgroundColor: '#FE5858',
+  },
+  weekButtonInactive: {
+    backgroundColor: '#F3F4F6',
+  },
+  weekButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  weekButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  weekButtonTextInactive: {
+    color: '#282B34',
+  },
+  workoutDays: {
+    marginBottom: 16,
+    gap: 12,
+  },
+  workoutCard: {
+    padding: 20,
+  },
+  workoutCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  workoutCardLeft: {
+    flex: 1,
+  },
+  workoutDayTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#282B34',
+    marginBottom: 4,
+  },
+  workoutDayType: {
+    fontSize: 14,
+    color: '#4B5563',
+  },
+  statusBadgeComplete: {
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  statusBadgeTextComplete: {
+    color: '#065F46',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  statusBadgeProgress: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  statusBadgeTextProgress: {
+    color: '#92400E',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  statusBadgeNotStarted: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  statusBadgeTextNotStarted: {
+    color: '#374151',
+    fontWeight: '600',
+    fontSize: 12,
   },
 })
 

@@ -421,7 +421,7 @@ export default function ProfilePage() {
   const [height, setHeight] = useState<number | null>(null)
   const [age, setAge] = useState<number | null>(null)
   const [intakeStatus, setIntakeStatus] = useState<string | null>(null)
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(['foundation-strength'])
+  const [expandedCategories, setExpandedCategories] = useState<string[]>(['foundation-strength', 'one-rm-lifts'])
   const [userSkills, setUserSkills] = useState<{[key: string]: string}>({})
   const [editingBenchmark, setEditingBenchmark] = useState<string | null>(null)
   const [benchmarkValues, setBenchmarkValues] = useState<{[key: string]: string}>({})
@@ -984,10 +984,10 @@ export default function ProfilePage() {
           </Card>
         )}
 
-        {/* BW Strength Ratios */}
+        {/* Strength Summary */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>BW STRENGTH RATIOS</Text>
+            <Text style={styles.sectionTitle}>STRENGTH SUMMARY</Text>
             <TouchableOpacity onPress={() => toggleCategory('foundation-strength')}>
               <Text style={styles.toggleText}>
                 [{expandedCategories.includes('foundation-strength') ? '- Hide' : '+ View'}]
@@ -1101,6 +1101,136 @@ export default function ProfilePage() {
           )}
         </View>
 
+        {/* 1RM Lifts Overview */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>1RM LIFTS</Text>
+            <TouchableOpacity onPress={() => toggleCategory('one-rm-lifts')}>
+              <Text style={styles.toggleText}>
+                [{expandedCategories.includes('one-rm-lifts') ? '- Hide' : '+ View'}]
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sectionDivider} />
+          <Text style={styles.sectionDescription}>Complete overview of all 1RM strength lifts</Text>
+
+          {expandedCategories.includes('one-rm-lifts') && (
+            <View style={styles.oneRMLiftsContainer}>
+              {/* Olympic Lifts */}
+              <View style={styles.oneRMLiftGroup}>
+                <Text style={styles.oneRMLiftGroupTitle}>Olympic Lifts</Text>
+                <View style={styles.oneRMLiftGrid}>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Snatch</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.snatch ? formatWeight(profile.one_rms.snatch) : 'Not set'}
+                    </Text>
+                  </View>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Clean & Jerk</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.clean_and_jerk ? formatWeight(profile.one_rms.clean_and_jerk) : 'Not set'}
+                    </Text>
+                  </View>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Power Snatch</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.power_snatch ? formatWeight(profile.one_rms.power_snatch) : 'Not set'}
+                    </Text>
+                  </View>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Power Clean</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.power_clean ? formatWeight(profile.one_rms.power_clean) : 'Not set'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Squat Variations */}
+              <View style={styles.oneRMLiftGroup}>
+                <Text style={styles.oneRMLiftGroupTitle}>Squat Variations</Text>
+                <View style={styles.oneRMLiftGrid}>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Back Squat</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.back_squat ? formatWeight(profile.one_rms.back_squat) : 'Not set'}
+                    </Text>
+                  </View>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Front Squat</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.front_squat ? formatWeight(profile.one_rms.front_squat) : 'Not set'}
+                    </Text>
+                  </View>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Overhead Squat</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.overhead_squat ? formatWeight(profile.one_rms.overhead_squat) : 'Not set'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Pressing */}
+              <View style={styles.oneRMLiftGroup}>
+                <Text style={styles.oneRMLiftGroupTitle}>Pressing</Text>
+                <View style={styles.oneRMLiftGrid}>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Bench Press</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.bench_press ? formatWeight(profile.one_rms.bench_press) : 'Not set'}
+                    </Text>
+                  </View>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Push Press</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.push_press ? formatWeight(profile.one_rms.push_press) : 'Not set'}
+                    </Text>
+                  </View>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Strict Press</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.strict_press ? formatWeight(profile.one_rms.strict_press) : 'Not set'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Other */}
+              <View style={styles.oneRMLiftGroup}>
+                <Text style={styles.oneRMLiftGroupTitle}>Other</Text>
+                <View style={styles.oneRMLiftGrid}>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Deadlift</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.deadlift ? formatWeight(profile.one_rms.deadlift) : 'Not set'}
+                    </Text>
+                  </View>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Weighted Pull-up</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.weighted_pullup ? formatWeight(profile.one_rms.weighted_pullup) : 'Not set'}
+                    </Text>
+                  </View>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Clean Only</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.clean_only ? formatWeight(profile.one_rms.clean_only) : 'Not set'}
+                    </Text>
+                  </View>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Jerk Only</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.jerk_only ? formatWeight(profile.one_rms.jerk_only) : 'Not set'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
+
         {/* Olympic Lifts */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
@@ -1165,10 +1295,10 @@ export default function ProfilePage() {
           )}
         </View>
 
-        {/* Strength Ratios */}
+        {/* Key Ratios */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>STRENGTH RATIOS</Text>
+            <Text style={styles.sectionTitle}>KEY RATIOS</Text>
             <TouchableOpacity onPress={() => toggleCategory('strength-ratios')}>
               <Text style={styles.toggleText}>
                 [{expandedCategories.includes('strength-ratios') ? '- Hide' : '+ View'}]
@@ -2257,6 +2387,39 @@ const styles = StyleSheet.create({
   unitText: {
     fontSize: 14,
     color: '#4B5563',
+  },
+  // 1RM Lifts Section Styles
+  oneRMLiftsContainer: {
+    paddingTop: 16,
+  },
+  oneRMLiftGroup: {
+    marginBottom: 24,
+  },
+  oneRMLiftGroupTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 12,
+  },
+  oneRMLiftGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  oneRMLiftItem: {
+    width: '48%',
+    marginBottom: 12,
+    paddingHorizontal: 8,
+  },
+  oneRMLiftLabel: {
+    fontSize: 14,
+    color: '#4B5563',
+    marginBottom: 4,
+  },
+  oneRMLiftValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#282B34',
   },
   // Meal Templates Section
   loadingSection: {

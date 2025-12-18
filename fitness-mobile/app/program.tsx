@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   StyleSheet
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -16,7 +17,6 @@ import {
   DaySummary,
 } from '@/lib/api/programs'
 import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 
 export default function ProgramPage() {
   const router = useRouter()
@@ -35,14 +35,6 @@ export default function ProgramPage() {
       loadPrograms()
     }
   }, [userId])
-
-  useEffect(() => {
-    if (programs.length > 0) {
-      // Find the most recent month (highest monthIndex)
-      const mostRecentMonth = Math.max(...programs.map((p) => p.monthIndex))
-      setExpandedMonths(new Set([mostRecentMonth]))
-    }
-  }, [programs])
 
   const loadUser = async () => {
     try {
@@ -133,14 +125,13 @@ export default function ProgramPage() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Training Overview</Text>
-          <Button
-            variant="ghost"
-            size="sm"
+          <TouchableOpacity
+            style={styles.backButton}
             onPress={() => router.back()}
           >
-            ← Back
-          </Button>
+            <Ionicons name="arrow-back" size={16} color="#F8FBFE" style={{ marginRight: 6 }} />
+            <Text style={styles.backButtonText}>Back</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -332,12 +323,22 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
   },
-  headerTitle: {
-    fontSize: 24,
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FE5858',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#282B34',
+  },
+  backButtonText: {
+    color: '#F8FBFE',
+    fontSize: 16,
     fontWeight: '700',
-    color: '#FE5858',
   },
   scrollView: {
     flex: 1,

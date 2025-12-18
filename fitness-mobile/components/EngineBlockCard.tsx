@@ -123,7 +123,8 @@ export default function EngineBlockCard({
   const handleStartWorkout = () => {
     // Navigate to Engine UI with the specific day number and program context
     const params = new URLSearchParams({
-      day: engineDayNumber.toString()
+      day: engineDayNumber.toString(),
+      view: 'workout'
     })
     if (programId) params.append('programId', programId.toString())
     if (week) params.append('week', week.toString())
