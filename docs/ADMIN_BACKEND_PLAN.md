@@ -57,6 +57,7 @@ CREATE TABLE public.subscriptions (
 
   -- Status & Plan
   status VARCHAR(50) NOT NULL,        -- 'active', 'expired', 'past_due'
+  is_trial_period BOOLEAN DEFAULT FALSE, -- TRUE = trial, FALSE = paying
   plan VARCHAR(100),                   -- Plan name
   entitlement_identifier VARCHAR(100), -- RevenueCat entitlement (ENGINE, BTN, etc.)
 
@@ -108,15 +109,28 @@ CREATE INDEX idx_subscriptions_entitlement ON subscriptions(user_id, entitlement
 ```
 
 **Key Queries Enabled:**
-| Query | Fields Used |
+| Query | SQL Pattern |
 |-------|-------------|
-| Active subscribers | `status = 'active'` |
-| User's plan | `entitlement_identifier` or `plan` |
-| Trials expiring soon | `trial_end` - compare to NOW() |
-| Canceled users (win-back) | `canceled_at IS NOT NULL` |
-| Subscription expiry | `current_period_end` |
-| Platform breakdown | `platform`, `store` |
-| Revenue by plan | `amount_cents`, `billing_interval`, `entitlement_identifier` |
+| Active subscribers | `WHERE status = 'active'` |
+| Trial users | `WHERE status = 'active' AND is_trial_period = TRUE` |
+| Paying customers | `WHERE status = 'active' AND is_trial_period = FALSE` |
+| Trials expiring soon | `WHERE is_trial_period = TRUE AND current_period_end < NOW() + INTERVAL '3 days'` |
+| Canceled (win-back) | `WHERE canceled_at IS NOT NULL AND status = 'active'` |
+| Billing issues | `WHERE status = 'past_due'` |
+| Expired | `WHERE status = 'expired'` |
+| Platform breakdown | `GROUP BY platform` |
+| Revenue by plan | `SUM(amount_cents) ... GROUP BY plan, billing_interval` |
+
+**Example: Trial Conversion Rate**
+```sql
+SELECT
+  plan,
+  COUNT(*) FILTER (WHERE is_trial_period = FALSE) as paying_count,
+  COUNT(*) FILTER (WHERE is_trial_period = TRUE) as trial_count
+FROM subscriptions
+WHERE status = 'active'
+GROUP BY plan;
+```
 
 ---
 
