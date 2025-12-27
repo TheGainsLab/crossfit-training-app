@@ -101,6 +101,7 @@ export async function GET(request: NextRequest) {
           })
           .filter(u => u.days_since_activity === null || u.days_since_activity >= 7)
           .sort((a, b) => (b.days_since_activity ?? 999) - (a.days_since_activity ?? 999))
+      }
 
     } else if (filter === 'expiring-trials') {
       // Get trial users expiring in next 7 days
