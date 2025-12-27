@@ -45,10 +45,78 @@ interface User {
 }
 ```
 
-### RevenueCat Integration
-- RevenueCat connected to Supabase (currently testing)
-- Subscription events sync to database
-- Admin backend reads subscription status from synced data
+### RevenueCat Integration ✅ CONFIRMED
+
+The `subscriptions` table syncs automatically with RevenueCat via webhook on every purchase, renewal, cancellation, and expiration event.
+
+**Subscriptions Table Schema:**
+```sql
+CREATE TABLE public.subscriptions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+
+  -- Status & Plan
+  status VARCHAR(50) NOT NULL,        -- 'active', 'expired', 'past_due'
+  plan VARCHAR(100),                   -- Plan name
+  entitlement_identifier VARCHAR(100), -- RevenueCat entitlement (ENGINE, BTN, etc.)
+
+  -- Billing
+  amount_cents INTEGER,
+  billing_interval VARCHAR(20),        -- 'monthly', 'quarterly', 'yearly'
+
+  -- Dates
+  subscription_start DATE,
+  current_period_start DATE,
+  current_period_end DATE,             -- When subscription expires/renews
+
+  -- Trial
+  trial_start TIMESTAMPTZ,
+  trial_end TIMESTAMPTZ,               -- For "trials expiring" feature
+
+  -- Cancellation
+  canceled_at TIMESTAMPTZ,             -- For win-back targeting
+
+  -- Platform
+  platform VARCHAR(20),                -- 'ios', 'android'
+  store VARCHAR(20),                   -- 'app_store', 'play_store'
+
+  -- RevenueCat IDs
+  revenuecat_subscriber_id VARCHAR(255),
+  revenuecat_product_id VARCHAR(255),
+
+  -- Legacy Stripe fields (for migration)
+  stripe_customer_id VARCHAR(255),
+  stripe_subscription_id VARCHAR(255),
+
+  -- Metadata
+  current_month INTEGER DEFAULT 1,
+  organization_id INTEGER DEFAULT 1,
+  revenue_share_config JSONB,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT check_subscription_source CHECK (
+    stripe_subscription_id IS NOT NULL OR revenuecat_subscriber_id IS NOT NULL
+  )
+);
+
+-- Indexes (already exist)
+CREATE INDEX idx_subscriptions_user_status ON subscriptions(user_id, status);
+CREATE INDEX idx_subscriptions_user_id ON subscriptions(user_id);
+CREATE INDEX idx_subscriptions_revenuecat_id ON subscriptions(revenuecat_subscriber_id);
+CREATE INDEX idx_subscriptions_entitlement ON subscriptions(user_id, entitlement_identifier, status);
+```
+
+**Key Queries Enabled:**
+| Query | Fields Used |
+|-------|-------------|
+| Active subscribers | `status = 'active'` |
+| User's plan | `entitlement_identifier` or `plan` |
+| Trials expiring soon | `trial_end` - compare to NOW() |
+| Canceled users (win-back) | `canceled_at IS NOT NULL` |
+| Subscription expiry | `current_period_end` |
+| Platform breakdown | `platform`, `store` |
+| Revenue by plan | `amount_cents`, `billing_interval`, `entitlement_identifier` |
 
 ---
 
@@ -647,7 +715,7 @@ This admin backend is a **customer engagement and marketing tool** that enables:
 
 ## 12. Open Items
 
-- [ ] Confirm RevenueCat data structure in Supabase (fields available)
+- [x] ~~Confirm RevenueCat data structure in Supabase~~ ✅ Schema confirmed (see Section 1)
 - [ ] Define exact "at-risk" thresholds (start with 7/14/30 days)
 - [ ] Design chat notification strategy (push, email, in-app)
 - [ ] Plan coach role permissions matrix
