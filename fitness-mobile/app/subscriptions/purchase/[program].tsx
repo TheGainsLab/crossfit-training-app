@@ -15,6 +15,14 @@ import { PROGRAMS, ProgramType, getOfferings, purchasePackage } from '@/lib/subs
 
 type BillingPeriod = 'monthly' | 'quarterly' | 'yearly';
 
+// Map program IDs to RevenueCat offering identifiers
+const OFFERING_IDS: Record<ProgramType, string> = {
+  'btn': 'The Gains AI BTN',
+  'engine': 'The Gains AI Engine',
+  'applied_power': 'The Gains AI Applied Power',
+  'competitor': 'The Gains AI Competitor'
+};
+
 export default function PurchaseScreen() {
   const router = useRouter();
   const { program: programId } = useLocalSearchParams<{ program: string }>();
@@ -38,70 +46,45 @@ export default function PurchaseScreen() {
       const offerings = await getOfferings();
       
       console.log('RevenueCat offerings received:', offerings);
-      console.log('Current offering:', offerings?.current);
       console.log('All offerings:', offerings?.all);
       
-      if (!offerings) {
+      if (!offerings || !offerings.all) {
         console.error('No offerings returned from RevenueCat');
         Alert.alert('Error', 'Unable to load subscription options. Please try again.');
         setLoading(false);
         return;
       }
 
-      // Try current offering first, fall back to any available offering
-      let availablePackages: PurchasesPackage[] = [];
+      // Get the specific offering for this program
+      const offeringId = OFFERING_IDS[programId as ProgramType];
+      console.log(`Looking for offering: ${offeringId} for program: ${programId}`);
       
-      if (offerings.current && offerings.current.availablePackages.length > 0) {
-        availablePackages = offerings.current.availablePackages;
-        console.log('Using current offering packages:', availablePackages.length);
-      } else if (offerings.all && Object.keys(offerings.all).length > 0) {
-        // Try to find any offering with packages
-        const allOfferings = Object.values(offerings.all);
-        for (const offering of allOfferings) {
-          if (offering.availablePackages && offering.availablePackages.length > 0) {
-            availablePackages = offering.availablePackages;
-            console.log('Using offering from all:', offering.identifier, availablePackages.length);
-            break;
-          }
-        }
-      }
+      const offering = offerings.all[offeringId];
       
-      if (availablePackages.length === 0) {
-        console.error('No packages available in any offering');
+      if (!offering) {
+        console.error(`No offering found with ID: ${offeringId}`);
+        console.log('Available offerings:', Object.keys(offerings.all));
         Alert.alert(
           'Configuration Error', 
-          'No subscription products are available. Please contact support.\n\nDebug: offerings.current is ' + 
-          (offerings.current ? 'present' : 'missing') + ', offerings.all has ' + 
-          Object.keys(offerings.all || {}).length + ' offerings'
+          `Subscription not available for ${program.displayName}. Please contact support.`
         );
         setLoading(false);
         return;
       }
 
-      // Find packages for this program
-      const programPackages = availablePackages.filter((pkg) => {
-        const productId = pkg.product.identifier.toLowerCase();
-        const matches = productId.includes(programId.toLowerCase());
-        console.log(`Checking product ${productId} for program ${programId}: ${matches}`);
-        return matches;
-      });
+      console.log(`Found offering ${offeringId} with ${offering.availablePackages.length} packages`);
 
-      // Map packages by billing period
+      // Map packages by identifier (monthly, quarterly, yearly)
       const packageMap: Record<BillingPeriod, PurchasesPackage | null> = {
-        monthly: null,
-        quarterly: null,
-        yearly: null,
+        monthly: offering.availablePackages.find(pkg => pkg.identifier === '$rc_monthly' || pkg.identifier === 'monthly') || null,
+        quarterly: offering.availablePackages.find(pkg => pkg.identifier === '$rc_quarterly' || pkg.identifier === 'quarterly') || null,
+        yearly: offering.availablePackages.find(pkg => pkg.identifier === '$rc_annual' || pkg.identifier === 'yearly') || null,
       };
 
-      programPackages.forEach((pkg) => {
-        const productId = pkg.product.identifier.toLowerCase();
-        if (productId.includes('monthly')) {
-          packageMap.monthly = pkg;
-        } else if (productId.includes('quarterly')) {
-          packageMap.quarterly = pkg;
-        } else if (productId.includes('yearly')) {
-          packageMap.yearly = pkg;
-        }
+      console.log('Package mapping:', {
+        monthly: packageMap.monthly?.product.identifier,
+        quarterly: packageMap.quarterly?.product.identifier,
+        yearly: packageMap.yearly?.product.identifier,
       });
 
       setPackages(packageMap);
