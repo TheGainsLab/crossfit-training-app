@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { getMealTemplates, deleteMealTemplate, MealTemplate } from '@/lib/api/mealTemplates'
+import { SupportChatCard } from '@/components/chat/SupportChatCard'
 
 interface ProfileData {
   user_summary: {
@@ -431,6 +432,7 @@ export default function ProfilePage() {
   const [savingLift, setSavingLift] = useState(false)
   const [mealTemplates, setMealTemplates] = useState<MealTemplate[]>([])
   const [templatesLoading, setTemplatesLoading] = useState(false)
+  const [userId, setUserId] = useState<number | null>(null)
 
   useEffect(() => {
     loadProfile()
@@ -465,6 +467,7 @@ export default function ProfilePage() {
         setHeight(userData.height)
         setAge(userData.age)
         setIntakeStatus(userData.intake_status)
+        setUserId(userData.id)
       }
 
       // Get profile data
@@ -2023,6 +2026,11 @@ export default function ProfilePage() {
             </View>
           )}
         </View>
+
+        {/* Support Chat Section */}
+        {userId && (
+          <SupportChatCard userId={userId} />
+        )}
 
         {/* Sign Out Section */}
         <View style={styles.sectionCard}>
