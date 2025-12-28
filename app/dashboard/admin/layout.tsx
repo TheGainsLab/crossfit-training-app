@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   CreditCard,
   Activity,
+  MessageCircle,
   Settings,
   LogOut,
   ChevronLeft
@@ -62,7 +63,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true)
   const [alertCounts, setAlertCounts] = useState({
     atRisk: 0,
-    expiringTrials: 0
+    expiringTrials: 0,
+    unreadChats: 0
   })
 
   useEffect(() => {
@@ -80,7 +82,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setIsAdmin(true)
 
         // Fetch alert counts for badges
-        // TODO: Create endpoint for engagement summary
+        try {
+          const chatRes = await fetch('/api/admin/chat/conversations?unread=true')
+          const chatData = await chatRes.json()
+          if (chatData.success) {
+            setAlertCounts(prev => ({
+              ...prev,
+              unreadChats: chatData.conversations?.length || 0
+            }))
+          }
+        } catch {
+          // Silently fail for badge counts
+        }
 
       } catch (error) {
         console.error('Failed to check admin access:', error)
@@ -120,6 +133,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       href: '/dashboard/admin/training',
       label: 'Training',
       icon: <Activity className="w-5 h-5" />
+    },
+    {
+      href: '/dashboard/admin/chat',
+      label: 'Chat',
+      icon: <MessageCircle className="w-5 h-5" />,
+      badge: alertCounts.unreadChats
     },
   ]
 
