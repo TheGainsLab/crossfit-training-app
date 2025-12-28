@@ -463,44 +463,120 @@ Platform-wide training health.
 
 ---
 
-## 6. Chat System (Future Feature)
+## 6. Chat System
 
-### Phase 1: Admin Support Chat (Near-term)
+### Phase 1: Admin Support Chat ✅ IMPLEMENTED
+
 Admin can initiate and respond to user conversations.
 
-**Database Schema:**
+**Database Schema:** (see `supabase/migrations/20251227_create_support_chat.sql`)
 ```sql
--- Support conversations
+-- Support conversations (one per user)
 CREATE TABLE support_conversations (
-  id UUID PRIMARY KEY,
-  user_id BIGINT REFERENCES users(id),
-  admin_id BIGINT REFERENCES users(id),
-  status VARCHAR(20) DEFAULT 'open', -- open, closed
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(20) DEFAULT 'open',  -- 'open', 'resolved'
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  last_message_at TIMESTAMPTZ,
+  unread_by_admin BOOLEAN DEFAULT FALSE,
+  unread_by_user BOOLEAN DEFAULT FALSE,
+  CONSTRAINT unique_user_conversation UNIQUE (user_id)
 );
 
 -- Messages
 CREATE TABLE support_messages (
-  id UUID PRIMARY KEY,
-  conversation_id UUID REFERENCES support_conversations(id),
-  sender_id BIGINT REFERENCES users(id),
-  sender_type VARCHAR(10), -- 'user' or 'admin'
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID NOT NULL REFERENCES support_conversations(id) ON DELETE CASCADE,
+  sender_type VARCHAR(10) NOT NULL CHECK (sender_type IN ('user', 'admin')),
+  sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   content TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  is_auto_reply BOOLEAN DEFAULT FALSE  -- For auto-acknowledgment
 );
 ```
 
-**Admin View:**
-- Inbox of all conversations
-- Unread count
+**Admin Web Features ✅:**
+- Chat inbox page (`/dashboard/admin/chat`) with conversation list
+- Unread badge in sidebar navigation
+- Filter by status (all, open, resolved)
+- Real-time message display
 - Reply interface
-- Mark resolved
+- Mark conversations as resolved/reopen
+- Chat section embedded in user detail page for quick replies
+- Link from user detail to full conversation
 
-**User View (Mobile):**
-- "Contact Support" button
-- Chat interface
-- Push notification on reply
+**API Endpoints ✅:**
+```
+GET  /api/admin/chat/conversations        # List all conversations
+GET  /api/admin/chat/conversations/[id]   # Get conversation with messages
+PATCH /api/admin/chat/conversations/[id]  # Update status
+POST /api/admin/chat/conversations/[id]/messages  # Send admin message
+
+GET  /api/chat/conversation               # Get/create user's conversation
+GET  /api/chat/messages                   # Get user's messages
+POST /api/chat/messages                   # Send user message (+ auto-reply)
+```
+
+**Auto-Reply Feature:**
+When a user sends their first message, an automatic acknowledgment is sent:
+> "Thanks for reaching out! We typically respond within a few hours during business hours. We'll get back to you as soon as possible."
+
+---
+
+### Mobile App Requirements (TODO)
+
+The mobile app needs to implement the user-side chat interface.
+
+**Location:** Profile page (as a module card, like existing modules)
+
+**UI Components Needed:**
+1. **Chat Module Card** - Appears in Profile page
+   - Shows unread badge if `unread_by_user = true`
+   - Tapping opens the chat screen
+
+2. **Chat Screen** - Full conversation view
+   - Message list (user messages on right, admin on left)
+   - Auto-reply messages styled differently (lighter color)
+   - Text input with send button
+   - Scroll to latest message on open
+
+**API Integration:**
+```typescript
+// On chat screen mount:
+const conversation = await fetch('/api/chat/conversation').json()
+const messages = await fetch('/api/chat/messages').json()
+
+// On send:
+const result = await fetch('/api/chat/messages', {
+  method: 'POST',
+  body: JSON.stringify({ content: messageText })
+}).json()
+// result.message = the sent message
+// result.autoReply = auto-reply if first message (add to list)
+```
+
+**Supabase Realtime (Optional Enhancement):**
+```typescript
+// Subscribe to new messages
+supabase
+  .channel('support_messages')
+  .on('postgres_changes', {
+    event: 'INSERT',
+    schema: 'public',
+    table: 'support_messages',
+    filter: `conversation_id=eq.${conversationId}`
+  }, (payload) => {
+    // Add new message to list (filter out own messages)
+  })
+  .subscribe()
+```
+
+**Push Notifications (Future):**
+- Not implemented yet
+- When implemented: notify user when admin replies
+
+---
 
 ### Phase 2: Friends & Social Chat (Future)
 - Friend request system
@@ -559,13 +635,19 @@ GET  /api/admin/subscriptions/changes
      Returns: recent upgrades, cancellations, expirations
 ```
 
-### Future: Chat
+### Phase 4: Chat ✅ IMPLEMENTED
 
 ```
-GET  /api/admin/chat/conversations
-POST /api/admin/chat/conversations
-GET  /api/admin/chat/conversations/[id]/messages
-POST /api/admin/chat/conversations/[id]/messages
+# Admin endpoints
+GET   /api/admin/chat/conversations              # List all conversations
+GET   /api/admin/chat/conversations/[id]         # Get conversation + messages
+PATCH /api/admin/chat/conversations/[id]         # Update status
+POST  /api/admin/chat/conversations/[id]/messages # Send admin message
+
+# User endpoints (for mobile app)
+GET  /api/chat/conversation                      # Get/create user's conversation
+GET  /api/chat/messages                          # Get user's messages
+POST /api/chat/messages                          # Send message (+ auto-reply)
 ```
 
 ---
@@ -617,19 +699,28 @@ POST /api/admin/chat/conversations/[id]/messages
 
 ---
 
-### Phase 4: Admin Support Chat (Post-Launch)
+### Phase 4: Admin Support Chat ✅ WEB COMPLETE
 **Goal:** Direct user communication
 
-1. Support inbox UI
-2. Chat interface
-3. Mobile app: "Contact Support" feature
-4. Push notifications for replies
+**Completed (Web Admin):**
+1. ✅ Database schema for chat (support_conversations, support_messages)
+2. ✅ Support inbox UI (`/dashboard/admin/chat`)
+3. ✅ Chat interface with message threading
+4. ✅ Unread badge in sidebar navigation
+5. ✅ Chat section in user detail page
+6. ✅ Auto-reply on first user message
+7. ✅ User-side API endpoints (ready for mobile)
 
-**Deliverables:**
-- Database schema for chat
-- ~6-8 React components (web + mobile)
-- ~4-5 API endpoints
-- Push notification integration
+**Remaining (Mobile App):**
+1. Chat module card on Profile page
+2. Chat screen with message list and input
+3. Optional: Supabase Realtime for live updates
+4. Future: Push notifications for admin replies
+
+**Deliverables Completed:**
+- Database schema: `20251227_create_support_chat.sql`
+- Web components: Chat inbox, conversation view, message input
+- API endpoints: 7 endpoints (4 admin, 3 user)
 
 ---
 
@@ -737,4 +828,4 @@ This admin backend is a **customer engagement and marketing tool** that enables:
 ---
 
 *Document updated: December 27, 2025*
-*Version: 2.0 - Engagement & Marketing Focus*
+*Version: 2.1 - Chat System Implementation Complete (Web)*

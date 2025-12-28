@@ -15,8 +15,10 @@ import {
   TrendingUp,
   TrendingDown,
   MessageSquare,
+  MessageCircle,
   FileText,
-  Plus
+  Plus,
+  Send
 } from 'lucide-react'
 
 interface UserProfile {
@@ -68,6 +70,21 @@ interface AdminNote {
   content: string
   created_at: string
   admin_name: string | null
+}
+
+interface ChatMessage {
+  id: string
+  sender_type: 'user' | 'admin'
+  content: string
+  created_at: string
+  is_auto_reply: boolean
+}
+
+interface ChatConversation {
+  id: string
+  status: string
+  last_message_at: string | null
+  unread: boolean
 }
 
 interface UserDetailData {
@@ -154,6 +171,13 @@ export default function UserDetailPage() {
   const [newNote, setNewNote] = useState('')
   const [savingNote, setSavingNote] = useState(false)
 
+  // Chat state
+  const [chatConversation, setChatConversation] = useState<ChatConversation | null>(null)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [chatLoading, setChatLoading] = useState(false)
+  const [newMessage, setNewMessage] = useState('')
+  const [sendingMessage, setSendingMessage] = useState(false)
+
   useEffect(() => {
     async function fetchUserDetail() {
       try {
@@ -175,6 +199,66 @@ export default function UserDetailPage() {
 
     fetchUserDetail()
   }, [userId])
+
+  // Fetch chat conversation for this user
+  useEffect(() => {
+    async function fetchChat() {
+      setChatLoading(true)
+      try {
+        // Find conversation for this user from all conversations
+        const res = await fetch('/api/admin/chat/conversations')
+        const data = await res.json()
+
+        if (data.success) {
+          const userConv = data.conversations.find((c: any) => c.user_id === parseInt(userId))
+          if (userConv) {
+            setChatConversation({
+              id: userConv.id,
+              status: userConv.status,
+              last_message_at: userConv.last_message_at,
+              unread: userConv.unread
+            })
+
+            // Fetch messages
+            const msgRes = await fetch(`/api/admin/chat/conversations/${userConv.id}`)
+            const msgData = await msgRes.json()
+            if (msgData.success) {
+              setChatMessages(msgData.messages || [])
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching chat:', err)
+      } finally {
+        setChatLoading(false)
+      }
+    }
+
+    fetchChat()
+  }, [userId])
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !chatConversation || sendingMessage) return
+
+    setSendingMessage(true)
+    try {
+      const res = await fetch(`/api/admin/chat/conversations/${chatConversation.id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newMessage.trim() })
+      })
+
+      const data = await res.json()
+      if (data.success) {
+        setChatMessages(prev => [...prev, data.message])
+        setNewMessage('')
+      }
+    } catch (err) {
+      console.error('Error sending message:', err)
+    } finally {
+      setSendingMessage(false)
+    }
+  }
 
   const handleAddNote = async () => {
     if (!newNote.trim()) return
@@ -427,6 +511,87 @@ export default function UserDetailPage() {
             <p className="text-gray-500 text-sm pt-4 border-t border-gray-100">No notes yet</p>
           )}
         </div>
+      </InfoCard>
+
+      {/* Support Chat */}
+      <InfoCard title="Support Chat">
+        {chatLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-coral"></div>
+          </div>
+        ) : chatConversation ? (
+          <div className="space-y-4">
+            {/* Messages */}
+            <div className="max-h-64 overflow-y-auto space-y-3 p-2 bg-gray-50 rounded-lg">
+              {chatMessages.length > 0 ? (
+                chatMessages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                        msg.sender_type === 'admin'
+                          ? msg.is_auto_reply
+                            ? 'bg-gray-200 text-gray-600'
+                            : 'bg-coral text-white'
+                          : 'bg-white border border-gray-200 text-gray-900'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      <p className={`text-xs mt-1 ${
+                        msg.sender_type === 'admin' && !msg.is_auto_reply
+                          ? 'text-white/70'
+                          : 'text-gray-400'
+                      }`}>
+                        {new Date(msg.created_at).toLocaleString()}
+                        {msg.is_auto_reply && ' • Auto'}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-gray-400 text-sm py-4">No messages yet</p>
+              )}
+            </div>
+
+            {/* Reply input */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                placeholder="Type a reply..."
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral/20"
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim() || sendingMessage}
+                className="px-4 py-2 bg-coral text-white rounded-lg hover:bg-coral/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Link to full chat */}
+            <div className="pt-2 border-t border-gray-100">
+              <Link
+                href={`/dashboard/admin/chat?id=${chatConversation.id}`}
+                className="text-sm text-coral hover:text-coral/80 flex items-center gap-1"
+              >
+                <MessageCircle className="w-4 h-4" />
+                View full conversation
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-500 text-sm">No support conversation with this user yet</p>
+            <p className="text-gray-400 text-xs mt-1">The user will appear here when they send their first message</p>
+          </div>
+        )}
       </InfoCard>
     </div>
   )
