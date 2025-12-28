@@ -122,10 +122,24 @@ export async function getActiveSubscriptions(): Promise<string[]> {
  */
 export async function getOfferings(): Promise<PurchasesOfferings | null> {
   try {
+    console.log('[RevenueCat] Fetching offerings...');
     const offerings = await Purchases.getOfferings();
+    console.log('[RevenueCat] Offerings fetched successfully');
+    console.log('[RevenueCat] Current offering exists:', !!offerings.current);
+    console.log('[RevenueCat] Current offering ID:', offerings.current?.identifier);
+    console.log('[RevenueCat] Current offering packages:', offerings.current?.availablePackages?.length || 0);
+    console.log('[RevenueCat] All offerings count:', Object.keys(offerings.all || {}).length);
+    
+    // Log all product IDs for debugging
+    if (offerings.current) {
+      offerings.current.availablePackages.forEach((pkg) => {
+        console.log('[RevenueCat] Product:', pkg.product.identifier, '-', pkg.product.priceString);
+      });
+    }
+    
     return offerings;
   } catch (error) {
-    console.error('Error getting offerings:', error);
+    console.error('[RevenueCat] Error getting offerings:', error);
     return null;
   }
 }

@@ -37,16 +37,53 @@ export default function PurchaseScreen() {
     try {
       const offerings = await getOfferings();
       
-      if (!offerings || !offerings.current) {
+      console.log('RevenueCat offerings received:', offerings);
+      console.log('Current offering:', offerings?.current);
+      console.log('All offerings:', offerings?.all);
+      
+      if (!offerings) {
+        console.error('No offerings returned from RevenueCat');
         Alert.alert('Error', 'Unable to load subscription options. Please try again.');
         setLoading(false);
         return;
       }
 
+      // Try current offering first, fall back to any available offering
+      let availablePackages: PurchasesPackage[] = [];
+      
+      if (offerings.current && offerings.current.availablePackages.length > 0) {
+        availablePackages = offerings.current.availablePackages;
+        console.log('Using current offering packages:', availablePackages.length);
+      } else if (offerings.all && Object.keys(offerings.all).length > 0) {
+        // Try to find any offering with packages
+        const allOfferings = Object.values(offerings.all);
+        for (const offering of allOfferings) {
+          if (offering.availablePackages && offering.availablePackages.length > 0) {
+            availablePackages = offering.availablePackages;
+            console.log('Using offering from all:', offering.identifier, availablePackages.length);
+            break;
+          }
+        }
+      }
+      
+      if (availablePackages.length === 0) {
+        console.error('No packages available in any offering');
+        Alert.alert(
+          'Configuration Error', 
+          'No subscription products are available. Please contact support.\n\nDebug: offerings.current is ' + 
+          (offerings.current ? 'present' : 'missing') + ', offerings.all has ' + 
+          Object.keys(offerings.all || {}).length + ' offerings'
+        );
+        setLoading(false);
+        return;
+      }
+
       // Find packages for this program
-      const programPackages = offerings.current.availablePackages.filter((pkg) => {
+      const programPackages = availablePackages.filter((pkg) => {
         const productId = pkg.product.identifier.toLowerCase();
-        return productId.includes(programId.toLowerCase());
+        const matches = productId.includes(programId.toLowerCase());
+        console.log(`Checking product ${productId} for program ${programId}: ${matches}`);
+        return matches;
       });
 
       // Map packages by billing period
