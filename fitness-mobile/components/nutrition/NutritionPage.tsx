@@ -11,6 +11,7 @@ import {
   Platform,
   TextInput,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera'
@@ -20,6 +21,8 @@ import { getMealTemplates, logMealTemplate, MealTemplate, deleteMealTemplate, ge
 import MealBuilder from '@/components/nutrition/MealBuilder'
 import FoodSelectionModal from '@/components/nutrition/FoodSelectionModal'
 import FoodSearchModal from '@/components/nutrition/FoodSearchModal'
+import FrequentFoodsScreen from '@/components/nutrition/FrequentFoodsScreen'
+import PhotoResultSlider from '@/components/nutrition/PhotoResultSlider'
 
 // TypeScript interfaces
 interface FoodEntry {
@@ -140,6 +143,7 @@ export default function NutritionPage() {
   const [showMealBuilder, setShowMealBuilder] = useState(false)
   const [currentMeal, setCurrentMeal] = useState<MealTemplate | null>(null)
   const [favoritesExpanded, setFavoritesExpanded] = useState(false)
+  const [showFrequentFoods, setShowFrequentFoods] = useState(false)
 
   // Data
   const [mealTemplates, setMealTemplates] = useState<MealTemplate[]>([])
@@ -170,6 +174,9 @@ export default function NutritionPage() {
   // Search and food queue state
   const [foodQueue, setFoodQueue] = useState<any[]>([])
   const [refreshKey, setRefreshKey] = useState(0)
+  const [photoFoods, setPhotoFoods] = useState<any[]>([])
+  const [showPhotoReview, setShowPhotoReview] = useState(false)
+  const [profile, setProfile] = useState<any>(null)
 
   // Camera and permissions
   const [permission, requestPermission] = useCameraPermissions()
@@ -347,15 +354,48 @@ export default function NutritionPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
-      const { data: userData } = await supabase.from('users').select('id').eq('auth_id', user.id).single()
+      
+      // Get user data including height and age for BMR calculation
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id, height, age')
+        .eq('auth_id', user.id)
+        .single()
+      
       if (userData) {
         setUserId((userData as any).id)
-        const { data: profileData } = await supabase.from('user_profiles').select('profile_data').eq('user_id', (userData as any).id).order('generated_at', { ascending: false }).limit(1).maybeSingle()
+        
+        // Get profile data
+        const { data: profileData } = await supabase
+          .from('user_profiles')
+          .select('profile_data')
+          .eq('user_id', (userData as any).id)
+          .order('generated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        
         const typedProfileData = profileData as UserProfile | null
         if (typedProfileData?.profile_data) {
           const profile = typedProfileData.profile_data
-          const storedBmr = profile.bmr || profile.user_summary?.bmr
-          if (storedBmr) setBmr(Math.round(storedBmr))
+          setProfile(profile) // Store profile for PhotoResultSlider
+          
+          // Calculate BMR from profile data (same formula as Profile page)
+          const weight = profile.user_summary?.body_weight
+          const height = (userData as any).height as number | undefined
+          const age = (userData as any).age as number | undefined
+          const gender = profile.user_summary?.gender
+          const units = profile.user_summary?.units as string | undefined
+          
+          if (weight && height && age && typeof weight === 'number' && typeof height === 'number' && typeof age === 'number') {
+            const isMetric = units?.includes('kg') || false
+            const weightKg = isMetric ? weight : weight * 0.453592
+            const heightCm = isMetric ? height : height * 2.54
+            const s = gender === 'Male' ? 5 : -161
+            
+            // Mifflin-St Jeor equation
+            const calculatedBmr = 10 * weightKg + 6.25 * heightCm - 5 * age + s
+            setBmr(Math.round(calculatedBmr))
+          }
         }
       }
     } catch (error) {
@@ -369,13 +409,38 @@ export default function NutritionPage() {
     if (!userId) return
     try {
       const supabase = createClient()
-      const today = new Date().toISOString().split('T')[0]
-      const { data: summary } = await supabase.from('daily_nutrition').select('*').eq('user_id', userId).eq('date', today).maybeSingle()
-      setDailySummary(summary || null)
       const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0)
       const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999)
-      const { data: logs } = await supabase.from('food_entries').select('*').eq('user_id', userId).gte('logged_at', startOfDay.toISOString()).lte('logged_at', endOfDay.toISOString()).order('logged_at', { ascending: false })
-      setTodayLogs(logs || [])
+      
+      // Load today's food entries
+      const { data: logs } = await supabase
+        .from('food_entries')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('logged_at', startOfDay.toISOString())
+        .lte('logged_at', endOfDay.toISOString())
+        .order('logged_at', { ascending: false })
+      
+      const foodLogs = (logs || []) as FoodEntry[]
+      setTodayLogs(foodLogs)
+      
+      // Calculate summary directly from food entries (single source of truth)
+      if (foodLogs.length > 0) {
+        const summary: Partial<DailySummary> = {
+          date: new Date().toISOString().split('T')[0],
+          total_calories: Math.round(foodLogs.reduce((sum, log) => sum + (log.calories || 0), 0)),
+          total_protein: Math.round(foodLogs.reduce((sum, log) => sum + (log.protein || 0), 0) * 10) / 10,
+          total_carbohydrate: Math.round(foodLogs.reduce((sum, log) => sum + (log.carbohydrate || 0), 0) * 10) / 10,
+          total_fat: Math.round(foodLogs.reduce((sum, log) => sum + (log.fat || 0), 0) * 10) / 10,
+          total_fiber: Math.round(foodLogs.reduce((sum, log) => sum + (log.fiber || 0), 0) * 10) / 10,
+          total_sugar: Math.round(foodLogs.reduce((sum, log) => sum + (log.sugar || 0), 0) * 10) / 10,
+          total_sodium: Math.round(foodLogs.reduce((sum, log) => sum + (log.sodium || 0), 0)),
+        }
+        setDailySummary(summary as DailySummary)
+      } else {
+        // No entries today, set to null
+        setDailySummary(null)
+      }
     } catch (error) {
       console.error('Error loading daily data:', error)
     }
@@ -434,24 +499,157 @@ export default function NutritionPage() {
       if (data?.success && data?.data?.foods && data.data.foods.length > 0) {
         const foods = data.data.foods as ImageRecognitionFood[]
         const foundFoods = foods.filter((f) => f.found)
-        if (foundFoods.length === 0) { Alert.alert('No Food Found', 'Try searching manually.'); return }
-        const foodsForModal: FoodSelection[] = foundFoods.map((f) => ({
-          food_id: f.entry_data.food_id, food_name: f.entry_data.food_name,
-          _completeNutritionData: { food: f.cache_data?.nutrition_data, entry_data: f.entry_data, matched_serving: f.matched_serving, available_servings: f.available_servings, alternatives: f.alternatives }
-        }))
-        if (foodsForModal.length === 1) handleFoodSelected(foodsForModal[0])
-        else {
-          const foodNames = foodsForModal.map((f) => f.food_name).join(', ')
-          Alert.alert('Foods Identified', `Found ${foodsForModal.length} items: ${foodNames}`, [
-            { text: 'OK', onPress: () => { setFoodQueue(foodsForModal.slice(1)); handleFoodSelected(foodsForModal[0]) } }
-          ])
+        if (foundFoods.length === 0) { 
+          Alert.alert('No Food Found', 'Try searching manually.')
+          return 
         }
+        
+        // Transform foods for PhotoResultSlider
+        const usesImperial = profile?.user_summary?.units?.includes('lbs') || false
+        const transformedFoods = foundFoods.map((f, idx) => {
+          // Get nutrition data from entry_data (where Edge Function stores calculated nutrition)
+          const serving = f.entry_data as any
+          const servingDesc = serving?.serving_description || ''
+          
+          // Parse AI estimate from matched_serving metadata
+          const identified = f.identified as any
+          const matchedServing = f.matched_serving as any
+          const aiEstimateStr = identified?.serving_size || matchedServing?.claude_estimate || '100g'
+          const aiEstimateMatch = aiEstimateStr.match(/(\d+\.?\d*)\s*([a-z]+)/i)
+          const aiEstimate = aiEstimateMatch ? parseFloat(aiEstimateMatch[1]) : 100
+          const aiUnit = aiEstimateMatch ? aiEstimateMatch[2].toLowerCase() : 'g'
+          
+          // Determine if this is weight-based food
+          const isWeightBased = aiUnit.includes('g') || aiUnit.includes('oz')
+          
+          // Convert to user's preferred unit
+          let displayAmount = aiEstimate
+          let displayUnit = aiUnit
+          if (isWeightBased) {
+            if (usesImperial && aiUnit.includes('g')) {
+              // Convert g to oz
+              displayAmount = Math.round(aiEstimate / 28.35)
+              displayUnit = 'oz'
+            } else if (!usesImperial && aiUnit.includes('oz')) {
+              // Convert oz to g
+              displayAmount = Math.round(aiEstimate * 28.35)
+              displayUnit = 'g'
+            }
+          }
+          
+          // Generate slider options based on unit
+          const options = displayUnit === 'oz' 
+            ? [1, 2, 3, 4, 6, 8, 12, 16]
+            : displayUnit === 'g'
+            ? [50, 100, 150, 200, 250, 300, 350, 400]
+            : [0.5, 1, 1.5, 2, 2.5, 3] // cups/other
+          
+          // Find closest option
+          const closestOption = options.reduce((prev, curr) => 
+            Math.abs(curr - displayAmount) < Math.abs(prev - displayAmount) ? curr : prev
+          )
+          
+          // Calculate nutrition per unit (per oz or per g)
+          const baseCalories = parseFloat(serving?.calories || '0')
+          const baseProtein = parseFloat(serving?.protein || '0')
+          const baseCarbs = parseFloat(serving?.carbohydrate || '0')
+          const baseFat = parseFloat(serving?.fat || '0')
+          const baseUnits = parseFloat(serving?.number_of_units || f.entry_data?.number_of_units || '1')
+          
+          const nutritionPerUnit = {
+            calories: baseUnits > 0 ? baseCalories / baseUnits : baseCalories,
+            protein: baseUnits > 0 ? baseProtein / baseUnits : baseProtein,
+            carbohydrate: baseUnits > 0 ? baseCarbs / baseUnits : baseCarbs,
+            fat: baseUnits > 0 ? baseFat / baseUnits : baseFat,
+          }
+          
+          // Determine confidence based on match quality
+          const confidence = matchedServing?.match_confidence === 'high' ? 'high' 
+            : matchedServing?.match_confidence === 'low' ? 'low' 
+            : 'medium'
+          
+          return {
+            id: `photo-food-${idx}`,
+            food_name: f.entry_data.food_name,
+            description: identified?.description || '',
+            amount: closestOption,
+            unit: displayUnit,
+            options,
+            aiEstimate: displayAmount,
+            confidence,
+            nutritionPerUnit,
+            cache_data: f.cache_data,
+            entry_data: f.entry_data,
+            matched_serving: f.matched_serving,
+            available_servings: f.available_servings,
+            alternatives: f.alternatives,
+          }
+        })
+        
+        setPhotoFoods(transformedFoods)
+        setShowPhotoReview(true)
       } else Alert.alert('No Food Found', 'Try again or search manually.')
     } catch (error) {
       Alert.alert('Error', 'Failed to recognize food')
     } finally {
       setImageRecognitionLoading(false)
     }
+  }
+
+  const handlePhotoConfirm = async (adjustedFoods: any[]) => {
+    if (!userId) return
+    try {
+      const supabase = createClient()
+      const mealType = selectedMealType || 'other'
+      
+      // Log all foods
+      for (const food of adjustedFoods) {
+        const finalCalories = Math.round(food.nutritionPerUnit.calories * food.amount)
+        const finalProtein = food.nutritionPerUnit.protein * food.amount
+        const finalCarbs = food.nutritionPerUnit.carbohydrate * food.amount
+        const finalFat = food.nutritionPerUnit.fat * food.amount
+        
+        await supabase.from('food_entries').insert({
+          user_id: userId,
+          food_id: food.entry_data.food_id,
+          food_name: food.food_name,
+          serving_id: food.entry_data.serving_id || '0',
+          serving_description: `${food.amount} ${food.unit}`,
+          number_of_units: food.amount,
+          calories: finalCalories,
+          protein: finalProtein,
+          carbohydrate: finalCarbs,
+          fat: finalFat,
+          fiber: 0,
+          sugar: 0,
+          sodium: 0,
+          meal_type: mealType,
+          logged_at: new Date().toISOString(),
+        } as any)
+      }
+      
+      Alert.alert('Success', `Logged ${adjustedFoods.length} ${adjustedFoods.length === 1 ? 'item' : 'items'} successfully!`)
+      await loadDailyData()
+      setShowPhotoReview(false)
+      setPhotoFoods([])
+      setSelectedMealType(null)
+    } catch (error) {
+      Alert.alert('Error', 'Failed to log meal')
+      console.error('Error logging photo foods:', error)
+    }
+  }
+
+  const handlePhotoRetake = () => {
+    setShowPhotoReview(false)
+    setPhotoFoods([])
+    // Re-trigger image picker
+    handleImageRecognition()
+  }
+
+  const handlePhotoCancel = () => {
+    setShowPhotoReview(false)
+    setPhotoFoods([])
+    setSelectedMealType(null)
   }
 
   const handleBarcodeScan = async () => {
@@ -534,6 +732,28 @@ export default function NutritionPage() {
 
   if (!userId) return <View style={styles.container}><Card style={styles.card}><Text style={styles.errorText}>Please sign in.</Text></Card></View>
 
+  // Show Frequent Foods screen if requested
+  if (showFrequentFoods) {
+    return (
+      <FrequentFoodsScreen 
+        onBack={() => setShowFrequentFoods(false)}
+      />
+    )
+  }
+
+  // Show Photo Result Slider if photo foods are ready
+  if (showPhotoReview && photoFoods.length > 0) {
+    return (
+      <PhotoResultSlider
+        foods={photoFoods}
+        userUnits={profile?.user_summary?.units || 'lbs/in'}
+        onConfirm={handlePhotoConfirm}
+        onRetake={handlePhotoRetake}
+        onCancel={handlePhotoCancel}
+      />
+    )
+  }
+
   return (
     <View style={styles.container}>
       <DailySummaryCard summary={dailySummary} logs={todayLogs} onDelete={(id) => setDeleteConfirmModal({ visible: true, entryId: id, entryName: todayLogs.find(l => l.id === id)?.food_name || '' })} bmr={bmr} />
@@ -541,7 +761,8 @@ export default function NutritionPage() {
         <LoggingInterface
           selectedMealType={selectedMealType} mealTemplates={mealTemplates} templatesLoading={templatesLoading}
           onMealTypeSelect={handleMealTypeSelect} onLogTemplate={handleLogTemplate} onTakePhoto={handleImageRecognition}
-          onScanBarcode={handleBarcodeScan} onSearchFood={() => setShowSearchModal(true)} onShowFavorites={() => setFavoritesExpanded(!favoritesExpanded)}
+          onScanBarcode={handleBarcodeScan} onSearchFood={() => setShowSearchModal(true)} 
+          onShowFavorites={() => setShowFrequentFoods(true)}
           favoritesExpanded={favoritesExpanded} onCreateFavorite={() => { setCurrentMeal(null); setShowMealBuilder(true) }}
           onEditTemplate={handleEditTemplate} onDeleteTemplate={handleDeleteTemplate} onDuplicateTemplate={handleDuplicateTemplate}
         />
@@ -551,7 +772,12 @@ export default function NutritionPage() {
         <MealBuilder userId={userId!} initialTemplate={currentMeal} selectedMealType={selectedMealType} onSave={handleTemplateSaved} onCancel={() => { setShowMealBuilder(false); setCurrentMeal(null) }} onAddFood={handleAddFood} />
       </Modal>}
 
-      {showSearchModal && <FoodSearchModal visible={showSearchModal} onClose={() => setShowSearchModal(false)} onFoodSelected={(food) => { setShowSearchModal(false); setSelectedFoodForDetails({ foodId: food.food_id, foodName: food.food_name }); setShowFoodSelector(true) }} preselectedMealType={selectedMealType} />}
+      {showSearchModal && <FoodSearchModal visible={showSearchModal} onClose={() => setShowSearchModal(false)} onFoodSelected={(food) => { 
+        setShowSearchModal(false); 
+        setSelectedFoodForDetails({ foodId: food.food_id, foodName: food.food_name }); 
+        // Add delay for iOS - gives time for search modal to fully unmount before opening selection modal
+        setTimeout(() => setShowFoodSelector(true), 300);
+      }} preselectedMealType={selectedMealType} />}
       {showFoodSelector && <FoodSelectionModal visible={showFoodSelector} foodId={selectedFoodForDetails.foodId} foodName={selectedFoodForDetails.foodName} onClose={() => { setShowFoodSelector(false); setSelectedFoodForDetails({ foodId: null, foodName: null }) }} onAdd={handleLogFoodEntry} preselectedMealType={selectedMealType} />}
 
       <Modal visible={deleteTemplateModal.visible} transparent={true} animationType="fade" onRequestClose={() => setDeleteTemplateModal({ visible: false, templateId: null, templateName: null })}>
@@ -606,17 +832,73 @@ function DailySummaryCard({ summary, logs, onDelete, bmr }: { summary: DailySumm
   const protein = (summary?.total_protein ?? 0) || logs.reduce((sum, log) => sum + (log.protein || 0), 0)
   const carbs = (summary?.total_carbohydrate ?? 0) || logs.reduce((sum, log) => sum + (log.carbohydrate || 0), 0)
   const fat = (summary?.total_fat ?? 0) || logs.reduce((sum, log) => sum + (log.fat || 0), 0)
-  const tdee = bmr || summary?.bmr || null
+  
+  const progressPercentage = bmr ? Math.min(100, (calories / bmr) * 100) : 0
+  
   return (
     <Card style={styles.card}>
-      <View style={styles.summaryHeaderRow}><Text style={styles.sectionTitle}>Today's Summary</Text><TouchableOpacity onPress={() => setExpanded(!expanded)} style={styles.expandButton}><Text style={styles.expandText}>{expanded ? '−' : '+'}</Text></TouchableOpacity></View>
-      <View style={styles.summaryRow}>
-        <View style={styles.summaryItem}><Text style={styles.summaryValue}>{Math.round(calories)}</Text><Text style={styles.summaryLabel}>Calories</Text></View>
-        <View style={styles.summaryItem}><Text style={styles.summaryValue}>{Math.round(protein)}g</Text><Text style={styles.summaryLabel}>Protein</Text></View>
-        <View style={styles.summaryItem}><Text style={styles.summaryValue}>{Math.round(carbs)}g</Text><Text style={styles.summaryLabel}>Carbs</Text></View>
-        <View style={styles.summaryItem}><Text style={styles.summaryValue}>{Math.round(fat)}g</Text><Text style={styles.summaryLabel}>Fat</Text></View>
+      <View style={styles.summaryHeaderRow}>
+        <Text style={styles.sectionTitle}>Today's Summary</Text>
+        <TouchableOpacity onPress={() => setExpanded(!expanded)} style={styles.expandButton}>
+          <Text style={styles.expandText}>{expanded ? '−' : '+'}</Text>
+        </TouchableOpacity>
       </View>
-      {tdee && <View style={styles.tdeeContainer}><Text style={styles.tdeeLabel}>Daily Calorie Goal</Text><Text style={styles.tdeeValue}>{Math.round(tdee)} kcal</Text><View style={styles.tdeeProgressContainer}><View style={[styles.tdeeProgressBar, { width: `${Math.min(100, (calories / tdee) * 100)}%` }]} /></View></View>}
+      
+      {/* BMR and Progress Bar - Prominent at top */}
+      {bmr && (
+        <View style={styles.bmrSection}>
+          <View style={styles.bmrHeaderRow}>
+            <View>
+              <Text style={styles.bmrLabel}>Basal Metabolic Rate (BMR)</Text>
+              <Text style={styles.bmrValue}>{Math.round(bmr)} kcal/day</Text>
+            </View>
+            <View style={styles.bmrIntakeInfo}>
+              <Text style={styles.bmrIntakeLabel}>Today's Intake</Text>
+              <Text style={styles.bmrIntakeValue}>{Math.round(calories)} kcal</Text>
+              <Text style={styles.bmrIntakePercentage}>
+                {Math.round(progressPercentage)}% of BMR
+              </Text>
+            </View>
+          </View>
+          <View style={styles.bmrProgressContainer}>
+            <View 
+              style={[
+                styles.bmrProgressBar, 
+                { 
+                  width: `${progressPercentage}%`,
+                  backgroundColor: progressPercentage > 100 ? '#F59E0B' : '#10B981'
+                }
+              ]} 
+            />
+          </View>
+          <Text style={styles.bmrProgressText}>
+            {calories >= bmr 
+              ? `${Math.round(calories - bmr)} kcal above BMR` 
+              : `${Math.round(bmr - calories)} kcal below BMR`}
+          </Text>
+        </View>
+      )}
+      
+      {/* Macro Summary */}
+      <View style={styles.summaryRow}>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryValue}>{Math.round(calories)}</Text>
+          <Text style={styles.summaryLabel}>Calories</Text>
+        </View>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryValue}>{Math.round(protein)}g</Text>
+          <Text style={styles.summaryLabel}>Protein</Text>
+        </View>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryValue}>{Math.round(carbs)}g</Text>
+          <Text style={styles.summaryLabel}>Carbs</Text>
+        </View>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryValue}>{Math.round(fat)}g</Text>
+          <Text style={styles.summaryLabel}>Fat</Text>
+        </View>
+      </View>
+      
       {expanded && <FoodLogList logs={logs} onDelete={onDelete} dailySummary={summary} />}
     </Card>
   )
@@ -661,10 +943,10 @@ function LoggingInterface({ selectedMealType, mealTemplates, onMealTypeSelect, o
           <TouchableOpacity style={styles.alternativeButton} onPress={onShowFavorites}><Text>⭐ Favorites</Text></TouchableOpacity>
         </View>
       </Card>}
-      <Card style={styles.card}>
-        <TouchableOpacity style={styles.templatesHeader} onPress={onShowFavorites}><Text style={styles.favoritesHeaderTitle}>My Favorites ({mealTemplates.length})</Text></TouchableOpacity>
-        {favoritesExpanded && <View style={styles.templatesList}>{mealTemplates.map((t: any) => (<View key={t.id} style={styles.templateItem}><TouchableOpacity style={styles.templateContent} onPress={() => onLogTemplate(t.id)}><Text style={styles.templateName}>{t.template_name}</Text><Text style={styles.templateDetails}>{Math.round(t.total_calories)} cal</Text></TouchableOpacity><View style={styles.templateActions}><TouchableOpacity onPress={() => onEditTemplate(t.id)}><Text>✏️</Text></TouchableOpacity><TouchableOpacity onPress={() => onDeleteTemplate(t.id)}><Text>🗑️</Text></TouchableOpacity></View></View>))}</View>}
-      </Card>
+      <TouchableOpacity style={styles.frequentFoodsButton} onPress={onShowFavorites}>
+        <Text style={styles.frequentFoodsTitle}>Frequent Foods</Text>
+        <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
+      </TouchableOpacity>
     </ScrollView>
   )
 }
@@ -688,6 +970,23 @@ const styles = StyleSheet.create({
   alternativeButton: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#D1D5DB', flex: 1, minWidth: '45%', alignItems: 'center' },
   templatesHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   favoritesHeaderTitle: { fontSize: 18, fontWeight: '600', color: '#1F2937' },
+  frequentFoodsButton: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    padding: 16, 
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 12, 
+    borderWidth: 1, 
+    borderColor: '#E5E7EB',
+    marginHorizontal: 16,
+    marginVertical: 8,
+  },
+  frequentFoodsTitle: { 
+    fontSize: 18, 
+    fontWeight: '700', 
+    color: '#1F2937',
+  },
   templatesList: { gap: 8 },
   templateItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FBFE', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#E5E7EB' },
   templateContent: { flex: 1 },
@@ -701,11 +1000,67 @@ const styles = StyleSheet.create({
   summaryItem: { alignItems: 'center', flex: 1 },
   summaryValue: { fontSize: 20, fontWeight: 'bold', color: '#FE5858' },
   summaryLabel: { fontSize: 12, color: '#6B7280', marginTop: 4 },
-  tdeeContainer: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E5E7EB' },
-  tdeeLabel: { fontSize: 14, fontWeight: '500', color: '#374151' },
-  tdeeValue: { fontSize: 16, fontWeight: '600', color: '#1F2937' },
-  tdeeProgressContainer: { height: 8, backgroundColor: '#E5E7EB', borderRadius: 4, marginTop: 8 },
-  tdeeProgressBar: { height: '100%', backgroundColor: '#FE5858', borderRadius: 4 },
+  // BMR Section styles
+  bmrSection: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  bmrHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  bmrLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  bmrValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  bmrIntakeInfo: {
+    alignItems: 'flex-end',
+  },
+  bmrIntakeLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  bmrIntakeValue: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FE5858',
+  },
+  bmrIntakePercentage: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  bmrProgressContainer: {
+    height: 12,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 6,
+    marginTop: 8,
+    marginBottom: 6,
+    overflow: 'hidden',
+  },
+  bmrProgressBar: {
+    height: '100%',
+    borderRadius: 6,
+  },
+  bmrProgressText: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
   logListContainer: { marginTop: 8 },
   filterContainer: { marginBottom: 12 },
   filterButton: { paddingHorizontal: 12, paddingVertical: 6, marginRight: 8, borderRadius: 16, borderWidth: 1, borderColor: '#D1D5DB' },

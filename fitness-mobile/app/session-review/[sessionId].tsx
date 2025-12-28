@@ -71,12 +71,13 @@ export default function SessionReviewPage() {
     const sets = exercise.sets || '-'
     const reps = exercise.reps || '-'
     const weightTime =
-      exercise.weight_time ||
-      (exercise.exercise_name.toLowerCase().includes('push-ups') ||
-      exercise.exercise_name.toLowerCase().includes('air squats') ||
-      exercise.exercise_name.toLowerCase().includes('pull-ups')
-        ? 'BW'
-        : '-')
+      exercise.weight_time && String(exercise.weight_time) !== 'NaN'
+        ? exercise.weight_time
+        : (exercise.exercise_name.toLowerCase().includes('push-ups') ||
+          exercise.exercise_name.toLowerCase().includes('air squats') ||
+          exercise.exercise_name.toLowerCase().includes('pull-ups')
+            ? 'BW'
+            : '-')
     const rpe = exercise.rpe || '-'
     const quality = exercise.quality_grade || '-'
 
@@ -123,36 +124,40 @@ export default function SessionReviewPage() {
 
         {/* Exercise List */}
         <View style={styles.blockContent}>
-          {/* Header Row */}
-          <View style={styles.headerRow}>
-            <View style={styles.headerColumn}>
-              <Text style={styles.headerText}>
-                Exercise
-              </Text>
-            </View>
-            <View style={styles.headerColumnSmall}>
-              <Text style={styles.headerText}>Sets</Text>
-            </View>
-            <View style={styles.headerColumnSmall}>
-              <Text style={styles.headerText}>Reps</Text>
-            </View>
-            <View style={styles.headerColumnMedium}>
-              <Text style={styles.headerText}>
-                Wt/Time
-              </Text>
-            </View>
-            <View style={styles.headerColumnRPE}>
-              <Text style={styles.headerText}>RPE</Text>
-            </View>
-            <View style={styles.headerColumnQuality}>
-              <Text style={styles.headerText}>Quality</Text>
-            </View>
-          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+            <View>
+              {/* Header Row */}
+              <View style={styles.headerRow}>
+                <View style={styles.headerColumn}>
+                  <Text style={styles.headerText}>
+                    Exercise
+                  </Text>
+                </View>
+                <View style={styles.headerColumnSmall}>
+                  <Text style={styles.headerText}>Sets</Text>
+                </View>
+                <View style={styles.headerColumnSmall}>
+                  <Text style={styles.headerText}>Reps</Text>
+                </View>
+                <View style={styles.headerColumnMedium}>
+                  <Text style={styles.headerText}>
+                    Wt/Time
+                  </Text>
+                </View>
+                <View style={styles.headerColumnRPE}>
+                  <Text style={styles.headerText}>RPE</Text>
+                </View>
+                <View style={styles.headerColumnQuality}>
+                  <Text style={styles.headerText}>Quality</Text>
+                </View>
+              </View>
 
-          {/* Exercise Rows */}
-          {exercises.map((exercise, index) =>
-            renderExerciseRow(exercise, index)
-          )}
+              {/* Exercise Rows */}
+              {exercises.map((exercise, index) =>
+                renderExerciseRow(exercise, index)
+              )}
+            </View>
+          </ScrollView>
         </View>
       </Card>
     )
@@ -255,44 +260,48 @@ export default function SessionReviewPage() {
             {/* Exercise Breakdown */}
             {metconExercises.length > 0 ? (
               <View style={styles.metconExerciseBreakdown}>
-                {/* Header Row */}
-                <View style={styles.headerRow}>
-                  <View style={styles.headerColumn}>
-                    <Text style={styles.headerText}>
-                      Exercise
-                    </Text>
-                  </View>
-                  <View style={styles.headerColumnSmall}>
-                    <Text style={styles.headerText}>
-                      Sets
-                    </Text>
-                  </View>
-                  <View style={styles.headerColumnSmall}>
-                    <Text style={styles.headerText}>
-                      Reps
-                    </Text>
-                  </View>
-                  <View style={styles.headerColumnMedium}>
-                    <Text style={styles.headerText}>
-                      Wt/Time
-                    </Text>
-                  </View>
-                  <View style={styles.headerColumnRPE}>
-                    <Text style={styles.headerText}>
-                      RPE
-                    </Text>
-                  </View>
-                  <View style={styles.headerColumnQuality}>
-                    <Text style={styles.headerText}>
-                      Quality
-                    </Text>
-                  </View>
-                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                  <View>
+                    {/* Header Row */}
+                    <View style={styles.headerRow}>
+                      <View style={styles.headerColumn}>
+                        <Text style={styles.headerText}>
+                          Exercise
+                        </Text>
+                      </View>
+                      <View style={styles.headerColumnSmall}>
+                        <Text style={styles.headerText}>
+                          Sets
+                        </Text>
+                      </View>
+                      <View style={styles.headerColumnSmall}>
+                        <Text style={styles.headerText}>
+                          Reps
+                        </Text>
+                      </View>
+                      <View style={styles.headerColumnMedium}>
+                        <Text style={styles.headerText}>
+                          Wt/Time
+                        </Text>
+                      </View>
+                      <View style={styles.headerColumnRPE}>
+                        <Text style={styles.headerText}>
+                          RPE
+                        </Text>
+                      </View>
+                      <View style={styles.headerColumnQuality}>
+                        <Text style={styles.headerText}>
+                          Quality
+                        </Text>
+                      </View>
+                    </View>
 
-                {/* Exercise Rows */}
-                {metconExercises.map((exercise, index) =>
-                  renderExerciseRow(exercise, index)
-                )}
+                    {/* Exercise Rows */}
+                    {metconExercises.map((exercise, index) =>
+                      renderExerciseRow(exercise, index)
+                    )}
+                  </View>
+                </ScrollView>
               </View>
             ) : null}
           </View>
@@ -510,23 +519,23 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   headerColumn: {
-    flex: 1,
+    minWidth: 180,
     marginRight: 8,
   },
   headerColumnSmall: {
-    width: 56,
+    minWidth: 56,
     alignItems: 'center',
   },
   headerColumnMedium: {
-    width: 72,
+    minWidth: 80,
     alignItems: 'center',
   },
   headerColumnRPE: {
-    width: 48,
+    minWidth: 50,
     alignItems: 'center',
   },
   headerColumnQuality: {
-    width: 64,
+    minWidth: 70,
     alignItems: 'center',
   },
   headerText: {
@@ -544,7 +553,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   exerciseNameContainer: {
-    flex: 1,
+    minWidth: 180,
     marginRight: 8,
   },
   exerciseName: {
@@ -553,7 +562,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   columnContainer: {
-    width: 56,
+    minWidth: 56,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -562,7 +571,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   weightTimeContainer: {
-    width: 72,
+    minWidth: 80,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -572,12 +581,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   rpeContainer: {
-    width: 48,
+    minWidth: 50,
     alignItems: 'center',
     justifyContent: 'center',
   },
   qualityContainer: {
-    width: 64,
+    minWidth: 70,
     alignItems: 'center',
     justifyContent: 'center',
   },

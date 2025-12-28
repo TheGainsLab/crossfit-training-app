@@ -40,6 +40,9 @@ async function callFatSecretAPI(method: string, params: Record<string, string | 
   return result.data
 }
 
+// Constants for unit conversion
+const GRAMS_PER_OZ = 28.35
+
 // Helper to normalize food.get response (handles single vs array serving quirk)
 function normalizeFoodGetResponse(response: any): any {
   const { food } = response
@@ -59,6 +62,44 @@ function normalizeFoodGetResponse(response: any): any {
   }
   
   return food
+}
+
+// Convert serving to per-gram nutrition for easy oz/g conversion
+function normalizeToPerGram(serving: any): any {
+  let grams: number | null = null
+  
+  // Try to extract grams from the serving
+  if (serving.metric_serving_amount && serving.metric_serving_unit === 'g') {
+    grams = parseFloat(serving.metric_serving_amount)
+  } else if (serving.serving_description) {
+    const desc = serving.serving_description.toLowerCase()
+    
+    // Parse "1 oz" or "3 oz"
+    const ozMatch = desc.match(/([\d.]+)\s*oz/i)
+    if (ozMatch) {
+      grams = parseFloat(ozMatch[1]) * GRAMS_PER_OZ
+    }
+    
+    // Parse "100g" or "341 g"
+    if (!grams) {
+      const gMatch = desc.match(/([\d.]+)\s*g(?:\s|$)/i)
+      if (gMatch) {
+        grams = parseFloat(gMatch[1])
+      }
+    }
+  }
+  
+  if (!grams || grams <= 0) return null
+  
+  return {
+    grams,
+    calories_per_gram: parseFloat(serving.calories || 0) / grams,
+    protein_per_gram: parseFloat(serving.protein || 0) / grams,
+    carbs_per_gram: parseFloat(serving.carbohydrate || 0) / grams,
+    fat_per_gram: parseFloat(serving.fat || 0) / grams,
+    fiber_per_gram: parseFloat(serving.fiber || 0) / grams,
+    sodium_per_gram: parseFloat(serving.sodium || 0) / grams,
+  }
 }
 
 serve(async (req) => {
@@ -114,7 +155,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { foodId } = await req.json()
+    const { foodId, normalize = false } = await req.json()
 
     if (!foodId || typeof foodId !== 'string') {
       return new Response(
@@ -130,6 +171,28 @@ serve(async (req) => {
 
     // Normalize response (handle single vs array serving quirk)
     const normalized = normalizeFoodGetResponse(result)
+
+    // Add per-gram nutrition if requested
+    if (normalize && normalized.servings?.serving) {
+      const servings = normalized.servings.serving
+      
+      // Find best serving to normalize (prefer 100g, then 1oz, then first available)
+      let bestServing = servings.find((s: any) => 
+        s.serving_description?.toLowerCase().includes('100') && 
+        s.metric_serving_unit === 'g'
+      ) || servings.find((s: any) => 
+        s.serving_description?.toLowerCase().includes('1 oz')
+      ) || servings[0]
+      
+      const perGram = normalizeToPerGram(bestServing)
+      
+      if (perGram) {
+        normalized.normalized_nutrition = {
+          ...perGram,
+          source_serving: bestServing.serving_description,
+        }
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true, data: { food: normalized } }),

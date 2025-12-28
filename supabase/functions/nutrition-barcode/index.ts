@@ -136,10 +136,46 @@ serve(async (req) => {
       barcode: normalizedBarcode,
     })
 
-    // Handle different possible response structures
-    const foodId = barcodeResult?.food_id?.food_id 
-      || barcodeResult?.food_id 
-      || barcodeResult?.food?.food_id
+    console.log('Barcode result structure:', JSON.stringify(barcodeResult))
+
+    // Handle different possible response structures from FatSecret API
+    // FatSecret can return: 
+    // - { food_id: { value: "123" } } (most common with barcode scope)
+    // - { food_id: { food_id: "123" } }
+    // - { food_id: "123" }
+    // - { food: { food_id: "123" } }
+    let foodId: string | null = null
+    
+    if (barcodeResult?.food_id) {
+      // Check for { food_id: { value: "123" } } structure (most common)
+      if (barcodeResult.food_id?.value) {
+        if (typeof barcodeResult.food_id.value === 'string') {
+          foodId = barcodeResult.food_id.value
+        } else if (typeof barcodeResult.food_id.value === 'number') {
+          foodId = String(barcodeResult.food_id.value)
+        }
+      }
+      // Check for { food_id: "123" } (direct string)
+      else if (typeof barcodeResult.food_id === 'string') {
+        foodId = barcodeResult.food_id
+      }
+      // Check for { food_id: { food_id: "123" } } (nested structure)
+      else if (barcodeResult.food_id?.food_id) {
+        if (typeof barcodeResult.food_id.food_id === 'string') {
+          foodId = barcodeResult.food_id.food_id
+        } else if (typeof barcodeResult.food_id.food_id === 'number') {
+          foodId = String(barcodeResult.food_id.food_id)
+        }
+      }
+    }
+    
+    if (!foodId && barcodeResult?.food?.food_id) {
+      if (typeof barcodeResult.food.food_id === 'string') {
+        foodId = barcodeResult.food.food_id
+      } else if (typeof barcodeResult.food.food_id === 'number') {
+        foodId = String(barcodeResult.food.food_id)
+      }
+    }
 
     if (!foodId) {
       console.log('Barcode not found. Response structure:', JSON.stringify(barcodeResult))
@@ -250,6 +286,12 @@ serve(async (req) => {
     )
   }
 })
+
+
+
+
+
+
 
 
 

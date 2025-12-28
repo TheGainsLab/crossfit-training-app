@@ -1,0 +1,689 @@
+import React, { useState, useEffect } from 'react'
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+
+interface FoodItem {
+  id: string
+  food_name: string
+  description?: string
+  amount: number
+  unit: string
+  options: number[]
+  aiEstimate: number
+  confidence: 'high' | 'medium' | 'low'
+  nutritionPerUnit: {
+    calories: number
+    protein: number
+    carbohydrate: number
+    fat: number
+  }
+  cache_data?: any
+  entry_data?: any
+  matched_serving?: any
+  available_servings?: any[]
+  alternatives?: any[]
+}
+
+interface PhotoResultSliderProps {
+  foods: FoodItem[]
+  userUnits: string // 'lbs/in' or 'kg/cm'
+  onConfirm: (adjustedFoods: FoodItem[]) => void
+  onRetake: () => void
+  onCancel: () => void
+}
+
+export default function PhotoResultSlider({
+  foods: initialFoods,
+  userUnits,
+  onConfirm,
+  onRetake,
+  onCancel,
+}: PhotoResultSliderProps) {
+  const [foods, setFoods] = useState<FoodItem[]>(initialFoods)
+  const [saveAsFavorite, setSaveAsFavorite] = useState(false)
+  const usesImperial = userUnits?.includes('lbs')
+
+  const updateAmount = (id: string, newAmount: number) => {
+    setFoods(prev => prev.map(food => 
+      food.id === id ? { ...food, amount: newAmount } : food
+    ))
+  }
+
+  const toggleUnit = (id: string) => {
+    setFoods(prev => prev.map(food => {
+      if (food.id !== id) return food
+      
+      const isCurrentlyOz = food.unit === 'oz'
+      const newUnit = isCurrentlyOz ? 'g' : 'oz'
+      
+      // Convert current amount
+      const newAmount = isCurrentlyOz 
+        ? Math.round(food.amount * 28.35) // oz to g
+        : Math.round(food.amount / 28.35) // g to oz
+      
+      // Generate new options
+      const newOptions = isCurrentlyOz
+        ? [50, 100, 150, 200, 250, 300, 350, 400] // grams
+        : [2, 4, 6, 8, 10, 12, 14, 16] // oz
+      
+      // Find closest option to converted amount
+      const closestOption = newOptions.reduce((prev, curr) => 
+        Math.abs(curr - newAmount) < Math.abs(prev - newAmount) ? curr : prev
+      )
+      
+      // Convert nutrition per unit
+      const conversionFactor = isCurrentlyOz ? 28.35 : (1 / 28.35)
+      const newNutritionPerUnit = {
+        calories: food.nutritionPerUnit.calories / conversionFactor,
+        protein: food.nutritionPerUnit.protein / conversionFactor,
+        carbohydrate: food.nutritionPerUnit.carbohydrate / conversionFactor,
+        fat: food.nutritionPerUnit.fat / conversionFactor,
+      }
+      
+      return {
+        ...food,
+        amount: closestOption,
+        unit: newUnit,
+        options: newOptions,
+        nutritionPerUnit: newNutritionPerUnit,
+      }
+    }))
+  }
+
+  const removeFood = (id: string) => {
+    if (foods.length === 1) {
+      Alert.alert('Cannot Remove', 'You must have at least one food item.')
+      return
+    }
+    Alert.alert(
+      'Remove Item',
+      'Remove this food from the meal?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => {
+          setFoods(prev => prev.filter(f => f.id !== id))
+        }},
+      ]
+    )
+  }
+
+  const getSliderPosition = (food: FoodItem) => {
+    const index = food.options.indexOf(food.amount)
+    return index >= 0 ? (index / (food.options.length - 1)) * 100 : 50
+  }
+
+  const totals = foods.reduce((acc, food) => ({
+    calories: acc.calories + Math.round(food.nutritionPerUnit.calories * food.amount),
+    protein: acc.protein + food.nutritionPerUnit.protein * food.amount,
+    carbs: acc.carbs + food.nutritionPerUnit.carbohydrate * food.amount,
+    fat: acc.fat + food.nutritionPerUnit.fat * food.amount,
+  }), { calories: 0, protein: 0, carbs: 0, fat: 0 })
+
+  const handleConfirm = () => {
+    if (saveAsFavorite) {
+      // For now, just log - actual save functionality can be added later
+      console.log('Saving meal as favorite:', foods)
+      Alert.alert('Favorite Saved', 'This meal has been added to your favorites!', [
+        { text: 'OK', onPress: () => onConfirm(foods) }
+      ])
+    } else {
+      onConfirm(foods)
+    }
+  }
+
+  return (
+    <View style={styles.container}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onRetake} style={styles.retakeButton}>
+            <Ionicons name="camera-reverse" size={20} color="#FE5858" />
+            <Text style={styles.retakeText}>Retake</Text>
+          </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>We found {foods.length} {foods.length === 1 ? 'item' : 'items'}</Text>
+            <Text style={styles.headerSubtitle}>Adjust portions if needed</Text>
+          </View>
+          <TouchableOpacity onPress={onCancel} style={styles.cancelButton}>
+            <Ionicons name="close" size={24} color="#9CA3AF" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Food Items with Sliders */}
+        <View style={styles.foodsList}>
+          {foods.map((food) => (
+            <View 
+              key={food.id}
+              style={[
+                styles.foodCard,
+                food.confidence === 'medium' && styles.foodCardWarning,
+                food.confidence === 'low' && styles.foodCardLowConfidence,
+              ]}
+            >
+              {/* Food Header */}
+              <View style={styles.foodHeader}>
+                <View style={styles.foodNameContainer}>
+                  <Text style={styles.foodName}>{food.food_name}</Text>
+                  {food.description && (
+                    <Text style={styles.foodDescription}>{food.description}</Text>
+                  )}
+                  {/* AI Estimate */}
+                  <Text style={styles.aiEstimate}>
+                    AI suggested: {food.aiEstimate} {food.unit}
+                  </Text>
+                </View>
+                <View style={styles.caloriesContainer}>
+                  <Text style={styles.caloriesValue}>
+                    {Math.round(food.nutritionPerUnit.calories * food.amount)}
+                  </Text>
+                  <Text style={styles.caloriesLabel}>cal</Text>
+                </View>
+              </View>
+
+              {/* Slider */}
+              <View style={styles.sliderContainer}>
+                <View style={styles.sliderTrack}>
+                  {/* Background Track */}
+                  <View style={styles.sliderTrackBackground} />
+                  
+                  {/* Active Track */}
+                  <View 
+                    style={[
+                      styles.sliderTrackActive,
+                      { width: `${getSliderPosition(food) * 0.88}%` }
+                    ]} 
+                  />
+
+                  {/* Option Buttons */}
+                  <View style={styles.sliderOptions}>
+                    {food.options.map((opt) => {
+                      const isSelected = food.amount === opt
+                      return (
+                        <TouchableOpacity
+                          key={opt}
+                          onPress={() => updateAmount(food.id, opt)}
+                          style={[
+                            styles.sliderOption,
+                            isSelected && styles.sliderOptionSelected,
+                          ]}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[
+                            styles.sliderOptionText,
+                            isSelected && styles.sliderOptionTextSelected,
+                          ]}>
+                            {opt}
+                          </Text>
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </View>
+                </View>
+                
+                {/* Unit Toggle */}
+                <View style={styles.unitRow}>
+                  <Text style={styles.unitLabel}>{food.unit}</Text>
+                  <TouchableOpacity 
+                    onPress={() => toggleUnit(food.id)}
+                    style={styles.unitToggle}
+                  >
+                    <Text style={styles.unitToggleText}>
+                      Switch to {food.unit === 'oz' ? 'g' : 'oz'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Macros Row */}
+              <View style={styles.macrosRow}>
+                <View style={styles.macroItem}>
+                  <Text style={styles.macroValue}>
+                    {Math.round(food.nutritionPerUnit.protein * food.amount)}g
+                  </Text>
+                  <Text style={styles.macroLabel}>protein</Text>
+                </View>
+                <View style={styles.macroItem}>
+                  <Text style={styles.macroValue}>
+                    {Math.round(food.nutritionPerUnit.carbohydrate * food.amount)}g
+                  </Text>
+                  <Text style={styles.macroLabel}>carbs</Text>
+                </View>
+                <View style={styles.macroItem}>
+                  <Text style={styles.macroValue}>
+                    {Math.round(food.nutritionPerUnit.fat * food.amount)}g
+                  </Text>
+                  <Text style={styles.macroLabel}>fat</Text>
+                </View>
+              </View>
+
+              {/* Confidence Warning */}
+              {food.confidence !== 'high' && (
+                <View style={[
+                  styles.confidenceWarning,
+                  food.confidence === 'low' && styles.confidenceWarningLow
+                ]}>
+                  <Ionicons 
+                    name="alert-circle" 
+                    size={16} 
+                    color={food.confidence === 'low' ? '#EF4444' : '#F59E0B'} 
+                  />
+                  <Text style={[
+                    styles.confidenceWarningText,
+                    food.confidence === 'low' && styles.confidenceWarningTextLow
+                  ]}>
+                    {food.confidence === 'low' 
+                      ? 'Low confidence - please verify carefully' 
+                      : 'Please verify portion size'}
+                  </Text>
+                </View>
+              )}
+
+              {/* Remove Button */}
+              {foods.length > 1 && (
+                <TouchableOpacity 
+                  style={styles.removeButton}
+                  onPress={() => removeFood(food.id)}
+                >
+                  <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                  <Text style={styles.removeButtonText}>Remove item</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
+        </View>
+
+        {/* Totals Summary */}
+        <View style={styles.totalsCard}>
+          <View style={styles.totalsHeader}>
+            <Text style={styles.totalsLabel}>Meal Total</Text>
+            <View style={styles.totalsCalories}>
+              <Text style={styles.totalsCaloriesValue}>{totals.calories}</Text>
+              <Text style={styles.totalsCaloriesLabel}>cal</Text>
+            </View>
+          </View>
+          <View style={styles.totalsMacros}>
+            <View style={styles.totalsMacroItem}>
+              <Text style={styles.totalsMacroValue}>{Math.round(totals.protein)}g</Text>
+              <Text style={styles.totalsMacroLabel}>protein</Text>
+            </View>
+            <View style={styles.totalsMacroItem}>
+              <Text style={styles.totalsMacroValue}>{Math.round(totals.carbs)}g</Text>
+              <Text style={styles.totalsMacroLabel}>carbs</Text>
+            </View>
+            <View style={styles.totalsMacroItem}>
+              <Text style={styles.totalsMacroValue}>{Math.round(totals.fat)}g</Text>
+              <Text style={styles.totalsMacroLabel}>fat</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity
+            onPress={handleConfirm}
+            style={styles.confirmButton}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.confirmButtonText}>Log Meal</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            onPress={() => setSaveAsFavorite(!saveAsFavorite)}
+            style={[styles.favoriteButton, saveAsFavorite && styles.favoriteButtonActive]}
+            activeOpacity={0.8}
+          >
+            <Ionicons 
+              name={saveAsFavorite ? "star" : "star-outline"} 
+              size={18} 
+              color={saveAsFavorite ? "#FE5858" : "#FE5858"} 
+            />
+            <Text style={[styles.favoriteButtonText, saveAsFavorite && styles.favoriteButtonTextActive]}>
+              {saveAsFavorite ? 'Will save as favorite' : 'Save as Favorite'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Helper Text */}
+        <Text style={styles.helperText}>
+          Tap circles to adjust portions • Totals update live
+        </Text>
+      </ScrollView>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FBFE',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  retakeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  retakeText: {
+    color: '#FE5858',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#282B34',
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  cancelButton: {
+    padding: 4,
+  },
+  foodsList: {
+    gap: 12,
+  },
+  foodCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#F8FBFE',
+  },
+  foodCardWarning: {
+    borderColor: '#F59E0B',
+  },
+  foodCardLowConfidence: {
+    borderColor: '#EF4444',
+  },
+  foodHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  foodNameContainer: {
+    flex: 1,
+  },
+  foodName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 2,
+  },
+  foodDescription: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    marginBottom: 4,
+  },
+  aiEstimate: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
+  caloriesContainer: {
+    alignItems: 'flex-end',
+  },
+  caloriesValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FE5858',
+  },
+  caloriesLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+  },
+  sliderContainer: {
+    marginBottom: 12,
+  },
+  sliderTrack: {
+    position: 'relative',
+    height: 44,
+    backgroundColor: '#DAE2EA',
+    borderRadius: 22,
+    paddingHorizontal: 4,
+    justifyContent: 'center',
+  },
+  sliderTrackBackground: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    height: 4,
+    backgroundColor: '#DAE2EA',
+    borderRadius: 2,
+  },
+  sliderTrackActive: {
+    position: 'absolute',
+    left: 20,
+    height: 4,
+    backgroundColor: '#FE5858',
+    borderRadius: 2,
+  },
+  sliderOptions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    position: 'relative',
+    zIndex: 2,
+  },
+  sliderOption: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#DAE2EA',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#F8FBFE',
+  },
+  sliderOptionSelected: {
+    width: 44,
+    height: 44,
+    backgroundColor: '#FE5858',
+    borderColor: '#FE5858',
+    shadowColor: '#FE5858',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  sliderOptionText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#9CA3AF',
+  },
+  sliderOptionTextSelected: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  unitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  unitLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  unitToggle: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  unitToggleText: {
+    fontSize: 12,
+    color: '#FE5858',
+    fontWeight: '500',
+  },
+  macrosRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F8FBFE',
+  },
+  macroItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  macroValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#282B34',
+  },
+  macroLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  confidenceWarning: {
+    marginTop: 10,
+    padding: 8,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  confidenceWarningLow: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+  },
+  confidenceWarningText: {
+    fontSize: 12,
+    color: '#F59E0B',
+    flex: 1,
+  },
+  confidenceWarningTextLow: {
+    color: '#EF4444',
+  },
+  removeButton: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+  },
+  removeButtonText: {
+    fontSize: 13,
+    color: '#EF4444',
+    fontWeight: '500',
+  },
+  totalsCard: {
+    marginTop: 12,
+    backgroundColor: 'rgba(254, 88, 88, 0.1)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(254, 88, 88, 0.3)',
+  },
+  totalsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  totalsLabel: {
+    fontSize: 15,
+    color: '#9CA3AF',
+  },
+  totalsCalories: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  totalsCaloriesValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FE5858',
+  },
+  totalsCaloriesLabel: {
+    fontSize: 15,
+    color: '#9CA3AF',
+  },
+  totalsMacros: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  totalsMacroItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  totalsMacroValue: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#282B34',
+  },
+  totalsMacroLabel: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  actionsContainer: {
+    marginTop: 20,
+    gap: 10,
+  },
+  confirmButton: {
+    paddingVertical: 16,
+    backgroundColor: '#FE5858',
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  favoriteButton: {
+    paddingVertical: 14,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#FE5858',
+    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  favoriteButtonActive: {
+    backgroundColor: 'rgba(254, 88, 88, 0.1)',
+  },
+  favoriteButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FE5858',
+  },
+  favoriteButtonTextActive: {
+    color: '#FE5858',
+  },
+  helperText: {
+    textAlign: 'center',
+    marginTop: 16,
+    fontSize: 13,
+    color: '#6B7280',
+  },
+})
+
+
+

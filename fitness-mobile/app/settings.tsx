@@ -11,6 +11,7 @@ import {
   StyleSheet
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -326,7 +327,16 @@ export default function SettingsPage() {
       }
 
       setMessage('Settings saved successfully!')
-      Alert.alert('Success', 'Settings saved successfully!')
+      Alert.alert(
+        'Success', 
+        'Settings saved successfully!',
+        [
+          { 
+            text: 'OK', 
+            onPress: () => router.back()
+          }
+        ]
+      )
       setSaving(false)
     } catch (err) {
       console.error('Error saving settings:', err)
@@ -499,6 +509,23 @@ export default function SettingsPage() {
               ))}
             </View>
           </View>
+        </Card>
+
+        {/* Subscription */}
+        <Card style={styles.sectionCard}>
+          <SectionHeader title="Subscription" />
+          
+          <TouchableOpacity
+            style={styles.subscriptionRow}
+            onPress={() => router.push('/subscription-status')}
+          >
+            <Ionicons name="card-outline" size={24} color="#FE5858" style={{ marginRight: 12 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.subscriptionText}>View subscription status</Text>
+              <Text style={styles.subscriptionSubtext}>Manage plans and billing</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
         </Card>
 
         {/* Equipment */}
@@ -1215,5 +1242,20 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  subscriptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  subscriptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#282B34',
+  },
+  subscriptionSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 2,
   },
 })

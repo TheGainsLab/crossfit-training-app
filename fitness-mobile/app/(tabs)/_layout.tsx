@@ -66,6 +66,16 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="coach"
+        options={{
+          title: 'Coach',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubbles-outline" size={size} color={color} />
+          ),
+          tabBarBadge: undefined, // Badge will be implemented with state management in future
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',

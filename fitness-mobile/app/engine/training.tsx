@@ -37,6 +37,7 @@ interface Interval {
   basePace?: any
 }
 
+
 interface SessionData {
   intervals: Interval[]
   totalOutput: number
@@ -264,6 +265,7 @@ export default function EnginePage() {
     { value: 'cal', label: 'Calories' },
     { value: 'kilometers', label: 'Kilometers' }
   ]
+  
 
   // Helper function to navigate back with proper route isolation and refresh trigger
   const navigateBack = () => {
@@ -2390,7 +2392,7 @@ export default function EnginePage() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { paddingTop: 16 }]}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={handleBackToDashboard}
@@ -2434,11 +2436,6 @@ export default function EnginePage() {
         {workoutView === 'equipment' && (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Select Modality</Text>
-            {selectedModality && timeTrialSelectedUnit && (
-              <Text style={styles.previouslySelectedHint}>
-                Previously used: {modalities.find(m => m.value === selectedModality)?.label} • {scoreUnits.find(u => u.value === timeTrialSelectedUnit)?.label}
-              </Text>
-            )}
             
             {/* Category Buttons */}
             <View style={styles.categoryRow}>
@@ -2543,8 +2540,8 @@ export default function EnginePage() {
               </View>
             )}
             
-            {/* Baseline Warning - show when unit selected but no matching baseline */}
-            {selectedModality && timeTrialSelectedUnit && !hasMatchingBaseline && (
+            {/* Baseline Warning - show when unit selected but no matching baseline, unless it IS a time trial day */}
+            {selectedModality && timeTrialSelectedUnit && !hasMatchingBaseline && workout.day_type !== 'time_trial' && (
               <View style={styles.baselineWarning}>
                   <Text style={styles.warningTitle}>No Time Trial Baseline</Text>
                 <Text style={styles.warningText}>
@@ -3271,11 +3268,9 @@ export default function EnginePage() {
                 >
                   <Ionicons name={isActive ? "pause" : "play"} size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                {__DEV__ && (
-                  <TouchableOpacity style={styles.devSkipRoundButton} onPress={skipToEnd}>
-                    <Ionicons name="play-skip-forward" size={24} color="#FFFFFF" />
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity style={styles.skipRoundButton} onPress={skipToEnd}>
+                  <Ionicons name="play-skip-forward" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
               </View>
             )}
           </>
@@ -3717,6 +3712,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#282B34',
     marginBottom: 16,
+    textAlign: 'center',
   },
   equipmentText: {
     fontSize: 16,
@@ -3771,13 +3767,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#065F46',
-  },
-  previouslySelectedHint: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: -12,
-    marginBottom: 16,
-    fontStyle: 'italic',
   },
   modalityGrid: {
     flexDirection: 'row',
@@ -3983,7 +3972,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  devSkipRoundButton: {
+  skipRoundButton: {
     width: 56,
     height: 56,
     borderRadius: 28,

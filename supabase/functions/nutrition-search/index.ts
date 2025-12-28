@@ -30,6 +30,13 @@ async function callFatSecretAPI(method: string, params: Record<string, string | 
 
   const result = await response.json()
   
+  console.log('Proxy response structure:', JSON.stringify({
+    success: result.success,
+    hasData: !!result.data,
+    dataType: typeof result.data,
+    dataKeys: result.data ? Object.keys(result.data).slice(0, 5) : null
+  }))
+  
   if (!result.success) {
     console.error('Proxy returned unsuccessful response:', result)
     throw new Error(result.error || 'Proxy returned unsuccessful response')
@@ -144,7 +151,13 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { query, pageNumber = 0, maxResults = 20 } = await req.json()
+    const { 
+      query, 
+      pageNumber = 0, 
+      maxResults = 20,
+      filterType = 'all',  // NEW: 'brand', 'generic', 'all'
+      brandName = null     // NEW: optional - filter to specific brand
+    } = await req.json()
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       return new Response(
@@ -161,12 +174,44 @@ serve(async (req) => {
     })
 
     console.log('FatSecret API response:', JSON.stringify(result).substring(0, 500)) // Log first 500 chars
+    console.log('Result type:', typeof result)
+    console.log('Result keys:', result ? Object.keys(result) : 'null')
+    console.log('Has foods property?', result?.foods ? 'YES' : 'NO')
 
     // Normalize response (handle single vs array quirk)
     const normalized = normalizeFoodsSearchResponse(result)
 
+    // Apply filters if requested
+    let filtered = normalized.foods
+
+    if (filterType === 'brand') {
+      // Show only branded items (items with brand_name)
+      filtered = filtered.filter((f: any) => f.brand_name && f.brand_name.trim().length > 0)
+    } else if (filterType === 'generic') {
+      // Show only generic items (items without brand_name)
+      filtered = filtered.filter((f: any) => !f.brand_name || f.brand_name.trim().length === 0)
+    }
+
+    // Filter by specific brand name if provided
+    if (brandName && typeof brandName === 'string') {
+      const searchBrand = brandName.toLowerCase()
+      filtered = filtered.filter((f: any) => 
+        f.brand_name && f.brand_name.toLowerCase().includes(searchBrand)
+      )
+    }
+
     return new Response(
-      JSON.stringify({ success: true, data: normalized }),
+      JSON.stringify({ 
+        success: true, 
+        data: {
+          foods: filtered,
+          pagination: {
+            ...normalized.pagination,
+            total: filtered.length,
+            filtered: filterType !== 'all' || brandName !== null
+          }
+        }
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

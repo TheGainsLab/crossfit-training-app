@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import {
   View,
   Text,
@@ -15,7 +16,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { SectionHeader } from '@/components/ui/SectionHeader'
-import { getMealTemplates, deleteMealTemplate, MealTemplate } from '@/lib/api/mealTemplates'
+import FrequentFoodsScreen from '@/components/nutrition/FrequentFoodsScreen'
+import { Ionicons } from '@expo/vector-icons'
 
 interface ProfileData {
   user_summary: {
@@ -429,18 +431,52 @@ export default function ProfilePage() {
   const [editingLift, setEditingLift] = useState<string | null>(null)
   const [liftValues, setLiftValues] = useState<{[key: string]: string}>({})
   const [savingLift, setSavingLift] = useState(false)
-  const [mealTemplates, setMealTemplates] = useState<MealTemplate[]>([])
-  const [templatesLoading, setTemplatesLoading] = useState(false)
+  const [showFrequentFoods, setShowFrequentFoods] = useState(false)
+  const [frequentFoodsCount, setFrequentFoodsCount] = useState(0)
 
-  useEffect(() => {
-    loadProfile()
-  }, [])
+  // Reload profile when screen comes into focus (e.g., returning from Settings)
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile()
+    }, [])
+  )
 
   useEffect(() => {
     if (profile) {
-      loadMealTemplates()
+      loadFrequentFoodsCount()
     }
   }, [profile])
+
+  const loadFrequentFoodsCount = async () => {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (!userData) return
+
+      const userId = (userData as any).id
+
+      // Get counts from all frequent foods tables
+      const [restaurants, brands, foods, meals] = await Promise.all([
+        supabase.from('favorite_restaurants').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+        supabase.from('favorite_brands').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+        supabase.from('food_favorites').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+        supabase.from('meal_templates').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+      ])
+
+      const total = (restaurants.count || 0) + (brands.count || 0) + (foods.count || 0) + (meals.count || 0)
+      setFrequentFoodsCount(total)
+    } catch (error) {
+      console.error('Error loading frequent foods count:', error)
+    }
+  }
 
   const loadProfile = async () => {
     try {
@@ -461,17 +497,22 @@ export default function ProfilePage() {
         .eq('auth_id', user.id)
         .single()
 
-      if (userData) {
-        setHeight(userData.height)
-        setAge(userData.age)
-        setIntakeStatus(userData.intake_status)
+      if (!userData) {
+        setError('User data not found')
+        setLoading(false)
+        return
       }
+
+      const userId = (userData as any).id
+      setHeight((userData as any).height)
+      setAge((userData as any).age)
+      setIntakeStatus((userData as any).intake_status)
 
       // Get profile data
       const { data: profileData } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('user_id', userData?.id)
+        .eq('user_id', userId)
         .order('generated_at', { ascending: false })
         .limit(1)
         .single()
@@ -482,13 +523,56 @@ export default function ProfilePage() {
         return
       }
 
-      setProfile(profileData.profile_data)
+      // Load 1RMs from user_one_rms table (single source of truth for 1RMs)
+      const { data: oneRMsData } = await supabase
+        .from('user_one_rms')
+        .select('one_rm_index, exercise_name, one_rm')
+        .eq('user_id', userId)
+
+      // Map 1RMs to profile structure
+      const oneRMsMap: any = {}
+      if (oneRMsData && oneRMsData.length > 0) {
+        const liftMapping: { [key: number]: string } = {
+          0: 'snatch',
+          1: 'clean_and_jerk',
+          2: 'power_snatch',
+          3: 'power_clean',
+          4: 'clean_only',
+          5: 'jerk_only',
+          6: 'back_squat',
+          7: 'front_squat',
+          8: 'overhead_squat',
+          9: 'deadlift',
+          10: 'bench_press',
+          11: 'push_press',
+          12: 'strict_press',
+          13: 'weighted_pullup'
+        }
+        
+        oneRMsData.forEach((rm: any) => {
+          const fieldName = liftMapping[rm.one_rm_index]
+          if (fieldName) {
+            oneRMsMap[fieldName] = rm.one_rm
+          }
+        })
+      }
+
+      // Merge 1RMs into profile data (prioritize user_one_rms table)
+      const mergedProfile = {
+        ...((profileData as any).profile_data),
+        one_rms: {
+          ...((profileData as any).profile_data?.one_rms || {}),
+          ...oneRMsMap
+        }
+      }
+
+      setProfile(mergedProfile)
 
       // Load user skills
       const { data: skillsData } = await supabase
         .from('user_skills')
         .select('skill_name, skill_level')
-        .eq('user_id', userData?.id)
+        .eq('user_id', userId)
 
       if (skillsData) {
         const skillsMap: {[key: string]: string} = {}
@@ -520,17 +604,20 @@ export default function ProfilePage() {
 
       if (!userData) return
 
-      setTemplatesLoading(true)
-      const templates = await getMealTemplates((userData as any).id)
-      setMealTemplates(templates)
+      // TODO: Re-enable meal templates functionality if needed
+      // setTemplatesLoading(true)
+      // const templates = await getMealTemplates((userData as any).id)
+      // setMealTemplates(templates)
     } catch (error) {
       console.error('Error loading meal templates:', error)
     } finally {
-      setTemplatesLoading(false)
+      // setTemplatesLoading(false)
     }
   }
 
   const handleDeleteTemplate = async (templateId: number, templateName: string) => {
+    // TODO: Re-enable if meal templates are shown in profile
+    /*
     Alert.alert(
       'Delete Meal Template',
       `Are you sure you want to delete "${templateName}"?`,
@@ -555,6 +642,7 @@ export default function ProfilePage() {
         },
       ]
     )
+    */
   }
 
   const handleSignOut = async () => {
@@ -694,14 +782,16 @@ export default function ProfilePage() {
 
       if (!userData) throw new Error('User not found')
 
+      const userId = (userData as any).id
+
       // Get current benchmarks
       const { data: currentUser } = await supabase
         .from('users')
         .select('conditioning_benchmarks')
-        .eq('id', userData.id)
+        .eq('id', userId)
         .single()
 
-      const currentBenchmarks = currentUser?.conditioning_benchmarks || {}
+      const currentBenchmarks = (currentUser as any)?.conditioning_benchmarks || {}
       
       // Map profile field names to database field names
       const dbFieldMap: {[key: string]: string} = {
@@ -720,13 +810,13 @@ export default function ProfilePage() {
         [dbField]: value || null
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('users')
         .update({
           conditioning_benchmarks: updatedBenchmarks,
           updated_at: new Date().toISOString()
         })
-        .eq('id', userData.id)
+        .eq('id', userId)
 
       if (error) throw error
 
@@ -765,6 +855,8 @@ export default function ProfilePage() {
 
       if (!userData) throw new Error('User not found')
 
+      const userId = (userData as any).id
+
       // Map profile field names to database structure
       const liftMap: {[key: string]: {index: number, name: string}} = {
         'snatch': { index: 0, name: 'Snatch' },
@@ -793,14 +885,14 @@ export default function ProfilePage() {
         await supabase
           .from('user_one_rms')
           .delete()
-          .eq('user_id', userData.id)
+          .eq('user_id', userId)
           .eq('one_rm_index', liftInfo.index)
 
         // Then insert the new value
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('user_one_rms')
           .insert({
-            user_id: userData.id,
+            user_id: userId,
             one_rm_index: liftInfo.index,
             exercise_name: liftInfo.name,
             one_rm: weightValue,
@@ -813,7 +905,7 @@ export default function ProfilePage() {
         const { error } = await supabase
           .from('user_one_rms')
           .delete()
-          .eq('user_id', userData.id)
+          .eq('user_id', userId)
           .eq('one_rm_index', liftInfo.index)
 
         if (error) throw error
@@ -896,6 +988,18 @@ export default function ProfilePage() {
           <Text style={styles.errorButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
+    )
+  }
+
+  // Show Frequent Foods screen if requested
+  if (showFrequentFoods) {
+    return (
+      <FrequentFoodsScreen 
+        onBack={() => {
+          setShowFrequentFoods(false)
+          loadFrequentFoodsCount() // Reload count when returning
+        }}
+      />
     )
   }
 
@@ -983,6 +1087,28 @@ export default function ProfilePage() {
             ) : null}
           </Card>
         )}
+
+        {/* Subscription Section */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>SUBSCRIPTION</Text>
+            <TouchableOpacity onPress={() => router.push('/subscription-status')}>
+              <Text style={styles.toggleText}>[+ Manage]</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sectionDivider} />
+          <TouchableOpacity
+            style={styles.subscriptionRow}
+            onPress={() => router.push('/subscription-status')}
+          >
+            <Ionicons name="card-outline" size={24} color="#FE5858" style={{ marginRight: 12 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.subscriptionText}>View subscription status</Text>
+              <Text style={styles.subscriptionSubtext}>Manage plans and billing</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+        </View>
 
         {/* Strength Summary */}
         <View style={styles.sectionCard}>
@@ -1144,6 +1270,18 @@ export default function ProfilePage() {
                       {profile.one_rms.power_clean ? formatWeight(profile.one_rms.power_clean) : 'Not set'}
                     </Text>
                   </View>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Clean Only</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.clean_only ? formatWeight(profile.one_rms.clean_only) : 'Not set'}
+                    </Text>
+                  </View>
+                  <View style={styles.oneRMLiftItem}>
+                    <Text style={styles.oneRMLiftLabel}>Jerk Only</Text>
+                    <Text style={styles.oneRMLiftValue}>
+                      {profile.one_rms.jerk_only ? formatWeight(profile.one_rms.jerk_only) : 'Not set'}
+                    </Text>
+                  </View>
                 </View>
               </View>
 
@@ -1197,9 +1335,9 @@ export default function ProfilePage() {
                 </View>
               </View>
 
-              {/* Other */}
+              {/* Pulling */}
               <View style={styles.oneRMLiftGroup}>
-                <Text style={styles.oneRMLiftGroupTitle}>Other</Text>
+                <Text style={styles.oneRMLiftGroupTitle}>Pulling</Text>
                 <View style={styles.oneRMLiftGrid}>
                   <View style={styles.oneRMLiftItem}>
                     <Text style={styles.oneRMLiftLabel}>Deadlift</Text>
@@ -1211,18 +1349,6 @@ export default function ProfilePage() {
                     <Text style={styles.oneRMLiftLabel}>Weighted Pull-up</Text>
                     <Text style={styles.oneRMLiftValue}>
                       {profile.one_rms.weighted_pullup ? formatWeight(profile.one_rms.weighted_pullup) : 'Not set'}
-                    </Text>
-                  </View>
-                  <View style={styles.oneRMLiftItem}>
-                    <Text style={styles.oneRMLiftLabel}>Clean Only</Text>
-                    <Text style={styles.oneRMLiftValue}>
-                      {profile.one_rms.clean_only ? formatWeight(profile.one_rms.clean_only) : 'Not set'}
-                    </Text>
-                  </View>
-                  <View style={styles.oneRMLiftItem}>
-                    <Text style={styles.oneRMLiftLabel}>Jerk Only</Text>
-                    <Text style={styles.oneRMLiftValue}>
-                      {profile.one_rms.jerk_only ? formatWeight(profile.one_rms.jerk_only) : 'Not set'}
                     </Text>
                   </View>
                 </View>
@@ -1948,80 +2074,18 @@ export default function ProfilePage() {
           )}
         </View>
 
-        {/* My Favorite Meals */}
+        {/* Frequent Foods */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>MY FAVORITE MEALS</Text>
-            <TouchableOpacity onPress={() => toggleCategory('favorite-meals')}>
-              <Text style={styles.toggleText}>
-                [{expandedCategories.includes('favorite-meals') ? '- Hide' : '+ View'}]
-              </Text>
+            <Text style={styles.sectionTitle}>FREQUENT FOODS</Text>
+            <TouchableOpacity onPress={() => setShowFrequentFoods(true)}>
+              <Text style={styles.toggleText}>[+ View]</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.sectionDivider} />
           <Text style={styles.sectionDescription}>
-            Your go-to meals for quick daily logging ({mealTemplates.length} saved)
+            Manage your go-to meals, restaurants, and foods for quick logging ({frequentFoodsCount} saved)
           </Text>
-          
-          {expandedCategories.includes('favorite-meals') && (
-            <View>
-              {templatesLoading ? (
-                <View style={styles.loadingSection}>
-                  <ActivityIndicator size="small" color="#FE5858" />
-                </View>
-              ) : mealTemplates.length === 0 ? (
-                <View style={styles.emptySection}>
-                  <Text style={styles.emptyText}>
-                    No favorite meals yet. Set them up to make daily logging super fast!
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.setupButton}
-                    onPress={() => router.push('/nutrition?mode=create')}
-                  >
-                    <Text style={styles.setupButtonText}>🍽️ Create Your Meals</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <>
-                  {mealTemplates.map((template) => (
-                    <View key={template.id} style={styles.templateRow}>
-                      <View style={styles.templateRowInfo}>
-                        <Text style={styles.templateRowName}>
-                          {template.meal_type === 'breakfast' ? '☀️' : 
-                           template.meal_type === 'lunch' ? '🌮' : 
-                           template.meal_type === 'dinner' ? '🍽️' : 
-                           template.meal_type === 'pre_workout' ? '💪' :
-                           template.meal_type === 'post_workout' ? '🥤' : '🍎'}{' '}
-                          {template.template_name}
-                        </Text>
-                        <Text style={styles.templateRowDetails}>
-                          {Math.round(template.total_calories)} cal • {Math.round(template.total_protein)}g protein
-                        </Text>
-                        {template.log_count && template.log_count > 0 && (
-                          <Text style={styles.templateRowUsage}>
-                            Logged {template.log_count} time{template.log_count !== 1 ? 's' : ''}
-                          </Text>
-                        )}
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => handleDeleteTemplate(template.id!, template.template_name)}
-                        style={styles.deleteTemplateButton}
-                      >
-                        <Text style={styles.deleteTemplateText}>Delete</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                  
-                  <TouchableOpacity
-                    style={styles.setupButton}
-                    onPress={() => router.push('/nutrition?mode=edit')}
-                  >
-                    <Text style={styles.setupButtonText}>✏️ Manage My Meals</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          )}
         </View>
 
         {/* Sign Out Section */}
@@ -2517,5 +2581,43 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  subscriptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  subscriptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#282B34',
+  },
+  subscriptionSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  frequentFoodsSection: {
+    width: '100%',
+  },
+  frequentFoodsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  frequentFoodsTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  frequentFoodsViewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FE5858',
   },
 })

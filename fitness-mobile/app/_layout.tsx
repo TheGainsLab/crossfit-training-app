@@ -4,8 +4,10 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import 'react-native-reanimated';
 import '../global.css';
+import Purchases from 'react-native-purchases';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -39,6 +41,24 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
+  // Initialize RevenueCat
+  useEffect(() => {
+    const initializeRevenueCat = async () => {
+      if (Platform.OS === 'ios') {
+        await Purchases.configure({
+          apiKey: 'appl_umJNBJEnUpZyeMlXteBXflPGrXB',
+        });
+      } else if (Platform.OS === 'android') {
+        // Android key will be added later after Google Play Console setup
+        // await Purchases.configure({
+        //   apiKey: 'your_android_api_key',
+        // });
+      }
+    };
+
+    initializeRevenueCat();
+  }, []);
+
   if (!loaded) {
     return null;
   }
@@ -54,6 +74,10 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="auth/signin" options={{ headerShown: false }} />
+        <Stack.Screen name="subscriptions/index" options={{ headerShown: false }} />
+        <Stack.Screen name="subscriptions/[program]" options={{ headerShown: false }} />
+        <Stack.Screen name="subscriptions/purchase/[program]" options={{ headerShown: false }} />
+        <Stack.Screen name="subscription-status" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="engine" options={{ headerShown: false }} />
         <Stack.Screen name="btn" options={{ headerShown: false }} />
