@@ -19,9 +19,9 @@ export const PROGRAMS: Record<ProgramType, ProgramInfo> = {
   btn: {
     id: 'btn',
     name: 'btn',
-    displayName: 'BTN',
+    displayName: 'BTN (Better Than Nothing)',
     icon: '🎯',
-    shortDescription: 'Build foundational strength and technique',
+    shortDescription: 'Build a personalized workout library',
     bullets: [
       'Progressive strength training',
       'Technical skill development',
