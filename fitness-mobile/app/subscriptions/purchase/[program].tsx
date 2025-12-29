@@ -11,9 +11,18 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PurchasesPackage } from 'react-native-purchases';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PROGRAMS, ProgramType, getOfferings, purchasePackage } from '@/lib/subscriptions';
 
 type BillingPeriod = 'monthly' | 'quarterly' | 'yearly';
+
+// Map program IDs to RevenueCat offering identifiers
+const OFFERING_IDS: Record<ProgramType, string> = {
+  'btn': 'The Gains AI BTN',
+  'engine': 'The Gains AI Engine',
+  'applied_power': 'The Gains AI Applied Power',
+  'competitor': 'The Gains AI Competitor'
+};
 
 export default function PurchaseScreen() {
   const router = useRouter();
@@ -37,34 +46,46 @@ export default function PurchaseScreen() {
     try {
       const offerings = await getOfferings();
       
-      if (!offerings || !offerings.current) {
+      console.log('RevenueCat offerings received:', offerings);
+      console.log('All offerings:', offerings?.all);
+      
+      if (!offerings || !offerings.all) {
+        console.error('No offerings returned from RevenueCat');
         Alert.alert('Error', 'Unable to load subscription options. Please try again.');
         setLoading(false);
         return;
       }
 
-      // Find packages for this program
-      const programPackages = offerings.current.availablePackages.filter((pkg) => {
-        const productId = pkg.product.identifier.toLowerCase();
-        return productId.includes(programId.toLowerCase());
-      });
+      // Get the specific offering for this program
+      const offeringId = OFFERING_IDS[programId as ProgramType];
+      console.log(`Looking for offering: ${offeringId} for program: ${programId}`);
+      
+      const offering = offerings.all[offeringId];
+      
+      if (!offering) {
+        console.error(`No offering found with ID: ${offeringId}`);
+        console.log('Available offerings:', Object.keys(offerings.all));
+        Alert.alert(
+          'Configuration Error', 
+          `Subscription not available for ${program.displayName}. Please contact support.`
+        );
+        setLoading(false);
+        return;
+      }
 
-      // Map packages by billing period
+      console.log(`Found offering ${offeringId} with ${offering.availablePackages.length} packages`);
+
+      // Map packages by identifier (monthly, quarterly, yearly)
       const packageMap: Record<BillingPeriod, PurchasesPackage | null> = {
-        monthly: null,
-        quarterly: null,
-        yearly: null,
+        monthly: offering.availablePackages.find(pkg => pkg.identifier === '$rc_monthly' || pkg.identifier === 'monthly') || null,
+        quarterly: offering.availablePackages.find(pkg => pkg.identifier === '$rc_three_month' || pkg.identifier === 'quarterly') || null,
+        yearly: offering.availablePackages.find(pkg => pkg.identifier === '$rc_annual' || pkg.identifier === 'yearly') || null,
       };
 
-      programPackages.forEach((pkg) => {
-        const productId = pkg.product.identifier.toLowerCase();
-        if (productId.includes('monthly')) {
-          packageMap.monthly = pkg;
-        } else if (productId.includes('quarterly')) {
-          packageMap.quarterly = pkg;
-        } else if (productId.includes('yearly')) {
-          packageMap.yearly = pkg;
-        }
+      console.log('Package mapping:', {
+        monthly: packageMap.monthly?.product.identifier,
+        quarterly: packageMap.quarterly?.product.identifier,
+        yearly: packageMap.yearly?.product.identifier,
       });
 
       setPackages(packageMap);
@@ -90,13 +111,20 @@ export default function PurchaseScreen() {
       const customerInfo = await purchasePackage(selectedPackage);
       
       if (customerInfo) {
+        // Store program ID for post-signup linking
+        await AsyncStorage.setItem('pending_subscription_program', programId as string);
+        
+        // Store active entitlements for reference
+        const activeEntitlements = Object.keys(customerInfo.entitlements.active);
+        await AsyncStorage.setItem('pending_subscription_entitlements', JSON.stringify(activeEntitlements));
+        
         Alert.alert(
           'Success!',
-          'Your subscription is now active. Enjoy your training!',
+          'Your subscription is active! Create your account to get started.',
           [
             {
-              text: 'Start Training',
-              onPress: () => router.push('/(tabs)'),
+              text: 'Create Account',
+              onPress: () => router.push('/auth/signup'),
             },
           ]
         );
@@ -134,11 +162,7 @@ export default function PurchaseScreen() {
     const price = pkg.product.priceString;
     const description = pkg.product.title;
 
-    let savings = '';
-    if (period === 'quarterly') savings = 'Save 10%';
-    if (period === 'yearly') savings = 'Save 23%';
-
-    return { price, description, savings };
+    return { price, description };
   };
 
   return (
@@ -189,11 +213,6 @@ export default function PurchaseScreen() {
                     </Text>
                     <Text style={styles.optionPrice}>{details.price}</Text>
                   </View>
-                  {details.savings && (
-                    <View style={styles.savingsBadge}>
-                      <Text style={styles.savingsText}>{details.savings}</Text>
-                    </View>
-                  )}
                 </View>
               </TouchableOpacity>
             );

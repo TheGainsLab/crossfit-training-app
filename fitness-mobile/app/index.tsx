@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'expo-router'
 import { View, ActivityIndicator } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient } from '@/lib/supabase/client'
 import { setRevenueCatUserId, hasActiveSubscription } from '@/lib/subscriptions'
 import { registerForPushNotifications } from '@/lib/notifications'
@@ -14,6 +15,27 @@ export default function Index() {
 
   const checkAuth = async () => {
     try {
+      // Check for pending subscription from anonymous purchase FIRST
+      const pendingProgram = await AsyncStorage.getItem('pending_subscription_program')
+      
+      if (pendingProgram) {
+        console.log('Pending subscription found:', pendingProgram)
+        
+        // Check if user has a session
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session) {
+          // User purchased anonymously but hasn't signed up yet
+          console.log('No session - redirecting to signup')
+          router.replace('/auth/signup')
+          return
+        }
+        
+        // User has session but pending subscription - signup flow will handle linking
+        console.log('Session exists with pending subscription - will be handled by signup')
+      }
+
       const supabase = createClient()
       const { data: { session } } = await supabase.auth.getSession()
 

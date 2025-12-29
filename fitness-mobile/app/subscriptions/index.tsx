@@ -9,16 +9,20 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PROGRAMS, ProgramType } from '@/lib/subscriptions';
+import { createClient } from '@/lib/supabase/client';
 
 export default function SubscriptionsScreen() {
   const router = useRouter();
+  const supabase = createClient();
 
   const handleProgramPress = (programId: ProgramType) => {
     router.push(`/subscriptions/${programId}`);
   };
 
-  const handleClose = () => {
-    router.back();
+  const handleClose = async () => {
+    // Sign out user and return to sign-in screen
+    await supabase.auth.signOut();
+    router.replace('/auth/signin');
   };
 
   return (

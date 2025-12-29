@@ -226,6 +226,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Ensure conversation exists
+    if (!conversation) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to create or fetch conversation' },
+        { status: 500 }
+      )
+    }
+
     // Create message
     const { data: message, error: messageError } = await supabase
       .from('support_messages')

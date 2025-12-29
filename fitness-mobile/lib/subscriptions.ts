@@ -20,14 +20,14 @@ export const PROGRAMS: Record<ProgramType, ProgramInfo> = {
   btn: {
     id: 'btn',
     name: 'btn',
-    displayName: 'BTN',
+    displayName: 'BTN (Better Than Nothing)',
     icon: '🎯',
-    shortDescription: 'Build foundational strength and technique',
+    shortDescription: 'Build a personalized workout library',
     bullets: [
-      'Progressive strength training',
-      'Technical skill development',
-      '4-5 workouts per week',
-      'Beginner to intermediate focused',
+      'Personalized workouts, targets and stretch goals',
+      'Fitness matrix for deep analytics',
+      'Unlimited workout storage',
+      'Target skills, time domains, or choose variation',
     ],
     monthlyPrice: '$14.99',
     quarterlyPrice: '$34.99',
@@ -38,12 +38,12 @@ export const PROGRAMS: Record<ProgramType, ProgramInfo> = {
     name: 'engine',
     displayName: 'Engine',
     icon: '⚡',
-    shortDescription: 'Improve conditioning and endurance',
+    shortDescription: 'Unstoppable Capacity',
     bullets: [
-      'Aerobic capacity building',
-      'Lactate threshold training',
-      '5-6 workouts per week',
-      'Intermediate to advanced',
+      'Increase capacity of all energy systems',
+      'Adaptive training delivers personalized targets',
+      'Comprehensive analytics track every aspect of your capacity',
+      'Unlock new challenges as your capacity increases',
     ],
     monthlyPrice: '$29.99',
     quarterlyPrice: '$74.99',
@@ -70,7 +70,7 @@ export const PROGRAMS: Record<ProgramType, ProgramInfo> = {
     name: 'competitor',
     displayName: 'Competitor',
     icon: '🚀',
-    shortDescription: 'Our flagship program for serious athletes',
+    shortDescription: 'Personalized programming, superior analytics, AI-Powered',
     bullets: [
       'Complete athletic development',
       'Competition-ready programming',
@@ -123,10 +123,24 @@ export async function getActiveSubscriptions(): Promise<string[]> {
  */
 export async function getOfferings(): Promise<PurchasesOfferings | null> {
   try {
+    console.log('[RevenueCat] Fetching offerings...');
     const offerings = await Purchases.getOfferings();
+    console.log('[RevenueCat] Offerings fetched successfully');
+    console.log('[RevenueCat] Current offering exists:', !!offerings.current);
+    console.log('[RevenueCat] Current offering ID:', offerings.current?.identifier);
+    console.log('[RevenueCat] Current offering packages:', offerings.current?.availablePackages?.length || 0);
+    console.log('[RevenueCat] All offerings count:', Object.keys(offerings.all || {}).length);
+    
+    // Log all product IDs for debugging
+    if (offerings.current) {
+      offerings.current.availablePackages.forEach((pkg) => {
+        console.log('[RevenueCat] Product:', pkg.product.identifier, '-', pkg.product.priceString);
+      });
+    }
+    
     return offerings;
   } catch (error) {
-    console.error('Error getting offerings:', error);
+    console.error('[RevenueCat] Error getting offerings:', error);
     return null;
   }
 }
