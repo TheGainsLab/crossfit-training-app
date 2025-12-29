@@ -9,6 +9,7 @@ import MessageInput from '@/components/coach/MessageInput';
 import { Ionicons } from '@expo/vector-icons';
 import { setupNotificationListener, clearBadgeCount } from '@/lib/notifications';
 import * as Notifications from 'expo-notifications';
+import { getOrCreateConversation, getMessages, sendMessage } from '@/lib/api/chat';
 
 interface Message {
   id: string;
@@ -31,6 +32,7 @@ interface Conversation {
 export default function CoachTab() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversation, setConversation] = useState<Conversation | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -162,23 +164,37 @@ export default function CoachTab() {
         return;
       }
 
-      // Get API URL from environment
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+      // Get user ID from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', session.user.id)
+        .single();
 
-      // Fetch conversation and messages
-      const response = await fetch(`${apiUrl}/api/athlete/chat`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      if (userError || !userData) {
+        setError('User not found');
+        setLoading(false);
+        return;
+      }
 
-      const data = await response.json();
+      setUserId(userData.id);
 
-      if (data.success) {
-        setConversation(data.conversation);
-        setMessages(data.messages || []);
+      // Get or create conversation using direct Supabase call
+      const convResult = await getOrCreateConversation(userData.id);
+
+      if (!convResult.success || !convResult.conversation) {
+        setError(convResult.error || 'Failed to load conversation');
+        setLoading(false);
+        return;
+      }
+
+      setConversation(convResult.conversation as Conversation);
+
+      // Fetch messages for this conversation
+      const messagesResult = await getMessages(convResult.conversation.id);
+
+      if (messagesResult.success) {
+        setMessages((messagesResult.messages || []) as Message[]);
         setError(null);
 
         // Scroll to bottom after messages load
@@ -186,7 +202,7 @@ export default function CoachTab() {
           flatListRef.current?.scrollToEnd({ animated: false });
         }, 100);
       } else {
-        setError(data.error || 'Failed to load messages');
+        setError(messagesResult.error || 'Failed to load messages');
       }
     } catch (err) {
       console.error('Error fetching messages:', err);
@@ -198,61 +214,55 @@ export default function CoachTab() {
   };
 
   const handleSendMessage = async (content: string) => {
-    if (!content.trim() || sending) return;
+    if (!content.trim() || sending || !userId || !conversation) return;
 
     setSending(true);
     setError(null);
 
+    // Optimistically add message to UI
+    const tempMessage: Message = {
+      id: `temp-${Date.now()}`,
+      sender_type: 'user',
+      sender_id: userId,
+      content: content.trim(),
+      created_at: new Date().toISOString(),
+      is_auto_reply: false,
+    };
+    setMessages(prev => [...prev, tempMessage]);
+
+    // Scroll to bottom immediately
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      // Send message using direct Supabase call
+      const result = await sendMessage(userId, conversation.id, content.trim());
 
-      if (!session) {
-        setError('Not authenticated');
-        setSending(false);
-        return;
-      }
-
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
-
-      // Optimistically add message to UI
-      const tempMessage: Message = {
-        id: `temp-${Date.now()}`,
-        sender_type: 'user',
-        sender_id: null,
-        content: content.trim(),
-        created_at: new Date().toISOString(),
-        is_auto_reply: false,
-      };
-      setMessages(prev => [...prev, tempMessage]);
-
-      // Scroll to bottom immediately
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-
-      // Send message
-      const response = await fetch(`${apiUrl}/api/athlete/chat`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: content.trim() }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
+      if (result.success && result.message) {
         // Replace temp message with real message
-        setMessages(prev => [
-          ...prev.filter(m => m.id !== tempMessage.id),
-          data.message,
-        ]);
+        setMessages(prev => {
+          const filtered = prev.filter(m => m.id !== tempMessage.id);
+          const newMessages = [...filtered, result.message as Message];
+
+          // If there's an auto-reply, add it too
+          if (result.autoReply) {
+            newMessages.push(result.autoReply as Message);
+          }
+
+          return newMessages;
+        });
+
+        // Scroll to bottom after auto-reply
+        if (result.autoReply) {
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        }
       } else {
         // Remove temp message on error
         setMessages(prev => prev.filter(m => m.id !== tempMessage.id));
-        setError(data.error || 'Failed to send message');
+        setError(result.error || 'Failed to send message');
       }
     } catch (err) {
       console.error('Error sending message:', err);
