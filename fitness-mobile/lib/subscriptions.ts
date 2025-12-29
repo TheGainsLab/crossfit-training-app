@@ -37,7 +37,7 @@ export const PROGRAMS: Record<ProgramType, ProgramInfo> = {
     name: 'engine',
     displayName: 'Engine',
     icon: '⚡',
-    shortDescription: 'Improve conditioning and endurance',
+    shortDescription: 'Unstoppable Capacity',
     bullets: [
       'Aerobic capacity building',
       'Lactate threshold training',
