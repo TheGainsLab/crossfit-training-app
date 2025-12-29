@@ -772,13 +772,29 @@ export default function NutritionPage() {
         <MealBuilder userId={userId!} initialTemplate={currentMeal} selectedMealType={selectedMealType} onSave={handleTemplateSaved} onCancel={() => { setShowMealBuilder(false); setCurrentMeal(null) }} onAddFood={handleAddFood} />
       </Modal>}
 
-      {showSearchModal && <FoodSearchModal visible={showSearchModal} onClose={() => setShowSearchModal(false)} onFoodSelected={(food) => { 
-        setShowSearchModal(false); 
-        setSelectedFoodForDetails({ foodId: food.food_id, foodName: food.food_name }); 
-        // Add delay for iOS - gives time for search modal to fully unmount before opening selection modal
-        setTimeout(() => setShowFoodSelector(true), 300);
-      }} preselectedMealType={selectedMealType} />}
-      {showFoodSelector && <FoodSelectionModal visible={showFoodSelector} foodId={selectedFoodForDetails.foodId} foodName={selectedFoodForDetails.foodName} onClose={() => { setShowFoodSelector(false); setSelectedFoodForDetails({ foodId: null, foodName: null }) }} onAdd={handleLogFoodEntry} preselectedMealType={selectedMealType} />}
+      {/* Always render modals - control via visible prop only to avoid iOS native freeze issues */}
+      <FoodSearchModal
+        visible={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        onFoodSelected={(food) => {
+          setShowSearchModal(false);
+          setSelectedFoodForDetails({ foodId: food.food_id, foodName: food.food_name });
+          // Longer delay for iOS native - modal unmount animation takes longer on real devices
+          setTimeout(() => setShowFoodSelector(true), 500);
+        }}
+        preselectedMealType={selectedMealType}
+      />
+      <FoodSelectionModal
+        visible={showFoodSelector}
+        foodId={selectedFoodForDetails.foodId}
+        foodName={selectedFoodForDetails.foodName}
+        onClose={() => {
+          setShowFoodSelector(false);
+          setSelectedFoodForDetails({ foodId: null, foodName: null });
+        }}
+        onAdd={handleLogFoodEntry}
+        preselectedMealType={selectedMealType}
+      />
 
       <Modal visible={deleteTemplateModal.visible} transparent={true} animationType="fade" onRequestClose={() => setDeleteTemplateModal({ visible: false, templateId: null, templateName: null })}>
         <View style={styles.modalOverlay}><View style={styles.modalContent}><View style={styles.modalHeader}><Text style={styles.modalTitle}>Delete Favorite</Text></View><View style={styles.modalBody}><Text style={styles.modalBodyText}>Are you sure you want to delete "{deleteTemplateModal.templateName}"?</Text></View><View style={styles.modalButtons}><TouchableOpacity style={styles.modalButton} onPress={() => setDeleteTemplateModal({ visible: false, templateId: null, templateName: null })}><Text>Cancel</Text></TouchableOpacity><TouchableOpacity style={[styles.modalButton, styles.modalButtonDelete]} onPress={async () => { const id = deleteTemplateModal.templateId; setDeleteTemplateModal({ visible: false, templateId: null, templateName: null }); if (id) await executeDeleteTemplate(id) }}><Text style={{ color: '#FFF' }}>Delete</Text></TouchableOpacity></View></View></View>
