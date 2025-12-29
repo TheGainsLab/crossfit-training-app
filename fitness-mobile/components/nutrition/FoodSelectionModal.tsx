@@ -353,6 +353,26 @@ export default function FoodSelectionModal({
                 </View>
               )}
 
+              {/* Quantity Input - Right after serving selection */}
+              <View style={styles.quantitySection}>
+                <Text style={styles.quantitySectionTitle}>Quantity</Text>
+                <View style={styles.quantityContainer}>
+                  <TouchableOpacity style={styles.quantityButton} onPress={decrementQuantity}>
+                    <Text style={styles.quantityButtonText}>−</Text>
+                  </TouchableOpacity>
+                  <TextInput
+                    style={styles.quantityInput}
+                    value={quantity}
+                    onChangeText={setQuantity}
+                    keyboardType="decimal-pad"
+                    placeholder="1"
+                  />
+                  <TouchableOpacity style={styles.quantityButton} onPress={incrementQuantity}>
+                    <Text style={styles.quantityButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
               {/* More Serving Sizes - Expandable */}
               {otherServings.length > 0 && (
                 <View style={styles.moreServingsSection}>
@@ -378,26 +398,6 @@ export default function FoodSelectionModal({
                   )}
                 </View>
               )}
-
-              {/* Quantity Input */}
-              <View style={styles.quantitySection}>
-                <Text style={styles.quantitySectionTitle}>Quantity</Text>
-                <View style={styles.quantityContainer}>
-                  <TouchableOpacity style={styles.quantityButton} onPress={decrementQuantity}>
-                    <Text style={styles.quantityButtonText}>−</Text>
-                  </TouchableOpacity>
-                  <TextInput
-                    style={styles.quantityInput}
-                    value={quantity}
-                    onChangeText={setQuantity}
-                    keyboardType="decimal-pad"
-                    placeholder="1"
-                  />
-                  <TouchableOpacity style={styles.quantityButton} onPress={incrementQuantity}>
-                    <Text style={styles.quantityButtonText}>+</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
 
               {/* Nutrition Summary */}
               {selectedServing && (
