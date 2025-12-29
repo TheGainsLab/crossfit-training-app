@@ -84,6 +84,47 @@ export async function POST(
       })
       .eq('id', conversationId)
 
+    // Send push notification to athlete
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('push_token, name')
+        .eq('id', conversation.user_id)
+        .single()
+
+      if (userData?.push_token) {
+        // Truncate message for notification preview
+        const previewContent = content.trim().length > 100 
+          ? content.trim().slice(0, 100) + '...' 
+          : content.trim()
+
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: userData.push_token,
+            title: '💬 New message from your coach',
+            body: previewContent,
+            sound: 'default',
+            badge: 1,
+            data: {
+              conversationId: conversationId,
+              type: 'coach_message',
+              screen: 'coach',
+            },
+            channelId: 'default',
+            priority: 'high',
+          }),
+        })
+      }
+    } catch (pushError) {
+      // Log but don't fail the request if push notification fails
+      console.error('Error sending push notification:', pushError)
+    }
+
     return NextResponse.json({
       success: true,
       message: {

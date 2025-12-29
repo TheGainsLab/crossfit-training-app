@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { createClient } from '@/lib/supabase/client'
+import { setRevenueCatUserId } from '@/lib/subscriptions'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -44,6 +45,14 @@ export default function SignIn() {
 
       if (data.user) {
         setMessage('✅ Signed in successfully!')
+
+        // Link user to RevenueCat - CRITICAL for purchase tracking
+        try {
+          await setRevenueCatUserId(data.user.id)
+        } catch (error) {
+          console.error('Error linking user to RevenueCat:', error)
+          // Don't block sign-in if RevenueCat fails, but log it
+        }
 
         // Check user's subscription tier, intake_status, and program status
         const { data: userData } = await supabase

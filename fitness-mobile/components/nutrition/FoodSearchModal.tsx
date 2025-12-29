@@ -16,6 +16,7 @@ interface FoodSearchModalProps {
   onClose: () => void
   onFoodSelected: (food: { food_id: string; food_name: string }) => void
   preselectedMealType?: string | null
+  filterType?: 'generic' | 'brand' | 'all'
 }
 
 interface SearchResult {
@@ -30,6 +31,7 @@ export default function FoodSearchModal({
   onClose,
   onFoodSelected,
   preselectedMealType,
+  filterType = 'all',
 }: FoodSearchModalProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
@@ -56,7 +58,12 @@ export default function FoodSearchModal({
       }
 
       const { data, error: invokeError } = await supabase.functions.invoke('nutrition-search', {
-        body: { query, pageNumber: 0, maxResults: 20 },
+        body: { 
+          query, 
+          pageNumber: 0, 
+          maxResults: 20,
+          filterType: filterType,
+        },
       })
 
       if (invokeError) {
@@ -78,10 +85,12 @@ export default function FoodSearchModal({
   }
 
   const handleSelectFood = (food: SearchResult) => {
+    console.log('🎯 FoodSearchModal: Food selected:', food.food_name, food.food_id)
     onFoodSelected({
       food_id: food.food_id,
       food_name: food.food_name,
     })
+    console.log('✅ FoodSearchModal: onFoodSelected callback completed')
   }
 
   const handleClose = () => {

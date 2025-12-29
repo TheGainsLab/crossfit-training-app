@@ -168,12 +168,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   contentBackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
-    paddingVertical: 8,
+    backgroundColor: '#FE5858',
+    borderWidth: 1,
+    borderColor: '#282B34',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignSelf: 'flex-start',
   },
   contentBackButtonText: {
     fontSize: 16,
-    color: '#FE5858',
+    color: '#F8FBFE',
     fontWeight: '600',
   },
   contentContainer: {
@@ -995,8 +1004,8 @@ export default function ProgressPage() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Back button - only show when NOT on overview */}
-        {activeTab !== 'overview' && (
+        {/* Back button - only show when NOT on overview AND NOT on engine tab (engine has its own back logic) */}
+        {activeTab !== 'overview' && activeTab !== 'engine' && (
           <TouchableOpacity 
             onPress={() => setActiveTab('overview')}
             style={styles.contentBackButton}
@@ -1007,7 +1016,6 @@ export default function ProgressPage() {
         )}
         
         {activeTab === 'overview' && (
-          <>
           <OverviewTab
             recentActivity={recentActivity}
             dashboardData={dashboardData}
@@ -1018,97 +1026,10 @@ export default function ProgressPage() {
             userId={userId}
             router={router}
             isAppliedPower={isAppliedPower}
+            isEngine={isEngine}
+            getTaskCount={getTaskCount}
+            setActiveTab={setActiveTab}
           />
-            
-            {/* Category Cards Grid - Only show on overview */}
-            <View style={styles.categoryGridContainer}>
-              <View style={styles.categoryGrid}>
-                {/* Left Column */}
-                <View style={styles.categoryColumn}>
-                  {/* Skills button - hide for Applied Power and Engine users */}
-                  {!isAppliedPower && !isEngine && (
-                  <TouchableOpacity
-                    style={styles.categoryCard}
-                    onPress={() => setActiveTab('skills')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.categoryCardCount}>
-                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('skills')}</Text> Skills
-                    </Text>
-                  </TouchableOpacity>
-                  )}
-                  
-                  {/* Technical button - show for Applied Power and Premium, hide for Engine */}
-                  {!isEngine && (
-                  <TouchableOpacity
-                    style={styles.categoryCard}
-                    onPress={() => setActiveTab('technical')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.categoryCardCount}>
-                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('technical')}</Text> Technical
-                    </Text>
-                  </TouchableOpacity>
-                  )}
-                  
-                  {/* Strength button - show for Applied Power and Premium, hide for Engine */}
-                  {!isEngine && (
-                  <TouchableOpacity
-                    style={styles.categoryCard}
-                    onPress={() => setActiveTab('strength')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.categoryCardCount}>
-                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('strength')}</Text> Strength
-                    </Text>
-                  </TouchableOpacity>
-                  )}
-                </View>
-                
-                {/* Right Column */}
-                <View style={styles.categoryColumn}>
-                  {/* Accessories button - show for Applied Power and Premium, hide for Engine */}
-                  {!isEngine && (
-                  <TouchableOpacity
-                    style={styles.categoryCard}
-                    onPress={() => setActiveTab('accessories')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.categoryCardCount}>
-                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('accessories')}</Text> Accessories
-                    </Text>
-                  </TouchableOpacity>
-                  )}
-                  
-                  {/* MetCons button - hide for Applied Power and Engine users */}
-                  {!isAppliedPower && !isEngine && (
-                  <TouchableOpacity
-                    style={styles.categoryCard}
-                    onPress={() => setActiveTab('metcons')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.categoryCardCount}>
-                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('metcons')}</Text> MetCons
-                    </Text>
-                  </TouchableOpacity>
-                  )}
-                  
-                  {/* Engine button - hide for Applied Power, show for Engine and Premium */}
-                  {!isAppliedPower && (
-                  <TouchableOpacity
-                    style={styles.categoryCard}
-                    onPress={() => setActiveTab('engine')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.categoryCardCount}>
-                      <Text style={styles.categoryCardCountNumber}>{getTaskCount('engine')}</Text> Engine
-                    </Text>
-                  </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            </View>
-          </>
         )}
         {activeTab === 'skills' && !isAppliedPower && (
           <SkillsTab skillsData={skillsData} userId={userId} />
@@ -1123,7 +1044,7 @@ export default function ProgressPage() {
           <AccessoriesTab accessoriesData={accessoriesData} userId={userId} />
         )}
         {activeTab === 'metcons' && !isAppliedPower && <MetConTab metconData={metconData} />}
-        {activeTab === 'engine' && !isAppliedPower && <EngineAnalyticsTab engineData={engineData} userId={userId} />}
+          {activeTab === 'engine' && !isAppliedPower && <EngineAnalyticsTab engineData={engineData} userId={userId} onBackToOverview={() => setActiveTab('overview')} />}
       </ScrollView>
     </View>
   )
@@ -1141,6 +1062,9 @@ function OverviewTab({
   userId,
   router,
   isAppliedPower,
+  isEngine,
+  getTaskCount,
+  setActiveTab,
 }: {
   recentActivity: RecentSession[]
   dashboardData: any
@@ -1151,6 +1075,9 @@ function OverviewTab({
   userId: number | null
   router: any
   isAppliedPower: boolean
+  isEngine: boolean
+  getTaskCount: (category: TabType) => number
+  setActiveTab: (tab: TabType) => void
 }) {
   return (
     <View style={styles.sectionGap}>
@@ -1192,6 +1119,98 @@ function OverviewTab({
           )}
         </View>
       )}
+
+      {/* Segment Summary */}
+      <SectionHeader title="Segment Summary" />
+      
+      {/* Category Cards Grid */}
+      <View style={styles.categoryGridContainer}>
+        <View style={styles.categoryGrid}>
+          {/* Left Column */}
+          <View style={styles.categoryColumn}>
+            {/* Skills button - hide for Applied Power and Engine users */}
+            {!isAppliedPower && !isEngine && (
+            <TouchableOpacity
+              style={styles.categoryCard}
+              onPress={() => setActiveTab('skills')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.categoryCardCount}>
+                <Text style={styles.categoryCardCountNumber}>{getTaskCount('skills')}</Text> Skills
+              </Text>
+            </TouchableOpacity>
+            )}
+            
+            {/* Technical button - show for Applied Power and Premium, hide for Engine */}
+            {!isEngine && (
+            <TouchableOpacity
+              style={styles.categoryCard}
+              onPress={() => setActiveTab('technical')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.categoryCardCount}>
+                <Text style={styles.categoryCardCountNumber}>{getTaskCount('technical')}</Text> Technical
+              </Text>
+            </TouchableOpacity>
+            )}
+            
+            {/* Strength button - show for Applied Power and Premium, hide for Engine */}
+            {!isEngine && (
+            <TouchableOpacity
+              style={styles.categoryCard}
+              onPress={() => setActiveTab('strength')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.categoryCardCount}>
+                <Text style={styles.categoryCardCountNumber}>{getTaskCount('strength')}</Text> Strength
+              </Text>
+            </TouchableOpacity>
+            )}
+          </View>
+          
+          {/* Right Column */}
+          <View style={styles.categoryColumn}>
+            {/* Accessories button - show for Applied Power and Premium, hide for Engine */}
+            {!isEngine && (
+            <TouchableOpacity
+              style={styles.categoryCard}
+              onPress={() => setActiveTab('accessories')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.categoryCardCount}>
+                <Text style={styles.categoryCardCountNumber}>{getTaskCount('accessories')}</Text> Accessories
+              </Text>
+            </TouchableOpacity>
+            )}
+            
+            {/* MetCons button - hide for Applied Power and Engine users */}
+            {!isAppliedPower && !isEngine && (
+            <TouchableOpacity
+              style={styles.categoryCard}
+              onPress={() => setActiveTab('metcons')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.categoryCardCount}>
+                <Text style={styles.categoryCardCountNumber}>{getTaskCount('metcons')}</Text> MetCons
+              </Text>
+            </TouchableOpacity>
+            )}
+            
+            {/* Engine button - hide for Applied Power, show for Engine and Premium */}
+            {!isAppliedPower && (
+            <TouchableOpacity
+              style={styles.categoryCard}
+              onPress={() => setActiveTab('engine')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.categoryCardCount}>
+                <Text style={styles.categoryCardCountNumber}>{getTaskCount('engine')}</Text> Engine
+              </Text>
+            </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </View>
 
       {/* Recent Activity */}
       <SectionHeader title="Recent Training Activity" />
@@ -1308,17 +1327,14 @@ function SkillsTab({
   return (
     <View style={styles.sectionGap}>
       {/* Summary Stats */}
-      <Card>
-        <SectionHeader title="Skills Development Overview" />
-        <View style={[styles.statsRow, { paddingHorizontal: 16 }]}>
-          <View style={styles.statCardWrapper}>
-            <StatCard label="Skills Practiced" value={skillsArray.length} />
-          </View>
-          <View style={styles.statCardWrapper}>
-            <StatCard label="Grade A Skills" value={skillsArray.filter((s) => s.qualityGrade === 'A').length} />
-          </View>
+      <View style={[styles.statsRow, { marginTop: 8 }]}>
+        <View style={styles.statCardWrapper}>
+          <StatCard label="Skills Practiced" value={skillsArray.length} />
         </View>
-      </Card>
+        <View style={styles.statCardWrapper}>
+          <StatCard label="Grade A Skills" value={skillsArray.filter((s) => s.qualityGrade === 'A').length} />
+        </View>
+      </View>
 
       {/* Skills Chart */}
       <SkillsAnalyticsChart skills={skillsArray} userId={userId} />

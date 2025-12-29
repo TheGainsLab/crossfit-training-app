@@ -94,13 +94,12 @@ const styles = StyleSheet.create({
   },
   // HR Specific Styles
   metricButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
-    minWidth: '30%'
   },
   metricButtonActive: {
     borderColor: '#FE5858',
@@ -138,6 +137,17 @@ const calculatePace = (session: any): number | null => {
     return session.total_output / (session.total_work_seconds / 60)
   }
   return null
+}
+
+// Convert decimal ratio (work/rest) to "work:rest" format
+const formatWorkRestRatio = (decimalRatio: number): string => {
+  if (decimalRatio >= 2.7) return "3:1"
+  if (decimalRatio >= 1.7) return "2:1"
+  if (decimalRatio >= 1.3) return "3:2"
+  if (decimalRatio >= 0.9) return "1:1"
+  if (decimalRatio >= 0.6) return "2:3"
+  if (decimalRatio >= 0.4) return "1:2"
+  return "1:3"
 }
 
 // Components
@@ -287,7 +297,7 @@ export function EngineHistoryView({ engineData }: { engineData: any }) {
     if (!selectedDayType || !selectedModality) return []
     return engineData.sessions?.filter((s: any) => 
       s.day_type === selectedDayType && s.modality === selectedModality
-    ).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()) || []
+    ).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()) || []
   }, [engineData.sessions, selectedDayType, selectedModality])
 
   return (
@@ -296,30 +306,28 @@ export function EngineHistoryView({ engineData }: { engineData: any }) {
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
           Select Modality
         </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {availableModalities.map((modality) => (
-              <TouchableOpacity
-                key={modality}
-                onPress={() => {
-                  setSelectedModality(modality)
-                  setSelectedDayType('')
-                }}
-                style={[
-                  styles.metricButton,
-                  selectedModality === modality && styles.metricButtonActive
-                ]}
-              >
-                <Text style={[
-                  styles.metricButtonText,
-                  selectedModality === modality && styles.metricButtonTextActive
-                ]}>
-                  {formatModality(modality)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+          {availableModalities.map((modality) => (
+            <TouchableOpacity
+              key={modality}
+              onPress={() => {
+                setSelectedModality(modality)
+                setSelectedDayType('')
+              }}
+              style={[
+                styles.metricButton,
+                selectedModality === modality && styles.metricButtonActive
+              ]}
+            >
+              <Text style={[
+                styles.metricButtonText,
+                selectedModality === modality && styles.metricButtonTextActive
+              ]}>
+                {formatModality(modality)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </Card>
 
       {selectedModality && (
@@ -327,27 +335,25 @@ export function EngineHistoryView({ engineData }: { engineData: any }) {
           <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
             Select Day Type
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {availableDayTypes.map((dayType) => (
-                <TouchableOpacity
-                  key={dayType}
-                  onPress={() => setSelectedDayType(dayType)}
-                  style={[
-                    styles.metricButton,
-                    selectedDayType === dayType && styles.metricButtonActive
-                  ]}
-                >
-                  <Text style={[
-                    styles.metricButtonText,
-                    selectedDayType === dayType && styles.metricButtonTextActive
-                  ]}>
-                    {formatDayType(dayType)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+            {availableDayTypes.map((dayType) => (
+              <TouchableOpacity
+                key={dayType}
+                onPress={() => setSelectedDayType(dayType)}
+                style={[
+                  styles.metricButton,
+                  selectedDayType === dayType && styles.metricButtonActive
+                ]}
+              >
+                <Text style={[
+                  styles.metricButtonText,
+                  selectedDayType === dayType && styles.metricButtonTextActive
+                ]}>
+                  {formatDayType(dayType)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </Card>
       )}
 
@@ -356,14 +362,6 @@ export function EngineHistoryView({ engineData }: { engineData: any }) {
           <SectionHeader title={`Performance History (${filteredSessions.length} sessions)`} />
           {filteredSessions.length === 0 ? (
             <Card><Text style={styles.noDataText}>No sessions found.</Text></Card>
-          ) : filteredSessions.length === 1 ? (
-            <Card>
-              <View style={styles.activityCardHeader}>
-                <Text style={styles.activityMeta}>{formatDate(filteredSessions[0].date)}</Text>
-                <Text style={styles.activityMeta}>Day {filteredSessions[0].program_day_number}</Text>
-              </View>
-              <Text style={styles.activityExercisesText}>Output: {filteredSessions[0].total_output} {filteredSessions[0].units}</Text>
-            </Card>
           ) : (
             <ScrollView>
               <Card style={{ padding: 16, marginBottom: 16 }}>
@@ -390,7 +388,7 @@ export function EngineHistoryView({ engineData }: { engineData: any }) {
                 <HorizontalBarChart
                   data={filteredSessions.map((s: any) => selectedMetric === 'output' ? parseFloat(s.total_output) : Math.round(parseFloat(s.actual_pace) || 0))}
                   labels={filteredSessions.map((s: any) => formatDate(s.date).split(',')[0])}
-                  maxValue={Math.max(...filteredSessions.map((s: any) => selectedMetric === 'output' ? parseFloat(s.total_output) : Math.round(parseFloat(s.actual_pace) || 0)))}
+                  maxValue={Math.max(...filteredSessions.map((s: any) => selectedMetric === 'output' ? parseFloat(s.total_output) : Math.round(parseFloat(s.actual_pace) || 0)), 1)}
                   unit={selectedMetric === 'output' ? ` ${filteredSessions[0]?.units || ''}` : ` ${filteredSessions[0]?.units || ''}/min`}
                 />
               </Card>
@@ -568,19 +566,17 @@ export function EngineTimeTrialsView({ engineData }: { engineData: any }) {
         <>
           <Card style={{ padding: 16 }}>
             <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                {availableModalities.map((modality) => (
-                  <TouchableOpacity
-                    key={modality}
-                    onPress={() => setSelectedModality(modality)}
-                    style={[styles.metricButton, selectedModality === modality && styles.metricButtonActive]}
-                  >
-                    <Text style={[styles.metricButtonText, selectedModality === modality && styles.metricButtonTextActive]}>{formatModality(modality)}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+              {availableModalities.map((modality) => (
+                <TouchableOpacity
+                  key={modality}
+                  onPress={() => setSelectedModality(modality)}
+                  style={[styles.metricButton, selectedModality === modality && styles.metricButtonActive]}
+                >
+                  <Text style={[styles.metricButtonText, selectedModality === modality && styles.metricButtonTextActive]}>{formatModality(modality)}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </Card>
 
           {selectedModality && filteredTrials.length > 0 && (
@@ -603,66 +599,61 @@ export function EngineTargetsView({ engineData }: { engineData: any }) {
   const [selectedDayType, setSelectedDayType] = useState('')
   const [selectedModality, setSelectedModality] = useState('')
 
-  const availableDayTypes = React.useMemo(() => {
-    const dayTypes = new Set<string>()
-    engineData.sessions?.forEach((s: any) => {
-      if (s.day_type && s.day_type !== 'time_trial') dayTypes.add(s.day_type)
-    })
-    return Array.from(dayTypes).sort()
-  }, [engineData.sessions])
-
   const availableModalities = React.useMemo(() => {
     const modalities = new Set<string>()
     engineData.sessions?.forEach((s: any) => {
-      if ((!selectedDayType || s.day_type === selectedDayType) && s.day_type !== 'time_trial') {
-        if (s.modality) modalities.add(s.modality)
-      }
+      if (s.modality && s.day_type !== 'time_trial') modalities.add(s.modality)
     })
     return Array.from(modalities).sort()
-  }, [engineData.sessions, selectedDayType])
+  }, [engineData.sessions])
+
+  const availableDayTypes = React.useMemo(() => {
+    if (!selectedModality) return []
+    const dayTypes = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (s.modality === selectedModality && s.day_type && s.day_type !== 'time_trial') dayTypes.add(s.day_type)
+    })
+    return Array.from(dayTypes).sort()
+  }, [engineData.sessions, selectedModality])
 
   const filteredSessions = React.useMemo(() => {
     if (!selectedDayType || !selectedModality) return []
     return engineData.sessions?.filter((s: any) => 
       s.day_type === selectedDayType && s.modality === selectedModality && s.target_pace && s.actual_pace
-    ).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()) || []
+    ).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()) || []
   }, [engineData.sessions, selectedDayType, selectedModality])
 
   return (
     <View style={styles.sectionGap}>
       <Card style={{ padding: 16 }}>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Day Type</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+          {availableModalities.map((m) => (
+            <TouchableOpacity
+              key={m}
+              onPress={() => { setSelectedModality(m); setSelectedDayType('') }}
+              style={[styles.metricButton, selectedModality === m && styles.metricButtonActive]}
+            >
+              <Text style={[styles.metricButtonText, selectedModality === m && styles.metricButtonTextActive]}>{formatModality(m)}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Card>
+
+      {selectedModality && (
+        <Card style={{ padding: 16 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Day Type</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
             {availableDayTypes.map((dt) => (
               <TouchableOpacity
                 key={dt}
-                onPress={() => { setSelectedDayType(dt); setSelectedModality('') }}
+                onPress={() => setSelectedDayType(dt)}
                 style={[styles.metricButton, selectedDayType === dt && styles.metricButtonActive]}
               >
                 <Text style={[styles.metricButtonText, selectedDayType === dt && styles.metricButtonTextActive]}>{formatDayType(dt)}</Text>
               </TouchableOpacity>
             ))}
           </View>
-        </ScrollView>
-      </Card>
-
-      {selectedDayType && (
-        <Card style={{ padding: 16 }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {availableModalities.map((m) => (
-                <TouchableOpacity
-                  key={m}
-                  onPress={() => setSelectedModality(m)}
-                  style={[styles.metricButton, selectedModality === m && styles.metricButtonActive]}
-                >
-                  <Text style={[styles.metricButtonText, selectedModality === m && styles.metricButtonTextActive]}>{formatModality(m)}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
         </Card>
       )}
 
@@ -710,7 +701,7 @@ export function EngineRecordsView({ engineData }: { engineData: any }) {
   }, [engineData.sessions])
 
   const personalRecords = React.useMemo(() => {
-    if (!selectedModality) return {}
+    if (!selectedModality) return []
     const records: Record<string, any> = {}
     engineData.sessions?.forEach((session: any) => {
       if (session.modality !== selectedModality) return
@@ -721,35 +712,38 @@ export function EngineRecordsView({ engineData }: { engineData: any }) {
         records[dayType] = { ...session, total_output: output }
       }
     })
-    return records
+    return Object.values(records)
+      .map((r: any) => ({
+        ...r,
+        pace: Math.round(parseFloat(r.actual_pace) || 0)
+      }))
+      .sort((a, b) => b.pace - a.pace)
   }, [engineData.sessions, selectedModality])
 
   return (
     <View style={styles.sectionGap}>
       <Card style={{ padding: 16 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {availableModalities.map((m) => (
-              <TouchableOpacity
-                key={m}
-                onPress={() => setSelectedModality(m)}
-                style={[styles.metricButton, selectedModality === m && styles.metricButtonActive]}
-              >
-                <Text style={[styles.metricButtonText, selectedModality === m && styles.metricButtonTextActive]}>{formatModality(m)}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+          {availableModalities.map((m) => (
+            <TouchableOpacity
+              key={m}
+              onPress={() => setSelectedModality(m)}
+              style={[styles.metricButton, selectedModality === m && styles.metricButtonActive]}
+            >
+              <Text style={[styles.metricButtonText, selectedModality === m && styles.metricButtonTextActive]}>{formatModality(m)}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </Card>
 
-      {selectedModality && (
+      {selectedModality && personalRecords.length > 0 && (
         <Card style={{ padding: 16 }}>
           <HorizontalBarChart
-            data={Object.values(personalRecords).map((r: any) => Math.round(parseFloat(r.actual_pace) || 0))}
-            labels={Object.keys(personalRecords).map(dt => formatDayType(dt))}
-            maxValue={Math.max(...Object.values(personalRecords).map((r: any) => Math.round(parseFloat(r.actual_pace) || 0)), 1)}
-            unit={` ${Object.values(personalRecords)[0]?.units || ''}/min`}
+            data={personalRecords.map((r: any) => r.pace)}
+            labels={personalRecords.map((r: any) => formatDayType(r.day_type))}
+            maxValue={Math.max(...personalRecords.map((r: any) => r.pace), 1)}
+            unit={` ${personalRecords[0]?.units || ''}/min`}
           />
         </Card>
       )}
@@ -760,6 +754,7 @@ export function EngineRecordsView({ engineData }: { engineData: any }) {
 export function EngineHeartRateView({ engineData }: { engineData: any }) {
   const [selectedMetric, setSelectedMetric] = useState('sessions')
   const [selectedDayType, setSelectedDayType] = useState('')
+  const [selectedModality, setSelectedModality] = useState('')
 
   const metrics = [
     { id: 'sessions', label: 'Sessions', unit: '' },
@@ -786,18 +781,32 @@ export function EngineHeartRateView({ engineData }: { engineData: any }) {
     return baselineMap
   }, [engineData.timeTrials])
 
+  const availableModalities = React.useMemo(() => {
+    const modalities = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (s.modality && (s.average_heart_rate || s.peak_heart_rate)) modalities.add(s.modality)
+    })
+    return Array.from(modalities).sort()
+  }, [engineData.sessions])
+
   const availableDayTypes = React.useMemo(() => {
     const dayTypes = new Set<string>()
     engineData.sessions?.forEach((s: any) => {
-      if (s.day_type && (s.average_heart_rate || s.peak_heart_rate)) dayTypes.add(s.day_type)
+      if ((!selectedModality || s.modality === selectedModality) && s.day_type && (s.average_heart_rate || s.peak_heart_rate)) {
+        dayTypes.add(s.day_type)
+      }
     })
     return Array.from(dayTypes).sort()
-  }, [engineData.sessions])
+  }, [engineData.sessions, selectedModality])
 
   const allDayTypeStats = React.useMemo(() => {
     const statsMap: Record<string, any> = {}
     availableDayTypes.forEach(dayType => {
-      const sessions = engineData.sessions?.filter((s: any) => s.day_type === dayType && (s.average_heart_rate || s.peak_heart_rate)) || []
+      const sessions = engineData.sessions?.filter((s: any) => 
+        s.day_type === dayType && 
+        (!selectedModality || s.modality === selectedModality) &&
+        (s.average_heart_rate || s.peak_heart_rate)
+      ) || []
       if (sessions.length === 0) return
       const avgHRs = sessions.filter((s: any) => s.average_heart_rate).map((s: any) => parseFloat(s.average_heart_rate))
       const peakHRs = sessions.filter((s: any) => s.peak_heart_rate).map((s: any) => parseFloat(s.peak_heart_rate))
@@ -823,7 +832,7 @@ export function EngineHeartRateView({ engineData }: { engineData: any }) {
       }
     })
     return statsMap
-  }, [availableDayTypes, engineData.sessions, baselines])
+  }, [availableDayTypes, engineData.sessions, baselines, selectedModality])
 
   const chartData = React.useMemo(() => {
     const items = availableDayTypes.map(dayType => ({
@@ -838,6 +847,18 @@ export function EngineHeartRateView({ engineData }: { engineData: any }) {
 
   return (
     <View style={styles.sectionGap}>
+      <Card style={{ padding: 16 }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+          {availableModalities.map((m) => (
+            <TouchableOpacity key={m} onPress={() => { setSelectedModality(m); setSelectedDayType('') }}
+              style={[styles.metricButton, selectedModality === m && styles.metricButtonActive]}>
+              <Text style={[styles.metricButtonText, selectedModality === m && styles.metricButtonTextActive]}>{formatModality(m)}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Card>
+
       <Card style={{ padding: 16 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Metric</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
@@ -892,67 +913,128 @@ export function EngineHeartRateView({ engineData }: { engineData: any }) {
 }
 
 export function EngineWorkRestView({ engineData }: { engineData: any }) {
-  const [selectedDayType, setSelectedDayType] = useState('')
+  const [selectedModality, setSelectedModality] = useState('')
+  const [selectedRatios, setSelectedRatios] = useState<string[]>([])
 
-  const availableDayTypes = React.useMemo(() => {
-    const dayTypes = new Set<string>()
+  const availableModalities = React.useMemo(() => {
+    const modalities = new Set<string>()
     engineData.sessions?.forEach((s: any) => {
-      if (s.day_type && s.day_type !== 'time_trial' && s.avg_work_rest_ratio) dayTypes.add(s.day_type)
+      if (s.modality && s.day_type !== 'time_trial' && s.avg_work_rest_ratio) modalities.add(s.modality)
     })
-    return Array.from(dayTypes).sort()
+    return Array.from(modalities).sort()
   }, [engineData.sessions])
 
-  const filteredData = React.useMemo(() => {
-    if (!selectedDayType) return null
-    const sessions = engineData.sessions?.filter((s: any) => 
-      s.day_type === selectedDayType && s.avg_work_rest_ratio && s.actual_pace
-    ) || []
-    if (sessions.length === 0) return null
-    const ratioGroups: Record<string, any[]> = {}
-    sessions.forEach((s: any) => {
-      const ratio = parseFloat(s.avg_work_rest_ratio)
-      let group = ratio < 0.8 ? '1:2+' : ratio < 1.2 ? '1:1' : ratio < 1.8 ? '1.5:1' : '2:1+'
-      if (!ratioGroups[group]) ratioGroups[group] = []
-      ratioGroups[group].push(s)
+  const availableRatios = React.useMemo(() => {
+    if (!selectedModality) return []
+    const ratios = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (s.modality === selectedModality && s.day_type !== 'time_trial' && s.avg_work_rest_ratio) {
+        const ratioLabel = formatWorkRestRatio(parseFloat(s.avg_work_rest_ratio))
+        ratios.add(ratioLabel)
+      }
     })
+    return Array.from(ratios).sort()
+  }, [engineData.sessions, selectedModality])
+
+  const chartData = React.useMemo(() => {
+    if (!selectedModality || selectedRatios.length === 0) return null
+    
+    const ratioGroups: Record<string, any[]> = {}
+    
+    engineData.sessions?.forEach((s: any) => {
+      if (s.modality === selectedModality && s.day_type !== 'time_trial' && s.avg_work_rest_ratio && s.actual_pace) {
+        const ratioLabel = formatWorkRestRatio(parseFloat(s.avg_work_rest_ratio))
+        if (selectedRatios.includes(ratioLabel)) {
+          if (!ratioGroups[ratioLabel]) ratioGroups[ratioLabel] = []
+          ratioGroups[ratioLabel].push(s)
+        }
+      }
+    })
+
+    const stats = Object.entries(ratioGroups).map(([ratio, sessions]) => ({
+      ratio,
+      sessionCount: sessions.length,
+      avgPace: sessions.reduce((sum, s) => sum + parseFloat(s.actual_pace), 0) / sessions.length,
+      units: sessions[0].units
+    }))
+
+    // Sort by avg pace descending
+    stats.sort((a, b) => b.avgPace - a.avgPace)
+
     return {
-      groupStats: Object.entries(ratioGroups).map(([group, sessions]) => ({
-        group,
-        sessionCount: sessions.length,
-        avgPace: Math.round(sessions.reduce((sum, s) => sum + parseFloat(s.actual_pace), 0) / sessions.length),
-        avgOutput: Math.round(sessions.reduce((sum, s) => sum + parseFloat(s.total_output), 0) / sessions.length),
-        units: sessions[0].units
-      })).sort((a, b) => a.group.localeCompare(b.group))
+      labels: stats.map(s => `${s.ratio} (${s.sessionCount})`),
+      data: stats.map(s => s.avgPace),
+      maxValue: Math.max(...stats.map(s => s.avgPace)),
+      units: stats[0]?.units || ''
     }
-  }, [engineData.sessions, selectedDayType])
+  }, [engineData.sessions, selectedModality, selectedRatios])
+
+  const toggleRatio = (ratio: string) => {
+    setSelectedRatios(prev => 
+      prev.includes(ratio) 
+        ? prev.filter(r => r !== ratio)
+        : [...prev, ratio]
+    )
+  }
 
   return (
     <View style={styles.sectionGap}>
       <Card style={{ padding: 16 }}>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Day Type</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {availableDayTypes.map((dt) => (
-            <TouchableOpacity key={dt} onPress={() => setSelectedDayType(dt)}
-              style={[styles.metricButton, selectedDayType === dt && styles.metricButtonActive]}>
-              <Text style={[styles.metricButtonText, selectedDayType === dt && styles.metricButtonTextActive]}>{formatDayType(dt)}</Text>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+          {availableModalities.map((m) => (
+            <TouchableOpacity 
+              key={m} 
+              onPress={() => { 
+                setSelectedModality(m)
+                setSelectedRatios([])
+              }}
+              style={[styles.metricButton, selectedModality === m && styles.metricButtonActive]}
+            >
+              <Text style={[styles.metricButtonText, selectedModality === m && styles.metricButtonTextActive]}>
+                {formatModality(m)}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
       </Card>
 
-      {filteredData && (
+      {selectedModality && availableRatios.length > 0 && (
         <Card style={{ padding: 16 }}>
-          <SectionHeader title="Work:Rest Ratio Analysis" />
-          {filteredData.groupStats.map((stat: any) => (
-            <View key={stat.group} style={{ marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: '#333333', marginBottom: 8 }}>{stat.group} Work:Rest</Text>
-              <View style={styles.statsRow}>
-                <View style={{ flex: 1 }}><Text style={{ fontSize: 11, color: '#9CA3AF' }}>Sessions</Text><Text style={{ fontSize: 18, fontWeight: '600', color: '#3B82F6' }}>{stat.sessionCount}</Text></View>
-                <View style={{ flex: 1 }}><Text style={{ fontSize: 11, color: '#9CA3AF' }}>Avg Pace</Text><Text style={{ fontSize: 18, fontWeight: '600' }}>{stat.avgPace}</Text></View>
-                <View style={{ flex: 1 }}><Text style={{ fontSize: 11, color: '#9CA3AF' }}>Avg Output</Text><Text style={{ fontSize: 18, fontWeight: '600', color: '#10B981' }}>{stat.avgOutput}</Text></View>
-              </View>
-            </View>
-          ))}
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 8, textAlign: 'center' }}>
+            Select Ratio(s) to Compare
+          </Text>
+          <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 12, textAlign: 'center' }}>
+            Tap to add/remove ratios
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+            {availableRatios.map((ratio) => (
+              <TouchableOpacity 
+                key={ratio} 
+                onPress={() => toggleRatio(ratio)}
+                style={[styles.metricButton, selectedRatios.includes(ratio) && styles.metricButtonActive]}
+              >
+                <Text style={[styles.metricButtonText, selectedRatios.includes(ratio) && styles.metricButtonTextActive]}>
+                  {ratio}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Card>
+      )}
+
+      {chartData && (
+        <Card style={{ padding: 16 }}>
+          <SectionHeader title="Average Pace by Ratio" />
+          <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 16, textAlign: 'center' }}>
+            Comparing {selectedRatios.length} ratio{selectedRatios.length !== 1 ? 's' : ''}
+          </Text>
+          <HorizontalBarChart
+            data={chartData.data}
+            labels={chartData.labels}
+            maxValue={chartData.maxValue}
+            unit={` ${chartData.units}`}
+          />
         </Card>
       )}
     </View>
@@ -963,21 +1045,22 @@ export function EngineVariabilityView({ engineData }: { engineData: any }) {
   const [selectedDayType, setSelectedDayType] = useState('')
   const [selectedModality, setSelectedModality] = useState('')
 
-  const availableDayTypes = React.useMemo(() => {
-    const dayTypes = new Set<string>()
-    engineData.sessions?.forEach((s: any) => {
-      if (s.day_type && s.day_type !== 'time_trial') dayTypes.add(s.day_type)
-    })
-    return Array.from(dayTypes).sort()
-  }, [engineData.sessions])
-
   const availableModalities = React.useMemo(() => {
     const modalities = new Set<string>()
     engineData.sessions?.forEach((s: any) => {
-      if ((!selectedDayType || s.day_type === selectedDayType) && s.day_type !== 'time_trial' && s.modality) modalities.add(s.modality)
+      if (s.modality && s.day_type !== 'time_trial') modalities.add(s.modality)
     })
     return Array.from(modalities).sort()
-  }, [engineData.sessions, selectedDayType])
+  }, [engineData.sessions])
+
+  const availableDayTypes = React.useMemo(() => {
+    if (!selectedModality) return []
+    const dayTypes = new Set<string>()
+    engineData.sessions?.forEach((s: any) => {
+      if (s.modality === selectedModality && s.day_type && s.day_type !== 'time_trial') dayTypes.add(s.day_type)
+    })
+    return Array.from(dayTypes).sort()
+  }, [engineData.sessions, selectedModality])
 
   const variabilityData = React.useMemo(() => {
     if (!selectedDayType || !selectedModality) return null
@@ -999,32 +1082,28 @@ export function EngineVariabilityView({ engineData }: { engineData: any }) {
   return (
     <View style={styles.sectionGap}>
       <Card style={{ padding: 16 }}>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Day Type</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+          {availableModalities.map((m) => (
+            <TouchableOpacity key={m} onPress={() => { setSelectedModality(m); setSelectedDayType('') }}
+              style={[styles.metricButton, selectedModality === m && styles.metricButtonActive]}>
+              <Text style={[styles.metricButtonText, selectedModality === m && styles.metricButtonTextActive]}>{formatModality(m)}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Card>
+
+      {selectedModality && (
+        <Card style={{ padding: 16 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Day Type</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
             {availableDayTypes.map((dt) => (
-              <TouchableOpacity key={dt} onPress={() => { setSelectedDayType(dt); setSelectedModality('') }}
+              <TouchableOpacity key={dt} onPress={() => setSelectedDayType(dt)}
                 style={[styles.metricButton, selectedDayType === dt && styles.metricButtonActive]}>
                 <Text style={[styles.metricButtonText, selectedDayType === dt && styles.metricButtonTextActive]}>{formatDayType(dt)}</Text>
               </TouchableOpacity>
             ))}
           </View>
-        </ScrollView>
-      </Card>
-
-      {selectedDayType && (
-        <Card style={{ padding: 16 }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {availableModalities.map((m) => (
-                <TouchableOpacity key={m} onPress={() => setSelectedModality(m)}
-                  style={[styles.metricButton, selectedModality === m && styles.metricButtonActive]}>
-                  <Text style={[styles.metricButtonText, selectedModality === m && styles.metricButtonTextActive]}>{formatModality(m)}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
         </Card>
       )}
 
@@ -1041,7 +1120,7 @@ export function EngineVariabilityView({ engineData }: { engineData: any }) {
   )
 }
 
-export function EngineTab({ engineData, userId }: { engineData: any; userId: number | null }) {
+export function EngineTab({ engineData, userId, onBackToOverview }: { engineData: any; userId: number | null; onBackToOverview?: () => void }) {
   const [currentView, setCurrentView] = useState('menu')
   
   if (!engineData) {
@@ -1068,6 +1147,20 @@ export function EngineTab({ engineData, userId }: { engineData: any; userId: num
   if (currentView === 'menu') {
     return (
       <View style={styles.sectionGap}>
+        {onBackToOverview && (
+          <TouchableOpacity
+            onPress={onBackToOverview}
+            style={{
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 8,
+              backgroundColor: '#FE5858', borderWidth: 1, borderColor: '#282B34', borderRadius: 8,
+              paddingHorizontal: 16, paddingVertical: 12, alignSelf: 'flex-start',
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={16} color="#F8FBFE" style={{ marginRight: 6 }} />
+            <Text style={{ fontSize: 16, color: '#F8FBFE', fontWeight: '600' }}>Back to Overview</Text>
+          </TouchableOpacity>
+        )}
         {hasData && (
           <Card style={{ paddingTop: 24 }}>
             <SectionHeader title="Summary" />
