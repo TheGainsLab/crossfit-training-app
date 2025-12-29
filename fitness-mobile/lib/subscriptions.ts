@@ -1,4 +1,5 @@
 import Purchases, { PurchasesOfferings, PurchasesPackage, CustomerInfo } from 'react-native-purchases';
+import { Platform } from 'react-native';
 import { createClient } from '@/lib/supabase/client';
 
 export type ProgramType = 'btn' | 'engine' | 'applied_power' | 'competitor';
