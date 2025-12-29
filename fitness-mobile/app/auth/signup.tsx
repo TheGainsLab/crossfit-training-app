@@ -134,9 +134,15 @@ export default function SignUp() {
         await AsyncStorage.removeItem('pending_subscription_program')
         await AsyncStorage.removeItem('pending_subscription_entitlements')
 
-        // Navigate to intake
+        // Navigate based on subscription status
         setTimeout(() => {
-          router.replace('/intake')
+          if (hasActiveSubscription) {
+            // Has subscription, proceed to intake
+            router.replace('/intake')
+          } else {
+            // No subscription, send to subscription browse
+            router.replace('/subscriptions')
+          }
         }, 500)
       }
     } catch (error) {
