@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -12,19 +12,49 @@ import {
   StyleSheet
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient } from '@/lib/supabase/client'
-import { setRevenueCatUserId } from '@/lib/subscriptions'
+import Purchases from 'react-native-purchases'
 
-export default function SignIn() {
+// Map program IDs to subscription tiers
+const PROGRAM_TO_TIER: Record<string, string> = {
+  'btn': 'BTN',
+  'engine': 'ENGINE',
+  'applied_power': 'APPLIED_POWER',
+  'competitor': 'PREMIUM'
+}
+
+export default function SignUp() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [hasPendingSubscription, setHasPendingSubscription] = useState(false)
   const router = useRouter()
 
-  const handleSignIn = async () => {
+  useEffect(() => {
+    checkPendingSubscription()
+  }, [])
+
+  const checkPendingSubscription = async () => {
+    const pendingProgram = await AsyncStorage.getItem('pending_subscription_program')
+    setHasPendingSubscription(!!pendingProgram)
+  }
+
+  const handleSignUp = async () => {
     if (!email || !password) {
       setMessage('❌ Please enter both email and password')
+      return
+    }
+
+    if (password.length < 6) {
+      setMessage('❌ Password must be at least 6 characters')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setMessage('❌ Passwords do not match')
       return
     }
 
@@ -33,7 +63,9 @@ export default function SignIn() {
 
     try {
       const supabase = createClient()
-      const { data, error } = await supabase.auth.signInWithPassword({
+      
+      // Create Supabase account
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       })
@@ -44,65 +76,72 @@ export default function SignIn() {
       }
 
       if (data.user) {
-        setMessage('✅ Signed in successfully!')
+        setMessage('✅ Account created successfully!')
 
-        // Link user to RevenueCat - CRITICAL for purchase tracking
+        // Link RevenueCat to new user - CRITICAL for linking anonymous purchase
         try {
-          await setRevenueCatUserId(data.user.id)
+          await Purchases.logIn(data.user.id)
+          console.log('RevenueCat linked to user:', data.user.id)
         } catch (error) {
           console.error('Error linking user to RevenueCat:', error)
-          // Don't block sign-in if RevenueCat fails, but log it
+          // Continue even if this fails - we'll handle it later
         }
 
-        // Check user's subscription tier, intake_status, and program status
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id, subscription_tier, intake_status')
-          .eq('auth_id', data.user.id)
-          .single()
-
-        if (userData) {
-          const typedUserData = userData as any
+        // Get RevenueCat entitlements
+        let subscriptionTier = null
+        let hasActiveSubscription = false
+        
+        try {
+          const customerInfo = await Purchases.getCustomerInfo()
+          const activeEntitlements = Object.keys(customerInfo.entitlements.active)
           
-          // Check intake_status first - redirect to intake if needed
-          const status = typedUserData.intake_status
-          if (status === 'draft' || status === null || status === 'generating' || status === 'failed') {
-            router.replace('/intake')
-            return
+          if (activeEntitlements.length > 0) {
+            hasActiveSubscription = true
+            
+            // Get pending program from AsyncStorage
+            const pendingProgram = await AsyncStorage.getItem('pending_subscription_program')
+            
+            if (pendingProgram) {
+              subscriptionTier = PROGRAM_TO_TIER[pendingProgram]
+              console.log('Mapped program to tier:', pendingProgram, '->', subscriptionTier)
+            } else {
+              // Fallback: use first entitlement
+              subscriptionTier = PROGRAM_TO_TIER[activeEntitlements[0]] || activeEntitlements[0].toUpperCase()
+            }
           }
-
-          // BTN users should go to main tabs (generator is in Training tab)
-          if (typedUserData.subscription_tier === 'BTN') {
-            router.replace('/(tabs)')
-            return
-          }
-
-          // Engine users should go to Engine dashboard
-          if (typedUserData.subscription_tier === 'ENGINE') {
-            router.replace('/engine/training')
-            return
-          }
-
-          // Check if user has a program (for Premium/Applied Power)
-          const { data: programData } = await supabase
-            .from('programs')
-            .select('id')
-            .eq('user_id', typedUserData.id)
-            .limit(1)
-            .single()
-
-          if (programData) {
-            // User has a program, go to tabs (with bottom navigation)
-            router.replace('/(tabs)')
-          } else {
-            // No program yet, redirect to intake
-            router.replace('/intake')
-          }
+        } catch (error) {
+          console.error('Error getting customer info:', error)
         }
+
+        // Create user record with subscription info
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            auth_id: data.user.id,
+            email: data.user.email,
+            subscription_tier: subscriptionTier,
+            subscription_status: hasActiveSubscription ? 'active' : null,
+            intake_status: 'draft' // Ready for intake
+          })
+
+        if (insertError) {
+          console.error('Error creating user record:', insertError)
+          Alert.alert('Error', 'Failed to create user profile. Please contact support.')
+          return
+        }
+
+        // Clean up AsyncStorage
+        await AsyncStorage.removeItem('pending_subscription_program')
+        await AsyncStorage.removeItem('pending_subscription_entitlements')
+
+        // Navigate to intake
+        setTimeout(() => {
+          router.replace('/intake')
+        }, 500)
       }
     } catch (error) {
       setMessage('❌ An unexpected error occurred')
-      console.error('Sign in error:', error)
+      console.error('Sign up error:', error)
     } finally {
       setLoading(false)
     }
@@ -121,11 +160,17 @@ export default function SignIn() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>
-              Sign in to your account
+              Create your account
             </Text>
-            <Text style={styles.subtitle}>
-              Welcome back to your training
-            </Text>
+            {hasPendingSubscription ? (
+              <Text style={styles.subtitle}>
+                🎉 Your subscription is active! Complete your account to get started.
+              </Text>
+            ) : (
+              <Text style={styles.subtitle}>
+                Start your fitness journey
+              </Text>
+            )}
           </View>
 
           {/* Message */}
@@ -173,7 +218,22 @@ export default function SignIn() {
               <TextInput
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Password"
+                placeholder="Password (min 6 characters)"
+                secureTextEntry
+                autoCapitalize="none"
+                autoComplete="password"
+                style={styles.input}
+              />
+            </View>
+
+            <View>
+              <Text style={styles.label}>
+                Confirm Password
+              </Text>
+              <TextInput
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="Confirm password"
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="password"
@@ -182,7 +242,7 @@ export default function SignIn() {
             </View>
 
             <TouchableOpacity
-              onPress={handleSignIn}
+              onPress={handleSignUp}
               disabled={loading}
               style={[
                 styles.button,
@@ -193,22 +253,22 @@ export default function SignIn() {
                 <View style={styles.buttonContent}>
                   <ActivityIndicator color="white" />
                   <Text style={styles.buttonText}>
-                    Signing in...
+                    Creating account...
                   </Text>
                 </View>
               ) : (
                 <Text style={styles.buttonText}>
-                  Sign in
+                  Create account
                 </Text>
               )}
             </TouchableOpacity>
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>
-                Don't have an account?{' '}
+                Already have an account?{' '}
               </Text>
-              <TouchableOpacity onPress={() => router.push('/auth/signup')}>
-                <Text style={styles.linkText}>Create account</Text>
+              <TouchableOpacity onPress={() => router.push('/auth/signin')}>
+                <Text style={styles.linkText}>Sign in</Text>
               </TouchableOpacity>
             </View>
           </View>

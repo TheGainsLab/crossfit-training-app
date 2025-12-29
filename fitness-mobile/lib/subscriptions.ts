@@ -69,7 +69,7 @@ export const PROGRAMS: Record<ProgramType, ProgramInfo> = {
     name: 'competitor',
     displayName: 'Competitor',
     icon: '🚀',
-    shortDescription: 'Our flagship program for serious athletes',
+    shortDescription: 'Personalized programming, superior analytics, AI-Powered',
     bullets: [
       'Complete athletic development',
       'Competition-ready programming',

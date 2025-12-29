@@ -11,6 +11,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PurchasesPackage } from 'react-native-purchases';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PROGRAMS, ProgramType, getOfferings, purchasePackage } from '@/lib/subscriptions';
 
 type BillingPeriod = 'monthly' | 'quarterly' | 'yearly';
@@ -77,7 +78,7 @@ export default function PurchaseScreen() {
       // Map packages by identifier (monthly, quarterly, yearly)
       const packageMap: Record<BillingPeriod, PurchasesPackage | null> = {
         monthly: offering.availablePackages.find(pkg => pkg.identifier === '$rc_monthly' || pkg.identifier === 'monthly') || null,
-        quarterly: offering.availablePackages.find(pkg => pkg.identifier === '$rc_quarterly' || pkg.identifier === 'quarterly') || null,
+        quarterly: offering.availablePackages.find(pkg => pkg.identifier === '$rc_three_month' || pkg.identifier === 'quarterly') || null,
         yearly: offering.availablePackages.find(pkg => pkg.identifier === '$rc_annual' || pkg.identifier === 'yearly') || null,
       };
 
@@ -110,13 +111,20 @@ export default function PurchaseScreen() {
       const customerInfo = await purchasePackage(selectedPackage);
       
       if (customerInfo) {
+        // Store program ID for post-signup linking
+        await AsyncStorage.setItem('pending_subscription_program', programId as string);
+        
+        // Store active entitlements for reference
+        const activeEntitlements = Object.keys(customerInfo.entitlements.active);
+        await AsyncStorage.setItem('pending_subscription_entitlements', JSON.stringify(activeEntitlements));
+        
         Alert.alert(
           'Success!',
-          'Your subscription is now active. Enjoy your training!',
+          'Your subscription is active! Create your account to get started.',
           [
             {
-              text: 'Start Training',
-              onPress: () => router.push('/(tabs)'),
+              text: 'Create Account',
+              onPress: () => router.push('/auth/signup'),
             },
           ]
         );
