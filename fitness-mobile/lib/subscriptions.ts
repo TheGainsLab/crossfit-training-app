@@ -26,7 +26,7 @@ export const PROGRAMS: Record<ProgramType, ProgramInfo> = {
       'Personalized workouts, targets and stretch goals',
       'Fitness matrix for deep analytics',
       'Unlimited workout storage',
-      'Target skills, time domains, or choose variation, it up to you.',
+      'Target skills, time domains, or choose variation',
     ],
     monthlyPrice: '$14.99',
     quarterlyPrice: '$34.99',
