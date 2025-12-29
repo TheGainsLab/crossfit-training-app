@@ -67,9 +67,6 @@ export default function ProgramDetailScreen() {
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Yearly:</Text>
             <Text style={styles.priceValue}>{program.yearlyPrice}/year</Text>
-            <View style={styles.saveBadge}>
-              <Text style={styles.saveText}>SAVE 23%</Text>
-            </View>
           </View>
         </View>
 

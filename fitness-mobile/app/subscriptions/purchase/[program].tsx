@@ -154,11 +154,7 @@ export default function PurchaseScreen() {
     const price = pkg.product.priceString;
     const description = pkg.product.title;
 
-    let savings = '';
-    if (period === 'quarterly') savings = 'Save 10%';
-    if (period === 'yearly') savings = 'Save 23%';
-
-    return { price, description, savings };
+    return { price, description };
   };
 
   return (
@@ -209,11 +205,6 @@ export default function PurchaseScreen() {
                     </Text>
                     <Text style={styles.optionPrice}>{details.price}</Text>
                   </View>
-                  {details.savings && (
-                    <View style={styles.savingsBadge}>
-                      <Text style={styles.savingsText}>{details.savings}</Text>
-                    </View>
-                  )}
                 </View>
               </TouchableOpacity>
             );
