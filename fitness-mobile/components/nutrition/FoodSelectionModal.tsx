@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { createClient } from '@/lib/supabase/client'
 
 interface FoodSelectionModalProps {
@@ -44,12 +45,30 @@ interface Serving {
   sugar?: string
   sodium?: string
   is_default?: string
+  metric_serving_amount?: string
+  metric_serving_unit?: string
 }
 
 interface FoodDetails {
   food_id: string
   food_name: string
   servings: Serving[]
+}
+
+// Helper to check if serving is ~1 oz
+function isOneOzServing(serving: Serving): boolean {
+  const desc = serving.serving_description?.toLowerCase() || ''
+  return desc.includes('1 oz') || desc === '1oz'
+}
+
+// Helper to check if serving is ~100g
+function is100gServing(serving: Serving): boolean {
+  const desc = serving.serving_description?.toLowerCase() || ''
+  // Check description for "100g" or "100 g"
+  if (desc.match(/\b100\s*g\b/)) return true
+  // Check metric fields
+  if (serving.metric_serving_amount === '100' && serving.metric_serving_unit === 'g') return true
+  return false
 }
 
 export default function FoodSelectionModal({
@@ -65,6 +84,7 @@ export default function FoodSelectionModal({
   const [selectedServing, setSelectedServing] = useState<Serving | null>(null)
   const [quantity, setQuantity] = useState('1')
   const [error, setError] = useState<string | null>(null)
+  const [showAllServings, setShowAllServings] = useState(false)
 
   useEffect(() => {
     if (visible && foodId) {
@@ -75,8 +95,32 @@ export default function FoodSelectionModal({
       setSelectedServing(null)
       setQuantity('1')
       setError(null)
+      setShowAllServings(false)
     }
   }, [visible, foodId])
+
+  // Categorize servings
+  const { defaultServing, oneOzServing, hundredGServing, otherServings } = useMemo(() => {
+    if (!foodDetails?.servings) {
+      return { defaultServing: null, oneOzServing: null, hundredGServing: null, otherServings: [] }
+    }
+
+    const servings = foodDetails.servings
+    const defaultServ = servings.find((s) => s.is_default === '1') || null
+    const oneOz = servings.find((s) => isOneOzServing(s)) || null
+    const hundredG = servings.find((s) => is100gServing(s)) || null
+
+    // Other servings = everything not in the quick options
+    const quickIds = new Set([defaultServ?.serving_id, oneOz?.serving_id, hundredG?.serving_id].filter(Boolean))
+    const others = servings.filter((s) => !quickIds.has(s.serving_id))
+
+    return {
+      defaultServing: defaultServ,
+      oneOzServing: oneOz,
+      hundredGServing: hundredG,
+      otherServings: others,
+    }
+  }, [foodDetails])
 
   const loadFoodDetails = async () => {
     if (!foodId) return
@@ -105,7 +149,7 @@ export default function FoodSelectionModal({
         const foodData = data.data.food
 
         // Normalize servings
-        let servings = []
+        let servings: Serving[] = []
         if (foodData.servings?.serving) {
           servings = Array.isArray(foodData.servings.serving)
             ? foodData.servings.serving
@@ -119,9 +163,9 @@ export default function FoodSelectionModal({
         })
 
         // Set default serving
-        const defaultServing = servings.find((s: Serving) => s.is_default === '1') || servings[0]
-        if (defaultServing) {
-          setSelectedServing(defaultServing)
+        const defaultServ = servings.find((s: Serving) => s.is_default === '1') || servings[0]
+        if (defaultServ) {
+          setSelectedServing(defaultServ)
         }
       } else {
         setError('Food details not found')
@@ -182,6 +226,85 @@ export default function FoodSelectionModal({
     }
   }
 
+  const selectServing = (serving: Serving) => {
+    setSelectedServing(serving)
+    setQuantity('1') // Reset quantity when changing serving
+  }
+
+  // Render a prominent serving option (default)
+  const renderDefaultOption = (serving: Serving) => {
+    const isSelected = selectedServing?.serving_id === serving.serving_id
+    const cal = Math.round(parseFloat(serving.calories || '0'))
+    const pro = Math.round(parseFloat(serving.protein || '0'))
+
+    return (
+      <TouchableOpacity
+        key={serving.serving_id}
+        onPress={() => selectServing(serving)}
+        style={[styles.defaultOption, isSelected && styles.defaultOptionActive]}
+        activeOpacity={0.7}
+      >
+        <View style={styles.defaultOptionHeader}>
+          <Text style={styles.defaultOptionIcon}>🎯</Text>
+          <Text style={[styles.defaultOptionLabel, isSelected && styles.defaultOptionLabelActive]}>
+            {serving.serving_description}
+          </Text>
+          {isSelected && <Ionicons name="checkmark-circle" size={22} color="#FE5858" />}
+        </View>
+        <Text style={[styles.defaultOptionMacros, isSelected && styles.defaultOptionMacrosActive]}>
+          {cal} cal · {pro}g protein
+        </Text>
+      </TouchableOpacity>
+    )
+  }
+
+  // Render quick option (1oz or 100g)
+  const renderQuickOption = (serving: Serving, label: string) => {
+    const isSelected = selectedServing?.serving_id === serving.serving_id
+    const cal = Math.round(parseFloat(serving.calories || '0'))
+
+    return (
+      <TouchableOpacity
+        key={serving.serving_id}
+        onPress={() => selectServing(serving)}
+        style={[styles.quickOption, isSelected && styles.quickOptionActive]}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.quickOptionLabel, isSelected && styles.quickOptionLabelActive]}>
+          {label}
+        </Text>
+        <Text style={[styles.quickOptionCalories, isSelected && styles.quickOptionCaloriesActive]}>
+          {cal} cal
+        </Text>
+      </TouchableOpacity>
+    )
+  }
+
+  // Render expandable serving option
+  const renderExpandedOption = (serving: Serving) => {
+    const isSelected = selectedServing?.serving_id === serving.serving_id
+    const cal = Math.round(parseFloat(serving.calories || '0'))
+
+    return (
+      <TouchableOpacity
+        key={serving.serving_id}
+        onPress={() => selectServing(serving)}
+        style={[styles.expandedOption, isSelected && styles.expandedOptionActive]}
+        activeOpacity={0.7}
+      >
+        <Text
+          style={[styles.expandedOptionText, isSelected && styles.expandedOptionTextActive]}
+          numberOfLines={2}
+        >
+          {serving.serving_description}
+        </Text>
+        <Text style={[styles.expandedOptionCalories, isSelected && styles.expandedOptionCaloriesActive]}>
+          {cal} cal
+        </Text>
+      </TouchableOpacity>
+    )
+  }
+
   return (
     <Modal
       visible={visible}
@@ -192,7 +315,7 @@ export default function FoodSelectionModal({
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{foodName || 'Select Food'}</Text>
+            <Text style={styles.modalTitle} numberOfLines={1}>{foodName || 'Select Food'}</Text>
             <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
               <Text style={styles.modalClose}>✕</Text>
             </TouchableOpacity>
@@ -211,49 +334,54 @@ export default function FoodSelectionModal({
               </TouchableOpacity>
             </View>
           ) : foodDetails ? (
-            <ScrollView 
-              style={styles.modalBody} 
+            <ScrollView
+              style={styles.modalBody}
               contentContainerStyle={styles.modalBodyContent}
               showsVerticalScrollIndicator={true}
             >
-              {/* Serving Selection */}
-              {foodDetails.servings && foodDetails.servings.length > 0 && (
-                <View style={styles.modalSection}>
-                  <Text style={styles.modalSectionTitle}>Serving Size</Text>
-                  {foodDetails.servings.map((serving) => (
-                    <TouchableOpacity
-                      key={serving.serving_id}
-                      onPress={() => setSelectedServing(serving)}
-                      style={[
-                        styles.servingOption,
-                        selectedServing?.serving_id === serving.serving_id && styles.servingOptionActive,
-                      ]}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.servingOptionText,
-                          selectedServing?.serving_id === serving.serving_id && styles.servingOptionTextActive,
-                        ]}
-                      >
-                        {serving.serving_description}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.servingOptionCalories,
-                          selectedServing?.serving_id === serving.serving_id && styles.servingOptionCaloriesActive,
-                        ]}
-                      >
-                        {serving.calories} kcal
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+              {/* Section: How much did you have? */}
+              <Text style={styles.sectionTitle}>How much did you have?</Text>
+
+              {/* Default Serving - Prominent */}
+              {defaultServing && renderDefaultOption(defaultServing)}
+
+              {/* Quick Options: 1oz and 100g */}
+              {(oneOzServing || hundredGServing) && (
+                <View style={styles.quickOptionsRow}>
+                  {oneOzServing && renderQuickOption(oneOzServing, '1 oz')}
+                  {hundredGServing && renderQuickOption(hundredGServing, '100g')}
+                </View>
+              )}
+
+              {/* More Serving Sizes - Expandable */}
+              {otherServings.length > 0 && (
+                <View style={styles.moreServingsSection}>
+                  <TouchableOpacity
+                    style={styles.moreServingsHeader}
+                    onPress={() => setShowAllServings(!showAllServings)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.moreServingsText}>
+                      More serving sizes ({otherServings.length})
+                    </Text>
+                    <Ionicons
+                      name={showAllServings ? 'chevron-up' : 'chevron-down'}
+                      size={20}
+                      color="#6B7280"
+                    />
+                  </TouchableOpacity>
+
+                  {showAllServings && (
+                    <View style={styles.moreServingsList}>
+                      {otherServings.map((serving) => renderExpandedOption(serving))}
+                    </View>
+                  )}
                 </View>
               )}
 
               {/* Quantity Input */}
-              <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Quantity</Text>
+              <View style={styles.quantitySection}>
+                <Text style={styles.quantitySectionTitle}>Quantity</Text>
                 <View style={styles.quantityContainer}>
                   <TouchableOpacity style={styles.quantityButton} onPress={decrementQuantity}>
                     <Text style={styles.quantityButtonText}>−</Text>
@@ -271,36 +399,36 @@ export default function FoodSelectionModal({
                 </View>
               </View>
 
-              {/* Nutrition Info Preview */}
+              {/* Nutrition Summary */}
               {selectedServing && (
-                <View style={styles.modalSection}>
-                  <Text style={styles.modalSectionTitle}>
-                    Nutrition ({quantity || 1} × serving)
+                <View style={styles.nutritionSummary}>
+                  <Text style={styles.nutritionSummaryTitle}>
+                    Total Nutrition
                   </Text>
-                  <View style={styles.nutritionPreview}>
-                    <View style={styles.nutritionRow}>
-                      <Text style={styles.nutritionLabel}>Calories:</Text>
-                      <Text style={styles.nutritionValue}>
+                  <View style={styles.nutritionGrid}>
+                    <View style={styles.nutritionItem}>
+                      <Text style={styles.nutritionItemValue}>
                         {Math.round(parseFloat(selectedServing.calories || '0') * (parseFloat(quantity) || 1))}
                       </Text>
+                      <Text style={styles.nutritionItemLabel}>Calories</Text>
                     </View>
-                    <View style={styles.nutritionRow}>
-                      <Text style={styles.nutritionLabel}>Protein:</Text>
-                      <Text style={styles.nutritionValue}>
+                    <View style={styles.nutritionItem}>
+                      <Text style={styles.nutritionItemValue}>
                         {Math.round(parseFloat(selectedServing.protein || '0') * (parseFloat(quantity) || 1))}g
                       </Text>
+                      <Text style={styles.nutritionItemLabel}>Protein</Text>
                     </View>
-                    <View style={styles.nutritionRow}>
-                      <Text style={styles.nutritionLabel}>Carbs:</Text>
-                      <Text style={styles.nutritionValue}>
+                    <View style={styles.nutritionItem}>
+                      <Text style={styles.nutritionItemValue}>
                         {Math.round(parseFloat(selectedServing.carbohydrate || '0') * (parseFloat(quantity) || 1))}g
                       </Text>
+                      <Text style={styles.nutritionItemLabel}>Carbs</Text>
                     </View>
-                    <View style={styles.nutritionRow}>
-                      <Text style={styles.nutritionLabel}>Fat:</Text>
-                      <Text style={styles.nutritionValue}>
+                    <View style={styles.nutritionItem}>
+                      <Text style={styles.nutritionItemValue}>
                         {Math.round(parseFloat(selectedServing.fat || '0') * (parseFloat(quantity) || 1))}g
                       </Text>
+                      <Text style={styles.nutritionItemLabel}>Fat</Text>
                     </View>
                   </View>
                 </View>
@@ -351,6 +479,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#282B34',
     flex: 1,
+    marginRight: 12,
   },
   modalClose: {
     fontSize: 24,
@@ -393,47 +522,151 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 40,
   },
-  modalSection: {
-    marginBottom: 24,
-  },
-  modalSectionTitle: {
+  sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#282B34',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  servingOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+
+  // Default option (prominent)
+  defaultOption: {
     padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 12,
+    borderWidth: 2,
     borderColor: '#E5E7EB',
     backgroundColor: '#F8FBFE',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  servingOptionActive: {
+  defaultOptionActive: {
     borderColor: '#FE5858',
     backgroundColor: '#FEF2F2',
   },
-  servingOptionText: {
+  defaultOptionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  defaultOptionIcon: {
     fontSize: 16,
-    fontWeight: '500',
+    marginRight: 8,
+  },
+  defaultOptionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
     color: '#282B34',
     flex: 1,
   },
-  servingOptionTextActive: {
+  defaultOptionLabelActive: {
     color: '#FE5858',
-    fontWeight: '600',
   },
-  servingOptionCalories: {
+  defaultOptionMacros: {
     fontSize: 14,
     color: '#6B7280',
+    marginLeft: 24,
   },
-  servingOptionCaloriesActive: {
+  defaultOptionMacrosActive: {
     color: '#FE5858',
+  },
+
+  // Quick options (1oz, 100g)
+  quickOptionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  quickOption: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+  },
+  quickOptionActive: {
+    borderColor: '#FE5858',
+    backgroundColor: '#FEF2F2',
+  },
+  quickOptionLabel: {
+    fontSize: 16,
     fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 2,
+  },
+  quickOptionLabelActive: {
+    color: '#FE5858',
+  },
+  quickOptionCalories: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  quickOptionCaloriesActive: {
+    color: '#FE5858',
+  },
+
+  // More servings expandable
+  moreServingsSection: {
+    marginBottom: 20,
+  },
+  moreServingsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  moreServingsText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  moreServingsList: {
+    marginTop: 12,
+    gap: 8,
+  },
+  expandedOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  expandedOptionActive: {
+    borderColor: '#FE5858',
+    backgroundColor: '#FEF2F2',
+  },
+  expandedOptionText: {
+    fontSize: 14,
+    color: '#282B34',
+    flex: 1,
+    marginRight: 8,
+  },
+  expandedOptionTextActive: {
+    color: '#FE5858',
+    fontWeight: '500',
+  },
+  expandedOptionCalories: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  expandedOptionCaloriesActive: {
+    color: '#FE5858',
+  },
+
+  // Quantity section
+  quantitySection: {
+    marginBottom: 20,
+  },
+  quantitySectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 12,
   },
   quantityContainer: {
     flexDirection: 'row',
@@ -467,33 +700,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     backgroundColor: '#FFFFFF',
   },
-  nutritionPreview: {
+
+  // Nutrition summary
+  nutritionSummary: {
     backgroundColor: '#F8FBFE',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
-    gap: 8,
+    marginBottom: 16,
   },
-  nutritionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  nutritionLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  nutritionValue: {
+  nutritionSummaryTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#282B34',
+    marginBottom: 12,
+    textAlign: 'center',
   },
+  nutritionGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  nutritionItem: {
+    alignItems: 'center',
+  },
+  nutritionItemValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FE5858',
+    marginBottom: 2,
+  },
+  nutritionItemLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+
+  // Add button
   addButton: {
     backgroundColor: '#FE5858',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
   },
   addButtonDisabled: {
     opacity: 0.5,
@@ -504,4 +750,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 })
-
