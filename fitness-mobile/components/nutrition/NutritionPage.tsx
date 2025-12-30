@@ -966,11 +966,11 @@ function LoggingInterface({ selectedMealType, mealTemplates, onMealTypeSelect, o
       {selectedMealType && <Card style={styles.card}>
         <Text style={styles.sectionTitle}>How are we logging it?</Text>
         <View style={styles.alternativeButtonsRow}>
-          <TouchableOpacity style={styles.alternativeButton} onPress={onTakePhoto}><Text>📷 Photo</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.alternativeButton} onPress={onScanBarcode}><Text>📱 Barcode</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.alternativeButton} onPress={onSearchFood}><Text>🔍 Search</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.alternativeButton} onPress={onShowFavorites}><Text>⭐ Favorites</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.alternativeButton} onPress={onShowIngredients}><Text>🥗 Ingredients</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.alternativeButton} onPress={onTakePhoto}><Text>Photo</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.alternativeButton} onPress={onScanBarcode}><Text>Barcode</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.alternativeButton} onPress={onSearchFood}><Text>Search</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.alternativeButton} onPress={onShowFavorites}><Text>Favorites</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.alternativeButton} onPress={onShowIngredients}><Text>Ingredients</Text></TouchableOpacity>
         </View>
       </Card>}
       <TouchableOpacity style={styles.frequentFoodsButton} onPress={onShowFavorites}>
