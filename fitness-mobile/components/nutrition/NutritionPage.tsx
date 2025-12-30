@@ -23,6 +23,7 @@ import FoodSelectionModal from '@/components/nutrition/FoodSelectionModal'
 import FoodSearchModal from '@/components/nutrition/FoodSearchModal'
 import FrequentFoodsScreen from '@/components/nutrition/FrequentFoodsScreen'
 import PhotoResultSlider from '@/components/nutrition/PhotoResultSlider'
+import IngredientsPickerModal from '@/components/nutrition/IngredientsPickerModal'
 
 // TypeScript interfaces
 interface FoodEntry {
@@ -156,6 +157,7 @@ export default function NutritionPage() {
   const [selectedMealType, setSelectedMealType] = useState<string | null>(null)
   const [showFoodSelector, setShowFoodSelector] = useState(false)
   const [showSearchModal, setShowSearchModal] = useState(false)
+  const [showIngredientsModal, setShowIngredientsModal] = useState(false)
   const [selectedFoodForDetails, setSelectedFoodForDetails] = useState<{foodId: string | null, foodName: string | null}>({ foodId: null, foodName: null })
   const [barcodeScannerVisible, setBarcodeScannerVisible] = useState(false)
   const [barcodeScanning, setBarcodeScanning] = useState(false)
@@ -761,8 +763,9 @@ export default function NutritionPage() {
         <LoggingInterface
           selectedMealType={selectedMealType} mealTemplates={mealTemplates} templatesLoading={templatesLoading}
           onMealTypeSelect={handleMealTypeSelect} onLogTemplate={handleLogTemplate} onTakePhoto={handleImageRecognition}
-          onScanBarcode={handleBarcodeScan} onSearchFood={() => setShowSearchModal(true)} 
+          onScanBarcode={handleBarcodeScan} onSearchFood={() => setShowSearchModal(true)}
           onShowFavorites={() => setShowFrequentFoods(true)}
+          onShowIngredients={() => setShowIngredientsModal(true)}
           favoritesExpanded={favoritesExpanded} onCreateFavorite={() => { setCurrentMeal(null); setShowMealBuilder(true) }}
           onEditTemplate={handleEditTemplate} onDeleteTemplate={handleDeleteTemplate} onDuplicateTemplate={handleDuplicateTemplate}
         />
@@ -794,6 +797,16 @@ export default function NutritionPage() {
         }}
         onAdd={handleLogFoodEntry}
         preselectedMealType={selectedMealType}
+      />
+      <IngredientsPickerModal
+        visible={showIngredientsModal}
+        onClose={() => setShowIngredientsModal(false)}
+        onIngredientSelected={(ingredient) => {
+          setShowIngredientsModal(false);
+          setSelectedFoodForDetails({ foodId: ingredient.food_id, foodName: ingredient.food_name });
+          // Delay to allow modal close animation before opening FoodSelectionModal
+          setTimeout(() => setShowFoodSelector(true), 500);
+        }}
       />
 
       <Modal visible={deleteTemplateModal.visible} transparent={true} animationType="fade" onRequestClose={() => setDeleteTemplateModal({ visible: false, templateId: null, templateName: null })}>
@@ -943,7 +956,7 @@ function FoodLogList({ logs, onDelete, dailySummary }: { logs: FoodEntry[]; onDe
   )
 }
 
-function LoggingInterface({ selectedMealType, mealTemplates, onMealTypeSelect, onLogTemplate, onTakePhoto, onScanBarcode, onSearchFood, onShowFavorites, favoritesExpanded, onCreateFavorite, onEditTemplate, onDeleteTemplate, onDuplicateTemplate }: any) {
+function LoggingInterface({ selectedMealType, mealTemplates, onMealTypeSelect, onLogTemplate, onTakePhoto, onScanBarcode, onSearchFood, onShowFavorites, onShowIngredients, favoritesExpanded, onCreateFavorite, onEditTemplate, onDeleteTemplate, onDuplicateTemplate }: any) {
   return (
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
       <Card style={styles.card}>
@@ -957,6 +970,7 @@ function LoggingInterface({ selectedMealType, mealTemplates, onMealTypeSelect, o
           <TouchableOpacity style={styles.alternativeButton} onPress={onScanBarcode}><Text>📱 Barcode</Text></TouchableOpacity>
           <TouchableOpacity style={styles.alternativeButton} onPress={onSearchFood}><Text>🔍 Search</Text></TouchableOpacity>
           <TouchableOpacity style={styles.alternativeButton} onPress={onShowFavorites}><Text>⭐ Favorites</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.alternativeButton} onPress={onShowIngredients}><Text>🥗 Ingredients</Text></TouchableOpacity>
         </View>
       </Card>}
       <TouchableOpacity style={styles.frequentFoodsButton} onPress={onShowFavorites}>
