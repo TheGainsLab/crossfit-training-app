@@ -94,11 +94,11 @@ export async function POST(
 
       if (userData?.push_token) {
         // Truncate message for notification preview
-        const previewContent = content.trim().length > 100 
-          ? content.trim().slice(0, 100) + '...' 
+        const previewContent = content.trim().length > 100
+          ? content.trim().slice(0, 100) + '...'
           : content.trim()
 
-        await fetch('https://exp.host/--/api/v2/push/send', {
+        const pushResponse = await fetch('https://exp.host/--/api/v2/push/send', {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -119,6 +119,16 @@ export async function POST(
             priority: 'high',
           }),
         })
+
+        const pushResult = await pushResponse.json()
+        console.log('Push notification result:', JSON.stringify(pushResult))
+
+        // Check for errors in Expo response
+        if (pushResult.data?.[0]?.status === 'error') {
+          console.error('Push notification error:', pushResult.data[0].message)
+        }
+      } else {
+        console.log('No push token found for user:', conversation.user_id)
       }
     } catch (pushError) {
       // Log but don't fail the request if push notification fails

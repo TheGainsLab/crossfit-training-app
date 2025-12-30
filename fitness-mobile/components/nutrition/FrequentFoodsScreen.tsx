@@ -753,15 +753,15 @@ export default function FrequentFoodsScreen({ onBack }: FrequentFoodsScreenProps
         )}
       </View>
 
-      {/* Ingredients */}
+      {/* Saved Ingredients */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.sectionHeaderLeft}
             onPress={() => toggleSection('foods')}
           >
             <Text style={styles.sectionTitle}>
-              🥬 Ingredients ({data.foods.filter(f => !f.restaurant_id && !f.brand_id).length})
+              🥬 Saved Ingredients ({data.foods.filter(f => !f.restaurant_id && !f.brand_id).length})
             </Text>
             <Ionicons 
               name={expandedSections.foods ? 'chevron-up' : 'chevron-down'} 

@@ -23,7 +23,7 @@ import FoodSelectionModal from '@/components/nutrition/FoodSelectionModal'
 import FoodSearchModal from '@/components/nutrition/FoodSearchModal'
 import FrequentFoodsScreen from '@/components/nutrition/FrequentFoodsScreen'
 import PhotoResultSlider from '@/components/nutrition/PhotoResultSlider'
-import IngredientsPickerModal from '@/components/nutrition/IngredientsPickerModal'
+import MealBuilderModal from '@/components/nutrition/MealBuilderModal'
 
 // TypeScript interfaces
 interface FoodEntry {
@@ -798,15 +798,48 @@ export default function NutritionPage() {
         onAdd={handleLogFoodEntry}
         preselectedMealType={selectedMealType}
       />
-      <IngredientsPickerModal
+      <MealBuilderModal
         visible={showIngredientsModal}
         onClose={() => setShowIngredientsModal(false)}
-        onIngredientSelected={(ingredient) => {
-          setShowIngredientsModal(false);
-          setSelectedFoodForDetails({ foodId: ingredient.food_id, foodName: ingredient.food_name });
-          // Delay to allow modal close animation before opening FoodSelectionModal
-          setTimeout(() => setShowFoodSelector(true), 500);
+        onLogMeal={async (mealItems) => {
+          // Log assembled meal to today's food entries
+          if (!userId) return
+          try {
+            const supabase = createClient()
+            const mealType = selectedMealType || 'other'
+            for (const item of mealItems) {
+              await supabase.from('food_entries').insert({
+                user_id: userId,
+                food_id: item.food_id,
+                food_name: item.food_name,
+                serving_id: item.serving_id || '0',
+                serving_description: item.serving_description || `${item.amount} ${item.unit}`,
+                number_of_units: item.amount,
+                calories: item.calories,
+                protein: item.protein,
+                carbohydrate: item.carbs,
+                fat: item.fat,
+                fiber: item.fiber || 0,
+                sugar: 0,
+                sodium: item.sodium || 0,
+                meal_type: mealType,
+                logged_at: new Date().toISOString(),
+              } as any)
+            }
+            Alert.alert('Success', `Logged ${mealItems.length} items!`)
+            setShowIngredientsModal(false)
+            await loadDailyData()
+            setSelectedMealType(null)
+          } catch (error) {
+            console.error('Error logging meal:', error)
+            Alert.alert('Error', 'Failed to log meal')
+          }
         }}
+        onSaved={() => {
+          loadMealTemplates()
+          setShowIngredientsModal(false)
+        }}
+        preselectedMealType={selectedMealType}
       />
 
       <Modal visible={deleteTemplateModal.visible} transparent={true} animationType="fade" onRequestClose={() => setDeleteTemplateModal({ visible: false, templateId: null, templateName: null })}>
@@ -966,11 +999,11 @@ function LoggingInterface({ selectedMealType, mealTemplates, onMealTypeSelect, o
       {selectedMealType && <Card style={styles.card}>
         <Text style={styles.sectionTitle}>How are we logging it?</Text>
         <View style={styles.alternativeButtonsRow}>
-          <TouchableOpacity style={styles.alternativeButton} onPress={onTakePhoto}><Text>Photo</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.alternativeButton} onPress={onScanBarcode}><Text>Barcode</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.alternativeButton} onPress={onSearchFood}><Text>Search</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.alternativeButton} onPress={onShowFavorites}><Text>Favorites</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.alternativeButton} onPress={onShowIngredients}><Text>Ingredients</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.alternativeButton} onPress={onTakePhoto}><Text>📷 Photo</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.alternativeButton} onPress={onScanBarcode}><Text>📱 Barcode</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.alternativeButton} onPress={onSearchFood}><Text>🔍 Search</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.alternativeButton} onPress={onShowFavorites}><Text>⭐ Favorites</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.alternativeButton} onPress={onShowIngredients}><Text>🍳 Meal Builder</Text></TouchableOpacity>
         </View>
       </Card>}
       <TouchableOpacity style={styles.frequentFoodsButton} onPress={onShowFavorites}>
