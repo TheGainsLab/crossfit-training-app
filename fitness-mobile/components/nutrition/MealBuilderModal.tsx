@@ -15,6 +15,13 @@ import { Card } from '@/components/ui/Card'
 import { createClient } from '@/lib/supabase/client'
 import FoodSearchModal from './FoodSearchModal'
 import PortionAdjustInput from './PortionAdjustInput'
+import {
+  getDefaultIngredients,
+  getIngredientsByCategory,
+  getSortedCategories,
+  CATEGORY_INFO,
+  DefaultIngredient,
+} from '@/lib/api/defaultFoodSources'
 
 interface MealItem {
   id: string // Temporary ID for UI
@@ -36,14 +43,19 @@ interface MealBuilderModalProps {
   visible: boolean
   onClose: () => void
   onSaved?: () => void
+  onLogMeal?: (items: MealItem[]) => Promise<void>
+  preselectedMealType?: string | null
 }
 
 export default function MealBuilderModal({
   visible,
   onClose,
   onSaved,
+  onLogMeal,
+  preselectedMealType,
 }: MealBuilderModalProps) {
   const [mealName, setMealName] = useState('')
+  const [loggingMode, setLoggingMode] = useState<'log' | 'logAndSave' | 'save' | null>(null)
   const [mealItems, setMealItems] = useState<MealItem[]>([])
   const [showFoodSearch, setShowFoodSearch] = useState(false)
   const [selectedFood, setSelectedFood] = useState<any>(null)
@@ -51,8 +63,56 @@ export default function MealBuilderModal({
   const [saving, setSaving] = useState(false)
   const [showSavedFoodsModal, setShowSavedFoodsModal] = useState(false)
   const [savedFoodsMode, setSavedFoodsMode] = useState<'ingredients' | 'restaurants' | 'brands' | null>(null)
-  
+  const [defaultIngredients, setDefaultIngredients] = useState<Record<string, DefaultIngredient[]>>({})
+  const [loadingDefaults, setLoadingDefaults] = useState(true)
+  const [selectedCategory, setSelectedCategory] = useState<string>('protein')
+
   const supabase = createClient()
+
+  // Load default ingredients on mount
+  useEffect(() => {
+    if (visible) {
+      loadDefaultIngredients()
+    }
+  }, [visible])
+
+  const loadDefaultIngredients = async () => {
+    try {
+      setLoadingDefaults(true)
+      const grouped = await getIngredientsByCategory()
+      setDefaultIngredients(grouped)
+    } catch (error) {
+      console.error('Error loading default ingredients:', error)
+    } finally {
+      setLoadingDefaults(false)
+    }
+  }
+
+  const handleDefaultIngredientSelect = async (ingredient: DefaultIngredient) => {
+    try {
+      // Search for the ingredient using its search_term
+      const { data, error } = await supabase.functions.invoke('nutrition-search', {
+        body: {
+          query: ingredient.search_term,
+          limit: 1,
+        },
+      })
+
+      if (error) throw error
+
+      const foods = data?.data?.foods?.food
+      if (!foods || (Array.isArray(foods) && foods.length === 0)) {
+        Alert.alert('Not Found', `Could not find nutrition data for ${ingredient.name}`)
+        return
+      }
+
+      const foodItem = Array.isArray(foods) ? foods[0] : foods
+      handleFoodSelect({ food_id: foodItem.food_id, food_name: foodItem.food_name || ingredient.name })
+    } catch (error) {
+      console.error('Error selecting default ingredient:', error)
+      Alert.alert('Error', 'Failed to look up ingredient')
+    }
+  }
 
   const resetModal = () => {
     setMealName('')
@@ -430,48 +490,86 @@ export default function MealBuilderModal({
             />
           </Card>
 
-          {/* Add Items Buttons */}
+          {/* Quick Add Ingredients */}
+          <Card style={styles.section}>
+            <Text style={styles.sectionTitle}>Quick Add Ingredients</Text>
+
+            {/* Category tabs */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryTabs}>
+              {getSortedCategories().map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[styles.categoryTab, selectedCategory === cat && styles.categoryTabActive]}
+                  onPress={() => setSelectedCategory(cat)}
+                >
+                  <Text style={styles.categoryTabEmoji}>{CATEGORY_INFO[cat]?.emoji}</Text>
+                  <Text style={[styles.categoryTabText, selectedCategory === cat && styles.categoryTabTextActive]}>
+                    {CATEGORY_INFO[cat]?.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Ingredient chips */}
+            {loadingDefaults ? (
+              <ActivityIndicator size="small" color="#FE5858" style={{ marginVertical: 20 }} />
+            ) : (
+              <View style={styles.ingredientChips}>
+                {(defaultIngredients[selectedCategory] || []).map((ingredient) => (
+                  <TouchableOpacity
+                    key={ingredient.id}
+                    style={styles.ingredientChip}
+                    onPress={() => handleDefaultIngredientSelect(ingredient)}
+                  >
+                    <Text style={styles.ingredientChipEmoji}>{ingredient.emoji}</Text>
+                    <Text style={styles.ingredientChipText}>{ingredient.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </Card>
+
+          {/* More Options */}
           <View style={styles.addButtonsContainer}>
             <TouchableOpacity
               style={styles.addButton}
               onPress={() => setShowFoodSearch(true)}
             >
               <Ionicons name="search" size={20} color="#3B82F6" />
-              <Text style={styles.addButtonText}>Search Foods</Text>
+              <Text style={styles.addButtonText}>Search All Foods</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.addButton, styles.addButtonSecondary]}
-              onPress={() => {
-                setSavedFoodsMode('ingredients')
-                setShowSavedFoodsModal(true)
-              }}
-            >
-              <Ionicons name="nutrition" size={20} color="#10B981" />
-              <Text style={[styles.addButtonText, styles.addButtonTextSecondary]}>Add from Ingredients</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.addButton, styles.addButtonSecondary]}
-              onPress={() => {
-                setSavedFoodsMode('restaurants')
-                setShowSavedFoodsModal(true)
-              }}
-            >
-              <Ionicons name="restaurant" size={20} color="#F59E0B" />
-              <Text style={[styles.addButtonText, styles.addButtonTextSecondary]}>Add from Restaurants</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.addButton, styles.addButtonSecondary]}
-              onPress={() => {
-                setSavedFoodsMode('brands')
-                setShowSavedFoodsModal(true)
-              }}
-            >
-              <Ionicons name="pricetag" size={20} color="#8B5CF6" />
-              <Text style={[styles.addButtonText, styles.addButtonTextSecondary]}>Add from Brands</Text>
-            </TouchableOpacity>
+
+            <View style={styles.savedFoodsRow}>
+              <TouchableOpacity
+                style={styles.savedFoodButton}
+                onPress={() => {
+                  setSavedFoodsMode('ingredients')
+                  setShowSavedFoodsModal(true)
+                }}
+              >
+                <Text style={styles.savedFoodButtonText}>📦 My Saved</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.savedFoodButton}
+                onPress={() => {
+                  setSavedFoodsMode('restaurants')
+                  setShowSavedFoodsModal(true)
+                }}
+              >
+                <Text style={styles.savedFoodButtonText}>🏪 Restaurants</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.savedFoodButton}
+                onPress={() => {
+                  setSavedFoodsMode('brands')
+                  setShowSavedFoodsModal(true)
+                }}
+              >
+                <Text style={styles.savedFoodButtonText}>🏷️ Brands</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Items in Meal */}
@@ -521,19 +619,82 @@ export default function MealBuilderModal({
           )}
         </ScrollView>
 
-        {/* Save Button */}
+        {/* 4-Button Footer */}
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.saveButton, (saving || !mealName.trim() || mealItems.length === 0) && styles.saveButtonDisabled]}
-            onPress={saveMeal}
-            disabled={saving || !mealName.trim() || mealItems.length === 0}
-          >
-            {saving ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.saveButtonText}>Save Meal Template</Text>
-            )}
-          </TouchableOpacity>
+          {saving ? (
+            <View style={styles.loadingFooter}>
+              <ActivityIndicator color="#FE5858" />
+              <Text style={styles.loadingText}>
+                {loggingMode === 'log' ? 'Logging...' : loggingMode === 'logAndSave' ? 'Logging & Saving...' : 'Saving...'}
+              </Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.footerRow}>
+                {onLogMeal && (
+                  <TouchableOpacity
+                    style={[styles.footerButton, styles.logNowButton, mealItems.length === 0 && styles.footerButtonDisabled]}
+                    onPress={async () => {
+                      if (mealItems.length === 0) return
+                      setLoggingMode('log')
+                      setSaving(true)
+                      try {
+                        await onLogMeal(mealItems)
+                        resetModal()
+                      } catch (error) {
+                        console.error('Error logging meal:', error)
+                      } finally {
+                        setSaving(false)
+                        setLoggingMode(null)
+                      }
+                    }}
+                    disabled={mealItems.length === 0}
+                  >
+                    <Text style={styles.logNowButtonText}>Log Now</Text>
+                  </TouchableOpacity>
+                )}
+                {onLogMeal && (
+                  <TouchableOpacity
+                    style={[styles.footerButton, styles.logAndSaveButton, (mealItems.length === 0 || !mealName.trim()) && styles.footerButtonDisabled]}
+                    onPress={async () => {
+                      if (mealItems.length === 0 || !mealName.trim()) return
+                      setLoggingMode('logAndSave')
+                      setSaving(true)
+                      try {
+                        await saveMeal()
+                        await onLogMeal(mealItems)
+                        resetModal()
+                        onClose()
+                      } catch (error) {
+                        console.error('Error logging and saving:', error)
+                      } finally {
+                        setSaving(false)
+                        setLoggingMode(null)
+                      }
+                    }}
+                    disabled={mealItems.length === 0 || !mealName.trim()}
+                  >
+                    <Text style={styles.logAndSaveButtonText}>Log & Save</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View style={styles.footerRow}>
+                <TouchableOpacity
+                  style={[styles.footerButton, styles.saveOnlyButton, (mealItems.length === 0 || !mealName.trim()) && styles.footerButtonDisabled]}
+                  onPress={saveMeal}
+                  disabled={mealItems.length === 0 || !mealName.trim()}
+                >
+                  <Text style={styles.saveOnlyButtonText}>Save Only</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.footerButton, styles.cancelButton]}
+                  onPress={handleClose}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
         </View>
       </View>
 
@@ -736,6 +897,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#FFFFFF',
   },
+  categoryTabs: {
+    marginBottom: 12,
+  },
+  categoryTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  categoryTabActive: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FE5858',
+  },
+  categoryTabEmoji: {
+    fontSize: 16,
+    marginRight: 6,
+  },
+  categoryTabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  categoryTabTextActive: {
+    color: '#FE5858',
+    fontWeight: '600',
+  },
+  ingredientChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  ingredientChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  ingredientChipEmoji: {
+    fontSize: 14,
+    marginRight: 6,
+  },
+  ingredientChipText: {
+    fontSize: 14,
+    color: '#374151',
+  },
   addButtonsContainer: {
     paddingHorizontal: 16,
     marginBottom: 16,
@@ -750,18 +965,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#3B82F6',
+    marginBottom: 8,
   },
   addButtonText: {
     fontSize: 15,
     fontWeight: '600',
     color: '#3B82F6',
   },
-  addButtonSecondary: {
-    backgroundColor: '#F9FAFB',
-    borderColor: '#D1D5DB',
-    marginTop: 8,
+  savedFoodsRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
-  addButtonTextSecondary: {
+  savedFoodButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+  },
+  savedFoodButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
     color: '#374151',
   },
   savedFoodPickerItem: {
@@ -861,19 +1087,64 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
   },
-  saveButton: {
-    backgroundColor: '#FE5858',
-    borderRadius: 8,
+  loadingFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 8,
+  },
+  footerButton: {
+    flex: 1,
     paddingVertical: 14,
+    borderRadius: 8,
     alignItems: 'center',
   },
-  saveButtonDisabled: {
-    opacity: 0.5,
+  footerButtonDisabled: {
+    opacity: 0.4,
   },
-  saveButtonText: {
+  logNowButton: {
+    backgroundColor: '#FE5858',
+  },
+  logNowButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  logAndSaveButton: {
+    backgroundColor: '#10B981',
+  },
+  logAndSaveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  saveOnlyButton: {
+    backgroundColor: '#3B82F6',
+  },
+  saveOnlyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  cancelButton: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#6B7280',
   },
 })
 
