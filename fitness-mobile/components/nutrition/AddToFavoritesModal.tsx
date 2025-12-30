@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -15,14 +15,16 @@ import { Card } from '@/components/ui/Card'
 import { createClient } from '@/lib/supabase/client'
 import FoodSearchModal from './FoodSearchModal'
 import PortionAdjustInput from './PortionAdjustInput'
-import { 
-  POPULAR_RESTAURANTS, 
-  POPULAR_BRANDS,
-  searchFoodSources,
+import {
+  getDefaultRestaurants,
+  getDefaultBrands,
+  searchRestaurants,
+  searchBrands,
   normalizeRestaurantName,
   normalizeBrandName,
-  FoodSource 
-} from '@/lib/nutrition/foodSourceMappings'
+  DefaultRestaurant,
+  DefaultBrand,
+} from '@/lib/api/defaultFoodSources'
 
 interface AddToFavoritesModalProps {
   visible: boolean
@@ -48,20 +50,45 @@ export default function AddToFavoritesModal({
   const [userHidden, setUserHidden] = useState<string[]>([])
   const [selectedFood, setSelectedFood] = useState<any>(null)
   const [showPortionInput, setShowPortionInput] = useState(false)
+
+  // Database-loaded defaults
+  const [defaultRestaurants, setDefaultRestaurants] = useState<DefaultRestaurant[]>([])
+  const [defaultBrands, setDefaultBrands] = useState<DefaultBrand[]>([])
+  const [loadingDefaults, setLoadingDefaults] = useState(false)
   
   const supabase = createClient()
   
+  // Load defaults from database
+  const loadDefaults = async (type: 'restaurant' | 'brand') => {
+    setLoadingDefaults(true)
+    try {
+      if (type === 'restaurant' && defaultRestaurants.length === 0) {
+        const restaurants = await getDefaultRestaurants()
+        setDefaultRestaurants(restaurants)
+      } else if (type === 'brand' && defaultBrands.length === 0) {
+        const brands = await getDefaultBrands()
+        setDefaultBrands(brands)
+      }
+    } catch (error) {
+      console.error('Error loading defaults:', error)
+    } finally {
+      setLoadingDefaults(false)
+    }
+  }
+
   // Set initial view based on initialMode prop
-  React.useEffect(() => {
+  useEffect(() => {
     if (visible && initialMode) {
       switch (initialMode) {
         case 'restaurant':
           setCurrentView('restaurant-list')
           loadUserData('restaurant')
+          loadDefaults('restaurant')
           break
         case 'brand':
           setCurrentView('brand-list')
           loadUserData('brand')
+          loadDefaults('brand')
           break
         case 'food':
           setCurrentView('generic-search')
@@ -135,23 +162,22 @@ export default function AddToFavoritesModal({
     onClose()
   }
 
-  const handleSelectRestaurant = (source: FoodSource) => {
-    addRestaurant(source.display, source.fatsecret)
-  }
-
-  const handleSelectBrand = (source: FoodSource) => {
-    addBrand(source.display, source.fatsecret)
-  }
-
-  const handleCustomRestaurantSubmit = () => {
+  const handleCustomRestaurantSubmit = async () => {
     if (!customName.trim()) {
       Alert.alert('Error', 'Please enter a restaurant name')
       return
     }
-    
+
+    // Ensure defaults are loaded
+    let restaurants = defaultRestaurants
+    if (restaurants.length === 0) {
+      restaurants = await getDefaultRestaurants()
+      setDefaultRestaurants(restaurants)
+    }
+
     // Try to normalize
-    const normalized = normalizeRestaurantName(customName)
-    
+    const normalized = normalizeRestaurantName(customName, restaurants)
+
     if (normalized) {
       // Found a match - show confirmation
       setNormalizedName(normalized)
@@ -162,15 +188,22 @@ export default function AddToFavoritesModal({
     }
   }
 
-  const handleCustomBrandSubmit = () => {
+  const handleCustomBrandSubmit = async () => {
     if (!customName.trim()) {
       Alert.alert('Error', 'Please enter a brand name')
       return
     }
-    
+
+    // Ensure defaults are loaded
+    let brands = defaultBrands
+    if (brands.length === 0) {
+      brands = await getDefaultBrands()
+      setDefaultBrands(brands)
+    }
+
     // Try to normalize
-    const normalized = normalizeBrandName(customName)
-    
+    const normalized = normalizeBrandName(customName, brands)
+
     if (normalized) {
       // Found a match - show confirmation
       setNormalizedName(normalized)
@@ -448,12 +481,12 @@ export default function AddToFavoritesModal({
   // Restaurant List View
   if (currentView === 'restaurant-list') {
     // Filter to show only restaurants that are NOT in favorites and NOT hidden
-    const visibleRestaurants = searchFoodSources(searchQuery, POPULAR_RESTAURANTS)
-      .filter(restaurant => 
-        !userFavorites.includes(restaurant.fatsecret) && 
-        !userHidden.includes(restaurant.fatsecret)
+    const visibleRestaurants = searchRestaurants(searchQuery, defaultRestaurants)
+      .filter(restaurant =>
+        !userFavorites.includes(restaurant.fatsecret_name) &&
+        !userHidden.includes(restaurant.fatsecret_name)
       )
-    
+
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
         <View style={styles.modalContainer}>
@@ -463,7 +496,7 @@ export default function AddToFavoritesModal({
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Add Restaurant</Text>
           </View>
-          
+
           <View style={styles.modalContent}>
             <View style={styles.searchBox}>
               <Ionicons name="search" size={20} color="#9CA3AF" />
@@ -475,35 +508,41 @@ export default function AddToFavoritesModal({
                 autoCapitalize="none"
               />
             </View>
-            
-            <ScrollView style={styles.sourceList}>
-              {visibleRestaurants.map((restaurant) => (
-                <View
-                  key={restaurant.display}
-                  style={styles.sourceItemWithButtons}
-                >
-                  <Text style={styles.sourceEmoji}>{restaurant.emoji}</Text>
-                  <Text style={styles.sourceNameWithButtons}>{restaurant.display}</Text>
-                  <View style={styles.actionButtons}>
-                    <TouchableOpacity
-                      style={styles.addButton}
-                      onPress={() => addRestaurant(restaurant.display, restaurant.fatsecret)}
-                      disabled={loading}
-                    >
-                      <Text style={styles.addButtonText}>Add</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={() => hideRestaurant(restaurant.fatsecret)}
-                      disabled={loading}
-                    >
-                      <Text style={styles.removeButtonText}>Remove</Text>
-                    </TouchableOpacity>
+
+            {loadingDefaults ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FE5858" />
+              </View>
+            ) : (
+              <ScrollView style={styles.sourceList}>
+                {visibleRestaurants.map((restaurant) => (
+                  <View
+                    key={restaurant.id}
+                    style={styles.sourceItemWithButtons}
+                  >
+                    <Text style={styles.sourceEmoji}>{restaurant.emoji}</Text>
+                    <Text style={styles.sourceNameWithButtons}>{restaurant.name}</Text>
+                    <View style={styles.actionButtons}>
+                      <TouchableOpacity
+                        style={styles.addButton}
+                        onPress={() => addRestaurant(restaurant.name, restaurant.fatsecret_name)}
+                        disabled={loading}
+                      >
+                        <Text style={styles.addButtonText}>Add</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => hideRestaurant(restaurant.fatsecret_name)}
+                        disabled={loading}
+                      >
+                        <Text style={styles.removeButtonText}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              ))}
-            </ScrollView>
-            
+                ))}
+              </ScrollView>
+            )}
+
             <TouchableOpacity
               style={styles.customButton}
               onPress={() => {
@@ -522,12 +561,12 @@ export default function AddToFavoritesModal({
   // Brand List View
   if (currentView === 'brand-list') {
     // Filter to show only brands that are NOT in favorites and NOT hidden
-    const visibleBrands = searchFoodSources(searchQuery, POPULAR_BRANDS)
-      .filter(brand => 
-        !userFavorites.includes(brand.fatsecret) && 
-        !userHidden.includes(brand.fatsecret)
+    const visibleBrands = searchBrands(searchQuery, defaultBrands)
+      .filter(brand =>
+        !userFavorites.includes(brand.fatsecret_name) &&
+        !userHidden.includes(brand.fatsecret_name)
       )
-    
+
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
         <View style={styles.modalContainer}>
@@ -537,7 +576,7 @@ export default function AddToFavoritesModal({
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Add Brand</Text>
           </View>
-          
+
           <View style={styles.modalContent}>
             <View style={styles.searchBox}>
               <Ionicons name="search" size={20} color="#9CA3AF" />
@@ -549,35 +588,41 @@ export default function AddToFavoritesModal({
                 autoCapitalize="none"
               />
             </View>
-            
-            <ScrollView style={styles.sourceList}>
-              {visibleBrands.map((brand) => (
-                <View
-                  key={brand.display}
-                  style={styles.sourceItemWithButtons}
-                >
-                  <Text style={styles.sourceEmoji}>{brand.emoji}</Text>
-                  <Text style={styles.sourceNameWithButtons}>{brand.display}</Text>
-                  <View style={styles.actionButtons}>
-                    <TouchableOpacity
-                      style={styles.addButton}
-                      onPress={() => addBrand(brand.display, brand.fatsecret)}
-                      disabled={loading}
-                    >
-                      <Text style={styles.addButtonText}>Add</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={() => hideBrand(brand.fatsecret)}
-                      disabled={loading}
-                    >
-                      <Text style={styles.removeButtonText}>Remove</Text>
-                    </TouchableOpacity>
+
+            {loadingDefaults ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FE5858" />
+              </View>
+            ) : (
+              <ScrollView style={styles.sourceList}>
+                {visibleBrands.map((brand) => (
+                  <View
+                    key={brand.id}
+                    style={styles.sourceItemWithButtons}
+                  >
+                    <Text style={styles.sourceEmoji}>{brand.emoji}</Text>
+                    <Text style={styles.sourceNameWithButtons}>{brand.name}</Text>
+                    <View style={styles.actionButtons}>
+                      <TouchableOpacity
+                        style={styles.addButton}
+                        onPress={() => addBrand(brand.name, brand.fatsecret_name)}
+                        disabled={loading}
+                      >
+                        <Text style={styles.addButtonText}>Add</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => hideBrand(brand.fatsecret_name)}
+                        disabled={loading}
+                      >
+                        <Text style={styles.removeButtonText}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              ))}
-            </ScrollView>
-            
+                ))}
+              </ScrollView>
+            )}
+
             <TouchableOpacity
               style={styles.customButton}
               onPress={() => {
