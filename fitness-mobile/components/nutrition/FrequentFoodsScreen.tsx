@@ -789,26 +789,16 @@ export default function FrequentFoodsScreen({ onBack }: FrequentFoodsScreenProps
                 <TouchableOpacity
                   key={food.id}
                   style={styles.savedFoodItem}
-                  onPress={() => quickLogFood(food)}
+                  onPress={() => setSelectedFood(food)}
                   activeOpacity={0.7}
                 >
                   <View style={styles.savedFoodInfo}>
                     <Text style={styles.savedFoodName}>{food.food_name}</Text>
                     <Text style={styles.savedFoodDetails}>
-                      {food.default_amount} {food.default_unit}
-                      {food.log_count > 0 && ` • Logged ${food.log_count}x`}
+                      {food.log_count && food.log_count > 0 ? `Logged ${food.log_count}x` : 'Tap to edit'}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    onPress={(e) => {
-                      e.stopPropagation()
-                      setSelectedFood(food)
-                    }}
-                    style={styles.editFoodButton}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Ionicons name="create-outline" size={20} color="#6B7280" />
-                  </TouchableOpacity>
+                  <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
                 </TouchableOpacity>
               ))
             }
