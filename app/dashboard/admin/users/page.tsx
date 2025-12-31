@@ -8,11 +8,18 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   User,
-  Mail,
-  Calendar,
+  Users,
+  UserCheck,
+  UserX,
+  Clock,
+  AlertTriangle,
+  CreditCard,
   Activity,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react'
 
 interface UserData {
@@ -27,6 +34,8 @@ interface UserData {
   last_activity: string | null
   days_since_activity: number | null
   workouts_30d: number
+  trial_ends?: string | null
+  canceled_at?: string | null
 }
 
 interface Pagination {
@@ -35,6 +44,36 @@ interface Pagination {
   total: number
   totalPages: number
 }
+
+interface SummaryStats {
+  subscriptions: {
+    active: number
+    trial: number
+    canceled: number
+    expired: number
+    pastDue: number
+    expiringTrials3Days: number
+  }
+  engagement: {
+    activeRecently: number
+    atRisk7Days: number
+    atRisk14Days: number
+    critical30Days: number
+  }
+  distributions?: {
+    byTier: { tier: string; count: number }[]
+    byBilling: { interval: string; count: number }[]
+    byPlatform: { platform: string; count: number }[]
+  }
+}
+
+// Preset filters for "Needs Attention" scenarios
+const PRESET_FILTERS = [
+  { id: 'expiring-trials', label: 'Expiring Trials', icon: Clock, color: 'yellow' },
+  { id: 'at-risk', label: 'At-Risk (7d+)', icon: AlertTriangle, color: 'red' },
+  { id: 'past-due', label: 'Past Due', icon: CreditCard, color: 'red' },
+  { id: 'win-back', label: 'Win-Back', icon: UserX, color: 'gray' },
+] as const
 
 function StatusBadge({ status }: { status: string | null }) {
   const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
@@ -100,14 +139,48 @@ function ActivityBadge({ daysSince }: { daysSince: number | null }) {
   )
 }
 
+function StatCard({ label, value, icon: Icon, color = 'gray', onClick }: {
+  label: string
+  value: number
+  icon: any
+  color?: string
+  onClick?: () => void
+}) {
+  const colorClasses: Record<string, string> = {
+    green: 'bg-green-50 text-green-600',
+    blue: 'bg-blue-50 text-blue-600',
+    yellow: 'bg-yellow-50 text-yellow-600',
+    red: 'bg-red-50 text-red-600',
+    gray: 'bg-gray-100 text-gray-600',
+    coral: 'bg-coral/10 text-coral',
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={!onClick}
+      className={`bg-white rounded-lg border border-gray-200 p-3 text-left hover:shadow-sm transition-shadow ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
+    >
+      <div className={`p-1.5 rounded-lg ${colorClasses[color]} w-fit`}>
+        <Icon className="w-4 h-4" />
+      </div>
+      <p className="text-xl font-bold text-gray-900 mt-2">{value}</p>
+      <p className="text-xs text-gray-500">{label}</p>
+    </button>
+  )
+}
+
 export default function AdminUsersPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const [users, setUsers] = useState<UserData[]>([])
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 25, total: 0, totalPages: 0 })
+  const [stats, setStats] = useState<SummaryStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [statsLoading, setStatsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showDistributions, setShowDistributions] = useState(false)
 
   // Filters
   const [search, setSearch] = useState(searchParams.get('search') || '')
@@ -115,39 +188,100 @@ export default function AdminUsersPage() {
   const [tierFilter, setTierFilter] = useState(searchParams.get('tier') || '')
   const [activityFilter, setActivityFilter] = useState(searchParams.get('activity') || '')
   const [roleFilter, setRoleFilter] = useState(searchParams.get('role') || '')
+  const [presetFilter, setPresetFilter] = useState(searchParams.get('preset') || '')
   const [showFilters, setShowFilters] = useState(false)
 
+  // Fetch summary stats
+  const fetchStats = useCallback(async () => {
+    setStatsLoading(true)
+    try {
+      const [subRes, engRes, overviewRes] = await Promise.all([
+        fetch('/api/admin/subscriptions/stats'),
+        fetch('/api/admin/engagement/stats'),
+        fetch('/api/admin/subscriptions/overview')
+      ])
+
+      const subData = await subRes.json()
+      const engData = await engRes.json()
+      const overviewData = await overviewRes.json()
+
+      if (subData.success && engData.success) {
+        setStats({
+          subscriptions: subData.stats,
+          engagement: engData.stats,
+          distributions: overviewData.success ? {
+            byTier: overviewData.stats.byTier,
+            byBilling: overviewData.stats.byBilling,
+            byPlatform: overviewData.stats.byPlatform
+          } : undefined
+        })
+      }
+    } catch (err) {
+      console.error('Error fetching stats:', err)
+    } finally {
+      setStatsLoading(false)
+    }
+  }, [])
+
+  // Fetch users - either from preset filter or regular list
   const fetchUsers = useCallback(async (page: number = 1) => {
     setLoading(true)
     setError(null)
 
     try {
-      const params = new URLSearchParams()
-      params.set('page', page.toString())
-      params.set('limit', '25')
-      if (search) params.set('search', search)
-      if (statusFilter) params.set('status', statusFilter)
-      if (tierFilter) params.set('tier', tierFilter)
-      if (activityFilter) params.set('activity', activityFilter)
-      if (roleFilter) params.set('role', roleFilter)
+      // If using a preset filter, use the engagement/users API
+      if (presetFilter) {
+        const engagementFilter = presetFilter === 'past-due' ? 'at-risk' : presetFilter
+        const res = await fetch(`/api/admin/engagement/users?filter=${engagementFilter}`)
+        const data = await res.json()
 
-      const res = await fetch(`/api/admin/users/list?${params.toString()}`)
-      const data = await res.json()
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to fetch users')
+        }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch users')
+        // For past-due, we need to filter by status
+        let filteredUsers = data.users
+        if (presetFilter === 'past-due') {
+          // Fetch users with past_due status instead
+          const pastDueRes = await fetch('/api/admin/users/list?status=past_due&limit=100')
+          const pastDueData = await pastDueRes.json()
+          filteredUsers = pastDueData.success ? pastDueData.users : []
+        }
+
+        setUsers(filteredUsers)
+        setPagination({ page: 1, limit: 100, total: filteredUsers.length, totalPages: 1 })
+      } else {
+        // Regular user list with filters
+        const params = new URLSearchParams()
+        params.set('page', page.toString())
+        params.set('limit', '25')
+        if (search) params.set('search', search)
+        if (statusFilter) params.set('status', statusFilter)
+        if (tierFilter) params.set('tier', tierFilter)
+        if (activityFilter) params.set('activity', activityFilter)
+        if (roleFilter) params.set('role', roleFilter)
+
+        const res = await fetch(`/api/admin/users/list?${params.toString()}`)
+        const data = await res.json()
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to fetch users')
+        }
+
+        setUsers(data.users)
+        setPagination(data.pagination)
       }
-
-      setUsers(data.users)
-      setPagination(data.pagination)
-
     } catch (err: any) {
       console.error('Error fetching users:', err)
       setError(err.message || 'Failed to load users')
     } finally {
       setLoading(false)
     }
-  }, [search, statusFilter, tierFilter, activityFilter, roleFilter])
+  }, [search, statusFilter, tierFilter, activityFilter, roleFilter, presetFilter])
+
+  useEffect(() => {
+    fetchStats()
+  }, [fetchStats])
 
   useEffect(() => {
     fetchUsers(1)
@@ -155,6 +289,7 @@ export default function AdminUsersPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
+    setPresetFilter('') // Clear preset when searching
     fetchUsers(1)
   }
 
@@ -164,20 +299,182 @@ export default function AdminUsersPage() {
     setTierFilter('')
     setActivityFilter('')
     setRoleFilter('')
+    setPresetFilter('')
+  }
+
+  const applyPresetFilter = (preset: string) => {
+    // Clear other filters when applying preset
+    setSearch('')
+    setStatusFilter('')
+    setTierFilter('')
+    setActivityFilter('')
+    setRoleFilter('')
+    setPresetFilter(preset === presetFilter ? '' : preset)
   }
 
   const hasActiveFilters = search || statusFilter || tierFilter || activityFilter || roleFilter
+  const hasAnyFilter = hasActiveFilters || presetFilter
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Users</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Users & Subscriptions</h2>
           <p className="text-gray-500 mt-1">
             {pagination.total} total users
           </p>
         </div>
+        <button
+          onClick={() => { fetchStats(); fetchUsers(1); }}
+          disabled={loading || statsLoading}
+          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading || statsLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+        <StatCard
+          label="Active"
+          value={stats?.subscriptions.active ?? 0}
+          icon={UserCheck}
+          color="green"
+          onClick={() => { clearFilters(); setStatusFilter('active'); }}
+        />
+        <StatCard
+          label="Trial"
+          value={stats?.subscriptions.trial ?? 0}
+          icon={Clock}
+          color="blue"
+          onClick={() => { clearFilters(); setStatusFilter('trial'); }}
+        />
+        <StatCard
+          label="Expiring (3d)"
+          value={stats?.subscriptions.expiringTrials3Days ?? 0}
+          icon={AlertTriangle}
+          color="yellow"
+          onClick={() => applyPresetFilter('expiring-trials')}
+        />
+        <StatCard
+          label="At-Risk"
+          value={(stats?.engagement.atRisk7Days ?? 0) + (stats?.engagement.atRisk14Days ?? 0)}
+          icon={AlertTriangle}
+          color="red"
+          onClick={() => applyPresetFilter('at-risk')}
+        />
+        <StatCard
+          label="Past Due"
+          value={stats?.subscriptions.pastDue ?? 0}
+          icon={CreditCard}
+          color="red"
+          onClick={() => applyPresetFilter('past-due')}
+        />
+        <StatCard
+          label="Canceled"
+          value={stats?.subscriptions.canceled ?? 0}
+          icon={UserX}
+          color="yellow"
+          onClick={() => { clearFilters(); setStatusFilter('canceled'); }}
+        />
+        <StatCard
+          label="Active (7d)"
+          value={stats?.engagement.activeRecently ?? 0}
+          icon={Activity}
+          color="green"
+          onClick={() => { clearFilters(); setActivityFilter('7'); }}
+        />
+        <StatCard
+          label="Critical (30d+)"
+          value={stats?.engagement.critical30Days ?? 0}
+          icon={UserX}
+          color="gray"
+          onClick={() => { clearFilters(); setActivityFilter('30'); }}
+        />
+      </div>
+
+      {/* Subscription Distributions (Collapsible) */}
+      {stats?.distributions && (
+        <div className="bg-white rounded-lg border border-gray-200">
+          <button
+            onClick={() => setShowDistributions(!showDistributions)}
+            className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50"
+          >
+            <span className="font-medium text-gray-700">Subscription Breakdown</span>
+            {showDistributions ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+          </button>
+          {showDistributions && (
+            <div className="px-4 pb-4 grid grid-cols-1 lg:grid-cols-3 gap-4 border-t border-gray-100">
+              <div className="pt-4">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3">By Tier</h4>
+                <div className="space-y-2">
+                  {stats.distributions.byTier.map((item, i) => (
+                    <div key={i} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">{item.tier || 'Unknown'}</span>
+                      <span className="font-medium text-gray-900">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="pt-4">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3">By Billing</h4>
+                <div className="space-y-2">
+                  {stats.distributions.byBilling.map((item, i) => (
+                    <div key={i} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600 capitalize">{item.interval || 'Unknown'}</span>
+                      <span className="font-medium text-gray-900">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="pt-4">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3">By Platform</h4>
+                <div className="space-y-2">
+                  {stats.distributions.byPlatform.map((item, i) => (
+                    <div key={i} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600 capitalize">{item.platform || 'Unknown'}</span>
+                      <span className="font-medium text-gray-900">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Preset Filters (Needs Attention) */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm text-gray-500 font-medium">Quick filters:</span>
+        {PRESET_FILTERS.map((preset) => {
+          const Icon = preset.icon
+          const isActive = presetFilter === preset.id
+          return (
+            <button
+              key={preset.id}
+              onClick={() => applyPresetFilter(preset.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-coral text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {preset.label}
+            </button>
+          )
+        })}
+        {hasAnyFilter && (
+          <button
+            onClick={clearFilters}
+            className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700"
+          >
+            <X className="w-4 h-4" />
+            Clear
+          </button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -224,7 +521,7 @@ export default function AdminUsersPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => { setStatusFilter(e.target.value); setPresetFilter(''); }}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/20"
                 >
                   <option value="">All Statuses</option>
@@ -240,7 +537,7 @@ export default function AdminUsersPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tier</label>
                 <select
                   value={tierFilter}
-                  onChange={(e) => setTierFilter(e.target.value)}
+                  onChange={(e) => { setTierFilter(e.target.value); setPresetFilter(''); }}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/20"
                 >
                   <option value="">All Tiers</option>
@@ -256,7 +553,7 @@ export default function AdminUsersPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Activity</label>
                 <select
                   value={activityFilter}
-                  onChange={(e) => setActivityFilter(e.target.value)}
+                  onChange={(e) => { setActivityFilter(e.target.value); setPresetFilter(''); }}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/20"
                 >
                   <option value="">All Activity</option>
@@ -271,7 +568,7 @@ export default function AdminUsersPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                 <select
                   value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
+                  onChange={(e) => { setRoleFilter(e.target.value); setPresetFilter(''); }}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/20"
                 >
                   <option value="">All Roles</option>
@@ -281,18 +578,6 @@ export default function AdminUsersPage() {
                 </select>
               </div>
             </div>
-
-            {hasActiveFilters && (
-              <div className="mt-4 flex items-center gap-2">
-                <button
-                  onClick={clearFilters}
-                  className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                >
-                  <X className="w-4 h-4" />
-                  Clear all filters
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -325,6 +610,16 @@ export default function AdminUsersPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Workouts (30d)
                 </th>
+                {presetFilter === 'expiring-trials' && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Trial Ends
+                  </th>
+                )}
+                {presetFilter === 'win-back' && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Canceled
+                  </th>
+                )}
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Joined
                 </th>
@@ -356,7 +651,7 @@ export default function AdminUsersPage() {
                 ))
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
                     No users found
                   </td>
                 </tr>
@@ -392,8 +687,18 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-4 text-gray-600">
                       {user.workouts_30d}
                     </td>
+                    {presetFilter === 'expiring-trials' && (
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {user.trial_ends ? new Date(user.trial_ends).toLocaleDateString() : '-'}
+                      </td>
+                    )}
+                    {presetFilter === 'win-back' && (
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {user.canceled_at ? new Date(user.canceled_at).toLocaleDateString() : '-'}
+                      </td>
+                    )}
                     <td className="px-4 py-4 text-sm text-gray-500">
-                      {new Date(user.created_at).toLocaleDateString()}
+                      {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
                     </td>
                   </tr>
                 ))
@@ -403,7 +708,7 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Pagination */}
-        {pagination.totalPages > 1 && (
+        {!presetFilter && pagination.totalPages > 1 && (
           <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
             <p className="text-sm text-gray-500">
               Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}

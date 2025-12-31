@@ -6,12 +6,9 @@ import { useEffect, useState } from 'react'
 import {
   LayoutDashboard,
   Users,
-  AlertTriangle,
-  CreditCard,
   Activity,
   MessageCircle,
   Settings,
-  LogOut,
   ChevronLeft
 } from 'lucide-react'
 
@@ -62,8 +59,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const [loading, setLoading] = useState(true)
   const [alertCounts, setAlertCounts] = useState({
-    atRisk: 0,
-    expiringTrials: 0,
     unreadChats: 0
   })
 
@@ -86,10 +81,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           const chatRes = await fetch('/api/admin/chat/conversations?unread=true')
           const chatData = await chatRes.json()
           if (chatData.success) {
-            setAlertCounts(prev => ({
-              ...prev,
+            setAlertCounts({
               unreadChats: chatData.conversations?.length || 0
-            }))
+            })
           }
         } catch {
           // Silently fail for badge counts
@@ -117,17 +111,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       href: '/dashboard/admin/users',
       label: 'Users',
       icon: <Users className="w-5 h-5" />
-    },
-    {
-      href: '/dashboard/admin/engagement',
-      label: 'Engagement',
-      icon: <AlertTriangle className="w-5 h-5" />,
-      badge: alertCounts.atRisk + alertCounts.expiringTrials
-    },
-    {
-      href: '/dashboard/admin/subscriptions',
-      label: 'Subscriptions',
-      icon: <CreditCard className="w-5 h-5" />
     },
     {
       href: '/dashboard/admin/training',
