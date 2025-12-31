@@ -92,8 +92,12 @@ export default function MealBuilderModal({
   const handleDefaultIngredientSelect = async (ingredient: DefaultIngredient) => {
     if (loadingIngredient) return // Prevent double-tap
 
+    console.log('=== handleDefaultIngredientSelect START ===')
+    console.log('Ingredient:', ingredient.name, ingredient.search_term)
+
     setLoadingIngredient(ingredient.name)
     try {
+      console.log('Calling nutrition-search API...')
       // Search for the ingredient using its search_term
       const { data, error } = await supabase.functions.invoke('nutrition-search', {
         body: {
@@ -102,9 +106,13 @@ export default function MealBuilderModal({
         },
       })
 
+      console.log('nutrition-search response:', { data, error })
+
       if (error) throw error
 
       const foods = data?.data?.foods?.food
+      console.log('Foods found:', foods)
+
       if (!foods || (Array.isArray(foods) && foods.length === 0)) {
         Alert.alert('Not Found', `Could not find nutrition data for ${ingredient.name}`)
         setLoadingIngredient(null)
@@ -112,11 +120,14 @@ export default function MealBuilderModal({
       }
 
       const foodItem = Array.isArray(foods) ? foods[0] : foods
+      console.log('Selected food item:', foodItem.food_id, foodItem.food_name)
+
       await handleFoodSelect({ food_id: foodItem.food_id, food_name: foodItem.food_name || ingredient.name })
     } catch (error) {
       console.error('Error selecting default ingredient:', error)
       Alert.alert('Error', 'Failed to look up ingredient')
     } finally {
+      console.log('=== handleDefaultIngredientSelect END ===')
       setLoadingIngredient(null)
     }
   }
