@@ -154,6 +154,8 @@ export default function MealBuilderModal({
 
   const handleFoodSelect = async (foodItem: any) => {
     try {
+      console.log('handleFoodSelect called with:', foodItem.food_id, foodItem.food_name)
+
       // Fetch full food details
       const { data, error } = await supabase.functions.invoke('nutrition-food', {
         body: {
@@ -162,12 +164,17 @@ export default function MealBuilderModal({
         },
       })
 
+      console.log('nutrition-food response:', { data, error })
+
       if (error) throw error
-      
+
       const foodData = data?.data?.food
       if (!foodData) {
+        console.log('No food data in response:', data)
         throw new Error('Failed to load food details')
       }
+
+      console.log('Food data loaded:', foodData.food_name)
 
       // Prepare food object with normalization
       const servings = foodData.servings?.serving || []
@@ -230,9 +237,11 @@ export default function MealBuilderModal({
         },
       }
 
+      console.log('Setting selectedFood and showPortionInput to true')
       setSelectedFood(preparedFood)
       setShowFoodSearch(false)
       setShowPortionInput(true)
+      console.log('States updated, portion picker should now show')
     } catch (error: any) {
       console.error('Error loading food details:', error)
       Alert.alert('Error', error.message || 'Failed to load food details')
