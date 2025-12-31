@@ -477,7 +477,7 @@ export default function FrequentFoodsScreen({ onBack }: FrequentFoodsScreenProps
     )
   }
 
-  const totalItems = data.restaurants.length + data.brands.length + data.foods.length + data.meals.length
+  const totalItems = data.restaurants.length + data.brands.length + data.meals.length
 
   return (
     <ScrollView style={styles.container}>
@@ -747,66 +747,9 @@ export default function FrequentFoodsScreen({ onBack }: FrequentFoodsScreenProps
             })}
           </View>
         )}
-        
+
         {expandedSections.brands && data.brands.length === 0 && (
           <Text style={styles.emptyText}>No brands added yet</Text>
-        )}
-      </View>
-
-      {/* Saved Ingredients */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <TouchableOpacity
-            style={styles.sectionHeaderLeft}
-            onPress={() => toggleSection('foods')}
-          >
-            <Text style={styles.sectionTitle}>
-              🥬 Saved Ingredients ({data.foods.filter(f => !f.restaurant_id && !f.brand_id).length})
-            </Text>
-            <Ionicons 
-              name={expandedSections.foods ? 'chevron-up' : 'chevron-down'} 
-              size={24} 
-              color="#6B7280" 
-            />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.addSectionButton}
-            onPress={() => {
-              setAddModalMode('food')
-              setShowAddModal(true)
-            }}
-          >
-            <Ionicons name="add-circle" size={20} color="#FE5858" />
-            <Text style={styles.addSectionButtonText}>Add</Text>
-          </TouchableOpacity>
-        </View>
-        
-        {expandedSections.foods && data.foods.length > 0 && (
-          <View style={styles.itemsList}>
-            {data.foods
-              .filter(food => !food.restaurant_id && !food.brand_id) // Only show ingredients (not tied to restaurant/brand)
-              .map((food) => (
-                <TouchableOpacity
-                  key={food.id}
-                  style={styles.savedFoodItem}
-                  onPress={() => setSelectedFood(food)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.savedFoodInfo}>
-                    <Text style={styles.savedFoodName}>{food.food_name}</Text>
-                    <Text style={styles.savedFoodDetails}>
-                      {food.log_count && food.log_count > 0 ? `Logged ${food.log_count}x` : 'Tap to edit'}
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-                </TouchableOpacity>
-              ))
-            }
-          </View>
-        )}
-        
-        {expandedSections.foods && data.foods.length === 0 && (
-          <Text style={styles.emptyText}>No ingredients added yet</Text>
         )}
       </View>
 
