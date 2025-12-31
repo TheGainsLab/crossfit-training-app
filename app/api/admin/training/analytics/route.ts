@@ -36,6 +36,7 @@ export async function GET() {
     // Fetch stats in parallel
     const [
       totalResult,
+      totalEngineResult,
       weekResult,
       monthResult,
       activeUsersResult,
@@ -44,9 +45,14 @@ export async function GET() {
       programStatsResult,
       engineWorkoutsResult
     ] = await Promise.all([
-      // Total workouts all time
+      // Total workouts all time (performance_logs)
       supabase
         .from('performance_logs')
+        .select('id', { count: 'exact', head: true }),
+
+      // Total Engine workouts all time (workout_sessions)
+      supabase
+        .from('workout_sessions')
         .select('id', { count: 'exact', head: true }),
 
       // Workouts this week
@@ -167,7 +173,7 @@ export async function GET() {
       : 0
 
     const stats = {
-      totalWorkouts: totalResult.count ?? 0,
+      totalWorkouts: (totalResult.count ?? 0) + (totalEngineResult.count ?? 0),
       workoutsThisWeek: weekResult.count ?? 0,
       workoutsThisMonth: monthResult.count ?? 0,
       activeUsersThisWeek: uniqueActiveUsers,
