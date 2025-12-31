@@ -66,6 +66,7 @@ export default function MealBuilderModal({
   const [defaultIngredients, setDefaultIngredients] = useState<Record<string, DefaultIngredient[]>>({})
   const [loadingDefaults, setLoadingDefaults] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>('protein')
+  const [loadingIngredient, setLoadingIngredient] = useState<string | null>(null)
 
   const supabase = createClient()
 
@@ -89,6 +90,9 @@ export default function MealBuilderModal({
   }
 
   const handleDefaultIngredientSelect = async (ingredient: DefaultIngredient) => {
+    if (loadingIngredient) return // Prevent double-tap
+
+    setLoadingIngredient(ingredient.name)
     try {
       // Search for the ingredient using its search_term
       const { data, error } = await supabase.functions.invoke('nutrition-search', {
@@ -103,14 +107,17 @@ export default function MealBuilderModal({
       const foods = data?.data?.foods?.food
       if (!foods || (Array.isArray(foods) && foods.length === 0)) {
         Alert.alert('Not Found', `Could not find nutrition data for ${ingredient.name}`)
+        setLoadingIngredient(null)
         return
       }
 
       const foodItem = Array.isArray(foods) ? foods[0] : foods
-      handleFoodSelect({ food_id: foodItem.food_id, food_name: foodItem.food_name || ingredient.name })
+      await handleFoodSelect({ food_id: foodItem.food_id, food_name: foodItem.food_name || ingredient.name })
     } catch (error) {
       console.error('Error selecting default ingredient:', error)
       Alert.alert('Error', 'Failed to look up ingredient')
+    } finally {
+      setLoadingIngredient(null)
     }
   }
 
@@ -518,10 +525,18 @@ export default function MealBuilderModal({
                 {(defaultIngredients[selectedCategory] || []).map((ingredient) => (
                   <TouchableOpacity
                     key={ingredient.id}
-                    style={styles.ingredientChip}
+                    style={[
+                      styles.ingredientChip,
+                      loadingIngredient === ingredient.name && styles.ingredientChipLoading
+                    ]}
                     onPress={() => handleDefaultIngredientSelect(ingredient)}
+                    disabled={!!loadingIngredient}
                   >
-                    <Text style={styles.ingredientChipEmoji}>{ingredient.emoji}</Text>
+                    {loadingIngredient === ingredient.name ? (
+                      <ActivityIndicator size="small" color="#FE5858" style={{ marginRight: 6 }} />
+                    ) : (
+                      <Text style={styles.ingredientChipEmoji}>{ingredient.emoji}</Text>
+                    )}
                     <Text style={styles.ingredientChipText}>{ingredient.name}</Text>
                   </TouchableOpacity>
                 ))}
@@ -942,6 +957,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  ingredientChipLoading: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FE5858',
   },
   ingredientChipEmoji: {
     fontSize: 14,
