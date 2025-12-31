@@ -41,7 +41,8 @@ export async function GET() {
       activeUsersResult,
       blockStatsResult,
       dailyStatsResult,
-      programStatsResult
+      programStatsResult,
+      engineWorkoutsResult
     ] = await Promise.all([
       // Total workouts all time
       supabase
@@ -83,7 +84,13 @@ export async function GET() {
       supabase
         .from('users')
         .select('subscription_tier')
-        .not('subscription_tier', 'is', null)
+        .not('subscription_tier', 'is', null),
+
+      // Engine workouts in last 30 days (from workout_sessions)
+      supabase
+        .from('workout_sessions')
+        .select('id', { count: 'exact', head: true })
+        .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
     ])
 
     // Calculate unique active users
@@ -97,6 +104,13 @@ export async function GET() {
       const block = log.block || 'Unknown'
       blockCounts[block] = (blockCounts[block] || 0) + 1
     })
+
+    // Add Engine workouts as a block type
+    const engineCount = engineWorkoutsResult.count ?? 0
+    if (engineCount > 0) {
+      blockCounts['ENGINE'] = engineCount
+    }
+
     const workoutsByBlock = Object.entries(blockCounts)
       .map(([block, count]) => ({ block, count }))
       .sort((a, b) => b.count - a.count)

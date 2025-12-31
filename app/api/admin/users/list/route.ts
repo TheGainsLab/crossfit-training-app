@@ -132,12 +132,19 @@ export async function GET(request: NextRequest) {
       .in('user_id', userIds)
       .order('date', { ascending: false })
 
-    // Get workout counts in last 30 days
+    // Get workout counts in last 30 days (performance_logs)
     const { data: workoutCounts } = await supabase
       .from('performance_logs')
       .select('user_id')
       .in('user_id', userIds)
       .gte('logged_at', thirtyDaysAgo.toISOString())
+
+    // Get Engine workout counts in last 30 days (workout_sessions)
+    const { data: engineWorkoutCounts } = await supabase
+      .from('workout_sessions')
+      .select('user_id')
+      .in('user_id', userIds)
+      .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
 
     // Build activity maps
     const userLastActivity: Map<number, Date> = new Map()
@@ -168,10 +175,17 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Count workouts in last 30 days
+    // Count workouts in last 30 days (performance_logs + workout_sessions)
     workoutCounts?.forEach(log => {
       if (log.user_id) {
         userWorkoutCounts.set(log.user_id, (userWorkoutCounts.get(log.user_id) || 0) + 1)
+      }
+    })
+
+    // Add Engine workouts to count
+    engineWorkoutCounts?.forEach(session => {
+      if (session.user_id) {
+        userWorkoutCounts.set(session.user_id, (userWorkoutCounts.get(session.user_id) || 0) + 1)
       }
     })
 
