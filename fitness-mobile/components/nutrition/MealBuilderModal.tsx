@@ -474,7 +474,7 @@ export default function MealBuilderModal({
           <TouchableOpacity onPress={handleClose} style={styles.backButton}>
             <Ionicons name="close" size={24} color="#282B34" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create Meal Template</Text>
+          <Text style={styles.headerTitle}>Meal Builder</Text>
         </View>
 
         <ScrollView style={styles.content}>
@@ -485,7 +485,7 @@ export default function MealBuilderModal({
               style={styles.input}
               value={mealName}
               onChangeText={setMealName}
-              placeholder="e.g., Post-Workout Meal, Chipotle Bowl"
+              placeholder="Enter meal name to save"
               autoFocus
             />
           </Card>
