@@ -8,10 +8,7 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
   User,
-  Users,
   UserCheck,
   UserX,
   Clock,
@@ -59,11 +56,6 @@ interface SummaryStats {
     atRisk7Days: number
     atRisk14Days: number
     critical30Days: number
-  }
-  distributions?: {
-    byTier: { tier: string; count: number }[]
-    byBilling: { interval: string; count: number }[]
-    byPlatform: { platform: string; count: number }[]
   }
 }
 
@@ -180,7 +172,6 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [statsLoading, setStatsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showDistributions, setShowDistributions] = useState(false)
 
   // Filters
   const [search, setSearch] = useState(searchParams.get('search') || '')
@@ -195,25 +186,18 @@ export default function AdminUsersPage() {
   const fetchStats = useCallback(async () => {
     setStatsLoading(true)
     try {
-      const [subRes, engRes, overviewRes] = await Promise.all([
+      const [subRes, engRes] = await Promise.all([
         fetch('/api/admin/subscriptions/stats'),
-        fetch('/api/admin/engagement/stats'),
-        fetch('/api/admin/subscriptions/overview')
+        fetch('/api/admin/engagement/stats')
       ])
 
       const subData = await subRes.json()
       const engData = await engRes.json()
-      const overviewData = await overviewRes.json()
 
       if (subData.success && engData.success) {
         setStats({
           subscriptions: subData.stats,
-          engagement: engData.stats,
-          distributions: overviewData.success ? {
-            byTier: overviewData.stats.byTier,
-            byBilling: overviewData.stats.byBilling,
-            byPlatform: overviewData.stats.byPlatform
-          } : undefined
+          engagement: engData.stats
         })
       }
     } catch (err) {
@@ -394,56 +378,6 @@ export default function AdminUsersPage() {
           onClick={() => { clearFilters(); setActivityFilter('30'); }}
         />
       </div>
-
-      {/* Subscription Distributions (Collapsible) */}
-      {stats?.distributions && (
-        <div className="bg-white rounded-lg border border-gray-200">
-          <button
-            onClick={() => setShowDistributions(!showDistributions)}
-            className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50"
-          >
-            <span className="font-medium text-gray-700">Subscription Breakdown</span>
-            {showDistributions ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-          </button>
-          {showDistributions && (
-            <div className="px-4 pb-4 grid grid-cols-1 lg:grid-cols-3 gap-4 border-t border-gray-100">
-              <div className="pt-4">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3">By Tier</h4>
-                <div className="space-y-2">
-                  {stats.distributions.byTier.map((item, i) => (
-                    <div key={i} className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">{item.tier || 'Unknown'}</span>
-                      <span className="font-medium text-gray-900">{item.count}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="pt-4">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3">By Billing</h4>
-                <div className="space-y-2">
-                  {stats.distributions.byBilling.map((item, i) => (
-                    <div key={i} className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600 capitalize">{item.interval || 'Unknown'}</span>
-                      <span className="font-medium text-gray-900">{item.count}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="pt-4">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3">By Platform</h4>
-                <div className="space-y-2">
-                  {stats.distributions.byPlatform.map((item, i) => (
-                    <div key={i} className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600 capitalize">{item.platform || 'Unknown'}</span>
-                      <span className="font-medium text-gray-900">{item.count}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Preset Filters (Needs Attention) */}
       <div className="flex items-center gap-2 flex-wrap">
