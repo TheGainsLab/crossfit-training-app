@@ -8,13 +8,16 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   User,
   UserX,
   Clock,
   AlertTriangle,
   CreditCard,
   X,
-  RefreshCw
+  RefreshCw,
+  ArrowUpDown
 } from 'lucide-react'
 
 interface UserData {
@@ -129,6 +132,8 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState(searchParams.get('role') || '')
   const [presetFilter, setPresetFilter] = useState(searchParams.get('preset') || '')
   const [showFilters, setShowFilters] = useState(false)
+  const [sortBy, setSortBy] = useState('created_at')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   // Fetch users - either from preset filter or regular list
   const fetchUsers = useCallback(async (page: number = 1) => {
@@ -167,6 +172,8 @@ export default function AdminUsersPage() {
         if (tierFilter) params.set('tier', tierFilter)
         if (activityFilter) params.set('activity', activityFilter)
         if (roleFilter) params.set('role', roleFilter)
+        params.set('sortBy', sortBy)
+        params.set('sortOrder', sortOrder)
 
         const res = await fetch(`/api/admin/users/list?${params.toString()}`)
         const data = await res.json()
@@ -184,7 +191,7 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false)
     }
-  }, [search, statusFilter, tierFilter, activityFilter, roleFilter, presetFilter])
+  }, [search, statusFilter, tierFilter, activityFilter, roleFilter, presetFilter, sortBy, sortOrder])
 
   useEffect(() => {
     fetchUsers(1)
@@ -213,6 +220,17 @@ export default function AdminUsersPage() {
     setActivityFilter('')
     setRoleFilter('')
     setPresetFilter(preset === presetFilter ? '' : preset)
+  }
+
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      // Toggle direction if same column
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      // New column, default to descending
+      setSortBy(column)
+      setSortOrder('desc')
+    }
   }
 
   const hasActiveFilters = search || statusFilter || tierFilter || activityFilter || roleFilter
@@ -388,20 +406,60 @@ export default function AdminUsersPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
+                <th
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('name')}
+                >
+                  <div className="flex items-center gap-1">
+                    User
+                    {sortBy === 'name' ? (
+                      sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                    ) : <ArrowUpDown className="w-3 h-3 text-gray-300" />}
+                  </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                <th
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('subscription_status')}
+                >
+                  <div className="flex items-center gap-1">
+                    Status
+                    {sortBy === 'subscription_status' ? (
+                      sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                    ) : <ArrowUpDown className="w-3 h-3 text-gray-300" />}
+                  </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tier
+                <th
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('subscription_tier')}
+                >
+                  <div className="flex items-center gap-1">
+                    Tier
+                    {sortBy === 'subscription_tier' ? (
+                      sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                    ) : <ArrowUpDown className="w-3 h-3 text-gray-300" />}
+                  </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Active
+                <th
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('days_since_activity')}
+                >
+                  <div className="flex items-center gap-1">
+                    Last Active
+                    {sortBy === 'days_since_activity' ? (
+                      sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                    ) : <ArrowUpDown className="w-3 h-3 text-gray-300" />}
+                  </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Workouts (30d)
+                <th
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('workouts_30d')}
+                >
+                  <div className="flex items-center gap-1">
+                    Workouts (30d)
+                    {sortBy === 'workouts_30d' ? (
+                      sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                    ) : <ArrowUpDown className="w-3 h-3 text-gray-300" />}
+                  </div>
                 </th>
                 {presetFilter === 'expiring-trials' && (
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -413,8 +471,16 @@ export default function AdminUsersPage() {
                     Canceled
                   </th>
                 )}
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Joined
+                <th
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort('created_at')}
+                >
+                  <div className="flex items-center gap-1">
+                    Joined
+                    {sortBy === 'created_at' ? (
+                      sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                    ) : <ArrowUpDown className="w-3 h-3 text-gray-300" />}
+                  </div>
                 </th>
               </tr>
             </thead>

@@ -33,9 +33,16 @@ export async function GET(request: NextRequest) {
     const tierFilter = searchParams.get('tier') || ''
     const activityFilter = searchParams.get('activity') || ''
     const roleFilter = searchParams.get('role') || ''
+    const sortBy = searchParams.get('sortBy') || 'created_at'
+    const sortOrder = searchParams.get('sortOrder') || 'desc'
 
     const offset = (page - 1) * limit
     const now = new Date()
+
+    // Valid sort columns (db columns only - computed columns sorted client-side)
+    const validSortColumns = ['name', 'email', 'subscription_status', 'subscription_tier', 'created_at']
+    const dbSortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at'
+    const ascending = sortOrder === 'asc'
 
     // Build base query for users
     let query = supabase
@@ -79,9 +86,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Execute base query
+    // Execute base query with sorting
     query = query
-      .order('created_at', { ascending: false })
+      .order(dbSortColumn, { ascending })
       .range(offset, offset + limit - 1)
 
     const { data: users, count, error: usersError } = await query
@@ -205,6 +212,19 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Client-side sorting for computed columns
+    if (sortBy === 'last_activity' || sortBy === 'days_since_activity') {
+      enrichedUsers.sort((a, b) => {
+        const aVal = a.days_since_activity ?? 9999
+        const bVal = b.days_since_activity ?? 9999
+        return ascending ? aVal - bVal : bVal - aVal
+      })
+    } else if (sortBy === 'workouts_30d') {
+      enrichedUsers.sort((a, b) => {
+        return ascending ? a.workouts_30d - b.workouts_30d : b.workouts_30d - a.workouts_30d
+      })
+    }
+
     return NextResponse.json({
       success: true,
       users: enrichedUsers,
@@ -213,6 +233,10 @@ export async function GET(request: NextRequest) {
         limit,
         total: count ?? 0,
         totalPages: Math.ceil((count ?? 0) / limit)
+      },
+      sort: {
+        sortBy,
+        sortOrder
       }
     })
 
