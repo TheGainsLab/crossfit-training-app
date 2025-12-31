@@ -90,6 +90,9 @@ export default function MealBuilderModal({
   }
 
   const handleDefaultIngredientSelect = async (ingredient: DefaultIngredient) => {
+    // Immediate alert to confirm tap
+    Alert.alert('Tapped', `You tapped ${ingredient.name}`)
+
     if (loadingIngredient) return // Prevent double-tap
 
     console.log('=== handleDefaultIngredientSelect START ===')
