@@ -4,11 +4,6 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   Users,
-  UserCheck,
-  Clock,
-  AlertTriangle,
-  CreditCard,
-  Activity,
   MessageSquare,
   Dumbbell,
   Upload,
@@ -19,56 +14,9 @@ interface QuickStats {
   subscriptions: {
     active: number
     trial: number
-    pastDue: number
-    expiringTrials3Days: number
+    canceled: number
+    expired: number
   }
-  engagement: {
-    atRisk7Days: number
-    atRisk14Days: number
-  }
-}
-
-function AlertCard({
-  title,
-  count,
-  description,
-  href,
-  severity
-}: {
-  title: string
-  count: number
-  description: string
-  href: string
-  severity: 'warning' | 'danger' | 'info'
-}) {
-  const severityClasses = {
-    warning: 'border-yellow-200 bg-yellow-50',
-    danger: 'border-red-200 bg-red-50',
-    info: 'border-blue-200 bg-blue-50'
-  }
-
-  const iconClasses = {
-    warning: 'text-yellow-600',
-    danger: 'text-red-600',
-    info: 'text-blue-600'
-  }
-
-  if (count === 0) return null
-
-  return (
-    <Link href={href} className={`block rounded-lg border-2 p-4 ${severityClasses[severity]} hover:shadow-md transition-shadow`}>
-      <div className="flex items-start gap-3">
-        <AlertTriangle className={`w-5 h-5 mt-0.5 ${iconClasses[severity]}`} />
-        <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">{title}</h3>
-            <span className="text-2xl font-bold text-gray-900">{count}</span>
-          </div>
-          <p className="text-sm text-gray-600 mt-1">{description}</p>
-        </div>
-      </div>
-    </Link>
-  )
 }
 
 function QuickLink({
@@ -122,18 +70,12 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const [subRes, engRes] = await Promise.all([
-          fetch('/api/admin/subscriptions/stats'),
-          fetch('/api/admin/engagement/stats')
-        ])
+        const res = await fetch('/api/admin/subscriptions/stats')
+        const data = await res.json()
 
-        const subData = await subRes.json()
-        const engData = await engRes.json()
-
-        if (subData.success && engData.success) {
+        if (data.success) {
           setStats({
-            subscriptions: subData.stats,
-            engagement: engData.stats
+            subscriptions: data.stats
           })
         }
       } catch (err) {
@@ -145,8 +87,6 @@ export default function AdminDashboardPage() {
 
     fetchStats()
   }, [])
-
-  const totalAtRisk = (stats?.engagement.atRisk7Days ?? 0) + (stats?.engagement.atRisk14Days ?? 0)
 
   return (
     <div className="space-y-8">
@@ -161,39 +101,8 @@ export default function AdminDashboardPage() {
         <div className="flex flex-wrap gap-3">
           <StatBadge label="Active" value={stats.subscriptions.active} color="green" />
           <StatBadge label="Trial" value={stats.subscriptions.trial} color="blue" />
-          <StatBadge label="Expiring" value={stats.subscriptions.expiringTrials3Days} color="yellow" />
-          <StatBadge label="At-Risk" value={totalAtRisk} color="red" />
-          <StatBadge label="Past Due" value={stats.subscriptions.pastDue} color="red" />
-        </div>
-      )}
-
-      {/* Needs Attention */}
-      {!loading && stats && (stats.subscriptions.expiringTrials3Days > 0 || totalAtRisk > 0 || stats.subscriptions.pastDue > 0) && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Needs Attention</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <AlertCard
-              title="Expiring Trials"
-              count={stats.subscriptions.expiringTrials3Days}
-              description="Trial users ending in 3 days - reach out before they expire"
-              href="/dashboard/admin/users?preset=expiring-trials"
-              severity="warning"
-            />
-            <AlertCard
-              title="At-Risk Users"
-              count={totalAtRisk}
-              description="Active subscribers with no activity in 7+ days"
-              href="/dashboard/admin/users?preset=at-risk"
-              severity="danger"
-            />
-            <AlertCard
-              title="Billing Issues"
-              count={stats.subscriptions.pastDue}
-              description="Subscriptions with payment problems"
-              href="/dashboard/admin/users?preset=past-due"
-              severity="danger"
-            />
-          </div>
+          <StatBadge label="Expired" value={stats.subscriptions.expired} color="yellow" />
+          <StatBadge label="Canceled" value={stats.subscriptions.canceled} color="red" />
         </div>
       )}
 
@@ -238,7 +147,7 @@ export default function AdminDashboardPage() {
       {loading && (
         <div className="animate-pulse space-y-4">
           <div className="flex gap-3">
-            {[...Array(5)].map((_, i) => (
+            {[...Array(4)].map((_, i) => (
               <div key={i} className="h-10 bg-gray-200 rounded-lg w-24" />
             ))}
           </div>

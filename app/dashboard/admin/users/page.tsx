@@ -9,12 +9,10 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
-  UserCheck,
   UserX,
   Clock,
   AlertTriangle,
   CreditCard,
-  Activity,
   X,
   RefreshCw
 } from 'lucide-react'
@@ -40,23 +38,6 @@ interface Pagination {
   limit: number
   total: number
   totalPages: number
-}
-
-interface SummaryStats {
-  subscriptions: {
-    active: number
-    trial: number
-    canceled: number
-    expired: number
-    pastDue: number
-    expiringTrials3Days: number
-  }
-  engagement: {
-    activeRecently: number
-    atRisk7Days: number
-    atRisk14Days: number
-    critical30Days: number
-  }
 }
 
 // Preset filters for "Needs Attention" scenarios
@@ -131,46 +112,13 @@ function ActivityBadge({ daysSince }: { daysSince: number | null }) {
   )
 }
 
-function StatCard({ label, value, icon: Icon, color = 'gray', onClick }: {
-  label: string
-  value: number
-  icon: any
-  color?: string
-  onClick?: () => void
-}) {
-  const colorClasses: Record<string, string> = {
-    green: 'bg-green-50 text-green-600',
-    blue: 'bg-blue-50 text-blue-600',
-    yellow: 'bg-yellow-50 text-yellow-600',
-    red: 'bg-red-50 text-red-600',
-    gray: 'bg-gray-100 text-gray-600',
-    coral: 'bg-coral/10 text-coral',
-  }
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={!onClick}
-      className={`bg-white rounded-lg border border-gray-200 p-3 text-left hover:shadow-sm transition-shadow ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
-    >
-      <div className={`p-1.5 rounded-lg ${colorClasses[color]} w-fit`}>
-        <Icon className="w-4 h-4" />
-      </div>
-      <p className="text-xl font-bold text-gray-900 mt-2">{value}</p>
-      <p className="text-xs text-gray-500">{label}</p>
-    </button>
-  )
-}
-
 export default function AdminUsersPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const [users, setUsers] = useState<UserData[]>([])
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 25, total: 0, totalPages: 0 })
-  const [stats, setStats] = useState<SummaryStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [statsLoading, setStatsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Filters
@@ -181,31 +129,6 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState(searchParams.get('role') || '')
   const [presetFilter, setPresetFilter] = useState(searchParams.get('preset') || '')
   const [showFilters, setShowFilters] = useState(false)
-
-  // Fetch summary stats
-  const fetchStats = useCallback(async () => {
-    setStatsLoading(true)
-    try {
-      const [subRes, engRes] = await Promise.all([
-        fetch('/api/admin/subscriptions/stats'),
-        fetch('/api/admin/engagement/stats')
-      ])
-
-      const subData = await subRes.json()
-      const engData = await engRes.json()
-
-      if (subData.success && engData.success) {
-        setStats({
-          subscriptions: subData.stats,
-          engagement: engData.stats
-        })
-      }
-    } catch (err) {
-      console.error('Error fetching stats:', err)
-    } finally {
-      setStatsLoading(false)
-    }
-  }, [])
 
   // Fetch users - either from preset filter or regular list
   const fetchUsers = useCallback(async (page: number = 1) => {
@@ -264,10 +187,6 @@ export default function AdminUsersPage() {
   }, [search, statusFilter, tierFilter, activityFilter, roleFilter, presetFilter])
 
   useEffect(() => {
-    fetchStats()
-  }, [fetchStats])
-
-  useEffect(() => {
     fetchUsers(1)
   }, [fetchUsers])
 
@@ -310,73 +229,13 @@ export default function AdminUsersPage() {
           </p>
         </div>
         <button
-          onClick={() => { fetchStats(); fetchUsers(1); }}
-          disabled={loading || statsLoading}
+          onClick={() => fetchUsers(1)}
+          disabled={loading}
           className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
         >
-          <RefreshCw className={`w-4 h-4 ${loading || statsLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
-      </div>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-        <StatCard
-          label="Active"
-          value={stats?.subscriptions.active ?? 0}
-          icon={UserCheck}
-          color="green"
-          onClick={() => { clearFilters(); setStatusFilter('active'); }}
-        />
-        <StatCard
-          label="Trial"
-          value={stats?.subscriptions.trial ?? 0}
-          icon={Clock}
-          color="blue"
-          onClick={() => { clearFilters(); setStatusFilter('trial'); }}
-        />
-        <StatCard
-          label="Expiring (3d)"
-          value={stats?.subscriptions.expiringTrials3Days ?? 0}
-          icon={AlertTriangle}
-          color="yellow"
-          onClick={() => applyPresetFilter('expiring-trials')}
-        />
-        <StatCard
-          label="At-Risk"
-          value={(stats?.engagement.atRisk7Days ?? 0) + (stats?.engagement.atRisk14Days ?? 0)}
-          icon={AlertTriangle}
-          color="red"
-          onClick={() => applyPresetFilter('at-risk')}
-        />
-        <StatCard
-          label="Past Due"
-          value={stats?.subscriptions.pastDue ?? 0}
-          icon={CreditCard}
-          color="red"
-          onClick={() => applyPresetFilter('past-due')}
-        />
-        <StatCard
-          label="Canceled"
-          value={stats?.subscriptions.canceled ?? 0}
-          icon={UserX}
-          color="yellow"
-          onClick={() => { clearFilters(); setStatusFilter('canceled'); }}
-        />
-        <StatCard
-          label="Active (7d)"
-          value={stats?.engagement.activeRecently ?? 0}
-          icon={Activity}
-          color="green"
-          onClick={() => { clearFilters(); setActivityFilter('7'); }}
-        />
-        <StatCard
-          label="Critical (30d+)"
-          value={stats?.engagement.critical30Days ?? 0}
-          icon={UserX}
-          color="gray"
-          onClick={() => { clearFilters(); setActivityFilter('30'); }}
-        />
       </div>
 
       {/* Preset Filters (Needs Attention) */}
