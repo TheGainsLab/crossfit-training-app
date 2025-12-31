@@ -88,7 +88,7 @@ function ActivityChart({ data }: { data: { date: string; count: number }[] }) {
 
   return (
     <div className="space-y-3">
-      <h4 className="text-sm font-medium text-gray-700">Daily Workouts (Last 14 Days)</h4>
+      <h4 className="text-sm font-medium text-gray-700">Daily Workouts (Last 7 Days)</h4>
       <div className="flex items-end gap-1 h-32">
         {data.map((day, i) => (
           <div key={i} className="flex-1 flex flex-col items-center gap-1">

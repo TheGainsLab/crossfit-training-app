@@ -30,7 +30,7 @@ export async function GET() {
     startOfWeek.setHours(0, 0, 0, 0)
 
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
     // Fetch stats in parallel
@@ -72,11 +72,11 @@ export async function GET() {
         .select('block')
         .gte('logged_at', thirtyDaysAgo.toISOString()),
 
-      // Daily workouts for last 14 days
+      // Daily workouts for last 7 days
       supabase
         .from('performance_logs')
         .select('logged_at')
-        .gte('logged_at', fourteenDaysAgo.toISOString())
+        .gte('logged_at', sevenDaysAgo.toISOString())
         .order('logged_at', { ascending: true }),
 
       // Program distribution (from users table)
@@ -104,8 +104,8 @@ export async function GET() {
 
     // Calculate daily workouts
     const dailyCounts: Record<string, number> = {}
-    // Initialize all 14 days
-    for (let i = 13; i >= 0; i--) {
+    // Initialize all 7 days
+    for (let i = 6; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
       const dateStr = date.toISOString().split('T')[0]
       dailyCounts[dateStr] = 0
