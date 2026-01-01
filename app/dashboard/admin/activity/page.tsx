@@ -207,6 +207,8 @@ export default function ActivityPage() {
           <option value={24}>Last 24 hours</option>
           <option value={48}>Last 48 hours</option>
           <option value={168}>Last 7 days</option>
+          <option value={720}>Last 30 days</option>
+          <option value={87600}>All time</option>
         </select>
 
         <select
