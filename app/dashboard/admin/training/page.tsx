@@ -221,23 +221,6 @@ export default function AdminTrainingPage() {
         </div>
       </div>
 
-      {/* Program Distribution */}
-      <div className="bg-white rounded-lg border border-gray-200 p-5">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Programs</h3>
-        {stats?.topPrograms && stats.topPrograms.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {stats.topPrograms.map((program, i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="font-medium text-gray-900">{program.name}</span>
-                <span className="text-coral font-bold">{program.count}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 text-sm">No program data available</p>
-        )}
-      </div>
-
       {/* Average Stats */}
       <div className="bg-white rounded-lg border border-gray-200 p-5">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Engagement Metrics</h3>

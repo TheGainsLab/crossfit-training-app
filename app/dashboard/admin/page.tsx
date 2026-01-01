@@ -19,6 +19,11 @@ interface QuickStats {
   }
 }
 
+interface ProgramData {
+  name: string
+  count: number
+}
+
 function QuickLink({
   href,
   icon: Icon,
@@ -66,17 +71,27 @@ function StatBadge({ label, value, color }: { label: string; value: number; colo
 export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<QuickStats | null>(null)
+  const [programs, setPrograms] = useState<ProgramData[]>([])
 
   useEffect(() => {
-    async function fetchStats() {
+    async function fetchData() {
       try {
-        const res = await fetch('/api/admin/subscriptions/stats')
-        const data = await res.json()
+        const [subsRes, trainingRes] = await Promise.all([
+          fetch('/api/admin/subscriptions/stats'),
+          fetch('/api/admin/training/analytics')
+        ])
 
-        if (data.success) {
+        const subsData = await subsRes.json()
+        const trainingData = await trainingRes.json()
+
+        if (subsData.success) {
           setStats({
-            subscriptions: data.stats
+            subscriptions: subsData.stats
           })
+        }
+
+        if (trainingData.success && trainingData.stats?.topPrograms) {
+          setPrograms(trainingData.stats.topPrograms)
         }
       } catch (err) {
         console.error('Failed to fetch stats:', err)
@@ -85,7 +100,7 @@ export default function AdminDashboardPage() {
       }
     }
 
-    fetchStats()
+    fetchData()
   }, [])
 
   return (
@@ -103,6 +118,21 @@ export default function AdminDashboardPage() {
           <StatBadge label="Trial" value={stats.subscriptions.trial} color="blue" />
           <StatBadge label="Expired" value={stats.subscriptions.expired} color="yellow" />
           <StatBadge label="Canceled" value={stats.subscriptions.canceled} color="red" />
+        </div>
+      )}
+
+      {/* Active Programs */}
+      {!loading && programs.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-5">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Programs</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {programs.map((program, i) => (
+              <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="font-medium text-gray-900">{program.name}</span>
+                <span className="text-coral font-bold">{program.count}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
