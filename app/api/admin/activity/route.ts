@@ -122,6 +122,8 @@ export async function GET(request: NextRequest) {
     const activityItems: ActivityItem[] = []
 
     perfByUserBlockDay.forEach((logs, key) => {
+      if (!logs || logs.length === 0) return
+
       const [userIdStr, block] = key.split('-')
       const userId = parseInt(userIdStr)
       const user = usersMap.get(userId)
