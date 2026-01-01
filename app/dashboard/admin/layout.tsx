@@ -9,7 +9,8 @@ import {
   Activity,
   MessageCircle,
   Settings,
-  ChevronLeft
+  ChevronLeft,
+  Zap
 } from 'lucide-react'
 
 interface NavItem {
@@ -106,6 +107,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       href: '/dashboard/admin',
       label: 'Overview',
       icon: <LayoutDashboard className="w-5 h-5" />
+    },
+    {
+      href: '/dashboard/admin/activity',
+      label: 'Activity',
+      icon: <Zap className="w-5 h-5" />
     },
     {
       href: '/dashboard/admin/users',
