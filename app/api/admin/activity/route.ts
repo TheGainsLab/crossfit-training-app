@@ -53,8 +53,9 @@ export async function GET(request: NextRequest) {
         user_id,
         block,
         exercise_name,
-        weight,
-        reps_completed,
+        weight_time,
+        reps,
+        sets,
         result,
         logged_at
       `)
@@ -73,9 +74,10 @@ export async function GET(request: NextRequest) {
         id,
         user_id,
         date,
-        duration_minutes,
-        session_type
+        day_type,
+        completed
       `)
+      .eq('completed', true)
       .gte('date', sinceDate.toISOString().split('T')[0])
       .order('date', { ascending: false })
       .limit(100)
@@ -148,8 +150,9 @@ export async function GET(request: NextRequest) {
         .slice(0, 5)
         .map(log => {
           let detail = log.exercise_name || ''
-          if (log.weight) detail += ` @ ${log.weight}lb`
-          if (log.reps_completed) detail += ` x ${log.reps_completed}`
+          if (log.weight_time) detail += ` @ ${log.weight_time}`
+          if (log.sets && log.reps) detail += ` ${log.sets}x${log.reps}`
+          else if (log.reps) detail += ` x ${log.reps}`
           return detail
         })
 
@@ -184,8 +187,8 @@ export async function GET(request: NextRequest) {
         userTier: user?.tier || null,
         timestamp: new Date(session.date).toISOString(),
         block: 'ENGINE',
-        summary: `ENGINE: ${session.session_type || 'Workout'} session`,
-        details: session.duration_minutes ? [`Duration: ${session.duration_minutes} min`] : []
+        summary: `ENGINE: ${session.day_type || 'Workout'} session`,
+        details: []
       })
     })
 
