@@ -171,15 +171,44 @@ export default function ActivityPage() {
     setNoteText('')
   }
 
+  const [sendingNote, setSendingNote] = useState(false)
+  const [noteSuccess, setNoteSuccess] = useState(false)
+
   const submitNote = async () => {
-    if (!noteModal || !noteText.trim()) return
+    if (!noteModal || !noteText.trim() || sendingNote) return
 
-    // TODO: Implement actual note sending (could use existing chat system)
-    console.log('Sending note to user:', noteModal.userId, noteText)
-    alert(`Note would be sent to ${noteModal.userName}: "${noteText}"`)
+    setSendingNote(true)
+    setNoteSuccess(false)
 
-    setNoteModal(null)
-    setNoteText('')
+    try {
+      const res = await fetch('/api/admin/chat/send-note', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: noteModal.userId,
+          content: noteText.trim(),
+          context: noteModal.summary
+        })
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        setNoteSuccess(true)
+        setTimeout(() => {
+          setNoteModal(null)
+          setNoteText('')
+          setNoteSuccess(false)
+        }, 1500)
+      } else {
+        alert(`Failed to send note: ${data.error}`)
+      }
+    } catch (err) {
+      console.error('Error sending note:', err)
+      alert('Failed to send note. Please try again.')
+    } finally {
+      setSendingNote(false)
+    }
   }
 
   return (
@@ -274,36 +303,57 @@ export default function ActivityPage() {
       {noteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Send Note</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              To: {noteModal.userName} ({noteModal.userEmail})
-            </p>
-            <p className="text-xs text-gray-400 mb-3 p-2 bg-gray-50 rounded">
-              Re: {noteModal.summary}
-            </p>
-            <textarea
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              placeholder="Great work on those squats! Keep it up..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/50 resize-none"
-              rows={4}
-              autoFocus
-            />
-            <div className="flex justify-end gap-3 mt-4">
-              <button
-                onClick={() => setNoteModal(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={submitNote}
-                disabled={!noteText.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-coral rounded-lg hover:bg-coral/90 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Send Note
-              </button>
-            </div>
+            {noteSuccess ? (
+              <div className="text-center py-4">
+                <div className="text-4xl mb-2">✅</div>
+                <p className="text-lg font-medium text-gray-900">Note Sent!</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {noteModal.userName} will see this in their messages
+                </p>
+              </div>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Send Note</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  To: {noteModal.userName} ({noteModal.userEmail})
+                </p>
+                <p className="text-xs text-gray-400 mb-3 p-2 bg-gray-50 rounded">
+                  Re: {noteModal.summary}
+                </p>
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  placeholder="Great work on those squats! Keep it up..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/50 resize-none"
+                  rows={4}
+                  autoFocus
+                  disabled={sendingNote}
+                />
+                <div className="flex justify-end gap-3 mt-4">
+                  <button
+                    onClick={() => setNoteModal(null)}
+                    disabled={sendingNote}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={submitNote}
+                    disabled={!noteText.trim() || sendingNote}
+                    className="px-4 py-2 text-sm font-medium text-white bg-coral rounded-lg hover:bg-coral/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {sendingNote ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      'Send Note'
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
