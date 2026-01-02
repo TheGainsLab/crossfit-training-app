@@ -102,9 +102,12 @@ export default function SessionReviewPage() {
   const renderExerciseRow = (exercise: Exercise) => {
     const sets = exercise.sets || '-';
     const reps = exercise.reps || '-';
-    const weightTime = exercise.weight_time || (exercise.exercise_name.toLowerCase().includes('push-ups') || 
-                                               exercise.exercise_name.toLowerCase().includes('air squats') || 
-                                               exercise.exercise_name.toLowerCase().includes('pull-ups') ? 'BW' : '-');
+    const isBodyweight = exercise.exercise_name.toLowerCase().includes('push-ups') ||
+                         exercise.exercise_name.toLowerCase().includes('air squats') ||
+                         exercise.exercise_name.toLowerCase().includes('pull-ups');
+    const weightTime = (exercise.weight_time && exercise.weight_time !== 'NaN')
+                         ? exercise.weight_time
+                         : (isBodyweight ? 'BW' : '-');
     const rpe = exercise.rpe || '-';
     const quality = exercise.quality_grade || '-';
 

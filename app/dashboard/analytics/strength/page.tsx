@@ -174,7 +174,7 @@ export default function AnalyticsStrengthPage() {
                         <td className="p-2 border-b">{formatDateCompact(r.training_date)}</td>
                         <td className="p-2 border-b">{r.sets ?? ''}</td>
                         <td className="p-2 border-b">{r.reps ?? ''}</td>
-                        <td className="p-2 border-b">{r.weight_time ?? ''}</td>
+                        <td className="p-2 border-b">{r.weight_time && r.weight_time !== 'NaN' ? r.weight_time : ''}</td>
                         <td className="p-2 border-b">{r.rpe ?? ''}</td>
                         <td className="p-2 border-b">{getQualityGrade(r.completion_quality)}</td>
                       </tr>

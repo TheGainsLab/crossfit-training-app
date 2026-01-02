@@ -164,7 +164,7 @@ export default function AnalyticsAccessoriesPage() {
                         <td className="p-2 border-b">{r.exercise_name}</td>
                         <td className="p-2 border-b text-center">{r.sets ?? ''}</td>
                         <td className="p-2 border-b text-center">{r.reps ?? ''}</td>
-                        <td className="p-2 border-b text-center">{r.weight_time ?? ''}</td>
+                        <td className="p-2 border-b text-center">{r.weight_time && r.weight_time !== 'NaN' ? r.weight_time : ''}</td>
                         <td className="p-2 border-b text-center">{r.rpe ?? ''}</td>
                         <td className="p-2 border-b text-center">{getQualityGrade(r.completion_quality)}</td>
                       </tr>

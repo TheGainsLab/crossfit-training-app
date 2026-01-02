@@ -189,7 +189,11 @@ export async function GET(request: NextRequest) {
         .slice(0, 5)
         .map(log => {
           let detail = log.exercise_name || ''
-          if (log.weight_time) detail += ` @ ${log.weight_time}`
+          // Only show weight_time if it's a valid value (not NaN string, not empty)
+          const wt = log.weight_time
+          if (wt && wt !== 'NaN' && wt !== 'nan') {
+            detail += ` @ ${wt}`
+          }
           if (log.sets && log.reps) detail += ` ${log.sets}x${log.reps}`
           else if (log.reps) detail += ` x ${log.reps}`
           return detail
