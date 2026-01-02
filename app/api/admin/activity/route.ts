@@ -202,6 +202,14 @@ export async function GET(request: NextRequest) {
         hours,
         totalItems: activityItems.length,
         returnedItems: limitedItems.length
+      },
+      debug: {
+        perfLogsCount: perfLogs?.length ?? 0,
+        perfError: perfError?.message || null,
+        engineSessionsCount: engineSessions?.length ?? 0,
+        engineError: engineError?.message || null,
+        uniqueUserIds: userIds.size,
+        sinceDate: sinceDate.toISOString()
       }
     })
 

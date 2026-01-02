@@ -139,6 +139,7 @@ export default function ActivityPage() {
   const [tierFilter, setTierFilter] = useState('')
   const [noteModal, setNoteModal] = useState<ActivityItem | null>(null)
   const [noteText, setNoteText] = useState('')
+  const [debug, setDebug] = useState<any>(null)
 
   const fetchActivity = async () => {
     setLoading(true)
@@ -151,6 +152,7 @@ export default function ActivityPage() {
       const data = await res.json()
       if (data.success) {
         setActivity(data.activity)
+        setDebug(data.debug)
       }
     } catch (err) {
       console.error('Failed to fetch activity:', err)
@@ -228,6 +230,21 @@ export default function ActivityPage() {
           {activity.length} activit{activity.length === 1 ? 'y' : 'ies'}
         </div>
       </div>
+
+      {/* Debug Info - Remove before shipping */}
+      {debug && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm">
+          <h4 className="font-semibold text-yellow-800 mb-2">Debug Info (remove before shipping)</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-yellow-700">
+            <div>Performance Logs: <strong>{debug.perfLogsCount}</strong></div>
+            <div>Engine Sessions: <strong>{debug.engineSessionsCount}</strong></div>
+            <div>Unique Users: <strong>{debug.uniqueUserIds}</strong></div>
+            <div>Since: <strong>{new Date(debug.sinceDate).toLocaleDateString()}</strong></div>
+            {debug.perfError && <div className="text-red-600">Perf Error: {debug.perfError}</div>}
+            {debug.engineError && <div className="text-red-600">Engine Error: {debug.engineError}</div>}
+          </div>
+        </div>
+      )}
 
       {/* Activity List */}
       {loading ? (
