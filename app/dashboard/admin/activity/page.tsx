@@ -138,6 +138,7 @@ export default function ActivityPage() {
   const [loading, setLoading] = useState(true)
   const [hours, setHours] = useState(24)
   const [tierFilter, setTierFilter] = useState('')
+  const [blockFilter, setBlockFilter] = useState('')
   const [noteModal, setNoteModal] = useState<ActivityItem | null>(null)
   const [noteText, setNoteText] = useState('')
   const [debug, setDebug] = useState<any>(null)
@@ -148,6 +149,9 @@ export default function ActivityPage() {
       let url = `/api/admin/activity?hours=${hours}`
       if (tierFilter) {
         url += `&tier=${tierFilter}`
+      }
+      if (blockFilter) {
+        url += `&block=${blockFilter}`
       }
       const res = await fetch(url)
       const data = await res.json()
@@ -164,7 +168,7 @@ export default function ActivityPage() {
 
   useEffect(() => {
     fetchActivity()
-  }, [hours, tierFilter])
+  }, [hours, tierFilter, blockFilter])
 
   const handleSendNote = (item: ActivityItem) => {
     setNoteModal(item)
@@ -254,6 +258,20 @@ export default function ActivityPage() {
           <option value="APPLIED_POWER">Applied Power</option>
           <option value="PREMIUM">Premium</option>
           <option value="FULL-PROGRAM">Full Program</option>
+        </select>
+
+        <select
+          value={blockFilter}
+          onChange={(e) => setBlockFilter(e.target.value)}
+          className="px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/50"
+        >
+          <option value="">All Blocks</option>
+          <option value="SKILLS">Skills</option>
+          <option value="TECHNICAL WORK">Technical Work</option>
+          <option value="STRENGTH AND POWER">Strength & Power</option>
+          <option value="ACCESSORIES">Accessories</option>
+          <option value="METCON">MetCon</option>
+          <option value="ENGINE">Engine</option>
         </select>
 
         <div className="flex items-center text-sm text-gray-500">

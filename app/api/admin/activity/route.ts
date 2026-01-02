@@ -41,84 +41,112 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const hours = parseInt(searchParams.get('hours') || '24')
     const tierFilter = searchParams.get('tier') || ''
+    const blockFilter = searchParams.get('block') || ''
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
 
     const sinceDate = new Date(Date.now() - hours * 60 * 60 * 1000)
 
-    // Fetch recent performance logs (BTN workouts)
-    const { data: perfLogs, error: perfError } = await supabase
-      .from('performance_logs')
-      .select(`
-        id,
-        user_id,
-        block,
-        exercise_name,
-        weight_time,
-        reps,
-        sets,
-        result,
-        logged_at
-      `)
-      .gte('logged_at', sinceDate.toISOString())
-      .order('logged_at', { ascending: false })
-      .limit(200)
+    // Fetch recent performance logs (BTN workouts) - skip if filtering for ENGINE or METCON only
+    let perfLogs: any[] | null = null
+    let perfError: any = null
+    if (!blockFilter || (blockFilter !== 'ENGINE' && blockFilter !== 'METCON')) {
+      let perfLogsQuery = supabase
+        .from('performance_logs')
+        .select(`
+          id,
+          user_id,
+          block,
+          exercise_name,
+          weight_time,
+          reps,
+          sets,
+          result,
+          logged_at
+        `)
+        .gte('logged_at', sinceDate.toISOString())
+        .order('logged_at', { ascending: false })
+        .limit(200)
 
-    if (perfError) {
-      console.error('Error fetching performance logs:', perfError)
+      // Apply block filter for specific BTN blocks
+      if (blockFilter) {
+        perfLogsQuery = perfLogsQuery.eq('block', blockFilter)
+      }
+
+      const result = await perfLogsQuery
+      perfLogs = result.data
+      perfError = result.error
+
+      if (perfError) {
+        console.error('Error fetching performance logs:', perfError)
+      }
     }
 
-    // Fetch recent Engine sessions with performance data
-    const { data: engineSessions, error: engineError } = await supabase
-      .from('workout_sessions')
-      .select(`
-        id,
-        user_id,
-        date,
-        day_type,
-        completed,
-        total_output,
-        actual_pace,
-        target_pace,
-        performance_ratio
-      `)
-      .eq('completed', true)
-      .gte('date', sinceDate.toISOString().split('T')[0])
-      .order('date', { ascending: false })
-      .limit(100)
+    // Fetch recent Engine sessions (only if no block filter or filtering for ENGINE)
+    let engineSessions: any[] | null = null
+    let engineError: any = null
+    if (!blockFilter || blockFilter === 'ENGINE') {
+      const result = await supabase
+        .from('workout_sessions')
+        .select(`
+          id,
+          user_id,
+          date,
+          day_type,
+          completed,
+          total_output,
+          actual_pace,
+          target_pace,
+          performance_ratio
+        `)
+        .eq('completed', true)
+        .gte('date', sinceDate.toISOString().split('T')[0])
+        .order('date', { ascending: false })
+        .limit(100)
 
-    if (engineError) {
-      console.error('Error fetching engine sessions:', engineError)
+      engineSessions = result.data
+      engineError = result.error
+
+      if (engineError) {
+        console.error('Error fetching engine sessions:', engineError)
+      }
     }
 
-    // Fetch recent MetCon completions
-    const { data: metconCompletions, error: metconError } = await supabase
-      .from('program_metcons')
-      .select(`
-        id,
-        program_id,
-        week,
-        day,
-        user_score,
-        percentile,
-        completed_at,
-        metcon_id,
-        performance_tier,
-        metcons (
-          workout_id,
-          time_range,
-          format
-        ),
-        programs (
-          user_id
-        )
-      `)
-      .not('completed_at', 'is', null)
-      .gte('completed_at', sinceDate.toISOString())
-      .order('completed_at', { ascending: false })
-      .limit(100)
+    // Fetch recent MetCon completions (only if no block filter or filtering for METCON)
+    let metconCompletions: any[] | null = null
+    let metconError: any = null
+    if (!blockFilter || blockFilter === 'METCON') {
+      const result = await supabase
+        .from('program_metcons')
+        .select(`
+          id,
+          program_id,
+          week,
+          day,
+          user_score,
+          percentile,
+          completed_at,
+          metcon_id,
+          performance_tier,
+          metcons (
+            workout_id,
+            time_range,
+            format
+          ),
+          programs (
+            user_id
+          )
+        `)
+        .not('completed_at', 'is', null)
+        .gte('completed_at', sinceDate.toISOString())
+        .order('completed_at', { ascending: false })
+        .limit(100)
 
-    if (metconError) {
-      console.error('Error fetching metcon completions:', metconError)
+      metconCompletions = result.data
+      metconError = result.error
+
+      if (metconError) {
+        console.error('Error fetching metcon completions:', metconError)
+      }
     }
 
     // Collect all unique user IDs
