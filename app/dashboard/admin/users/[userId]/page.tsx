@@ -32,8 +32,6 @@ interface UserProfile {
   created_at: string
   auth_id: string
   current_program: string | null
-  engine_program_version: string | null
-  engine_current_day: number | null
 }
 
 interface SubscriptionData {
@@ -431,15 +429,12 @@ export default function UserDetailPage() {
 
         {/* Program Status */}
         <InfoCard title="Training Program">
-          {user.current_program || user.engine_program_version ? (
+          {user.current_program ? (
             <>
               <InfoRow
                 label="Current Program"
-                value={user.current_program || `Engine ${user.engine_program_version}`}
+                value={user.current_program}
               />
-              {user.engine_current_day && (
-                <InfoRow label="Program Day" value={user.engine_current_day} />
-              )}
               <InfoRow label="Tier" value={user.subscription_tier || '-'} />
             </>
           ) : (

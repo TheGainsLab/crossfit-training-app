@@ -40,7 +40,7 @@ export async function GET(
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-    // Fetch user data
+    // Fetch user data - only select columns that exist in users table
     const { data: user, error: userError } = await supabase
       .from('users')
       .select(`
@@ -53,14 +53,13 @@ export async function GET(
         subscription_status,
         created_at,
         auth_id,
-        current_program,
-        engine_program_version,
-        engine_current_day
+        current_program
       `)
       .eq('id', targetId)
       .single()
 
     if (userError || !user) {
+      console.error('Error fetching user:', userError)
       return NextResponse.json(
         { success: false, error: 'User not found' },
         { status: 404 }
