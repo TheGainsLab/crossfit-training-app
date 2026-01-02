@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Clock, User, MessageSquare, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
 
 interface ActivityItem {
@@ -121,12 +122,12 @@ function ActivityRow({ item, onSendNote }: { item: ActivityItem; onSendNote: (it
           <MessageSquare className="w-4 h-4" />
           Send Note
         </button>
-        <a
+        <Link
           href={`/dashboard/admin/users/${item.userId}`}
           className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
         >
           View Profile
-        </a>
+        </Link>
       </div>
     </div>
   )
