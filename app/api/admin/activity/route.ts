@@ -102,9 +102,11 @@ export async function GET(request: NextRequest) {
         percentile,
         completed_at,
         metcon_id,
+        performance_tier,
         metcons (
-          name,
-          time_range
+          workout_id,
+          time_range,
+          format
         ),
         programs (
           user_id
@@ -251,8 +253,13 @@ export async function GET(request: NextRequest) {
       // Apply tier filter
       if (tierFilter && user?.tier !== tierFilter) return
 
-      const metconName = (mc.metcons as any)?.name || 'MetCon'
+      const workoutId = (mc.metcons as any)?.workout_id || ''
       const timeRange = (mc.metcons as any)?.time_range || ''
+      const format = (mc.metcons as any)?.format || ''
+      const tier = mc.performance_tier || ''
+
+      // Build summary - use workout_id as identifier, or format
+      const metconLabel = workoutId || format || 'MetCon'
 
       // Build details
       const details: string[] = []
@@ -262,8 +269,11 @@ export async function GET(request: NextRequest) {
       if (mc.percentile) {
         details.push(`Percentile: ${mc.percentile}%`)
       }
+      if (tier) {
+        details.push(`Tier: ${tier}`)
+      }
       if (timeRange) {
-        details.push(`Time domain: ${timeRange}`)
+        details.push(`Time: ${timeRange}`)
       }
 
       activityItems.push({
@@ -275,7 +285,7 @@ export async function GET(request: NextRequest) {
         userTier: user?.tier || null,
         timestamp: mc.completed_at,
         block: 'METCON',
-        summary: `METCON: ${metconName}`,
+        summary: `METCON: ${metconLabel}`,
         details
       })
     })
