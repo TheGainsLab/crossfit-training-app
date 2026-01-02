@@ -235,13 +235,15 @@ export default function ActivityPage() {
       {debug && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm">
           <h4 className="font-semibold text-yellow-800 mb-2">Debug Info (remove before shipping)</h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-yellow-700">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-yellow-700">
             <div>Performance Logs: <strong>{debug.perfLogsCount}</strong></div>
             <div>Engine Sessions: <strong>{debug.engineSessionsCount}</strong></div>
+            <div>MetCon Completions: <strong>{debug.metconCount}</strong></div>
             <div>Unique Users: <strong>{debug.uniqueUserIds}</strong></div>
             <div>Since: <strong>{new Date(debug.sinceDate).toLocaleDateString()}</strong></div>
-            {debug.perfError && <div className="text-red-600">Perf Error: {debug.perfError}</div>}
-            {debug.engineError && <div className="text-red-600">Engine Error: {debug.engineError}</div>}
+            {debug.perfError && <div className="text-red-600 col-span-2">Perf Error: {debug.perfError}</div>}
+            {debug.engineError && <div className="text-red-600 col-span-2">Engine Error: {debug.engineError}</div>}
+            {debug.metconError && <div className="text-red-600 col-span-2">MetCon Error: {debug.metconError}</div>}
           </div>
         </div>
       )}

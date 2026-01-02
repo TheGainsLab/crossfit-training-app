@@ -4,7 +4,7 @@ import { getUserIdFromAuth, isAdmin } from '@/lib/permissions'
 
 interface ActivityItem {
   id: string
-  type: 'btn' | 'engine'
+  type: 'btn' | 'engine' | 'metcon'
   userId: number
   userName: string | null
   userEmail: string | null
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching performance logs:', perfError)
     }
 
-    // Fetch recent Engine sessions
+    // Fetch recent Engine sessions with performance data
     const { data: engineSessions, error: engineError } = await supabase
       .from('workout_sessions')
       .select(`
@@ -75,7 +75,11 @@ export async function GET(request: NextRequest) {
         user_id,
         date,
         day_type,
-        completed
+        completed,
+        total_output,
+        actual_pace,
+        target_pace,
+        performance_ratio
       `)
       .eq('completed', true)
       .gte('date', sinceDate.toISOString().split('T')[0])
@@ -86,10 +90,43 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching engine sessions:', engineError)
     }
 
+    // Fetch recent MetCon completions
+    const { data: metconCompletions, error: metconError } = await supabase
+      .from('program_metcons')
+      .select(`
+        id,
+        program_id,
+        week,
+        day,
+        user_score,
+        percentile,
+        completed_at,
+        metcon_id,
+        metcons (
+          name,
+          time_range
+        ),
+        programs (
+          user_id
+        )
+      `)
+      .not('completed_at', 'is', null)
+      .gte('completed_at', sinceDate.toISOString())
+      .order('completed_at', { ascending: false })
+      .limit(100)
+
+    if (metconError) {
+      console.error('Error fetching metcon completions:', metconError)
+    }
+
     // Collect all unique user IDs
     const userIds = new Set<number>()
     perfLogs?.forEach(log => log.user_id && userIds.add(log.user_id))
     engineSessions?.forEach(session => session.user_id && userIds.add(session.user_id))
+    metconCompletions?.forEach(mc => {
+      const mcUserId = (mc.programs as any)?.user_id
+      if (mcUserId) userIds.add(mcUserId)
+    })
 
     // Fetch user details
     let usersMap = new Map<number, { name: string | null, email: string | null, tier: string | null }>()
@@ -170,13 +207,26 @@ export async function GET(request: NextRequest) {
       })
     })
 
-    // Add Engine sessions
+    // Add Engine sessions with performance data
     engineSessions?.forEach(session => {
       if (!session.user_id) return
       const user = usersMap.get(session.user_id)
 
       // Apply tier filter
       if (tierFilter && user?.tier !== tierFilter) return
+
+      // Build details with performance metrics
+      const details: string[] = []
+      if (session.actual_pace) {
+        details.push(`Pace: ${session.actual_pace}`)
+      }
+      if (session.total_output) {
+        details.push(`Output: ${session.total_output}`)
+      }
+      if (session.performance_ratio) {
+        const pct = (session.performance_ratio * 100).toFixed(0)
+        details.push(`Performance: ${pct}%`)
+      }
 
       activityItems.push({
         id: `engine-${session.id}`,
@@ -188,7 +238,45 @@ export async function GET(request: NextRequest) {
         timestamp: new Date(session.date).toISOString(),
         block: 'ENGINE',
         summary: `ENGINE: ${session.day_type || 'Workout'} session`,
-        details: []
+        details
+      })
+    })
+
+    // Add MetCon completions
+    metconCompletions?.forEach(mc => {
+      const mcUserId = (mc.programs as any)?.user_id
+      if (!mcUserId) return
+      const user = usersMap.get(mcUserId)
+
+      // Apply tier filter
+      if (tierFilter && user?.tier !== tierFilter) return
+
+      const metconName = (mc.metcons as any)?.name || 'MetCon'
+      const timeRange = (mc.metcons as any)?.time_range || ''
+
+      // Build details
+      const details: string[] = []
+      if (mc.user_score) {
+        details.push(`Score: ${mc.user_score}`)
+      }
+      if (mc.percentile) {
+        details.push(`Percentile: ${mc.percentile}%`)
+      }
+      if (timeRange) {
+        details.push(`Time domain: ${timeRange}`)
+      }
+
+      activityItems.push({
+        id: `metcon-${mc.id}`,
+        type: 'metcon',
+        userId: mcUserId,
+        userName: user?.name || null,
+        userEmail: user?.email || null,
+        userTier: user?.tier || null,
+        timestamp: mc.completed_at,
+        block: 'METCON',
+        summary: `METCON: ${metconName}`,
+        details
       })
     })
 
@@ -211,6 +299,8 @@ export async function GET(request: NextRequest) {
         perfError: perfError?.message || null,
         engineSessionsCount: engineSessions?.length ?? 0,
         engineError: engineError?.message || null,
+        metconCount: metconCompletions?.length ?? 0,
+        metconError: metconError?.message || null,
         uniqueUserIds: userIds.size,
         sinceDate: sinceDate.toISOString()
       }
