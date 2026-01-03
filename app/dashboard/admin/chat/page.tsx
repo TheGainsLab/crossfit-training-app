@@ -12,7 +12,10 @@ import {
   ChevronRight,
   RefreshCw,
   Filter,
-  Send
+  Send,
+  Paperclip,
+  X,
+  Image as ImageIcon
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { RealtimeChannel } from '@supabase/supabase-js'
@@ -179,6 +182,15 @@ export default function AdminChatPage() {
   const [newMessage, setNewMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  // Attachment state
+  const [pendingAttachment, setPendingAttachment] = useState<{
+    file: File
+    preview: string
+    type: 'image' | 'video'
+  } | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   // Realtime subscription refs
   const messagesChannelRef = useRef<RealtimeChannel | null>(null)
   const conversationsChannelRef = useRef<RealtimeChannel | null>(null)
@@ -314,15 +326,100 @@ export default function AdminChatPage() {
     router.push(`/dashboard/admin/chat?id=${conv.id}${statusFilter ? `&status=${statusFilter}` : ''}`)
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Check file type
+    const isImage = file.type.startsWith('image/')
+    const isVideo = file.type.startsWith('video/')
+
+    if (!isImage && !isVideo) {
+      setError('Please select an image or video file')
+      return
+    }
+
+    // Check file size (10MB for images, 50MB for videos)
+    const maxSize = isImage ? 10 * 1024 * 1024 : 50 * 1024 * 1024
+    if (file.size > maxSize) {
+      setError(`File too large. Max size: ${isImage ? '10MB' : '50MB'}`)
+      return
+    }
+
+    // Create preview
+    const preview = URL.createObjectURL(file)
+    setPendingAttachment({
+      file,
+      preview,
+      type: isImage ? 'image' : 'video'
+    })
+    setError(null)
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const clearAttachment = () => {
+    if (pendingAttachment?.preview) {
+      URL.revokeObjectURL(pendingAttachment.preview)
+    }
+    setPendingAttachment(null)
+  }
+
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedId || sending) return
+    if ((!newMessage.trim() && !pendingAttachment) || !selectedId || sending || uploading) return
 
     setSending(true)
+    setError(null)
+
     try {
+      let attachments: ChatAttachment[] | undefined
+
+      // Upload attachment if present
+      if (pendingAttachment && selectedConversation) {
+        setUploading(true)
+
+        // Upload to Supabase Storage
+        const timestamp = Date.now()
+        const ext = pendingAttachment.file.name.split('.').pop() || 'jpg'
+        const filename = `${timestamp}.${ext}`
+        const storagePath = `${selectedConversation.user_id}/${filename}`
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('chat-attachments')
+          .upload(storagePath, pendingAttachment.file, {
+            contentType: pendingAttachment.file.type,
+            upsert: false
+          })
+
+        if (uploadError) {
+          throw new Error(`Upload failed: ${uploadError.message}`)
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('chat-attachments')
+          .getPublicUrl(storagePath)
+
+        attachments = [{
+          type: pendingAttachment.type,
+          url: urlData.publicUrl,
+          filename: pendingAttachment.file.name,
+          size_bytes: pendingAttachment.file.size
+        }]
+
+        setUploading(false)
+      }
+
       const res = await fetch(`/api/admin/chat/conversations/${selectedId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newMessage.trim() })
+        body: JSON.stringify({
+          content: newMessage.trim(),
+          attachments
+        })
       })
 
       const data = await res.json()
@@ -330,13 +427,15 @@ export default function AdminChatPage() {
       if (data.success) {
         setMessages(prev => [...prev, data.message])
         setNewMessage('')
+        clearAttachment()
         fetchConversations()
       } else {
         setError(data.error || 'Failed to send message')
       }
     } catch (err) {
       console.error('Error sending message:', err)
-      setError('Failed to send message')
+      setError(err instanceof Error ? err.message : 'Failed to send message')
+      setUploading(false)
     } finally {
       setSending(false)
     }
@@ -527,7 +626,53 @@ export default function AdminChatPage() {
                 {error && (
                   <p className="text-sm text-red-600 mb-2">{error}</p>
                 )}
+
+                {/* Attachment preview */}
+                {pendingAttachment && (
+                  <div className="mb-3 relative inline-block">
+                    {pendingAttachment.type === 'image' ? (
+                      <img
+                        src={pendingAttachment.preview}
+                        alt="Attachment preview"
+                        className="max-h-32 rounded-lg border border-gray-200"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
+                        <span className="text-xl">🎬</span>
+                        <span className="text-sm text-gray-600 truncate max-w-48">
+                          {pendingAttachment.file.name}
+                        </span>
+                      </div>
+                    )}
+                    <button
+                      onClick={clearAttachment}
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+
+                  {/* Attachment button */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={sending || uploading}
+                    className="px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Add attachment"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+
                   <input
                     type="text"
                     value={newMessage}
@@ -538,11 +683,15 @@ export default function AdminChatPage() {
                   />
                   <button
                     onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || sending}
+                    disabled={(!newMessage.trim() && !pendingAttachment) || sending || uploading}
                     className="px-4 py-2 bg-coral text-white rounded-lg hover:bg-coral/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    <Send className="w-4 h-4" />
-                    Send
+                    {uploading ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                    {uploading ? 'Uploading...' : 'Send'}
                   </button>
                 </div>
               </div>

@@ -30,11 +30,15 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { content } = body
+    const { content, attachments } = body
 
-    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+    // Allow messages with just attachments (no text content)
+    const hasContent = content && typeof content === 'string' && content.trim().length > 0
+    const hasAttachments = attachments && Array.isArray(attachments) && attachments.length > 0
+
+    if (!hasContent && !hasAttachments) {
       return NextResponse.json(
-        { success: false, error: 'Message content is required' },
+        { success: false, error: 'Message content or attachment is required' },
         { status: 400 }
       )
     }
@@ -62,7 +66,8 @@ export async function POST(
         conversation_id: conversationId,
         sender_type: 'admin',
         sender_id: userId,
-        content: content.trim()
+        content: hasContent ? content.trim() : '',
+        attachments: hasAttachments ? attachments : null
       })
       .select()
       .single()
@@ -94,9 +99,15 @@ export async function POST(
 
       if (userData?.push_token) {
         // Truncate message for notification preview
-        const previewContent = content.trim().length > 100
-          ? content.trim().slice(0, 100) + '...'
-          : content.trim()
+        let previewContent = ''
+        if (hasContent) {
+          previewContent = content.trim().length > 100
+            ? content.trim().slice(0, 100) + '...'
+            : content.trim()
+        } else if (hasAttachments) {
+          const attachmentType = attachments[0]?.type === 'video' ? 'video' : 'image'
+          previewContent = `Sent ${attachmentType === 'video' ? 'a video' : 'an image'}`
+        }
 
         const pushResponse = await fetch('https://exp.host/--/api/v2/push/send', {
           method: 'POST',
@@ -143,7 +154,8 @@ export async function POST(
         sender_id: message.sender_id,
         content: message.content,
         created_at: message.created_at,
-        is_auto_reply: false
+        is_auto_reply: false,
+        attachments: message.attachments
       }
     })
 
