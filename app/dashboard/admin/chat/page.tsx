@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -14,6 +14,8 @@ import {
   Filter,
   Send
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
+import { RealtimeChannel } from '@supabase/supabase-js'
 
 interface Conversation {
   id: string
@@ -27,6 +29,14 @@ interface Conversation {
   last_message_preview: string | null
 }
 
+interface ChatAttachment {
+  type: 'image' | 'video'
+  url: string
+  thumbnail_url?: string
+  filename: string
+  size_bytes: number
+}
+
 interface Message {
   id: string
   sender_type: 'user' | 'admin'
@@ -34,6 +44,7 @@ interface Message {
   content: string
   created_at: string
   is_auto_reply: boolean
+  attachments?: ChatAttachment[] | null
 }
 
 function ConversationRow({
@@ -96,6 +107,7 @@ function ConversationRow({
 
 function MessageBubble({ message }: { message: Message }) {
   const isAdmin = message.sender_type === 'admin'
+  const hasAttachments = message.attachments && message.attachments.length > 0
 
   return (
     <div className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
@@ -108,7 +120,41 @@ function MessageBubble({ message }: { message: Message }) {
             : 'bg-gray-100 text-gray-900'
         }`}
       >
-        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+        {/* Attachments */}
+        {hasAttachments && (
+          <div className="mb-2 space-y-2">
+            {message.attachments!.map((attachment, idx) => (
+              <div key={idx}>
+                {attachment.type === 'image' ? (
+                  <a href={attachment.url} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={attachment.url}
+                      alt={attachment.filename}
+                      className="max-w-full rounded-lg max-h-64 object-cover cursor-pointer hover:opacity-90"
+                    />
+                  </a>
+                ) : (
+                  <a
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                      isAdmin && !message.is_auto_reply
+                        ? 'bg-white/20 hover:bg-white/30'
+                        : 'bg-gray-200 hover:bg-gray-300'
+                    }`}
+                  >
+                    <span className="text-xl">🎬</span>
+                    <span className="text-sm truncate">{attachment.filename}</span>
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {message.content && (
+          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+        )}
         <p className={`text-xs mt-1 ${isAdmin && !message.is_auto_reply ? 'text-white/70' : 'text-gray-400'}`}>
           {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           {message.is_auto_reply && ' • Auto-reply'}
@@ -132,6 +178,11 @@ export default function AdminChatPage() {
   const [sending, setSending] = useState(false)
   const [newMessage, setNewMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
+
+  // Realtime subscription refs
+  const messagesChannelRef = useRef<RealtimeChannel | null>(null)
+  const conversationsChannelRef = useRef<RealtimeChannel | null>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   const fetchConversations = useCallback(async () => {
     try {
@@ -179,6 +230,85 @@ export default function AdminChatPage() {
       setMessages([])
     }
   }, [selectedId, fetchMessages])
+
+  // Subscribe to conversation list changes (new conversations, status updates)
+  useEffect(() => {
+    // Clean up existing subscription
+    if (conversationsChannelRef.current) {
+      supabase.removeChannel(conversationsChannelRef.current)
+    }
+
+    const channel = supabase
+      .channel('admin-conversations')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'support_conversations'
+        },
+        () => {
+          // Refresh conversations list when any conversation changes
+          fetchConversations()
+        }
+      )
+      .subscribe()
+
+    conversationsChannelRef.current = channel
+
+    return () => {
+      if (conversationsChannelRef.current) {
+        supabase.removeChannel(conversationsChannelRef.current)
+      }
+    }
+  }, [fetchConversations])
+
+  // Subscribe to messages in the selected conversation
+  useEffect(() => {
+    // Clean up existing subscription
+    if (messagesChannelRef.current) {
+      supabase.removeChannel(messagesChannelRef.current)
+      messagesChannelRef.current = null
+    }
+
+    if (!selectedId) return
+
+    const channel = supabase
+      .channel(`admin-messages-${selectedId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'support_messages',
+          filter: `conversation_id=eq.${selectedId}`
+        },
+        (payload) => {
+          const newMsg = payload.new as Message
+          // Only add if not already in the list (avoid duplicates from our own sends)
+          setMessages(prev => {
+            if (prev.some(m => m.id === newMsg.id)) return prev
+            return [...prev, newMsg]
+          })
+          // Scroll to bottom
+          setTimeout(() => {
+            messagesContainerRef.current?.scrollTo({
+              top: messagesContainerRef.current.scrollHeight,
+              behavior: 'smooth'
+            })
+          }, 100)
+        }
+      )
+      .subscribe()
+
+    messagesChannelRef.current = channel
+
+    return () => {
+      if (messagesChannelRef.current) {
+        supabase.removeChannel(messagesChannelRef.current)
+      }
+    }
+  }, [selectedId])
 
   const handleSelectConversation = (conv: Conversation) => {
     router.push(`/dashboard/admin/chat?id=${conv.id}${statusFilter ? `&status=${statusFilter}` : ''}`)
@@ -245,14 +375,23 @@ export default function AdminChatPage() {
             {unreadCount > 0 ? `${unreadCount} unread conversation${unreadCount > 1 ? 's' : ''}` : 'User support messages'}
           </p>
         </div>
-        <button
-          onClick={fetchConversations}
-          disabled={loading}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 text-sm text-green-600">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            </span>
+            Live
+          </div>
+          <button
+            onClick={fetchConversations}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Filter tabs */}
@@ -367,7 +506,7 @@ export default function AdminChatPage() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messagesLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <RefreshCw className="w-6 h-6 text-gray-400 animate-spin" />
