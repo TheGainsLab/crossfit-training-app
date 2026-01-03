@@ -39,7 +39,7 @@ WITH CHECK (
   bucket_id = 'chat-attachments'
   AND (storage.foldername(name))[1] = (
     SELECT id::text FROM public.users
-    WHERE supabase_user_id = auth.uid()
+    WHERE auth_id = auth.uid()
   )
 );
 
@@ -52,7 +52,7 @@ USING (
   bucket_id = 'chat-attachments'
   AND (storage.foldername(name))[1] = (
     SELECT id::text FROM public.users
-    WHERE supabase_user_id = auth.uid()
+    WHERE auth_id = auth.uid()
   )
 );
 
@@ -65,7 +65,7 @@ USING (
   bucket_id = 'chat-attachments'
   AND (storage.foldername(name))[1] = (
     SELECT id::text FROM public.users
-    WHERE supabase_user_id = auth.uid()
+    WHERE auth_id = auth.uid()
   )
 );
 
@@ -87,7 +87,7 @@ USING (
   bucket_id = 'chat-attachments'
   AND EXISTS (
     SELECT 1 FROM public.users
-    WHERE supabase_user_id = auth.uid()
+    WHERE auth_id = auth.uid()
     AND role IN ('admin', 'superadmin')
   )
 )
@@ -95,7 +95,7 @@ WITH CHECK (
   bucket_id = 'chat-attachments'
   AND EXISTS (
     SELECT 1 FROM public.users
-    WHERE supabase_user_id = auth.uid()
+    WHERE auth_id = auth.uid()
     AND role IN ('admin', 'superadmin')
   )
 );
