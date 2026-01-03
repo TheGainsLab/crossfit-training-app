@@ -283,8 +283,8 @@ export default function AdminChatPage() {
           table: 'support_messages',
           filter: `conversation_id=eq.${selectedId}`
         },
-        (payload) => {
-          const newMsg = payload.new as Message
+        (payload: { new: Message }) => {
+          const newMsg = payload.new
           // Only add if not already in the list (avoid duplicates from our own sends)
           setMessages(prev => {
             if (prev.some(m => m.id === newMsg.id)) return prev
