@@ -9,19 +9,27 @@ import {
   Platform,
   StyleSheet,
   ActivityIndicator,
-  SafeAreaView
+  SafeAreaView,
+  Image,
+  Alert
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import * as ImagePicker from 'expo-image-picker'
+import { Video, ResizeMode } from 'expo-av'
 import { createClient } from '@/lib/supabase/client'
 import {
   ChatMessage,
   ChatConversation,
+  ChatAttachment,
   getOrCreateConversation,
   getMessages,
   sendMessage,
   subscribeToMessages,
-  unsubscribeFromMessages
+  unsubscribeFromMessages,
+  uploadAttachment,
+  MAX_IMAGE_SIZE_BYTES,
+  MAX_VIDEO_SIZE_BYTES
 } from '@/lib/api/chat'
 import { RealtimeChannel } from '@supabase/supabase-js'
 
@@ -37,6 +45,8 @@ export default function SupportChatScreen() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pendingAttachment, setPendingAttachment] = useState<{uri: string, type: 'image' | 'video'} | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   // Initialize chat
   useEffect(() => {
@@ -117,12 +127,89 @@ export default function SupportChatScreen() {
     }
   }, [messages])
 
-  const handleSend = useCallback(async () => {
-    if (!newMessage.trim() || !userId || !conversation || sending) return
+  // Pick image or video
+  const handlePickMedia = useCallback(async () => {
+    Alert.alert(
+      'Add Attachment',
+      'Choose an option',
+      [
+        {
+          text: 'Take Photo',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync()
+            if (status !== 'granted') {
+              Alert.alert('Permission needed', 'Camera access is required to take photos')
+              return
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              quality: 0.8,
+              allowsEditing: true,
+            })
+            if (!result.canceled && result.assets[0]) {
+              const asset = result.assets[0]
+              if (asset.fileSize && asset.fileSize > MAX_IMAGE_SIZE_BYTES) {
+                Alert.alert('File too large', 'Please choose an image under 10MB')
+                return
+              }
+              setPendingAttachment({ uri: asset.uri, type: 'image' })
+            }
+          }
+        },
+        {
+          text: 'Choose from Library',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+            if (status !== 'granted') {
+              Alert.alert('Permission needed', 'Photo library access is required')
+              return
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.All,
+              quality: 0.8,
+              allowsEditing: true,
+            })
+            if (!result.canceled && result.assets[0]) {
+              const asset = result.assets[0]
+              const isVideo = asset.type === 'video'
+              const maxSize = isVideo ? MAX_VIDEO_SIZE_BYTES : MAX_IMAGE_SIZE_BYTES
+              if (asset.fileSize && asset.fileSize > maxSize) {
+                Alert.alert('File too large', `Please choose a file under ${isVideo ? '50MB' : '10MB'}`)
+                return
+              }
+              setPendingAttachment({ uri: asset.uri, type: isVideo ? 'video' : 'image' })
+            }
+          }
+        },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    )
+  }, [])
 
-    const messageContent = newMessage.trim()
+  const handleSend = useCallback(async () => {
+    if ((!newMessage.trim() && !pendingAttachment) || !userId || !conversation || sending || uploading) return
+
+    const messageContent = newMessage.trim() || (pendingAttachment ? `[${pendingAttachment.type === 'image' ? 'Photo' : 'Video'}]` : '')
     setNewMessage('')
     setSending(true)
+
+    let attachments: ChatAttachment[] | undefined
+
+    // Upload attachment if present
+    if (pendingAttachment) {
+      setUploading(true)
+      const uploadResult = await uploadAttachment(userId, pendingAttachment.uri, pendingAttachment.type)
+      setUploading(false)
+
+      if (uploadResult.success && uploadResult.attachment) {
+        attachments = [uploadResult.attachment]
+      } else {
+        Alert.alert('Upload failed', uploadResult.error || 'Could not upload attachment')
+        setSending(false)
+        return
+      }
+      setPendingAttachment(null)
+    }
 
     // Optimistically add the message
     const optimisticMessage: ChatMessage = {
@@ -132,12 +219,13 @@ export default function SupportChatScreen() {
       sender_id: userId,
       content: messageContent,
       created_at: new Date().toISOString(),
-      is_auto_reply: false
+      is_auto_reply: false,
+      attachments: attachments
     }
     setMessages(prev => [...prev, optimisticMessage])
 
     try {
-      const result = await sendMessage(userId, conversation.id, messageContent)
+      const result = await sendMessage(userId, conversation.id, messageContent, attachments)
 
       if (result.success && result.message) {
         // Replace optimistic message with real one
@@ -161,11 +249,12 @@ export default function SupportChatScreen() {
     } finally {
       setSending(false)
     }
-  }, [newMessage, userId, conversation, sending])
+  }, [newMessage, userId, conversation, sending, uploading, pendingAttachment])
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isUser = item.sender_type === 'user'
     const isAutoReply = item.is_auto_reply
+    const hasAttachments = item.attachments && item.attachments.length > 0
 
     return (
       <View
@@ -184,18 +273,40 @@ export default function SupportChatScreen() {
                 : styles.adminBubble
           ]}
         >
-          <Text
-            style={[
-              styles.messageText,
-              isUser
-                ? styles.userMessageText
-                : isAutoReply
-                  ? styles.autoReplyText
-                  : styles.adminMessageText
-            ]}
-          >
-            {item.content}
-          </Text>
+          {/* Render attachments */}
+          {hasAttachments && item.attachments!.map((attachment, index) => (
+            <View key={index} style={styles.attachmentContainer}>
+              {attachment.type === 'image' ? (
+                <Image
+                  source={{ uri: attachment.url }}
+                  style={styles.attachmentImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Video
+                  source={{ uri: attachment.url }}
+                  style={styles.attachmentVideo}
+                  useNativeControls
+                  resizeMode={ResizeMode.CONTAIN}
+                />
+              )}
+            </View>
+          ))}
+          {/* Message text (hide if just "[Photo]" or "[Video]" placeholder) */}
+          {item.content && !item.content.match(/^\[(Photo|Video)\]$/) && (
+            <Text
+              style={[
+                styles.messageText,
+                isUser
+                  ? styles.userMessageText
+                  : isAutoReply
+                    ? styles.autoReplyText
+                    : styles.adminMessageText
+              ]}
+            >
+              {item.content}
+            </Text>
+          )}
           <Text
             style={[
               styles.messageTime,
@@ -294,8 +405,37 @@ export default function SupportChatScreen() {
           />
         )}
 
+        {/* Pending Attachment Preview */}
+        {pendingAttachment && (
+          <View style={styles.attachmentPreviewContainer}>
+            <Image
+              source={{ uri: pendingAttachment.uri }}
+              style={styles.attachmentPreview}
+              resizeMode="cover"
+            />
+            <TouchableOpacity
+              style={styles.removeAttachmentButton}
+              onPress={() => setPendingAttachment(null)}
+            >
+              <Ionicons name="close-circle" size={24} color="#EF4444" />
+            </TouchableOpacity>
+            {pendingAttachment.type === 'video' && (
+              <View style={styles.videoIndicator}>
+                <Ionicons name="videocam" size={16} color="#FFFFFF" />
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Input */}
         <View style={styles.inputContainer}>
+          <TouchableOpacity
+            style={styles.attachButton}
+            onPress={handlePickMedia}
+            disabled={sending || uploading}
+          >
+            <Ionicons name="attach" size={24} color={sending || uploading ? '#4B5563' : '#9CA3AF'} />
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             value={newMessage}
@@ -308,12 +448,12 @@ export default function SupportChatScreen() {
           <TouchableOpacity
             style={[
               styles.sendButton,
-              (!newMessage.trim() || sending) && styles.sendButtonDisabled
+              (!newMessage.trim() && !pendingAttachment || sending || uploading) && styles.sendButtonDisabled
             ]}
             onPress={handleSend}
-            disabled={!newMessage.trim() || sending}
+            disabled={(!newMessage.trim() && !pendingAttachment) || sending || uploading}
           >
-            {sending ? (
+            {sending || uploading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <Ionicons name="send" size={20} color="#FFFFFF" />
@@ -493,5 +633,53 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#374151',
+  },
+  attachButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  attachmentContainer: {
+    marginBottom: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  attachmentImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 8,
+  },
+  attachmentVideo: {
+    width: 200,
+    height: 150,
+    borderRadius: 8,
+  },
+  attachmentPreviewContainer: {
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#1F2937',
+    backgroundColor: '#111827',
+  },
+  attachmentPreview: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  removeAttachmentButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: '#111827',
+    borderRadius: 12,
+  },
+  videoIndicator: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
 })

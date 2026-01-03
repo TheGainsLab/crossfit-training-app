@@ -1,5 +1,15 @@
 import { createClient } from '../supabase/client'
 import { RealtimeChannel } from '@supabase/supabase-js'
+import * as FileSystem from 'expo-file-system'
+import { decode } from 'base64-arraybuffer'
+
+export interface ChatAttachment {
+  type: 'image' | 'video'
+  url: string
+  thumbnail_url?: string
+  filename: string
+  size_bytes: number
+}
 
 export interface ChatMessage {
   id: string
@@ -9,6 +19,7 @@ export interface ChatMessage {
   content: string
   created_at: string
   is_auto_reply: boolean
+  attachments?: ChatAttachment[] | null
 }
 
 export interface ChatConversation {
@@ -150,12 +161,13 @@ export async function getMessages(
 }
 
 /**
- * Send a message as the user
+ * Send a message as the user (with optional attachments)
  */
 export async function sendMessage(
   userId: number,
   conversationId: string,
-  content: string
+  content: string,
+  attachments?: ChatAttachment[]
 ): Promise<{ success: boolean; message?: ChatMessage; autoReply?: ChatMessage; error?: string }> {
   try {
     const supabase = createClient()
@@ -169,7 +181,8 @@ export async function sendMessage(
         conversation_id: conversationId,
         sender_type: 'user',
         sender_id: userId,
-        content: content.trim()
+        content: content.trim(),
+        attachments: attachments && attachments.length > 0 ? attachments : null
       })
       .select()
       .single()
@@ -268,3 +281,73 @@ export function unsubscribeFromMessages(channel: RealtimeChannel) {
   const supabase = createClient()
   supabase.removeChannel(channel)
 }
+
+/**
+ * Upload an attachment to Supabase Storage
+ */
+export async function uploadAttachment(
+  userId: number,
+  fileUri: string,
+  fileType: 'image' | 'video'
+): Promise<{ success: boolean; attachment?: ChatAttachment; error?: string }> {
+  try {
+    const supabase = createClient()
+
+    // Get file info
+    const fileInfo = await FileSystem.getInfoAsync(fileUri)
+    if (!fileInfo.exists) {
+      return { success: false, error: 'File not found' }
+    }
+
+    // Generate unique filename
+    const timestamp = Date.now()
+    const extension = fileType === 'image' ? 'jpg' : 'mp4'
+    const filename = `${timestamp}.${extension}`
+    const storagePath = `${userId}/${filename}`
+
+    // Read file as base64
+    const base64 = await FileSystem.readAsStringAsync(fileUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    })
+
+    // Determine content type
+    const contentType = fileType === 'image' ? 'image/jpeg' : 'video/mp4'
+
+    // Upload to Supabase Storage
+    const { data, error: uploadError } = await supabase.storage
+      .from('chat-attachments')
+      .upload(storagePath, decode(base64), {
+        contentType,
+        upsert: false
+      })
+
+    if (uploadError) {
+      console.error('Error uploading attachment:', uploadError)
+      return { success: false, error: uploadError.message }
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('chat-attachments')
+      .getPublicUrl(storagePath)
+
+    const attachment: ChatAttachment = {
+      type: fileType,
+      url: urlData.publicUrl,
+      filename,
+      size_bytes: fileInfo.size || 0
+    }
+
+    return { success: true, attachment }
+
+  } catch (error: any) {
+    console.error('Error in uploadAttachment:', error)
+    return { success: false, error: error.message || 'Failed to upload attachment' }
+  }
+}
+
+/**
+ * Max file sizes for uploads
+ */
+export const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024 // 10MB
+export const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024 // 50MB
