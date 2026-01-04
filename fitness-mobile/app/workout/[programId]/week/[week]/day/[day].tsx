@@ -29,6 +29,7 @@ interface WorkoutData {
   dayName: string
   mainLift: string
   isDeload: boolean
+  isTestWeek: boolean
   userGender: string
   blocks: Block[]
   metconData?: any
@@ -686,6 +687,9 @@ export default function WorkoutPage() {
               <Text style={styles.headerTitle}>
                 Week {workout.week}, Day {workout.day}
               </Text>
+              {workout.isTestWeek && (
+                <Text style={styles.testWeekLabel}>Test Week</Text>
+              )}
               {workout.isDeload && (
                 <Text style={styles.deloadLabel}>Deload Week</Text>
               )}
@@ -968,6 +972,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#D97706',
     marginTop: 2,
+  },
+  testWeekLabel: {
+    fontSize: 14,
+    color: '#059669',
+    marginTop: 2,
+    fontWeight: '600',
   },
   progressContainer: {
     flexDirection: 'row',

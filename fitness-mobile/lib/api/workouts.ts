@@ -7,6 +7,7 @@ export interface WorkoutData {
   dayName: string
   mainLift: string
   isDeload: boolean
+  isTestWeek: boolean
   userGender: string
   blocks: Array<{
     blockName: string
@@ -196,6 +197,7 @@ export async function fetchWorkout(
       dayName: targetDay.dayName || `Day ${day}`,
       mainLift: targetDay.mainLift || '',
       isDeload: targetDay.isDeload || false,
+      isTestWeek: targetDay.isTestWeek || false,
       userGender,
       blocks: targetDay.blocks || [],
       metconData: targetDay.metconData ? await enhanceMetconData(targetDay.metconData) : undefined,

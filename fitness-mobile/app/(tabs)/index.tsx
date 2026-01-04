@@ -34,6 +34,7 @@ interface WorkoutDay {
   day: number
   dayName: string
   isDeload: boolean
+  isTestWeek: boolean
   completionPercentage: number
 }
 
@@ -749,6 +750,7 @@ export default function Dashboard() {
           day,
           dayName: dayData.dayName || `Day ${day}`,
           isDeload: dayData.isDeload || false,
+          isTestWeek: dayData.isTestWeek || false,
           completionPercentage
         })
       }
@@ -1113,6 +1115,11 @@ export default function Dashboard() {
           <>
             {/* Week Navigation */}
             <Card style={styles.weekNavCard}>
+              {currentWeek[0]?.isTestWeek && (
+                <View style={styles.weekNavHeader}>
+                  <Text style={styles.testWeekText}>Test Week</Text>
+                </View>
+              )}
               {currentWeek[0]?.isDeload && (
                 <View style={styles.weekNavHeader}>
                   <Text style={styles.deloadText}>Deload Week</Text>
@@ -1526,6 +1533,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4B5563',
     marginTop: 4,
+  },
+  testWeekText: {
+    fontSize: 14,
+    color: '#059669',
+    marginTop: 4,
+    fontWeight: '600',
   },
   weekNavButtons: {
     flexDirection: 'row',
