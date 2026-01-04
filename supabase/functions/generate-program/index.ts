@@ -13,7 +13,8 @@ const defaultMainLifts = ['Snatch', 'Back Squat', 'Press', 'Clean and Jerk', 'Fr
 interface GenerateProgramRequest {
   user_id: number
   weeksToGenerate?: number[]
-  programType?: 'full' | 'applied_power'
+  programType?: 'full' | 'applied_power' | 'engine' | 'btn'
+  includeTestWeek?: boolean
 }
 
 serve(async (req) => {
@@ -39,7 +40,7 @@ serve(async (req) => {
       )
     }
 
-    const { user_id, weeksToGenerate = [1, 2, 3, 4], programType = 'full' }: GenerateProgramRequest = parsed || {}
+    const { user_id, weeksToGenerate = [1, 2, 3, 4], programType = 'full', includeTestWeek = false }: GenerateProgramRequest = parsed || {}
 
     if (!user_id || typeof user_id !== 'number' || user_id <= 0) {
       return new Response(
@@ -60,7 +61,7 @@ serve(async (req) => {
       ? ['TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES']  // Applied Power: 3 blocks (no SKILLS, no METCONS)
       : ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS', 'ENGINE']  // Full program: 6 blocks (added ENGINE)
 
-    console.log(`🚀 Starting program generation for user ${user_id}, weeks: ${weeksToGenerate.join(', ')}, programType: ${programType}, blocks: ${blocks.join(', ')}`)
+    console.log(`🚀 Starting program generation for user ${user_id}, weeks: ${weeksToGenerate.join(', ')}, programType: ${programType}, includeTestWeek: ${includeTestWeek}, blocks: ${blocks.join(', ')}`)
     
     // Step 1: Fetch complete user data
     console.log('📊 Step 1: Fetching user data...')
@@ -137,7 +138,7 @@ serve(async (req) => {
     
     // Step 4: Generate program structure
     console.log('🏗️ Step 4: Generating program structure...')
-    const program = await generateProgramStructure(user, ratios, weeksToGenerate, supabase, supabaseUrl, supabaseKey, blocks)
+    const program = await generateProgramStructure(user, ratios, weeksToGenerate, supabase, supabaseUrl, supabaseKey, blocks, includeTestWeek, programType)
     
     const executionTime = Date.now() - startTime
     console.log(`🎉 Program generation complete in ${executionTime}ms`)
@@ -262,7 +263,7 @@ async function fetchCompleteUserData(supabase: any, user_id: number) {
 }
 
 // === PROGRAM STRUCTURE GENERATION (Exact Google Script Logic) ===
-async function generateProgramStructure(user: any, ratios: any, weeksToGenerate: number[], supabase: any, supabaseUrl: string, supabaseKey: string, blocks: string[]): Promise<any> {
+async function generateProgramStructure(user: any, ratios: any, weeksToGenerate: number[], supabase: any, supabaseUrl: string, supabaseKey: string, blocks: string[], includeTestWeek: boolean = false, programType: string = 'full'): Promise<any> {
   console.log('Generating program structure...')
   
   const weeks: any[] = []
@@ -593,8 +594,95 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
     Object.keys(weeklyAccessories).forEach(key => delete weeklyAccessories[key])
   }
   
+  // Generate test week if requested
+  if (includeTestWeek) {
+    console.log('🧪 Generating test week from templates...')
+
+    // Determine test week number (last week in the cycle)
+    const testWeekNumber = weeksToGenerate[weeksToGenerate.length - 1] + 1
+
+    // Map programType to template program_type
+    const templateProgramType = programType === 'full' ? 'competitor' : programType
+
+    // Fetch test week templates from database
+    const { data: templates, error: templateError } = await supabase
+      .from('test_week_templates')
+      .select('*')
+      .eq('program_type', templateProgramType)
+      .order('day', { ascending: true })
+      .order('block_order', { ascending: true })
+
+    if (templateError) {
+      console.error('❌ Failed to fetch test week templates:', templateError.message)
+    } else if (!templates || templates.length === 0) {
+      console.warn('⚠️ No test week templates found for program type:', templateProgramType)
+    } else {
+      console.log(`📋 Found ${templates.length} test week template blocks`)
+
+      // Group templates by day
+      const templatesByDay: Record<number, any[]> = {}
+      templates.forEach((t: any) => {
+        if (!templatesByDay[t.day]) templatesByDay[t.day] = []
+        templatesByDay[t.day].push(t)
+      })
+
+      const testWeekData: any = {
+        week: testWeekNumber,
+        isTestWeek: true,
+        days: []
+      }
+
+      // Generate each day from templates
+      for (let dayNum = 1; dayNum <= 5; dayNum++) {
+        const dayTemplates = templatesByDay[dayNum] || []
+
+        const dayData: any = {
+          day: dayNum,
+          dayName: `TEST DAY ${dayNum}`,
+          isTestWeek: true,
+          blocks: []
+        }
+
+        for (const template of dayTemplates) {
+          // Convert exercises from JSONB to block format
+          const exercises = (template.exercises || []).map((ex: any) => ({
+            name: ex.name,
+            testType: ex.testType,
+            warmupProtocol: ex.warmupProtocol || '',
+            workout: ex.workout || '',
+            notes: ex.notes || '',
+            sets: '',
+            reps: ex.testType === '1RM' ? 'Work up to 1RM' :
+                  ex.testType === 'max_reps' ? 'Max reps' :
+                  ex.testType === 'time' ? 'For time' :
+                  ex.testType === 'distance' ? 'For distance' :
+                  ex.testType === 'amrap_20' ? 'AMRAP 20' : '',
+            weightTime: ''
+          }))
+
+          dayData.blocks.push({
+            blockName: template.block_name,
+            blockOrder: template.block_order,
+            isTestBlock: true,
+            instructions: template.instructions || '',
+            restNotes: template.rest_notes || '',
+            exercises: exercises
+          })
+
+          totalExercises += exercises.length
+        }
+
+        testWeekData.days.push(dayData)
+        console.log(`  ✅ Test Day ${dayNum}: ${dayData.blocks.length} blocks, ${dayData.blocks.reduce((sum: number, b: any) => sum + b.exercises.length, 0)} exercises`)
+      }
+
+      weeks.push(testWeekData)
+      console.log(`🧪 ✅ Test Week ${testWeekNumber} complete`)
+    }
+  }
+
   console.log(`🎉 Program structure complete: ${weeks.length} weeks, ${totalExercises} total exercises`)
-  
+
   return {
     weeks: weeks,
     totalExercises: totalExercises
