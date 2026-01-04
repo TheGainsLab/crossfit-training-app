@@ -632,6 +632,24 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
         days: []
       }
 
+      // Fetch Engine test week templates if program includes ENGINE block
+      let engineTestTemplates: Record<number, any> = {}
+      if (blocks.includes('ENGINE') || programType === 'engine') {
+        const { data: engineTests, error: engineTestError } = await supabase
+          .from('engine_test_week_templates')
+          .select('*')
+          .order('day', { ascending: true })
+
+        if (engineTestError) {
+          console.error('❌ Failed to fetch Engine test week templates:', engineTestError.message)
+        } else if (engineTests && engineTests.length > 0) {
+          console.log(`⚡ Found ${engineTests.length} Engine test week templates`)
+          engineTests.forEach((t: any) => {
+            engineTestTemplates[t.day] = t
+          })
+        }
+      }
+
       // Generate each day from templates
       for (let dayNum = 1; dayNum <= 5; dayNum++) {
         const dayTemplates = templatesByDay[dayNum] || []
@@ -670,6 +688,44 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
           })
 
           totalExercises += exercises.length
+        }
+
+        // Add Engine test block if available for this program type
+        const engineTest = engineTestTemplates[dayNum]
+        if (engineTest) {
+          // Format Engine test workout exactly like regular Engine workouts
+          const dayType = engineTest.day_type || `Test ${dayNum}`
+
+          dayData.blocks.push({
+            blockName: 'ENGINE',
+            isTestBlock: true,
+            exercises: [{
+              name: `Engine ${dayType}`,
+              sets: 1,
+              reps: '',
+              weightTime: '',
+              notes: `Test Week - ${dayType}`,
+              engineTestDay: dayNum
+            }]
+          })
+
+          // Store Engine test data in same format as regular engineData
+          dayData.engineData = {
+            workoutId: `test-${dayNum}`,
+            dayNumber: dayNum,
+            dayType: dayType,
+            isTestWeek: true,
+            blockCount: engineTest.block_count || 1,
+            blockParams: {
+              block1: engineTest.block_1_params,
+              block2: engineTest.block_2_params,
+              block3: engineTest.block_3_params,
+              block4: engineTest.block_4_params
+            }
+          }
+
+          totalExercises += 1
+          console.log(`  ⚡ Engine Test ${dayNum}: ${dayType}`)
         }
 
         testWeekData.days.push(dayData)
