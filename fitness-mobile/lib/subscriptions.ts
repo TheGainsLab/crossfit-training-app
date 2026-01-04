@@ -54,7 +54,7 @@ export const PROGRAMS: Record<ProgramType, ProgramInfo> = {
     name: 'applied_power',
     displayName: 'Applied Power',
     icon: '💪',
-    shortDescription: 'Strength and Power for athletes',
+    shortDescription: 'Strength. Power. Force. Velocity.',
     bullets: [
       'Personalized workouts, not just percentages',
       'Technical Work to improve movement quality',
