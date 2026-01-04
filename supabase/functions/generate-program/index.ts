@@ -844,6 +844,52 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
             totalExercises += exercises.length
           }
 
+          // Add regular METCONS block for Competitor test week (not benchmarks)
+          if (programType === 'full') {
+            const metconResponse = await fetch(`${supabaseUrl}/functions/v1/assign-metcon`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                user: { ...user, ...ratios },
+                week: testWeekNumber,
+                day: dayNum
+              })
+            })
+
+            if (metconResponse.ok) {
+              try {
+                const metconResult = await metconResponse.json()
+                const metconExercises = Array.isArray(metconResult.exercises) ? metconResult.exercises : []
+
+                dayData.blocks.push({
+                  blockName: 'METCONS',
+                  exercises: metconExercises
+                })
+
+                // Add MetCon metadata
+                if (metconResult.workoutId) {
+                  dayData.metconData = {
+                    workoutId: metconResult.workoutId,
+                    workoutFormat: metconResult.workoutFormat,
+                    timeRange: metconResult.timeRange,
+                    percentileGuidance: metconResult.percentileGuidance,
+                    workoutNotes: metconResult.workoutNotes || ''
+                  }
+                }
+
+                totalExercises += metconExercises.length
+                console.log(`  🏋️ Test Day ${dayNum} MetCon: ${metconResult.workoutId || 'assigned'}`)
+              } catch (e) {
+                console.error(`  ↳ Test week assign-metcon JSON parse error:`, e)
+              }
+            } else {
+              console.error(`  ↳ Test week assign-metcon failed for day ${dayNum}`)
+            }
+          }
+
           // Add Engine test block if available for this program type
           const engineTest = engineTestTemplates[dayNum]
           if (engineTest) {
