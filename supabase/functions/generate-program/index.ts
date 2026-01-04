@@ -625,6 +625,7 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
         const testWeekData: any = {
           week: testWeekNumber,
           isTestWeek: true,
+          testWeekMessage: 'This is your test week! After completing each test, update your profile with your new results. Your next training cycle will be built using your updated numbers.',
           days: []
         }
 
@@ -776,6 +777,7 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
       const testWeekData: any = {
         week: testWeekNumber,
         isTestWeek: true,
+        testWeekMessage: 'This is your test week! After completing each test, update your profile with your new results. Your next training cycle will be built using your updated numbers.',
         days: []
       }
 
@@ -935,6 +937,7 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
         const testWeekData: any = {
           week: testWeekNumber,
           isTestWeek: true,
+          testWeekMessage: 'This is your test week! Record your times for each test. These results help you track your conditioning progress over time.',
           days: []
         }
 
