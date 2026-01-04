@@ -2,6 +2,184 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getUserIdFromAuth, isAdmin } from '@/lib/permissions'
 
+// POST - Create a new conversation (admin initiating chat with user)
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+
+    // Authenticate
+    const { userId, error: authError } = await getUserIdFromAuth(supabase)
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: authError || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Check admin permission
+    const userIsAdmin = await isAdmin(supabase, userId)
+    if (!userIsAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const { targetUserId, message } = body
+
+    if (!targetUserId || typeof targetUserId !== 'number') {
+      return NextResponse.json(
+        { success: false, error: 'Target user ID is required' },
+        { status: 400 }
+      )
+    }
+
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Initial message is required' },
+        { status: 400 }
+      )
+    }
+
+    // Verify target user exists
+    const { data: targetUser, error: userError } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', targetUserId)
+      .single()
+
+    if (userError || !targetUser) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    const now = new Date().toISOString()
+
+    // Check if conversation already exists for this user
+    const { data: existingConv } = await supabase
+      .from('support_conversations')
+      .select('id')
+      .eq('user_id', targetUserId)
+      .single()
+
+    let conversationId: string
+
+    if (existingConv) {
+      // Use existing conversation
+      conversationId = existingConv.id
+    } else {
+      // Create new conversation
+      const { data: newConv, error: convError } = await supabase
+        .from('support_conversations')
+        .insert({
+          user_id: targetUserId,
+          status: 'open',
+          last_message_at: now,
+          unread_by_user: true,
+          unread_by_admin: false
+        })
+        .select()
+        .single()
+
+      if (convError || !newConv) {
+        console.error('Error creating conversation:', convError)
+        throw convError
+      }
+
+      conversationId = newConv.id
+    }
+
+    // Insert the first message from admin
+    const { data: newMessage, error: msgError } = await supabase
+      .from('support_messages')
+      .insert({
+        conversation_id: conversationId,
+        sender_type: 'admin',
+        sender_id: userId,
+        content: message.trim()
+      })
+      .select()
+      .single()
+
+    if (msgError) {
+      console.error('Error creating message:', msgError)
+      throw msgError
+    }
+
+    // Update conversation timestamps
+    await supabase
+      .from('support_conversations')
+      .update({
+        last_message_at: now,
+        updated_at: now,
+        unread_by_user: true,
+        unread_by_admin: false,
+        status: 'open'
+      })
+      .eq('id', conversationId)
+
+    // Send push notification to user
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('push_token')
+        .eq('id', targetUserId)
+        .single()
+
+      if (userData?.push_token) {
+        const previewContent = message.trim().length > 100
+          ? message.trim().slice(0, 100) + '...'
+          : message.trim()
+
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: userData.push_token,
+            title: '💬 New message from your coach',
+            body: previewContent,
+            sound: 'default',
+            badge: 1,
+            data: {
+              conversationId: conversationId,
+              type: 'coach_message',
+              screen: 'coach',
+            },
+            channelId: 'default',
+            priority: 'high',
+          }),
+        })
+      }
+    } catch (pushError) {
+      console.error('Error sending push notification:', pushError)
+    }
+
+    return NextResponse.json({
+      success: true,
+      conversationId,
+      message: {
+        id: newMessage.id,
+        sender_type: newMessage.sender_type,
+        content: newMessage.content,
+        created_at: newMessage.created_at
+      }
+    })
+
+  } catch (error) {
+    console.error('Error creating conversation:', error)
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
 // GET - List all support conversations (admin inbox)
 export async function GET(request: NextRequest) {
   try {

@@ -15,7 +15,9 @@ import {
   Send,
   Paperclip,
   X,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Plus,
+  Search
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { RealtimeChannel } from '@supabase/supabase-js'
@@ -48,6 +50,12 @@ interface Message {
   created_at: string
   is_auto_reply: boolean
   attachments?: ChatAttachment[] | null
+}
+
+interface SearchUser {
+  id: number
+  name: string | null
+  email: string
 }
 
 function ConversationRow({
@@ -195,6 +203,16 @@ export default function AdminChatPage() {
   const messagesChannelRef = useRef<RealtimeChannel | null>(null)
   const conversationsChannelRef = useRef<RealtimeChannel | null>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
+
+  // New chat modal state
+  const [showNewChatModal, setShowNewChatModal] = useState(false)
+  const [userSearchQuery, setUserSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([])
+  const [selectedUser, setSelectedUser] = useState<SearchUser | null>(null)
+  const [newChatMessage, setNewChatMessage] = useState('')
+  const [searching, setSearching] = useState(false)
+  const [creatingChat, setCreatingChat] = useState(false)
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchConversations = useCallback(async () => {
     try {
@@ -462,6 +480,92 @@ export default function AdminChatPage() {
     }
   }
 
+  // Search users for new chat
+  const searchUsers = useCallback(async (query: string) => {
+    if (!query.trim() || query.length < 2) {
+      setSearchResults([])
+      return
+    }
+
+    setSearching(true)
+    try {
+      const res = await fetch(`/api/admin/users?search=${encodeURIComponent(query)}&limit=10`)
+      const data = await res.json()
+
+      if (data.success && data.users) {
+        setSearchResults(data.users.map((u: any) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email
+        })))
+      }
+    } catch (err) {
+      console.error('Error searching users:', err)
+    } finally {
+      setSearching(false)
+    }
+  }, [])
+
+  // Debounced search
+  const handleUserSearch = (query: string) => {
+    setUserSearchQuery(query)
+    setSelectedUser(null)
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      searchUsers(query)
+    }, 300)
+  }
+
+  // Create new chat
+  const handleCreateChat = async () => {
+    if (!selectedUser || !newChatMessage.trim()) return
+
+    setCreatingChat(true)
+    try {
+      const res = await fetch('/api/admin/chat/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetUserId: selectedUser.id,
+          message: newChatMessage.trim()
+        })
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        // Close modal and navigate to the new conversation
+        setShowNewChatModal(false)
+        setUserSearchQuery('')
+        setSearchResults([])
+        setSelectedUser(null)
+        setNewChatMessage('')
+        fetchConversations()
+        router.push(`/dashboard/admin/chat?id=${data.conversationId}`)
+      } else {
+        setError(data.error || 'Failed to create conversation')
+      }
+    } catch (err) {
+      console.error('Error creating chat:', err)
+      setError('Failed to create conversation')
+    } finally {
+      setCreatingChat(false)
+    }
+  }
+
+  // Close modal and reset state
+  const closeNewChatModal = () => {
+    setShowNewChatModal(false)
+    setUserSearchQuery('')
+    setSearchResults([])
+    setSelectedUser(null)
+    setNewChatMessage('')
+  }
+
   const unreadCount = conversations.filter(c => c.unread).length
 
   return (
@@ -482,6 +586,13 @@ export default function AdminChatPage() {
             </span>
             Live
           </div>
+          <button
+            onClick={() => setShowNewChatModal(true)}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-white bg-coral hover:bg-coral/90 rounded-lg"
+          >
+            <Plus className="w-4 h-4" />
+            New Chat
+          </button>
           <button
             onClick={fetchConversations}
             disabled={loading}
@@ -706,6 +817,131 @@ export default function AdminChatPage() {
           )}
         </div>
       </div>
+
+      {/* New Chat Modal */}
+      {showNewChatModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-md mx-4 shadow-xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Start New Chat</h3>
+              <button
+                onClick={closeNewChatModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 space-y-4">
+              {/* User Search */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select User
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={userSearchQuery}
+                    onChange={(e) => handleUserSearch(e.target.value)}
+                    placeholder="Search by name or email..."
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/50 focus:border-coral"
+                  />
+                </div>
+
+                {/* Search Results */}
+                {(searchResults.length > 0 || searching) && !selectedUser && (
+                  <div className="mt-2 border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
+                    {searching ? (
+                      <div className="p-3 text-center text-gray-500">
+                        <RefreshCw className="w-4 h-4 animate-spin inline mr-2" />
+                        Searching...
+                      </div>
+                    ) : (
+                      searchResults.map((user) => (
+                        <button
+                          key={user.id}
+                          onClick={() => {
+                            setSelectedUser(user)
+                            setUserSearchQuery(user.name || user.email)
+                            setSearchResults([])
+                          }}
+                          className="w-full text-left p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                        >
+                          <p className="font-medium text-gray-900">{user.name || 'Unnamed User'}</p>
+                          <p className="text-sm text-gray-500">{user.email}</p>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Selected User Badge */}
+                {selectedUser && (
+                  <div className="mt-2 flex items-center gap-2 p-2 bg-coral/10 rounded-lg">
+                    <User className="w-4 h-4 text-coral" />
+                    <span className="text-sm font-medium text-gray-900">
+                      {selectedUser.name || selectedUser.email}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setSelectedUser(null)
+                        setUserSearchQuery('')
+                      }}
+                      className="ml-auto text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Message Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Message
+                </label>
+                <textarea
+                  value={newChatMessage}
+                  onChange={(e) => setNewChatMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/50 focus:border-coral resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200">
+              <button
+                onClick={closeNewChatModal}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateChat}
+                disabled={!selectedUser || !newChatMessage.trim() || creatingChat}
+                className="px-4 py-2 text-sm text-white bg-coral hover:bg-coral/90 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {creatingChat ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Start Chat
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
