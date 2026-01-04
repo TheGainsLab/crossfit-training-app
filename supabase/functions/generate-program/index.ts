@@ -596,144 +596,281 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
   
   // Generate test week if requested
   if (includeTestWeek) {
-    console.log('🧪 Generating test week from templates...')
+    console.log('🧪 Generating test week...')
 
     // Determine test week number (last week in the cycle)
     const testWeekNumber = weeksToGenerate[weeksToGenerate.length - 1] + 1
 
-    // Map programType to template program_type
-    const templateProgramType = programType === 'full' ? 'competitor' : programType
+    // Applied Power test week: generate full training days with 1RM tests in Strength block
+    if (programType === 'applied_power') {
+      console.log('💪 Generating Applied Power test week (full training days with 1RM tests)...')
 
-    // Fetch test week templates from database
-    const { data: templates, error: templateError } = await supabase
-      .from('test_week_templates')
-      .select('*')
-      .eq('program_type', templateProgramType)
-      .order('day', { ascending: true })
-      .order('block_order', { ascending: true })
+      // Fetch 1RM test lifts from templates
+      const { data: testLifts, error: testLiftsError } = await supabase
+        .from('applied_power_test_templates')
+        .select('*')
+        .order('day', { ascending: true })
+        .order('lift_order', { ascending: true })
 
-    if (templateError) {
-      console.error('❌ Failed to fetch test week templates:', templateError.message)
-    } else if (!templates || templates.length === 0) {
-      console.warn('⚠️ No test week templates found for program type:', templateProgramType)
-    } else {
-      console.log(`📋 Found ${templates.length} test week template blocks`)
+      if (testLiftsError) {
+        console.error('❌ Failed to fetch Applied Power test templates:', testLiftsError.message)
+      } else {
+        // Group test lifts by day
+        const testLiftsByDay: Record<number, any[]> = {}
+        testLifts?.forEach((t: any) => {
+          if (!testLiftsByDay[t.day]) testLiftsByDay[t.day] = []
+          testLiftsByDay[t.day].push(t)
+        })
 
-      // Group templates by day
-      const templatesByDay: Record<number, any[]> = {}
-      templates.forEach((t: any) => {
-        if (!templatesByDay[t.day]) templatesByDay[t.day] = []
-        templatesByDay[t.day].push(t)
-      })
-
-      const testWeekData: any = {
-        week: testWeekNumber,
-        isTestWeek: true,
-        days: []
-      }
-
-      // Fetch Engine test week templates if program includes ENGINE block
-      let engineTestTemplates: Record<number, any> = {}
-      if (blocks.includes('ENGINE') || programType === 'engine') {
-        const { data: engineTests, error: engineTestError } = await supabase
-          .from('engine_test_week_templates')
-          .select('*')
-          .order('day', { ascending: true })
-
-        if (engineTestError) {
-          console.error('❌ Failed to fetch Engine test week templates:', engineTestError.message)
-        } else if (engineTests && engineTests.length > 0) {
-          console.log(`⚡ Found ${engineTests.length} Engine test week templates`)
-          engineTests.forEach((t: any) => {
-            engineTestTemplates[t.day] = t
-          })
-        }
-      }
-
-      // Generate each day from templates
-      for (let dayNum = 1; dayNum <= 5; dayNum++) {
-        const dayTemplates = templatesByDay[dayNum] || []
-
-        const dayData: any = {
-          day: dayNum,
-          dayName: `TEST DAY ${dayNum}`,
+        const testWeekData: any = {
+          week: testWeekNumber,
           isTestWeek: true,
-          blocks: []
+          days: []
         }
 
-        for (const template of dayTemplates) {
-          // Convert exercises from JSONB to block format
-          const exercises = (template.exercises || []).map((ex: any) => ({
-            name: ex.name,
-            testType: ex.testType,
-            warmupProtocol: ex.warmupProtocol || '',
-            workout: ex.workout || '',
-            notes: ex.notes || '',
-            sets: '',
-            reps: ex.testType === '1RM' ? 'Work up to 1RM' :
-                  ex.testType === 'max_reps' ? 'Max reps' :
-                  ex.testType === 'time' ? 'For time' :
-                  ex.testType === 'distance' ? 'For distance' :
-                  ex.testType === 'amrap_20' ? 'AMRAP 20' : '',
-            weightTime: ''
+        // Main lifts for each day (for technical work context)
+        const testDayMainLifts = ['Snatch', 'Back Squat', 'Press', 'Clean and Jerk', 'Front Squat']
+
+        for (let dayNum = 1; dayNum <= 5; dayNum++) {
+          const mainLift = testDayMainLifts[dayNum - 1]
+          const dayTestLifts = testLiftsByDay[dayNum] || []
+
+          const dayData: any = {
+            day: dayNum,
+            dayName: `TEST DAY ${dayNum}`,
+            mainLift: mainLift,
+            isTestWeek: true,
+            isDeload: false,
+            blocks: []
+          }
+
+          // TECHNICAL WORK block (generated normally)
+          const techResponse = await fetch(`${supabaseUrl}/functions/v1/assign-exercises`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              user: { ...user, ...ratios },
+              block: 'TECHNICAL WORK',
+              mainLift: mainLift,
+              week: testWeekNumber,
+              day: dayNum,
+              isDeload: false,
+              numExercises: 2,
+              weeklySkills: {},
+              weeklyAccessories: {},
+              previousDayAccessories: [],
+              previousDaySkills: []
+            })
+          })
+
+          if (techResponse.ok) {
+            const techResult = await techResponse.json()
+            const techExercises = Array.isArray(techResult.exercises) ? techResult.exercises : []
+            dayData.blocks.push({
+              blockName: 'TECHNICAL WORK',
+              exercises: techExercises
+            })
+            totalExercises += techExercises.length
+            console.log(`  📚 Test Day ${dayNum} Technical: ${techExercises.length} exercises`)
+          }
+
+          // STRENGTH AND POWER block (1RM tests from templates)
+          const strengthExercises = dayTestLifts.map((lift: any) => ({
+            name: lift.lift_name,
+            sets: 1,
+            reps: 'Work up to 1RM',
+            weightTime: '',
+            notes: lift.notes || '',
+            testType: lift.test_type,
+            isTestLift: true
           }))
 
           dayData.blocks.push({
-            blockName: template.block_name,
-            blockOrder: template.block_order,
+            blockName: 'STRENGTH AND POWER',
             isTestBlock: true,
-            instructions: template.instructions || '',
-            restNotes: template.rest_notes || '',
-            exercises: exercises
+            exercises: strengthExercises
+          })
+          totalExercises += strengthExercises.length
+          console.log(`  🏋️ Test Day ${dayNum} Strength: ${strengthExercises.map((e: any) => e.name).join(', ')}`)
+
+          // ACCESSORIES block (generated normally)
+          const accResponse = await fetch(`${supabaseUrl}/functions/v1/assign-exercises`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              user: { ...user, ...ratios },
+              block: 'ACCESSORIES',
+              mainLift: mainLift,
+              week: testWeekNumber,
+              day: dayNum,
+              isDeload: false,
+              numExercises: 3,
+              weeklySkills: {},
+              weeklyAccessories: {},
+              previousDayAccessories: [],
+              previousDaySkills: []
+            })
           })
 
-          totalExercises += exercises.length
-        }
-
-        // Add Engine test block if available for this program type
-        const engineTest = engineTestTemplates[dayNum]
-        if (engineTest) {
-          // Format Engine test workout exactly like regular Engine workouts
-          const dayType = engineTest.day_type || `Test ${dayNum}`
-
-          dayData.blocks.push({
-            blockName: 'ENGINE',
-            isTestBlock: true,
-            exercises: [{
-              name: `Engine ${dayType}`,
-              sets: 1,
-              reps: '',
-              weightTime: '',
-              notes: `Test Week - ${dayType}`,
-              engineTestDay: dayNum
-            }]
-          })
-
-          // Store Engine test data in same format as regular engineData
-          dayData.engineData = {
-            workoutId: `test-${dayNum}`,
-            dayNumber: dayNum,
-            dayType: dayType,
-            isTestWeek: true,
-            blockCount: engineTest.block_count || 1,
-            blockParams: {
-              block1: engineTest.block_1_params,
-              block2: engineTest.block_2_params,
-              block3: engineTest.block_3_params,
-              block4: engineTest.block_4_params
-            }
+          if (accResponse.ok) {
+            const accResult = await accResponse.json()
+            const accExercises = Array.isArray(accResult.exercises) ? accResult.exercises : []
+            dayData.blocks.push({
+              blockName: 'ACCESSORIES',
+              exercises: accExercises
+            })
+            totalExercises += accExercises.length
+            console.log(`  💪 Test Day ${dayNum} Accessories: ${accExercises.length} exercises`)
           }
 
-          totalExercises += 1
-          console.log(`  ⚡ Engine Test ${dayNum}: ${dayType}`)
+          testWeekData.days.push(dayData)
         }
 
-        testWeekData.days.push(dayData)
-        console.log(`  ✅ Test Day ${dayNum}: ${dayData.blocks.length} blocks, ${dayData.blocks.reduce((sum: number, b: any) => sum + b.exercises.length, 0)} exercises`)
+        weeks.push(testWeekData)
+        console.log(`🧪 ✅ Applied Power Test Week ${testWeekNumber} complete`)
       }
+    } else {
+      // Full/Competitor and Engine test weeks: use test_week_templates
+      // Map programType to template program_type
+      const templateProgramType = programType === 'full' ? 'competitor' : programType
 
-      weeks.push(testWeekData)
-      console.log(`🧪 ✅ Test Week ${testWeekNumber} complete`)
+      // Fetch test week templates from database
+      const { data: templates, error: templateError } = await supabase
+        .from('test_week_templates')
+        .select('*')
+        .eq('program_type', templateProgramType)
+        .order('day', { ascending: true })
+        .order('block_order', { ascending: true })
+
+      if (templateError) {
+        console.error('❌ Failed to fetch test week templates:', templateError.message)
+      } else if (!templates || templates.length === 0) {
+        console.warn('⚠️ No test week templates found for program type:', templateProgramType)
+      } else {
+        console.log(`📋 Found ${templates.length} test week template blocks`)
+
+        // Group templates by day
+        const templatesByDay: Record<number, any[]> = {}
+        templates.forEach((t: any) => {
+          if (!templatesByDay[t.day]) templatesByDay[t.day] = []
+          templatesByDay[t.day].push(t)
+        })
+
+        const testWeekData: any = {
+          week: testWeekNumber,
+          isTestWeek: true,
+          days: []
+        }
+
+        // Fetch Engine test week templates if program includes ENGINE block
+        let engineTestTemplates: Record<number, any> = {}
+        if (blocks.includes('ENGINE') || programType === 'engine') {
+          const { data: engineTests, error: engineTestError } = await supabase
+            .from('engine_test_week_templates')
+            .select('*')
+            .order('day', { ascending: true })
+
+          if (engineTestError) {
+            console.error('❌ Failed to fetch Engine test week templates:', engineTestError.message)
+          } else if (engineTests && engineTests.length > 0) {
+            console.log(`⚡ Found ${engineTests.length} Engine test week templates`)
+            engineTests.forEach((t: any) => {
+              engineTestTemplates[t.day] = t
+            })
+          }
+        }
+
+        // Generate each day from templates
+        for (let dayNum = 1; dayNum <= 5; dayNum++) {
+          const dayTemplates = templatesByDay[dayNum] || []
+
+          const dayData: any = {
+            day: dayNum,
+            dayName: `TEST DAY ${dayNum}`,
+            isTestWeek: true,
+            blocks: []
+          }
+
+          for (const template of dayTemplates) {
+            // Convert exercises from JSONB to block format
+            const exercises = (template.exercises || []).map((ex: any) => ({
+              name: ex.name,
+              testType: ex.testType,
+              warmupProtocol: ex.warmupProtocol || '',
+              workout: ex.workout || '',
+              notes: ex.notes || '',
+              sets: '',
+              reps: ex.testType === '1RM' ? 'Work up to 1RM' :
+                    ex.testType === 'max_reps' ? 'Max reps' :
+                    ex.testType === 'time' ? 'For time' :
+                    ex.testType === 'distance' ? 'For distance' :
+                    ex.testType === 'amrap_20' ? 'AMRAP 20' : '',
+              weightTime: ''
+            }))
+
+            dayData.blocks.push({
+              blockName: template.block_name,
+              blockOrder: template.block_order,
+              isTestBlock: true,
+              instructions: template.instructions || '',
+              restNotes: template.rest_notes || '',
+              exercises: exercises
+            })
+
+            totalExercises += exercises.length
+          }
+
+          // Add Engine test block if available for this program type
+          const engineTest = engineTestTemplates[dayNum]
+          if (engineTest) {
+            // Format Engine test workout exactly like regular Engine workouts
+            const dayType = engineTest.day_type || `Test ${dayNum}`
+
+            dayData.blocks.push({
+              blockName: 'ENGINE',
+              isTestBlock: true,
+              exercises: [{
+                name: `Engine ${dayType}`,
+                sets: 1,
+                reps: '',
+                weightTime: '',
+                notes: `Test Week - ${dayType}`,
+                engineTestDay: dayNum
+              }]
+            })
+
+            // Store Engine test data in same format as regular engineData
+            dayData.engineData = {
+              workoutId: `test-${dayNum}`,
+              dayNumber: dayNum,
+              dayType: dayType,
+              isTestWeek: true,
+              blockCount: engineTest.block_count || 1,
+              blockParams: {
+                block1: engineTest.block_1_params,
+                block2: engineTest.block_2_params,
+                block3: engineTest.block_3_params,
+                block4: engineTest.block_4_params
+              }
+            }
+
+            totalExercises += 1
+            console.log(`  ⚡ Engine Test ${dayNum}: ${dayType}`)
+          }
+
+          testWeekData.days.push(dayData)
+          console.log(`  ✅ Test Day ${dayNum}: ${dayData.blocks.length} blocks, ${dayData.blocks.reduce((sum: number, b: any) => sum + b.exercises.length, 0)} exercises`)
+        }
+
+        weeks.push(testWeekData)
+        console.log(`🧪 ✅ Test Week ${testWeekNumber} complete`)
+      }
     }
   }
 
