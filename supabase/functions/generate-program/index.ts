@@ -815,6 +815,39 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
           console.log(`  🎯 Test Day ${dayNum}: Skills update block added`)
         }
 
+        // TECHNICAL WORK block (generated normally)
+        const techResponse = await fetch(`${supabaseUrl}/functions/v1/assign-exercises`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user: { ...user, ...ratios },
+            block: 'TECHNICAL WORK',
+            mainLift: mainLift,
+            week: testWeekNumber,
+            day: dayNum,
+            isDeload: false,
+            numExercises: 2,
+            weeklySkills: {},
+            weeklyAccessories: {},
+            previousDayAccessories: [],
+            previousDaySkills: []
+          })
+        })
+
+        if (techResponse.ok) {
+          const techResult = await techResponse.json()
+          const techExercises = Array.isArray(techResult.exercises) ? techResult.exercises : []
+          dayData.blocks.push({
+            blockName: 'TECHNICAL WORK',
+            exercises: techExercises
+          })
+          totalExercises += techExercises.length
+          console.log(`  📚 Test Day ${dayNum} Technical: ${techExercises.length} exercises`)
+        }
+
         // STRENGTH AND POWER block (1RM tests - same as Applied Power)
         if (dayTestLifts.length > 0) {
           const strengthExercises = dayTestLifts.map((lift: any) => ({
@@ -834,6 +867,39 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
           })
           totalExercises += strengthExercises.length
           console.log(`  🏋️ Test Day ${dayNum} Strength: ${strengthExercises.map((e: any) => e.name).join(', ')}`)
+        }
+
+        // ACCESSORIES block (generated normally)
+        const accResponse = await fetch(`${supabaseUrl}/functions/v1/assign-exercises`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user: { ...user, ...ratios },
+            block: 'ACCESSORIES',
+            mainLift: mainLift,
+            week: testWeekNumber,
+            day: dayNum,
+            isDeload: false,
+            numExercises: 3,
+            weeklySkills: {},
+            weeklyAccessories: {},
+            previousDayAccessories: [],
+            previousDaySkills: []
+          })
+        })
+
+        if (accResponse.ok) {
+          const accResult = await accResponse.json()
+          const accExercises = Array.isArray(accResult.exercises) ? accResult.exercises : []
+          dayData.blocks.push({
+            blockName: 'ACCESSORIES',
+            exercises: accExercises
+          })
+          totalExercises += accExercises.length
+          console.log(`  💪 Test Day ${dayNum} Accessories: ${accExercises.length} exercises`)
         }
 
         // Add regular METCONS block for Competitor test week (not benchmarks)
