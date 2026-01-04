@@ -797,6 +797,24 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
             blocks: []
           }
 
+          // Add SKILLS update block on Day 1 for Competitor program
+          if (dayNum === 1 && programType === 'full') {
+            dayData.blocks.push({
+              blockName: 'SKILLS',
+              isTestBlock: true,
+              isSkillsUpdate: true,
+              exercises: [{
+                name: 'Review & Update Skills',
+                sets: '',
+                reps: '',
+                weightTime: '',
+                notes: 'Update any skills you\'ve acquired or improved this cycle. These changes will be reflected in your next training cycle.',
+                isSkillsUpdatePrompt: true
+              }]
+            })
+            console.log(`  🎯 Test Day ${dayNum}: Skills update block added`)
+          }
+
           for (const template of dayTemplates) {
             // Convert exercises from JSONB to block format
             const exercises = (template.exercises || []).map((ex: any) => ({
