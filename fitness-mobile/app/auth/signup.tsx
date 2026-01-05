@@ -144,7 +144,7 @@ export default function SignUp() {
             subscription_tier: subscriptionTier,
             subscription_status: hasActiveSubscription ? 'active' : null,
             intake_status: 'draft' // Ready for intake
-          }, { onConflict: 'email' })
+          }, { onConflict: 'auth_id' })
 
         if (insertError) {
           console.error('[Signup] Error creating user record:', insertError)
