@@ -133,6 +133,7 @@ export default function SignUp() {
         }
 
         // Create user record with subscription info
+        console.log('[Signup] Creating user record in database...')
         const { error: insertError } = await supabase
           .from('users')
           .insert({
@@ -144,28 +145,42 @@ export default function SignUp() {
           })
 
         if (insertError) {
-          console.error('Error creating user record:', insertError)
+          console.error('[Signup] Error creating user record:', insertError)
           Alert.alert('Error', 'Failed to create user profile. Please contact support.')
+          setLoading(false)
           return
         }
+        console.log('[Signup] User record created successfully')
 
-        // Clean up AsyncStorage
-        await AsyncStorage.removeItem('pending_subscription_program')
-        await AsyncStorage.removeItem('pending_subscription_entitlements')
+        // Clean up AsyncStorage (with timeout in case it hangs)
+        console.log('[Signup] Cleaning up AsyncStorage...')
+        try {
+          await Promise.race([
+            Promise.all([
+              AsyncStorage.removeItem('pending_subscription_program'),
+              AsyncStorage.removeItem('pending_subscription_entitlements')
+            ]),
+            new Promise((resolve) => setTimeout(resolve, 2000))
+          ])
+        } catch (e) {
+          console.log('[Signup] AsyncStorage cleanup failed, continuing...')
+        }
+        console.log('[Signup] AsyncStorage cleanup complete')
 
         // Navigate based on subscription status
-        // Use setLoading(false) before navigation to avoid race conditions
+        console.log('[Signup] Preparing to navigate, hasActiveSubscription:', hasActiveSubscription)
         setLoading(false)
 
-        if (hasActiveSubscription) {
-          // Has subscription, proceed to intake
-          console.log('[Signup] User has active subscription, navigating to intake')
-          router.replace('/intake')
-        } else {
-          // No subscription, send to subscription browse
-          console.log('[Signup] No active subscription, navigating to subscriptions')
-          router.replace('/subscriptions')
-        }
+        // Use setTimeout to ensure state updates before navigation
+        setTimeout(() => {
+          if (hasActiveSubscription) {
+            console.log('[Signup] Navigating to /intake')
+            router.replace('/intake')
+          } else {
+            console.log('[Signup] Navigating to /subscriptions')
+            router.replace('/subscriptions')
+          }
+        }, 100)
         return // Exit early - navigation will handle the rest
       }
     } catch (error) {
