@@ -44,14 +44,14 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/notification-icon.png",
+          "icon": "./assets/images/icon.png",
           "color": "#FE5858",
           "sounds": []
         }
       ]
     ],
     "notification": {
-      "icon": "./assets/images/notification-icon.png",
+      "icon": "./assets/images/icon.png",
       "color": "#FE5858",
       "iosDisplayInForeground": true,
       "androidMode": "default",
