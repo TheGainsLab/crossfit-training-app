@@ -35,10 +35,22 @@ serve(async (req) => {
       .eq('auth_id', appUserId)
       .single()
 
+    // Handle anonymous purchases - defer processing until user signs up
     if (!user) {
-      console.error('User not found:', appUserId)
-      return new Response(JSON.stringify({ error: 'User not found' }), { 
-        status: 404,
+      console.log('Anonymous purchase detected - will be linked after user signup:', {
+        appUserId,
+        eventType,
+        productId,
+        entitlements: Object.keys(entitlements),
+        timestamp: new Date().toISOString()
+      })
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        deferred: true,
+        message: 'Anonymous purchase - will sync after user signup'
+      }), { 
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
@@ -111,6 +123,26 @@ serve(async (req) => {
                 current_period_end: expiresAt,
               })
           }
+        }
+
+        // Update users table with subscription tier from first active entitlement
+        if (activeEntitlements.length > 0) {
+          const primaryEntitlement = activeEntitlements[0]
+          const tierMap: Record<string, string> = {
+            'btn': 'BTN',
+            'engine': 'ENGINE',
+            'applied_power': 'APPLIED_POWER',
+            'competitor': 'PREMIUM'
+          }
+          const subscriptionTier = tierMap[primaryEntitlement] || primaryEntitlement.toUpperCase()
+          
+          await supabase
+            .from('users')
+            .update({
+              subscription_tier: subscriptionTier,
+              subscription_status: 'active'
+            })
+            .eq('id', userId)
         }
 
         break

@@ -132,25 +132,27 @@ export default function SignUp() {
           console.error('[Signup] Error getting customer info:', error)
         }
 
-        // Create user record with subscription info
-        console.log('[Signup] Creating user record in database...')
+        // Create or update user record with subscription info
+        // Using upsert to handle case where trigger already created the user
+        console.log('[Signup] Creating/updating user record in database...')
         const { error: insertError } = await supabase
           .from('users')
-          .insert({
+          .upsert({
             auth_id: data.user.id,
             email: data.user.email,
+            name: data.user.email?.split('@')[0] || 'New User',
             subscription_tier: subscriptionTier,
             subscription_status: hasActiveSubscription ? 'active' : null,
             intake_status: 'draft' // Ready for intake
-          })
+          }, { onConflict: 'email' })
 
         if (insertError) {
-          console.error('[Signup] Error creating user record:', insertError)
+          console.error('[Signup] Error creating/updating user record:', insertError)
           Alert.alert('Error', 'Failed to create user profile. Please contact support.')
           setLoading(false)
           return
         }
-        console.log('[Signup] User record created successfully')
+        console.log('[Signup] User record created/updated successfully')
 
         // Clean up AsyncStorage (with timeout in case it hangs)
         console.log('[Signup] Cleaning up AsyncStorage...')
