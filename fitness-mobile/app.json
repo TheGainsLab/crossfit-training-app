@@ -48,7 +48,8 @@
           "color": "#FE5858",
           "sounds": []
         }
-      ]
+      ],
+      "react-native-purchases"
     ],
     "notification": {
       "icon": "./assets/images/notification-icon.png",
