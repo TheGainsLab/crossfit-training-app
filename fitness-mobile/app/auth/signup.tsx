@@ -139,6 +139,7 @@ export default function SignUp() {
           .insert({
             auth_id: data.user.id,
             email: data.user.email,
+            name: data.user.email?.split('@')[0] || 'New User', // Default name from email
             subscription_tier: subscriptionTier,
             subscription_status: hasActiveSubscription ? 'active' : null,
             intake_status: 'draft' // Ready for intake
