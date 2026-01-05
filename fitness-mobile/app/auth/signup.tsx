@@ -135,20 +135,23 @@ export default function SignUp() {
         await AsyncStorage.removeItem('pending_subscription_entitlements')
 
         // Navigate based on subscription status
-        setTimeout(() => {
-          if (hasActiveSubscription) {
-            // Has subscription, proceed to intake
-            router.replace('/intake')
-          } else {
-            // No subscription, send to subscription browse
-            router.replace('/subscriptions')
-          }
-        }, 500)
+        // Use setLoading(false) before navigation to avoid race conditions
+        setLoading(false)
+
+        if (hasActiveSubscription) {
+          // Has subscription, proceed to intake
+          console.log('[Signup] User has active subscription, navigating to intake')
+          router.replace('/intake')
+        } else {
+          // No subscription, send to subscription browse
+          console.log('[Signup] No active subscription, navigating to subscriptions')
+          router.replace('/subscriptions')
+        }
+        return // Exit early - navigation will handle the rest
       }
     } catch (error) {
       setMessage('❌ An unexpected error occurred')
       console.error('Sign up error:', error)
-    } finally {
       setLoading(false)
     }
   }
