@@ -78,42 +78,62 @@ export default function SignUp() {
       if (data.user) {
         setMessage('✅ Account created successfully!')
 
+        // Helper to add timeout to promises (RevenueCat can hang on simulator)
+        const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T | null> => {
+          return Promise.race([
+            promise,
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))
+          ])
+        }
+
         // Link RevenueCat to new user - CRITICAL for linking anonymous purchase
         try {
-          await Purchases.logIn(data.user.id)
-          console.log('RevenueCat linked to user:', data.user.id)
+          console.log('[Signup] Linking RevenueCat to user...')
+          const loginResult = await withTimeout(Purchases.logIn(data.user.id), 5000)
+          if (loginResult) {
+            console.log('[Signup] RevenueCat linked to user:', data.user.id)
+          } else {
+            console.log('[Signup] RevenueCat login timed out, continuing...')
+          }
         } catch (error) {
-          console.error('Error linking user to RevenueCat:', error)
+          console.error('[Signup] Error linking user to RevenueCat:', error)
           // Continue even if this fails - we'll handle it later
         }
 
         // Get RevenueCat entitlements
         let subscriptionTier = null
         let hasActiveSubscription = false
-        
+
         try {
-          const customerInfo = await Purchases.getCustomerInfo()
-          const activeEntitlements = Object.keys(customerInfo.entitlements.active)
-          
-          if (activeEntitlements.length > 0) {
-            hasActiveSubscription = true
-            
-            // Get pending program from AsyncStorage
-            const pendingProgram = await AsyncStorage.getItem('pending_subscription_program')
-            
-            if (pendingProgram) {
-              subscriptionTier = PROGRAM_TO_TIER[pendingProgram]
-              console.log('Mapped program to tier:', pendingProgram, '->', subscriptionTier)
-            } else {
-              // Fallback: use first entitlement
-              subscriptionTier = PROGRAM_TO_TIER[activeEntitlements[0]] || activeEntitlements[0].toUpperCase()
+          console.log('[Signup] Getting RevenueCat customer info...')
+          const customerInfo = await withTimeout(Purchases.getCustomerInfo(), 5000)
+
+          if (customerInfo) {
+            const activeEntitlements = Object.keys(customerInfo.entitlements.active)
+
+            if (activeEntitlements.length > 0) {
+              hasActiveSubscription = true
+
+              // Get pending program from AsyncStorage
+              const pendingProgram = await AsyncStorage.getItem('pending_subscription_program')
+
+              if (pendingProgram) {
+                subscriptionTier = PROGRAM_TO_TIER[pendingProgram]
+                console.log('[Signup] Mapped program to tier:', pendingProgram, '->', subscriptionTier)
+              } else {
+                // Fallback: use first entitlement
+                subscriptionTier = PROGRAM_TO_TIER[activeEntitlements[0]] || activeEntitlements[0].toUpperCase()
+              }
             }
+          } else {
+            console.log('[Signup] RevenueCat getCustomerInfo timed out, continuing without subscription...')
           }
         } catch (error) {
-          console.error('Error getting customer info:', error)
+          console.error('[Signup] Error getting customer info:', error)
         }
 
         // Create user record with subscription info
+        console.log('[Signup] Creating user record in database...')
         const { error: insertError } = await supabase
           .from('users')
           .insert({
@@ -125,28 +145,42 @@ export default function SignUp() {
           })
 
         if (insertError) {
-          console.error('Error creating user record:', insertError)
+          console.error('[Signup] Error creating user record:', insertError)
           Alert.alert('Error', 'Failed to create user profile. Please contact support.')
+          setLoading(false)
           return
         }
+        console.log('[Signup] User record created successfully')
 
-        // Clean up AsyncStorage
-        await AsyncStorage.removeItem('pending_subscription_program')
-        await AsyncStorage.removeItem('pending_subscription_entitlements')
+        // Clean up AsyncStorage (with timeout in case it hangs)
+        console.log('[Signup] Cleaning up AsyncStorage...')
+        try {
+          await Promise.race([
+            Promise.all([
+              AsyncStorage.removeItem('pending_subscription_program'),
+              AsyncStorage.removeItem('pending_subscription_entitlements')
+            ]),
+            new Promise((resolve) => setTimeout(resolve, 2000))
+          ])
+        } catch (e) {
+          console.log('[Signup] AsyncStorage cleanup failed, continuing...')
+        }
+        console.log('[Signup] AsyncStorage cleanup complete')
 
         // Navigate based on subscription status
-        // Use setLoading(false) before navigation to avoid race conditions
+        console.log('[Signup] Preparing to navigate, hasActiveSubscription:', hasActiveSubscription)
         setLoading(false)
 
-        if (hasActiveSubscription) {
-          // Has subscription, proceed to intake
-          console.log('[Signup] User has active subscription, navigating to intake')
-          router.replace('/intake')
-        } else {
-          // No subscription, send to subscription browse
-          console.log('[Signup] No active subscription, navigating to subscriptions')
-          router.replace('/subscriptions')
-        }
+        // Use setTimeout to ensure state updates before navigation
+        setTimeout(() => {
+          if (hasActiveSubscription) {
+            console.log('[Signup] Navigating to /intake')
+            router.replace('/intake')
+          } else {
+            console.log('[Signup] Navigating to /subscriptions')
+            router.replace('/subscriptions')
+          }
+        }, 100)
         return // Exit early - navigation will handle the rest
       }
     } catch (error) {
