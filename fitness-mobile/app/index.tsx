@@ -67,30 +67,46 @@ export default function Index() {
         }
 
         // Check if user has active subscription via RevenueCat
+        console.log('[Index] Checking subscription status...')
         const hasSubscription = await hasActiveSubscription()
+        console.log('[Index] RevenueCat subscription status:', hasSubscription)
 
-        if (!hasSubscription) {
+        // Also check database for subscription_status as backup
+        const { data: userData } = await supabase
+          .from('users')
+          .select('intake_status, subscription_status, subscription_tier')
+          .eq('auth_id', session.user.id)
+          .single()
+
+        console.log('[Index] User data:', {
+          intakeStatus: userData?.intake_status,
+          subscriptionStatus: userData?.subscription_status,
+          subscriptionTier: userData?.subscription_tier
+        })
+
+        // User needs to subscribe if:
+        // 1. RevenueCat says no subscription AND
+        // 2. Database shows no active subscription
+        const dbHasSubscription = userData?.subscription_status === 'active'
+
+        if (!hasSubscription && !dbHasSubscription) {
           // No active subscription - redirect to subscription browse
+          console.log('[Index] No active subscription, redirecting to /subscriptions')
           router.replace('/subscriptions')
           return
         }
-
-        // User has subscription - check if they've completed intake
-        const { data: userData } = await supabase
-          .from('users')
-          .select('intake_status')
-          .eq('auth_id', session.user.id)
-          .single()
 
         const intakeStatus = userData?.intake_status
 
         // If intake is not complete, redirect to intake
         if (intakeStatus === 'draft' || intakeStatus === null || intakeStatus === 'generating' || intakeStatus === 'failed') {
+          console.log('[Index] Intake not complete, redirecting to /intake')
           router.replace('/intake')
           return
         }
 
         // User has subscription AND completed intake - continue to app
+        console.log('[Index] User has subscription and completed intake, redirecting to /(tabs)')
         router.replace('/(tabs)')
       } else {
         // No session, go to sign in
