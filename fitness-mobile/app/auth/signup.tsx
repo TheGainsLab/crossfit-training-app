@@ -132,18 +132,19 @@ export default function SignUp() {
           console.error('[Signup] Error getting customer info:', error)
         }
 
-        // Create user record with subscription info
-        console.log('[Signup] Creating user record in database...')
+        // Create or update user record with subscription info
+        // Using upsert to handle case where trigger already created the user
+        console.log('[Signup] Creating/updating user record in database...')
         const { error: insertError } = await supabase
           .from('users')
-          .insert({
+          .upsert({
             auth_id: data.user.id,
             email: data.user.email,
             name: data.user.email?.split('@')[0] || 'New User', // Default name from email
             subscription_tier: subscriptionTier,
             subscription_status: hasActiveSubscription ? 'active' : null,
             intake_status: 'draft' // Ready for intake
-          })
+          }, { onConflict: 'email' })
 
         if (insertError) {
           console.error('[Signup] Error creating user record:', insertError)
