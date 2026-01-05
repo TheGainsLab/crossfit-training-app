@@ -78,39 +78,58 @@ export default function SignUp() {
       if (data.user) {
         setMessage('✅ Account created successfully!')
 
+        // Helper to add timeout to promises (RevenueCat can hang on simulator)
+        const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T | null> => {
+          return Promise.race([
+            promise,
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))
+          ])
+        }
+
         // Link RevenueCat to new user - CRITICAL for linking anonymous purchase
         try {
-          await Purchases.logIn(data.user.id)
-          console.log('RevenueCat linked to user:', data.user.id)
+          console.log('[Signup] Linking RevenueCat to user...')
+          const loginResult = await withTimeout(Purchases.logIn(data.user.id), 5000)
+          if (loginResult) {
+            console.log('[Signup] RevenueCat linked to user:', data.user.id)
+          } else {
+            console.log('[Signup] RevenueCat login timed out, continuing...')
+          }
         } catch (error) {
-          console.error('Error linking user to RevenueCat:', error)
+          console.error('[Signup] Error linking user to RevenueCat:', error)
           // Continue even if this fails - we'll handle it later
         }
 
         // Get RevenueCat entitlements
         let subscriptionTier = null
         let hasActiveSubscription = false
-        
+
         try {
-          const customerInfo = await Purchases.getCustomerInfo()
-          const activeEntitlements = Object.keys(customerInfo.entitlements.active)
-          
-          if (activeEntitlements.length > 0) {
-            hasActiveSubscription = true
-            
-            // Get pending program from AsyncStorage
-            const pendingProgram = await AsyncStorage.getItem('pending_subscription_program')
-            
-            if (pendingProgram) {
-              subscriptionTier = PROGRAM_TO_TIER[pendingProgram]
-              console.log('Mapped program to tier:', pendingProgram, '->', subscriptionTier)
-            } else {
-              // Fallback: use first entitlement
-              subscriptionTier = PROGRAM_TO_TIER[activeEntitlements[0]] || activeEntitlements[0].toUpperCase()
+          console.log('[Signup] Getting RevenueCat customer info...')
+          const customerInfo = await withTimeout(Purchases.getCustomerInfo(), 5000)
+
+          if (customerInfo) {
+            const activeEntitlements = Object.keys(customerInfo.entitlements.active)
+
+            if (activeEntitlements.length > 0) {
+              hasActiveSubscription = true
+
+              // Get pending program from AsyncStorage
+              const pendingProgram = await AsyncStorage.getItem('pending_subscription_program')
+
+              if (pendingProgram) {
+                subscriptionTier = PROGRAM_TO_TIER[pendingProgram]
+                console.log('[Signup] Mapped program to tier:', pendingProgram, '->', subscriptionTier)
+              } else {
+                // Fallback: use first entitlement
+                subscriptionTier = PROGRAM_TO_TIER[activeEntitlements[0]] || activeEntitlements[0].toUpperCase()
+              }
             }
+          } else {
+            console.log('[Signup] RevenueCat getCustomerInfo timed out, continuing without subscription...')
           }
         } catch (error) {
-          console.error('Error getting customer info:', error)
+          console.error('[Signup] Error getting customer info:', error)
         }
 
         // Create user record with subscription info
