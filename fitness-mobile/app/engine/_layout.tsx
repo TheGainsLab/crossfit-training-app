@@ -211,6 +211,15 @@ export default function EngineTabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="coach"
+        options={{
+          title: 'Coach',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubbles-outline" size={size} color={color} />
+          ),
+        }}
+      />
       {/* Hide components folder if it exists - should not be a route */}
       <Tabs.Screen
         name="components"
