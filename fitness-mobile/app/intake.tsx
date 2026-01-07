@@ -836,7 +836,6 @@ export default function IntakePage() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Athlete Intake</Text>
-          <Text style={styles.subtitle}>{currentSportConfig.name}</Text>
 
           {/* Progress Bar */}
           <View style={styles.progressContainer}>
@@ -1247,7 +1246,7 @@ export default function IntakePage() {
           <Card style={styles.sectionCard}>
             <SectionHeader title="Section 4: 1RM Lifts" />
             <Text style={styles.sectionDescription}>
-              Enter your 1-Rep Max in {formData.units === 'Metric (kg)' ? 'kilograms' : 'pounds'}.
+              Enter your 1-Rep Max.
               For Weighted Pullup, enter added weight only.
             </Text>
 
@@ -1509,10 +1508,11 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   skillCategoryTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#282B34',
     marginBottom: 12,
+    textAlign: 'center',
   },
   skillItem: {
     marginBottom: 16,
@@ -1636,6 +1636,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#282B34',
     marginBottom: 12,
+    textAlign: 'center',
   },
   liftInputGroup: {
     marginBottom: 16,
