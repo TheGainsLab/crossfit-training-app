@@ -996,7 +996,24 @@ try {
                 (user.units === 'Metric (kg)' ? 20 : 45);
               calculatedWeight = Math.max(calculatedWeight, weightFloor);
             }
-            
+
+            // Apply technical work weight caps (stored in lbs)
+            if (block === 'TECHNICAL WORK') {
+              const capLbs = user.gender === 'Female'
+                ? exercise.technical_cap_female
+                : exercise.technical_cap_male;
+              if (capLbs && capLbs > 0) {
+                // Convert cap to user's units if metric
+                const capInUserUnits = user.units === 'Metric (kg)'
+                  ? Math.round(capLbs / 2.205)
+                  : capLbs;
+                if (calculatedWeight > capInUserUnits) {
+                  console.log(`⚠️ Technical cap applied: ${exercise.name} ${calculatedWeight} → ${capInUserUnits} (cap: ${capLbs}lbs)`);
+                  calculatedWeight = capInUserUnits;
+                }
+              }
+            }
+
             const roundedWeight = roundWeight(calculatedWeight, user.units);
             weightTime = roundedWeight.toString();
           }
@@ -1116,6 +1133,23 @@ try {
                 (user.units === 'Metric (kg)' ? 15 : 35) :
                 (user.units === 'Metric (kg)' ? 20 : 45);
               calculatedWeight = Math.max(calculatedWeight, weightFloor);
+            }
+
+            // Apply technical work weight caps (stored in lbs)
+            if (block === 'TECHNICAL WORK') {
+              const capLbs = user.gender === 'Female'
+                ? exercise.technical_cap_female
+                : exercise.technical_cap_male;
+              if (capLbs && capLbs > 0) {
+                // Convert cap to user's units if metric
+                const capInUserUnits = user.units === 'Metric (kg)'
+                  ? Math.round(capLbs / 2.205)
+                  : capLbs;
+                if (calculatedWeight > capInUserUnits) {
+                  console.log(`⚠️ Technical cap applied: ${exercise.name} ${calculatedWeight} → ${capInUserUnits} (cap: ${capLbs}lbs)`);
+                  calculatedWeight = capInUserUnits;
+                }
+              }
             }
 
             const roundedWeight = roundWeight(calculatedWeight, user.units);
