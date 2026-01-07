@@ -881,6 +881,21 @@ async function assignExercises(
             const weightFloor = user.gender === 'Female' ? (user.units === 'Metric (kg)' ? 15 : 35) : (user.units === 'Metric (kg)' ? 20 : 45)
             calculatedWeight = Math.max(calculatedWeight, weightFloor)
           }
+
+          // Apply accessory weight caps (stored in lbs)
+          const accessoryCapLbs = user.gender === 'Female'
+            ? selectedExercise.accessory_cap_female
+            : selectedExercise.accessory_cap_male;
+          if (accessoryCapLbs && accessoryCapLbs > 0) {
+            const capInUserUnits = user.units === 'Metric (kg)'
+              ? Math.round(accessoryCapLbs / 2.205)
+              : accessoryCapLbs;
+            if (calculatedWeight > capInUserUnits) {
+              console.log(`⚠️ Accessory cap applied: ${selectedExercise.name} ${calculatedWeight} → ${capInUserUnits} (cap: ${accessoryCapLbs}lbs)`);
+              calculatedWeight = capInUserUnits;
+            }
+          }
+
           const roundedWeight = roundWeight(calculatedWeight, user.units)
           weightTime = roundedWeight.toString()
         }
