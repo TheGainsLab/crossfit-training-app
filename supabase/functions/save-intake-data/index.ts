@@ -449,6 +449,11 @@ serve(async (req) => {
 
       const isAppliedPower = userTier?.subscription_tier === 'APPLIED_POWER'
 
+      // Determine programType based on subscription tier
+      const programType = isEngineUser ? 'engine'
+        : isAppliedPower ? 'applied_power'
+        : 'full'
+
       // Check if user already has a program and calculate program number
       const { data: existingPrograms } = await supabase
         .from('programs')
@@ -465,9 +470,12 @@ serve(async (req) => {
         : 1
 
       // Determine what jobs to queue
-      const needsProgram = !isEngineUser && !isBTN && !hasExistingProgram
+      // BTN users don't need program generation (they generate workouts on-demand)
+      // Engine users DO need program generation for their Engine conditioning program
+      const needsProgram = !isBTN && !hasExistingProgram
       const needsProfile = true // Always generate profile
 
+      console.log(`📋 User tier: ${userData?.subscription_tier}, programType: ${programType}`)
       console.log(`📋 Queueing jobs: program=${needsProgram}, profile=${needsProfile}`)
 
       const jobIds: number[] = []
@@ -481,7 +489,7 @@ serve(async (req) => {
           job_type: 'intake_program',
           payload: {
             weeksToGenerate,
-            programType: isAppliedPower ? 'applied_power' : 'full'
+            programType
           }
         }
 
@@ -503,7 +511,7 @@ serve(async (req) => {
                 program_number: programNumber,
                 payload: {
                   weeksToGenerate,
-                  programType: isAppliedPower ? 'applied_power' : 'full'
+                  programType
                 }
               })
               .select('id')
@@ -581,12 +589,23 @@ serve(async (req) => {
         .delete()
         .eq('user_id', effectiveUserId)
 
+      // For BTN users, mark intake as complete immediately since they don't need program generation
+      if (isBTN) {
+        console.log('🎯 BTN user - marking intake as complete immediately')
+        await supabase
+          .from('users')
+          .update({
+            intake_status: 'complete'
+          })
+          .eq('id', effectiveUserId)
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
           message: 'Intake data saved and jobs queued',
           jobIds,
-          intakeStatus: 'generating',
+          intakeStatus: isBTN ? 'complete' : 'generating',
           programQueued: needsProgram,
           profileQueued: needsProfile
         }),

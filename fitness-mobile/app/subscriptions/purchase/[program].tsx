@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PurchasesPackage } from 'react-native-purchases';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PROGRAMS, ProgramType, getOfferings, purchasePackage } from '@/lib/subscriptions';
+import { createClient } from '@/lib/supabase/client';
 
 type BillingPeriod = 'monthly' | 'quarterly' | 'yearly';
 
@@ -118,16 +119,35 @@ export default function PurchaseScreen() {
         const activeEntitlements = Object.keys(customerInfo.entitlements.active);
         await AsyncStorage.setItem('pending_subscription_entitlements', JSON.stringify(activeEntitlements));
         
-        Alert.alert(
-          'Success!',
-          'Your subscription is active! Create your account to get started.',
-          [
-            {
-              text: 'Create Account',
-              onPress: () => router.push('/auth/signup'),
-            },
-          ]
-        );
+        // Check if user is already signed in
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          // User is already signed in - go to intake
+          Alert.alert(
+            'Success!',
+            'Your subscription is active! Complete your profile to get started.',
+            [
+              {
+                text: 'Continue',
+                onPress: () => router.push('/intake'),
+              },
+            ]
+          );
+        } else {
+          // User is not signed in - go to sign in (not signup!)
+          Alert.alert(
+            'Success!',
+            'Your subscription is active! Sign in to get started.',
+            [
+              {
+                text: 'Sign In',
+                onPress: () => router.push('/auth/signin'),
+              },
+            ]
+          );
+        }
       }
     } catch (error: any) {
       if (!error.userCancelled) {

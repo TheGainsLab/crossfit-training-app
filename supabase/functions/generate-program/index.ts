@@ -57,9 +57,11 @@ serve(async (req) => {
     }
 
     // Determine blocks based on program type
-    const blocks = programType === 'applied_power'
-      ? ['TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES']  // Applied Power: 3 blocks (no SKILLS, no METCONS)
-      : ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS', 'ENGINE']  // Full program: 6 blocks (added ENGINE)
+    const blocks = programType === 'engine'
+      ? ['ENGINE']  // Engine: Only ENGINE block
+      : programType === 'applied_power'
+      ? ['TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES']  // Applied Power: 3 blocks (no SKILLS, no METCONS, no ENGINE)
+      : ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS', 'ENGINE']  // Full program: 6 blocks
 
     console.log(`🚀 Starting program generation for user ${user_id}, weeks: ${weeksToGenerate.join(', ')}, programType: ${programType}, includeTestWeek: ${includeTestWeek}, blocks: ${blocks.join(', ')}`)
     

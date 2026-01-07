@@ -194,6 +194,20 @@ serve(async (req) => {
 
     console.log(`🏋️ Generating program for ${weeksToGenerate.length} weeks...`)
 
+    // Determine programType based on subscription tier
+    const { data: userTier } = await supabase
+      .from('users')
+      .select('subscription_tier')
+      .eq('id', user_id)
+      .single()
+    
+    const subscriptionTier = userTier?.subscription_tier
+    const programType = subscriptionTier === 'ENGINE' ? 'engine'
+      : subscriptionTier === 'APPLIED_POWER' ? 'applied_power'
+      : 'full'
+    
+    console.log(`📊 User subscription tier: ${subscriptionTier}, programType: ${programType}`)
+
     // Generate program
     const programResponse = await fetch(
       `${supabaseUrl}/functions/v1/generate-program`,
@@ -205,7 +219,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({ 
           user_id, 
-          weeksToGenerate 
+          weeksToGenerate,
+          programType
         })
       }
     )

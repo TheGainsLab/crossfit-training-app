@@ -272,7 +272,7 @@ export default function IntakePage() {
           const supabase = createClient()
           const { data: userData } = await supabase
             .from('users')
-            .select('intake_status, intake_error_message')
+            .select('intake_status, intake_error_message, subscription_tier')
             .eq('id', userId)
             .single()
 
@@ -282,10 +282,17 @@ export default function IntakePage() {
             if (userData.intake_status === 'complete') {
               setIsGenerating(false)
               clearInterval(pollInterval)
+              // Route based on subscription tier
+              const destination = userData.subscription_tier === 'BTN' 
+                ? '/btn/workouts' 
+                : '/(tabs)'
+              
               Alert.alert(
                 'Success!',
-                'Your program has been generated!',
-                [{ text: 'OK', onPress: () => router.push('/(tabs)/profile') }]
+                userData.subscription_tier === 'BTN'
+                  ? 'Your profile is ready! Time to generate some workouts.'
+                  : 'Your program has been generated!',
+                [{ text: 'OK', onPress: () => router.push(destination) }]
               )
             } else if (userData.intake_status === 'failed') {
               setIsGenerating(false)
