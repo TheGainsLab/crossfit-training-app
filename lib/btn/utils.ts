@@ -1305,9 +1305,9 @@ function getTimeDomainRange(duration: number): string {
 
 function filterExercisesForConsistency(exerciseTypes: string[]): string[] {
   const hasBarbell = exerciseTypes.some(exercise => isBarbellExercise(exercise));
-  const hasDumbbell = exerciseTypes.some(exercise => exercise.includes('Dumbbell'));
-  const hasKettlebell = exerciseTypes.some(exercise => exercise.includes('Kettlebell'));
-  
+  const hasDumbbell = exerciseTypes.some(exercise => isDumbbellExercise(exercise));
+  const hasKettlebell = exerciseTypes.some(exercise => isKettlebellExercise(exercise));
+
   if (hasBarbell) {
     const barbellExercises = exerciseTypes.filter(exercise => isBarbellExercise(exercise));
     if (barbellExercises.length > 1) {
@@ -1315,27 +1315,27 @@ function filterExercisesForConsistency(exerciseTypes: string[]): string[] {
       return exerciseTypes.filter(exercise => !isBarbellExercise(exercise) || exercise === firstBarbell);
     }
   }
-  
+
   if (hasDumbbell) {
-    const dumbbellExercises = exerciseTypes.filter(exercise => exercise.includes('Dumbbell'));
+    const dumbbellExercises = exerciseTypes.filter(exercise => isDumbbellExercise(exercise));
     if (dumbbellExercises.length > 1) {
       const firstDumbbell = dumbbellExercises[0];
-      return exerciseTypes.filter(exercise => !exercise.includes('Dumbbell') || exercise === firstDumbbell);
+      return exerciseTypes.filter(exercise => !isDumbbellExercise(exercise) || exercise === firstDumbbell);
     }
   }
-  
+
   if (hasBarbell && hasDumbbell) {
-    return exerciseTypes.filter(exercise => !exercise.includes('Dumbbell'));
+    return exerciseTypes.filter(exercise => !isDumbbellExercise(exercise));
   }
-  
+
   if (hasBarbell && hasKettlebell) {
-    return exerciseTypes.filter(exercise => !exercise.includes('Kettlebell'));
+    return exerciseTypes.filter(exercise => !isKettlebellExercise(exercise));
   }
-  
+
   if (hasDumbbell && hasKettlebell) {
-    return exerciseTypes.filter(exercise => !exercise.includes('Kettlebell'));
+    return exerciseTypes.filter(exercise => !isKettlebellExercise(exercise));
   }
-  
+
   return exerciseTypes;
 }
 
@@ -1435,14 +1435,19 @@ function getMode(numbers: number[]): number {
 }
 
 function isBarbellExercise(exerciseName: string): boolean {
-  const barbellExercises = [
-    'Deadlifts', 'Thrusters', 'Overhead Squats', 'Clean and Jerks', 'Power Cleans', 'Snatch',
-    'Squat Cleans', 'Squat Snatch', 'Power Snatch'
-  ];
-  
-  return barbellExercises.some(exercise => 
-    exerciseName.includes(exercise) || exerciseName === exercise
-  );
+  // Use equipment data from database instead of hardcoded list
+  const equipment = _exerciseEquipment[exerciseName];
+  return equipment ? equipment.includes('Barbell') : false;
+}
+
+function isDumbbellExercise(exerciseName: string): boolean {
+  const equipment = _exerciseEquipment[exerciseName];
+  return equipment ? equipment.includes('Dumbbells') : false;
+}
+
+function isKettlebellExercise(exerciseName: string): boolean {
+  const equipment = _exerciseEquipment[exerciseName];
+  return equipment ? equipment.includes('Kettlebells') : false;
 }
 
 function calculateWorkoutDuration(exercises: Exercise[], format: string, rounds?: number, amrapTime?: number, pattern?: string, userProfile?: UserProfile): number {
