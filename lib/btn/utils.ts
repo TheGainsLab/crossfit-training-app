@@ -98,6 +98,306 @@ const exerciseRates: { [key: string]: number } = {
   'Strict Pull-ups': 7.00
 };
 
+// === DECAY MODEL CONSTANTS ===
+// Derived from empirical pacing factors: 0.9 decay per round matches observed data
+// Round 1: 100%, Round 5: 66%, Round 10: 39%
+const DECAY_FACTOR = 0.9;
+
+// Max reps per round for each exercise (realistic caps)
+const maxRepsPerRound: { [key: string]: number } = {
+  'Double Unders': 100,
+  'Wall Balls': 50,
+  'Snatch': 30,
+  'Rowing Calories': 50,
+  'Chest to Bar Pull-ups': 30,
+  'Pull-ups': 30,
+  'Alternating Dumbbell Snatches': 50,
+  'Handstand Push-ups': 30,
+  'Deadlifts': 30,
+  'Overhead Squats': 30,
+  'Thrusters': 30,
+  'Dumbbell Thrusters': 30,
+  'Burpees': 30,
+  'Toes to Bar': 30,
+  'Power Cleans': 30,
+  'Burpee Box Jump Overs': 30,
+  'Box Jumps': 30,
+  'Box Jump Overs': 30,
+  'Clean and Jerks': 30,
+  'Dumbbell Clean and Jerk': 30,
+  'Ring Muscle Ups': 20,
+  'Rope Climbs': 5,
+  'Legless Rope Climbs': 3,
+  'GHD Sit-ups': 40,
+  'Kettlebell Swings': 50,
+  'Kettlebell Snatches': 50,
+  'Bike Calories': 50,
+  'Ski Calories': 50,
+  'Squat Cleans': 30,
+  'Squat Snatch': 30,
+  'Power Snatch': 30,
+  'Bar Muscle Ups': 20,
+  'Push-ups': 30,
+  'Strict Pull-ups': 12
+};
+
+// All valid rep options for each exercise (clean numbers only)
+const allRepOptions: { [key: string]: number[] } = {
+  'Double Unders': [15, 20, 25, 30, 35, 40, 50, 60, 75, 100],
+  'Wall Balls': [10, 12, 15, 18, 20, 24, 30, 35, 40, 50],
+  'Snatch': [3, 5, 10, 12, 15, 20, 25, 30],
+  'Rowing Calories': [10, 12, 15, 18, 20, 24, 30, 35, 40, 50],
+  'Chest to Bar Pull-ups': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
+  'Pull-ups': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
+  'Alternating Dumbbell Snatches': [6, 8, 10, 12, 18, 20, 24, 30, 36, 40, 50],
+  'Handstand Push-ups': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
+  'Deadlifts': [3, 5, 10, 12, 15, 20, 25, 30],
+  'Overhead Squats': [3, 5, 10, 12, 15, 20, 25, 30],
+  'Thrusters': [3, 5, 10, 12, 15, 20, 25, 30],
+  'Dumbbell Thrusters': [3, 5, 10, 12, 15, 20, 25, 30],
+  'Burpees': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
+  'Toes to Bar': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
+  'Power Cleans': [3, 5, 10, 12, 15, 20, 25, 30],
+  'Burpee Box Jump Overs': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
+  'Box Jumps': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
+  'Box Jump Overs': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
+  'Clean and Jerks': [3, 5, 10, 12, 15, 20, 25, 30],
+  'Dumbbell Clean and Jerk': [3, 5, 10, 12, 15, 20, 25, 30],
+  'Ring Muscle Ups': [3, 5, 7, 9, 10, 12, 15, 18, 20],
+  'Rope Climbs': [1, 2, 3, 5],
+  'Legless Rope Climbs': [1, 2, 3],
+  'GHD Sit-ups': [7, 9, 10, 12, 15, 18, 20, 24, 25, 30, 40],
+  'Kettlebell Swings': [10, 12, 15, 18, 20, 24, 30, 35, 40, 50],
+  'Kettlebell Snatches': [10, 12, 15, 18, 20, 24, 30, 35, 40, 50],
+  'Bike Calories': [10, 12, 15, 18, 20, 24, 30, 35, 40, 50],
+  'Ski Calories': [10, 12, 15, 18, 20, 24, 30, 35, 40, 50],
+  'Squat Cleans': [3, 5, 10, 12, 15, 20, 25, 30],
+  'Squat Snatch': [3, 5, 10, 12, 15, 20, 25, 30],
+  'Power Snatch': [3, 5, 10, 12, 15, 20, 25, 30],
+  'Bar Muscle Ups': [3, 5, 7, 9, 10, 12, 15, 18, 20],
+  'Push-ups': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
+  'Strict Pull-ups': [3, 5, 7, 9, 10, 12]
+};
+
+// === DECAY MODEL FUNCTIONS ===
+
+/**
+ * Calculate time for a single round at a given round number (1-indexed)
+ * Accounts for decay (fatigue) as rounds progress
+ */
+function calculateRoundTime(
+  exercises: { name: string; reps: number; weight?: string }[],
+  roundNum: number,
+  userProfile?: UserProfile
+): number {
+  const decayMultiplier = Math.pow(DECAY_FACTOR, roundNum - 1);
+  let time = 0;
+
+  for (const exercise of exercises) {
+    const baseRate = exerciseRates[exercise.name] || 10.0;
+    const weight = exercise.weight ? parseFloat(exercise.weight) : undefined;
+    const weightMultiplier = weight && isBarbellExercise(exercise.name)
+      ? getBarbellWeightMultiplier(exercise.name, weight, userProfile)
+      : 1.0;
+
+    // Effective rate = base × weight adjustment × decay
+    const effectiveRate = baseRate * weightMultiplier * decayMultiplier;
+    time += exercise.reps / effectiveRate;
+  }
+
+  return time;
+}
+
+/**
+ * Calculate total time for R rounds with decay
+ */
+function calculateTotalTimeWithDecay(
+  exercises: { name: string; reps: number; weight?: string }[],
+  rounds: number,
+  userProfile?: UserProfile
+): number {
+  let total = 0;
+  for (let r = 1; r <= rounds; r++) {
+    total += calculateRoundTime(exercises, r, userProfile);
+  }
+  return total;
+}
+
+/**
+ * Calculate time for a For Time pattern (e.g., 21-15-9)
+ * Each set in the pattern is treated as a "round" for decay purposes
+ */
+function calculatePatternTime(
+  exerciseNames: string[],
+  pattern: number[],
+  userProfile?: UserProfile,
+  weights?: { [key: string]: string }
+): number {
+  let total = 0;
+
+  for (let setIdx = 0; setIdx < pattern.length; setIdx++) {
+    const reps = pattern[setIdx];
+    const decayMultiplier = Math.pow(DECAY_FACTOR, setIdx);
+
+    for (const name of exerciseNames) {
+      const baseRate = exerciseRates[name] || 10.0;
+      const weight = weights?.[name] ? parseFloat(weights[name]) : undefined;
+      const weightMultiplier = weight && isBarbellExercise(name)
+        ? getBarbellWeightMultiplier(name, weight, userProfile)
+        : 1.0;
+
+      const effectiveRate = baseRate * weightMultiplier * decayMultiplier;
+      total += reps / effectiveRate;
+    }
+  }
+
+  return total;
+}
+
+/**
+ * Find how many complete rounds fit in an AMRAP time
+ */
+function calculateAmrapRounds(
+  exercises: { name: string; reps: number; weight?: string }[],
+  amrapTime: number,
+  userProfile?: UserProfile
+): { fullRounds: number; partialReps: number } {
+  let cumulative = 0;
+  let r = 0;
+
+  while (true) {
+    r++;
+    const roundTime = calculateRoundTime(exercises, r, userProfile);
+
+    if (cumulative + roundTime > amrapTime) {
+      // Calculate partial round
+      const remainingTime = amrapTime - cumulative;
+      const partialFraction = remainingTime / roundTime;
+      const totalRepsInRound = exercises.reduce((sum, ex) => sum + ex.reps, 0);
+      const partialReps = Math.floor(partialFraction * totalRepsInRound);
+
+      return { fullRounds: r - 1, partialReps };
+    }
+
+    cumulative += roundTime;
+
+    // Safety: cap at 20 rounds to prevent infinite loop
+    if (r >= 20) {
+      return { fullRounds: r, partialReps: 0 };
+    }
+  }
+}
+
+/**
+ * Get valid rep options for an exercise (under cap)
+ */
+function getValidRepOptions(exerciseName: string): number[] {
+  const options = allRepOptions[exerciseName] || [5, 10, 15, 20];
+  const cap = maxRepsPerRound[exerciseName] || 30;
+  return options.filter(r => r <= cap);
+}
+
+/**
+ * Search for valid round/rep combinations that hit a target time range
+ * This is the core of the new algorithm
+ */
+function findValidWorkoutCombinations(
+  exerciseNames: string[],
+  targetMin: number,
+  targetMax: number,
+  roundOptions: number[],
+  userProfile?: UserProfile,
+  weights?: { [key: string]: string }
+): { rounds: number; exercises: { name: string; reps: number; weight?: string }[]; duration: number }[] {
+  const results: { rounds: number; exercises: { name: string; reps: number; weight?: string }[]; duration: number }[] = [];
+
+  // Get rep options for each exercise
+  const repOptionsPerExercise = exerciseNames.map(name => getValidRepOptions(name));
+
+  // For efficiency, limit search space by picking representative options
+  // Use ~5 options per exercise, spread across the range
+  const limitedOptions = repOptionsPerExercise.map(opts => {
+    if (opts.length <= 5) return opts;
+    // Pick evenly spaced options
+    const step = Math.floor(opts.length / 5);
+    return [opts[0], opts[step], opts[step * 2], opts[step * 3], opts[opts.length - 1]];
+  });
+
+  // Search through combinations
+  for (const rounds of roundOptions) {
+    // Generate all combinations of reps
+    const searchCombos = (depth: number, current: number[]): void => {
+      if (depth === exerciseNames.length) {
+        // Build exercise array with reps
+        const exercises = exerciseNames.map((name, i) => ({
+          name,
+          reps: current[i],
+          weight: weights?.[name]
+        }));
+
+        // Calculate duration with decay model
+        const duration = calculateTotalTimeWithDecay(exercises, rounds, userProfile);
+
+        // Check if in target range
+        if (duration >= targetMin && duration <= targetMax) {
+          results.push({ rounds, exercises: [...exercises], duration });
+        }
+        return;
+      }
+
+      for (const reps of limitedOptions[depth]) {
+        current.push(reps);
+        searchCombos(depth + 1, current);
+        current.pop();
+      }
+    };
+
+    searchCombos(0, []);
+  }
+
+  return results;
+}
+
+/**
+ * Pick the best combination from valid options
+ * Prefers: middle of time range, balanced reps across exercises
+ */
+function selectBestCombination(
+  combinations: { rounds: number; exercises: { name: string; reps: number; weight?: string }[]; duration: number }[],
+  targetMin: number,
+  targetMax: number
+): { rounds: number; exercises: { name: string; reps: number; weight?: string }[]; duration: number } | null {
+  if (combinations.length === 0) return null;
+
+  const targetMid = (targetMin + targetMax) / 2;
+
+  // Score each combination
+  const scored = combinations.map(combo => {
+    // Prefer duration close to middle of range
+    const durationScore = 1 - Math.abs(combo.duration - targetMid) / (targetMax - targetMin);
+
+    // Prefer balanced reps (low variance)
+    const reps = combo.exercises.map(e => e.reps);
+    const avgReps = reps.reduce((a, b) => a + b, 0) / reps.length;
+    const variance = reps.reduce((sum, r) => sum + Math.pow(r - avgReps, 2), 0) / reps.length;
+    const balanceScore = 1 / (1 + variance / 100);
+
+    return {
+      combo,
+      score: durationScore * 0.7 + balanceScore * 0.3
+    };
+  });
+
+  // Sort by score and pick best, with some randomness among top options
+  scored.sort((a, b) => b.score - a.score);
+
+  // Pick randomly from top 3 (or fewer if less available)
+  const topN = Math.min(3, scored.length);
+  const pick = Math.floor(Math.random() * topN);
+
+  return scored[pick].combo;
+}
+
 function getAllowedPatternsForExercises(exercises: string[]): string[] {
   let mostRestrictiveTier = 'lowSkill';
   
@@ -559,169 +859,152 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
     
   const barbellWeight = barbellExercises.length > 0 ? generateWeightForExercise(barbellExercises[0], userProfile) : undefined;
   const dumbbellWeight = dumbbellExercises.length > 0 ? generateWeightForExercise(dumbbellExercises[0], userProfile) : undefined;
-  
-  // For Rounds For Time: Calculate rounds based on actual exercises and their work rates
-  if (format === 'Rounds For Time' && !rounds) {
-    // Calculate rep factor based on time domain
-    let repFactor;
-    if (targetDuration <= 5) {
-      repFactor = 1.0;
-    } else if (targetDuration <= 10) {
-      repFactor = 0.85;
-    } else if (targetDuration <= 15) {
-      repFactor = 0.75;
-    } else if (targetDuration <= 20) {
-      repFactor = 0.65;
-    } else {
-      repFactor = 0.55;
+
+  // Build weights map for search function
+  const weightsMap: { [key: string]: string } = {};
+  filteredExercises.forEach(name => {
+    if (isBarbellExercise(name) && barbellWeight) {
+      weightsMap[name] = barbellWeight;
+    } else if (name.includes('Dumbbell') && dumbbellWeight) {
+      weightsMap[name] = dumbbellWeight;
     }
-    
-    // Calculate estimated time per round based on actual exercises with adjusted rates
-    let estimatedTimePerRound = 0;
-    filteredExercises.forEach(exerciseName => {
-      // Get weight for this exercise (barbell or dumbbell)
-      let weight: number | undefined;
-      if (isBarbellExercise(exerciseName) && barbellWeight) {
-        weight = parseFloat(barbellWeight);
-      } else if (exerciseName.includes('Dumbbell') && dumbbellWeight) {
-        weight = parseFloat(dumbbellWeight);
-      }
-      
-      const adjustedRate = getAdjustedWorkRate(exerciseName, weight, targetDuration, userProfile);
-      // Estimate reasonable reps per exercise per round
-      const estimatedRepsPerExercise = Math.floor(adjustedRate * targetDuration / filteredExercises.length / 4); // Divide by 4 as rough round estimate
-      const timeForThisExercise = estimatedRepsPerExercise / adjustedRate;
-      estimatedTimePerRound += timeForThisExercise;
-    });
-    
-    // Calculate rounds based on duration and estimated time per round
-    rounds = Math.max(Math.floor(targetDuration / estimatedTimePerRound), 2);
-    
-    // Ensure reasonable round counts by time domain
-    if (targetDuration <= 5) {
-      rounds = Math.max(Math.min(rounds, 3), 2);  // 2-3 rounds for sprint
-    } else if (targetDuration <= 10) {
-      rounds = Math.max(Math.min(rounds, 5), 3);  // 3-5 rounds for short
-  } else {
-      rounds = Math.max(Math.min(rounds, 7), 4);  // 4-7 rounds for medium+
-    }
-  }
-  
-  // Generate exercises with reps
-  const exerciseReps: { name: string; reps: number }[] = [];
-  
-  if (format === 'AMRAP') {
-    // AMRAP: Calculate each exercise individually with dynamic divisor
-    const actualAmrapTime = amrapTime || targetDuration;
-    
-    // Calculate rep factor based on time domain
-    let repFactor;
-    if (actualAmrapTime <= 5) {
-      repFactor = 1.0;
-    } else if (actualAmrapTime <= 10) {
-      repFactor = 0.85;
-    } else if (actualAmrapTime <= 15) {
-      repFactor = 0.75;
-    } else if (actualAmrapTime <= 20) {
-      repFactor = 0.65;
-    } else {
-      repFactor = 0.55;
-    }
-    
-    // Calculate target rounds based on time domain and actual exercise difficulty
-    // These divisors represent target time-per-round for different durations
-    let targetTimePerRound: number;
-    if (actualAmrapTime <= 5) {
-      targetTimePerRound = 1.5;  // Sprint: ~90 seconds per round
-    } else if (actualAmrapTime <= 10) {
-      targetTimePerRound = 1.8;  // Short: ~108 seconds per round
-    } else if (actualAmrapTime <= 15) {
-      targetTimePerRound = 2.0;  // Medium: ~2 minutes per round
-    } else {
-      targetTimePerRound = 2.2;  // Extended: ~132 seconds per round
-    }
-    
-    const estimatedRounds = Math.max(Math.floor(actualAmrapTime / targetTimePerRound), 2);
-    
-    // Calculate reps for each exercise individually using adjusted rates
-    filteredExercises.forEach(exerciseName => {
-      // Get weight for this exercise
-      let weight: number | undefined;
-      if (isBarbellExercise(exerciseName) && barbellWeight) {
-        weight = parseFloat(barbellWeight);
-      } else if (exerciseName.includes('Dumbbell') && dumbbellWeight) {
-        weight = parseFloat(dumbbellWeight);
-      }
-      
-      const adjustedRate = getAdjustedWorkRate(exerciseName, weight, actualAmrapTime, userProfile);
-      const exerciseTotalReps = Math.floor(adjustedRate * actualAmrapTime);
-      const exerciseRepsPerRound = Math.floor(exerciseTotalReps / estimatedRounds);
-      const exerciseRepsPerExercise = Math.floor(exerciseRepsPerRound / filteredExercises.length);
-      
-      // Find closest match from rep options
-      const reps = calculateRepsForTimeDomain(exerciseName, exerciseRepsPerExercise, format, rounds, filteredExercises.length, amrapTime);
-      exerciseReps.push({ name: exerciseName, reps });
-    });
-  } else if (format === 'Rounds For Time' && rounds) {
-    // Rounds For Time: Calculate each exercise individually with dynamic divisor
-    // Calculate rep factor based on time domain
-    let repFactor;
-    if (targetDuration <= 5) {
-      repFactor = 1.0;
-    } else if (targetDuration <= 10) {
-      repFactor = 0.85;
-    } else if (targetDuration <= 15) {
-      repFactor = 0.75;
-    } else if (targetDuration <= 20) {
-      repFactor = 0.65;
-    } else {
-      repFactor = 0.55;
-    }
-    
-    // Calculate dynamic divisor based on actual exercises with adjusted rates
-    let totalTimePerRound = 0;
-    filteredExercises.forEach(exerciseName => {
-      // Get weight for this exercise
-      let weight: number | undefined;
-      if (isBarbellExercise(exerciseName) && barbellWeight) {
-        weight = parseFloat(barbellWeight);
-      } else if (exerciseName.includes('Dumbbell') && dumbbellWeight) {
-        weight = parseFloat(dumbbellWeight);
-      }
-      
-      const adjustedRate = getAdjustedWorkRate(exerciseName, weight, targetDuration, userProfile);
-      const estimatedRepsPerExercise = Math.floor(adjustedRate * targetDuration / filteredExercises.length);
-      const timeForThisExercise = estimatedRepsPerExercise / adjustedRate;
-      totalTimePerRound += timeForThisExercise;
-    });
-    
-    const dynamicDivisor = totalTimePerRound;
-    const estimatedRounds = Math.max(Math.floor(targetDuration / dynamicDivisor), 2);
-    
-    // Calculate reps for each exercise individually using adjusted rates
-  filteredExercises.forEach(exerciseName => {
-      // Get weight for this exercise
-      let weight: number | undefined;
-      if (isBarbellExercise(exerciseName) && barbellWeight) {
-        weight = parseFloat(barbellWeight);
-      } else if (exerciseName.includes('Dumbbell') && dumbbellWeight) {
-        weight = parseFloat(dumbbellWeight);
-      }
-      
-      const adjustedRate = getAdjustedWorkRate(exerciseName, weight, targetDuration, userProfile);
-      const exerciseTotalReps = Math.floor(adjustedRate * targetDuration);
-      const exerciseRepsPerRound = Math.floor(exerciseTotalReps / estimatedRounds);
-      const exerciseRepsPerExercise = Math.floor(exerciseRepsPerRound / filteredExercises.length);
-      
-      // Find closest match from rep options
-      const reps = calculateRepsForTimeDomain(exerciseName, exerciseRepsPerExercise, format, rounds, filteredExercises.length, amrapTime);
-    exerciseReps.push({ name: exerciseName, reps });
   });
+
+  // Generate exercises with reps using NEW SEARCH-BASED ALGORITHM
+  const exerciseReps: { name: string; reps: number }[] = [];
+
+  if (format === 'AMRAP') {
+    // AMRAP: Find rep combinations that give good round counts for the fixed time
+    const actualAmrapTime = amrapTime || targetDuration;
+
+    // Determine target round range based on duration
+    let targetRoundsMin: number, targetRoundsMax: number;
+    if (actualAmrapTime <= 5) {
+      targetRoundsMin = 3; targetRoundsMax = 5;
+    } else if (actualAmrapTime <= 10) {
+      targetRoundsMin = 4; targetRoundsMax = 7;
+    } else if (actualAmrapTime <= 15) {
+      targetRoundsMin = 5; targetRoundsMax = 9;
+    } else {
+      targetRoundsMin = 6; targetRoundsMax = 12;
+    }
+
+    // Search for rep combinations that yield rounds in target range
+    // We invert the problem: find reps such that calculateAmrapRounds gives good results
+    const repOptionsPerExercise = filteredExercises.map(name => getValidRepOptions(name));
+
+    // Limit search space
+    const limitedOptions = repOptionsPerExercise.map(opts => {
+      if (opts.length <= 5) return opts;
+      const step = Math.floor(opts.length / 5);
+      return [opts[0], opts[step], opts[step * 2], opts[step * 3], opts[opts.length - 1]];
+    });
+
+    // Search for best rep combination
+    let bestCombo: { name: string; reps: number }[] | null = null;
+    let bestScore = -Infinity;
+
+    const searchAmrapCombos = (depth: number, current: number[]): void => {
+      if (depth === filteredExercises.length) {
+        const testExercises = filteredExercises.map((name, i) => ({
+          name,
+          reps: current[i],
+          weight: weightsMap[name]
+        }));
+
+        const { fullRounds } = calculateAmrapRounds(testExercises, actualAmrapTime, userProfile);
+
+        // Score: prefer rounds in target range, penalize outside
+        let score = 0;
+        if (fullRounds >= targetRoundsMin && fullRounds <= targetRoundsMax) {
+          score = 100 - Math.abs(fullRounds - (targetRoundsMin + targetRoundsMax) / 2);
+        } else if (fullRounds < targetRoundsMin) {
+          score = 50 - (targetRoundsMin - fullRounds) * 10;
+        } else {
+          score = 50 - (fullRounds - targetRoundsMax) * 10;
+        }
+
+        // Add some randomness to avoid always picking same combo
+        score += Math.random() * 5;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestCombo = testExercises.map(e => ({ name: e.name, reps: e.reps }));
+        }
+        return;
+      }
+
+      for (const reps of limitedOptions[depth]) {
+        current.push(reps);
+        searchAmrapCombos(depth + 1, current);
+        current.pop();
+      }
+    };
+
+    searchAmrapCombos(0, []);
+
+    if (bestCombo) {
+      exerciseReps.push(...bestCombo);
+    } else {
+      // Fallback: use middle rep options
+      filteredExercises.forEach(name => {
+        const opts = getValidRepOptions(name);
+        exerciseReps.push({ name, reps: opts[Math.floor(opts.length / 2)] });
+      });
+    }
+
+  } else if (format === 'Rounds For Time') {
+    // Rounds For Time: Search for (rounds, reps) that hit target duration range
+    // Target duration is a hint - we search for combos in a range around it
+    const targetMin = Math.max(targetDuration - 2, 3);
+    const targetMax = targetDuration + 3;
+
+    // Determine round options based on duration
+    let roundOptions: number[];
+    if (targetDuration <= 5) {
+      roundOptions = [2, 3];
+    } else if (targetDuration <= 10) {
+      roundOptions = [3, 4, 5];
+    } else if (targetDuration <= 15) {
+      roundOptions = [4, 5, 6];
+    } else if (targetDuration <= 20) {
+      roundOptions = [4, 5, 6, 7];
+    } else {
+      roundOptions = [5, 6, 7, 8];
+    }
+
+    // Search for valid combinations
+    const combinations = findValidWorkoutCombinations(
+      filteredExercises,
+      targetMin,
+      targetMax,
+      roundOptions,
+      userProfile,
+      weightsMap
+    );
+
+    // Select best combination
+    const selected = selectBestCombination(combinations, targetMin, targetMax);
+
+    if (selected) {
+      rounds = selected.rounds;
+      selected.exercises.forEach(ex => {
+        exerciseReps.push({ name: ex.name, reps: ex.reps });
+      });
+    } else {
+      // Fallback: use middle options with middle round count
+      rounds = roundOptions[Math.floor(roundOptions.length / 2)];
+      filteredExercises.forEach(name => {
+        const opts = getValidRepOptions(name);
+        exerciseReps.push({ name, reps: opts[Math.floor(opts.length / 2)] });
+      });
+    }
+
   } else {
-    // Other formats: use existing logic
-    filteredExercises.forEach(exerciseName => {
-      const reps = calculateRepsForTimeDomain(exerciseName, targetDuration, format, rounds, filteredExercises.length, amrapTime);
-      exerciseReps.push({ name: exerciseName, reps });
+    // For Time with pattern: pattern determines reps, just return exercises
+    // Reps will be set by the pattern in the calling function
+    filteredExercises.forEach(name => {
+      exerciseReps.push({ name, reps: 0 }); // Placeholder, will be overwritten by pattern
     });
   }
   
@@ -1213,43 +1496,35 @@ function calculateWorkoutDuration(exercises: Exercise[], format: string, rounds?
   if (format === 'AMRAP' && amrapTime) {
     return amrapTime;
   }
-  
-  // Estimate duration for rep factor calculation (use actual if available, otherwise estimate from exercises)
-  const estimatedDuration = amrapTime || (rounds ? 12 : 8); // Rough estimate if not available
-  
+
   if (format === 'For Time' && pattern) {
-    const patternReps = pattern.split('-').map(Number);
-    const totalRepsPerRound = patternReps.reduce((sum, reps) => sum + reps, 0);
-    const totalReps = totalRepsPerRound * exercises.length;
-    
-    // Calculate each exercise separately at its adjusted rate
-    let totalTime = 0;
-    exercises.forEach(exercise => {
-      const weight = getExerciseWeight(exercise);
-      // Use estimated duration for rep factor calculation
-      const adjustedRate = getAdjustedWorkRate(exercise.name, weight, estimatedDuration, userProfile);
-      const timeForThisExercise = exercise.reps / adjustedRate;
-      totalTime += timeForThisExercise;
+    // Use decay model for pattern workouts
+    const patternNums = pattern.split('-').map(Number);
+    const exerciseNames = exercises.map(e => e.name);
+    const weights: { [key: string]: string } = {};
+    exercises.forEach(e => {
+      if (e.weight) weights[e.name] = e.weight;
     });
-    
-    return totalTime;
+    return calculatePatternTime(exerciseNames, patternNums, userProfile, weights);
   }
-  
-  // Calculate each exercise separately at its adjusted rate
-  let totalTimePerRound = 0;
-  exercises.forEach(exercise => {
-    const weight = getExerciseWeight(exercise);
-    // Use estimated duration for rep factor calculation
-    const adjustedRate = getAdjustedWorkRate(exercise.name, weight, estimatedDuration, userProfile);
-    const timeForThisExercise = exercise.reps / adjustedRate;
-    totalTimePerRound += timeForThisExercise;
-  });
-  
+
   if (format === 'Rounds For Time' && rounds) {
-    return totalTimePerRound * rounds;
-  } else {
-    return totalTimePerRound;
+    // Use decay model for rounds-based workouts
+    const exercisesWithWeight = exercises.map(e => ({
+      name: e.name,
+      reps: e.reps,
+      weight: e.weight
+    }));
+    return calculateTotalTimeWithDecay(exercisesWithWeight, rounds, userProfile);
   }
+
+  // Fallback: single round calculation without decay
+  let totalTime = 0;
+  exercises.forEach(exercise => {
+    const baseRate = exerciseRates[exercise.name] || 10.0;
+    totalTime += exercise.reps / baseRate;
+  });
+  return totalTime;
 }
 
 function generateWeightForExercise(exerciseName: string, userProfile?: UserProfile): string {
