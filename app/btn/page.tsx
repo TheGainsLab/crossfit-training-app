@@ -316,6 +316,10 @@ function BTNWorkoutGenerator() {
                       </div>
                     </div>
                     
+                    {/* DEBUG: Show pattern value */}
+                    <div className="text-xs text-red-500 mb-1">
+                      DEBUG: format="{workout.format}", pattern="{workout.pattern || 'UNDEFINED'}"
+                    </div>
                     <div className="rounded p-4 mb-4 border" style={{ backgroundColor: '#FFFFFF', borderColor: '#282B34' }}>
                       <p className="font-semibold mb-2">
                         {workout.format === 'Rounds For Time' && workout.rounds
