@@ -5,16 +5,17 @@
 -- Add new columns
 ALTER TABLE public.exercises
 ADD COLUMN IF NOT EXISTS can_be_btn boolean null default false,
-ADD COLUMN IF NOT EXISTS btn_work_rate numeric(5,2) null,           -- reps per minute at median pace
-ADD COLUMN IF NOT EXISTS btn_max_reps_per_round integer null,       -- realistic cap per round
-ADD COLUMN IF NOT EXISTS btn_rep_options integer[] null,            -- valid rep counts for clean programming
-ADD COLUMN IF NOT EXISTS btn_difficulty_tier varchar(20) null;      -- 'highSkill', 'highVolume', 'moderate', 'lowSkill'
+ADD COLUMN IF NOT EXISTS btn_work_rate numeric(5,2) null,              -- reps per minute at median pace
+ADD COLUMN IF NOT EXISTS btn_max_reps_per_round integer null,          -- realistic cap per round
+ADD COLUMN IF NOT EXISTS btn_rep_options integer[] null,               -- valid rep counts for clean programming
+ADD COLUMN IF NOT EXISTS btn_difficulty_tier varchar(20) null,         -- 'highSkill', 'highVolume', 'moderate', 'lowSkill'
+ADD COLUMN IF NOT EXISTS btn_weight_degradation_rate numeric(3,2) null; -- weight-based speed penalty (0.7=mild, 0.8=medium, 1.0=high)
 
 -- Add index for BTN filtering
 CREATE INDEX IF NOT EXISTS idx_exercises_btn ON public.exercises USING btree (can_be_btn) WHERE can_be_btn = true;
 
 -- Populate BTN data for existing exercises
--- Work rates, max reps, rep options, and difficulty tiers from current BTN generator
+-- Work rates, max reps, rep options, difficulty tiers, and weight degradation from current BTN generator
 
 -- High Skill exercises
 UPDATE public.exercises SET
@@ -22,7 +23,8 @@ UPDATE public.exercises SET
   btn_work_rate = 12.00,
   btn_max_reps_per_round = 30,
   btn_rep_options = ARRAY[3, 5, 10, 12, 15, 20, 25, 30],
-  btn_difficulty_tier = 'highSkill'
+  btn_difficulty_tier = 'highSkill',
+  btn_weight_degradation_rate = 0.80
 WHERE name = 'Snatch';
 
 UPDATE public.exercises SET
@@ -88,7 +90,8 @@ UPDATE public.exercises SET
   btn_work_rate = 12.00,
   btn_max_reps_per_round = 30,
   btn_rep_options = ARRAY[3, 5, 10, 12, 15, 20, 25, 30],
-  btn_difficulty_tier = 'moderate'
+  btn_difficulty_tier = 'moderate',
+  btn_weight_degradation_rate = 0.70
 WHERE name = 'Deadlifts';
 
 UPDATE public.exercises SET
@@ -128,7 +131,8 @@ UPDATE public.exercises SET
   btn_work_rate = 15.00,
   btn_max_reps_per_round = 30,
   btn_rep_options = ARRAY[3, 5, 10, 12, 15, 20, 25, 30],
-  btn_difficulty_tier = 'moderate'
+  btn_difficulty_tier = 'moderate',
+  btn_weight_degradation_rate = 1.00
 WHERE name = 'Overhead Squats';
 
 UPDATE public.exercises SET
@@ -136,7 +140,8 @@ UPDATE public.exercises SET
   btn_work_rate = 12.00,
   btn_max_reps_per_round = 30,
   btn_rep_options = ARRAY[3, 5, 10, 12, 15, 20, 25, 30],
-  btn_difficulty_tier = 'moderate'
+  btn_difficulty_tier = 'moderate',
+  btn_weight_degradation_rate = 0.80
 WHERE name = 'Thrusters';
 
 UPDATE public.exercises SET
@@ -144,7 +149,8 @@ UPDATE public.exercises SET
   btn_work_rate = 15.00,
   btn_max_reps_per_round = 30,
   btn_rep_options = ARRAY[3, 5, 10, 12, 15, 20, 25, 30],
-  btn_difficulty_tier = 'moderate'
+  btn_difficulty_tier = 'moderate',
+  btn_weight_degradation_rate = 0.70
 WHERE name = 'Power Cleans';
 
 UPDATE public.exercises SET
@@ -152,7 +158,8 @@ UPDATE public.exercises SET
   btn_work_rate = 12.00,
   btn_max_reps_per_round = 30,
   btn_rep_options = ARRAY[3, 5, 10, 12, 15, 20, 25, 30],
-  btn_difficulty_tier = 'moderate'
+  btn_difficulty_tier = 'moderate',
+  btn_weight_degradation_rate = 0.80
 WHERE name = 'Clean and Jerks';
 
 UPDATE public.exercises SET
@@ -168,7 +175,8 @@ UPDATE public.exercises SET
   btn_work_rate = 12.00,
   btn_max_reps_per_round = 30,
   btn_rep_options = ARRAY[3, 5, 10, 12, 15, 20, 25, 30],
-  btn_difficulty_tier = 'moderate'
+  btn_difficulty_tier = 'moderate',
+  btn_weight_degradation_rate = 1.00
 WHERE name = 'Squat Cleans';
 
 UPDATE public.exercises SET
@@ -176,7 +184,8 @@ UPDATE public.exercises SET
   btn_work_rate = 15.00,
   btn_max_reps_per_round = 30,
   btn_rep_options = ARRAY[3, 5, 10, 12, 15, 20, 25, 30],
-  btn_difficulty_tier = 'moderate'
+  btn_difficulty_tier = 'moderate',
+  btn_weight_degradation_rate = 0.70
 WHERE name = 'Power Snatch';
 
 UPDATE public.exercises SET
@@ -192,7 +201,8 @@ UPDATE public.exercises SET
   btn_work_rate = 9.00,
   btn_max_reps_per_round = 30,
   btn_rep_options = ARRAY[3, 5, 10, 12, 15, 20, 25, 30],
-  btn_difficulty_tier = 'moderate'
+  btn_difficulty_tier = 'moderate',
+  btn_weight_degradation_rate = 1.00
 WHERE name = 'Squat Snatch';
 
 -- Low Skill exercises
@@ -290,3 +300,4 @@ COMMENT ON COLUMN public.exercises.btn_work_rate IS 'Reps per minute at median (
 COMMENT ON COLUMN public.exercises.btn_max_reps_per_round IS 'Maximum realistic reps per round for BTN workouts';
 COMMENT ON COLUMN public.exercises.btn_rep_options IS 'Array of valid rep counts for clean BTN programming (e.g., 12 not 13)';
 COMMENT ON COLUMN public.exercises.btn_difficulty_tier IS 'Difficulty tier for BTN pattern restrictions: highSkill, highVolume, moderate, lowSkill';
+COMMENT ON COLUMN public.exercises.btn_weight_degradation_rate IS 'Weight-based speed penalty for barbell exercises: 0.7=mild, 0.8=medium, 1.0=high degradation';
