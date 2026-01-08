@@ -1,6 +1,34 @@
 // BTN Database Service - fetches exercise configuration from the database
 import { createClient } from '@/lib/supabase/client';
 
+// Display name mappings: database name → display name
+// Used to show user-friendly names in the UI while using actual database names for queries
+const DISPLAY_NAME_MAP: { [dbName: string]: string } = {
+  'Rowing': 'Rowing Calories',
+  'Bike Erg': 'Bike Calories',
+  'Ski Erg': 'Ski Calories',
+  'Pull-ups (kipping or butterfly)': 'Pull-ups'
+};
+
+// Reverse mapping: display name → database name
+const DB_NAME_MAP: { [displayName: string]: string } = Object.fromEntries(
+  Object.entries(DISPLAY_NAME_MAP).map(([db, display]) => [display, db])
+);
+
+/**
+ * Convert database exercise name to display name
+ */
+export function toDisplayName(dbName: string): string {
+  return DISPLAY_NAME_MAP[dbName] || dbName;
+}
+
+/**
+ * Convert display name back to database name
+ */
+export function toDbName(displayName: string): string {
+  return DB_NAME_MAP[displayName] || displayName;
+}
+
 // Type for BTN exercise data from database
 export interface BTNExercise {
   name: string;
@@ -93,29 +121,32 @@ export function buildExerciseMaps(exercises: BTNExercise[]) {
   const weightDegradationRates: { [key: string]: number } = {};
 
   for (const exercise of exercises) {
+    // Use display name for all internal references
+    const displayName = toDisplayName(exercise.name);
+
     // Exercise name list
-    exerciseDatabase.push(exercise.name);
+    exerciseDatabase.push(displayName);
 
     // Equipment mapping
-    exerciseEquipment[exercise.name] = exercise.required_equipment || [];
+    exerciseEquipment[displayName] = exercise.required_equipment || [];
 
     // Work rate (reps per minute)
-    exerciseRates[exercise.name] = exercise.btn_work_rate;
+    exerciseRates[displayName] = exercise.btn_work_rate;
 
     // Max reps per round
-    maxRepsPerRound[exercise.name] = exercise.btn_max_reps_per_round;
+    maxRepsPerRound[displayName] = exercise.btn_max_reps_per_round;
 
     // Valid rep options
-    allRepOptions[exercise.name] = exercise.btn_rep_options;
+    allRepOptions[displayName] = exercise.btn_rep_options;
 
     // Difficulty tier
     if (exercise.btn_difficulty_tier) {
-      exerciseDifficultyTiers[exercise.btn_difficulty_tier].push(exercise.name);
+      exerciseDifficultyTiers[exercise.btn_difficulty_tier].push(displayName);
     }
 
     // Weight degradation rate (for barbell exercises)
     if (exercise.btn_weight_degradation_rate !== null) {
-      weightDegradationRates[exercise.name] = exercise.btn_weight_degradation_rate;
+      weightDegradationRates[displayName] = exercise.btn_weight_degradation_rate;
     }
   }
 
