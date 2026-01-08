@@ -1,5 +1,10 @@
 import { Workout } from './types';
 
+// NOTE: Exercise data is now primarily loaded from the database (exercises table with btn_* columns)
+// The frontend generator (utils.ts) uses db.ts to fetch from the database.
+// This static data is kept for API routes and as a fallback reference.
+// To add/modify BTN exercises, update the exercises table in the database.
+
 export const exerciseDatabase = [
   'Double Unders', 'Wall Balls', 'Snatch', 'Rowing Calories', 'Chest to Bar Pull-ups',
   'Pull-ups', 'Alternating Dumbbell Snatches', 'Handstand Push-ups', 'Deadlifts',

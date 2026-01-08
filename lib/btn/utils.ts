@@ -1,6 +1,50 @@
 import { Workout, PerformancePrediction, GeneratedWorkout, Exercise, UserProfile } from './types';
-import { exerciseDatabase, exerciseEquipment } from './data';
 import { calculateBenchmarkScores } from './benchmarks';
+import { fetchBTNExercises, buildExerciseMaps, BTNExerciseMaps } from './db';
+
+// Module-level state for exercise data (populated from database)
+let _exerciseDataInitialized = false;
+let _exerciseDatabase: string[] = [];
+let _exerciseEquipment: { [key: string]: string[] } = {};
+let _exerciseRates: { [key: string]: number } = {};
+let _maxRepsPerRound: { [key: string]: number } = {};
+let _allRepOptions: { [key: string]: number[] } = {};
+let _exerciseDifficultyTiers: { highSkill: string[]; highVolume: string[]; moderate: string[]; lowSkill: string[] } = {
+  highSkill: [], highVolume: [], moderate: [], lowSkill: []
+};
+let _weightDegradationRates: { [key: string]: number } = {};
+
+/**
+ * Initialize BTN exercise data from database
+ * This must be called before generating workouts
+ */
+async function initializeBTNExerciseData(): Promise<void> {
+  if (_exerciseDataInitialized) return;
+
+  try {
+    const exercises = await fetchBTNExercises();
+    const maps = buildExerciseMaps(exercises);
+
+    _exerciseDatabase = maps.exerciseDatabase;
+    _exerciseEquipment = maps.exerciseEquipment;
+    _exerciseRates = maps.exerciseRates;
+    _maxRepsPerRound = maps.maxRepsPerRound;
+    _allRepOptions = maps.allRepOptions;
+    _exerciseDifficultyTiers = maps.exerciseDifficultyTiers;
+    _weightDegradationRates = maps.weightDegradationRates;
+    _exerciseDataInitialized = true;
+
+    console.log(`✅ BTN exercise data initialized: ${_exerciseDatabase.length} exercises`);
+  } catch (error) {
+    console.error('❌ Failed to initialize BTN exercise data from database:', error);
+    throw error;
+  }
+}
+
+// Export for use in page.tsx filtering
+export function getExerciseEquipment(): { [key: string]: string[] } {
+  return _exerciseEquipment;
+}
 
 // Format-specific rule sets
 const formatRules = {
@@ -33,13 +77,8 @@ const formatRules = {
   }
 };
 
-// Exercise difficulty tiers for pattern compatibility
-const exerciseDifficultyTiers = {
-  highSkill: ['Snatch', 'Ring Muscle Ups', 'Handstand Push-ups', 'Rope Climbs', 'Legless Rope Climbs', 'Bar Muscle Ups'],
-  highVolume: ['Double Unders', 'Wall Balls'],
-  moderate: ['Deadlifts', 'Burpees', 'Pull-ups', 'Chest to Bar Pull-ups', 'Toes to Bar', 'Overhead Squats', 'Thrusters', 'Power Cleans', 'Clean and Jerks', 'GHD Sit-ups', 'Squat Cleans', 'Power Snatch', 'Push-ups'],
-  lowSkill: ['Box Jumps', 'Box Jump Overs', 'Burpee Box Jump Overs', 'Alternating Dumbbell Snatches', 'Dumbbell Thrusters', 'Dumbbell Clean and Jerk', 'Rowing Calories', 'Kettlebell Swings', 'Kettlebell Snatches', 'Bike Calories', 'Ski Calories']
-};
+// Exercise difficulty tiers - now loaded from database via _exerciseDifficultyTiers
+// Kept as reference for pattern restrictions logic
 
 // Pattern restrictions by exercise difficulty tier
 const patternRestrictions = {
@@ -60,121 +99,15 @@ const specialPatternRestrictions: { [key: string]: string[] } = {
   'Ski Calories': ['21-15-9', '15-12-9-6-3', '27-21-15-9', '33-27-21-15-9', '50-40-30-20-10', '40-30-20-10']
 };
 
-// Exercise rate database (reps per minute for different exercises)
-const exerciseRates: { [key: string]: number } = {
-  'Double Unders': 60.00,
-  'Wall Balls': 20.00,
-  'Snatch': 12.00,
-  'Rowing Calories': 18.00,
-  'Chest to Bar Pull-ups': 18.00,
-  'Pull-ups': 18.00,
-  'Alternating Dumbbell Snatches': 20.79,
-  'Handstand Push-ups': 15.00,
-  'Deadlifts': 12.00,
-  'Overhead Squats': 15.00,
-  'Thrusters': 15.00,
-  'Dumbbell Thrusters': 15.00,
-  'Burpees': 12.00,
-  'Toes to Bar': 15.00,
-  'Power Cleans': 15.00,
-  'Burpee Box Jump Overs': 12.00,
-  'Box Jumps': 15.00,
-  'Box Jump Overs': 15.00,
-  'Clean and Jerks': 12.00,
-  'Dumbbell Clean and Jerk': 12.00,
-  'Ring Muscle Ups': 7.00,
-  'Rope Climbs': 5.00,
-  'Legless Rope Climbs': 3.00,
-  'GHD Sit-ups': 15.00,
-  'Kettlebell Swings': 20.79,
-  'Kettlebell Snatches': 18.00,
-  'Bike Calories': 18.00,
-  'Ski Calories': 18.00,
-  'Squat Cleans': 12.00,
-  'Squat Snatch': 12.00,
-  'Power Snatch': 15.00,
-  'Bar Muscle Ups': 7.00,
-  'Push-ups': 20.00
-};
+// Exercise rates - now loaded from database via _exerciseRates
 
 // === DECAY MODEL CONSTANTS ===
 // Derived from empirical pacing factors: 0.9 decay per round matches observed data
 // Round 1: 100%, Round 5: 66%, Round 10: 39%
 const DECAY_FACTOR = 0.9;
 
-// Max reps per round for each exercise (realistic caps)
-const maxRepsPerRound: { [key: string]: number } = {
-  'Double Unders': 100,
-  'Wall Balls': 50,
-  'Snatch': 30,
-  'Rowing Calories': 50,
-  'Chest to Bar Pull-ups': 30,
-  'Pull-ups': 30,
-  'Alternating Dumbbell Snatches': 50,
-  'Handstand Push-ups': 30,
-  'Deadlifts': 30,
-  'Overhead Squats': 30,
-  'Thrusters': 30,
-  'Dumbbell Thrusters': 30,
-  'Burpees': 30,
-  'Toes to Bar': 30,
-  'Power Cleans': 30,
-  'Burpee Box Jump Overs': 30,
-  'Box Jumps': 30,
-  'Box Jump Overs': 30,
-  'Clean and Jerks': 30,
-  'Dumbbell Clean and Jerk': 30,
-  'Ring Muscle Ups': 20,
-  'Rope Climbs': 5,
-  'Legless Rope Climbs': 3,
-  'GHD Sit-ups': 40,
-  'Kettlebell Swings': 50,
-  'Kettlebell Snatches': 50,
-  'Bike Calories': 50,
-  'Ski Calories': 50,
-  'Squat Cleans': 30,
-  'Squat Snatch': 30,
-  'Power Snatch': 30,
-  'Bar Muscle Ups': 20,
-  'Push-ups': 30
-};
-
-// All valid rep options for each exercise (clean numbers only)
-const allRepOptions: { [key: string]: number[] } = {
-  'Double Unders': [15, 20, 25, 30, 35, 40, 50, 60, 75, 100],
-  'Wall Balls': [10, 12, 15, 18, 20, 24, 30, 35, 40, 50],
-  'Snatch': [3, 5, 10, 12, 15, 20, 25, 30],
-  'Rowing Calories': [10, 12, 15, 18, 20, 24, 30, 35, 40, 50],
-  'Chest to Bar Pull-ups': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
-  'Pull-ups': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
-  'Alternating Dumbbell Snatches': [6, 8, 10, 12, 18, 20, 24, 30, 36, 40, 50],
-  'Handstand Push-ups': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
-  'Deadlifts': [3, 5, 10, 12, 15, 20, 25, 30],
-  'Overhead Squats': [3, 5, 10, 12, 15, 20, 25, 30],
-  'Thrusters': [3, 5, 10, 12, 15, 20, 25, 30],
-  'Dumbbell Thrusters': [3, 5, 10, 12, 15, 20, 25, 30],
-  'Burpees': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
-  'Toes to Bar': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
-  'Power Cleans': [3, 5, 10, 12, 15, 20, 25, 30],
-  'Burpee Box Jump Overs': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
-  'Box Jumps': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
-  'Box Jump Overs': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
-  'Clean and Jerks': [3, 5, 10, 12, 15, 20, 25, 30],
-  'Dumbbell Clean and Jerk': [3, 5, 10, 12, 15, 20, 25, 30],
-  'Ring Muscle Ups': [3, 5, 7, 9, 10, 12, 15, 18, 20],
-  'Rope Climbs': [1, 2, 3, 5],
-  'Legless Rope Climbs': [1, 2, 3],
-  'GHD Sit-ups': [7, 9, 10, 12, 15, 18, 20, 24, 25, 30, 40],
-  'Kettlebell Swings': [10, 12, 15, 18, 20, 24, 30, 35, 40, 50],
-  'Kettlebell Snatches': [10, 12, 15, 18, 20, 24, 30, 35, 40, 50],
-  'Bike Calories': [10, 12, 15, 18, 20, 24, 30, 35, 40, 50],
-  'Ski Calories': [10, 12, 15, 18, 20, 24, 30, 35, 40, 50],
-  'Squat Cleans': [3, 5, 10, 12, 15, 20, 25, 30],
-  'Squat Snatch': [3, 5, 10, 12, 15, 20, 25, 30],
-  'Power Snatch': [3, 5, 10, 12, 15, 20, 25, 30],
-  'Bar Muscle Ups': [3, 5, 7, 9, 10, 12, 15, 18, 20],
-  'Push-ups': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30]
-};
+// Max reps per round - now loaded from database via _maxRepsPerRound
+// All valid rep options - now loaded from database via _allRepOptions
 
 // === DECAY MODEL FUNCTIONS ===
 
@@ -191,7 +124,7 @@ function calculateRoundTime(
   let time = 0;
 
   for (const exercise of exercises) {
-    const baseRate = exerciseRates[exercise.name] || 10.0;
+    const baseRate = _exerciseRates[exercise.name] || 10.0;
     const weight = exercise.weight ? parseFloat(exercise.weight) : undefined;
     const weightMultiplier = weight && isBarbellExercise(exercise.name)
       ? getBarbellWeightMultiplier(exercise.name, weight, userProfile)
@@ -237,7 +170,7 @@ function calculatePatternTime(
     const decayMultiplier = Math.pow(DECAY_FACTOR, setIdx);
 
     for (const name of exerciseNames) {
-      const baseRate = exerciseRates[name] || 10.0;
+      const baseRate = _exerciseRates[name] || 10.0;
       const weight = weights?.[name] ? parseFloat(weights[name]) : undefined;
       const weightMultiplier = weight && isBarbellExercise(name)
         ? getBarbellWeightMultiplier(name, weight, userProfile)
@@ -289,8 +222,8 @@ function calculateAmrapRounds(
  * Get valid rep options for an exercise (under cap)
  */
 function getValidRepOptions(exerciseName: string): number[] {
-  const options = allRepOptions[exerciseName] || [5, 10, 15, 20];
-  const cap = maxRepsPerRound[exerciseName] || 30;
+  const options = _allRepOptions[exerciseName] || [5, 10, 15, 20];
+  const cap = _maxRepsPerRound[exerciseName] || 30;
   return options.filter(r => r <= cap);
 }
 
@@ -399,12 +332,12 @@ function getAllowedPatternsForExercises(exercises: string[]): string[] {
   let mostRestrictiveTier = 'lowSkill';
   
   for (const exercise of exercises) {
-    if (exerciseDifficultyTiers.highSkill.includes(exercise)) {
+    if (_exerciseDifficultyTiers.highSkill.includes(exercise)) {
       mostRestrictiveTier = 'highSkill';
       break;
-    } else if (exerciseDifficultyTiers.highVolume.includes(exercise) && mostRestrictiveTier !== 'highSkill') {
+    } else if (_exerciseDifficultyTiers.highVolume.includes(exercise) && mostRestrictiveTier !== 'highSkill') {
       mostRestrictiveTier = 'highVolume';
-    } else if (exerciseDifficultyTiers.moderate.includes(exercise) && mostRestrictiveTier === 'lowSkill') {
+    } else if (_exerciseDifficultyTiers.moderate.includes(exercise) && mostRestrictiveTier === 'lowSkill') {
       mostRestrictiveTier = 'moderate';
     }
   }
@@ -421,7 +354,10 @@ function getAllowedPatternsForExercises(exercises: string[]): string[] {
   return allowedPatterns;
 }
 
-export function generateTestWorkouts(selectedDomainRanges?: string[], userProfile?: UserProfile, requiredEquipment?: string[]): GeneratedWorkout[] {
+export async function generateTestWorkouts(selectedDomainRanges?: string[], userProfile?: UserProfile, requiredEquipment?: string[]): Promise<GeneratedWorkout[]> {
+  // Initialize exercise data from database
+  await initializeBTNExerciseData();
+
   const workouts: GeneratedWorkout[] = [];
   
   const allTimeDomains = [
@@ -440,14 +376,14 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
     : allTimeDomains;
   
   // Filter available exercises based on user profile
-  let availableExercises = [...exerciseDatabase];
+  let availableExercises = [..._exerciseDatabase];
   
   if (userProfile) {
     console.log('🔍 Filtering exercises by user profile...');
     
     // Filter by equipment
     availableExercises = availableExercises.filter(exercise => {
-      const required = exerciseEquipment[exercise] || [];
+      const required = _exerciseEquipment[exercise] || [];
       if (required.length === 0) return true; // Bodyweight exercises
       
       // User must have ALL required equipment
@@ -474,12 +410,12 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       return true;
     });
     
-    console.log(`✅ Available exercises after filtering: ${availableExercises.length}/${exerciseDatabase.length}`);
+    console.log(`✅ Available exercises after filtering: ${availableExercises.length}/${_exerciseDatabase.length}`);
     
     // Ensure we have minimum exercises for generation
     if (availableExercises.length < 10) {
       console.warn('⚠️ Too few exercises available after filtering, using all exercises');
-      availableExercises = [...exerciseDatabase];
+      availableExercises = [..._exerciseDatabase];
     }
   }
   
@@ -748,7 +684,7 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
   }
 
   // Use provided available exercises or default to all exercises
-  let candidateExercises = availableExercises ? [...availableExercises] : [...exerciseDatabase];
+  let candidateExercises = availableExercises ? [...availableExercises] : [..._exerciseDatabase];
   
   // Apply pattern restrictions for For Time format
   if (rules.patternRestrictions && pattern) {
@@ -821,7 +757,7 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
       }
       // For other equipment types, check exerciseEquipment mapping
       return filteredExercises.some(ex => {
-        const exEquipment = exerciseEquipment[ex] || [];
+        const exEquipment = _exerciseEquipment[ex] || [];
         return exEquipment.includes(eq);
       });
     });
@@ -1083,7 +1019,7 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
 }
 
 function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number, format: string, rounds?: number, numExercises: number = 3, amrapTime?: number): number {
-  const baseRate = exerciseRates[exerciseName] || 10.0;
+  const baseRate = _exerciseRates[exerciseName] || 10.0;
   
   // Domain-specific rep factors
   // Note: Exercise rates are already realistic sustainable rates from actual workout data
@@ -1538,7 +1474,7 @@ function calculateWorkoutDuration(exercises: Exercise[], format: string, rounds?
   // Fallback: single round calculation without decay
   let totalTime = 0;
   exercises.forEach(exercise => {
-    const baseRate = exerciseRates[exercise.name] || 10.0;
+    const baseRate = _exerciseRates[exercise.name] || 10.0;
     totalTime += exercise.reps / baseRate;
   });
   return totalTime;
@@ -1645,31 +1581,23 @@ function getBarbellWeightMultiplier(exerciseName: string, weight: number, userPr
   if (!userProfile || !isBarbellExercise(exerciseName)) {
     return 1.0; // No adjustment without profile or for non-barbell exercises
   }
-  
+
   const oneRM = getRelevantOneRM(exerciseName, userProfile.oneRMs);
   if (!oneRM || oneRM === 0) {
     return 1.0; // No adjustment without 1RM data
   }
-  
+
   // Max allowed weight (80% cap)
   const maxWeight = oneRM * 0.8;
   const effectiveWeight = Math.min(weight, maxWeight);
-  
+
   // Intensity as % of max allowed (0.0 to 1.0)
   const intensity = effectiveWeight / maxWeight;
-  
-  // Get movement-specific degradation rate
-  let degradationRate: number;
-  if (['Deadlifts', 'Power Cleans', 'Power Snatch'].includes(exerciseName)) {
-    degradationRate = 0.7;  // Mild degradation
-  } else if (['Clean and Jerks', 'Snatch', 'Thrusters'].includes(exerciseName)) {
-    degradationRate = 0.8;  // Medium degradation
-  } else if (['Squat Cleans', 'Squat Snatch', 'Overhead Squats'].includes(exerciseName)) {
-    degradationRate = 1.0;  // Highest degradation
-  } else {
-    degradationRate = 0.8;  // Default to medium
-  }
-  
+
+  // Get movement-specific degradation rate from database
+  // Falls back to default of 0.8 (medium degradation) if not in database
+  const degradationRate = _weightDegradationRates[exerciseName] ?? 0.8;
+
   // Calculate speed multiplier
   // At 50% of max: 1.0x, at 100% of max (cap): multiplier based on degradation rate
   if (intensity <= 0.5) {
@@ -1686,7 +1614,7 @@ export function getAdjustedWorkRate(
   targetDuration: number,
   userProfile?: UserProfile
 ): number {
-  const baseRate = exerciseRates[exerciseName] || 10.0;
+  const baseRate = _exerciseRates[exerciseName] || 10.0;
   
   // Apply weight-based multiplier (for barbell exercises)
   let weightMultiplier = 1.0;

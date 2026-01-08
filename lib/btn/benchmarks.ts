@@ -7,42 +7,7 @@ export const PERFORMANCE_FACTORS = {
   excellent: 1.30    // 90th percentile (elite pace)
 };
 
-// Exercise rate database (reps per minute for different exercises)
-const exerciseRates: { [key: string]: number } = {
-  'Double Unders': 60.00,
-  'Wall Balls': 20.00,
-  'Snatch': 12.00,
-  'Rowing Calories': 18.00,
-  'Chest to Bar Pull-ups': 18.00,
-  'Pull-ups': 18.00,
-  'Alternating Dumbbell Snatches': 20.79,
-  'Handstand Push-ups': 15.00,
-  'Deadlifts': 12.00,
-  'Overhead Squats': 15.00,
-  'Thrusters': 12.00,
-  'Dumbbell Thrusters': 15.42,
-  'Burpees': 15.00,
-  'Toes to Bar': 18.00,
-  'Power Cleans': 15.00,
-  'Burpee Box Jump Overs': 12.00,
-  'Box Jumps': 21.21,
-  'Box Jump Overs': 18.75,
-  'Clean and Jerks': 12.00,
-  'Dumbbell Clean and Jerk': 15.00,
-  'Ring Muscle Ups': 9.00,
-  'Rope Climbs': 6.00,
-  'Legless Rope Climbs': 4.50,
-  'GHD Sit-ups': 24.00,
-  'Kettlebell Swings': 30.00,
-  'Kettlebell Snatches': 21.00,
-  'Bike Calories': 18.00,
-  'Ski Calories': 15.00,
-  'Squat Cleans': 12.00,
-  'Squat Snatch': 9.00,
-  'Power Snatch': 15.00,
-  'Bar Muscle Ups': 7.50,
-  'Push-ups': 30.00
-};
+// Exercise rates are now loaded from database via getAdjustedWorkRate() in utils.ts
 
 /**
  * Calculate benchmark scores (50th and 90th percentile) for a generated workout

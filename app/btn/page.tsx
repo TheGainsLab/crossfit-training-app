@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { GeneratedWorkout, UserProfile } from '@/lib/btn/types';
-import { generateTestWorkouts } from '@/lib/btn/utils';
-import { exerciseEquipment } from '@/lib/btn/data';
+import { generateTestWorkouts, getExerciseEquipment } from '@/lib/btn/utils';
 
 interface SubscriptionStatus {
   hasAccess: boolean
@@ -104,12 +103,15 @@ function BTNWorkoutGenerator() {
         requiredEquipment = undefined; // 'all', 'no_barbell', or 'gymnastics' - handled post-generation
       }
       
-      const workouts = generateTestWorkouts(
+      const workouts = await generateTestWorkouts(
         selectedDomains.length > 0 ? selectedDomains : undefined,
         userProfile || undefined,
         requiredEquipment
       );
-      
+
+      // Get exercise equipment mapping from database
+      const exerciseEquipment = getExerciseEquipment();
+
       // Apply post-generation filtering for 'no_barbell' and 'gymnastics'
       // This matches the analysis filter logic exactly
       let filteredWorkouts = workouts;
