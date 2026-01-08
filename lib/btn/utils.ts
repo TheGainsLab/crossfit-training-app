@@ -1383,36 +1383,41 @@ function filterForbiddenPairs(exerciseTypes: string[]): string[] {
 
 function clusterReps(exerciseReps: { name: string; reps: number }[]): void {
   if (exerciseReps.length < 2) return;
-  
+
   const clusters: { name: string; reps: number }[][] = [];
   const processed = new Set<number>();
-  
+
   for (let i = 0; i < exerciseReps.length; i++) {
     if (processed.has(i)) continue;
-    
+
     const cluster = [exerciseReps[i]];
     processed.add(i);
-    
+
     for (let j = i + 1; j < exerciseReps.length; j++) {
       if (processed.has(j)) continue;
-      
+
       const repDiff = Math.abs(exerciseReps[i].reps - exerciseReps[j].reps);
       if (repDiff <= 2) {
         cluster.push(exerciseReps[j]);
         processed.add(j);
       }
     }
-    
+
     clusters.push(cluster);
   }
-  
+
   clusters.forEach(cluster => {
     if (cluster.length >= 2) {
       const repCounts = cluster.map(ex => ex.reps);
       const mode = getMode(repCounts);
-      
+
       cluster.forEach(exercise => {
-        exercise.reps = mode;
+        // Only apply clustered rep if it's valid for this exercise
+        const validOptions = _allRepOptions[exercise.name] || [5, 10, 15, 20];
+        if (validOptions.includes(mode)) {
+          exercise.reps = mode;
+        }
+        // Otherwise keep the original valid rep count
       });
     }
   });
