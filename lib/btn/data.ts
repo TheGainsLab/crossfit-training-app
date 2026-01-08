@@ -7,7 +7,7 @@ export const exerciseDatabase = [
   'Power Cleans', 'Burpee Box Jump Overs', 'Box Jumps', 'Box Jump Overs',
   'Clean and Jerks', 'Dumbbell Clean and Jerk', 'Ring Muscle Ups',
   'Rope Climbs', 'Legless Rope Climbs', 'GHD Sit-ups', 'Kettlebell Swings', 'Kettlebell Snatches',
-  'Bike Calories', 'Ski Calories', 'Squat Cleans', 'Squat Snatch', 'Power Snatch', 'Bar Muscle Ups', 'Push-ups', 'Strict Pull-ups'
+  'Bike Calories', 'Ski Calories', 'Squat Cleans', 'Squat Snatch', 'Power Snatch', 'Bar Muscle Ups', 'Push-ups'
 ];
 
 export const exerciseEquipment: { [key: string]: string[] } = {
@@ -43,6 +43,5 @@ export const exerciseEquipment: { [key: string]: string[] } = {
   'Squat Snatch': ['Barbell'],
   'Power Snatch': ['Barbell'],
   'Bar Muscle Ups': ['Pullup Bar or Rig'],
-  'Push-ups': [],
-  'Strict Pull-ups': ['Pullup Bar or Rig', 'Low or Adjustable Rings']
+  'Push-ups': []
 };

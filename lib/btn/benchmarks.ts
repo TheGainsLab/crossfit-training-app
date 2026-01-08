@@ -41,8 +41,7 @@ const exerciseRates: { [key: string]: number } = {
   'Squat Snatch': 9.00,
   'Power Snatch': 15.00,
   'Bar Muscle Ups': 7.50,
-  'Push-ups': 30.00,
-  'Strict Pull-ups': 12.00
+  'Push-ups': 30.00
 };
 
 /**
