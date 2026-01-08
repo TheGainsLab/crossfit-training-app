@@ -1168,7 +1168,7 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
       20: [20, 24, 30, 35],
       25: [20, 30, 35, 40, 50],
     },
-    'Kettlebell Snatches': {
+    'Kettlebell Snatch': {
       5: [10, 12, 15],
       10: [10, 12, 15, 18, 20],
       15: [18, 20, 24, 30],
@@ -1205,19 +1205,19 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     },
     // Barbell exercises - same options for all time domains
     'Snatch': barbellTimeDomainOptions,
-    'Deadlifts': barbellTimeDomainOptions,
-    'Overhead Squats': barbellTimeDomainOptions,
+    'Deadlift': barbellTimeDomainOptions,
+    'Overhead Squat': barbellTimeDomainOptions,
     'Thrusters': barbellTimeDomainOptions,
-    'Power Cleans': barbellTimeDomainOptions,
-    'Clean and Jerks': barbellTimeDomainOptions,
+    'Power Clean': barbellTimeDomainOptions,
+    'Clean and Jerk': barbellTimeDomainOptions,
     'Squat Cleans': barbellTimeDomainOptions,
     'Squat Snatch': barbellTimeDomainOptions,
     'Power Snatch': barbellTimeDomainOptions,
     'Dumbbell Thrusters': barbellTimeDomainOptions,
     'Dumbbell Clean and Jerk': barbellTimeDomainOptions,
   };
-  
-  const isBarbellExerciseForReps = ['Snatch', 'Deadlifts', 'Overhead Squats', 'Thrusters', 'Dumbbell Thrusters', 'Power Cleans', 'Clean and Jerks', 'Dumbbell Clean and Jerk', 'Squat Cleans', 'Squat Snatch', 'Power Snatch'].includes(exerciseName);
+
+  const isBarbellExerciseForReps = ['Snatch', 'Deadlift', 'Overhead Squat', 'Thrusters', 'Dumbbell Thrusters', 'Power Clean', 'Clean and Jerk', 'Dumbbell Clean and Jerk', 'Squat Cleans', 'Squat Snatch', 'Power Snatch'].includes(exerciseName);
   const isDoubleUnders = exerciseName === 'Double Unders';
   const isWallBalls = exerciseName === 'Wall Balls';
   const isBoxExercise = ['Burpee Box Jump Overs', 'Box Jumps', 'Box Jump Overs'].includes(exerciseName);
@@ -1232,7 +1232,7 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
   const isLeglessRopeClimbs = exerciseName === 'Legless Rope Climbs';
   const isGhdSitups = exerciseName === 'GHD Sit-ups';
   const isKettlebellSwings = exerciseName === 'Kettlebell Swings';
-  const isKettlebellSnatches = exerciseName === 'Kettlebell Snatches';
+  const isKettlebellSnatch = exerciseName === 'Kettlebell Snatch';
   const isBikeCalories = exerciseName === 'Bike Calories';
   const isSkiCalories = exerciseName === 'Ski Calories';
   const isBarMuscleUps = exerciseName === 'Bar Muscle Ups';
@@ -1493,18 +1493,18 @@ function calculateWorkoutDuration(exercises: Exercise[], format: string, rounds?
 function generateWeightForExercise(exerciseName: string, userProfile?: UserProfile): string {
   // Get standard weight options for this exercise
   let weightPairs: string[] = [];
-  
+
   if (exerciseName.includes('Dumbbell')) {
     weightPairs = ['50/35'];
-  } else if (['Deadlifts'].includes(exerciseName)) {
+  } else if (['Deadlift', 'Deadlifts'].includes(exerciseName)) {
     weightPairs = ['135/95', '185/135', '225/155', '275/185', '315/205'];
-  } else if ((exerciseName.includes('Clean') || exerciseName.includes('Jerk') || exerciseName === 'Clean and Jerks') && !exerciseName.includes('Dumbbell')) {
+  } else if ((exerciseName.includes('Clean') || exerciseName.includes('Jerk')) && !exerciseName.includes('Dumbbell')) {
     weightPairs = ['75/55', '95/65', '115/75', '135/95', '165/115', '185/135', '225/155', '275/185', '315/205'];
   } else if (exerciseName.includes('Snatch') && !exerciseName.includes('Dumbbell')) {
     weightPairs = ['75/55', '95/65', '115/75', '135/95', '165/115', '185/135', '225/155'];
-  } else if (['Thrusters', 'Overhead Squats'].includes(exerciseName)) {
+  } else if (['Thrusters', 'Overhead Squat', 'Overhead Squats'].includes(exerciseName)) {
     weightPairs = ['75/55', '95/65', '115/75', '135/95', '165/115', '185/135', '225/155'];
-  } else {  
+  } else {
     return '';
   }
 
@@ -1561,28 +1561,28 @@ function getRelevantOneRM(exerciseName: string, oneRMs: { [key: string]: number 
   if (['Snatch', 'Power Snatch', 'Squat Snatch'].includes(exerciseName)) {
     return oneRMs['Snatch'] || null;
   }
-  
+
   // Clean family (use Clean and Jerk 1RM)
-  if (['Power Clean', 'Squat Clean', 'Clean and Jerks', 'Squat Cleans', 'Power Cleans'].includes(exerciseName)) {
+  if (['Power Clean', 'Squat Cleans', 'Clean and Jerk'].includes(exerciseName)) {
     return oneRMs['Clean and Jerk'] || null;
   }
-  
+
   // Thrusters (70% of Clean & Jerk)
   if (exerciseName === 'Thrusters') {
     const cleanAndJerk = oneRMs['Clean and Jerk'];
     return cleanAndJerk ? cleanAndJerk * 0.7 : null;
   }
-  
+
   // Overhead Squat
-  if (['Overhead Squats', 'Overhead Squat'].includes(exerciseName)) {
+  if (exerciseName === 'Overhead Squat') {
     return oneRMs['Overhead Squat'] || null;
   }
-  
+
   // Deadlift
-  if (exerciseName === 'Deadlifts') {
+  if (exerciseName === 'Deadlift') {
     return oneRMs['Deadlift'] || null;
   }
-  
+
   return null;
 }
 
