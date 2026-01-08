@@ -490,22 +490,30 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
   const guaranteedWorkouts = Math.min(selectedCount, 5);
   
   // First pass: Generate 1 workout from each selected domain (up to 5)
+  // Uses retry logic to ensure workouts match their target domain
   for (let i = 0; i < guaranteedWorkouts; i++) {
     const domain = timeDomains[i];
-    
-    // For 1-5 min domain: AMRAP not allowed (must be 6+ min)
-    const formats = domain.maxDuration < 6 
-      ? ['For Time', 'Rounds For Time']  // No AMRAP for sprint domain
-      : allFormats;
-    
-    {
+
+    // Retry logic to ensure workout lands in target domain
+    let attempts = 0;
+    const maxAttempts = 30;
+    let workout: GeneratedWorkout | null = null;
+
+    while (attempts < maxAttempts && !workout) {
+      attempts++;
+
+      // For 1-5 min domain: AMRAP not allowed (must be 6+ min)
+      const formats = domain.maxDuration < 6
+        ? ['For Time', 'Rounds For Time']  // No AMRAP for sprint domain
+        : allFormats;
+
       const format = formats[Math.floor(Math.random() * formats.length)] as 'For Time' | 'AMRAP' | 'Rounds For Time';
-      
+
       let amrapTime: number | undefined;
       let rounds: number | undefined;
       let pattern: string | undefined;
       let targetDurationHint: number | undefined;
-      
+
       if (format === 'For Time') {
         // For Time: Pick pattern, then calculate duration from work
         const allPatterns = ['21-15-9', '15-12-9', '12-9-6', '10-8-6-4-2', '15-12-9-6-3', '27-21-15-9', '33-27-21-15-9', '50-40-30-20-10', '40-30-20-10'];
@@ -527,7 +535,6 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
           console.error('❌ CRITICAL: Pattern not set for For Time workout!');
           pattern = '15-12-9'; // Fallback
         }
-        console.log(`🎯 Selected pattern for For Time: ${pattern}`);
         amrapTime = undefined;
         rounds = undefined;
         targetDurationHint = undefined; // No target for For Time
@@ -544,61 +551,61 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
         amrapTime = undefined;
         pattern = undefined;
       }
-      
+
       // Generate exercises (targetDurationHint is only used for Rounds For Time round calculation)
       const result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment);
       const exercises = result.exercises;
-      
+
       // Update rounds if calculated dynamically
       if (result.rounds !== undefined) {
         rounds = result.rounds;
       }
-        
+
       // For "For Time": set each exercise to the total pattern reps
       if (pattern) {
-        console.log(`🎯 For Time workout - Pattern: ${pattern}`);
         const patternReps = pattern.split('-').map(Number);
         const totalPatternReps = patternReps.reduce((sum, reps) => sum + reps, 0);
-        console.log(`🎯 Pattern reps: ${patternReps.join('-')}, Total: ${totalPatternReps}`);
         exercises.forEach((exercise) => {
           exercise.reps = totalPatternReps;
         });
-      } else {
-        console.log(`⚠️ For Time workout without pattern! Format: ${format}`);
       }
-      
+
       // Calculate ACTUAL duration from the work
       const calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern, userProfile);
-      
+
       // Classify into time domain based on CALCULATED duration
       const actualTimeDomain = getTimeDomainRange(calculatedDuration);
-      
-      // Only add workout if it has at least 2 exercises AND meets time domain requirements
-      const meetsMinimumExerciseRequirement = exercises.length >= 2 && 
+
+      // Check if workout landed in target domain AND meets exercise requirements
+      // STRICT: Only accept workouts that match the selected domain
+      const meetsExerciseRequirement = exercises.length >= 2 &&
         !(actualTimeDomain === '15:00 - 20:00' && exercises.length < 3) &&
         !(actualTimeDomain === '20:00+' && exercises.length < 3);
-      
-      if (meetsMinimumExerciseRequirement) {
-        console.log(`✅ Creating workout ${i + 1}: format=${format}, pattern=${pattern || 'NONE'}`);
-        const workout: GeneratedWorkout = {
-          name: `Workout ${i + 1}`,
-          duration: calculatedDuration,  // Use calculated duration, not random target
+
+      if (actualTimeDomain === domain.range && meetsExerciseRequirement) {
+        console.log(`✅ Creating workout ${workouts.length + 1}: format=${format}, pattern=${pattern || 'NONE'}, domain=${actualTimeDomain}`);
+        workout = {
+          name: `Workout ${workouts.length + 1}`,
+          duration: calculatedDuration,
           format: format,
           amrapTime: amrapTime,
           rounds: rounds,
-          timeDomain: actualTimeDomain,  // Use actual classification
+          timeDomain: actualTimeDomain,
           exercises: exercises,
-          pattern: format === 'For Time' ? pattern : undefined  // Explicit: only For Time has pattern
+          pattern: format === 'For Time' ? pattern : undefined
         };
-        console.log(`✅ Workout created - workout.pattern=${workout.pattern || 'NONE'}`);
-        
+
         // Calculate benchmark scores
         const benchmarks = calculateBenchmarkScores(workout, userProfile);
         workout.medianScore = benchmarks.medianScore;
         workout.excellentScore = benchmarks.excellentScore;
-        
-        workouts.push(workout);
       }
+    }
+
+    if (workout) {
+      workouts.push(workout);
+    } else {
+      console.warn(`⚠️ Could not generate workout matching domain ${domain.range} after ${maxAttempts} attempts`);
     }
   }
   
