@@ -37,7 +37,7 @@ const formatRules = {
 const exerciseDifficultyTiers = {
   highSkill: ['Snatch', 'Ring Muscle Ups', 'Handstand Push-ups', 'Rope Climbs', 'Legless Rope Climbs', 'Bar Muscle Ups'],
   highVolume: ['Double Unders', 'Wall Balls'],
-  moderate: ['Deadlifts', 'Burpees', 'Pull-ups', 'Chest to Bar Pull-ups', 'Toes to Bar', 'Overhead Squats', 'Thrusters', 'Power Cleans', 'Clean and Jerks', 'GHD Sit-ups', 'Squat Cleans', 'Power Snatch', 'Push-ups', 'Strict Pull-ups'],
+  moderate: ['Deadlifts', 'Burpees', 'Pull-ups', 'Chest to Bar Pull-ups', 'Toes to Bar', 'Overhead Squats', 'Thrusters', 'Power Cleans', 'Clean and Jerks', 'GHD Sit-ups', 'Squat Cleans', 'Power Snatch', 'Push-ups'],
   lowSkill: ['Box Jumps', 'Box Jump Overs', 'Burpee Box Jump Overs', 'Alternating Dumbbell Snatches', 'Dumbbell Thrusters', 'Dumbbell Clean and Jerk', 'Rowing Calories', 'Kettlebell Swings', 'Kettlebell Snatches', 'Bike Calories', 'Ski Calories']
 };
 
@@ -94,8 +94,7 @@ const exerciseRates: { [key: string]: number } = {
   'Squat Snatch': 12.00,
   'Power Snatch': 15.00,
   'Bar Muscle Ups': 7.00,
-  'Push-ups': 20.00,
-  'Strict Pull-ups': 7.00
+  'Push-ups': 20.00
 };
 
 // === DECAY MODEL CONSTANTS ===
@@ -137,8 +136,7 @@ const maxRepsPerRound: { [key: string]: number } = {
   'Squat Snatch': 30,
   'Power Snatch': 30,
   'Bar Muscle Ups': 20,
-  'Push-ups': 30,
-  'Strict Pull-ups': 12
+  'Push-ups': 30
 };
 
 // All valid rep options for each exercise (clean numbers only)
@@ -175,8 +173,7 @@ const allRepOptions: { [key: string]: number[] } = {
   'Squat Snatch': [3, 5, 10, 12, 15, 20, 25, 30],
   'Power Snatch': [3, 5, 10, 12, 15, 20, 25, 30],
   'Bar Muscle Ups': [3, 5, 7, 9, 10, 12, 15, 18, 20],
-  'Push-ups': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30],
-  'Strict Pull-ups': [3, 5, 7, 9, 10, 12]
+  'Push-ups': [5, 7, 9, 10, 12, 15, 18, 20, 24, 30]
 };
 
 // === DECAY MODEL FUNCTIONS ===
@@ -1155,13 +1152,6 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
       20: [7, 9, 10, 12, 15, 18],
       25: [10, 12, 15, 18, 20],
     },
-    'Strict Pull-ups': {
-      5: [3, 5],
-      10: [3, 5, 7],
-      15: [5, 7, 9, 10],
-      20: [7, 9, 10, 12],
-      25: [7, 9, 10, 12],
-    },
     'Ring Muscle Ups': {
       5: [3, 5, 7],
       10: [3, 5, 7],
@@ -1301,8 +1291,7 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
   const isSkiCalories = exerciseName === 'Ski Calories';
   const isBarMuscleUps = exerciseName === 'Bar Muscle Ups';
   const isPushups = exerciseName === 'Push-ups';
-  const isStrictPullups = exerciseName === 'Strict Pull-ups';
-  
+
   if (format === 'AMRAP') {
     // AMRAP format: targetDuration is actually the pre-calculated reps per exercise
     // from the dynamic divisor logic in generateExercisesForTimeDomain
@@ -1426,16 +1415,10 @@ function filterForbiddenPairs(exerciseTypes: string[]): string[] {
     ['Bike Calories', 'Ski Calories'],
     ['Ring Muscle Ups', 'Chest to Bar Pull-ups'],
     ['Legless Rope Climbs', 'Chest to Bar Pull-ups'],
-    ['Ring Muscle Ups', 'Strict Pull-ups'],
     ['Bar Muscle Ups', 'Chest to Bar Pull-ups'],
     ['Ring Muscle Ups', 'Bar Muscle Ups'],
     ['Chest to Bar Pull-ups', 'Toes to Bar'],
-    ['Push-ups', 'Burpees'],
-    ['Strict Pull-ups', 'Pull-ups'],
-    ['Strict Pull-ups', 'Chest to Bar Pull-ups'],
-    ['Strict Pull-ups', 'Bar Muscle Ups'],
-    ['Strict Pull-ups', 'Rope Climbs'],
-    ['Strict Pull-ups', 'Legless Rope Climbs']
+    ['Push-ups', 'Burpees']
   ];
   
   let filteredExercises = [...exerciseTypes];
