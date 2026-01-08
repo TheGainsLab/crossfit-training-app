@@ -146,6 +146,10 @@ function BTNWorkoutGenerator() {
       setGeneratedWorkouts(filteredWorkouts);
       setSavedWorkouts(new Set()); // Clear saved state
       console.log(`✅ Generated ${filteredWorkouts.length} workouts`);
+      // Debug: Log pattern values
+      filteredWorkouts.forEach((w, i) => {
+        console.log(`📋 Workout ${i + 1}: format=${w.format}, pattern=${w.pattern || 'UNDEFINED'}, exercises=${w.exercises.map(e => `${e.reps} ${e.name}`).join(', ')}`);
+      });
     } catch (error) {
       console.error('❌ Generation failed:', error);
       alert('Failed to generate workouts. Please try again.');

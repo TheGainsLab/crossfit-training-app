@@ -553,11 +553,15 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
         
       // For "For Time": set each exercise to the total pattern reps
       if (pattern) {
+        console.log(`🎯 For Time workout - Pattern: ${pattern}`);
         const patternReps = pattern.split('-').map(Number);
         const totalPatternReps = patternReps.reduce((sum, reps) => sum + reps, 0);
+        console.log(`🎯 Pattern reps: ${patternReps.join('-')}, Total: ${totalPatternReps}`);
         exercises.forEach((exercise) => {
           exercise.reps = totalPatternReps;
         });
+      } else {
+        console.log(`⚠️ For Time workout without pattern! Format: ${format}`);
       }
       
       // Calculate ACTUAL duration from the work
@@ -572,6 +576,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
         !(actualTimeDomain === '20:00+' && exercises.length < 3);
       
       if (meetsMinimumExerciseRequirement) {
+        console.log(`✅ Creating workout ${i + 1}: format=${format}, pattern=${pattern || 'NONE'}`);
         const workout: GeneratedWorkout = {
           name: `Workout ${i + 1}`,
           duration: calculatedDuration,  // Use calculated duration, not random target
@@ -582,6 +587,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
           exercises,
           pattern
         };
+        console.log(`✅ Workout created - workout.pattern=${workout.pattern || 'NONE'}`);
         
         // Calculate benchmark scores
         const benchmarks = calculateBenchmarkScores(workout, userProfile);
@@ -653,22 +659,26 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       }
         
       if (pattern) {
+        console.log(`🎯 (2nd loop) For Time workout - Pattern: ${pattern}`);
         const patternReps = pattern.split('-').map(Number);
         const totalPatternReps = patternReps.reduce((sum, reps) => sum + reps, 0);
         exercises.forEach((exercise) => {
           exercise.reps = totalPatternReps;
         });
+      } else if (format === 'For Time') {
+        console.log(`⚠️ (2nd loop) For Time workout without pattern!`);
       }
-      
+
       const calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern, userProfile);
       const actualTimeDomain = getTimeDomainRange(calculatedDuration);
-      
+
       // Check if workout landed in target domain AND meets exercise requirements (or accept if max attempts reached)
-      const meetsExerciseRequirement = exercises.length >= 2 && 
+      const meetsExerciseRequirement = exercises.length >= 2 &&
         !(actualTimeDomain === '15:00 - 20:00' && exercises.length < 3) &&
         !(actualTimeDomain === '20:00+' && exercises.length < 3);
-      
+
       if ((actualTimeDomain === targetDomain.range && meetsExerciseRequirement) || attempts >= maxAttempts) {
+        console.log(`✅ (2nd loop) Creating workout: format=${format}, pattern=${pattern || 'NONE'}`);
         workout = {
           name: `Workout ${workouts.length + 1}`,
         duration: calculatedDuration,
