@@ -609,9 +609,9 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
     
     // Retry logic to ensure workout lands in target domain
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 30;  // More attempts to ensure domain match
     let workout: GeneratedWorkout | null = null;
-    
+
     while (attempts < maxAttempts && !workout) {
       attempts++;
       
@@ -681,12 +681,13 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       const calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern, userProfile);
       const actualTimeDomain = getTimeDomainRange(calculatedDuration);
 
-      // Check if workout landed in target domain AND meets exercise requirements (or accept if max attempts reached)
+      // Check if workout landed in target domain AND meets exercise requirements
+      // STRICT: Only accept workouts that match the selected domain
       const meetsExerciseRequirement = exercises.length >= 2 &&
         !(actualTimeDomain === '15:00 - 20:00' && exercises.length < 3) &&
         !(actualTimeDomain === '20:00+' && exercises.length < 3);
 
-      if ((actualTimeDomain === targetDomain.range && meetsExerciseRequirement) || attempts >= maxAttempts) {
+      if (actualTimeDomain === targetDomain.range && meetsExerciseRequirement) {
         console.log(`✅ (2nd loop) Creating workout: format=${format}, pattern=${pattern || 'NONE'}`);
         workout = {
           name: `Workout ${workouts.length + 1}`,
@@ -708,6 +709,8 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
     
     if (workout) {
       workouts.push(workout);
+    } else {
+      console.warn(`⚠️ Could not generate workout matching domain ${targetDomain.range} after ${maxAttempts} attempts`);
     }
   }
 

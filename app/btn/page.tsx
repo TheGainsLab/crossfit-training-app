@@ -219,11 +219,13 @@ function BTNWorkoutGenerator() {
               ))}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              {selectedDomains.length === 0 
+              {selectedDomains.length === 0
                 ? 'No domains selected - will generate 5 random workouts'
+                : selectedDomains.length === 1
+                ? `Will generate 5 workouts from the selected domain`
                 : selectedDomains.length >= 5
                 ? `Will generate 1 workout from each selected domain`
-                : `Will generate at least 1 from each selected domain, filling remainder randomly`
+                : `Will generate 5 workouts from the selected domains`
               }
             </p>
           </div>
