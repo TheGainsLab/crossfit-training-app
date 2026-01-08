@@ -512,7 +512,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       if (format === 'For Time') {
         // For Time: Pick pattern, then calculate duration from work
         const allPatterns = ['21-15-9', '15-12-9', '12-9-6', '10-8-6-4-2', '15-12-9-6-3', '27-21-15-9', '33-27-21-15-9', '50-40-30-20-10', '40-30-20-10'];
-        
+
         // Select pattern based on time domain (for variety)
         if (domain.maxDuration <= 10) {
           // Short workouts: lower volume patterns
@@ -520,11 +520,17 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
           pattern = shortPatterns[Math.floor(Math.random() * shortPatterns.length)];
         } else {
           // Longer workouts: any pattern except the highest volume
-          const moderatePatterns = allPatterns.filter(p => 
+          const moderatePatterns = allPatterns.filter(p =>
             !['50-40-30-20-10', '40-30-20-10'].includes(p)
           );
           pattern = moderatePatterns[Math.floor(Math.random() * moderatePatterns.length)];
         }
+        // Defensive: ensure pattern was set
+        if (!pattern) {
+          console.error('❌ CRITICAL: Pattern not set for For Time workout!');
+          pattern = '15-12-9'; // Fallback
+        }
+        console.log(`🎯 Selected pattern for For Time: ${pattern}`);
         amrapTime = undefined;
         rounds = undefined;
         targetDurationHint = undefined; // No target for For Time
@@ -580,12 +586,12 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
         const workout: GeneratedWorkout = {
           name: `Workout ${i + 1}`,
           duration: calculatedDuration,  // Use calculated duration, not random target
-          format,
-          amrapTime,
-          rounds,
+          format: format,
+          amrapTime: amrapTime,
+          rounds: rounds,
           timeDomain: actualTimeDomain,  // Use actual classification
-          exercises,
-          pattern
+          exercises: exercises,
+          pattern: format === 'For Time' ? pattern : undefined  // Explicit: only For Time has pattern
         };
         console.log(`✅ Workout created - workout.pattern=${workout.pattern || 'NONE'}`);
         
@@ -626,16 +632,22 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       
       if (format === 'For Time') {
         const allPatterns = ['21-15-9', '15-12-9', '12-9-6', '10-8-6-4-2', '15-12-9-6-3', '27-21-15-9', '33-27-21-15-9', '50-40-30-20-10', '40-30-20-10'];
-        
+
         if (targetDomain.maxDuration <= 10) {
           const shortPatterns = ['21-15-9', '15-12-9', '12-9-6', '10-8-6-4-2'];
           pattern = shortPatterns[Math.floor(Math.random() * shortPatterns.length)];
         } else {
-          const moderatePatterns = allPatterns.filter(p => 
+          const moderatePatterns = allPatterns.filter(p =>
             !['50-40-30-20-10', '40-30-20-10'].includes(p)
           );
           pattern = moderatePatterns[Math.floor(Math.random() * moderatePatterns.length)];
         }
+        // Defensive: ensure pattern was set
+        if (!pattern) {
+          console.error('❌ CRITICAL (2nd loop): Pattern not set for For Time workout!');
+          pattern = '15-12-9'; // Fallback
+        }
+        console.log(`🎯 (2nd loop) Selected pattern for For Time: ${pattern}`);
         amrapTime = undefined;
         rounds = undefined;
         targetDurationHint = undefined;
@@ -681,14 +693,14 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
         console.log(`✅ (2nd loop) Creating workout: format=${format}, pattern=${pattern || 'NONE'}`);
         workout = {
           name: `Workout ${workouts.length + 1}`,
-        duration: calculatedDuration,
-        format,
-        amrapTime,
-        rounds,
+          duration: calculatedDuration,
+          format: format,
+          amrapTime: amrapTime,
+          rounds: rounds,
           timeDomain: actualTimeDomain,
-        exercises,
-        pattern
-      };
+          exercises: exercises,
+          pattern: format === 'For Time' ? pattern : undefined  // Explicit: only For Time has pattern
+        };
         
         // Calculate benchmark scores
         const benchmarks = calculateBenchmarkScores(workout, userProfile);
