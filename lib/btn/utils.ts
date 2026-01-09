@@ -861,8 +861,8 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
         !(actualTimeDomain === '20:00+' && exercises.length < 3);
 
       if (actualTimeDomain === domain.range && meetsExerciseRequirement) {
-        console.log(`✅ Creating workout ${workouts.length + 1}: format=${format}, pattern=${pattern || 'NONE'}, domain=${actualTimeDomain}`);
-        workout = {
+        // Build provisional workout to calculate benchmarks
+        const provisionalWorkout = {
           name: `Workout ${workouts.length + 1}`,
           duration: calculatedDuration,
           format: format,
@@ -873,10 +873,21 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
           pattern: format === 'For Time' ? pattern : undefined
         };
 
-        // Calculate benchmark scores
-        const benchmarks = calculateBenchmarkScores(workout, userProfile);
-        workout.medianScore = benchmarks.medianScore;
-        workout.excellentScore = benchmarks.excellentScore;
+        // Calculate benchmark scores BEFORE accepting
+        const benchmarks = calculateBenchmarkScores(provisionalWorkout, userProfile);
+        const medianMinutes = parseTimeToMinutes(benchmarks.medianScore);
+
+        // For non-AMRAP formats, reject workouts where median time exceeds cap
+        const meetsTimeCap = format === 'AMRAP' || medianMinutes <= MAX_WORKOUT_MEDIAN_TIME;
+
+        if (meetsTimeCap) {
+          console.log(`✅ Creating workout ${workouts.length + 1}: format=${format}, pattern=${pattern || 'NONE'}, domain=${actualTimeDomain}, median=${benchmarks.medianScore}`);
+          workout = provisionalWorkout as GeneratedWorkout;
+          workout.medianScore = benchmarks.medianScore;
+          workout.excellentScore = benchmarks.excellentScore;
+        } else {
+          console.log(`❌ Rejected workout: median time ${benchmarks.medianScore} exceeds ${MAX_WORKOUT_MEDIAN_TIME} min cap`);
+        }
       }
     }
 
@@ -973,8 +984,8 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
         !(actualTimeDomain === '20:00+' && exercises.length < 3);
 
       if (actualTimeDomain === targetDomain.range && meetsExerciseRequirement) {
-        console.log(`✅ (2nd loop) Creating workout: format=${format}, pattern=${pattern || 'NONE'}`);
-        workout = {
+        // Build provisional workout to calculate benchmarks
+        const provisionalWorkout = {
           name: `Workout ${workouts.length + 1}`,
           duration: calculatedDuration,
           format: format,
@@ -982,16 +993,27 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
           rounds: rounds,
           timeDomain: actualTimeDomain,
           exercises: exercises,
-          pattern: format === 'For Time' ? pattern : undefined  // Explicit: only For Time has pattern
+          pattern: format === 'For Time' ? pattern : undefined
         };
-        
-        // Calculate benchmark scores
-        const benchmarks = calculateBenchmarkScores(workout, userProfile);
-        workout.medianScore = benchmarks.medianScore;
-        workout.excellentScore = benchmarks.excellentScore;
+
+        // Calculate benchmark scores BEFORE accepting
+        const benchmarks = calculateBenchmarkScores(provisionalWorkout, userProfile);
+        const medianMinutes = parseTimeToMinutes(benchmarks.medianScore);
+
+        // For non-AMRAP formats, reject workouts where median time exceeds cap
+        const meetsTimeCap = format === 'AMRAP' || medianMinutes <= MAX_WORKOUT_MEDIAN_TIME;
+
+        if (meetsTimeCap) {
+          console.log(`✅ (2nd loop) Creating workout: format=${format}, pattern=${pattern || 'NONE'}, median=${benchmarks.medianScore}`);
+          workout = provisionalWorkout as GeneratedWorkout;
+          workout.medianScore = benchmarks.medianScore;
+          workout.excellentScore = benchmarks.excellentScore;
+        } else {
+          console.log(`❌ (2nd loop) Rejected workout: median time ${benchmarks.medianScore} exceeds ${MAX_WORKOUT_MEDIAN_TIME} min cap`);
+        }
       }
     }
-    
+
     if (workout) {
       workouts.push(workout);
     } else {
@@ -1534,6 +1556,19 @@ function getTimeDomainRange(duration: number): string {
   if (duration <= 20) return '15:00 - 20:00';
   return '20:00+';
 }
+
+// Parse "MM:SS" format to total minutes
+function parseTimeToMinutes(timeStr: string): number {
+  if (!timeStr || timeStr === '--') return 0;
+  const parts = timeStr.split(':');
+  if (parts.length !== 2) return 0;
+  const minutes = parseInt(parts[0], 10);
+  const seconds = parseInt(parts[1], 10);
+  return minutes + seconds / 60;
+}
+
+// Maximum allowed median time for workouts (in minutes)
+const MAX_WORKOUT_MEDIAN_TIME = 25;
 
 function filterExercisesForConsistency(exerciseTypes: string[]): string[] {
   const hasBarbell = exerciseTypes.some(exercise => isBarbellExercise(exercise));
