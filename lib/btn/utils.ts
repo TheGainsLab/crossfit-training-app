@@ -147,7 +147,7 @@ const repWeightPairings: { [exercise: string]: { [weight: string]: number[] } } 
     '185/135': [3, 5],
     '225/155': [3, 5],
   },
-  'Hang Power Clean': {
+  'Hang Power Cleans': {
     '75/55': [15, 20, 25, 30],
     '95/65': [10, 12, 15, 20],
     '115/75': [5, 10, 12, 15],
@@ -523,7 +523,7 @@ const TIME_DOMAIN_REP_OPTIONS: { [key: string]: { [key: number]: number[] } } = 
   'Overhead Squat': BARBELL_TIME_DOMAIN_OPTIONS,
   'Thrusters': BARBELL_TIME_DOMAIN_OPTIONS,
   'Power Clean': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Hang Power Clean': BARBELL_TIME_DOMAIN_OPTIONS,
+  'Hang Power Cleans': BARBELL_TIME_DOMAIN_OPTIONS,
   'Clean and Jerk': BARBELL_TIME_DOMAIN_OPTIONS,
   'Squat Cleans': BARBELL_TIME_DOMAIN_OPTIONS,
   'Squat Snatch': BARBELL_TIME_DOMAIN_OPTIONS,
@@ -1796,7 +1796,7 @@ function getRelevantOneRM(exerciseName: string, oneRMs: { [key: string]: number 
   }
 
   // Clean family (use Clean and Jerk 1RM)
-  if (['Power Clean', 'Hang Power Clean', 'Squat Cleans', 'Clean and Jerk'].includes(exerciseName)) {
+  if (['Power Clean', 'Hang Power Cleans', 'Squat Cleans', 'Clean and Jerk'].includes(exerciseName)) {
     return oneRMs['Clean and Jerk'] || null;
   }
 
