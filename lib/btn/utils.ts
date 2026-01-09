@@ -475,6 +475,13 @@ const TIME_DOMAIN_REP_OPTIONS: { [key: string]: { [key: number]: number[] } } = 
     20: [5, 7, 10],
     25: [5, 7, 10],
   },
+  'Handstand Walk (10m or 25\')': {
+    5: [1, 2],
+    10: [1, 2, 3],
+    15: [2, 3, 4],
+    20: [2, 3, 4, 5],
+    25: [3, 4, 5],
+  },
   'Wall Balls': {
     5: [10, 12, 15],
     10: [10, 12, 15, 18, 20],
@@ -1645,7 +1652,10 @@ function filterForbiddenPairs(exerciseTypes: string[]): string[] {
     ['Wall Walks', 'Handstand Push-ups'],
     ['Wall Walks', 'Burpees'],
     ['Wall Walks', 'Overhead Squat'],
-    ['Wall Walks', 'Ring Muscle Ups']
+    ['Wall Walks', 'Ring Muscle Ups'],
+    ['Handstand Walk (10m or 25\')', 'Wall Walks'],
+    ['Handstand Walk (10m or 25\')', 'Handstand Push-ups'],
+    ['Handstand Walk (10m or 25\')', 'Ring Muscle Ups']
   ];
   
   let filteredExercises = [...exerciseTypes];
