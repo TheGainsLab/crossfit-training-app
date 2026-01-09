@@ -1272,9 +1272,9 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     'Rope Climbs': {
       5: [2, 3],
       10: [2, 3],
-      15: [2, 3, 5],
-      20: [2, 3, 5],
-      25: [2, 3, 5],
+      15: [3, 5],
+      20: [3, 5, 7],
+      25: [3, 5, 7],
     },
     'Legless Rope Climbs': {
       5: [1],
