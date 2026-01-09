@@ -702,7 +702,7 @@ RESPONSE STRUCTURE (no invented examples):
       ['SC, Squat Clean', 'Clean (clean only)'],
       ['Hang Clean', 'Hang Cleans'],
       ['HPC, Hang PC', 'Hang Power Cleans'],
-      ['Hang Snatch', 'Hang Snatch'],
+      ['HPS, Hang Snatch', 'Hang Power Snatch'],
       ['OHP, OH Press, MP, Military Press', 'Strict Press'],
       ['PP', 'Push Press'],
       ['S2O, STOH, S2OH', 'Shoulder to Overhead'],
