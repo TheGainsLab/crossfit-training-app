@@ -193,6 +193,9 @@ const repWeightPairings: { [exercise: string]: { [weight: string]: number[] } } 
   'Dumbbell Clean and Jerk': {
     '50/35': [5, 10, 12, 15, 20, 25, 30],
   },
+  'Dumbbell Box Step Over': {
+    '50/35': [5, 10, 12, 15, 20, 25, 30],
+  },
 };
 
 // Helper: Get valid weights for a given rep count
@@ -528,6 +531,7 @@ const TIME_DOMAIN_REP_OPTIONS: { [key: string]: { [key: number]: number[] } } = 
   'Hang Power Snatch': BARBELL_TIME_DOMAIN_OPTIONS,
   'Dumbbell Thrusters': BARBELL_TIME_DOMAIN_OPTIONS,
   'Dumbbell Clean and Jerk': BARBELL_TIME_DOMAIN_OPTIONS,
+  'Dumbbell Box Step Over': BARBELL_TIME_DOMAIN_OPTIONS,
 };
 
 /**
