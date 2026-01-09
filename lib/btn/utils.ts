@@ -99,7 +99,100 @@ const specialPatternRestrictions: { [key: string]: string[] } = {
   'Ski Calories': ['21-15-9', '15-12-9-6-3', '27-21-15-9', '33-27-21-15-9', '50-40-30-20-10', '40-30-20-10']
 };
 
-// Exercise rates - now loaded from database via _exerciseRates
+// Rep-weight pairings for barbell exercises
+// Maps weight (male/female) to valid rep counts for that load
+// Heavier weights → lower reps, lighter weights → higher reps
+const repWeightPairings: { [exercise: string]: { [weight: string]: number[] } } = {
+  'Overhead Squat': {
+    '75/55': [15, 20, 25, 30],
+    '95/65': [10, 12, 15, 20],
+    '115/75': [5, 10, 12, 15],
+    '135/95': [3, 5, 10],
+    '185/135': [3, 5],
+  },
+  'Snatch': {
+    '75/55': [10, 12, 15],
+    '95/65': [5, 10, 12],
+    '115/75': [3, 5, 10],
+    '135/95': [3, 5],
+    '185/135': [3, 5],
+  },
+  'Power Snatch': {
+    '75/55': [10, 12, 15],
+    '95/65': [5, 10, 12],
+    '115/75': [3, 5, 10],
+    '135/95': [3, 5],
+    '185/135': [3, 5],
+  },
+  'Squat Snatch': {
+    '75/55': [10, 12, 15],
+    '95/65': [5, 10, 12],
+    '115/75': [3, 5, 10],
+    '135/95': [3, 5],
+    '185/135': [3, 5],
+  },
+  'Power Clean': {
+    '75/55': [15, 20, 25, 30],
+    '95/65': [10, 12, 15, 20],
+    '115/75': [5, 10, 12, 15],
+    '135/95': [3, 5, 10, 12],
+    '165/115': [3, 5, 10],
+    '185/135': [3, 5],
+    '225/155': [3, 5],
+  },
+  'Squat Cleans': {
+    '75/55': [12, 15, 20],
+    '95/65': [10, 12, 15],
+    '115/75': [5, 10, 12],
+    '135/95': [3, 5, 10],
+    '165/115': [3, 5],
+    '185/135': [3, 5],
+    '225/155': [3, 5],
+  },
+  'Clean and Jerk': {
+    '75/55': [10, 12, 15],
+    '95/65': [5, 10, 12],
+    '115/75': [3, 5, 10],
+    '135/95': [3, 5],
+    '165/115': [3, 5],
+    '185/135': [3, 5],
+  },
+  'Thrusters': {
+    '75/55': [15, 20, 25, 30],
+    '95/65': [10, 12, 15, 20],
+    '115/75': [5, 10, 12, 15],
+    '135/95': [3, 5, 10],
+    '155/105': [3, 5],
+  },
+  'Deadlift': {
+    '135/95': [15, 20, 25, 30],
+    '185/135': [10, 12, 15, 20],
+    '225/155': [5, 10, 12, 15],
+    '275/185': [3, 5, 10],
+    '315/205': [3, 5],
+  },
+  'Dumbbell Thrusters': {
+    '50/35': [5, 10, 12, 15, 20, 25, 30],
+  },
+  'Dumbbell Clean and Jerk': {
+    '50/35': [5, 10, 12, 15, 20, 25, 30],
+  },
+};
+
+// Helper: Get valid weights for a given rep count
+function getValidWeightsForReps(exerciseName: string, targetReps: number): string[] {
+  const pairings = repWeightPairings[exerciseName];
+  if (!pairings) return [];
+
+  return Object.entries(pairings)
+    .filter(([_, validReps]) => validReps.includes(targetReps))
+    .map(([weight, _]) => weight);
+}
+
+// Helper: Get valid reps for a given weight
+function getValidRepsForWeight(exerciseName: string, weight: string): number[] {
+  return repWeightPairings[exerciseName]?.[weight] || [];
+}
 
 // === DECAY MODEL CONSTANTS ===
 // Derived from empirical pacing factors: 0.9 decay per round matches observed data
@@ -978,15 +1071,51 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
     clusterReps(exerciseReps);
   }
   
-  // Create final exercise objects
+  // Create final exercise objects with rep-appropriate weights
   exerciseReps.forEach(({ name, reps }) => {
     let weight: string | undefined;
     if (name.includes('Dumbbell')) {
       weight = dumbbellWeight;
     } else if (isBarbellExercise(name)) {
-      weight = barbellWeight;
+      // Use rep-weight pairings to find appropriate weight for these reps
+      const validWeights = getValidWeightsForReps(name, reps);
+      if (validWeights.length > 0) {
+        // Pick a random valid weight, or apply user profile filtering
+        if (userProfile) {
+          // Filter weights by user's capability (80% of 1RM cap)
+          const oneRM = getRelevantOneRM(name, userProfile.oneRMs);
+          if (oneRM) {
+            const cap = oneRM * 0.8;
+            const cappedWeights = validWeights.filter(w => {
+              const [male, female] = w.split('/').map(Number);
+              const userWeight = userProfile.gender === 'Female' ? female : male;
+              return userWeight <= cap;
+            });
+            if (cappedWeights.length > 0) {
+              weight = cappedWeights[Math.floor(Math.random() * cappedWeights.length)];
+            } else {
+              // All weights exceed cap, use lightest valid weight
+              weight = validWeights[0];
+            }
+          } else {
+            // No 1RM, pick random valid weight
+            weight = validWeights[Math.floor(Math.random() * validWeights.length)];
+          }
+          // Convert to gender-specific single weight
+          if (weight) {
+            const [male, female] = weight.split('/').map(Number);
+            weight = String(userProfile.gender === 'Female' ? female : male);
+          }
+        } else {
+          // No user profile, return weight pair format
+          weight = validWeights[Math.floor(Math.random() * validWeights.length)];
+        }
+      } else {
+        // No rep-weight pairing defined, fall back to old method
+        weight = barbellWeight;
+      }
     }
-    
+
     exercises.push({
       name,
       reps,
