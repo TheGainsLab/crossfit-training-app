@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { GeneratedWorkout, UserProfile } from '@/lib/btn/types';
-import { generateTestWorkouts, getExerciseEquipment } from '@/lib/btn/utils';
+import { generateTestWorkouts } from '@/lib/btn/utils';
 
 interface SubscriptionStatus {
   hasAccess: boolean
@@ -95,61 +95,33 @@ function BTNWorkoutGenerator() {
       console.log('Equipment filter:', equipmentFilter);
       console.log('Using profile:', userProfile ? 'Yes' : 'No (default generator)');
       
-      // Determine requiredEquipment based on filter
+      // Determine requiredEquipment and excludeEquipment based on filter
       let requiredEquipment: string[] | undefined;
+      let excludeEquipment: string[] | undefined;
+
       if (equipmentFilter === 'barbell') {
         requiredEquipment = ['Barbell'];
-      } else {
-        requiredEquipment = undefined; // 'all', 'no_barbell', or 'gymnastics' - handled post-generation
+      } else if (equipmentFilter === 'gymnastics') {
+        // Require at least one gymnastics exercise (Pullup Bar, Rings, or Rope)
+        requiredEquipment = ['Pullup Bar or Rig', 'High Rings', 'Climbing Rope'];
+      } else if (equipmentFilter === 'no_barbell') {
+        // Exclude all barbell exercises from candidates
+        excludeEquipment = ['Barbell'];
       }
-      
+
       const workouts = await generateTestWorkouts(
         selectedDomains.length > 0 ? selectedDomains : undefined,
         userProfile || undefined,
-        requiredEquipment
+        requiredEquipment,
+        excludeEquipment
       );
 
-      // Get exercise equipment mapping from database
-      const exerciseEquipment = getExerciseEquipment();
-
-      // Apply post-generation filtering for 'no_barbell' and 'gymnastics'
-      // This matches the analysis filter logic exactly
-      let filteredWorkouts = workouts;
-      if (equipmentFilter === 'no_barbell' || equipmentFilter === 'gymnastics') {
-        filteredWorkouts = workouts.filter(workout => {
-          // Calculate required_equipment for this workout (same logic as when saving)
-          const equipmentSet = new Set<string>();
-          workout.exercises.forEach((exercise: any) => {
-            const exerciseName = exercise.name || exercise.exercise;
-            const equipment = exerciseEquipment[exerciseName] || [];
-            equipment.forEach(eq => equipmentSet.add(eq));
-          });
-          const reqEq = Array.from(equipmentSet);
-          
-          if (equipmentFilter === 'no_barbell') {
-            return !reqEq.includes('Barbell');
-          } else if (equipmentFilter === 'gymnastics') {
-            return reqEq.some(eq => 
-              eq === 'Pullup Bar or Rig' || 
-              eq === 'High Rings' || 
-              eq === 'Climbing Rope'
-            );
-          }
-          return true;
-        });
-        
-        // If we filtered out too many, show what we have
-        if (filteredWorkouts.length < 5) {
-          console.warn(`⚠️ Only ${filteredWorkouts.length} workouts match filter, showing available workouts`);
-        }
-      }
-      
       // Display workouts immediately (no auto-save)
-      setGeneratedWorkouts(filteredWorkouts);
+      setGeneratedWorkouts(workouts);
       setSavedWorkouts(new Set()); // Clear saved state
-      console.log(`✅ Generated ${filteredWorkouts.length} workouts`);
+      console.log(`✅ Generated ${workouts.length} workouts`);
       // Debug: Log pattern values
-      filteredWorkouts.forEach((w, i) => {
+      workouts.forEach((w, i) => {
         console.log(`📋 Workout ${i + 1}: format=${w.format}, pattern=${w.pattern || 'UNDEFINED'}, exercises=${w.exercises.map(e => `${e.reps} ${e.name}`).join(', ')}`);
       });
     } catch (error) {
