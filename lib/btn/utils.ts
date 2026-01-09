@@ -180,6 +180,14 @@ const repWeightPairings: { [exercise: string]: { [weight: string]: number[] } } 
     '135/95': [3, 5, 10],
     '155/105': [3, 5],
   },
+  'Shoulder to Overhead': {
+    '75/55': [15, 20, 25, 30],
+    '95/65': [10, 12, 15, 20],
+    '115/75': [5, 10, 12, 15],
+    '135/95': [3, 5, 10],
+    '155/105': [3, 5],
+    '185/135': [3, 5],
+  },
   'Deadlift': {
     '135/95': [15, 20, 25, 30],
     '185/135': [10, 12, 15, 20],
@@ -384,6 +392,13 @@ const TIME_DOMAIN_REP_OPTIONS: { [key: string]: { [key: number]: number[] } } = 
     20: [20, 24, 30, 35, 40],
     25: [30, 35, 40, 50],
   },
+  'Shuttle Runs': {
+    5: [5, 7, 10],
+    10: [7, 10, 12],
+    15: [10, 12, 15],
+    20: [10, 12, 15],
+    25: [12, 15],
+  },
   'Pull-ups': {
     5: [5, 7, 9, 10],
     10: [7, 9, 10, 12, 15],
@@ -426,12 +441,33 @@ const TIME_DOMAIN_REP_OPTIONS: { [key: string]: { [key: number]: number[] } } = 
     20: [12, 15, 20, 24],
     25: [15, 18, 20, 24, 25, 30],
   },
+  'Wall Facing Handstand Push-ups': {
+    5: [3, 5],
+    10: [3, 5, 7],
+    15: [5, 7, 10],
+    20: [5, 7, 10],
+    25: [7, 10],
+  },
+  'Strict Handstand Push-ups': {
+    5: [3, 5],
+    10: [3, 5, 7],
+    15: [5, 7, 10],
+    20: [5, 7, 10],
+    25: [7, 10],
+  },
   'Burpees': {
     5: [5, 7, 9, 10],
     10: [7, 9, 10, 12],
     15: [10, 12, 15, 18],
     20: [12, 15, 20, 24],
     25: [15, 18, 20, 24, 25, 30],
+  },
+  'Bar Facing Burpees': {
+    5: [5, 7, 10],
+    10: [7, 10, 12],
+    15: [10, 12, 15],
+    20: [10, 12, 15],
+    25: [12, 15],
   },
   'Push-ups': {
     5: [5, 7, 9, 10],
@@ -543,6 +579,7 @@ const TIME_DOMAIN_REP_OPTIONS: { [key: string]: { [key: number]: number[] } } = 
   'Deadlift': BARBELL_TIME_DOMAIN_OPTIONS,
   'Overhead Squat': BARBELL_TIME_DOMAIN_OPTIONS,
   'Thrusters': BARBELL_TIME_DOMAIN_OPTIONS,
+  'Shoulder to Overhead': BARBELL_TIME_DOMAIN_OPTIONS,
   'Power Clean': BARBELL_TIME_DOMAIN_OPTIONS,
   'Hang Power Cleans': BARBELL_TIME_DOMAIN_OPTIONS,
   'Clean and Jerk': BARBELL_TIME_DOMAIN_OPTIONS,
@@ -1655,7 +1692,19 @@ function filterForbiddenPairs(exerciseTypes: string[]): string[] {
     ['Wall Walks', 'Ring Muscle Ups'],
     ['Handstand Walk (10m or 25\')', 'Wall Walks'],
     ['Handstand Walk (10m or 25\')', 'Handstand Push-ups'],
-    ['Handstand Walk (10m or 25\')', 'Ring Muscle Ups']
+    ['Handstand Walk (10m or 25\')', 'Ring Muscle Ups'],
+    ['Bar Facing Burpees', 'Burpees'],
+    ['Bar Facing Burpees', 'Burpee Box Jump Overs'],
+    ['Wall Facing Handstand Push-ups', 'Handstand Push-ups'],
+    ['Wall Facing Handstand Push-ups', 'Wall Walks'],
+    ['Wall Facing Handstand Push-ups', 'Push-ups'],
+    ['Strict Handstand Push-ups', 'Handstand Push-ups'],
+    ['Strict Handstand Push-ups', 'Wall Facing Handstand Push-ups'],
+    ['Strict Handstand Push-ups', 'Wall Walks'],
+    ['Strict Handstand Push-ups', 'Push-ups'],
+    ['Shuttle Runs', 'Rowing Calories'],
+    ['Shuttle Runs', 'Bike Calories'],
+    ['Shuttle Runs', 'Ski Calories']
   ];
   
   let filteredExercises = [...exerciseTypes];
@@ -1878,6 +1927,11 @@ function getRelevantOneRM(exerciseName: string, oneRMs: { [key: string]: number 
   // Deadlift
   if (exerciseName === 'Deadlift') {
     return oneRMs['Deadlift'] || null;
+  }
+
+  // Shoulder to Overhead (use Push Press or Strict Press 1RM)
+  if (exerciseName === 'Shoulder to Overhead') {
+    return oneRMs['Push Press'] || oneRMs['Strict Press'] || null;
   }
 
   return null;
