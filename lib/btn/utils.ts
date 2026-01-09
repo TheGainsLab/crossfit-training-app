@@ -124,6 +124,13 @@ const repWeightPairings: { [exercise: string]: { [weight: string]: number[] } } 
     '135/95': [3, 5],
     '185/135': [3, 5],
   },
+  'Hang Power Snatch': {
+    '75/55': [10, 12, 15],
+    '95/65': [5, 10, 12],
+    '115/75': [3, 5, 10],
+    '135/95': [3, 5],
+    '185/135': [3, 5],
+  },
   'Squat Snatch': {
     '75/55': [10, 12, 15],
     '95/65': [5, 10, 12],
@@ -132,6 +139,15 @@ const repWeightPairings: { [exercise: string]: { [weight: string]: number[] } } 
     '185/135': [3, 5],
   },
   'Power Clean': {
+    '75/55': [15, 20, 25, 30],
+    '95/65': [10, 12, 15, 20],
+    '115/75': [5, 10, 12, 15],
+    '135/95': [3, 5, 10, 12],
+    '165/115': [3, 5, 10],
+    '185/135': [3, 5],
+    '225/155': [3, 5],
+  },
+  'Hang Power Clean': {
     '75/55': [15, 20, 25, 30],
     '95/65': [10, 12, 15, 20],
     '115/75': [5, 10, 12, 15],
@@ -504,10 +520,12 @@ const TIME_DOMAIN_REP_OPTIONS: { [key: string]: { [key: number]: number[] } } = 
   'Overhead Squat': BARBELL_TIME_DOMAIN_OPTIONS,
   'Thrusters': BARBELL_TIME_DOMAIN_OPTIONS,
   'Power Clean': BARBELL_TIME_DOMAIN_OPTIONS,
+  'Hang Power Clean': BARBELL_TIME_DOMAIN_OPTIONS,
   'Clean and Jerk': BARBELL_TIME_DOMAIN_OPTIONS,
   'Squat Cleans': BARBELL_TIME_DOMAIN_OPTIONS,
   'Squat Snatch': BARBELL_TIME_DOMAIN_OPTIONS,
   'Power Snatch': BARBELL_TIME_DOMAIN_OPTIONS,
+  'Hang Power Snatch': BARBELL_TIME_DOMAIN_OPTIONS,
   'Dumbbell Thrusters': BARBELL_TIME_DOMAIN_OPTIONS,
   'Dumbbell Clean and Jerk': BARBELL_TIME_DOMAIN_OPTIONS,
 };
@@ -1769,12 +1787,12 @@ function generateWeightForExercise(exerciseName: string, userProfile?: UserProfi
 // Helper: Get relevant 1RM for an exercise
 function getRelevantOneRM(exerciseName: string, oneRMs: { [key: string]: number }): number | null {
   // Snatch family
-  if (['Snatch', 'Power Snatch', 'Squat Snatch'].includes(exerciseName)) {
+  if (['Snatch', 'Power Snatch', 'Hang Power Snatch', 'Squat Snatch'].includes(exerciseName)) {
     return oneRMs['Snatch'] || null;
   }
 
   // Clean family (use Clean and Jerk 1RM)
-  if (['Power Clean', 'Squat Cleans', 'Clean and Jerk'].includes(exerciseName)) {
+  if (['Power Clean', 'Hang Power Clean', 'Squat Cleans', 'Clean and Jerk'].includes(exerciseName)) {
     return oneRMs['Clean and Jerk'] || null;
   }
 
