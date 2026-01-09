@@ -1643,7 +1643,9 @@ function filterForbiddenPairs(exerciseTypes: string[]): string[] {
     ['Toes to Bar', 'Legless Rope Climbs'],
     ['Wall Balls', 'Alternating Pistols'],
     ['Wall Walks', 'Handstand Push-ups'],
-    ['Wall Walks', 'Burpees']
+    ['Wall Walks', 'Burpees'],
+    ['Wall Walks', 'Overhead Squat'],
+    ['Wall Walks', 'Ring Muscle Ups']
   ];
   
   let filteredExercises = [...exerciseTypes];
