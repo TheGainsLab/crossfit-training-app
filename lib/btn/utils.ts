@@ -690,9 +690,10 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
 
       // Check if workout landed in target domain AND meets exercise requirements
       // STRICT: Only accept workouts that match the selected domain
+      // Skip 15+ min exercise requirements if user explicitly requested a specific count
       const meetsExerciseRequirement = exercises.length >= 2 &&
-        !(actualTimeDomain === '15:00 - 20:00' && exercises.length < 3) &&
-        !(actualTimeDomain === '20:00+' && exercises.length < 3);
+        (exerciseCount !== undefined || !(actualTimeDomain === '15:00 - 20:00' && exercises.length < 3)) &&
+        (exerciseCount !== undefined || !(actualTimeDomain === '20:00+' && exercises.length < 3));
 
       if (actualTimeDomain === domain.range && meetsExerciseRequirement) {
         // Build provisional workout to calculate benchmarks
@@ -819,9 +820,10 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
 
       // Check if workout landed in target domain AND meets exercise requirements
       // STRICT: Only accept workouts that match the selected domain
+      // Skip 15+ min exercise requirements if user explicitly requested a specific count
       const meetsExerciseRequirement = exercises.length >= 2 &&
-        !(actualTimeDomain === '15:00 - 20:00' && exercises.length < 3) &&
-        !(actualTimeDomain === '20:00+' && exercises.length < 3);
+        (exerciseCount !== undefined || !(actualTimeDomain === '15:00 - 20:00' && exercises.length < 3)) &&
+        (exerciseCount !== undefined || !(actualTimeDomain === '20:00+' && exercises.length < 3));
 
       if (actualTimeDomain === targetDomain.range && meetsExerciseRequirement) {
         // Build provisional workout to calculate benchmarks
