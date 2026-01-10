@@ -938,7 +938,10 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
 
   // Use provided available exercises or default to all exercises
   let candidateExercises = availableExercises ? [...availableExercises] : [..._exerciseDatabase];
-  
+
+  // Save original pool before pattern filtering (for include exercises)
+  const originalPool = [...candidateExercises];
+
   // Apply pattern restrictions for For Time format
   if (rules.patternRestrictions && pattern) {
     candidateExercises = candidateExercises.filter(exercise => {
@@ -953,10 +956,11 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
   const triedExercises = new Set<string>();
 
   // HIGHEST PRIORITY: Add user-specified "must include" exercises first
+  // Check against originalPool to bypass pattern restrictions for explicit includes
   if (includeExercises && includeExercises.length > 0) {
     for (const exercise of includeExercises) {
-      // Only add if it's in the available exercises (not excluded by other filters)
-      if (candidateExercises.includes(exercise) && !filteredExercises.includes(exercise)) {
+      // Check against original pool (before pattern filtering) to honor user's explicit request
+      if (originalPool.includes(exercise) && !filteredExercises.includes(exercise)) {
         // Check if adding this exercise would violate constraints
         const testExercises = [...filteredExercises, exercise];
         const testFiltered = filterExercisesForConsistency(testExercises);
