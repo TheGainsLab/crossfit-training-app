@@ -38,6 +38,7 @@ export interface BTNExercise {
   btn_rep_options: number[];
   btn_difficulty_tier: 'highSkill' | 'highVolume' | 'moderate' | 'lowSkill';
   btn_weight_degradation_rate: number | null;
+  btn_time_domain_rep_options: { [key: string]: number[] } | null;
 }
 
 // Cached exercise data
@@ -66,7 +67,8 @@ export async function fetchBTNExercises(): Promise<BTNExercise[]> {
       btn_max_reps_per_round,
       btn_rep_options,
       btn_difficulty_tier,
-      btn_weight_degradation_rate
+      btn_weight_degradation_rate,
+      btn_time_domain_rep_options
     `)
     .eq('can_be_btn', true)
     .not('btn_work_rate', 'is', null);
@@ -119,6 +121,7 @@ export function buildExerciseMaps(exercises: BTNExercise[]) {
     lowSkill: []
   };
   const weightDegradationRates: { [key: string]: number } = {};
+  const timeDomainRepOptions: { [key: string]: { [key: number]: number[] } } = {};
 
   for (const exercise of exercises) {
     // Use display name for all internal references
@@ -148,6 +151,14 @@ export function buildExerciseMaps(exercises: BTNExercise[]) {
     if (exercise.btn_weight_degradation_rate !== null) {
       weightDegradationRates[displayName] = exercise.btn_weight_degradation_rate;
     }
+
+    // Time domain rep options (convert string keys to numbers)
+    if (exercise.btn_time_domain_rep_options) {
+      timeDomainRepOptions[displayName] = {};
+      for (const [key, value] of Object.entries(exercise.btn_time_domain_rep_options)) {
+        timeDomainRepOptions[displayName][parseInt(key, 10)] = value;
+      }
+    }
   }
 
   return {
@@ -157,7 +168,8 @@ export function buildExerciseMaps(exercises: BTNExercise[]) {
     maxRepsPerRound,
     allRepOptions,
     exerciseDifficultyTiers,
-    weightDegradationRates
+    weightDegradationRates,
+    timeDomainRepOptions
   };
 }
 
@@ -201,15 +213,16 @@ export async function fetchForbiddenPairs(): Promise<[string, string][]> {
   }
 
   // Convert to tuple format and apply display name mapping
-  cachedForbiddenPairs = data.map((pair: ForbiddenPair) => [
+  const pairs: [string, string][] = data.map((pair: ForbiddenPair) => [
     toDisplayName(pair.exercise_1),
     toDisplayName(pair.exercise_2)
   ] as [string, string]);
 
+  cachedForbiddenPairs = pairs;
   forbiddenPairsCacheTimestamp = Date.now();
 
-  console.log(`✅ Loaded ${cachedForbiddenPairs.length} forbidden pairs from database`);
-  return cachedForbiddenPairs;
+  console.log(`✅ Loaded ${pairs.length} forbidden pairs from database`);
+  return pairs;
 }
 
 /**

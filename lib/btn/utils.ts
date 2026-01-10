@@ -13,6 +13,7 @@ let _exerciseDifficultyTiers: { highSkill: string[]; highVolume: string[]; moder
   highSkill: [], highVolume: [], moderate: [], lowSkill: []
 };
 let _weightDegradationRates: { [key: string]: number } = {};
+let _timeDomainRepOptions: { [key: string]: { [key: number]: number[] } } = {};
 let _forbiddenPairs: [string, string][] = [];
 
 /**
@@ -38,6 +39,7 @@ async function initializeBTNExerciseData(): Promise<void> {
     _allRepOptions = maps.allRepOptions;
     _exerciseDifficultyTiers = maps.exerciseDifficultyTiers;
     _weightDegradationRates = maps.weightDegradationRates;
+    _timeDomainRepOptions = maps.timeDomainRepOptions;
     _forbiddenPairs = forbiddenPairs;
     _exerciseDataInitialized = true;
 
@@ -366,245 +368,13 @@ function getTimeDomainKey(targetDuration: number): number {
   return 25;
 }
 
-// Barbell exercises use same rep options for all time domains
-const BARBELL_REP_OPTIONS = [3, 5, 10, 12, 15, 20, 25, 30];
-const BARBELL_TIME_DOMAIN_OPTIONS: { [key: number]: number[] } = {
-  5: BARBELL_REP_OPTIONS,
-  10: BARBELL_REP_OPTIONS,
-  15: BARBELL_REP_OPTIONS,
-  20: BARBELL_REP_OPTIONS,
-  25: BARBELL_REP_OPTIONS,
-};
-
-// Time-domain-specific rep options (organized by 1-5, 5-10, 10-15, 15-20, 20+)
-const TIME_DOMAIN_REP_OPTIONS: { [key: string]: { [key: number]: number[] } } = {
-  'Rowing Calories': {
-    5: [10, 12],
-    10: [10, 12, 15, 18],
-    15: [15, 21, 25, 30],
-    20: [20, 24, 30, 35, 40],
-    25: [30, 35, 40, 50],
-  },
-  'Bike Calories': {
-    5: [10, 12],
-    10: [10, 12, 15, 18],
-    15: [15, 21, 25, 30],
-    20: [20, 24, 30, 35, 40],
-    25: [30, 35, 40, 50],
-  },
-  'Ski Calories': {
-    5: [10, 12],
-    10: [10, 12, 15, 18],
-    15: [15, 21, 25, 30],
-    20: [20, 24, 30, 35, 40],
-    25: [30, 35, 40, 50],
-  },
-  'Shuttle Runs': {
-    5: [5, 7, 10],
-    10: [7, 10, 12],
-    15: [10, 12, 15],
-    20: [10, 12, 15],
-    25: [12, 15],
-  },
-  'Pull-ups': {
-    5: [5, 7, 9, 10],
-    10: [7, 9, 10, 12, 15],
-    15: [10, 12, 15, 18, 20],
-    20: [12, 15, 18, 20, 24],
-    25: [15, 20, 24, 30],
-  },
-  'Chest to Bar Pull-ups': {
-    5: [5, 7, 9, 10],
-    10: [7, 9, 10, 12, 15],
-    15: [10, 12, 15, 18, 20],
-    20: [12, 15, 18, 20, 24],
-    25: [15, 20, 24, 30],
-  },
-  'Toes to Bar': {
-    5: [5, 7, 9, 10],
-    10: [7, 9, 10, 12, 15],
-    15: [10, 12, 15, 18, 20],
-    20: [12, 15, 18, 20, 24],
-    25: [15, 20, 24, 30],
-  },
-  'Bar Muscle Ups': {
-    5: [3, 5, 7],
-    10: [3, 5, 7],
-    15: [7, 9, 10, 12],
-    20: [7, 9, 10, 12, 15, 18],
-    25: [10, 12, 15, 18, 20],
-  },
-  'Ring Muscle Ups': {
-    5: [3, 5, 7],
-    10: [3, 5, 7],
-    15: [7, 9, 10, 12],
-    20: [7, 9, 10, 12, 15, 18],
-    25: [10, 12, 15, 18, 20],
-  },
-  'Handstand Push-ups': {
-    5: [5, 7, 9, 10],
-    10: [7, 9, 10, 12],
-    15: [10, 12, 15, 18],
-    20: [12, 15, 20, 24],
-    25: [15, 18, 20, 24, 25, 30],
-  },
-  'Wall Facing Handstand Push-ups': {
-    5: [3, 5],
-    10: [3, 5, 7],
-    15: [5, 7, 10],
-    20: [5, 7, 10],
-    25: [7, 10],
-  },
-  'Strict Handstand Push-ups': {
-    5: [3, 5],
-    10: [3, 5, 7],
-    15: [5, 7, 10],
-    20: [5, 7, 10],
-    25: [7, 10],
-  },
-  'Burpees': {
-    5: [5, 7, 9, 10],
-    10: [7, 9, 10, 12],
-    15: [10, 12, 15, 18],
-    20: [12, 15, 20, 24],
-    25: [15, 18, 20, 24, 25, 30],
-  },
-  'Bar Facing Burpees': {
-    5: [5, 7, 10],
-    10: [7, 10, 12],
-    15: [10, 12, 15],
-    20: [10, 12, 15],
-    25: [12, 15],
-  },
-  'Push-ups': {
-    5: [5, 7, 9, 10],
-    10: [7, 9, 10, 12],
-    15: [10, 12, 15, 18],
-    20: [12, 15, 20, 24],
-    25: [15, 18, 20, 24, 25, 30],
-  },
-  'Double Unders': {
-    5: [15, 20, 25, 30],
-    10: [25, 30, 35],
-    15: [30, 35, 40, 50],
-    20: [35, 40, 50, 60],
-    25: [40, 50, 60, 75, 100],
-  },
-  'GHD Sit-ups': {
-    5: [7, 9, 10],
-    10: [10, 12, 15],
-    15: [10, 15, 18, 25],
-    20: [20, 24, 25, 30],
-    25: [20, 24, 25, 30, 40],
-  },
-  'Rope Climbs': {
-    5: [2, 3],
-    10: [2, 3],
-    15: [3, 5],
-    20: [3, 5, 7],
-    25: [3, 5, 7],
-  },
-  'Legless Rope Climbs': {
-    5: [1],
-    10: [1, 2],
-    15: [1, 2, 3],
-    20: [1, 2, 3],
-    25: [1, 2, 3],
-  },
-  'Wall Walks': {
-    5: [3, 5],
-    10: [3, 5],
-    15: [5, 7],
-    20: [5, 7, 10],
-    25: [5, 7, 10],
-  },
-  'Handstand Walk (10m or 25\')': {
-    5: [1, 2],
-    10: [1, 2, 3],
-    15: [2, 3, 4],
-    20: [2, 3, 4, 5],
-    25: [3, 4, 5],
-  },
-  'Wall Balls': {
-    5: [10, 12, 15],
-    10: [10, 12, 15, 18, 20],
-    15: [18, 20, 24, 30],
-    20: [20, 24, 30, 35],
-    25: [20, 30, 35, 40, 50],
-  },
-  'Alternating Pistols': {
-    5: [10, 12, 15],
-    10: [10, 12, 15, 18, 20],
-    15: [18, 20, 24, 30],
-    20: [20, 24, 30, 35],
-    25: [20, 30, 35, 40, 50],
-  },
-  'Kettlebell Swings': {
-    5: [10, 12, 15],
-    10: [10, 12, 15, 18, 20],
-    15: [18, 20, 24, 30],
-    20: [20, 24, 30, 35],
-    25: [20, 30, 35, 40, 50],
-  },
-  'Kettlebell Snatch': {
-    5: [10, 12, 15],
-    10: [10, 12, 15, 18, 20],
-    15: [18, 20, 24, 30],
-    20: [20, 24, 30, 35],
-    25: [20, 30, 35, 40, 50],
-  },
-  'Alternating Dumbbell Snatches': {
-    5: [6, 8, 10],
-    10: [10, 12, 18],
-    15: [12, 18, 20, 24, 30],
-    20: [20, 24, 30, 40],
-    25: [24, 30, 36, 40, 50],
-  },
-  'Box Jumps': {
-    5: [5, 7, 9],
-    10: [7, 9, 10, 12],
-    15: [10, 12, 15],
-    20: [12, 15, 18, 20],
-    25: [15, 18, 24, 30],
-  },
-  'Box Jump Overs': {
-    5: [5, 7, 9],
-    10: [7, 9, 10, 12],
-    15: [10, 12, 15],
-    20: [12, 15, 18, 20],
-    25: [15, 18, 24, 30],
-  },
-  'Burpee Box Jump Overs': {
-    5: [5, 7, 9],
-    10: [7, 9, 10, 12],
-    15: [10, 12, 15],
-    20: [12, 15, 18, 20],
-    25: [15, 18, 24, 30],
-  },
-  // Barbell exercises - same options for all time domains
-  'Snatch': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Deadlift': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Overhead Squat': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Thrusters': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Shoulder to Overhead': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Power Clean': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Hang Power Cleans': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Clean and Jerk': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Squat Cleans': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Squat Snatch': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Power Snatch': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Hang Power Snatch': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Dumbbell Thrusters': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Dumbbell Clean and Jerk': BARBELL_TIME_DOMAIN_OPTIONS,
-  'Dumbbell Box Step Over': BARBELL_TIME_DOMAIN_OPTIONS,
-};
-
 /**
  * Get time-domain-specific rep options for an exercise
  * Falls back to general rep options if no time-domain-specific options exist
  */
 function getTimeDomainRepOptions(exerciseName: string, timeDomainKey: number): number[] {
-  const timeDomainOptions = TIME_DOMAIN_REP_OPTIONS[exerciseName]?.[timeDomainKey];
+  // Use database-loaded time domain rep options
+  const timeDomainOptions = _timeDomainRepOptions[exerciseName]?.[timeDomainKey];
   if (timeDomainOptions) {
     return timeDomainOptions;
   }
@@ -1386,8 +1156,9 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
 
     searchAmrapCombos(0, []);
 
-    if (bestCombo) {
-      exerciseReps.push(...bestCombo);
+    if (bestCombo !== null) {
+      const combo = bestCombo as { name: string; reps: number }[];
+      exerciseReps.push(...combo);
     } else {
       // Fallback: use middle rep options (still using time-domain-specific)
       filteredExercises.forEach(name => {
@@ -1553,14 +1324,14 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     repFactor = 0.55;  // Extended: 55% (grind pace)
   }
 
-  // Now uses module-level TIME_DOMAIN_REP_OPTIONS
+  // Uses database-loaded _timeDomainRepOptions
 
   if (format === 'AMRAP') {
     // AMRAP format: targetDuration is actually the pre-calculated reps per exercise
     // from the dynamic divisor logic in generateExercisesForTimeDomain
     // This is just snapping to clean numbers
     const repsPerExercise = targetDuration;
-    
+
     // Determine time domain key (5=1-5min, 10=5-10min, 15=10-15min, 20=15-20min, 25=20+min)
     let timeDomainKey = 5;
     if (amrapTime && amrapTime <= 5) timeDomainKey = 5;
@@ -1568,9 +1339,9 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     else if (amrapTime && amrapTime <= 15) timeDomainKey = 15;
     else if (amrapTime && amrapTime <= 20) timeDomainKey = 20;
     else timeDomainKey = 25;
-    
+
     // Get time-domain-specific rep options if available
-    const timeDomainOptions = TIME_DOMAIN_REP_OPTIONS[exerciseName]?.[timeDomainKey];
+    const timeDomainOptions = _timeDomainRepOptions[exerciseName]?.[timeDomainKey];
 
     if (timeDomainOptions) {
       return timeDomainOptions.reduce((prev, curr) =>
@@ -1591,10 +1362,10 @@ function calculateRepsForTimeDomain(exerciseName: string, targetDuration: number
     const timeDomainKey = getTimeDomainKey(targetDuration);
 
     // Get time-domain-specific rep options if available
-    const timeDomainOptions = TIME_DOMAIN_REP_OPTIONS[exerciseName]?.[timeDomainKey];
-    
+    const timeDomainOptions = _timeDomainRepOptions[exerciseName]?.[timeDomainKey];
+
     if (timeDomainOptions) {
-      return timeDomainOptions.reduce((prev, curr) => 
+      return timeDomainOptions.reduce((prev, curr) =>
         Math.abs(curr - repsPerExercise) < Math.abs(prev - repsPerExercise) ? curr : prev
       );
     }
