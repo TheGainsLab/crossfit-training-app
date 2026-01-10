@@ -659,7 +659,13 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
       }
 
       // Generate exercises (targetDurationHint is only used for Rounds For Time round calculation)
-      const result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment);
+      let result;
+      try {
+        result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment);
+      } catch (e) {
+        // Failed to generate (e.g., couldn't add required equipment) - retry
+        continue;
+      }
       const exercises = result.exercises;
 
       // Update rounds if calculated dynamically
@@ -784,9 +790,15 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
         pattern = undefined;
       }
       
-      const result = generateExercisesForTimeDomain(targetDurationHint || targetDomain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment);
+      let result;
+      try {
+        result = generateExercisesForTimeDomain(targetDurationHint || targetDomain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment);
+      } catch (e) {
+        // Failed to generate (e.g., couldn't add required equipment) - retry
+        continue;
+      }
       const exercises = result.exercises;
-      
+
       if (result.rounds !== undefined) {
         rounds = result.rounds;
       }
@@ -885,12 +897,31 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
       return allowedPatterns.includes(pattern);
     });
   }
-    
+
   // Shuffle and select exercises
   const shuffledExercises = candidateExercises.sort(() => Math.random() - 0.5);
-    const filteredExercises: string[] = [];
+  const filteredExercises: string[] = [];
   const triedExercises = new Set<string>();
-  
+
+  // PRIORITY: If required equipment is specified, START with an exercise from that pool
+  // This ensures we always have the required equipment type in the workout
+  if (requiredEquipment && requiredEquipment.length > 0) {
+    let requiredCandidates: string[] = [];
+
+    if (requiredEquipment.includes('Barbell')) {
+      requiredCandidates = shuffledExercises.filter(ex => isBarbellExercise(ex));
+    } else if (requiredEquipment.some(eq => GYMNASTICS_EQUIPMENT.includes(eq))) {
+      requiredCandidates = shuffledExercises.filter(ex => isGymnasticsExercise(ex));
+    }
+
+    // Add a required equipment exercise first
+    if (requiredCandidates.length > 0) {
+      const firstRequired = requiredCandidates[0];
+      triedExercises.add(firstRequired);
+      filteredExercises.push(firstRequired);
+    }
+  }
+
   // Keep trying until we have the right number of exercises
   while (filteredExercises.length < numExercises && triedExercises.size < shuffledExercises.length) {
     const remainingCandidates = shuffledExercises.filter(ex => !triedExercises.has(ex) && !filteredExercises.includes(ex));
@@ -1058,13 +1089,13 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
         }
       }
 
-      // If still no required equipment, log a warning but continue
+      // If still no required equipment, throw error to trigger retry
       if (!added) {
-        console.warn(`⚠️ Could not add required equipment (${requiredEquipment.join(', ')}) to workout`);
+        throw new Error(`Could not add required equipment (${requiredEquipment.join(', ')}) to workout`);
       }
     }
   }
-    
+
   // Generate weights
     const barbellExercises = filteredExercises.filter(ex => isBarbellExercise(ex));
     const dumbbellExercises = filteredExercises.filter(ex => ex.includes('Dumbbell'));
