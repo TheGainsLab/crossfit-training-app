@@ -284,7 +284,13 @@ function BTNWorkoutGenerator() {
                 {(['any', 'required', 'excluded'] as const).map(option => (
                   <button
                     key={option}
-                    onClick={() => setBarbellFilter(option)}
+                    onClick={() => {
+                      setBarbellFilter(option);
+                      // Barbell + Dumbbell can't both be required (equipment consistency)
+                      if (option === 'required' && dumbbellFilter === 'required') {
+                        setDumbbellFilter('any');
+                      }
+                    }}
                     className={`px-3 py-1 rounded-lg border-2 text-sm font-medium transition-all ${
                       barbellFilter === option
                         ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
@@ -304,7 +310,13 @@ function BTNWorkoutGenerator() {
                 {(['any', 'required', 'excluded'] as const).map(option => (
                   <button
                     key={option}
-                    onClick={() => setDumbbellFilter(option)}
+                    onClick={() => {
+                      setDumbbellFilter(option);
+                      // Barbell + Dumbbell can't both be required (equipment consistency)
+                      if (option === 'required' && barbellFilter === 'required') {
+                        setBarbellFilter('any');
+                      }
+                    }}
                     className={`px-3 py-1 rounded-lg border-2 text-sm font-medium transition-all ${
                       dumbbellFilter === option
                         ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
