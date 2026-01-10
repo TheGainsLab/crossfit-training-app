@@ -560,20 +560,22 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
     console.log(`✅ After equipment exclusion: ${availableExercises.length} exercises available`);
   }
 
-  // Pre-filter: Apply cardio filter
+  // Pre-filter: Apply cardio filter and determine required cardio
   const cardioExerciseNames = ['Rowing Calories', 'Bike Calories', 'Ski Calories'];
+  let requiredCardio: string | undefined = undefined;
+
   if (cardioFilter) {
     if (cardioFilter === 'none') {
       // Remove all cardio exercises
       availableExercises = availableExercises.filter(ex => !cardioExerciseNames.includes(ex));
       console.log(`✅ After cardio exclusion: ${availableExercises.length} exercises available`);
-    } else {
-      // Keep only the specified cardio type, remove others
-      const allowedCardio = cardioFilter === 'rower' ? 'Rowing Calories' :
-                           cardioFilter === 'bike' ? 'Bike Calories' : 'Ski Calories';
-      const excludedCardio = cardioExerciseNames.filter(c => c !== allowedCardio);
+    } else if (cardioFilter !== 'any') {
+      // Keep only the specified cardio type, remove others, and REQUIRE it
+      requiredCardio = cardioFilter === 'rower' ? 'Rowing Calories' :
+                       cardioFilter === 'bike' ? 'Bike Calories' : 'Ski Calories';
+      const excludedCardio = cardioExerciseNames.filter(c => c !== requiredCardio);
       availableExercises = availableExercises.filter(ex => !excludedCardio.includes(ex));
-      console.log(`✅ After cardio filter (${cardioFilter}): ${availableExercises.length} exercises available`);
+      console.log(`✅ After cardio filter (${cardioFilter}), requiring ${requiredCardio}: ${availableExercises.length} exercises available`);
     }
   }
 
@@ -700,7 +702,7 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
       // Generate exercises (targetDurationHint is only used for Rounds For Time round calculation)
       let result;
       try {
-        result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment, exerciseCount, includeExercises);
+        result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment, exerciseCount, includeExercises, requiredCardio);
       } catch (e) {
         // Failed to generate (e.g., couldn't add required equipment) - retry
         continue;
@@ -836,7 +838,7 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
       
       let result;
       try {
-        result = generateExercisesForTimeDomain(targetDurationHint || targetDomain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment, exerciseCount, includeExercises);
+        result = generateExercisesForTimeDomain(targetDurationHint || targetDomain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment, exerciseCount, includeExercises, requiredCardio);
       } catch (e) {
         // Failed to generate (e.g., couldn't add required equipment) - retry
         continue;
@@ -909,7 +911,7 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
   return workouts;
 }
 
-function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number, availableExercises?: string[], userProfile?: UserProfile, requiredEquipment?: string[], exerciseCount?: number, includeExercises?: string[]): { exercises: Exercise[], rounds?: number } {
+function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number, availableExercises?: string[], userProfile?: UserProfile, requiredEquipment?: string[], exerciseCount?: number, includeExercises?: string[], requiredCardio?: string): { exercises: Exercise[], rounds?: number } {
   const exercises: Exercise[] = [];
   const rules = formatRules[format as keyof typeof formatRules];
   if (!rules) {
@@ -1006,6 +1008,23 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
           filteredExercises.push(firstRequired);
         }
       }
+    }
+  }
+
+  // PRIORITY: If required cardio is specified, add it early
+  // This ensures we always have the required cardio type in the workout
+  if (requiredCardio && !filteredExercises.includes(requiredCardio)) {
+    // Check if adding cardio would violate constraints
+    const testExercises = [...filteredExercises, requiredCardio];
+    const testFiltered = filterExercisesForConsistency(testExercises);
+    const testFinal = filterForbiddenPairs(testFiltered);
+
+    if (testFinal.length === testExercises.length && testFinal.includes(requiredCardio)) {
+      triedExercises.add(requiredCardio);
+      filteredExercises.push(requiredCardio);
+      console.log(`✅ Added required cardio: ${requiredCardio}`);
+    } else {
+      console.warn(`⚠️ Could not add required cardio ${requiredCardio} due to constraints`);
     }
   }
 
