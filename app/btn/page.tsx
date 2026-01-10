@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { GeneratedWorkout, UserProfile } from '@/lib/btn/types';
-import { generateTestWorkouts, getAvailableExercises } from '@/lib/btn/utils';
+import { getAvailableExercises } from '@/lib/btn/utils';
 
 interface SubscriptionStatus {
   hasAccess: boolean
@@ -129,51 +129,34 @@ function BTNWorkoutGenerator() {
   const generateWorkouts = async () => {
     setIsGenerating(true);
     try {
-      console.log('🎲 Generating workouts...');
+      console.log('🎲 Generating workouts via API...');
       console.log('Selected domains:', selectedDomains.length > 0 ? selectedDomains : 'all (random)');
       console.log('Barbell filter:', barbellFilter);
       console.log('Dumbbell filter:', dumbbellFilter);
       console.log('Cardio filter:', cardioFilter);
-      console.log('Using profile:', userProfile ? 'Yes' : 'No (default generator)');
 
-      // Build requiredEquipment and excludeEquipment from separate filters
-      const requiredEquipment: string[] = [];
-      const excludeEquipment: string[] = [];
+      const response = await fetch('/api/btn/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selectedDomains: selectedDomains.length > 0 ? selectedDomains : undefined,
+          barbellFilter,
+          dumbbellFilter,
+          cardioFilter,
+          exerciseCount,
+          workoutFormat,
+          includeExercises: includeExercises.length > 0 ? includeExercises : undefined,
+          excludeExercises: excludeExercises.length > 0 ? excludeExercises : undefined
+        })
+      });
 
-      if (barbellFilter === 'required') {
-        requiredEquipment.push('Barbell');
-      } else if (barbellFilter === 'excluded') {
-        excludeEquipment.push('Barbell');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate workouts');
       }
 
-      if (dumbbellFilter === 'required') {
-        requiredEquipment.push('Dumbbells');
-      } else if (dumbbellFilter === 'excluded') {
-        excludeEquipment.push('Dumbbells');
-      }
-
-      // Convert exercise count to number or undefined
-      const exerciseCountNum = exerciseCount === 'any' ? undefined : parseInt(exerciseCount);
-
-      // Convert workout format to the expected format string
-      const formatFilter = workoutFormat === 'any' ? undefined :
-        workoutFormat === 'for_time' ? 'For Time' :
-        workoutFormat === 'amrap' ? 'AMRAP' : 'Rounds For Time';
-
-      // Convert cardio filter
-      const cardioOption = cardioFilter === 'any' ? undefined : cardioFilter;
-
-      const workouts = await generateTestWorkouts(
-        selectedDomains.length > 0 ? selectedDomains : undefined,
-        userProfile || undefined,
-        requiredEquipment.length > 0 ? requiredEquipment : undefined,
-        excludeEquipment.length > 0 ? excludeEquipment : undefined,
-        exerciseCountNum,
-        formatFilter,
-        cardioOption,
-        includeExercises.length > 0 ? includeExercises : undefined,
-        excludeExercises.length > 0 ? excludeExercises : undefined
-      );
+      const data = await response.json();
+      const workouts = data.workouts as GeneratedWorkout[];
 
       // Display workouts immediately (no auto-save)
       setGeneratedWorkouts(workouts);
