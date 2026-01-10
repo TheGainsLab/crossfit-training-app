@@ -24,7 +24,8 @@ function BTNWorkoutGenerator() {
   const [savedWorkouts, setSavedWorkouts] = useState<Set<number>>(new Set());
   const [savingWorkouts, setSavingWorkouts] = useState<Set<number>>(new Set());
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
-  const [equipmentFilter, setEquipmentFilter] = useState<'all' | 'barbell' | 'no_barbell' | 'gymnastics'>('all');
+  const [equipmentFilter, setEquipmentFilter] = useState<'all' | 'barbell' | 'no_barbell' | 'gymnastics' | 'dumbbell'>('all');
+  const [exerciseCount, setExerciseCount] = useState<'any' | '2' | '3'>('any');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
@@ -104,16 +105,22 @@ function BTNWorkoutGenerator() {
       } else if (equipmentFilter === 'gymnastics') {
         // Require at least one gymnastics exercise (Pullup Bar, Rings, or Rope)
         requiredEquipment = ['Pullup Bar or Rig', 'High Rings', 'Climbing Rope'];
+      } else if (equipmentFilter === 'dumbbell') {
+        requiredEquipment = ['Dumbbells'];
       } else if (equipmentFilter === 'no_barbell') {
         // Exclude all barbell exercises from candidates
         excludeEquipment = ['Barbell'];
       }
 
+      // Convert exercise count to number or undefined
+      const exerciseCountNum = exerciseCount === 'any' ? undefined : parseInt(exerciseCount);
+
       const workouts = await generateTestWorkouts(
         selectedDomains.length > 0 ? selectedDomains : undefined,
         userProfile || undefined,
         requiredEquipment,
-        excludeEquipment
+        excludeEquipment,
+        exerciseCountNum
       );
 
       // Display workouts immediately (no auto-save)
@@ -211,7 +218,7 @@ function BTNWorkoutGenerator() {
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3">Select Equipment:</h3>
             <div className="flex flex-wrap gap-2">
-              {(['all', 'barbell', 'no_barbell', 'gymnastics'] as const).map(filter => (
+              {(['all', 'barbell', 'dumbbell', 'gymnastics', 'no_barbell'] as const).map(filter => (
                 <button
                   key={filter}
                   onClick={() => setEquipmentFilter(filter)}
@@ -221,21 +228,54 @@ function BTNWorkoutGenerator() {
                       : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                   }`}
                 >
-                  {filter === 'all' ? 'All' : 
+                  {filter === 'all' ? 'All' :
                    filter === 'barbell' ? 'Barbell' :
-                   filter === 'no_barbell' ? 'No Barbell' :
-                   'Gymnastics'}
+                   filter === 'dumbbell' ? 'Dumbbell' :
+                   filter === 'gymnastics' ? 'Gymnastics' :
+                   'No Barbell'}
                 </button>
               ))}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              {equipmentFilter === 'all' 
+              {equipmentFilter === 'all'
                 ? 'No equipment filter - workouts may include any equipment'
                 : equipmentFilter === 'barbell'
                 ? 'All workouts will include at least one barbell exercise'
-                : equipmentFilter === 'no_barbell'
-                ? 'Workouts will not include barbell exercises'
-                : 'All workouts will include at least one gymnastics exercise'
+                : equipmentFilter === 'dumbbell'
+                ? 'All workouts will include at least one dumbbell exercise'
+                : equipmentFilter === 'gymnastics'
+                ? 'All workouts will include at least one gymnastics exercise'
+                : 'Workouts will not include barbell exercises'
+              }
+            </p>
+          </div>
+
+          {/* Exercise Count Filter */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-3">Number of Exercises:</h3>
+            <div className="flex flex-wrap gap-2">
+              {(['any', '2', '3'] as const).map(count => (
+                <button
+                  key={count}
+                  onClick={() => setExerciseCount(count)}
+                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                    exerciseCount === count
+                      ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  {count === 'any' ? 'Any' :
+                   count === '2' ? 'Couplet (2)' :
+                   'Triplet (3)'}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {exerciseCount === 'any'
+                ? 'Workouts may have 2-4 exercises based on time domain'
+                : exerciseCount === '2'
+                ? 'All workouts will have exactly 2 exercises'
+                : 'All workouts will have exactly 3 exercises'
               }
             </p>
           </div>

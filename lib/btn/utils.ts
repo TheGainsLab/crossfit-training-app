@@ -511,7 +511,7 @@ function getAllowedPatternsForExercises(exercises: string[]): string[] {
   return allowedPatterns;
 }
 
-export async function generateTestWorkouts(selectedDomainRanges?: string[], userProfile?: UserProfile, requiredEquipment?: string[], excludeEquipment?: string[]): Promise<GeneratedWorkout[]> {
+export async function generateTestWorkouts(selectedDomainRanges?: string[], userProfile?: UserProfile, requiredEquipment?: string[], excludeEquipment?: string[], exerciseCount?: number): Promise<GeneratedWorkout[]> {
   // Initialize exercise data from database
   await initializeBTNExerciseData();
 
@@ -661,7 +661,7 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
       // Generate exercises (targetDurationHint is only used for Rounds For Time round calculation)
       let result;
       try {
-        result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment);
+        result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment, exerciseCount);
       } catch (e) {
         // Failed to generate (e.g., couldn't add required equipment) - retry
         continue;
@@ -792,7 +792,7 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
       
       let result;
       try {
-        result = generateExercisesForTimeDomain(targetDurationHint || targetDomain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment);
+        result = generateExercisesForTimeDomain(targetDurationHint || targetDomain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment, exerciseCount);
       } catch (e) {
         // Failed to generate (e.g., couldn't add required equipment) - retry
         continue;
@@ -802,7 +802,7 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
       if (result.rounds !== undefined) {
         rounds = result.rounds;
       }
-        
+
       if (pattern) {
         console.log(`🎯 (2nd loop) For Time workout - Pattern: ${pattern}`);
         const patternReps = pattern.split('-').map(Number);
@@ -864,16 +864,20 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
   return workouts;
 }
 
-function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number, availableExercises?: string[], userProfile?: UserProfile, requiredEquipment?: string[]): { exercises: Exercise[], rounds?: number } {
+function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number, availableExercises?: string[], userProfile?: UserProfile, requiredEquipment?: string[], exerciseCount?: number): { exercises: Exercise[], rounds?: number } {
   const exercises: Exercise[] = [];
   const rules = formatRules[format as keyof typeof formatRules];
   if (!rules) {
     throw new Error(`Unknown format: ${format}`);
   }
-  
+
   // Determine number of exercises based on format rules
   let numExercises: number;
-  if (format === 'For Time') {
+
+  // If exerciseCount is specified, use it (clamped to format rules)
+  if (exerciseCount !== undefined) {
+    numExercises = Math.max(rules.minExercises, Math.min(rules.maxExercises, exerciseCount));
+  } else if (format === 'For Time') {
     numExercises = Math.floor(Math.random() * (rules.maxExercises - rules.minExercises + 1)) + rules.minExercises;
   } else {
     // AMRAP and Rounds For Time: based on time domain
@@ -910,6 +914,8 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
 
     if (requiredEquipment.includes('Barbell')) {
       requiredCandidates = shuffledExercises.filter(ex => isBarbellExercise(ex));
+    } else if (requiredEquipment.includes('Dumbbells')) {
+      requiredCandidates = shuffledExercises.filter(ex => isDumbbellExercise(ex));
     } else if (requiredEquipment.some(eq => GYMNASTICS_EQUIPMENT.includes(eq))) {
       requiredCandidates = shuffledExercises.filter(ex => isGymnasticsExercise(ex));
     }
@@ -981,6 +987,9 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
       if (eq === 'Barbell') {
         return filteredExercises.some(ex => isBarbellExercise(ex));
       }
+      if (eq === 'Dumbbells') {
+        return filteredExercises.some(ex => isDumbbellExercise(ex));
+      }
       if (GYMNASTICS_EQUIPMENT.includes(eq)) {
         // For gymnastics, check if ANY gymnastics equipment is present
         return filteredExercises.some(ex => isGymnasticsExercise(ex));
@@ -1034,6 +1043,54 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
 
             if (testFinal.length === testExercises.length && testFinal.includes(barbell)) {
               filteredExercises.push(barbell);
+              added = true;
+              break;
+            }
+          }
+        }
+      }
+
+      // Handle dumbbell equipment requirement
+      if (!added && requiredEquipment.includes('Dumbbells')) {
+        // Get all dumbbell exercises that are available
+        const dumbbellCandidates = candidateExercises.filter(ex => isDumbbellExercise(ex));
+
+        // Shuffle to add variety
+        const shuffledDumbbells = [...dumbbellCandidates].sort(() => Math.random() - 0.5);
+
+        // Try to find a dumbbell exercise that fits
+        for (const dbExercise of shuffledDumbbells) {
+          if (filteredExercises.includes(dbExercise)) continue; // Already in workout
+
+          // Try replacing the last exercise
+          const testExercises = filteredExercises.length > 0
+            ? [...filteredExercises.slice(0, -1), dbExercise]
+            : [dbExercise];
+
+          const testFiltered = filterExercisesForConsistency(testExercises);
+          const testFinal = filterForbiddenPairs(testFiltered);
+
+          if (testFinal.length === testExercises.length && testFinal.includes(dbExercise)) {
+            if (filteredExercises.length > 0) {
+              filteredExercises.pop();
+            }
+            filteredExercises.push(dbExercise);
+            added = true;
+            break;
+          }
+        }
+
+        // If we couldn't replace, try adding (if we have room)
+        if (!added && filteredExercises.length < numExercises) {
+          for (const dbExercise of shuffledDumbbells) {
+            if (filteredExercises.includes(dbExercise)) continue;
+
+            const testExercises = [...filteredExercises, dbExercise];
+            const testFiltered = filterExercisesForConsistency(testExercises);
+            const testFinal = filterForbiddenPairs(testFiltered);
+
+            if (testFinal.length === testExercises.length && testFinal.includes(dbExercise)) {
+              filteredExercises.push(dbExercise);
               added = true;
               break;
             }
