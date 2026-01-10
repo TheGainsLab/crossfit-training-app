@@ -407,6 +407,7 @@ function BTNWorkoutGenerator() {
           {/* Include/Exclude Exercises */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3">Customize Exercises:</h3>
+            <p className="text-xs text-gray-500 mb-3 italic">Custom selections override equipment filters above</p>
 
             {/* Must Include */}
             <div className="mb-4">

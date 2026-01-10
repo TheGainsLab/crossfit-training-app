@@ -956,11 +956,12 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
   const triedExercises = new Set<string>();
 
   // HIGHEST PRIORITY: Add user-specified "must include" exercises first
-  // Check against originalPool to bypass pattern restrictions for explicit includes
+  // Check against _exerciseDatabase to allow includes to override ALL other filters
+  // (equipment exclusions, cardio filters, pattern restrictions)
   if (includeExercises && includeExercises.length > 0) {
     for (const exercise of includeExercises) {
-      // Check against original pool (before pattern filtering) to honor user's explicit request
-      if (originalPool.includes(exercise) && !filteredExercises.includes(exercise)) {
+      // Check against full database - custom includes override other filters
+      if (_exerciseDatabase.includes(exercise) && !filteredExercises.includes(exercise)) {
         // Check if adding this exercise would violate constraints
         const testExercises = [...filteredExercises, exercise];
         const testFiltered = filterExercisesForConsistency(testExercises);
