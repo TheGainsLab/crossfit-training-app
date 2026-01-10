@@ -1568,11 +1568,17 @@ function parseTimeToMinutes(timeStr: string): number {
 // Maximum allowed median time for workouts (in minutes)
 const MAX_WORKOUT_MEDIAN_TIME = 25;
 
+function isCardioExercise(exerciseName: string): boolean {
+  return ['Rowing Calories', 'Bike Calories', 'Ski Calories'].includes(exerciseName);
+}
+
 function filterExercisesForConsistency(exerciseTypes: string[]): string[] {
   const hasBarbell = exerciseTypes.some(exercise => isBarbellExercise(exercise));
   const hasDumbbell = exerciseTypes.some(exercise => isDumbbellExercise(exercise));
   const hasKettlebell = exerciseTypes.some(exercise => isKettlebellExercise(exercise));
+  const hasCardio = exerciseTypes.some(exercise => isCardioExercise(exercise));
 
+  // Rule: Only one barbell exercise per workout
   if (hasBarbell) {
     const barbellExercises = exerciseTypes.filter(exercise => isBarbellExercise(exercise));
     if (barbellExercises.length > 1) {
@@ -1581,6 +1587,7 @@ function filterExercisesForConsistency(exerciseTypes: string[]): string[] {
     }
   }
 
+  // Rule: Only one dumbbell exercise per workout
   if (hasDumbbell) {
     const dumbbellExercises = exerciseTypes.filter(exercise => isDumbbellExercise(exercise));
     if (dumbbellExercises.length > 1) {
@@ -1589,14 +1596,26 @@ function filterExercisesForConsistency(exerciseTypes: string[]): string[] {
     }
   }
 
+  // Rule: Only one cardio exercise per workout (no mixing Rower + Bike + Ski)
+  if (hasCardio) {
+    const cardioExercises = exerciseTypes.filter(exercise => isCardioExercise(exercise));
+    if (cardioExercises.length > 1) {
+      const firstCardio = cardioExercises[0];
+      return exerciseTypes.filter(exercise => !isCardioExercise(exercise) || exercise === firstCardio);
+    }
+  }
+
+  // Rule: Barbell and dumbbell can't coexist (remove dumbbell if barbell present)
   if (hasBarbell && hasDumbbell) {
     return exerciseTypes.filter(exercise => !isDumbbellExercise(exercise));
   }
 
+  // Rule: Barbell and kettlebell can't coexist (remove kettlebell if barbell present)
   if (hasBarbell && hasKettlebell) {
     return exerciseTypes.filter(exercise => !isKettlebellExercise(exercise));
   }
 
+  // Rule: Dumbbell and kettlebell can't coexist (remove kettlebell if dumbbell present)
   if (hasDumbbell && hasKettlebell) {
     return exerciseTypes.filter(exercise => !isKettlebellExercise(exercise));
   }
