@@ -511,7 +511,7 @@ function getAllowedPatternsForExercises(exercises: string[]): string[] {
   return allowedPatterns;
 }
 
-export async function generateTestWorkouts(selectedDomainRanges?: string[], userProfile?: UserProfile, requiredEquipment?: string[], excludeEquipment?: string[], exerciseCount?: number): Promise<GeneratedWorkout[]> {
+export async function generateTestWorkouts(selectedDomainRanges?: string[], userProfile?: UserProfile, requiredEquipment?: string[], excludeEquipment?: string[], exerciseCount?: number, formatFilter?: string): Promise<GeneratedWorkout[]> {
   // Initialize exercise data from database
   await initializeBTNExerciseData();
 
@@ -525,7 +525,8 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
     { range: '20:00+', minDuration: 20, maxDuration: 25 }
   ];
 
-  const allFormats = ['For Time', 'AMRAP', 'Rounds For Time'];
+  // If format filter specified, only use that format; otherwise use all formats
+  const allFormats = formatFilter ? [formatFilter] : ['For Time', 'AMRAP', 'Rounds For Time'];
 
   // Filter to selected domains, or use all if none selected
   const timeDomains = selectedDomainRanges && selectedDomainRanges.length > 0
@@ -609,9 +610,13 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
       attempts++;
 
       // For 1-5 min domain: AMRAP not allowed (must be 6+ min)
+      // Filter from allFormats to respect user's format selection
       const formats = domain.maxDuration < 6
-        ? ['For Time', 'Rounds For Time']  // No AMRAP for sprint domain
+        ? allFormats.filter(f => f !== 'AMRAP')  // No AMRAP for sprint domain
         : allFormats;
+
+      // Skip if no valid formats for this domain (e.g., AMRAP selected for sprint domain)
+      if (formats.length === 0) continue;
 
       const format = formats[Math.floor(Math.random() * formats.length)] as 'For Time' | 'AMRAP' | 'Rounds For Time';
 
@@ -747,12 +752,16 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
       attempts++;
       
       // For 1-5 min domain: AMRAP not allowed (must be 6+ min)
-      const formats = targetDomain.maxDuration < 6 
-        ? ['For Time', 'Rounds For Time']  // No AMRAP for sprint domain
+      // Filter from allFormats to respect user's format selection
+      const formats = targetDomain.maxDuration < 6
+        ? allFormats.filter(f => f !== 'AMRAP')  // No AMRAP for sprint domain
         : allFormats;
-      
+
+      // Skip if no valid formats for this domain (e.g., AMRAP selected for sprint domain)
+      if (formats.length === 0) continue;
+
       const format = formats[Math.floor(Math.random() * formats.length)] as 'For Time' | 'AMRAP' | 'Rounds For Time';
-      
+
       let amrapTime: number | undefined;
       let rounds: number | undefined;
       let pattern: string | undefined;

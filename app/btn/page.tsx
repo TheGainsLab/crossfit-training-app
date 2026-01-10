@@ -26,6 +26,7 @@ function BTNWorkoutGenerator() {
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [equipmentFilter, setEquipmentFilter] = useState<'all' | 'barbell' | 'no_barbell' | 'gymnastics' | 'dumbbell'>('all');
   const [exerciseCount, setExerciseCount] = useState<'any' | '2' | '3'>('any');
+  const [workoutFormat, setWorkoutFormat] = useState<'any' | 'for_time' | 'amrap' | 'rounds_for_time'>('any');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
@@ -81,11 +82,26 @@ function BTNWorkoutGenerator() {
   }, [searchParams, router]);
 
   const toggleDomain = (domain: string) => {
-    setSelectedDomains(prev => 
+    setSelectedDomains(prev =>
       prev.includes(domain)
         ? prev.filter(d => d !== domain)
         : [...prev, domain]
     );
+  };
+
+  // Check if a time domain is disabled due to format conflict
+  const isTimeDomainDisabled = (domain: string) => {
+    // AMRAP requires 6+ min, so 1-5 min domain is incompatible
+    return workoutFormat === 'amrap' && domain === '1:00 - 5:00';
+  };
+
+  // Handle format selection with conflict resolution
+  const handleFormatChange = (format: 'any' | 'for_time' | 'amrap' | 'rounds_for_time') => {
+    setWorkoutFormat(format);
+    // If selecting AMRAP, remove 1-5 min domain from selection
+    if (format === 'amrap') {
+      setSelectedDomains(prev => prev.filter(d => d !== '1:00 - 5:00'));
+    }
   };
 
   const generateWorkouts = async () => {
@@ -115,12 +131,18 @@ function BTNWorkoutGenerator() {
       // Convert exercise count to number or undefined
       const exerciseCountNum = exerciseCount === 'any' ? undefined : parseInt(exerciseCount);
 
+      // Convert workout format to the expected format string
+      const formatFilter = workoutFormat === 'any' ? undefined :
+        workoutFormat === 'for_time' ? 'For Time' :
+        workoutFormat === 'amrap' ? 'AMRAP' : 'Rounds For Time';
+
       const workouts = await generateTestWorkouts(
         selectedDomains.length > 0 ? selectedDomains : undefined,
         userProfile || undefined,
         requiredEquipment,
         excludeEquipment,
-        exerciseCountNum
+        exerciseCountNum,
+        formatFilter
       );
 
       // Display workouts immediately (no auto-save)
@@ -185,19 +207,26 @@ function BTNWorkoutGenerator() {
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3">Select Time Domains:</h3>
             <div className="flex flex-wrap gap-2">
-              {timeDomains.map((domain) => (
-                <button
-                  key={domain}
-                  onClick={() => toggleDomain(domain)}
-                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                    selectedDomains.includes(domain)
-                      ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                  }`}
-                >
-                  {domain}
-                </button>
-              ))}
+              {timeDomains.map((domain) => {
+                const disabled = isTimeDomainDisabled(domain);
+                return (
+                  <button
+                    key={domain}
+                    onClick={() => !disabled && toggleDomain(domain)}
+                    disabled={disabled}
+                    title={disabled ? 'AMRAP workouts require 6+ minutes' : undefined}
+                    className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                      disabled
+                        ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : selectedDomains.includes(domain)
+                        ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    }`}
+                  >
+                    {domain}
+                  </button>
+                );
+              })}
             </div>
             <p className="text-xs text-gray-500 mt-2">
               {selectedDomains.length === 0
@@ -279,8 +308,41 @@ function BTNWorkoutGenerator() {
               }
             </p>
           </div>
-          
-          <button 
+
+          {/* Workout Format Filter */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-3">Workout Format:</h3>
+            <div className="flex flex-wrap gap-2">
+              {(['any', 'for_time', 'amrap', 'rounds_for_time'] as const).map(format => (
+                <button
+                  key={format}
+                  onClick={() => handleFormatChange(format)}
+                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                    workoutFormat === format
+                      ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  {format === 'any' ? 'Any' :
+                   format === 'for_time' ? 'For Time' :
+                   format === 'amrap' ? 'AMRAP' :
+                   'Rounds For Time'}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {workoutFormat === 'any'
+                ? 'Workouts may be any format (For Time, AMRAP, or Rounds For Time)'
+                : workoutFormat === 'for_time'
+                ? 'All workouts will be For Time with rep schemes (21-15-9, etc.)'
+                : workoutFormat === 'amrap'
+                ? 'All workouts will be AMRAPs (requires 6+ minute time domain)'
+                : 'All workouts will be Rounds For Time'
+              }
+            </p>
+          </div>
+
+          <button
             className="w-full py-3 px-6 bg-[#FE5858] text-white rounded-lg text-lg font-semibold hover:bg-[#ff6b6b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={generateWorkouts}
             disabled={isGenerating}
