@@ -1013,24 +1013,61 @@ export default function Dashboard() {
     )
   }
 
-  // BTN users see generator, Premium users see program dashboard
+  // BTN users see dashboard with links to generator and workouts
   if (subscriptionTier === 'BTN') {
-    return <BTNWorkoutGeneratorView 
-      userName={userName}
-      generatedWorkouts={generatedWorkouts}
-      isGenerating={isGenerating}
-      savedWorkouts={savedWorkouts}
-      savingWorkouts={savingWorkouts}
-      selectedDomains={selectedDomains}
-      equipmentFilter={equipmentFilter}
-      timeDomains={timeDomains}
-      toggleDomain={toggleDomain}
-      setEquipmentFilter={setEquipmentFilter}
-      generateWorkouts={generateWorkouts}
-      saveWorkout={saveWorkout}
-      discardWorkout={discardWorkout}
-      router={router}
-    />
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+        {/* Greeting Card */}
+        <Card style={styles.greetingCard}>
+          <View style={styles.greetingContent}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
+            </View>
+            <View style={styles.greetingText}>
+              <Text style={styles.greetingTitle}>Hello, {userName}!</Text>
+              <Text style={styles.programNameInCard}>Beat The Norm</Text>
+            </View>
+          </View>
+        </Card>
+
+        {/* Quick Actions */}
+        <Card style={styles.generatorCard}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+
+          <TouchableOpacity
+            onPress={() => router.push('/btn/generate')}
+            style={styles.actionButton}
+          >
+            <Text style={styles.actionButtonText}>Generate Workouts</Text>
+            <Text style={styles.actionButtonSubtext}>Create new workouts with custom filters</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push('/btn/workouts')}
+            style={styles.actionButton}
+          >
+            <Text style={styles.actionButtonText}>My Workouts</Text>
+            <Text style={styles.actionButtonSubtext}>View saved workouts and log results</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push('/btn/analytics')}
+            style={styles.actionButton}
+          >
+            <Text style={styles.actionButtonText}>Analytics</Text>
+            <Text style={styles.actionButtonSubtext}>Track your performance and progress</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push('/btn/profile')}
+            style={styles.actionButton}
+          >
+            <Text style={styles.actionButtonText}>Profile Settings</Text>
+            <Text style={styles.actionButtonSubtext}>Equipment, skills, and 1RM settings</Text>
+          </TouchableOpacity>
+        </Card>
+      </ScrollView>
+    )
   }
 
   return (
@@ -1878,6 +1915,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FE5858',
+  },
+  actionButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  actionButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  actionButtonSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
   },
 })
 
