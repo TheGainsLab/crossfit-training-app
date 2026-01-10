@@ -24,10 +24,11 @@ function BTNWorkoutGenerator() {
   const [savedWorkouts, setSavedWorkouts] = useState<Set<number>>(new Set());
   const [savingWorkouts, setSavingWorkouts] = useState<Set<number>>(new Set());
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
-  const [equipmentFilter, setEquipmentFilter] = useState<'all' | 'barbell' | 'no_barbell' | 'gymnastics' | 'dumbbell'>('all');
+  const [barbellFilter, setBarbellFilter] = useState<'any' | 'required' | 'excluded'>('any');
+  const [dumbbellFilter, setDumbbellFilter] = useState<'any' | 'required' | 'excluded'>('any');
+  const [cardioFilter, setCardioFilter] = useState<'any' | 'rower' | 'bike' | 'ski' | 'none'>('any');
   const [exerciseCount, setExerciseCount] = useState<'any' | '2' | '3'>('any');
   const [workoutFormat, setWorkoutFormat] = useState<'any' | 'for_time' | 'amrap' | 'rounds_for_time'>('any');
-  const [cardioFilter, setCardioFilter] = useState<'any' | 'rower' | 'bike' | 'ski' | 'none'>('any');
   const [includeExercises, setIncludeExercises] = useState<string[]>([]);
   const [excludeExercises, setExcludeExercises] = useState<string[]>([]);
   const [includeSearch, setIncludeSearch] = useState('');
@@ -130,23 +131,25 @@ function BTNWorkoutGenerator() {
     try {
       console.log('🎲 Generating workouts...');
       console.log('Selected domains:', selectedDomains.length > 0 ? selectedDomains : 'all (random)');
-      console.log('Equipment filter:', equipmentFilter);
+      console.log('Barbell filter:', barbellFilter);
+      console.log('Dumbbell filter:', dumbbellFilter);
+      console.log('Cardio filter:', cardioFilter);
       console.log('Using profile:', userProfile ? 'Yes' : 'No (default generator)');
-      
-      // Determine requiredEquipment and excludeEquipment based on filter
-      let requiredEquipment: string[] | undefined;
-      let excludeEquipment: string[] | undefined;
 
-      if (equipmentFilter === 'barbell') {
-        requiredEquipment = ['Barbell'];
-      } else if (equipmentFilter === 'gymnastics') {
-        // Require at least one gymnastics exercise (Pullup Bar, Rings, or Rope)
-        requiredEquipment = ['Pullup Bar or Rig', 'High Rings', 'Climbing Rope'];
-      } else if (equipmentFilter === 'dumbbell') {
-        requiredEquipment = ['Dumbbells'];
-      } else if (equipmentFilter === 'no_barbell') {
-        // Exclude all barbell exercises from candidates
-        excludeEquipment = ['Barbell'];
+      // Build requiredEquipment and excludeEquipment from separate filters
+      const requiredEquipment: string[] = [];
+      const excludeEquipment: string[] = [];
+
+      if (barbellFilter === 'required') {
+        requiredEquipment.push('Barbell');
+      } else if (barbellFilter === 'excluded') {
+        excludeEquipment.push('Barbell');
+      }
+
+      if (dumbbellFilter === 'required') {
+        requiredEquipment.push('Dumbbells');
+      } else if (dumbbellFilter === 'excluded') {
+        excludeEquipment.push('Dumbbells');
       }
 
       // Convert exercise count to number or undefined
@@ -163,8 +166,8 @@ function BTNWorkoutGenerator() {
       const workouts = await generateTestWorkouts(
         selectedDomains.length > 0 ? selectedDomains : undefined,
         userProfile || undefined,
-        requiredEquipment,
-        excludeEquipment,
+        requiredEquipment.length > 0 ? requiredEquipment : undefined,
+        excludeEquipment.length > 0 ? excludeEquipment : undefined,
         exerciseCountNum,
         formatFilter,
         cardioOption,
@@ -272,38 +275,70 @@ function BTNWorkoutGenerator() {
           
           {/* Equipment Filter Section */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Select Equipment:</h3>
-            <div className="flex flex-wrap gap-2">
-              {(['all', 'barbell', 'dumbbell', 'gymnastics', 'no_barbell'] as const).map(filter => (
-                <button
-                  key={filter}
-                  onClick={() => setEquipmentFilter(filter)}
-                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                    equipmentFilter === filter
-                      ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                  }`}
-                >
-                  {filter === 'all' ? 'All' :
-                   filter === 'barbell' ? 'Barbell' :
-                   filter === 'dumbbell' ? 'Dumbbell' :
-                   filter === 'gymnastics' ? 'Gymnastics' :
-                   'No Barbell'}
-                </button>
-              ))}
+            <h3 className="text-lg font-semibold mb-3">Equipment:</h3>
+
+            {/* Barbell */}
+            <div className="mb-3">
+              <label className="text-sm font-medium text-gray-700 mr-3">Barbell:</label>
+              <div className="inline-flex gap-1">
+                {(['any', 'required', 'excluded'] as const).map(option => (
+                  <button
+                    key={option}
+                    onClick={() => setBarbellFilter(option)}
+                    className={`px-3 py-1 rounded-lg border-2 text-sm font-medium transition-all ${
+                      barbellFilter === option
+                        ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    }`}
+                  >
+                    {option === 'any' ? 'Any' : option === 'required' ? 'Required' : 'Excluded'}
+                  </button>
+                ))}
+              </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              {equipmentFilter === 'all'
-                ? 'No equipment filter - workouts may include any equipment'
-                : equipmentFilter === 'barbell'
-                ? 'All workouts will include at least one barbell exercise'
-                : equipmentFilter === 'dumbbell'
-                ? 'All workouts will include at least one dumbbell exercise'
-                : equipmentFilter === 'gymnastics'
-                ? 'All workouts will include at least one gymnastics exercise'
-                : 'Workouts will not include barbell exercises'
-              }
-            </p>
+
+            {/* Dumbbell */}
+            <div className="mb-3">
+              <label className="text-sm font-medium text-gray-700 mr-3">Dumbbell:</label>
+              <div className="inline-flex gap-1">
+                {(['any', 'required', 'excluded'] as const).map(option => (
+                  <button
+                    key={option}
+                    onClick={() => setDumbbellFilter(option)}
+                    className={`px-3 py-1 rounded-lg border-2 text-sm font-medium transition-all ${
+                      dumbbellFilter === option
+                        ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    }`}
+                  >
+                    {option === 'any' ? 'Any' : option === 'required' ? 'Required' : 'Excluded'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cardio */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mr-3">Cardio:</label>
+              <div className="inline-flex gap-1">
+                {(['any', 'rower', 'bike', 'ski', 'none'] as const).map(option => (
+                  <button
+                    key={option}
+                    onClick={() => setCardioFilter(option)}
+                    className={`px-3 py-1 rounded-lg border-2 text-sm font-medium transition-all ${
+                      cardioFilter === option
+                        ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    }`}
+                  >
+                    {option === 'any' ? 'Any' :
+                     option === 'rower' ? 'Rower' :
+                     option === 'bike' ? 'Bike' :
+                     option === 'ski' ? 'Ski' : 'None'}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Exercise Count Filter */}
@@ -365,38 +400,6 @@ function BTNWorkoutGenerator() {
                 : workoutFormat === 'amrap'
                 ? 'All workouts will be AMRAPs (requires 6+ minute time domain)'
                 : 'All workouts will be Rounds For Time'
-              }
-            </p>
-          </div>
-
-          {/* Cardio Equipment Filter */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Cardio Equipment:</h3>
-            <div className="flex flex-wrap gap-2">
-              {(['any', 'rower', 'bike', 'ski', 'none'] as const).map(cardio => (
-                <button
-                  key={cardio}
-                  onClick={() => setCardioFilter(cardio)}
-                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                    cardioFilter === cardio
-                      ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                  }`}
-                >
-                  {cardio === 'any' ? 'Any' :
-                   cardio === 'rower' ? 'Rower' :
-                   cardio === 'bike' ? 'Bike' :
-                   cardio === 'ski' ? 'Ski' :
-                   'No Cardio'}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              {cardioFilter === 'any'
-                ? 'Workouts may include any cardio equipment'
-                : cardioFilter === 'none'
-                ? 'Workouts will not include cardio exercises'
-                : `Only ${cardioFilter === 'rower' ? 'Rowing' : cardioFilter === 'bike' ? 'Bike' : 'Ski'} Calories will be used for cardio`
               }
             </p>
           </div>
