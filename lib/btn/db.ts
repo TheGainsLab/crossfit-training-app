@@ -163,3 +163,59 @@ export function buildExerciseMaps(exercises: BTNExercise[]) {
 
 // Type for the built exercise maps
 export type BTNExerciseMaps = ReturnType<typeof buildExerciseMaps>;
+
+// Type for forbidden pair from database
+export interface ForbiddenPair {
+  exercise_1: string;
+  exercise_2: string;
+}
+
+// Cached forbidden pairs
+let cachedForbiddenPairs: [string, string][] | null = null;
+let forbiddenPairsCacheTimestamp: number = 0;
+
+/**
+ * Fetch forbidden exercise pairs from the database
+ * Results are cached for 5 minutes to avoid repeated queries
+ */
+export async function fetchForbiddenPairs(): Promise<[string, string][]> {
+  // Return cached data if still valid
+  if (cachedForbiddenPairs && Date.now() - forbiddenPairsCacheTimestamp < CACHE_TTL) {
+    return cachedForbiddenPairs;
+  }
+
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('btn_forbidden_pairs')
+    .select('exercise_1, exercise_2');
+
+  if (error) {
+    console.error('Error fetching forbidden pairs:', error);
+    throw new Error(`Failed to fetch forbidden pairs: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    console.warn('No forbidden pairs found in database');
+    return [];
+  }
+
+  // Convert to tuple format and apply display name mapping
+  cachedForbiddenPairs = data.map((pair: ForbiddenPair) => [
+    toDisplayName(pair.exercise_1),
+    toDisplayName(pair.exercise_2)
+  ] as [string, string]);
+
+  forbiddenPairsCacheTimestamp = Date.now();
+
+  console.log(`✅ Loaded ${cachedForbiddenPairs.length} forbidden pairs from database`);
+  return cachedForbiddenPairs;
+}
+
+/**
+ * Clear the forbidden pairs cache (useful for testing or after updates)
+ */
+export function clearForbiddenPairsCache(): void {
+  cachedForbiddenPairs = null;
+  forbiddenPairsCacheTimestamp = 0;
+}

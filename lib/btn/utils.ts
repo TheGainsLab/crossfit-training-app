@@ -1,6 +1,6 @@
 import { Workout, PerformancePrediction, GeneratedWorkout, Exercise, UserProfile } from './types';
 import { calculateBenchmarkScores } from './benchmarks';
-import { fetchBTNExercises, buildExerciseMaps, BTNExerciseMaps } from './db';
+import { fetchBTNExercises, buildExerciseMaps, BTNExerciseMaps, fetchForbiddenPairs } from './db';
 
 // Module-level state for exercise data (populated from database)
 let _exerciseDataInitialized = false;
@@ -13,6 +13,7 @@ let _exerciseDifficultyTiers: { highSkill: string[]; highVolume: string[]; moder
   highSkill: [], highVolume: [], moderate: [], lowSkill: []
 };
 let _weightDegradationRates: { [key: string]: number } = {};
+let _forbiddenPairs: [string, string][] = [];
 
 /**
  * Initialize BTN exercise data from database
@@ -22,7 +23,12 @@ async function initializeBTNExerciseData(): Promise<void> {
   if (_exerciseDataInitialized) return;
 
   try {
-    const exercises = await fetchBTNExercises();
+    // Fetch exercises and forbidden pairs in parallel
+    const [exercises, forbiddenPairs] = await Promise.all([
+      fetchBTNExercises(),
+      fetchForbiddenPairs()
+    ]);
+
     const maps = buildExerciseMaps(exercises);
 
     _exerciseDatabase = maps.exerciseDatabase;
@@ -32,9 +38,10 @@ async function initializeBTNExerciseData(): Promise<void> {
     _allRepOptions = maps.allRepOptions;
     _exerciseDifficultyTiers = maps.exerciseDifficultyTiers;
     _weightDegradationRates = maps.weightDegradationRates;
+    _forbiddenPairs = forbiddenPairs;
     _exerciseDataInitialized = true;
 
-    console.log(`✅ BTN exercise data initialized: ${_exerciseDatabase.length} exercises`);
+    console.log(`✅ BTN exercise data initialized: ${_exerciseDatabase.length} exercises, ${_forbiddenPairs.length} forbidden pairs`);
   } catch (error) {
     console.error('❌ Failed to initialize BTN exercise data from database:', error);
     throw error;
@@ -1658,66 +1665,16 @@ function filterExercisesForConsistency(exerciseTypes: string[]): string[] {
 }
 
 function filterForbiddenPairs(exerciseTypes: string[]): string[] {
-  const forbiddenPairs = [
-    ['Pull-ups', 'Chest to Bar Pull-ups'],
-    ['Pull-ups', 'Toes to Bar'],
-    ['Pull-ups', 'Ring Muscle Ups'],
-    ['Handstand Push-ups', 'Push-ups'],
-    ['Burpee Box Jump Overs', 'Box Jump Overs'], 
-    ['Box Jump Overs', 'Box Jumps'],
-    ['Burpee Box Jump Overs', 'Box Jumps'],
-    ['Burpees', 'Burpee Box Jump Overs'],
-    ['Rope Climbs', 'Legless Rope Climbs'],
-    ['Rope Climbs', 'Ring Muscle Ups'],
-    ['Rope Climbs', 'Toes to Bar'],
-    ['Rope Climbs', 'Pull-ups'],
-    ['Rope Climbs', 'Chest to Bar Pull-ups'],
-    ['Legless Rope Climbs', 'Ring Muscle Ups'],
-    ['GHD Sit-ups', 'Toes to Bar'],
-    ['Rowing Calories', 'Bike Calories'],
-    ['Rowing Calories', 'Ski Calories'],
-    ['Bike Calories', 'Ski Calories'],
-    ['Ring Muscle Ups', 'Chest to Bar Pull-ups'],
-    ['Legless Rope Climbs', 'Chest to Bar Pull-ups'],
-    ['Bar Muscle Ups', 'Chest to Bar Pull-ups'],
-    ['Ring Muscle Ups', 'Bar Muscle Ups'],
-    ['Chest to Bar Pull-ups', 'Toes to Bar'],
-    ['Push-ups', 'Burpees'],
-    ['Toes to Bar', 'Ring Muscle Ups'],
-    ['Toes to Bar', 'Legless Rope Climbs'],
-    ['Wall Balls', 'Alternating Pistols'],
-    ['Wall Walks', 'Handstand Push-ups'],
-    ['Wall Walks', 'Burpees'],
-    ['Wall Walks', 'Overhead Squat'],
-    ['Wall Walks', 'Ring Muscle Ups'],
-    ['Handstand Walk (10m or 25\')', 'Wall Walks'],
-    ['Handstand Walk (10m or 25\')', 'Handstand Push-ups'],
-    ['Handstand Walk (10m or 25\')', 'Ring Muscle Ups'],
-    ['Bar Facing Burpees', 'Burpees'],
-    ['Bar Facing Burpees', 'Burpee Box Jump Overs'],
-    ['Wall Facing Handstand Push-ups', 'Handstand Push-ups'],
-    ['Wall Facing Handstand Push-ups', 'Wall Walks'],
-    ['Wall Facing Handstand Push-ups', 'Push-ups'],
-    ['Strict Handstand Push-ups', 'Handstand Push-ups'],
-    ['Strict Handstand Push-ups', 'Wall Facing Handstand Push-ups'],
-    ['Strict Handstand Push-ups', 'Wall Walks'],
-    ['Strict Handstand Push-ups', 'Push-ups'],
-    ['Shuttle Runs', 'Rowing Calories'],
-    ['Shuttle Runs', 'Bike Calories'],
-    ['Shuttle Runs', 'Ski Calories'],
-    ['Kettlebell Swings', 'Kettlebell Snatch'],
-    ['Bar Muscle Ups', 'Toes to Bar']
-  ];
-  
+  // Use forbidden pairs loaded from database
   let filteredExercises = [...exerciseTypes];
-  
-  forbiddenPairs.forEach(pair => {
+
+  _forbiddenPairs.forEach(pair => {
     const [exercise1, exercise2] = pair;
     if (filteredExercises.includes(exercise1) && filteredExercises.includes(exercise2)) {
       filteredExercises = filteredExercises.filter(ex => ex !== exercise2);
     }
   });
-  
+
   return filteredExercises;
 }
 
