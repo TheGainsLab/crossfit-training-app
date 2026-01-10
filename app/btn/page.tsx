@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { GeneratedWorkout, UserProfile } from '@/lib/btn/types';
-import { generateTestWorkouts } from '@/lib/btn/utils';
+import { generateTestWorkouts, getAvailableExercises } from '@/lib/btn/utils';
 
 interface SubscriptionStatus {
   hasAccess: boolean
@@ -27,8 +27,16 @@ function BTNWorkoutGenerator() {
   const [equipmentFilter, setEquipmentFilter] = useState<'all' | 'barbell' | 'no_barbell' | 'gymnastics' | 'dumbbell'>('all');
   const [exerciseCount, setExerciseCount] = useState<'any' | '2' | '3'>('any');
   const [workoutFormat, setWorkoutFormat] = useState<'any' | 'for_time' | 'amrap' | 'rounds_for_time'>('any');
+  const [cardioFilter, setCardioFilter] = useState<'any' | 'rower' | 'bike' | 'ski' | 'none'>('any');
+  const [includeExercises, setIncludeExercises] = useState<string[]>([]);
+  const [excludeExercises, setExcludeExercises] = useState<string[]>([]);
+  const [includeSearch, setIncludeSearch] = useState('');
+  const [excludeSearch, setExcludeSearch] = useState('');
+  const [showIncludeDropdown, setShowIncludeDropdown] = useState(false);
+  const [showExcludeDropdown, setShowExcludeDropdown] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [availableExercises, setAvailableExercises] = useState<string[]>([]);
 
   const timeDomains = [
     '1:00 - 5:00',
@@ -69,6 +77,19 @@ function BTNWorkoutGenerator() {
   // Fetch user profile on mount and when URL has refresh parameter
   useEffect(() => {
     fetchUserProfile();
+  }, []);
+
+  // Fetch available exercises for include/exclude dropdowns
+  useEffect(() => {
+    const loadExercises = async () => {
+      try {
+        const exercises = await getAvailableExercises();
+        setAvailableExercises(exercises);
+      } catch (error) {
+        console.error('Failed to load exercises:', error);
+      }
+    };
+    loadExercises();
   }, []);
 
   // Handle profile refresh from URL parameter
@@ -136,13 +157,19 @@ function BTNWorkoutGenerator() {
         workoutFormat === 'for_time' ? 'For Time' :
         workoutFormat === 'amrap' ? 'AMRAP' : 'Rounds For Time';
 
+      // Convert cardio filter
+      const cardioOption = cardioFilter === 'any' ? undefined : cardioFilter;
+
       const workouts = await generateTestWorkouts(
         selectedDomains.length > 0 ? selectedDomains : undefined,
         userProfile || undefined,
         requiredEquipment,
         excludeEquipment,
         exerciseCountNum,
-        formatFilter
+        formatFilter,
+        cardioOption,
+        includeExercises.length > 0 ? includeExercises : undefined,
+        excludeExercises.length > 0 ? excludeExercises : undefined
       );
 
       // Display workouts immediately (no auto-save)
@@ -340,6 +367,181 @@ function BTNWorkoutGenerator() {
                 : 'All workouts will be Rounds For Time'
               }
             </p>
+          </div>
+
+          {/* Cardio Equipment Filter */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-3">Cardio Equipment:</h3>
+            <div className="flex flex-wrap gap-2">
+              {(['any', 'rower', 'bike', 'ski', 'none'] as const).map(cardio => (
+                <button
+                  key={cardio}
+                  onClick={() => setCardioFilter(cardio)}
+                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                    cardioFilter === cardio
+                      ? 'border-[#FE5858] bg-red-50 text-[#FE5858]'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  {cardio === 'any' ? 'Any' :
+                   cardio === 'rower' ? 'Rower' :
+                   cardio === 'bike' ? 'Bike' :
+                   cardio === 'ski' ? 'Ski' :
+                   'No Cardio'}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {cardioFilter === 'any'
+                ? 'Workouts may include any cardio equipment'
+                : cardioFilter === 'none'
+                ? 'Workouts will not include cardio exercises'
+                : `Only ${cardioFilter === 'rower' ? 'Rowing' : cardioFilter === 'bike' ? 'Bike' : 'Ski'} Calories will be used for cardio`
+              }
+            </p>
+          </div>
+
+          {/* Include/Exclude Exercises */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-3">Customize Exercises:</h3>
+
+            {/* Must Include */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Must Include:</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={includeSearch}
+                  onChange={(e) => {
+                    setIncludeSearch(e.target.value);
+                    setShowIncludeDropdown(true);
+                  }}
+                  onFocus={() => setShowIncludeDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowIncludeDropdown(false), 200)}
+                  placeholder="Search exercises to include..."
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-[#FE5858] focus:outline-none"
+                />
+                {showIncludeDropdown && includeSearch && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {availableExercises
+                      .filter(ex =>
+                        ex.toLowerCase().includes(includeSearch.toLowerCase()) &&
+                        !includeExercises.includes(ex) &&
+                        !excludeExercises.includes(ex)
+                      )
+                      .slice(0, 10)
+                      .map(exercise => (
+                        <button
+                          key={exercise}
+                          onClick={() => {
+                            setIncludeExercises(prev => [...prev, exercise]);
+                            setIncludeSearch('');
+                            setShowIncludeDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100"
+                        >
+                          {exercise}
+                        </button>
+                      ))
+                    }
+                    {availableExercises.filter(ex =>
+                      ex.toLowerCase().includes(includeSearch.toLowerCase()) &&
+                      !includeExercises.includes(ex) &&
+                      !excludeExercises.includes(ex)
+                    ).length === 0 && (
+                      <div className="px-4 py-2 text-sm text-gray-500">No matching exercises</div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {includeExercises.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {includeExercises.map(exercise => (
+                    <span
+                      key={exercise}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full"
+                    >
+                      {exercise}
+                      <button
+                        onClick={() => setIncludeExercises(prev => prev.filter(e => e !== exercise))}
+                        className="hover:text-green-600"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Exclude */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Exclude:</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={excludeSearch}
+                  onChange={(e) => {
+                    setExcludeSearch(e.target.value);
+                    setShowExcludeDropdown(true);
+                  }}
+                  onFocus={() => setShowExcludeDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowExcludeDropdown(false), 200)}
+                  placeholder="Search exercises to exclude..."
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg text-sm focus:border-[#FE5858] focus:outline-none"
+                />
+                {showExcludeDropdown && excludeSearch && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {availableExercises
+                      .filter(ex =>
+                        ex.toLowerCase().includes(excludeSearch.toLowerCase()) &&
+                        !excludeExercises.includes(ex) &&
+                        !includeExercises.includes(ex)
+                      )
+                      .slice(0, 10)
+                      .map(exercise => (
+                        <button
+                          key={exercise}
+                          onClick={() => {
+                            setExcludeExercises(prev => [...prev, exercise]);
+                            setExcludeSearch('');
+                            setShowExcludeDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100"
+                        >
+                          {exercise}
+                        </button>
+                      ))
+                    }
+                    {availableExercises.filter(ex =>
+                      ex.toLowerCase().includes(excludeSearch.toLowerCase()) &&
+                      !excludeExercises.includes(ex) &&
+                      !includeExercises.includes(ex)
+                    ).length === 0 && (
+                      <div className="px-4 py-2 text-sm text-gray-500">No matching exercises</div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {excludeExercises.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {excludeExercises.map(exercise => (
+                    <span
+                      key={exercise}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-800 text-sm rounded-full"
+                    >
+                      {exercise}
+                      <button
+                        onClick={() => setExcludeExercises(prev => prev.filter(e => e !== exercise))}
+                        className="hover:text-red-600"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <button

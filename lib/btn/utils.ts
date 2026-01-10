@@ -55,6 +55,17 @@ export function getExerciseEquipment(): { [key: string]: string[] } {
   return _exerciseEquipment;
 }
 
+// Export exercise list for include/exclude filtering
+export function getExerciseDatabase(): string[] {
+  return [..._exerciseDatabase].sort();
+}
+
+// Initialize and return exercise database (for use before full generation)
+export async function getAvailableExercises(): Promise<string[]> {
+  await initializeBTNExerciseData();
+  return [..._exerciseDatabase].sort();
+}
+
 // Format-specific rule sets
 const formatRules = {
   'For Time': {
@@ -511,7 +522,7 @@ function getAllowedPatternsForExercises(exercises: string[]): string[] {
   return allowedPatterns;
 }
 
-export async function generateTestWorkouts(selectedDomainRanges?: string[], userProfile?: UserProfile, requiredEquipment?: string[], excludeEquipment?: string[], exerciseCount?: number, formatFilter?: string): Promise<GeneratedWorkout[]> {
+export async function generateTestWorkouts(selectedDomainRanges?: string[], userProfile?: UserProfile, requiredEquipment?: string[], excludeEquipment?: string[], exerciseCount?: number, formatFilter?: string, cardioFilter?: string, includeExercises?: string[], excludeExercises?: string[]): Promise<GeneratedWorkout[]> {
   // Initialize exercise data from database
   await initializeBTNExerciseData();
 
@@ -547,6 +558,29 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
       return !hasExcluded;
     });
     console.log(`✅ After equipment exclusion: ${availableExercises.length} exercises available`);
+  }
+
+  // Pre-filter: Apply cardio filter
+  const cardioExerciseNames = ['Rowing Calories', 'Bike Calories', 'Ski Calories'];
+  if (cardioFilter) {
+    if (cardioFilter === 'none') {
+      // Remove all cardio exercises
+      availableExercises = availableExercises.filter(ex => !cardioExerciseNames.includes(ex));
+      console.log(`✅ After cardio exclusion: ${availableExercises.length} exercises available`);
+    } else {
+      // Keep only the specified cardio type, remove others
+      const allowedCardio = cardioFilter === 'rower' ? 'Rowing Calories' :
+                           cardioFilter === 'bike' ? 'Bike Calories' : 'Ski Calories';
+      const excludedCardio = cardioExerciseNames.filter(c => c !== allowedCardio);
+      availableExercises = availableExercises.filter(ex => !excludedCardio.includes(ex));
+      console.log(`✅ After cardio filter (${cardioFilter}): ${availableExercises.length} exercises available`);
+    }
+  }
+
+  // Pre-filter: Remove user-excluded exercises
+  if (excludeExercises && excludeExercises.length > 0) {
+    availableExercises = availableExercises.filter(ex => !excludeExercises.includes(ex));
+    console.log(`✅ After user exclusions: ${availableExercises.length} exercises available`);
   }
   
   if (userProfile) {
@@ -666,7 +700,7 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
       // Generate exercises (targetDurationHint is only used for Rounds For Time round calculation)
       let result;
       try {
-        result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment, exerciseCount);
+        result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment, exerciseCount, includeExercises);
       } catch (e) {
         // Failed to generate (e.g., couldn't add required equipment) - retry
         continue;
@@ -802,7 +836,7 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
       
       let result;
       try {
-        result = generateExercisesForTimeDomain(targetDurationHint || targetDomain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment, exerciseCount);
+        result = generateExercisesForTimeDomain(targetDurationHint || targetDomain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment, exerciseCount, includeExercises);
       } catch (e) {
         // Failed to generate (e.g., couldn't add required equipment) - retry
         continue;
@@ -875,7 +909,7 @@ export async function generateTestWorkouts(selectedDomainRanges?: string[], user
   return workouts;
 }
 
-function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number, availableExercises?: string[], userProfile?: UserProfile, requiredEquipment?: string[], exerciseCount?: number): { exercises: Exercise[], rounds?: number } {
+function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number, availableExercises?: string[], userProfile?: UserProfile, requiredEquipment?: string[], exerciseCount?: number, includeExercises?: string[]): { exercises: Exercise[], rounds?: number } {
   const exercises: Exercise[] = [];
   const rules = formatRules[format as keyof typeof formatRules];
   if (!rules) {
@@ -918,24 +952,55 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
   const filteredExercises: string[] = [];
   const triedExercises = new Set<string>();
 
+  // HIGHEST PRIORITY: Add user-specified "must include" exercises first
+  if (includeExercises && includeExercises.length > 0) {
+    for (const exercise of includeExercises) {
+      // Only add if it's in the available exercises (not excluded by other filters)
+      if (candidateExercises.includes(exercise) && !filteredExercises.includes(exercise)) {
+        // Check if adding this exercise would violate constraints
+        const testExercises = [...filteredExercises, exercise];
+        const testFiltered = filterExercisesForConsistency(testExercises);
+        const testFinal = filterForbiddenPairs(testFiltered);
+
+        if (testFinal.length === testExercises.length && testFinal.includes(exercise)) {
+          triedExercises.add(exercise);
+          filteredExercises.push(exercise);
+        } else {
+          console.warn(`⚠️ Could not include ${exercise} due to equipment consistency or forbidden pair constraint`);
+        }
+      }
+    }
+  }
+
   // PRIORITY: If required equipment is specified, START with an exercise from that pool
   // This ensures we always have the required equipment type in the workout
+  // Skip if we already have the required equipment from included exercises
   if (requiredEquipment && requiredEquipment.length > 0) {
-    let requiredCandidates: string[] = [];
+    // Check if we already have required equipment from included exercises
+    const alreadyHasBarbell = requiredEquipment.includes('Barbell') && filteredExercises.some(ex => isBarbellExercise(ex));
+    const alreadyHasDumbbell = requiredEquipment.includes('Dumbbells') && filteredExercises.some(ex => isDumbbellExercise(ex));
+    const alreadyHasGymnastics = requiredEquipment.some(eq => GYMNASTICS_EQUIPMENT.includes(eq)) && filteredExercises.some(ex => isGymnasticsExercise(ex));
 
-    if (requiredEquipment.includes('Barbell')) {
-      requiredCandidates = shuffledExercises.filter(ex => isBarbellExercise(ex));
-    } else if (requiredEquipment.includes('Dumbbells')) {
-      requiredCandidates = shuffledExercises.filter(ex => isDumbbellExercise(ex));
-    } else if (requiredEquipment.some(eq => GYMNASTICS_EQUIPMENT.includes(eq))) {
-      requiredCandidates = shuffledExercises.filter(ex => isGymnasticsExercise(ex));
-    }
+    if (!alreadyHasBarbell && !alreadyHasDumbbell && !alreadyHasGymnastics) {
+      let requiredCandidates: string[] = [];
 
-    // Add a required equipment exercise first
-    if (requiredCandidates.length > 0) {
-      const firstRequired = requiredCandidates[0];
-      triedExercises.add(firstRequired);
-      filteredExercises.push(firstRequired);
+      if (requiredEquipment.includes('Barbell')) {
+        requiredCandidates = shuffledExercises.filter(ex => isBarbellExercise(ex));
+      } else if (requiredEquipment.includes('Dumbbells')) {
+        requiredCandidates = shuffledExercises.filter(ex => isDumbbellExercise(ex));
+      } else if (requiredEquipment.some(eq => GYMNASTICS_EQUIPMENT.includes(eq))) {
+        requiredCandidates = shuffledExercises.filter(ex => isGymnasticsExercise(ex));
+      }
+
+      // Add a required equipment exercise first (if not already added via includes)
+      if (requiredCandidates.length > 0) {
+        const availableCandidates = requiredCandidates.filter(ex => !filteredExercises.includes(ex));
+        if (availableCandidates.length > 0) {
+          const firstRequired = availableCandidates[0];
+          triedExercises.add(firstRequired);
+          filteredExercises.push(firstRequired);
+        }
+      }
     }
   }
 
