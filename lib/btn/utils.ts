@@ -1705,7 +1705,8 @@ function filterForbiddenPairs(exerciseTypes: string[]): string[] {
     ['Shuttle Runs', 'Rowing Calories'],
     ['Shuttle Runs', 'Bike Calories'],
     ['Shuttle Runs', 'Ski Calories'],
-    ['Kettlebell Swings', 'Kettlebell Snatch']
+    ['Kettlebell Swings', 'Kettlebell Snatch'],
+    ['Bar Muscle Ups', 'Toes to Bar']
   ];
   
   let filteredExercises = [...exerciseTypes];
