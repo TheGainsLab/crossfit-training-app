@@ -954,7 +954,7 @@ export default function IntakePage() {
               />
             </View>
 
-            <Text style={styles.label}>Equipment Available</Text>
+            <Text style={styles.equipmentAvailableHeader}>Equipment Available</Text>
             
             {/* The Basics */}
             <View style={styles.equipmentSection}>
@@ -1465,6 +1465,13 @@ const styles = StyleSheet.create({
     color: '#374151',
     marginBottom: 8
   },
+  equipmentAvailableHeader: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#282B34',
+    marginTop: 24,
+    marginBottom: 12
+  },
   equipmentSection: {
     marginBottom: 24,
   },
@@ -1490,6 +1497,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: '#374151',
+    flex: 1,
+    flexWrap: 'wrap',
   },
   equipmentCount: {
     fontSize: 12,
@@ -1503,7 +1512,7 @@ const styles = StyleSheet.create({
   skillCategory: {
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#DAE2EA',
+    borderColor: '#282B34',
     borderRadius: 8,
     padding: 16,
   },
