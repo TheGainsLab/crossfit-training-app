@@ -11,6 +11,7 @@ import {
   Alert,
   StyleSheet
 } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { createClient } from '@/lib/supabase/client'
 import { setRevenueCatUserId } from '@/lib/subscriptions'
