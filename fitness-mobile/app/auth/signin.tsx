@@ -12,8 +12,18 @@ import {
   StyleSheet
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import Purchases from 'react-native-purchases'
 import { createClient } from '@/lib/supabase/client'
 import { setRevenueCatUserId } from '@/lib/subscriptions'
+
+// Map program IDs to subscription tiers
+const PROGRAM_TO_TIER: Record<string, string> = {
+  'btn': 'BTN',
+  'engine': 'ENGINE',
+  'applied_power': 'APPLIED_POWER',
+  'competitor': 'PREMIUM'
+}
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -58,17 +68,9 @@ export default function SignIn() {
         const pendingProgram = await AsyncStorage.getItem('pending_subscription_program');
         if (pendingProgram) {
           console.log('📦 Found pending subscription program:', pendingProgram);
-          
-          // Map programId to subscription_tier
-          const PROGRAM_TO_TIER: { [key: string]: string } = {
-            'engine': 'ENGINE',
-            'btn': 'BTN',
-            'applied_power': 'APPLIED_POWER',
-            'competitor': 'PREMIUM'
-          };
-          
+
           const subscriptionTier = PROGRAM_TO_TIER[pendingProgram] || 'PREMIUM';
-          
+
           // Update database with pending subscription
           const { error: updateError } = await supabase
             .from('users')
@@ -77,12 +79,12 @@ export default function SignIn() {
               subscription_status: 'active'
             })
             .eq('auth_id', data.user.id);
-          
+
           if (updateError) {
             console.error('❌ Error updating subscription_tier:', updateError);
           } else {
             console.log(`✅ Updated subscription_tier to ${subscriptionTier} from pending purchase`);
-            
+
             // Clear AsyncStorage
             await AsyncStorage.removeItem('pending_subscription_program');
             await AsyncStorage.removeItem('pending_subscription_entitlements');
@@ -97,8 +99,48 @@ export default function SignIn() {
           .single()
 
         if (userData) {
-          const typedUserData = userData as any
-          
+          let typedUserData = userData as any
+
+          // FALLBACK: If subscription_tier is missing, check RevenueCat for active entitlements
+          // This ensures tier is always set even if it was missed during purchase
+          if (!typedUserData.subscription_tier) {
+            console.log('[SignIn] No subscription_tier in DB, checking RevenueCat...');
+            try {
+              const customerInfo = await Purchases.getCustomerInfo();
+              const activeEntitlements = Object.keys(customerInfo.entitlements.active);
+
+              if (activeEntitlements.length > 0) {
+                // Map entitlement to tier - entitlements may be program IDs or tier names
+                let detectedTier = PROGRAM_TO_TIER[activeEntitlements[0]];
+                if (!detectedTier) {
+                  // Try uppercase version as fallback (e.g., 'btn' -> 'BTN')
+                  detectedTier = activeEntitlements[0].toUpperCase();
+                }
+
+                console.log(`[SignIn] Found RevenueCat entitlement: ${activeEntitlements[0]}, mapping to tier: ${detectedTier}`);
+
+                // Update database with detected subscription tier
+                const { error: tierUpdateError } = await supabase
+                  .from('users')
+                  .update({
+                    subscription_tier: detectedTier,
+                    subscription_status: 'active'
+                  })
+                  .eq('auth_id', data.user.id);
+
+                if (tierUpdateError) {
+                  console.error('[SignIn] Error updating subscription_tier from RevenueCat:', tierUpdateError);
+                } else {
+                  console.log(`[SignIn] ✅ Updated subscription_tier to ${detectedTier} from RevenueCat`);
+                  typedUserData.subscription_tier = detectedTier;
+                }
+              }
+            } catch (rcError) {
+              console.error('[SignIn] Error checking RevenueCat entitlements:', rcError);
+              // Continue without blocking sign-in
+            }
+          }
+
           // Check intake_status first - redirect to intake if needed
           const status = typedUserData.intake_status
           if (status === 'draft' || status === null || status === 'generating' || status === 'failed') {
