@@ -709,8 +709,6 @@ export default function WorkoutPage() {
     )
   }
 
-  const progress = calculateProgress()
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -735,17 +733,6 @@ export default function WorkoutPage() {
                 <Text style={styles.deloadLabel}>Deload Week</Text>
               )}
             </View>
-          </View>
-
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBarContainer}>
-              <View
-                style={[styles.progressBar, { width: `${progress}%` }]}
-              />
-            </View>
-            <Text style={[styles.progressText, { marginLeft: 8 }]}>
-              {Math.round(progress)}%
-            </Text>
           </View>
         </View>
       </View>
@@ -1020,27 +1007,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: '600',
   },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  progressBarContainer: {
-    width: 96,
-    backgroundColor: '#DAE2EA',
-    borderRadius: 999,
-    height: 8,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: '#FE5858',
-  },
-  progressText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#282B34',
-  },
+
   scrollView: {
     flex: 1,
     paddingHorizontal: 16,
