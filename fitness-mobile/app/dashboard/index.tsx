@@ -88,8 +88,20 @@ export default function Dashboard() {
         return
       }
 
+      // Check for NULL subscription_tier - block access if missing
+      if (!userData.subscription_tier) {
+        console.error('❌ User missing subscription_tier for dashboard access')
+        Alert.alert(
+          'Subscription Required',
+          'Please subscribe to access this feature.',
+          [{ text: 'View Plans', onPress: () => router.replace('/subscriptions') }]
+        )
+        router.replace('/subscriptions')
+        return
+      }
+
       setUserName(userData.email?.split('@')[0] || 'User')
-      setSubscriptionTier(userData.subscription_tier || 'Premium')
+      setSubscriptionTier(userData.subscription_tier)
       setUserId(userData.id)
 
       // Get user's programs

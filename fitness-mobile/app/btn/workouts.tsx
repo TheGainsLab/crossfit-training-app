@@ -62,13 +62,31 @@ export default function BTNWorkoutsPage() {
         .eq('auth_id', user.id)
         .single()
 
-      if (userData?.subscription_tier === 'BTN') {
-        setHasAccess(true)
-      } else {
-        Alert.alert('Access Denied', 'BTN subscription required', [
-          { text: 'OK', onPress: () => router.back() },
-        ])
+      // Check for NULL subscription_tier
+      if (!userData?.subscription_tier) {
+        console.error('❌ User missing subscription_tier for BTN access')
+        Alert.alert(
+          'Subscription Required',
+          'Please subscribe to access BTN workouts.',
+          [{ text: 'View Plans', onPress: () => router.replace('/subscriptions') }]
+        )
+        router.replace('/subscriptions')
+        return
       }
+
+      // Verify user has BTN tier
+      if (userData.subscription_tier !== 'BTN') {
+        console.error('❌ Non-BTN user trying to access BTN workouts')
+        Alert.alert(
+          'Access Denied',
+          'This feature is only available for BTN subscribers.',
+          [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+        )
+        router.replace('/(tabs)')
+        return
+      }
+
+      setHasAccess(true)
     } catch (error) {
       console.error('Error checking access:', error)
       Alert.alert('Error', 'Failed to verify access')

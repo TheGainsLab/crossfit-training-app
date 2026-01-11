@@ -514,11 +514,21 @@ export default function EnginePage() {
             setUserName('User')
           }
 
-          if (profile?.subscription_tier) {
-            const tier = profile.subscription_tier.toUpperCase()
-            if (tier === 'FULL-PROGRAM' || tier === 'PREMIUM') {
-              setProgramVersion('Premium')
-            }
+          // Check for NULL subscription_tier - block access if missing
+          if (!profile?.subscription_tier) {
+            console.error('❌ User missing subscription_tier for engine training access')
+            Alert.alert(
+              'Subscription Required',
+              'Please subscribe to access training.',
+              [{ text: 'View Plans', onPress: () => router.replace('/subscriptions') }]
+            )
+            router.replace('/subscriptions')
+            return
+          }
+
+          const tier = profile.subscription_tier.toUpperCase()
+          if (tier === 'FULL-PROGRAM' || tier === 'PREMIUM') {
+            setProgramVersion('Premium')
           }
         }
       } catch (error) {

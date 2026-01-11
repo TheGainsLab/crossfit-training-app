@@ -114,6 +114,19 @@ export default function WorkoutPage() {
           return
         }
 
+        // Check for NULL subscription_tier - block access if missing
+        if (!userData.subscription_tier) {
+          console.error('❌ User missing subscription_tier for workout access')
+          Alert.alert(
+            'Subscription Required',
+            'Please subscribe to access workouts.',
+            [{ text: 'View Plans', onPress: () => router.replace('/subscriptions') }]
+          )
+          setError('Subscription required')
+          router.replace('/subscriptions')
+          return
+        }
+
         // Fetch all programs for navigation
         const { data: programs } = await supabase
           .from('programs')
@@ -135,8 +148,8 @@ export default function WorkoutPage() {
           // Filter blocks based on subscription tier
           let filteredWorkout = { ...data.workout };
           
-          if (userData.subscription_tier) {
-            const TIER_BLOCKS: { [key: string]: string[] } = {
+          // Now guaranteed to have subscription_tier
+          const TIER_BLOCKS: { [key: string]: string[] } = {
               'ENGINE': ['ENGINE'],
               'BTN': [], // BTN users shouldn't be here, but handle gracefully
               'APPLIED_POWER': ['TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES'],
@@ -159,7 +172,6 @@ export default function WorkoutPage() {
             }
             
             console.log(`🔒 Filtered blocks for ${userData.subscription_tier}:`, filteredWorkout.blocks.map((b: Block) => b.blockName));
-          }
           
           setWorkout(filteredWorkout)
           if (Array.isArray(data.completions)) {

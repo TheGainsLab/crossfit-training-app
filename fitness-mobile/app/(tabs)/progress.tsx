@@ -818,10 +818,23 @@ export default function ProgressPage() {
       if (userData) {
         setUserId((userData as { id: number }).id)
         
+        // Check for NULL subscription_tier - block access if missing
+        if (!(userData as any).subscription_tier) {
+          console.error('❌ User missing subscription_tier for analytics access')
+          Alert.alert(
+            'Subscription Required',
+            'Please subscribe to access analytics.',
+            [{ text: 'View Plans', onPress: () => router.replace('/subscriptions') }]
+          )
+          setLoading(false)
+          router.replace('/subscriptions')
+          return
+        }
+        
         // Check subscription tier for analytics filtering
         // isEngine should ONLY be true for standalone Engine users
         // Premium/Full-Program users should have both false to see all analytics blocks
-        const subscriptionTier = ((userData as any).subscription_tier || '').toUpperCase().trim()
+        const subscriptionTier = (userData as any).subscription_tier.toUpperCase().trim()
         if (subscriptionTier === 'APPLIED_POWER') {
           setIsAppliedPower(true)
         } else if (subscriptionTier === 'ENGINE') {

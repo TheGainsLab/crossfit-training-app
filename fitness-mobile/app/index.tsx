@@ -84,6 +84,18 @@ export default function Index() {
           subscriptionTier: userData?.subscription_tier
         })
 
+        // Check for NULL subscription_tier - indicates purchase flow issue
+        if (userData && !userData.subscription_tier) {
+          console.warn('⚠️ User has NULL subscription_tier at app entry')
+          Alert.alert(
+            'Subscription Required',
+            'Please select a program to get started.',
+            [{ text: 'Choose Program', onPress: () => router.replace('/subscriptions') }]
+          )
+          router.replace('/subscriptions')
+          return
+        }
+
         // User needs to subscribe if:
         // 1. RevenueCat says no subscription AND
         // 2. Database shows no active subscription
