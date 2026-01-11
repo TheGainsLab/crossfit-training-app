@@ -296,16 +296,40 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
           )}
 
           {/* Task Performance */}
-          {metconData.tasks && metconData.tasks.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Task Performance</Text>
-              {metconData.tasks.map((task, index) => (
+          {metconData.tasks && metconData.tasks.length > 0 && (() => {
+            // Group tasks by exercise + weight to avoid duplicate ratings
+            const getTaskKey = (task: any) => {
+              const weight = gender === 'male' ? task.weight_male : task.weight_female
+              return weight ? `${task.exercise}-${weight}` : task.exercise
+            }
+
+            const taskGroups = metconData.tasks.reduce((acc: any, task: any) => {
+              const key = getTaskKey(task)
+              if (!acc[key]) {
+                acc[key] = {
+                  exercise: task.exercise,
+                  weight: gender === 'male' ? task.weight_male : task.weight_female,
+                  totalReps: 0,
+                  repsList: []
+                }
+              }
+              acc[key].totalReps += parseInt(task.reps) || 0
+              acc[key].repsList.push(task.reps)
+              return acc
+            }, {})
+
+            const uniqueTasks = Object.values(taskGroups)
+
+            return (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Task Performance</Text>
+                {uniqueTasks.map((taskGroup: any, index: number) => (
               <View key={index} style={styles.taskCard}>
                 {/* Task Header */}
                 <View style={styles.taskHeader}>
-                  <Text style={styles.taskExercise}>{task.exercise}</Text>
+                  <Text style={styles.taskExercise}>{taskGroup.exercise}</Text>
                   <Text style={styles.taskReps}>
-                    {task.reps} reps{task.weight_male ? ` @ ${gender === 'male' ? task.weight_male : task.weight_female} lbs` : ''}
+                    {taskGroup.totalReps} total reps ({taskGroup.repsList.join('-')}){taskGroup.weight ? ` @ ${taskGroup.weight} lbs` : ''}
                   </Text>
                 </View>
 
@@ -314,15 +338,15 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
                   <View style={styles.rpeHeader}>
                     <Text style={styles.rpeLabel}>RPE</Text>
                     <Text style={styles.rpeValue}>
-                      {taskRPEs[task.exercise] || 5}/10
+                      {taskRPEs[taskGroup.exercise] || 5}/10
                     </Text>
                   </View>
                   <Slider
                     minimumValue={1}
                     maximumValue={10}
                     step={1}
-                    value={taskRPEs[task.exercise] || 5}
-                    onValueChange={(value) => handleTaskRPE(task.exercise, value)}
+                    value={taskRPEs[taskGroup.exercise] || 5}
+                    onValueChange={(value) => handleTaskRPE(taskGroup.exercise, value)}
                     minimumTrackTintColor="#FE5858"
                     maximumTrackTintColor="#DAE2EA"
                     thumbTintColor="#FE5858"
@@ -342,11 +366,11 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
                       <QualityButton
                         key={grade}
                         grade={grade}
-                        isSelected={taskQualities[task.exercise] === grade}
+                        isSelected={taskQualities[taskGroup.exercise] === grade}
                         onPress={() =>
                           handleTaskQuality(
-                            task.exercise,
-                            taskQualities[task.exercise] === grade ? 'C' : grade
+                            taskGroup.exercise,
+                            taskQualities[taskGroup.exercise] === grade ? 'C' : grade
                           )
                         }
                       />
@@ -354,9 +378,10 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
                   </View>
                 </View>
               </View>
-            ))}
-            </View>
-          )}
+                ))}
+              </View>
+            )
+          })()}
 
           {/* Submit Button */}
           <TouchableOpacity
