@@ -142,7 +142,7 @@ export default function SignUp() {
             email: data.user.email,
             name: data.user.email?.split('@')[0] || 'New User',
             subscription_tier: subscriptionTier,
-            subscription_status: hasActiveSubscription ? 'active' : null,
+            subscription_status: subscriptionTier ? 'active' : null,  // If they have a tier, they're active
             intake_status: 'draft' // Ready for intake
           }, { onConflict: 'email' })
 
