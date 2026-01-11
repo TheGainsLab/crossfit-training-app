@@ -536,7 +536,7 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
       if (testFinal.length === testExercises.length) {
         filteredExercises.push(requiredCardio);
       } else {
-        throw new Error(\`Could not add required cardio: \${requiredCardio}\`);
+        throw new Error(`Could not add required cardio: ${requiredCardio}`);
       }
     }
   } else if (rules.cardioRequired && filteredExercises.length === 4) {
