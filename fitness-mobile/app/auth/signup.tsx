@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient } from '@/lib/supabase/client'
+import { PROGRAM_TO_TIER } from '@/lib/subscriptions'
 import Purchases from 'react-native-purchases'
 
 // Map program IDs to subscription tiers

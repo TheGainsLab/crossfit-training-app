@@ -14,7 +14,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { createClient } from '@/lib/supabase/client'
-import { setRevenueCatUserId } from '@/lib/subscriptions'
+import { setRevenueCatUserId, PROGRAM_TO_TIER } from '@/lib/subscriptions'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -59,14 +59,6 @@ export default function SignIn() {
         const pendingProgram = await AsyncStorage.getItem('pending_subscription_program');
         if (pendingProgram) {
           console.log('📦 Found pending subscription program:', pendingProgram);
-          
-          // Map programId to subscription_tier
-          const PROGRAM_TO_TIER: { [key: string]: string } = {
-            'engine': 'ENGINE',
-            'btn': 'BTN',
-            'applied_power': 'APPLIED_POWER',
-            'competitor': 'PREMIUM'
-          };
           
           const subscriptionTier = PROGRAM_TO_TIER[pendingProgram] || 'PREMIUM';
           

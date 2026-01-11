@@ -85,6 +85,18 @@ export const PROGRAMS: Record<ProgramType, ProgramInfo> = {
 };
 
 /**
+ * Maps program IDs to database subscription tier values
+ * Used in purchase, signup, and signin flows to convert program selection
+ * to the subscription_tier stored in the database
+ */
+export const PROGRAM_TO_TIER: Record<ProgramType, string> = {
+  'engine': 'ENGINE',
+  'btn': 'BTN',
+  'applied_power': 'APPLIED_POWER',
+  'competitor': 'PREMIUM'
+} as const;
+
+/**
  * Check if user has an active subscription to a specific program
  */
 export async function hasActiveSubscription(program?: ProgramType): Promise<boolean> {
