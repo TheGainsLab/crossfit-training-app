@@ -17,14 +17,6 @@ import { createClient } from '@/lib/supabase/client'
 import { PROGRAM_TO_TIER } from '@/lib/subscriptions'
 import Purchases from 'react-native-purchases'
 
-// Map program IDs to subscription tiers
-const PROGRAM_TO_TIER: Record<string, string> = {
-  'btn': 'BTN',
-  'engine': 'ENGINE',
-  'applied_power': 'APPLIED_POWER',
-  'competitor': 'PREMIUM'
-}
-
 export default function SignUp() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
