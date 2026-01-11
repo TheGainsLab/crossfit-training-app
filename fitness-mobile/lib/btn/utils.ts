@@ -124,7 +124,17 @@ function getAllowedPatternsForExercises(exercises: string[]): string[] {
   return allowedPatterns;
 }
 
-export function generateTestWorkouts(selectedDomainRanges?: string[], userProfile?: UserProfile, requiredEquipment?: string[]): GeneratedWorkout[] {
+export function generateTestWorkouts(
+  selectedDomainRanges?: string[], 
+  userProfile?: UserProfile, 
+  requiredEquipment?: string[], 
+  excludeEquipment?: string[], 
+  exerciseCount?: number, 
+  formatFilter?: string, 
+  cardioFilter?: string, 
+  includeExercises?: string[], 
+  excludeExercises?: string[]
+): GeneratedWorkout[] {
   const workouts: GeneratedWorkout[] = [];
   
   const allTimeDomains = [
@@ -135,15 +145,54 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
     { range: '20:00+', minDuration: 20, maxDuration: 25 }
   ];
   
-  const allFormats = ['For Time', 'AMRAP', 'Rounds For Time'];
+  // If format filter specified, only use that format; otherwise use all formats
+  const allFormats = formatFilter ? [formatFilter] : ['For Time', 'AMRAP', 'Rounds For Time'];
   
   // Filter to selected domains, or use all if none selected
   const timeDomains = selectedDomainRanges && selectedDomainRanges.length > 0
     ? allTimeDomains.filter(td => selectedDomainRanges.includes(td.range))
     : allTimeDomains;
   
-  // Filter available exercises based on user profile
+  // Filter available exercises based on filters
   let availableExercises = [...exerciseDatabase];
+  
+  // Pre-filter: Exclude exercises with specified equipment (e.g., no barbell workouts)
+  if (excludeEquipment && excludeEquipment.length > 0) {
+    availableExercises = availableExercises.filter(exercise => {
+      const equipment = exerciseEquipment[exercise] || [];
+      const hasExcluded = excludeEquipment.some(eq => equipment.includes(eq));
+      if (hasExcluded) {
+        console.log(`❌ ${exercise} excluded (has excluded equipment: ${equipment.filter(eq => excludeEquipment.includes(eq)).join(', ')})`);
+      }
+      return !hasExcluded;
+    });
+    console.log(`✅ After equipment exclusion: ${availableExercises.length} exercises available`);
+  }
+  
+  // Pre-filter: Apply cardio filter and determine required cardio
+  const cardioExerciseNames = ['Rowing Calories', 'Bike Calories', 'Ski Calories'];
+  let requiredCardio: string | undefined = undefined;
+  
+  if (cardioFilter) {
+    if (cardioFilter === 'none') {
+      // Remove all cardio exercises
+      availableExercises = availableExercises.filter(ex => !cardioExerciseNames.includes(ex));
+      console.log(`✅ After cardio exclusion: ${availableExercises.length} exercises available`);
+    } else if (cardioFilter !== 'any') {
+      // Keep only the specified cardio type, remove others, and REQUIRE it
+      requiredCardio = cardioFilter === 'rower' ? 'Rowing Calories' :
+                       cardioFilter === 'bike' ? 'Bike Calories' : 'Ski Calories';
+      const excludedCardio = cardioExerciseNames.filter(c => c !== requiredCardio);
+      availableExercises = availableExercises.filter(ex => !excludedCardio.includes(ex));
+      console.log(`✅ After cardio filter (${cardioFilter}), requiring ${requiredCardio}: ${availableExercises.length} exercises available`);
+    }
+  }
+  
+  // Pre-filter: Remove user-excluded exercises
+  if (excludeExercises && excludeExercises.length > 0) {
+    availableExercises = availableExercises.filter(ex => !excludeExercises.includes(ex));
+    console.log(`✅ After user exclusions: ${availableExercises.length} exercises available`);
+  }
   
   if (userProfile) {
     console.log('🔍 Filtering exercises by user profile...');
@@ -243,7 +292,7 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
       }
       
       // Generate exercises (targetDurationHint is only used for Rounds For Time round calculation)
-      const result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment);
+      const result = generateExercisesForTimeDomain(targetDurationHint || domain.minDuration, format, rounds, pattern, amrapTime, availableExercises, userProfile, requiredEquipment, exerciseCount, includeExercises, requiredCardio);
       const exercises = result.exercises;
       
       // Update rounds if calculated dynamically
@@ -395,16 +444,18 @@ export function generateTestWorkouts(selectedDomainRanges?: string[], userProfil
   return workouts;
 }
 
-function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number, availableExercises?: string[], userProfile?: UserProfile, requiredEquipment?: string[]): { exercises: Exercise[], rounds?: number } {
+function generateExercisesForTimeDomain(targetDuration: number, format: string, rounds?: number, pattern?: string, amrapTime?: number, availableExercises?: string[], userProfile?: UserProfile, requiredEquipment?: string[], exerciseCount?: number, includeExercises?: string[], requiredCardio?: string): { exercises: Exercise[], rounds?: number } {
   const exercises: Exercise[] = [];
   const rules = formatRules[format as keyof typeof formatRules];
   if (!rules) {
     throw new Error(`Unknown format: ${format}`);
   }
   
-  // Determine number of exercises based on format rules
+  // Determine number of exercises based on exerciseCount filter or format rules
   let numExercises: number;
-  if (format === 'For Time') {
+  if (exerciseCount) {
+    numExercises = exerciseCount;
+  } else if (format === 'For Time') {
     numExercises = Math.floor(Math.random() * (rules.maxExercises - rules.minExercises + 1)) + rules.minExercises;
   } else {
     // AMRAP and Rounds For Time: based on time domain
@@ -429,9 +480,19 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
     });
   }
     
-  // Shuffle and select exercises
+  // Start with required exercises from includeExercises filter
+  const filteredExercises: string[] = [];
+  if (includeExercises && includeExercises.length > 0) {
+    // Add all include exercises that are in candidate list
+    includeExercises.forEach(ex => {
+      if (candidateExercises.includes(ex) && !filteredExercises.includes(ex)) {
+        filteredExercises.push(ex);
+      }
+    });
+  }
+  
+  // Shuffle and select remaining exercises
   const shuffledExercises = candidateExercises.sort(() => Math.random() - 0.5);
-    const filteredExercises: string[] = [];
   const triedExercises = new Set<string>();
   
   // Keep trying until we have the right number of exercises
@@ -463,8 +524,22 @@ function generateExercisesForTimeDomain(targetDuration: number, format: string, 
     if (!foundExercise) break;
   }
   
-  // Apply cardio requirement for formats that support it
-  if (rules.cardioRequired && filteredExercises.length === 4) {
+  // Apply cardio requirement (from requiredCardio filter or format rules)
+  if (requiredCardio && filteredExercises.length >= 2) {
+    const hasRequiredCardio = filteredExercises.includes(requiredCardio);
+    if (!hasRequiredCardio) {
+      // Remove last exercise and add required cardio
+      filteredExercises.pop();
+      const testExercises = [...filteredExercises, requiredCardio];
+      const testFiltered = filterExercisesForConsistency(testExercises);
+      const testFinal = filterForbiddenPairs(testFiltered);
+      if (testFinal.length === testExercises.length) {
+        filteredExercises.push(requiredCardio);
+      } else {
+        throw new Error(\`Could not add required cardio: \${requiredCardio}\`);
+      }
+    }
+  } else if (rules.cardioRequired && filteredExercises.length === 4) {
       const cardioExercises = ['Rowing Calories', 'Bike Calories', 'Ski Calories'];
       const hasCardio = filteredExercises.some(ex => cardioExercises.includes(ex));
       
