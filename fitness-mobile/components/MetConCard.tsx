@@ -328,9 +328,11 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
                 {/* Task Header */}
                 <View style={styles.taskHeader}>
                   <Text style={styles.taskExercise}>{taskGroup.exercise}</Text>
-                  <Text style={styles.taskReps}>
-                    {taskGroup.totalReps} total reps ({taskGroup.repsList.join('-')}){taskGroup.weight ? ` @ ${taskGroup.weight} lbs` : ''}
-                  </Text>
+                  {taskGroup.weight && (
+                    <Text style={styles.taskReps}>
+                      {taskGroup.weight} lbs
+                    </Text>
+                  )}
                 </View>
 
                 {/* RPE */}
