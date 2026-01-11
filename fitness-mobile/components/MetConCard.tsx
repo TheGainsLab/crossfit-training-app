@@ -108,12 +108,6 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
         ]}>
           {grade}
         </Text>
-        <Text style={[
-          styles.qualityLabel,
-          isSelected ? styles.qualityLabelSelected : styles.qualityLabelUnselected
-        ]}>
-          {getGradeLabel()}
-        </Text>
       </TouchableOpacity>
     )
   }
