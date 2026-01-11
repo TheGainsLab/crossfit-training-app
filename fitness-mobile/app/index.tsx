@@ -99,7 +99,7 @@ export default function Index() {
         // User needs to subscribe if:
         // 1. RevenueCat says no subscription AND
         // 2. Database shows no active subscription
-        const dbHasSubscription = userData?.subscription_status === 'active'
+        const dbHasSubscription = userData?.subscription_status?.toUpperCase() === 'ACTIVE'
 
         if (!hasSubscription && !dbHasSubscription) {
           // No active subscription - redirect to subscription browse
