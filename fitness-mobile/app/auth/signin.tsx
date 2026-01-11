@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { createClient } from '@/lib/supabase/client'
 import { setRevenueCatUserId, PROGRAM_TO_TIER } from '@/lib/subscriptions'
+import Purchases from 'react-native-purchases'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -91,6 +92,44 @@ export default function SignIn() {
 
         if (userData) {
           const typedUserData = userData as any
+          
+          // Fallback: If tier is NULL, check RevenueCat to sync any missed purchases
+          if (!typedUserData.subscription_tier) {
+            console.log('⚠️ subscription_tier is NULL, checking RevenueCat as fallback...')
+            
+            try {
+              const customerInfo = await Purchases.getCustomerInfo()
+              const activeEntitlements = Object.keys(customerInfo.entitlements.active)
+              
+              if (activeEntitlements.length > 0) {
+                console.log('✅ Found active entitlements in RevenueCat:', activeEntitlements)
+                
+                // Map first entitlement to tier
+                const subscriptionTier = PROGRAM_TO_TIER[activeEntitlements[0]] || activeEntitlements[0].toUpperCase()
+                
+                // Sync to database
+                const { error: updateError } = await supabase
+                  .from('users')
+                  .update({
+                    subscription_tier: subscriptionTier,
+                    subscription_status: 'active'
+                  })
+                  .eq('auth_id', data.user.id)
+                
+                if (!updateError) {
+                  console.log(`✅ Synced subscription_tier from RevenueCat: ${subscriptionTier}`)
+                  typedUserData.subscription_tier = subscriptionTier // Update local copy for routing
+                } else {
+                  console.error('❌ Error syncing tier from RevenueCat:', updateError)
+                }
+              } else {
+                console.log('❌ No active entitlements in RevenueCat either')
+              }
+            } catch (revenueCatError) {
+              console.error('Error checking RevenueCat fallback:', revenueCatError)
+              // Don't block sign-in if RevenueCat check fails
+            }
+          }
           
           // Check intake_status first - redirect to intake if needed
           const status = typedUserData.intake_status
