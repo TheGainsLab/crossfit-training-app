@@ -12,7 +12,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PurchasesPackage } from 'react-native-purchases';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PROGRAMS, ProgramType, getOfferings, purchasePackage } from '@/lib/subscriptions';
+import { PROGRAMS, ProgramType, getOfferings, purchasePackage, PROGRAM_TO_TIER } from '@/lib/subscriptions';
 import { createClient } from '@/lib/supabase/client';
 
 type BillingPeriod = 'monthly' | 'quarterly' | 'yearly';
@@ -119,14 +119,6 @@ export default function PurchaseScreen() {
         if (session) {
           // User is signed in - update database immediately
           console.log('✅ User signed in, updating subscription_tier in database');
-          
-          // Map programId to subscription_tier
-          const PROGRAM_TO_TIER: { [key: string]: string } = {
-            'engine': 'ENGINE',
-            'btn': 'BTN',
-            'applied_power': 'APPLIED_POWER',
-            'competitor': 'PREMIUM'
-          };
           
           const subscriptionTier = PROGRAM_TO_TIER[programId as string] || 'PREMIUM';
           
