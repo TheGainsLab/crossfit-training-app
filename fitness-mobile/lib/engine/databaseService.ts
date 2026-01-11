@@ -414,7 +414,7 @@ class EngineDatabaseService {
           .insert({
             user_id: this.userId,
             modality: modality,
-            primary_unit: null,
+            primary_unit: 'calories',  // Default placeholder, user can change later
             secondary_unit: null,
             updated_at: new Date().toISOString()
           })
