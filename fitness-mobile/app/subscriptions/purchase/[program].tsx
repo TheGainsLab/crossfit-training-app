@@ -112,19 +112,42 @@ export default function PurchaseScreen() {
       const customerInfo = await purchasePackage(selectedPackage);
       
       if (customerInfo) {
-        // Store program ID for post-signup linking
-        await AsyncStorage.setItem('pending_subscription_program', programId as string);
-        
-        // Store active entitlements for reference
-        const activeEntitlements = Object.keys(customerInfo.entitlements.active);
-        await AsyncStorage.setItem('pending_subscription_entitlements', JSON.stringify(activeEntitlements));
-        
         // Check if user is already signed in
         const supabase = createClient();
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
-          // User is already signed in - go to intake
+          // User is signed in - update database immediately
+          console.log('✅ User signed in, updating subscription_tier in database');
+          
+          // Map programId to subscription_tier
+          const PROGRAM_TO_TIER: { [key: string]: string } = {
+            'engine': 'ENGINE',
+            'btn': 'BTN',
+            'applied_power': 'APPLIED_POWER',
+            'competitor': 'PREMIUM'
+          };
+          
+          const subscriptionTier = PROGRAM_TO_TIER[programId as string] || 'PREMIUM';
+          
+          // Update database with subscription info
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({
+              subscription_tier: subscriptionTier,
+              subscription_status: 'active'
+            })
+            .eq('auth_id', session.user.id);
+          
+          if (updateError) {
+            console.error('❌ Error updating subscription_tier:', updateError);
+            Alert.alert('Error', 'Failed to update subscription. Please contact support.');
+            return;
+          }
+          
+          console.log(`✅ Updated subscription_tier to ${subscriptionTier}`);
+          
+          // Navigate to intake
           Alert.alert(
             'Success!',
             'Your subscription is active! Complete your profile to get started.',
@@ -136,7 +159,14 @@ export default function PurchaseScreen() {
             ]
           );
         } else {
-          // User is not signed in - go to sign in (not signup!)
+          // User is not signed in - store in AsyncStorage for signup/signin flow
+          console.log('📦 User not signed in, storing in AsyncStorage');
+          await AsyncStorage.setItem('pending_subscription_program', programId as string);
+          
+          // Store active entitlements for reference
+          const activeEntitlements = Object.keys(customerInfo.entitlements.active);
+          await AsyncStorage.setItem('pending_subscription_entitlements', JSON.stringify(activeEntitlements));
+          
           Alert.alert(
             'Success!',
             'Your subscription is active! Sign in to get started.',

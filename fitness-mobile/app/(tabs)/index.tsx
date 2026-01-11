@@ -128,7 +128,22 @@ export default function Dashboard() {
       }
 
       setUserName(userData.email?.split('@')[0] || 'User')
-      setSubscriptionTier(userData.subscription_tier || 'Premium')
+      
+      // Check for null subscription_tier - should never happen after purchase fixes
+      if (!userData.subscription_tier) {
+        console.error('❌ User missing subscription_tier:', { userId: userData.id, email: userData.email });
+        Alert.alert(
+          'Subscription Required',
+          'Please select a program to get started.',
+          [{ text: 'Choose Program', onPress: () => router.replace('/subscriptions') }]
+        );
+        setLoading(false);
+        setRefreshing(false);
+        isLoadingRef.current = false;
+        return;
+      }
+      
+      setSubscriptionTier(userData.subscription_tier)
       setUserId(userData.id)
 
       // Skip program loading for BTN users - they see generator instead

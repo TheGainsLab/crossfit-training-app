@@ -54,6 +54,41 @@ export default function SignIn() {
           // Don't block sign-in if RevenueCat fails, but log it
         }
 
+        // Check for pending subscription from purchase flow
+        const pendingProgram = await AsyncStorage.getItem('pending_subscription_program');
+        if (pendingProgram) {
+          console.log('📦 Found pending subscription program:', pendingProgram);
+          
+          // Map programId to subscription_tier
+          const PROGRAM_TO_TIER: { [key: string]: string } = {
+            'engine': 'ENGINE',
+            'btn': 'BTN',
+            'applied_power': 'APPLIED_POWER',
+            'competitor': 'PREMIUM'
+          };
+          
+          const subscriptionTier = PROGRAM_TO_TIER[pendingProgram] || 'PREMIUM';
+          
+          // Update database with pending subscription
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({
+              subscription_tier: subscriptionTier,
+              subscription_status: 'active'
+            })
+            .eq('auth_id', data.user.id);
+          
+          if (updateError) {
+            console.error('❌ Error updating subscription_tier:', updateError);
+          } else {
+            console.log(`✅ Updated subscription_tier to ${subscriptionTier} from pending purchase`);
+            
+            // Clear AsyncStorage
+            await AsyncStorage.removeItem('pending_subscription_program');
+            await AsyncStorage.removeItem('pending_subscription_entitlements');
+          }
+        }
+
         // Check user's subscription tier, intake_status, and program status
         const { data: userData } = await supabase
           .from('users')

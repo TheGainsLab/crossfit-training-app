@@ -102,10 +102,10 @@ export default function WorkoutPage() {
           return
         }
 
-        // Get user ID
+        // Get user ID and subscription tier for block filtering
         const { data: userData } = await supabase
           .from('users')
-          .select('id')
+          .select('id, subscription_tier')
           .eq('auth_id', user.id)
           .single()
 
@@ -132,7 +132,36 @@ export default function WorkoutPage() {
         )
 
         if (data.success && data.workout) {
-          setWorkout(data.workout)
+          // Filter blocks based on subscription tier
+          let filteredWorkout = { ...data.workout };
+          
+          if (userData.subscription_tier) {
+            const TIER_BLOCKS: { [key: string]: string[] } = {
+              'ENGINE': ['ENGINE'],
+              'BTN': [], // BTN users shouldn't be here, but handle gracefully
+              'APPLIED_POWER': ['TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES'],
+              'PREMIUM': ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS', 'ENGINE']
+            };
+            
+            const allowedBlocks = TIER_BLOCKS[userData.subscription_tier] || TIER_BLOCKS['PREMIUM'];
+            
+            // Filter blocks
+            filteredWorkout.blocks = data.workout.blocks.filter((block: Block) => 
+              allowedBlocks.includes(block.blockName)
+            );
+            
+            // Remove metcon/engine data if not allowed
+            if (!allowedBlocks.includes('METCONS')) {
+              filteredWorkout.metconData = undefined;
+            }
+            if (!allowedBlocks.includes('ENGINE')) {
+              filteredWorkout.engineData = undefined;
+            }
+            
+            console.log(`🔒 Filtered blocks for ${userData.subscription_tier}:`, filteredWorkout.blocks.map((b: Block) => b.blockName));
+          }
+          
+          setWorkout(filteredWorkout)
           if (Array.isArray(data.completions)) {
             const completionMap: Record<string, Completion> = {}
             data.completions.forEach((comp: any) => {
