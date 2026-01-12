@@ -232,6 +232,10 @@ export default function EnginePage() {
   const [savedPeakHeartRate, setSavedPeakHeartRate] = useState('')
   const [savedRpeValue, setSavedRpeValue] = useState(5)
   
+  // Persistent workout saved state
+  const [isWorkoutSaved, setIsWorkoutSaved] = useState(false)
+  const [lastCompletionTime, setLastCompletionTime] = useState<string | null>(null)
+  
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const currentPhaseRef = useRef<'work' | 'rest'>('work')
   const currentIntervalRef = useRef<number>(0)
@@ -395,6 +399,13 @@ export default function EnginePage() {
       setHasMatchingBaseline(false)
     }
   }, [selectedModality, timeTrialSelectedUnit, baselines])
+
+  // Check workout saved status when workout loads or equipment changes
+  useEffect(() => {
+    if (workout && selectedModality && userId) {
+      checkWorkoutSavedStatus()
+    }
+  }, [workout?.id, selectedModality, userId])
 
   // Debug: Check authentication status
   useEffect(() => {
@@ -1672,6 +1683,51 @@ export default function EnginePage() {
     })
   }
 
+  // Check if workout has been completed today for this equipment
+  const checkWorkoutSavedStatus = async () => {
+    if (!userId || !workout?.id || !selectedModality) {
+      setIsWorkoutSaved(false)
+      setLastCompletionTime(null)
+      return
+    }
+    
+    try {
+      const supabase = createClient()
+      const today = new Date().toISOString().split('T')[0]
+      
+      const { data, error } = await supabase
+        .from('workout_sessions')
+        .select('id, created_at, total_output')
+        .eq('user_id', userId)
+        .eq('workout_id', workout.id)
+        .eq('modality', selectedModality)
+        .eq('date', today)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      
+      if (error) {
+        console.error('Error checking workout saved status:', error)
+        setIsWorkoutSaved(false)
+        setLastCompletionTime(null)
+        return
+      }
+      
+      if (data) {
+        setIsWorkoutSaved(true)
+        setLastCompletionTime(data.created_at)
+        console.log('✅ Workout already completed today at', data.created_at)
+      } else {
+        setIsWorkoutSaved(false)
+        setLastCompletionTime(null)
+      }
+    } catch (err) {
+      console.error('Error in checkWorkoutSavedStatus:', err)
+      setIsWorkoutSaved(false)
+      setLastCompletionTime(null)
+    }
+  }
+
 
   const handlePhaseCompletion = () => {
     const phase = currentPhaseRef.current
@@ -2235,6 +2291,10 @@ export default function EnginePage() {
 
       // Show success state
       setSaveSuccess(true)
+      
+      // Update workout saved state
+      setIsWorkoutSaved(true)
+      setLastCompletionTime(new Date().toISOString())
       
       // Reset form state after successful save (for next workout)
       setTotalOutput('')
@@ -3109,6 +3169,19 @@ export default function EnginePage() {
               </View>
             )}
             
+            {/* Completion Status Badge */}
+            {isWorkoutSaved && lastCompletionTime && (
+              <View style={styles.completionBadge}>
+                <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                <Text style={styles.completionText}>
+                  Completed today at {new Date(lastCompletionTime).toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit' 
+                  })}
+                </Text>
+              </View>
+            )}
+            
             {/* Start Button */}
             <TouchableOpacity
               style={styles.startPreviewButton}
@@ -3125,7 +3198,9 @@ export default function EnginePage() {
                 // Don't set isActive to true - let user click Start on timer screen
               }}
             >
-              <Text style={styles.startPreviewButtonText}>Start Workout</Text>
+              <Text style={styles.startPreviewButtonText}>
+                {isWorkoutSaved ? 'Complete Again' : 'Start Workout'}
+              </Text>
             </TouchableOpacity>
           </>
         )}
@@ -4938,6 +5013,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
+  },
+  completionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D1FAE5',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    gap: 8,
+  },
+  completionText: {
+    color: '#065F46',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
   programHeader: {
     fontSize: 24,
