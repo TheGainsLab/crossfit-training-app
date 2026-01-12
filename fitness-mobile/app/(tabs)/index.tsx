@@ -20,6 +20,7 @@ import { StatCard } from '@/components/ui/StatCard'
 import { GeneratedWorkout, UserProfile } from '@/lib/btn/types'
 import { saveBTNWorkouts } from '@/lib/api/btn'
 import { generateTestWorkouts } from '@/lib/btn/utils'
+import { exerciseDatabase } from '@/lib/btn/data'
 
 interface Program {
   id: number
@@ -975,26 +976,10 @@ export default function Dashboard() {
     }
   }
 
-  const loadAvailableExercises = async () => {
-    try {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL || ''
-      const response = await fetch(`${apiUrl}/api/btn/exercises`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setAvailableExercises(data.exercises || [])
-      }
-    } catch (error) {
-      console.error('Error loading exercises:', error)
-    }
+  const loadAvailableExercises = () => {
+    // Use local exercise database instead of API call
+    // This provides offline support and eliminates network dependency
+    setAvailableExercises(exerciseDatabase)
   }
 
   const generateWorkouts = async () => {
