@@ -1587,6 +1587,92 @@ export default function EnginePage() {
     }
   }
 
+  // Check if interval inputs should be shown (only for day types with rest segments)
+  const shouldShowIntervalInputs = (): boolean => {
+    if (!workout?.day_type || !sessionData.intervals || sessionData.intervals.length === 0) {
+      return false
+    }
+
+    // Exclude continuous day types
+    const continuousDayTypes = ['endurance', 'threshold', 'polarized', 'tempo', 'recovery', 'flux', 'flux_stages', 'time_trial']
+    if (continuousDayTypes.includes(workout.day_type)) {
+      return false
+    }
+
+    // Must have multiple intervals
+    if (sessionData.intervals.length === 1) {
+      return false
+    }
+
+    // Must have at least one interval with rest duration > 0
+    const hasRestSegments = sessionData.intervals.some(interval => (interval.restDuration ?? 0) > 0)
+    if (!hasRestSegments) {
+      return false
+    }
+
+    return true
+  }
+
+  // Build structured interval data array with pace calculations
+  const buildIntervalDataArray = (): any[] | null => {
+    if (!shouldShowIntervalInputs()) {
+      return null
+    }
+
+    // Check if we have actualOutput data from intervals
+    const intervalsWithOutput = sessionData.intervals.filter(
+      (i: any) => i.actualOutput !== null && i.actualOutput !== undefined
+    )
+    const intervalsWithoutOutput = sessionData.intervals.filter(
+      (i: any) => i.actualOutput === null || i.actualOutput === undefined
+    )
+
+    // All-or-nothing validation: if any interval has output, all must have output
+    if (intervalsWithOutput.length > 0 && intervalsWithoutOutput.length > 0) {
+      console.warn('⚠️ Partial interval data detected - saving workout without interval breakdown')
+      return null
+    }
+
+    // If no intervals have output, return null
+    if (intervalsWithOutput.length === 0) {
+      return null
+    }
+
+    // All intervals have output - build the structured array
+    return sessionData.intervals.map((interval: any) => {
+      const output = interval.actualOutput || 0
+      const durationMinutes = (interval.duration || 0) / 60
+      const calculatedPace = durationMinutes > 0 ? output / durationMinutes : 0
+
+      // Get target pace for this interval
+      let targetPaceValue = null
+      if (interval.targetPace && typeof interval.targetPace === 'object' && interval.targetPace.pace) {
+        targetPaceValue = interval.targetPace.pace
+      } else {
+        const targetPaceData = calculateTargetPaceWithData(interval)
+        if (targetPaceData && targetPaceData.pace) {
+          targetPaceValue = targetPaceData.pace
+        }
+      }
+
+      // Calculate performance ratio for this interval
+      const performanceRatio = targetPaceValue && targetPaceValue > 0
+        ? calculatedPace / targetPaceValue
+        : null
+
+      return {
+        interval_number: interval.roundNumber || interval.id,
+        actual_output: output,
+        target_pace: targetPaceValue,
+        actual_pace: calculatedPace,
+        performance_ratio: performanceRatio,
+        duration: interval.duration,
+        rest_duration: interval.restDuration || 0
+      }
+    })
+  }
+
+
   const handlePhaseCompletion = () => {
     const phase = currentPhaseRef.current
     const intervalIndex = currentIntervalRef.current
@@ -2074,7 +2160,8 @@ export default function EnginePage() {
           total_intervals: sessionData.intervals.length,
           total_work_time: totalWorkTime,
           total_rest_time: totalRestTime,
-          interval_scores: intervalScores
+          interval_scores: intervalScores,
+          interval_data: buildIntervalDataArray()
         },
         avg_work_rest_ratio: avgWorkRestRatio,
         total_work_seconds: totalWorkTime,
@@ -3357,7 +3444,7 @@ export default function EnginePage() {
             </View>
 
             {/* Optional Interval Breakdown */}
-            {sessionData.intervals.length > 1 && (
+            {shouldShowIntervalInputs() && (
               <View style={styles.formGroup}>
                 <TouchableOpacity 
                   style={styles.intervalToggle}
