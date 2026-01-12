@@ -3435,6 +3435,24 @@ export default function EnginePage() {
               )
             })()}
 
+            {/* Controls - Circular buttons at bottom */}
+            {(isActive || isPaused) && (
+              <View style={styles.timerControls}>
+                <TouchableOpacity style={styles.stopButton} onPress={resetWorkout}>
+                  <Ionicons name="close" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.pauseButton} 
+                  onPress={isActive ? pauseWorkout : resumeWorkout}
+                >
+                  <Ionicons name={isActive ? "pause" : "play"} size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.skipRoundButton} onPress={skipToEnd}>
+                  <Ionicons name="play-skip-forward" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Workout Progress Card */}
             {sessionData.intervals.length > 0 && (
               <WorkoutProgressCard
@@ -3459,24 +3477,6 @@ export default function EnginePage() {
                   }))
                 }}
               />
-            )}
-
-            {/* Controls - Circular buttons at bottom */}
-            {(isActive || isPaused) && (
-              <View style={styles.timerControls}>
-                <TouchableOpacity style={styles.stopButton} onPress={resetWorkout}>
-                  <Ionicons name="close" size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.pauseButton} 
-                  onPress={isActive ? pauseWorkout : resumeWorkout}
-                >
-                  <Ionicons name={isActive ? "pause" : "play"} size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.skipRoundButton} onPress={skipToEnd}>
-                  <Ionicons name="play-skip-forward" size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
             )}
           </KeyboardAvoidingView>
         )}
