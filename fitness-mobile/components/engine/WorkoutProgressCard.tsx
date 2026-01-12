@@ -95,11 +95,16 @@ export default function WorkoutProgressCard({
             prevInterval.blockNumber && 
             interval.blockNumber !== prevInterval.blockNumber
           
+          // Check if this is the first interval of a block (including first interval overall)
+          const isFirstIntervalOfBlock = index === 0 || isNewBlock
+          
           return (
             <React.Fragment key={interval.id}>
-              {/* Block separator */}
-              {isNewBlock && (
-                <View style={styles.blockSeparator} />
+              {/* Block header */}
+              {isFirstIntervalOfBlock && interval.blockNumber && (
+                <View style={styles.blockHeader}>
+                  <Text style={styles.blockHeaderText}>Block {interval.blockNumber}</Text>
+                </View>
               )}
               
               <IntervalRow
@@ -147,10 +152,20 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 8,
   },
-  blockSeparator: {
-    height: 1,
-    backgroundColor: '#282B34',
-    marginVertical: 12,
-    width: '100%',
+  blockHeader: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 6,
+    marginTop: 12,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#ef4444',
+  },
+  blockHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    letterSpacing: 0.5,
   },
 })

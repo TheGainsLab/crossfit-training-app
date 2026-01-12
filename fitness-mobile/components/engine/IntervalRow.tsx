@@ -70,8 +70,7 @@ export default function IntervalRow({
           isCurrent && styles.currentText,
           isCompleted && styles.completedText
         ]}>
-          {interval.blockNumber ? `Block ${interval.blockNumber} - ` : ''}
-          Round {interval.roundNumber || index + 1}
+          R{interval.roundNumber || index + 1}
         </Text>
       </View>
       
