@@ -9,6 +9,7 @@ import engineDatabaseService from '@/lib/engine/databaseService'
 import { fetchWorkout } from '@/lib/api/workouts'
 import Dashboard from '@/components/engine/Dashboard'
 import { Card } from '@/components/ui/Card'
+import WorkoutProgressCard from '@/components/engine/WorkoutProgressCard'
 
 interface Interval {
   id: number
@@ -3427,6 +3428,18 @@ export default function EnginePage() {
                 </View>
               )
             })()}
+
+            {/* Workout Progress Card */}
+            {sessionData.intervals.length > 0 && (
+              <WorkoutProgressCard
+                intervals={sessionData.intervals}
+                currentInterval={currentInterval}
+                isActive={isActive}
+                baselines={baselines}
+                selectedModality={selectedModality}
+                calculateTargetPaceWithData={calculateTargetPaceWithData}
+              />
+            )}
 
             {/* Controls - Circular buttons at bottom */}
             {(isActive || isPaused) && (
