@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Alert, StatusBar, Dimensions, RefreshControl } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Alert, StatusBar, Dimensions, RefreshControl, KeyboardAvoidingView, Platform, Keyboard } from 'react-native'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { createClient } from '@/lib/supabase/client'
@@ -1762,6 +1762,9 @@ export default function EnginePage() {
   }
 
   const completeCurrentInterval = () => {
+    // Dismiss keyboard when moving to next interval
+    Keyboard.dismiss()
+    
     const intervalIndex = currentIntervalRef.current
     setSessionData(prev => {
       const updatedIntervals = [...prev.intervals]
@@ -3208,7 +3211,10 @@ export default function EnginePage() {
 
         {/* Workout Timer - Only show in active view */}
         {selectedModality && workoutView === 'active' && (
-          <>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+          >
             {/* Workout Info Above Timer */}
             <View style={styles.timerInfoContainer}>
               
@@ -3438,6 +3444,20 @@ export default function EnginePage() {
                 baselines={baselines}
                 selectedModality={selectedModality}
                 calculateTargetPaceWithData={calculateTargetPaceWithData}
+                shouldShowIntervalInputs={shouldShowIntervalInputs}
+                onIntervalOutputChange={(intervalId, value) => {
+                  const numValue = parseFloat(value)
+                  const outputValue = isNaN(numValue) || numValue < 0 ? null : numValue
+                  
+                  setSessionData(prev => ({
+                    ...prev,
+                    intervals: prev.intervals.map(interval =>
+                      interval.id === intervalId
+                        ? { ...interval, actualOutput: outputValue }
+                        : interval
+                    )
+                  }))
+                }}
               />
             )}
 
@@ -3458,7 +3478,7 @@ export default function EnginePage() {
                 </TouchableOpacity>
               </View>
             )}
-          </>
+          </KeyboardAvoidingView>
         )}
 
         {/* Completion Form or Review Card */}

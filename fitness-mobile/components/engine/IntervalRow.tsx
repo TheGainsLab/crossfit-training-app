@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, TextInput, StyleSheet } from 'react-native'
 import Svg, { Line } from 'react-native-svg'
 import { calculateFluxPeriods, calculateBurstTimes, formatTime, normalizeBarWidth } from '@/lib/engine/progressHelpers'
 
@@ -18,6 +18,7 @@ interface Interval {
   burstTiming?: string
   burstDuration?: number
   targetPace?: any
+  actualOutput?: number
 }
 
 interface IntervalRowProps {
@@ -27,6 +28,8 @@ interface IntervalRowProps {
   isCompleted: boolean
   maxDuration: number
   target: any
+  shouldShowInput: boolean
+  onOutputChange: (intervalId: number, value: string) => void
 }
 
 export default function IntervalRow({
@@ -35,7 +38,9 @@ export default function IntervalRow({
   isCurrent,
   isCompleted,
   maxDuration,
-  target
+  target,
+  shouldShowInput,
+  onOutputChange
 }: IntervalRowProps) {
   
   // Calculate bar width normalized to max duration
@@ -176,9 +181,22 @@ export default function IntervalRow({
         </View>
       )}
       
-      {/* Right labels - Target pace/intensity details */}
+      {/* Right labels - Input box OR Target pace/intensity details */}
       <View style={styles.targetContainer}>
-        {target ? (
+        {shouldShowInput ? (
+          // Show input box for workouts with rest segments
+          <TextInput
+            style={[
+              styles.intervalInput,
+              !(isCurrent || isCompleted) && styles.intervalInputDisabled
+            ]}
+            value={interval.actualOutput?.toString() ?? ''}
+            onChangeText={(text) => onOutputChange(interval.id, text)}
+            keyboardType="decimal-pad"
+            placeholder="—"
+            editable={isCurrent || isCompleted}
+          />
+        ) : target ? (
           target.needsRocketRacesA ? (
             <Text style={styles.errorText}>
               {target.message}
@@ -353,5 +371,23 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     fontStyle: 'italic',
     fontSize: 10,
+  },
+  intervalInput: {
+    width: 80,
+    height: 44,
+    padding: 8,
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    borderWidth: 1,
+    borderColor: '#282B34',
+    borderRadius: 6,
+    backgroundColor: '#ffffff',
+    color: '#282B34',
+  },
+  intervalInputDisabled: {
+    borderColor: '#d1d5db',
+    backgroundColor: '#f3f4f6',
+    color: '#9ca3af',
   },
 })

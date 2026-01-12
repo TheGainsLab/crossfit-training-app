@@ -36,6 +36,8 @@ interface WorkoutProgressCardProps {
   baselines: Record<string, any>
   selectedModality: string
   calculateTargetPaceWithData: (interval: Interval) => any
+  shouldShowIntervalInputs: () => boolean
+  onIntervalOutputChange: (intervalId: number, value: string) => void
 }
 
 const INTERVAL_ROW_HEIGHT = 68 // Approximate height of each row including margin
@@ -46,7 +48,9 @@ export default function WorkoutProgressCard({
   isActive,
   baselines,
   selectedModality,
-  calculateTargetPaceWithData
+  calculateTargetPaceWithData,
+  shouldShowIntervalInputs,
+  onIntervalOutputChange
 }: WorkoutProgressCardProps) {
   const scrollViewRef = useRef<ScrollView>(null)
   
@@ -105,6 +109,8 @@ export default function WorkoutProgressCard({
                 isCompleted={isCompleted}
                 maxDuration={maxDuration}
                 target={target}
+                shouldShowInput={shouldShowIntervalInputs()}
+                onOutputChange={onIntervalOutputChange}
               />
             </React.Fragment>
           )
