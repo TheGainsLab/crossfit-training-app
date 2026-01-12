@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   labelContainer: {
-    width: 120,
+    width: 40,
   },
   labelText: {
     fontSize: 14,
