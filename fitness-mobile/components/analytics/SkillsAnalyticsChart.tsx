@@ -209,28 +209,75 @@ export default function SkillsAnalyticsChart({
                 </View>
               ) : (
                 <ScrollView showsVerticalScrollIndicator={true}>
-                  <View style={styles.historyList}>
+                  <View style={styles.sessionHistoryTable}>
+                    {/* Header */}
+                    <View style={styles.sessionHistoryHeader}>
+                      <View style={[styles.sessionHistoryHeaderCell, styles.sessionHistoryDateCell]}>
+                        <Text style={styles.sessionHistoryHeaderText}>Date</Text>
+                      </View>
+                      <View style={styles.sessionHistoryHeaderCell}>
+                        <Text style={styles.sessionHistoryHeaderText}>Sets</Text>
+                      </View>
+                      <View style={styles.sessionHistoryHeaderCell}>
+                        <Text style={styles.sessionHistoryHeaderText}>Reps</Text>
+                      </View>
+                      <View style={styles.sessionHistoryHeaderCell}>
+                        <Text style={styles.sessionHistoryHeaderText}>Wt/Time</Text>
+                      </View>
+                      <View style={styles.sessionHistoryHeaderCell}>
+                        <Text style={styles.sessionHistoryHeaderText}>RPE</Text>
+                      </View>
+                      <View style={styles.sessionHistoryHeaderCell}>
+                        <Text style={styles.sessionHistoryHeaderText}>Quality</Text>
+                      </View>
+                    </View>
+
+                    {/* Rows */}
                     {selectedSkill.sessions
                       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                       .map((session, idx) => (
-                        <Card key={idx} style={{ marginBottom: 12, padding: 12 }}>
-                          <View style={styles.historyCardHeader}>
-                            <Text style={styles.historyDate}>
-                              Week {session.week} • {new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </Text>
-                            <Text style={styles.historyMeta}>
-                              RPE {session.rpe} • Quality {session.quality}/4
+                        <View
+                          key={idx}
+                          style={[
+                            styles.sessionHistoryRow,
+                            idx % 2 === 1 ? styles.sessionHistoryRowOdd : null,
+                          ]}
+                        >
+                          <View style={[styles.sessionHistoryCell, styles.sessionHistoryDateCell]}>
+                            <Text style={styles.sessionHistoryDateText}>
+                              {new Date(session.date).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              })}
                             </Text>
                           </View>
-                          <Text style={styles.historySets}>
-                            {session.sets} sets × {session.reps} reps = {session.sets * session.reps} total
-                          </Text>
-                          {session.notes && (
-                            <Text style={styles.historyNotes}>
-                              "{session.notes}"
+                          <View style={styles.sessionHistoryCell}>
+                            <Text style={styles.sessionHistoryCellText}>
+                              {session.sets}
                             </Text>
-                          )}
-                        </Card>
+                          </View>
+                          <View style={styles.sessionHistoryCell}>
+                            <Text style={styles.sessionHistoryCellText}>
+                              {session.reps}
+                            </Text>
+                          </View>
+                          <View style={styles.sessionHistoryCell}>
+                            <Text style={styles.sessionHistoryCellText}>
+                              -
+                            </Text>
+                          </View>
+                          <View style={styles.sessionHistoryCell}>
+                            <Text style={styles.sessionHistoryCellText}>
+                              {session.rpe}
+                            </Text>
+                          </View>
+                          <View style={styles.sessionHistoryCell}>
+                            <Text style={styles.sessionHistoryCellText}>
+                              {session.quality >= 4 ? 'A' : session.quality >= 3 ? 'B' : session.quality >= 2 ? 'C' : 'D'}
+                            </Text>
+                          </View>
+                        </View>
                       ))}
                   </View>
                 </ScrollView>
@@ -296,34 +343,57 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
-  historyList: {
-    gap: 12,
+  sessionHistoryTable: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
-  historyCardHeader: {
+  sessionHistoryHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    backgroundColor: '#F3F4F6',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  historyDate: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#282B34',
+  sessionHistoryHeaderCell: {
+    padding: 12,
+    borderRightWidth: 1,
+    borderRightColor: '#E5E7EB',
     flex: 1,
   },
-  historyMeta: {
+  sessionHistoryHeaderText: {
     fontSize: 12,
-    color: '#6B7280',
+    fontWeight: '700',
+    color: '#374151',
+    textAlign: 'center',
   },
-  historySets: {
+  sessionHistoryRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  sessionHistoryRowOdd: {
+    backgroundColor: '#F9FAFB',
+  },
+  sessionHistoryCell: {
+    padding: 12,
+    borderRightWidth: 1,
+    borderRightColor: '#E5E7EB',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  sessionHistoryCellText: {
     fontSize: 14,
     color: '#374151',
-    marginBottom: 4,
+    textAlign: 'center',
   },
-  historyNotes: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontStyle: 'italic',
-    marginTop: 4,
+  sessionHistoryDateCell: {
+    flex: 1.2,
+  },
+  sessionHistoryDateText: {
+    fontSize: 14,
+    color: '#374151',
+    textAlign: 'left',
   },
 })
