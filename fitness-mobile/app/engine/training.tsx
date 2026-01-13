@@ -3219,6 +3219,11 @@ export default function EnginePage() {
             {/* Workout Info Above Timer */}
             <View style={styles.timerInfoContainer}>
               
+              {/* Day Type - always shown */}
+              <Text style={styles.dayTypeText}>
+                {getWorkoutTypeDisplayName(workout.day_type || 'conditioning')}
+              </Text>
+              
               {/* Phase, Goal, and Round info - only show when workout has started */}
               {(isActive || isPaused || isCompleted) && (
                 <>
@@ -3438,20 +3443,25 @@ export default function EnginePage() {
 
             {/* Controls - Circular buttons at bottom */}
             {(isActive || isPaused) && (
-              <View style={styles.timerControls}>
-                <TouchableOpacity style={styles.stopButton} onPress={resetWorkout}>
-                  <Ionicons name="close" size={24} color="#FFFFFF" />
-                </TouchableOpacity>
+              <>
+                <View style={styles.timerControls}>
+                  <TouchableOpacity style={styles.stopButton} onPress={resetWorkout}>
+                    <Ionicons name="close" size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.pauseButton} 
+                    onPress={isActive ? pauseWorkout : resumeWorkout}
+                  >
+                    <Ionicons name={isActive ? "pause" : "play"} size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
                 <TouchableOpacity 
-                  style={styles.pauseButton} 
-                  onPress={isActive ? pauseWorkout : resumeWorkout}
+                  style={styles.skipWorkoutButton} 
+                  onPress={skipToEnd}
                 >
-                  <Ionicons name={isActive ? "pause" : "play"} size={24} color="#FFFFFF" />
+                  <Text style={styles.skipWorkoutButtonText}>Skip Workout</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.skipRoundButton} onPress={skipToEnd}>
-                  <Ionicons name="play-skip-forward" size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
+              </>
             )}
 
             {/* Workout Progress Card */}
@@ -4179,21 +4189,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  skipRoundButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#F59E0B',
+  skipWorkoutButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#D97706',
+  },
+  skipWorkoutButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+    textDecorationLine: 'underline',
   },
   timerContainer: {
     alignItems: 'center',
