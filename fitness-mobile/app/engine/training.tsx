@@ -2599,7 +2599,7 @@ export default function EnginePage() {
         {/* Equipment Selection View */}
         {workoutView === 'equipment' && (
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Select Modality</Text>
+            <Text style={styles.unitSelectionTitle}>Select Modality</Text>
             
             {/* Category Buttons */}
             <View style={styles.categoryRow}>
