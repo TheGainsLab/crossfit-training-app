@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Alert, StatusBar, Dimensions, RefreshControl, KeyboardAvoidingView, Platform, Keyboard } from 'react-native'
+import Slider from '@react-native-community/slider'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { createClient } from '@/lib/supabase/client'
@@ -3612,25 +3613,26 @@ export default function EnginePage() {
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>RPE (1-10): {rpeValue}</Text>
-              <View style={styles.rpeContainer}>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => (
-                  <TouchableOpacity
-                    key={value}
-                    style={[
-                      styles.rpeButton,
-                      rpeValue === value && styles.rpeButtonActive
-                    ]}
-                    onPress={() => setRpeValue(value)}
-                  >
-                    <Text style={[
-                      styles.rpeButtonText,
-                      rpeValue === value && styles.rpeButtonTextActive
-                    ]}>
-                      {value}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+              <View style={styles.rpeHeader}>
+                <Text style={styles.label}>RPE</Text>
+                <Text style={styles.rpeValue}>{rpeValue}/10</Text>
+              </View>
+              <View style={styles.sliderContainer}>
+                <Slider
+                  minimumValue={1}
+                  maximumValue={10}
+                  step={1}
+                  value={rpeValue}
+                  onValueChange={(value) => setRpeValue(value)}
+                  minimumTrackTintColor="#FE5858"
+                  maximumTrackTintColor="#DAE2EA"
+                  thumbTintColor="#FE5858"
+                  style={styles.slider}
+                />
+              </View>
+              <View style={styles.sliderLabels}>
+                <Text style={styles.sliderLabel}>1 - Very Easy</Text>
+                <Text style={styles.sliderLabel}>10 - Max Effort</Text>
               </View>
             </View>
 
@@ -4319,31 +4321,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#282B34',
   },
-  rpeContainer: {
+  rpeHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 8,
-  },
-  rpeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
     marginBottom: 8,
   },
-  rpeButtonActive: {
-    backgroundColor: '#FE5858',
-  },
-  rpeButtonText: {
+  rpeValue: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: '700',
+    color: '#FE5858',
   },
-  rpeButtonTextActive: {
-    color: '#FFFFFF',
+  sliderContainer: {
+    paddingHorizontal: 8,
+    marginBottom: 8,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+  },
+  sliderLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+  },
+  sliderLabel: {
+    fontSize: 12,
+    color: '#6B7280',
   },
   completionButtonsContainer: {
     flexDirection: 'row',
