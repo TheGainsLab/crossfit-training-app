@@ -3219,10 +3219,12 @@ export default function EnginePage() {
             {/* Workout Info Above Timer */}
             <View style={styles.timerInfoContainer}>
               
-              {/* Day Type - always shown */}
-              <Text style={styles.dayTypeText}>
-                {getWorkoutTypeDisplayName(workout.day_type || 'conditioning')}
-              </Text>
+              {/* Day Type - show during workout */}
+              {(isActive || isPaused || isCompleted) && (
+                <Text style={styles.timerDayType}>
+                  {getWorkoutTypeDisplayName(workout.day_type || 'conditioning')}
+                </Text>
+              )}
               
               {/* Phase, Goal, and Round info - only show when workout has started */}
               {(isActive || isPaused || isCompleted) && (
@@ -4027,6 +4029,13 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
     alignItems: 'center',
+  },
+  timerDayType: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+    marginBottom: 8,
+    textTransform: 'capitalize',
   },
   timerWorkoutTitle: {
     fontSize: 20,
