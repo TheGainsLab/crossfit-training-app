@@ -1133,8 +1133,7 @@ function OverviewTab({
         </View>
       )}
 
-      {/* Segment Summary */}
-      <SectionHeader title="Segment Summary" />
+      {/* Segment Summary - removed per design update */}
       
       {/* Category Cards Grid */}
       <View style={styles.categoryGridContainer}>

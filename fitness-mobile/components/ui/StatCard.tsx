@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#282B34',
   },
   iconContainer: {
     marginBottom: 8,

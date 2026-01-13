@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   default: {
     ...defaultShadow,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#282B34',
   },
   outlined: {
     borderWidth: 2,
@@ -66,6 +66,6 @@ const styles = StyleSheet.create({
   elevated: {
     ...elevatedShadow,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#282B34',
   },
 })
