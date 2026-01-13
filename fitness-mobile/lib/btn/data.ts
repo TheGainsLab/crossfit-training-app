@@ -67,3 +67,4 @@ export const exerciseEquipment: { [key: string]: string[] } = {
 
 
 
+

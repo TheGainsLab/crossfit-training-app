@@ -553,13 +553,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   exerciseNameContainer: {
-    minWidth: 180,
+    flex: 1,
     marginRight: 8,
   },
   exerciseName: {
     fontWeight: '600',
     color: '#111827',
     fontSize: 16,
+    flexShrink: 1,
   },
   columnContainer: {
     minWidth: 56,
