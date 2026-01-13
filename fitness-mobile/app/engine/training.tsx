@@ -2565,34 +2565,36 @@ export default function EnginePage() {
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Workout Info */}
-        <View style={styles.card}>
-          <Text style={styles.dayLabel}>
-            Day {workout.day_number} - {getWorkoutTypeDisplayName(workout.day_type || 'conditioning')}
-          </Text>
-          
-          {/* Equipment display - only show in preview view */}
-          {workoutView === 'preview' && selectedModality && (
-            <TouchableOpacity
-              onPress={() => {
-                setSelectedModality('')
-                setWorkoutView('equipment')
-              }}
-              style={{ marginTop: 8 }}
-            >
-              <Text style={styles.equipmentText}>
-                {modalities.find(m => m.value === selectedModality)?.label || 'Not selected'}
-                <Text style={{ color: '#FE5858', fontWeight: '500' }}> (change)</Text>
-              </Text>
-            </TouchableOpacity>
-          )}
-          
-          {workout.description && (
-            <View style={styles.descriptionContainer}>
-              <Text style={styles.description}>{workout.description}</Text>
-            </View>
-          )}
-        </View>
+        {/* Workout Info - only show on equipment and preview views, not active view */}
+        {workoutView !== 'active' && (
+          <View style={styles.card}>
+            <Text style={styles.dayLabel}>
+              Day {workout.day_number} - {getWorkoutTypeDisplayName(workout.day_type || 'conditioning')}
+            </Text>
+            
+            {/* Equipment display - only show in preview view */}
+            {workoutView === 'preview' && selectedModality && (
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedModality('')
+                  setWorkoutView('equipment')
+                }}
+                style={{ marginTop: 8 }}
+              >
+                <Text style={styles.equipmentText}>
+                  {modalities.find(m => m.value === selectedModality)?.label || 'Not selected'}
+                  <Text style={{ color: '#FE5858', fontWeight: '500' }}> (change)</Text>
+                </Text>
+              </TouchableOpacity>
+            )}
+            
+            {workout.description && (
+              <View style={styles.descriptionContainer}>
+                <Text style={styles.description}>{workout.description}</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Equipment Selection View */}
         {workoutView === 'equipment' && (
