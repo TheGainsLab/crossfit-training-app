@@ -818,8 +818,12 @@ export function EngineHeartRateView({ engineData }: { engineData: any }) {
         if (pace !== null && avgHR !== null && avgHR > 0) {
           // HR Efficiency: absolute work output per heartbeat (no baseline normalization)
           const efficiency = (pace / avgHR) * 1000
-          // Training Load: keep baseline normalization to measure relative physiological stress
-          const trainingLoad = baseline && baseline > 0 ? (pace / baseline) * avgHR * durationMinutes : pace * avgHR * durationMinutes
+          // Training Load: squared intensity factor for non-linear stress
+          // Low intensity (70%) gets reduced: 0.49x
+          // Max effort (100%) unchanged: 1.0x
+          // Super-maximal (110%) amplified: 1.21x
+          const intensityFactor = baseline && baseline > 0 ? pace / baseline : 1
+          const trainingLoad = Math.pow(intensityFactor, 2) * avgHR * durationMinutes
           efficiencies.push(efficiency); trainingLoads.push(trainingLoad)
         }
       })
