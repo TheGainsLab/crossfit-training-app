@@ -1126,7 +1126,7 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
   if (!engineData) {
     return (
       <View style={styles.sectionGap}>
-        <Card><SectionHeader title="Engine Analytics" /><Text style={styles.noDataText}>Loading Engine data...</Text></Card>
+        <Card><Text style={styles.noDataText}>Loading Engine data...</Text></Card>
       </View>
     )
   }
@@ -1171,7 +1171,7 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
           </Card>
         )}
         {!hasData && (
-          <Card><SectionHeader title="Engine Analytics" /><Text style={styles.noDataText}>No Engine workout data yet. Complete Engine workouts to see detailed analytics!</Text></Card>
+          <Card><Text style={styles.noDataText}>No Engine workout data yet. Complete Engine workouts to see detailed analytics!</Text></Card>
         )}
         <View style={styles.activityList}>
           {analyticsOptions.map((option) => (
