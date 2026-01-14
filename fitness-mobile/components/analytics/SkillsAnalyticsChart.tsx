@@ -145,13 +145,13 @@ export default function SkillsAnalyticsChart({
                   key={index}
                   onPress={() => handleBarPress(item.skill)}
                   activeOpacity={0.7}
-                  style={{ marginBottom: 12 }}
+                  style={{ marginBottom: 10 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, color: '#6B7280', flex: 0.8, flexWrap: 'wrap' }} numberOfLines={1}>
+                    <Text style={{ fontSize: 12, color: '#6B7280', flex: 0.6, flexWrap: 'wrap' }} numberOfLines={1}>
                       {item.name}
                     </Text>
-                    <View style={{ flex: 2.5, height: 32, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden', marginHorizontal: 6 }}>
+                    <View style={{ flex: 3.0, height: 28, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden', marginHorizontal: 6 }}>
                       <View 
                         style={{ 
                           height: '100%', 
@@ -161,7 +161,7 @@ export default function SkillsAnalyticsChart({
                         }} 
                       />
                     </View>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34', width: 70, textAlign: 'right' }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34', width: 60, textAlign: 'right' }}>
                       {item.displayValue}{item.unit}
                     </Text>
                   </View>
