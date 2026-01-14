@@ -816,7 +816,9 @@ export function EngineHeartRateView({ engineData }: { engineData: any }) {
         const pace = calculatePace(session); const avgHR = session.average_heart_rate ? parseFloat(session.average_heart_rate) : null
         const baseline = baselines[session.modality || 'unknown']; const durationMinutes = session.total_work_seconds ? session.total_work_seconds / 60 : 0
         if (pace !== null && avgHR !== null && avgHR > 0) {
-          const efficiency = baseline && baseline > 0 ? ((pace / baseline) / avgHR) * 1000 : (pace / avgHR) * 1000
+          // HR Efficiency: absolute work output per heartbeat (no baseline normalization)
+          const efficiency = (pace / avgHR) * 1000
+          // Training Load: keep baseline normalization to measure relative physiological stress
           const trainingLoad = baseline && baseline > 0 ? (pace / baseline) * avgHR * durationMinutes : pace * avgHR * durationMinutes
           efficiencies.push(efficiency); trainingLoads.push(trainingLoad)
         }
