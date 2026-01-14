@@ -327,13 +327,18 @@ export default function EnginePage() {
   }, [programId, userId])
 
 
+  // Load workout when day param changes OR selectedDay state changes
   useEffect(() => {
     if (connected && day) {
+      // Direct navigation from URL with day param
+      loadWorkout()
+    } else if (connected && !day && selectedDay && currentView === 'workout') {
+      // Navigation from dashboard (selectedDay set via handleDayClick)
       loadWorkout()
     } else if (connected && !day) {
       loadDashboardData()
     }
-  }, [day, connected])
+  }, [day, selectedDay, currentView, connected])
 
   // Set initial view to equipment selection when workout loads and reset form state
   useEffect(() => {
@@ -362,13 +367,14 @@ export default function EnginePage() {
   }, [connected, workout])
 
   // Load baseline when modality changes
+  // Load baseline, history, and metrics when modality AND unit are ready
   useEffect(() => {
-    if (connected && selectedModality) {
+    if (connected && selectedModality && timeTrialSelectedUnit) {
       loadBaselineForModality()
       loadWorkoutHistory()
       loadPerformanceMetrics()
     }
-  }, [connected, selectedModality, workout?.day_type])
+  }, [connected, selectedModality, timeTrialSelectedUnit, workout?.day_type])
 
   // Load unit preference when modality selected
   useEffect(() => {
@@ -377,12 +383,7 @@ export default function EnginePage() {
     }
   }, [connected, selectedModality])
 
-  // Reload baseline when unit is selected (to filter by units)
-  useEffect(() => {
-    if (connected && selectedModality && timeTrialSelectedUnit) {
-      loadBaselineForModality()
-    }
-  }, [connected, selectedModality, timeTrialSelectedUnit])
+  // Note: Removed duplicate baseline loading effect - now handled above with unit check
 
   // Check if baseline matches selected unit
   useEffect(() => {
@@ -774,9 +775,14 @@ export default function EnginePage() {
       const preference = await engineDatabaseService.loadUnitPreferenceForModality(selectedModality)
       if (preference) {
         setTimeTrialSelectedUnit(preference)
+      } else {
+        // Default to 'cal' if no preference saved
+        setTimeTrialSelectedUnit('cal')
       }
     } catch (error) {
       console.error('Error loading unit preference:', error)
+      // Default to 'cal' on error
+      setTimeTrialSelectedUnit('cal')
     }
   }
 
@@ -865,12 +871,7 @@ export default function EnginePage() {
     }
   }
 
-  // Load workout when selectedDay changes
-  useEffect(() => {
-    if (selectedDay && currentView === 'workout') {
-      loadWorkout()
-    }
-  }, [selectedDay, currentView])
+  // Note: Workout loading now handled in consolidated effect above (lines 330-340)
 
   const loadWorkout = async () => {
     if (!selectedDay) return
