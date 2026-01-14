@@ -92,32 +92,13 @@ export async function fetchSessionData(
         .single()
 
       if (metconDetails && !metconDetailsError) {
-        // Get percentile data
-        const { data: percentileData, error: percentileError } = await supabase
-          .from('exercise_percentile_log')
-          .select('percentile, performance_tier')
-          .eq('user_id', userId)
-          .eq('metcon_id', programMetcons.metcon_id)
-          .eq('program_id', programId)
-          .eq('week', week)
-          .eq('day', day)
-          .single()
-
-        // Log for debugging
-        if (percentileError) {
-          console.log('⚠️ Percentile lookup failed:', percentileError.message)
-        }
-        if (!percentileData) {
-          console.log('⚠️ No percentile data found for metcon_id:', programMetcons.metcon_id)
-        }
-        
-        console.log('📊 Percentile data:', percentileData)
-
+        // Use percentile and performance_tier directly from program_metcons
+        // (same source as heatmap data)
         metconData = {
           metcon_id: programMetcons.metcon_id,
           user_score: programMetcons.user_score || '',
-          percentile: percentileData?.percentile?.toString() || '0',
-          performance_tier: percentileData?.performance_tier || 'Average',
+          percentile: programMetcons.percentile?.toString() || '0',
+          performance_tier: programMetcons.performance_tier || 'Average',
           metcon: metconDetails,
         }
       }
