@@ -147,13 +147,13 @@ export default function MovementAnalyticsChart({
                   key={index}
                   onPress={() => handleCardPress(item.name)}
                   activeOpacity={0.7}
-                  style={{ marginBottom: 16 }}
+                  style={{ marginBottom: 12 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, color: '#6B7280', flex: 1, flexWrap: 'wrap' }} numberOfLines={1}>
+                    <Text style={{ fontSize: 12, color: '#6B7280', flex: 0.8, flexWrap: 'wrap' }} numberOfLines={1}>
                       {item.name}
                     </Text>
-                    <View style={{ flex: 2, height: 40, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden', marginHorizontal: 8 }}>
+                    <View style={{ flex: 2.5, height: 32, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden', marginHorizontal: 6 }}>
                       <View 
                         style={{ 
                           height: '100%', 
@@ -163,7 +163,7 @@ export default function MovementAnalyticsChart({
                         }} 
                       />
                     </View>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34', width: 80, textAlign: 'right' }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34', width: 70, textAlign: 'right' }}>
                       {selectedMetric === 'totalVolume' 
                         ? item.value.toLocaleString() 
                         : selectedMetric === 'avgRPE' 
