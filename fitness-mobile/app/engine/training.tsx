@@ -3408,7 +3408,10 @@ export default function EnginePage() {
                       />
                       {/* Progress circle */}
                       {(() => {
-                        const totalDuration = currentInt?.duration || 600
+                        // Calculate duration based on current phase (work or rest)
+                        const totalDuration = currentPhase === 'work' 
+                          ? (currentInt?.duration || 600)
+                          : (currentInt?.restDuration || 0)
                         const progress = totalDuration > 0 ? ((totalDuration - timeRemaining) / totalDuration) * 100 : 0
                         const offset = circumference - (progress / 100) * circumference
                         // Use green for work phase, gray for rest/completed
