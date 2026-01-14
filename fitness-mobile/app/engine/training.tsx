@@ -3148,7 +3148,7 @@ export default function EnginePage() {
                         <View style={styles.performanceSummaryCard}>
                           <View style={styles.performanceSummaryContent}>
                             <Text style={styles.performanceSummaryLabel}>
-                              {workout?.day_type ? `${getWorkoutTypeDisplayName(workout.day_type)} Summary` : 'Summary'}
+                              {workout?.day_type ? getWorkoutTypeDisplayName(workout.day_type) : 'Summary'}
                             </Text>
                             <View style={styles.performanceSummaryMetrics}>
                               <View style={styles.performanceRatioBadge}>
