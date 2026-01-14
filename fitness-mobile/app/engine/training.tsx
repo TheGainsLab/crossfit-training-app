@@ -3469,7 +3469,7 @@ export default function EnginePage() {
             )}
 
             {/* Workout Progress Card */}
-            {sessionData.intervals.length > 0 && (
+            {sessionData.intervals.length > 0 && !isCompleted && (
               <WorkoutProgressCard
                 intervals={sessionData.intervals}
                 currentInterval={currentInterval}
