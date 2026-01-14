@@ -93,7 +93,7 @@ export async function fetchSessionData(
 
       if (metconDetails && !metconDetailsError) {
         // Get percentile data
-        const { data: percentileData } = await supabase
+        const { data: percentileData, error: percentileError } = await supabase
           .from('exercise_percentile_log')
           .select('percentile, performance_tier')
           .eq('user_id', userId)
@@ -102,6 +102,16 @@ export async function fetchSessionData(
           .eq('week', week)
           .eq('day', day)
           .single()
+
+        // Log for debugging
+        if (percentileError) {
+          console.log('⚠️ Percentile lookup failed:', percentileError.message)
+        }
+        if (!percentileData) {
+          console.log('⚠️ No percentile data found for metcon_id:', programMetcons.metcon_id)
+        }
+        
+        console.log('📊 Percentile data:', percentileData)
 
         metconData = {
           metcon_id: programMetcons.metcon_id,
