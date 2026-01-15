@@ -184,6 +184,7 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
           fiber: macros.fiber || 0,
           sodium: macros.sodium || 0,
           source: 'favorite',
+          meal_type: mealType,
         },
       })
 
