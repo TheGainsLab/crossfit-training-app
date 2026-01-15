@@ -73,6 +73,7 @@ serve(async (req) => {
       sodium = null,
       meal_type = null,
       source = 'manual',
+      restaurant_id = null,
       notes = null,
       logged_at = new Date().toISOString()
     } = await req.json()
@@ -110,6 +111,7 @@ serve(async (req) => {
         sodium,
         meal_type,
         source,
+        restaurant_id,
         notes,
         logged_at
       })

@@ -186,6 +186,7 @@ export default function RestaurantMenuBrowser({
           number_of_units: amount,
           ...macros,
           source: 'restaurant',
+          restaurant_id: restaurant.id,
         },
       })
 
@@ -251,6 +252,7 @@ export default function RestaurantMenuBrowser({
           number_of_units: amount,
           ...macros,
           source: 'restaurant',
+          restaurant_id: restaurant.id,
         },
       })
 
