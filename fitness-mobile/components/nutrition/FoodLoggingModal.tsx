@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { Modal } from 'react-native'
-import FoodSearchModal from './FoodSearchModal'
-import FoodSelectionModal from './FoodSelectionModal'
+import { Modal, View, StyleSheet } from 'react-native'
+import FoodSearchView from './FoodSearchView'
+import FoodSelectionView from './FoodSelectionView'
 
 interface FoodLoggingModalProps {
   visible: boolean
@@ -37,7 +37,7 @@ export default function FoodLoggingModal({
   const [selectedFood, setSelectedFood] = useState<{ foodId: string; foodName: string } | null>(null)
 
   const handleClose = () => {
-    // Reset to search view when closing
+    // Reset to search view when fully closing modal
     setCurrentView('search')
     setSelectedFood(null)
     onClose()
@@ -61,26 +61,47 @@ export default function FoodLoggingModal({
     handleClose()
   }
 
-  // Render the appropriate view based on state
-  // Both modals are actually rendered but only one is visible at a time
-  // This prevents the iOS modal stacking issue
   return (
-    <>
-      <FoodSearchModal
-        visible={visible && currentView === 'search'}
-        onClose={handleClose}
-        onFoodSelected={handleFoodSelected}
-        preselectedMealType={preselectedMealType}
-        filterType={filterType}
-      />
-      <FoodSelectionModal
-        visible={visible && currentView === 'details'}
-        foodId={selectedFood?.foodId || null}
-        foodName={selectedFood?.foodName || null}
-        onClose={handleBackToSearch}
-        onAdd={handleFoodAdded}
-        preselectedMealType={preselectedMealType}
-      />
-    </>
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={handleClose}
+    >
+      <View style={styles.overlay}>
+        <View style={styles.content}>
+          {currentView === 'search' ? (
+            <FoodSearchView
+              onClose={handleClose}
+              onFoodSelected={handleFoodSelected}
+              filterType={filterType}
+            />
+          ) : (
+            <FoodSelectionView
+              foodId={selectedFood?.foodId || null}
+              foodName={selectedFood?.foodName || null}
+              onBack={handleBackToSearch}
+              onAdd={handleFoodAdded}
+            />
+          )}
+        </View>
+      </View>
+    </Modal>
   )
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  content: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '90%',
+    flex: 1,
+    paddingTop: 20,
+  },
+})
