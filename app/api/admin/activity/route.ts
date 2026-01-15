@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
     const hours = parseInt(searchParams.get('hours') || '24')
     const tierFilter = searchParams.get('tier') || ''
     const blockFilter = searchParams.get('block') || ''
+    const userIdFilter = searchParams.get('userId') || ''
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
 
     const sinceDate = new Date(Date.now() - hours * 60 * 60 * 1000)
@@ -200,6 +201,9 @@ export async function GET(request: NextRequest) {
       // Apply tier filter
       if (tierFilter && user?.tier !== tierFilter) return
 
+      // Apply user filter
+      if (userIdFilter && userId !== parseInt(userIdFilter)) return
+
       // Get the most recent timestamp for this group
       const mostRecent = logs.reduce((latest, log) => {
         const logTime = new Date(log.logged_at).getTime()
@@ -249,6 +253,9 @@ export async function GET(request: NextRequest) {
       // Apply tier filter
       if (tierFilter && user?.tier !== tierFilter) return
 
+      // Apply user filter
+      if (userIdFilter && session.user_id !== parseInt(userIdFilter)) return
+
       // Build details with performance metrics
       const details: string[] = []
       if (session.actual_pace) {
@@ -284,6 +291,9 @@ export async function GET(request: NextRequest) {
 
       // Apply tier filter
       if (tierFilter && user?.tier !== tierFilter) return
+
+      // Apply user filter
+      if (userIdFilter && mcUserId !== parseInt(userIdFilter)) return
 
       const workoutId = (mc.metcons as any)?.workout_id || ''
       const timeRange = (mc.metcons as any)?.time_range || ''

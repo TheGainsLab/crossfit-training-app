@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Clock, User, MessageSquare, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
+import { Clock, User, MessageSquare, ChevronDown, ChevronUp, RefreshCw, Search, X, Filter } from 'lucide-react'
 
 interface ActivityItem {
   id: string
@@ -15,6 +15,13 @@ interface ActivityItem {
   block: string | null
   summary: string
   details: string[]
+}
+
+interface UserSearchResult {
+  id: number
+  name: string | null
+  email: string | null
+  subscription_tier: string | null
 }
 
 function formatTimeAgo(timestamp: string): string {
@@ -53,7 +60,7 @@ function getTierColor(tier: string | null): string {
   }
 }
 
-function ActivityRow({ item, onSendNote }: { item: ActivityItem; onSendNote: (item: ActivityItem) => void }) {
+function ActivityRow({ item, onSendNote, onFilterUser }: { item: ActivityItem; onSendNote: (item: ActivityItem) => void; onFilterUser: (userId: number) => void }) {
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -122,6 +129,13 @@ function ActivityRow({ item, onSendNote }: { item: ActivityItem; onSendNote: (it
           <MessageSquare className="w-4 h-4" />
           Send Note
         </button>
+        <button
+          onClick={() => onFilterUser(item.userId)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+        >
+          <Filter className="w-4 h-4" />
+          Filter to this user
+        </button>
         <Link
           href={`/dashboard/admin/users/${item.userId}`}
           className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
@@ -139,6 +153,11 @@ export default function ActivityPage() {
   const [hours, setHours] = useState(24)
   const [tierFilter, setTierFilter] = useState('')
   const [blockFilter, setBlockFilter] = useState('')
+  const [userFilter, setUserFilter] = useState<number | null>(null)
+  const [userSearchQuery, setUserSearchQuery] = useState('')
+  const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([])
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+  const [selectedUserInfo, setSelectedUserInfo] = useState<UserSearchResult | null>(null)
   const [noteModal, setNoteModal] = useState<ActivityItem | null>(null)
   const [noteText, setNoteText] = useState('')
   const [debug, setDebug] = useState<any>(null)
@@ -152,6 +171,9 @@ export default function ActivityPage() {
       }
       if (blockFilter) {
         url += `&block=${blockFilter}`
+      }
+      if (userFilter) {
+        url += `&userId=${userFilter}`
       }
       const res = await fetch(url)
       const data = await res.json()
@@ -168,7 +190,60 @@ export default function ActivityPage() {
 
   useEffect(() => {
     fetchActivity()
-  }, [hours, tierFilter, blockFilter])
+  }, [hours, tierFilter, blockFilter, userFilter])
+
+  // Debounced user search
+  useEffect(() => {
+    if (userSearchQuery.length < 2) {
+      setUserSearchResults([])
+      setShowSearchDropdown(false)
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/users/search?query=${encodeURIComponent(userSearchQuery)}`)
+        const data = await res.json()
+        if (data.success) {
+          setUserSearchResults(data.users || [])
+          setShowSearchDropdown(true)
+        }
+      } catch (err) {
+        console.error('Failed to search users:', err)
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [userSearchQuery])
+
+  const handleSelectUser = (user: UserSearchResult) => {
+    setUserFilter(user.id)
+    setSelectedUserInfo(user)
+    setUserSearchQuery('')
+    setShowSearchDropdown(false)
+  }
+
+  const handleClearUserFilter = () => {
+    setUserFilter(null)
+    setSelectedUserInfo(null)
+    setUserSearchQuery('')
+  }
+
+  const handleFilterToUser = (userId: number) => {
+    // Find user info from current activity if available
+    const userActivity = activity.find(a => a.userId === userId)
+    if (userActivity) {
+      setUserFilter(userId)
+      setSelectedUserInfo({
+        id: userId,
+        name: userActivity.userName,
+        email: userActivity.userEmail,
+        subscription_tier: userActivity.userTier
+      })
+    } else {
+      setUserFilter(userId)
+    }
+  }
 
   const handleSendNote = (item: ActivityItem) => {
     setNoteModal(item)
@@ -274,10 +349,74 @@ export default function ActivityPage() {
           <option value="ENGINE">Engine</option>
         </select>
 
+        {/* User Search */}
+        <div className="relative flex-1 min-w-[250px]">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={userSearchQuery}
+              onChange={(e) => setUserSearchQuery(e.target.value)}
+              onFocus={() => userSearchResults.length > 0 && setShowSearchDropdown(true)}
+              placeholder="Search users by name or email..."
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/50"
+            />
+          </div>
+          
+          {/* Search Dropdown */}
+          {showSearchDropdown && userSearchResults.length > 0 && (
+            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+              {userSearchResults.map((user) => (
+                <button
+                  key={user.id}
+                  onClick={() => handleSelectUser(user)}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between gap-2"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-900 truncate">
+                      {user.name || 'Unknown User'}
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                  </div>
+                  {user.subscription_tier && (
+                    <span className={`px-2 py-0.5 text-xs font-medium rounded border ${getTierColor(user.subscription_tier)}`}>
+                      {user.subscription_tier}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center text-sm text-gray-500">
           {activity.length} activit{activity.length === 1 ? 'y' : 'ies'}
         </div>
       </div>
+
+      {/* Active User Filter Banner */}
+      {selectedUserInfo && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4 text-blue-600" />
+            <span className="text-sm text-blue-900">
+              Filtering by user: <strong>{selectedUserInfo.name || selectedUserInfo.email}</strong>
+            </span>
+            {selectedUserInfo.subscription_tier && (
+              <span className={`px-2 py-0.5 text-xs font-medium rounded border ${getTierColor(selectedUserInfo.subscription_tier)}`}>
+                {selectedUserInfo.subscription_tier}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={handleClearUserFilter}
+            className="flex items-center gap-1 px-3 py-1 text-sm font-medium text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+          >
+            <X className="w-4 h-4" />
+            Clear
+          </button>
+        </div>
+      )}
 
       {/* Debug Info - Remove before shipping */}
       {debug && (
@@ -312,7 +451,7 @@ export default function ActivityPage() {
       ) : (
         <div className="space-y-3">
           {activity.map((item) => (
-            <ActivityRow key={item.id} item={item} onSendNote={handleSendNote} />
+            <ActivityRow key={item.id} item={item} onSendNote={handleSendNote} onFilterUser={handleFilterToUser} />
           ))}
         </div>
       )}
