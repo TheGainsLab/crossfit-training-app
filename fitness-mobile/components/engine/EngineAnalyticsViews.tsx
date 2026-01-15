@@ -156,7 +156,7 @@ export function HorizontalBarChart({
   labels, 
   maxValue, 
   unit = '', 
-  height = 32,
+  height = 20,
   onPressRow
 }: { 
   data: number[], 
