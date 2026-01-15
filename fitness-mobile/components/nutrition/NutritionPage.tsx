@@ -20,8 +20,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { getMealTemplates, logMealTemplate, MealTemplate, deleteMealTemplate, getMealTemplateWithItems, createMealTemplate } from '@/lib/api/mealTemplates'
 import MealBuilder from '@/components/nutrition/MealBuilder'
-import FoodSelectionModal from '@/components/nutrition/FoodSelectionModal'
-import FoodSearchModal from '@/components/nutrition/FoodSearchModal'
+import FoodLoggingModal from '@/components/nutrition/FoodLoggingModal'
 import FrequentFoodsScreen from '@/components/nutrition/FrequentFoodsScreen'
 import PhotoResultSlider from '@/components/nutrition/PhotoResultSlider'
 import MealBuilderModal from '@/components/nutrition/MealBuilderModal'
@@ -156,10 +155,8 @@ export default function NutritionPage() {
 
   // UI state
   const [selectedMealType, setSelectedMealType] = useState<string | null>(null)
-  const [showFoodSelector, setShowFoodSelector] = useState(false)
-  const [showSearchModal, setShowSearchModal] = useState(false)
+  const [showFoodLoggingModal, setShowFoodLoggingModal] = useState(false)
   const [showIngredientsModal, setShowIngredientsModal] = useState(false)
-  const [selectedFoodForDetails, setSelectedFoodForDetails] = useState<{foodId: string | null, foodName: string | null}>({ foodId: null, foodName: null })
   const [barcodeScannerVisible, setBarcodeScannerVisible] = useState(false)
   const [barcodeScanning, setBarcodeScanning] = useState(false)
   const [imageRecognitionLoading, setImageRecognitionLoading] = useState(false)
@@ -774,7 +771,7 @@ export default function NutritionPage() {
         <LoggingInterface
           selectedMealType={selectedMealType} mealTemplates={mealTemplates} templatesLoading={templatesLoading}
           onMealTypeSelect={handleMealTypeSelect} onLogTemplate={handleLogTemplate} onTakePhoto={handleImageRecognition}
-          onScanBarcode={handleBarcodeScan} onSearchFood={() => setShowSearchModal(true)}
+          onScanBarcode={handleBarcodeScan} onSearchFood={() => setShowFoodLoggingModal(true)}
           onShowFavorites={() => setShowFrequentFoods(true)}
           onShowIngredients={() => setShowIngredientsModal(true)}
           favoritesExpanded={favoritesExpanded} onCreateFavorite={() => { setCurrentMeal(null); setShowMealBuilder(true) }}
@@ -786,27 +783,11 @@ export default function NutritionPage() {
         <MealBuilder userId={userId!} initialTemplate={currentMeal} selectedMealType={selectedMealType} onSave={handleTemplateSaved} onCancel={() => { setShowMealBuilder(false); setCurrentMeal(null) }} onAddFood={handleAddFood} />
       </Modal>}
 
-      {/* Always render modals - control via visible prop only to avoid iOS native freeze issues */}
-      <FoodSearchModal
-        visible={showSearchModal}
-        onClose={() => setShowSearchModal(false)}
-        onFoodSelected={(food) => {
-          setShowSearchModal(false);
-          setSelectedFoodForDetails({ foodId: food.food_id, foodName: food.food_name });
-          // Longer delay for iOS native - modal unmount animation takes longer on real devices
-          setTimeout(() => setShowFoodSelector(true), 500);
-        }}
-        preselectedMealType={selectedMealType}
-      />
-      <FoodSelectionModal
-        visible={showFoodSelector}
-        foodId={selectedFoodForDetails.foodId}
-        foodName={selectedFoodForDetails.foodName}
-        onClose={() => {
-          setShowFoodSelector(false);
-          setSelectedFoodForDetails({ foodId: null, foodName: null });
-        }}
-        onAdd={handleLogFoodEntry}
+      {/* Unified Food Logging Modal - prevents iOS modal stacking issues */}
+      <FoodLoggingModal
+        visible={showFoodLoggingModal}
+        onClose={() => setShowFoodLoggingModal(false)}
+        onFoodAdded={handleLogFoodEntry}
         preselectedMealType={selectedMealType}
       />
       <MealBuilderModal
