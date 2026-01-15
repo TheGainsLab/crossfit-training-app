@@ -749,6 +749,7 @@ export default function NutritionPage() {
     return (
       <FrequentFoodsScreen 
         onBack={() => setShowFrequentFoods(false)}
+        mealType={selectedMealType}
       />
     )
   }

@@ -25,12 +25,14 @@ interface RestaurantMenuBrowserProps {
   restaurant: Restaurant
   onBack: () => void
   onFoodLogged?: () => void
+  mealType?: string | null
 }
 
 export default function RestaurantMenuBrowser({
   restaurant,
   onBack,
   onFoodLogged,
+  mealType,
 }: RestaurantMenuBrowserProps) {
   const [loading, setLoading] = useState(true)
   const [searching, setSearching] = useState(false)
@@ -187,6 +189,7 @@ export default function RestaurantMenuBrowser({
           ...macros,
           source: 'restaurant',
           restaurant_id: restaurant.id,
+          meal_type: mealType,
         },
       })
 
@@ -253,6 +256,7 @@ export default function RestaurantMenuBrowser({
           ...macros,
           source: 'restaurant',
           restaurant_id: restaurant.id,
+          meal_type: mealType,
         },
       })
 

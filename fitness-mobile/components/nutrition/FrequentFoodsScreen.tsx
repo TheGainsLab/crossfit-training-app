@@ -27,9 +27,10 @@ interface FrequentFoodsData {
 
 interface FrequentFoodsScreenProps {
   onBack?: () => void
+  mealType?: string | null
 }
 
-export default function FrequentFoodsScreen({ onBack }: FrequentFoodsScreenProps) {
+export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsScreenProps) {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<FrequentFoodsData>({
     restaurants: [],
@@ -409,6 +410,7 @@ export default function FrequentFoodsScreen({ onBack }: FrequentFoodsScreenProps
           setSelectedRestaurant(null)
           loadFavorites()
         }}
+        mealType={mealType}
       />
     )
   }
