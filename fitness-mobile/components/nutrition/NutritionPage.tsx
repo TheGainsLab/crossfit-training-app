@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams } from 'expo-router'
+import { useFocusEffect } from '@react-navigation/native'
 import * as ImagePicker from 'expo-image-picker'
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera'
 import { createClient } from '@/lib/supabase/client'
@@ -194,6 +195,15 @@ export default function NutritionPage() {
       loadMealTemplates()
     }
   }, [userId])
+
+  // Refresh data when tab is focused (e.g., after logging from restaurant browser)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (userId) {
+        loadDailyData()
+      }
+    }, [userId])
+  )
 
   // Refresh data when refreshKey changes
   useEffect(() => {
