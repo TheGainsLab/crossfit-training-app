@@ -181,6 +181,7 @@ export default function RestaurantMenuBrowser({
         body: {
           food_id: selectedFood.fatsecret_id,
           food_name: selectedFood.name,
+          serving_id: selectedFood.servings?.[0]?.serving_id || '0',
           serving_description: `${amount} ${unit}`,
           number_of_units: amount,
           ...macros,
@@ -245,6 +246,7 @@ export default function RestaurantMenuBrowser({
         body: {
           food_id: selectedFood.fatsecret_id,
           food_name: selectedFood.name,
+          serving_id: selectedFood.servings?.[0]?.serving_id || '0',
           serving_description: `${amount} ${unit}`,
           number_of_units: amount,
           ...macros,
@@ -362,6 +364,7 @@ export default function RestaurantMenuBrowser({
                       fat: item.raw_serving_fat,
                       serving_description: item.serving_description,
                     } : null,
+                    servings: item.serving_id ? [{ serving_id: item.serving_id }] : [],
                   })
                   setShowPortionInput(true)
                 }}>
