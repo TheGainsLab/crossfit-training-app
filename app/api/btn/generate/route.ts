@@ -104,7 +104,8 @@ export async function POST(request: NextRequest) {
             equipment,
             skills,
             oneRMs,
-            gender: profileData?.gender || 'Male'
+            gender: profileData?.gender || 'Male',
+            units: 'lbs' // Default to pounds for BTN workouts
           }
           console.log('✅ User profile loaded for generation')
         }
