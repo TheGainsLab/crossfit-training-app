@@ -172,10 +172,10 @@ export function HorizontalBarChart({
         const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0
         const content = (
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            <Text style={{ fontSize: 12, color: '#6B7280', width: 80 }} numberOfLines={1}>
+            <Text style={{ fontSize: 12, color: '#6B7280', width: 60 }} numberOfLines={1}>
               {labels[index]}
             </Text>
-            <View style={{ flex: 1, height, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden', marginHorizontal: 8 }}>
+            <View style={{ flex: 1, height, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden', marginHorizontal: 6 }}>
               <View 
                 style={{ 
                   height: '100%', 
@@ -185,7 +185,7 @@ export function HorizontalBarChart({
                 }} 
               />
             </View>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34', width: 70, textAlign: 'right' }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34', width: 65, textAlign: 'right' }}>
               {typeof value === 'number' ? Math.round(value) : value}{unit}
             </Text>
           </View>
