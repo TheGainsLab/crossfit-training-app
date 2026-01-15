@@ -666,20 +666,32 @@ export function EngineTargetsView({ engineData }: { engineData: any }) {
                 <Text style={{ fontSize: 14, color: '#6B7280' }}>Day {session.program_day_number}</Text>
               </View>
               <View style={{ gap: 8 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 11, color: '#9CA3AF', width: 60 }}>TARGET</Text>
-                  <View style={{ flex: 1, height: 12, backgroundColor: '#E5E7EB', borderRadius: 4, marginHorizontal: 8 }}>
-                    <View style={{ height: '100%', width: '100%', backgroundColor: '#6B7280', borderRadius: 4 }} />
-                  </View>
-                  <Text style={{ fontSize: 12, fontWeight: '600', width: 60, textAlign: 'right' }}>{Math.round(session.target_pace)}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 11, color: '#9CA3AF', width: 60 }}>ACTUAL</Text>
-                  <View style={{ flex: 1, height: 12, backgroundColor: '#E5E7EB', borderRadius: 4, marginHorizontal: 8 }}>
-                    <View style={{ height: '100%', width: `${Math.min((parseFloat(session.actual_pace) / parseFloat(session.target_pace)) * 100, 100)}%`, backgroundColor: '#FE5858', borderRadius: 4 }} />
-                  </View>
-                  <Text style={{ fontSize: 12, fontWeight: '600', width: 60, textAlign: 'right' }}>{Math.round(session.actual_pace)}</Text>
-                </View>
+                {(() => {
+                  const targetPace = parseFloat(session.target_pace) || 0
+                  const actualPace = parseFloat(session.actual_pace) || 0
+                  const maxPace = Math.max(targetPace, actualPace)
+                  const targetWidth = maxPace > 0 ? `${(targetPace / maxPace) * 100}%` : '0%'
+                  const actualWidth = maxPace > 0 ? `${(actualPace / maxPace) * 100}%` : '0%'
+                  
+                  return (
+                    <>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 11, color: '#9CA3AF', width: 60 }}>TARGET</Text>
+                        <View style={{ flex: 1, height: 12, backgroundColor: '#E5E7EB', borderRadius: 4, marginHorizontal: 8 }}>
+                          <View style={{ height: '100%', width: targetWidth, backgroundColor: '#0B21D0', borderRadius: 4 }} />
+                        </View>
+                        <Text style={{ fontSize: 12, fontWeight: '600', width: 60, textAlign: 'right' }}>{Math.round(targetPace)}</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 11, color: '#9CA3AF', width: 60 }}>ACTUAL</Text>
+                        <View style={{ flex: 1, height: 12, backgroundColor: '#E5E7EB', borderRadius: 4, marginHorizontal: 8 }}>
+                          <View style={{ height: '100%', width: actualWidth, backgroundColor: '#FE5858', borderRadius: 4 }} />
+                        </View>
+                        <Text style={{ fontSize: 12, fontWeight: '600', width: 60, textAlign: 'right' }}>{Math.round(actualPace)}</Text>
+                      </View>
+                    </>
+                  )
+                })()}
               </View>
             </Card>
           ))}
