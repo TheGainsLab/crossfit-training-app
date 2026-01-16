@@ -150,8 +150,12 @@ export default function AdminMetconsImportPage() {
             <li><code className="bg-gray-200 px-1 rounded">equipment_csv</code> - Comma-separated: Barbell, Dumbbells, Pullup Bar or Rig, etc.</li>
             <li><code className="bg-gray-200 px-1 rounded">max_weight_male</code> / <code className="bg-gray-200 px-1 rounded">max_weight_female</code> - Heaviest weight in lbs</li>
             <li><code className="bg-gray-200 px-1 rounded">workout_notes</code> - Description text</li>
-            <li><code className="bg-gray-200 px-1 rounded">male_p90</code>, <code className="bg-gray-200 px-1 rounded">male_p50</code>, <code className="bg-gray-200 px-1 rounded">male_std_dev</code> - Male percentiles</li>
-            <li><code className="bg-gray-200 px-1 rounded">female_p90</code>, <code className="bg-gray-200 px-1 rounded">female_p50</code>, <code className="bg-gray-200 px-1 rounded">female_std_dev</code> - Female percentiles</li>
+            <li><code className="bg-gray-200 px-1 rounded">male_p90</code> - Male 90th percentile time (seconds)</li>
+            <li><code className="bg-gray-200 px-1 rounded">male_p50</code> - Male 50th percentile/median time (seconds)</li>
+            <li><code className="bg-gray-200 px-1 rounded">male_std_dev</code> - Male standard deviation (seconds)</li>
+            <li><code className="bg-gray-200 px-1 rounded">female_p90</code> - Female 90th percentile time (seconds)</li>
+            <li><code className="bg-gray-200 px-1 rounded">female_p50</code> - Female 50th percentile/median time (seconds)</li>
+            <li><code className="bg-gray-200 px-1 rounded">female_std_dev</code> - Female standard deviation (seconds)</li>
           </ul>
         </div>
 
@@ -183,8 +187,8 @@ export default function AdminMetconsImportPage() {
         <div className="space-y-2 text-sm">
           <h3 className="font-medium">Example Row (Fran):</h3>
           <pre className="bg-gray-200 p-2 rounded overflow-x-auto text-xs">
-{`workout_id,level,format,time_range,equipment_csv,max_weight_male,max_weight_female,tasks_json,workout_notes,male_p90,male_p50,female_p90,female_p50
-fran,Open,For Time,5:00–10:00,"Barbell, Pullup Bar or Rig",95,65,"[{""exercise"":""Thruster"",""reps"":""21"",""weight_male"":""95"",""weight_female"":""65""},{""exercise"":""Pull-up"",""reps"":""21""},{""exercise"":""Thruster"",""reps"":""15"",""weight_male"":""95"",""weight_female"":""65""},{""exercise"":""Pull-up"",""reps"":""15""},{""exercise"":""Thruster"",""reps"":""9"",""weight_male"":""95"",""weight_female"":""65""},{""exercise"":""Pull-up"",""reps"":""9""}]",21-15-9 Thrusters and Pull-ups,3:00,5:30,4:00,7:00`}
+{`workout_id,level,format,time_range,equipment_csv,max_weight_male,max_weight_female,tasks_json,workout_notes,male_p90,male_p50,male_std_dev,female_p90,female_p50,female_std_dev
+fran,Open,For Time,1:00–5:00,"Barbell, Pullup Bar or Rig",95,65,"[{""exercise"":""Thruster"",""reps"":""21"",""weight_male"":""95"",""weight_female"":""65""},{""exercise"":""Pull-up"",""reps"":""21""},{""exercise"":""Thruster"",""reps"":""15"",""weight_male"":""95"",""weight_female"":""65""},{""exercise"":""Pull-up"",""reps"":""15""},{""exercise"":""Thruster"",""reps"":""9"",""weight_male"":""95"",""weight_female"":""65""},{""exercise"":""Pull-up"",""reps"":""9""}]",21-15-9 Thrusters and Pull-ups,180,330,45,240,420,55`}
           </pre>
         </div>
       </div>
