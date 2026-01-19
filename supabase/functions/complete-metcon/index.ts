@@ -378,15 +378,31 @@ serve(async (req) => {
 
     // Step 6: Get benchmarks
     const isMale = userData.gender?.toLowerCase() === 'male'
-    const benchmarkMean = parseBenchmarkScore(isMale ? metcon.male_p50 : metcon.female_p50)
-    const benchmarkStdDev = parseBenchmarkScore(isMale ? metcon.male_std_dev : metcon.female_std_dev)
+    const benchmarkP50 = parseBenchmarkScore(isMale ? metcon.male_p50 : metcon.female_p50)
+    const benchmarkP90 = parseBenchmarkScore(isMale ? metcon.male_p90 : metcon.female_p90)
+    let benchmarkStdDev = parseBenchmarkScore(isMale ? metcon.male_std_dev : metcon.female_std_dev)
 
-    if (benchmarkMean === 0 || benchmarkStdDev === 0) {
+    // Derive std_dev from p50/p90 if missing (assumes normal distribution)
+    // In a normal distribution, p90 is at z-score ~1.28 from p50 (mean)
+    if (benchmarkStdDev === 0 && benchmarkP50 !== 0 && benchmarkP90 !== 0) {
+      benchmarkStdDev = Math.abs((benchmarkP90 - benchmarkP50) / 1.28)
+      console.log(`📊 Derived std_dev from p50/p90: ${benchmarkStdDev}`)
+    }
+
+    if (benchmarkP50 === 0) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Invalid benchmark data' }),
+        JSON.stringify({ success: false, error: 'Invalid benchmark data - missing p50' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // If we still don't have std_dev, use a reasonable default (20% of mean)
+    if (benchmarkStdDev === 0) {
+      benchmarkStdDev = benchmarkP50 * 0.2
+      console.log(`📊 Using default std_dev (20% of mean): ${benchmarkStdDev}`)
+    }
+
+    const benchmarkMean = benchmarkP50
 
     // Step 7: Calculate percentile
     const lowerIsBetter = isLowerBetter(parsedUserScore.type)
@@ -430,7 +446,7 @@ serve(async (req) => {
           performance_tier: performanceTier,
           excellent_score: isMale ? metcon.male_p90 : metcon.female_p90,
           median_score: isMale ? metcon.male_p50 : metcon.female_p50,
-          std_dev: isMale ? metcon.male_std_dev : metcon.female_std_dev,
+          std_dev: benchmarkStdDev.toFixed(2),
           avg_heart_rate: completionData.avgHR || null,
           max_heart_rate: completionData.peakHR || null,
           avg_rpe: avgRpe,
@@ -457,7 +473,7 @@ serve(async (req) => {
           performance_tier: performanceTier,
           excellent_score: isMale ? metcon.male_p90 : metcon.female_p90,
           median_score: isMale ? metcon.male_p50 : metcon.female_p50,
-          std_dev: isMale ? metcon.male_std_dev : metcon.female_std_dev,
+          std_dev: benchmarkStdDev.toFixed(2),
           avg_heart_rate: completionData.avgHR || null,
           max_heart_rate: completionData.peakHR || null,
           avg_rpe: avgRpe,
