@@ -8,26 +8,53 @@ function isAdminEmail(email: string | null | undefined): boolean {
   return allow.includes(email)
 }
 
-// Normalize equipment names to match database values
+// Valid equipment options (must match intake form options)
+const VALID_EQUIPMENT = [
+  'Air Bike', 'Axle Bar', 'Barbell', 'Bench', 'Squat Rack', 'Climbing Rope',
+  'Dball', 'Dip Bar', 'Dumbbells', 'Plyo Box', 'GHD', 'HS Walk Obstacle',
+  'High Rings', 'Low or Adjustable Rings', 'Jump Rope', 'Kettlebells',
+  'Open Space', 'Parallettes', 'Pegboard', 'Pullup Bar or Rig',
+  'Rowing Machine', 'Ski Erg', 'Bike Erg', 'Sandbag', 'Wall Ball', 'Wall Space'
+]
+
+// Normalize equipment names to match intake form values
 const normalizeEquipment = (raw: string): string => {
   const s = raw.toLowerCase().trim()
+  if (s === 'none' || s === '') return 'None'
+
+  // Exact match (case-insensitive)
+  const exactMatch = VALID_EQUIPMENT.find(eq => eq.toLowerCase() === s)
+  if (exactMatch) return exactMatch
+
+  // Fuzzy matching for common variations
   if (s.includes('pull') && (s.includes('bar') || s.includes('rig'))) return 'Pullup Bar or Rig'
   if (s.includes('barbell')) return 'Barbell'
   if (s.includes('axle')) return 'Axle Bar'
   if (s.includes('dumbbell')) return 'Dumbbells'
   if (s.includes('wall ball') || s.includes('med ball')) return 'Wall Ball'
-  if (s.includes('kettlebell')) return 'Kettlebell'
-  if (s.includes('row')) return 'Row Erg'
-  if (s.includes('bike')) return 'Bike Erg'
+  if (s.includes('kettlebell')) return 'Kettlebells'
+  if (s.includes('rowing') || s.includes('row erg') || s.includes('rower')) return 'Rowing Machine'
+  if (s.includes('air bike') || s.includes('assault bike') || s.includes('echo bike')) return 'Air Bike'
+  if (s.includes('bike erg') || s === 'bike') return 'Bike Erg'
   if (s.includes('ski')) return 'Ski Erg'
-  if (s.includes('jump rope') || s.includes('double')) return 'Jump Rope'
-  if (s.includes('rope climb') || (s.includes('rope') && s.includes('climb'))) return 'Climbing Rope'
-  if (s.includes('box')) return 'Plyo Box'
+  if (s.includes('jump rope') || s.includes('double under') || s.includes('single under')) return 'Jump Rope'
+  if (s.includes('rope climb') || s.includes('climbing rope')) return 'Climbing Rope'
+  if (s.includes('plyo') || s.includes('box jump')) return 'Plyo Box'
   if (s.includes('ghd') || s.includes('glute-ham') || s.includes('glute ham')) return 'GHD'
-  if (s.includes('ring')) return 'Rings'
+  if (s.includes('high ring')) return 'High Rings'
+  if (s.includes('low ring') || s.includes('adjustable ring')) return 'Low or Adjustable Rings'
+  if (s === 'rings' || s === 'ring') return 'High Rings'
   if (s.includes('sandbag')) return 'Sandbag'
-  if (s.includes('sled')) return 'Sled'
-  if (s === 'none' || s === '') return 'None'
+  if (s.includes('d-ball') || s.includes('dball') || s.includes('d ball')) return 'Dball'
+  if (s.includes('dip')) return 'Dip Bar'
+  if (s.includes('bench')) return 'Bench'
+  if (s.includes('squat rack') || s.includes('rack')) return 'Squat Rack'
+  if (s.includes('parallette')) return 'Parallettes'
+  if (s.includes('pegboard') || s.includes('peg board')) return 'Pegboard'
+  if (s.includes('hs walk') || s.includes('handstand walk') || s.includes('obstacle')) return 'HS Walk Obstacle'
+  if (s.includes('open space')) return 'Open Space'
+  if (s.includes('wall space')) return 'Wall Space'
+
   // Return original with proper casing if no match
   return raw.trim()
 }

@@ -177,11 +177,13 @@ export default function AdminMetconsImportPage() {
         </div>
 
         <div className="space-y-2 text-sm">
-          <h3 className="font-medium">Equipment Values:</h3>
-          <p className="text-gray-700">
-            Barbell, Dumbbells, Kettlebell, Pullup Bar or Rig, Wall Ball, Row Erg, Bike Erg, Ski Erg,
-            Jump Rope, Climbing Rope, Plyo Box, Axle Bar, GHD, Rings, Sandbag, Sled, None
-          </p>
+          <h3 className="font-medium">Equipment Values (must match intake form):</h3>
+          <div className="text-gray-700 space-y-1">
+            <p><strong>Basics:</strong> Barbell, Dumbbells, Kettlebells, Pullup Bar or Rig, High Rings, Low or Adjustable Rings, Bench, Squat Rack, Open Space, Wall Space, Jump Rope, Wall Ball</p>
+            <p><strong>Cardio:</strong> Rowing Machine, Air Bike, Ski Erg, Bike Erg</p>
+            <p><strong>Specialty:</strong> GHD, Axle Bar, Climbing Rope, Pegboard, Parallettes, Dball, Dip Bar, Plyo Box, HS Walk Obstacle, Sandbag</p>
+            <p><strong>Other:</strong> None</p>
+          </div>
         </div>
 
         <div className="space-y-2 text-sm">
