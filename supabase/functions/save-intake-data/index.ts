@@ -447,7 +447,13 @@ serve(async (req) => {
         ? Array.from({length: 13}, (_, i) => i + 1)
         : [1, 2, 3, 4]
 
-      const isAppliedPower = userTier?.subscription_tier === 'APPLIED_POWER'
+      // Map subscription tier to program type
+      const tier = userTier?.subscription_tier
+      const programType = 
+        tier === 'ENGINE' ? 'engine' :
+        tier === 'BTN' ? 'btn' :
+        tier === 'APPLIED_POWER' ? 'applied_power' : 
+        'full'  // PREMIUM/COMPETITOR get full program
 
       // Determine programType based on subscription tier
       const programType = isEngineUser ? 'engine'
