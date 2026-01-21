@@ -215,8 +215,9 @@ serve(async (req) => {
       .eq('id', effectiveUserId)
       .single()
     
-    const isEngineUser = userData?.subscription_tier === 'ENGINE'
-    const isBTN = userData?.subscription_tier === 'BTN'
+    const normalizedTier = userData?.subscription_tier?.toUpperCase()
+    const isEngineUser = normalizedTier === 'ENGINE'
+    const isBTN = normalizedTier === 'BTN'
     const originalIntakeStatus = userData?.intake_status || 'draft'
     console.log('📊 User subscription tier:', userData?.subscription_tier)
 
@@ -448,17 +449,12 @@ serve(async (req) => {
         : [1, 2, 3, 4]
 
       // Map subscription tier to program type
-      const tier = userTier?.subscription_tier
+      const tier = userTier?.subscription_tier?.toUpperCase()
       const programType = 
         tier === 'ENGINE' ? 'engine' :
         tier === 'BTN' ? 'btn' :
         tier === 'APPLIED_POWER' ? 'applied_power' : 
         'full'  // PREMIUM/COMPETITOR get full program
-
-      // Determine programType based on subscription tier
-      const programType = isEngineUser ? 'engine'
-        : isAppliedPower ? 'applied_power'
-        : 'full'
 
       // Check if user already has a program and calculate program number
       const { data: existingPrograms } = await supabase
