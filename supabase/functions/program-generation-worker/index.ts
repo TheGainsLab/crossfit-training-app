@@ -334,9 +334,14 @@ async function processProgramGenerationJob(job: any) {
     .select('subscription_tier')
     .eq('id', userId)
     .single()
-  
-  const isAppliedPower = userData?.subscription_tier === 'APPLIED_POWER'
-  const programType = isAppliedPower ? 'applied_power' : 'full'
+
+  // Normalize tier to uppercase for case-insensitive comparison
+  const normalizedTier = userData?.subscription_tier?.toUpperCase()
+  const isEngineUser = normalizedTier === 'ENGINE'
+  const isAppliedPower = normalizedTier === 'APPLIED_POWER'
+  const programType = isEngineUser ? 'engine'
+    : isAppliedPower ? 'applied_power'
+    : 'full'
   
   // Call generate-program Edge Function
   const generateResponse = await fetch(`${supabaseUrl}/functions/v1/generate-program`, {

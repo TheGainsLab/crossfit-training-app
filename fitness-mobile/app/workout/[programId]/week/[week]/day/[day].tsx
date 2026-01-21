@@ -148,6 +148,9 @@ export default function WorkoutPage() {
           // Filter blocks based on subscription tier
           let filteredWorkout = { ...data.workout };
           
+          // Normalize tier to uppercase for comparison (handles 'engine' vs 'ENGINE')
+          const normalizedTier = (userData.subscription_tier || '').toUpperCase();
+
           // Now guaranteed to have subscription_tier
           const TIER_BLOCKS: { [key: string]: string[] } = {
               'ENGINE': ['ENGINE'],
@@ -155,8 +158,8 @@ export default function WorkoutPage() {
               'APPLIED_POWER': ['TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES'],
               'PREMIUM': ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS', 'ENGINE']
             };
-            
-            const allowedBlocks = TIER_BLOCKS[userData.subscription_tier] || TIER_BLOCKS['PREMIUM'];
+
+            const allowedBlocks = TIER_BLOCKS[normalizedTier] || TIER_BLOCKS['PREMIUM'];
             
             // Filter blocks
             filteredWorkout.blocks = data.workout.blocks.filter((block: Block) => 
@@ -171,7 +174,7 @@ export default function WorkoutPage() {
               filteredWorkout.engineData = undefined;
             }
             
-            console.log(`🔒 Filtered blocks for ${userData.subscription_tier}:`, filteredWorkout.blocks.map((b: Block) => b.blockName));
+            console.log(`🔒 Filtered blocks for ${normalizedTier}:`, filteredWorkout.blocks.map((b: Block) => b.blockName));
           
           setWorkout(filteredWorkout)
           if (Array.isArray(data.completions)) {

@@ -215,8 +215,10 @@ serve(async (req) => {
       .eq('id', effectiveUserId)
       .single()
     
-    const isEngineUser = userData?.subscription_tier === 'ENGINE'
-    const isBTN = userData?.subscription_tier === 'BTN'
+    // Normalize subscription_tier to uppercase for comparison
+    const normalizedTier = userData?.subscription_tier?.toUpperCase()
+    const isEngineUser = normalizedTier === 'ENGINE'
+    const isBTN = normalizedTier === 'BTN'
     const originalIntakeStatus = userData?.intake_status || 'draft'
     console.log('📊 User subscription tier:', userData?.subscription_tier)
 
@@ -447,7 +449,9 @@ serve(async (req) => {
         ? Array.from({length: 13}, (_, i) => i + 1)
         : [1, 2, 3, 4]
 
-      const isAppliedPower = userTier?.subscription_tier === 'APPLIED_POWER'
+      // Normalize tier to uppercase for case-insensitive comparison
+      const normalizedUserTier = userTier?.subscription_tier?.toUpperCase()
+      const isAppliedPower = normalizedUserTier === 'APPLIED_POWER'
 
       // Determine programType based on subscription tier
       const programType = isEngineUser ? 'engine'
