@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useRouter } from 'expo-router'
-import { View, ActivityIndicator } from 'react-native'
+import { View, ActivityIndicator, Alert } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient } from '@/lib/supabase/client'
 import { setRevenueCatUserId, hasActiveSubscription } from '@/lib/subscriptions'

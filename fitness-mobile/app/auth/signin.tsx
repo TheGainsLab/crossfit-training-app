@@ -131,7 +131,14 @@ export default function SignIn() {
             }
           }
           
-          // Check intake_status first - redirect to intake if needed
+          // Check subscription_tier FIRST - user must have a subscription before intake
+          if (!typedUserData.subscription_tier || typedUserData.subscription_tier === 'FREE') {
+            console.log('⚠️ No subscription tier, redirecting to /subscriptions')
+            router.replace('/subscriptions')
+            return
+          }
+          
+          // THEN check intake_status - redirect to intake if needed
           const status = typedUserData.intake_status
           if (status === 'draft' || status === null || status === 'generating' || status === 'failed') {
             router.replace('/intake')
