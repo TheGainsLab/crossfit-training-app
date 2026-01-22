@@ -490,7 +490,7 @@ export default function AddToFavoritesModal({
 
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SafeAreaView style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('main')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -570,7 +570,7 @@ export default function AddToFavoritesModal({
 
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SafeAreaView style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('main')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -643,7 +643,7 @@ export default function AddToFavoritesModal({
   if (currentView === 'restaurant-custom') {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SafeAreaView style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('restaurant-list')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -686,7 +686,7 @@ export default function AddToFavoritesModal({
   if (currentView === 'brand-custom') {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SafeAreaView style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('brand-list')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -729,7 +729,7 @@ export default function AddToFavoritesModal({
   if (currentView === 'restaurant-confirm') {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SafeAreaView style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('restaurant-custom')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -781,7 +781,7 @@ export default function AddToFavoritesModal({
   if (currentView === 'brand-confirm') {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SafeAreaView style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('brand-custom')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -835,7 +835,7 @@ export default function AddToFavoritesModal({
     if (showPortionInput && selectedFood) {
       return (
         <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-          <SafeAreaView style={styles.modalContainer}>
+          <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => {
                 setShowPortionInput(false)
@@ -885,7 +885,7 @@ export default function AddToFavoritesModal({
   // Main menu
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-      <SafeAreaView style={styles.modalContainer}>
+      <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={handleClose}>
             <Ionicons name="close" size={24} color="#282B34" />

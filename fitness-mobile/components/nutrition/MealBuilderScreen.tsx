@@ -472,7 +472,7 @@ export default function MealBuilderScreen({
   // Render portion input view
   if (currentView === 'portion' && selectedFood) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -499,7 +499,7 @@ export default function MealBuilderScreen({
   // Render food search view
   if (currentView === 'search') {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <FoodSearchView
           onClose={handleBack}
           onFoodSelected={handleSearchFoodSelected}
@@ -512,7 +512,7 @@ export default function MealBuilderScreen({
   // Render food selection/details view (after search)
   if (currentView === 'searchDetails' && searchSelectedFood) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <FoodSelectionView
           foodId={searchSelectedFood.foodId}
           foodName={searchSelectedFood.foodName}
@@ -526,7 +526,7 @@ export default function MealBuilderScreen({
   // Render saved foods picker view
   if (currentView === 'savedFoods' && savedFoodsMode) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <SavedFoodsPickerView
           mode={savedFoodsMode}
           onBack={handleBack}
@@ -538,7 +538,7 @@ export default function MealBuilderScreen({
 
   // Main meal builder view
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="close" size={24} color="#282B34" />

@@ -69,7 +69,7 @@ export default function FoodLoggingScreen({
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {currentView === 'search' ? (
         <FoodSearchView
           onClose={handleBack}
