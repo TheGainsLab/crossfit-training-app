@@ -101,8 +101,9 @@ export default function MealBuilderView({
       const foods = data?.data?.foods?.food || data?.foods?.food
 
       if (!foods || (Array.isArray(foods) && foods.length === 0)) {
-        Alert.alert('Not Found', `Could not find nutrition data for ${ingredient.name}`)
+        // Fall back to opening search with the ingredient name pre-filled
         setLoadingIngredient(null)
+        setShowFoodSearch(true)
         return
       }
 
@@ -110,7 +111,9 @@ export default function MealBuilderView({
       await handleFoodSelect({ food_id: foodItem.food_id, food_name: foodItem.food_name || ingredient.name })
     } catch (error) {
       console.error('Error selecting default ingredient:', error)
-      Alert.alert('Error', 'Failed to look up ingredient')
+      // Fall back to search on error
+      setLoadingIngredient(null)
+      setShowFoodSearch(true)
     } finally {
       setLoadingIngredient(null)
     }
