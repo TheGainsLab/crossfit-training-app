@@ -87,8 +87,9 @@ export default function MealBuilderScreen({
   const [searchSelectedFood, setSearchSelectedFood] = useState<{ foodId: string; foodName: string } | null>(null)
 
   const insets = useSafeAreaInsets()
-  // Use Constants.statusBarHeight as fallback when insets aren't available
-  const topInset = insets.top > 0 ? insets.top : (Constants.statusBarHeight || 0)
+  // Fallback: use statusBarHeight, but minimum 59 for iOS (Dynamic Island safe area)
+  const fallbackTop = Platform.OS === 'ios' ? Math.max(Constants.statusBarHeight || 0, 59) : 0
+  const topInset = insets.top > 0 ? insets.top : fallbackTop
   const supabase = createClient()
 
   useEffect(() => {
