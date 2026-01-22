@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '@/components/ui/Card'
 import { createClient } from '@/lib/supabase/client'
@@ -489,7 +490,7 @@ export default function AddToFavoritesModal({
 
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <View style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('main')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -553,7 +554,7 @@ export default function AddToFavoritesModal({
               <Text style={styles.customButtonText}>Not listed? Add custom restaurant</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
     )
   }
@@ -569,7 +570,7 @@ export default function AddToFavoritesModal({
 
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <View style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('main')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -633,7 +634,7 @@ export default function AddToFavoritesModal({
               <Text style={styles.customButtonText}>Not listed? Add custom brand</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
     )
   }
@@ -642,7 +643,7 @@ export default function AddToFavoritesModal({
   if (currentView === 'restaurant-custom') {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <View style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('restaurant-list')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -676,7 +677,7 @@ export default function AddToFavoritesModal({
               </Text>
             </TouchableOpacity>
           </ScrollView>
-        </View>
+        </SafeAreaView>
       </Modal>
     )
   }
@@ -685,7 +686,7 @@ export default function AddToFavoritesModal({
   if (currentView === 'brand-custom') {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <View style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('brand-list')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -719,7 +720,7 @@ export default function AddToFavoritesModal({
               </Text>
             </TouchableOpacity>
           </ScrollView>
-        </View>
+        </SafeAreaView>
       </Modal>
     )
   }
@@ -728,7 +729,7 @@ export default function AddToFavoritesModal({
   if (currentView === 'restaurant-confirm') {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <View style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('restaurant-custom')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -771,7 +772,7 @@ export default function AddToFavoritesModal({
               </TouchableOpacity>
             </View>
           </ScrollView>
-        </View>
+        </SafeAreaView>
       </Modal>
     )
   }
@@ -780,7 +781,7 @@ export default function AddToFavoritesModal({
   if (currentView === 'brand-confirm') {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <View style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('brand-custom')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -823,7 +824,7 @@ export default function AddToFavoritesModal({
               </TouchableOpacity>
             </View>
           </ScrollView>
-        </View>
+        </SafeAreaView>
       </Modal>
     )
   }
@@ -834,7 +835,7 @@ export default function AddToFavoritesModal({
     if (showPortionInput && selectedFood) {
       return (
         <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-          <View style={styles.modalContainer}>
+          <SafeAreaView style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => {
                 setShowPortionInput(false)
@@ -865,7 +866,7 @@ export default function AddToFavoritesModal({
                 />
               )}
             </ScrollView>
-          </View>
+          </SafeAreaView>
         </Modal>
       )
     }
@@ -884,7 +885,7 @@ export default function AddToFavoritesModal({
   // Main menu
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-      <View style={styles.modalContainer}>
+      <SafeAreaView style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={handleClose}>
             <Ionicons name="close" size={24} color="#282B34" />
@@ -983,7 +984,7 @@ export default function AddToFavoritesModal({
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </View>
+      </SafeAreaView>
     </Modal>
   )
 }
