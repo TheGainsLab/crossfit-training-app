@@ -8,10 +8,12 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
+  SafeAreaView,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { createMealTemplate, updateMealTemplate, MealTemplate, MealTemplateItem } from '@/lib/api/mealTemplates'
-import FoodSelectionModal from './FoodSelectionModal'
-import FoodSearchModal from './FoodSearchModal'
+import FoodSearchView from './FoodSearchView'
+import FoodSelectionView from './FoodSelectionView'
 
 interface MealBuilderProps {
   userId: number
@@ -21,6 +23,9 @@ interface MealBuilderProps {
   onCancel: () => void
   onAddFood: () => void
 }
+
+// Internal view states for swap-out pattern (no nested modals)
+type BuilderView = 'main' | 'search' | 'details'
 
 export default function MealBuilder({
   userId,
@@ -42,8 +47,9 @@ export default function MealBuilder({
     }
   )
   const [saving, setSaving] = useState(false)
-  const [showSearchModal, setShowSearchModal] = useState(false)
-  const [showFoodSelector, setShowFoodSelector] = useState(false)
+
+  // View switching state (replaces modal state for swap-out pattern)
+  const [currentView, setCurrentView] = useState<BuilderView>('main')
   const [selectedFoodForDetails, setSelectedFoodForDetails] = useState<{ foodId: string | null; foodName: string | null }>({
     foodId: null,
     foodName: null,
@@ -145,10 +151,9 @@ export default function MealBuilder({
   }
 
   const handleFoodSelectedFromSearch = (food: { food_id: string; food_name: string }) => {
-    // Close search modal and open food selection modal
-    setShowSearchModal(false)
+    // Switch to details view (no modal stacking)
     setSelectedFoodForDetails({ foodId: food.food_id, foodName: food.food_name })
-    setShowFoodSelector(true)
+    setCurrentView('details')
   }
 
   const handleFoodAdded = (foodData: {
@@ -187,13 +192,44 @@ export default function MealBuilder({
       items: [...template.items, newItem],
     })
 
-    // Close modal and reset state
-    setShowFoodSelector(false)
+    // Return to main view and reset state (no modal to close)
+    setCurrentView('main')
     setSelectedFoodForDetails({ foodId: null, foodName: null })
   }
 
   const totals = calculateTotals(template.items)
 
+  // Render search view (swap-out pattern - no modal)
+  if (currentView === 'search') {
+    return (
+      <View style={styles.fullScreenContainer}>
+        <FoodSearchView
+          onClose={() => setCurrentView('main')}
+          onFoodSelected={handleFoodSelectedFromSearch}
+          filterType="all"
+        />
+      </View>
+    )
+  }
+
+  // Render details view (swap-out pattern - no modal)
+  if (currentView === 'details' && selectedFoodForDetails.foodId && selectedFoodForDetails.foodName) {
+    return (
+      <View style={styles.fullScreenContainer}>
+        <FoodSelectionView
+          foodId={selectedFoodForDetails.foodId}
+          foodName={selectedFoodForDetails.foodName}
+          onBack={() => {
+            setCurrentView('search')
+            setSelectedFoodForDetails({ foodId: null, foodName: null })
+          }}
+          onAdd={handleFoodAdded}
+        />
+      </View>
+    )
+  }
+
+  // Main builder view
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* Template Header */}
@@ -221,7 +257,7 @@ export default function MealBuilder({
           <Text style={styles.label}>Food Items ({template.items.length})</Text>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => setShowSearchModal(true)}
+            onPress={() => setCurrentView('search')}
           >
             <Text style={styles.addButtonText}>+ Add Food</Text>
           </TouchableOpacity>
@@ -300,37 +336,16 @@ export default function MealBuilder({
           )}
         </TouchableOpacity>
       </View>
-
-      {/* Food Search Modal */}
-      {showSearchModal && (
-        <FoodSearchModal
-          visible={showSearchModal}
-          onClose={() => setShowSearchModal(false)}
-          onFoodSelected={handleFoodSelectedFromSearch}
-          preselectedMealType={selectedMealType}
-        />
-      )}
-
-      {/* Food Selection Modal */}
-      {showFoodSelector && selectedFoodForDetails.foodId && selectedFoodForDetails.foodName && (
-        <FoodSelectionModal
-          visible={showFoodSelector}
-          foodId={selectedFoodForDetails.foodId}
-          foodName={selectedFoodForDetails.foodName}
-          onClose={() => {
-            setShowFoodSelector(false)
-            setSelectedFoodForDetails({ foodId: null, foodName: null })
-          }}
-          onAdd={handleFoodAdded}
-          preselectedMealType={selectedMealType}
-        />
-      )}
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  fullScreenContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },

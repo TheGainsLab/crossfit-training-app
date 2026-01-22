@@ -20,10 +20,11 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { getMealTemplates, logMealTemplate, MealTemplate, deleteMealTemplate, getMealTemplateWithItems, createMealTemplate } from '@/lib/api/mealTemplates'
 import MealBuilder from '@/components/nutrition/MealBuilder'
-import FoodLoggingModal from '@/components/nutrition/FoodLoggingModal'
 import FrequentFoodsScreen from '@/components/nutrition/FrequentFoodsScreen'
 import PhotoResultSlider from '@/components/nutrition/PhotoResultSlider'
-import MealBuilderModal from '@/components/nutrition/MealBuilderModal'
+// Swap-out screen components (prevent iOS modal stacking issues)
+import FoodLoggingScreen from '@/components/nutrition/FoodLoggingScreen'
+import MealBuilderScreen from '@/components/nutrition/MealBuilderScreen'
 
 // TypeScript interfaces
 interface FoodEntry {
@@ -153,10 +154,10 @@ export default function NutritionPage() {
   const [todayLogs, setTodayLogs] = useState<FoodEntry[]>([])
   const [bmr, setBmr] = useState<number | null>(null)
 
-  // UI state
+  // UI state - using swap-out screens instead of modals to prevent iOS freezing
   const [selectedMealType, setSelectedMealType] = useState<string | null>(null)
-  const [showFoodLoggingModal, setShowFoodLoggingModal] = useState(false)
-  const [showIngredientsModal, setShowIngredientsModal] = useState(false)
+  const [showFoodLoggingScreen, setShowFoodLoggingScreen] = useState(false)
+  const [showMealBuilderScreen, setShowMealBuilderScreen] = useState(false)
   const [barcodeScannerVisible, setBarcodeScannerVisible] = useState(false)
   const [barcodeScanning, setBarcodeScanning] = useState(false)
   const [imageRecognitionLoading, setImageRecognitionLoading] = useState(false)
@@ -741,10 +742,74 @@ export default function NutritionPage() {
 
   if (!userId) return <View style={styles.container}><Card style={styles.card}><Text style={styles.errorText}>Please sign in.</Text></Card></View>
 
+  // Swap-out screens (render instead of main view to prevent iOS modal stacking)
+
+  // Show Food Logging screen if requested
+  if (showFoodLoggingScreen) {
+    return (
+      <FoodLoggingScreen
+        onBack={() => {
+          setShowFoodLoggingScreen(false)
+          setSelectedMealType(null)
+        }}
+        onFoodAdded={handleLogFoodEntry}
+        preselectedMealType={selectedMealType}
+      />
+    )
+  }
+
+  // Show Meal Builder screen if requested
+  if (showMealBuilderScreen) {
+    return (
+      <MealBuilderScreen
+        onBack={() => {
+          setShowMealBuilderScreen(false)
+          setSelectedMealType(null)
+        }}
+        onLogMeal={async (mealItems) => {
+          if (!userId) return
+          try {
+            const supabase = createClient()
+            const mealType = selectedMealType || 'other'
+            for (const item of mealItems) {
+              await supabase.from('food_entries').insert({
+                user_id: userId,
+                food_id: item.food_id,
+                food_name: item.food_name,
+                serving_id: item.serving_id || '0',
+                serving_description: item.serving_description || `${item.amount} ${item.unit}`,
+                number_of_units: item.amount,
+                calories: item.calories,
+                protein: item.protein,
+                carbohydrate: item.carbs,
+                fat: item.fat,
+                fiber: item.fiber || 0,
+                sugar: 0,
+                sodium: item.sodium || 0,
+                meal_type: mealType,
+                logged_at: new Date().toISOString(),
+              } as any)
+            }
+            Alert.alert('Success', `Logged ${mealItems.length} items!`)
+            await loadDailyData()
+            setSelectedMealType(null)
+          } catch (error) {
+            console.error('Error logging meal:', error)
+            Alert.alert('Error', 'Failed to log meal')
+          }
+        }}
+        onSaved={() => {
+          loadMealTemplates()
+        }}
+        preselectedMealType={selectedMealType}
+      />
+    )
+  }
+
   // Show Frequent Foods screen if requested
   if (showFrequentFoods) {
     return (
-      <FrequentFoodsScreen 
+      <FrequentFoodsScreen
         onBack={() => setShowFrequentFoods(false)}
         mealType={selectedMealType}
       />
@@ -771,68 +836,21 @@ export default function NutritionPage() {
         <LoggingInterface
           selectedMealType={selectedMealType} mealTemplates={mealTemplates} templatesLoading={templatesLoading}
           onMealTypeSelect={handleMealTypeSelect} onLogTemplate={handleLogTemplate} onTakePhoto={handleImageRecognition}
-          onScanBarcode={handleBarcodeScan} onSearchFood={() => setShowFoodLoggingModal(true)}
+          onScanBarcode={handleBarcodeScan} onSearchFood={() => setShowFoodLoggingScreen(true)}
           onShowFavorites={() => setShowFrequentFoods(true)}
-          onShowIngredients={() => setShowIngredientsModal(true)}
+          onShowIngredients={() => setShowMealBuilderScreen(true)}
           favoritesExpanded={favoritesExpanded} onCreateFavorite={() => { setCurrentMeal(null); setShowMealBuilder(true) }}
           onEditTemplate={handleEditTemplate} onDeleteTemplate={handleDeleteTemplate} onDuplicateTemplate={handleDuplicateTemplate}
         />
       </View>
 
+      {/* MealBuilder for creating/editing favorite templates (still uses modal for this specific flow) */}
       {showMealBuilder && <Modal visible={showMealBuilder} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setShowMealBuilder(false); setCurrentMeal(null) }}>
         <MealBuilder userId={userId!} initialTemplate={currentMeal} selectedMealType={selectedMealType} onSave={handleTemplateSaved} onCancel={() => { setShowMealBuilder(false); setCurrentMeal(null) }} onAddFood={handleAddFood} />
       </Modal>}
 
-      {/* Unified Food Logging Modal - prevents iOS modal stacking issues */}
-      <FoodLoggingModal
-        visible={showFoodLoggingModal}
-        onClose={() => setShowFoodLoggingModal(false)}
-        onFoodAdded={handleLogFoodEntry}
-        preselectedMealType={selectedMealType}
-      />
-      <MealBuilderModal
-        visible={showIngredientsModal}
-        onClose={() => setShowIngredientsModal(false)}
-        onLogMeal={async (mealItems) => {
-          // Log assembled meal to today's food entries
-          if (!userId) return
-          try {
-            const supabase = createClient()
-            const mealType = selectedMealType || 'other'
-            for (const item of mealItems) {
-              await supabase.from('food_entries').insert({
-                user_id: userId,
-                food_id: item.food_id,
-                food_name: item.food_name,
-                serving_id: item.serving_id || '0',
-                serving_description: item.serving_description || `${item.amount} ${item.unit}`,
-                number_of_units: item.amount,
-                calories: item.calories,
-                protein: item.protein,
-                carbohydrate: item.carbs,
-                fat: item.fat,
-                fiber: item.fiber || 0,
-                sugar: 0,
-                sodium: item.sodium || 0,
-                meal_type: mealType,
-                logged_at: new Date().toISOString(),
-              } as any)
-            }
-            Alert.alert('Success', `Logged ${mealItems.length} items!`)
-            setShowIngredientsModal(false)
-            await loadDailyData()
-            setSelectedMealType(null)
-          } catch (error) {
-            console.error('Error logging meal:', error)
-            Alert.alert('Error', 'Failed to log meal')
-          }
-        }}
-        onSaved={() => {
-          loadMealTemplates()
-          setShowIngredientsModal(false)
-        }}
-        preselectedMealType={selectedMealType}
-      />
+      {/* Note: FoodLoggingScreen and MealBuilderScreen are now swap-out screens rendered above,
+          not modals. This prevents iOS modal stacking crashes. */}
 
       <Modal visible={deleteTemplateModal.visible} transparent={true} animationType="fade" onRequestClose={() => setDeleteTemplateModal({ visible: false, templateId: null, templateName: null })}>
         <View style={styles.modalOverlay}><View style={styles.modalContent}><View style={styles.modalHeader}><Text style={styles.modalTitle}>Delete Favorite</Text></View><View style={styles.modalBody}><Text style={styles.modalBodyText}>Are you sure you want to delete "{deleteTemplateModal.templateName}"?</Text></View><View style={styles.modalButtons}><TouchableOpacity style={styles.modalButton} onPress={() => setDeleteTemplateModal({ visible: false, templateId: null, templateName: null })}><Text>Cancel</Text></TouchableOpacity><TouchableOpacity style={[styles.modalButton, styles.modalButtonDelete]} onPress={async () => { const id = deleteTemplateModal.templateId; setDeleteTemplateModal({ visible: false, templateId: null, templateName: null }); if (id) await executeDeleteTemplate(id) }}><Text style={{ color: '#FFF' }}>Delete</Text></TouchableOpacity></View></View></View>
