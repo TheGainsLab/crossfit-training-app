@@ -1,8 +1,6 @@
 import React, { useState } from 'react'
-import { View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Constants from 'expo-constants'
-import { Ionicons } from '@expo/vector-icons'
+import { View, StyleSheet } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import FoodSearchView from './FoodSearchView'
 import FoodSelectionView from './FoodSelectionView'
 
@@ -45,10 +43,6 @@ export default function FoodLoggingScreen({
 }: FoodLoggingScreenProps) {
   const [currentView, setCurrentView] = useState<ScreenView>('search')
   const [selectedFood, setSelectedFood] = useState<{ foodId: string; foodName: string } | null>(null)
-  const insets = useSafeAreaInsets()
-  // Fallback: use statusBarHeight, but minimum 59 for iOS (Dynamic Island safe area)
-  const fallbackTop = Platform.OS === 'ios' ? Math.max(Constants.statusBarHeight || 0, 59) : 0
-  const topInset = insets.top > 0 ? insets.top : fallbackTop
 
   const handleBack = () => {
     if (currentView === 'details') {
@@ -75,7 +69,7 @@ export default function FoodLoggingScreen({
   }
 
   return (
-    <View style={[styles.container, { paddingTop: topInset }]}>
+    <SafeAreaView style={styles.container}>
       {currentView === 'search' ? (
         <FoodSearchView
           onClose={handleBack}
@@ -93,7 +87,7 @@ export default function FoodLoggingScreen({
           onAdd={handleFoodAdded}
         />
       )}
-    </View>
+    </SafeAreaView>
   )
 }
 

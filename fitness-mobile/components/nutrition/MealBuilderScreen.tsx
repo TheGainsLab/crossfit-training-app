@@ -8,10 +8,8 @@ import {
   Alert,
   StyleSheet,
   ActivityIndicator,
-  Platform,
 } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Constants from 'expo-constants'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '@/components/ui/Card'
 import { createClient } from '@/lib/supabase/client'
@@ -86,10 +84,6 @@ export default function MealBuilderScreen({
   // For search -> details flow
   const [searchSelectedFood, setSearchSelectedFood] = useState<{ foodId: string; foodName: string } | null>(null)
 
-  const insets = useSafeAreaInsets()
-  // Fallback: use statusBarHeight, but minimum 59 for iOS (Dynamic Island safe area)
-  const fallbackTop = Platform.OS === 'ios' ? Math.max(Constants.statusBarHeight || 0, 59) : 0
-  const topInset = insets.top > 0 ? insets.top : fallbackTop
   const supabase = createClient()
 
   useEffect(() => {
@@ -478,7 +472,7 @@ export default function MealBuilderScreen({
   // Render portion input view
   if (currentView === 'portion' && selectedFood) {
     return (
-      <View style={[styles.container, { paddingTop: topInset }]}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -498,53 +492,53 @@ export default function MealBuilderScreen({
             />
           </Card>
         </ScrollView>
-      </View>
+      </SafeAreaView>
     )
   }
 
   // Render food search view
   if (currentView === 'search') {
     return (
-      <View style={[styles.container, { paddingTop: topInset }]}>
+      <SafeAreaView style={styles.container}>
         <FoodSearchView
           onClose={handleBack}
           onFoodSelected={handleSearchFoodSelected}
           filterType="all"
         />
-      </View>
+      </SafeAreaView>
     )
   }
 
   // Render food selection/details view (after search)
   if (currentView === 'searchDetails' && searchSelectedFood) {
     return (
-      <View style={[styles.container, { paddingTop: topInset }]}>
+      <SafeAreaView style={styles.container}>
         <FoodSelectionView
           foodId={searchSelectedFood.foodId}
           foodName={searchSelectedFood.foodName}
           onBack={handleBack}
           onAdd={handleSearchFoodAdded}
         />
-      </View>
+      </SafeAreaView>
     )
   }
 
   // Render saved foods picker view
   if (currentView === 'savedFoods' && savedFoodsMode) {
     return (
-      <View style={[styles.container, { paddingTop: topInset }]}>
+      <SafeAreaView style={styles.container}>
         <SavedFoodsPickerView
           mode={savedFoodsMode}
           onBack={handleBack}
           onFoodSelected={handleAddSavedFood}
         />
-      </View>
+      </SafeAreaView>
     )
   }
 
   // Main meal builder view
   return (
-    <View style={[styles.container, { paddingTop: topInset }]}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="close" size={24} color="#282B34" />
@@ -779,7 +773,7 @@ export default function MealBuilderScreen({
           </>
         )}
       </View>
-    </View>
+    </SafeAreaView>
   )
 }
 
