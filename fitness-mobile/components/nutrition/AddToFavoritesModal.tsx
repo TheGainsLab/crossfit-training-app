@@ -489,7 +489,7 @@ export default function AddToFavoritesModal({
       )
 
     return (
-      <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
         <SafeAreaProvider>
           <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
@@ -571,7 +571,7 @@ export default function AddToFavoritesModal({
       )
 
     return (
-      <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
         <SafeAreaProvider>
           <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
@@ -646,7 +646,7 @@ export default function AddToFavoritesModal({
   // Custom Restaurant Entry
   if (currentView === 'restaurant-custom') {
     return (
-      <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
         <SafeAreaProvider>
           <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
@@ -691,7 +691,7 @@ export default function AddToFavoritesModal({
   // Custom Brand Entry
   if (currentView === 'brand-custom') {
     return (
-      <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
         <SafeAreaProvider>
           <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
@@ -736,7 +736,7 @@ export default function AddToFavoritesModal({
   // Restaurant Confirmation
   if (currentView === 'restaurant-confirm') {
     return (
-      <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
         <SafeAreaProvider>
           <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
@@ -790,7 +790,7 @@ export default function AddToFavoritesModal({
   // Brand Confirmation
   if (currentView === 'brand-confirm') {
     return (
-      <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
         <SafeAreaProvider>
           <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
@@ -846,7 +846,7 @@ export default function AddToFavoritesModal({
     // If showing portion input, render it
     if (showPortionInput && selectedFood) {
       return (
-        <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+        <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
           <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => {
@@ -885,7 +885,7 @@ export default function AddToFavoritesModal({
 
     // Otherwise show food search - embedded as view (not nested modal)
     return (
-      <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
         <SafeAreaProvider>
           <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <FoodSearchView
@@ -901,7 +901,7 @@ export default function AddToFavoritesModal({
 
   // Main menu
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
       <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={handleClose}>

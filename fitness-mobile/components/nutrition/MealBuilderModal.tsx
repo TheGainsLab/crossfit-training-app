@@ -450,7 +450,7 @@ export default function MealBuilderModal({
   // Show portion input screen
   if (showPortionInput && selectedFood) {
     return (
-      <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
         <SafeAreaProvider>
           <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <View style={styles.header}>
@@ -490,7 +490,7 @@ export default function MealBuilderModal({
   // Show food search - render as view inside the same modal (not nested modal)
   if (showFoodSearch) {
     return (
-      <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
         <SafeAreaProvider>
           <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <FoodSearchView
@@ -507,7 +507,7 @@ export default function MealBuilderModal({
   // Show saved foods picker - render as view inside the same modal (not nested modal)
   if (showSavedFoodsModal) {
     return (
-      <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
         <SafeAreaProvider>
           <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <SavedFoodsPickerView
@@ -526,7 +526,7 @@ export default function MealBuilderModal({
 
   // Main meal builder screen
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
       <SafeAreaProvider>
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
           <View style={styles.header}>
