@@ -64,7 +64,6 @@ export default function MealBuilderView({
   const [loadingDefaults, setLoadingDefaults] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>('protein')
   const [searchInitialQuery, setSearchInitialQuery] = useState<string | undefined>(undefined)
-  const [loadingIngredient, setLoadingIngredient] = useState<string | null>(null)
 
   const supabase = createClient()
 
@@ -84,43 +83,10 @@ export default function MealBuilderView({
     }
   }
 
-  // Chip click = search API for food_id, then show portion picker
-  const handleDefaultIngredientSelect = async (ingredient: DefaultIngredient) => {
-    if (loadingIngredient) return
-
-    setLoadingIngredient(ingredient.name)
-    try {
-      const { data, error } = await supabase.functions.invoke('nutrition-search', {
-        body: {
-          query: ingredient.search_term,
-          pageNumber: 0,
-          maxResults: 10,
-          filterType: 'generic', // Generic ingredients, not branded
-        },
-      })
-
-      if (error) throw error
-
-      // Edge function returns data.data.foods as already-normalized array
-      const foods = data?.data?.foods
-
-      if (!foods || foods.length === 0) {
-        Alert.alert('Not Found', `Could not find "${ingredient.name}" in the database.`)
-        return
-      }
-
-      // Auto-select first result and go to portion picker
-      const foodItem = foods[0]
-      await handleFoodSelect({
-        food_id: foodItem.food_id,
-        food_name: foodItem.food_name || ingredient.name,
-      })
-    } catch (error) {
-      console.error('Error selecting default ingredient:', error)
-      Alert.alert('Error', 'Failed to look up ingredient. Please try again.')
-    } finally {
-      setLoadingIngredient(null)
-    }
+  // Chip click = open search with that ingredient pre-filled
+  const handleDefaultIngredientSelect = (ingredient: DefaultIngredient) => {
+    setSearchInitialQuery(ingredient.search_term)
+    setShowFoodSearch(true)
   }
 
   const resetState = () => {
@@ -541,18 +507,10 @@ export default function MealBuilderView({
               {(defaultIngredients[selectedCategory] || []).map((ingredient) => (
                 <TouchableOpacity
                   key={ingredient.id}
-                  style={[
-                    styles.ingredientChip,
-                    loadingIngredient === ingredient.name && styles.ingredientChipLoading
-                  ]}
+                  style={styles.ingredientChip}
                   onPress={() => handleDefaultIngredientSelect(ingredient)}
-                  disabled={!!loadingIngredient}
                 >
-                  {loadingIngredient === ingredient.name ? (
-                    <ActivityIndicator size="small" color="#FE5858" style={{ marginRight: 6 }} />
-                  ) : (
-                    <Text style={styles.ingredientChipEmoji}>{ingredient.emoji}</Text>
-                  )}
+                  <Text style={styles.ingredientChipEmoji}>{ingredient.emoji}</Text>
                   <Text style={styles.ingredientChipText}>{ingredient.name}</Text>
                 </TouchableOpacity>
               ))}
