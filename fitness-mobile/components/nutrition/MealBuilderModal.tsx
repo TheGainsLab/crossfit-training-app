@@ -554,6 +554,7 @@ export default function MealBuilderModal({
             <Text style={styles.sectionTitle}>Quick Add Ingredients</Text>
 
             {/* Category tabs */}
+            <Text style={styles.categoryLabel}>Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryTabs}>
               {getSortedCategories().map((cat) => (
                 <TouchableOpacity
@@ -568,6 +569,8 @@ export default function MealBuilderModal({
                 </TouchableOpacity>
               ))}
             </ScrollView>
+
+            <View style={styles.categoryDivider} />
 
             {/* Ingredient chips */}
             {loadingDefaults ? (
@@ -951,7 +954,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#FFFFFF',
   },
+  categoryLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
   categoryTabs: {
+    marginBottom: 12,
+  },
+  categoryDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
     marginBottom: 12,
   },
   categoryTab: {
