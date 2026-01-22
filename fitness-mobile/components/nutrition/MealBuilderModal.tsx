@@ -67,7 +67,7 @@ export default function MealBuilderModal({
   const [defaultIngredients, setDefaultIngredients] = useState<Record<string, DefaultIngredient[]>>({})
   const [loadingDefaults, setLoadingDefaults] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>('protein')
-  const [loadingIngredient, setLoadingIngredient] = useState<string | null>(null)
+  const [searchInitialQuery, setSearchInitialQuery] = useState<string | undefined>(undefined)
 
   const supabase = createClient()
 
@@ -90,40 +90,10 @@ export default function MealBuilderModal({
     }
   }
 
-  const handleDefaultIngredientSelect = async (ingredient: DefaultIngredient) => {
-    if (loadingIngredient) return
-
-    setLoadingIngredient(ingredient.name)
-    try {
-      const { data, error } = await supabase.functions.invoke('nutrition-search', {
-        body: {
-          query: ingredient.search_term,
-          limit: 10,
-        },
-      })
-
-      if (error) throw error
-
-      // Handle different response formats from FatSecret API
-      const foods = data?.data?.foods?.food || data?.foods?.food
-
-      if (!foods || (Array.isArray(foods) && foods.length === 0)) {
-        // Fall back to opening search with the ingredient name pre-filled
-        setLoadingIngredient(null)
-        setShowFoodSearch(true)
-        return
-      }
-
-      const foodItem = Array.isArray(foods) ? foods[0] : foods
-      await handleFoodSelect({ food_id: foodItem.food_id, food_name: foodItem.food_name || ingredient.name })
-    } catch (error) {
-      console.error('Error selecting default ingredient:', error)
-      // Fall back to search on error
-      setLoadingIngredient(null)
-      setShowFoodSearch(true)
-    } finally {
-      setLoadingIngredient(null)
-    }
+  // Chip click = shortcut to search with that ingredient name pre-filled
+  const handleDefaultIngredientSelect = (ingredient: DefaultIngredient) => {
+    setSearchInitialQuery(ingredient.search_term)
+    setShowFoodSearch(true)
   }
 
   const resetModal = () => {
@@ -484,9 +454,13 @@ export default function MealBuilderModal({
         <SafeAreaProvider>
           <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <FoodSearchView
-              onClose={() => setShowFoodSearch(false)}
+              onClose={() => {
+                setShowFoodSearch(false)
+                setSearchInitialQuery(undefined)
+              }}
               filterType="all"
               onFoodSelected={handleFoodSelect}
+              initialQuery={searchInitialQuery}
             />
           </SafeAreaView>
         </SafeAreaProvider>

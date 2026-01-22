@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ interface FoodSearchViewProps {
   onClose: () => void
   onFoodSelected: (food: { food_id: string; food_name: string }) => void
   filterType?: 'generic' | 'brand' | 'all'
+  initialQuery?: string // Pre-fill search and auto-search on mount
 }
 
 interface SearchResult {
@@ -27,15 +28,25 @@ export default function FoodSearchView({
   onClose,
   onFoodSelected,
   filterType = 'all',
+  initialQuery,
 }: FoodSearchViewProps) {
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(initialQuery || '')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<SearchResult[]>([])
   const [error, setError] = useState<string | null>(null)
+  const hasAutoSearched = useRef(false)
 
-  const handleSearch = async () => {
-    const query = searchQuery.trim()
-    if (!query) {
+  // Auto-search on mount if initialQuery is provided
+  useEffect(() => {
+    if (initialQuery && !hasAutoSearched.current) {
+      hasAutoSearched.current = true
+      performSearch(initialQuery)
+    }
+  }, [initialQuery])
+
+  const performSearch = async (query: string) => {
+    const trimmed = query.trim()
+    if (!trimmed) {
       setResults([])
       return
     }
@@ -53,9 +64,9 @@ export default function FoodSearchView({
       }
 
       const { data, error: invokeError } = await supabase.functions.invoke('nutrition-search', {
-        body: { 
-          query, 
-          pageNumber: 0, 
+        body: {
+          query: trimmed,
+          pageNumber: 0,
           maxResults: 20,
           filterType: filterType,
         },
@@ -77,6 +88,10 @@ export default function FoodSearchView({
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSearch = () => {
+    performSearch(searchQuery)
   }
 
   const handleSelectFood = (food: SearchResult) => {
