@@ -10,7 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '@/components/ui/Card'
 import { createClient } from '@/lib/supabase/client'
@@ -490,7 +490,8 @@ export default function AddToFavoritesModal({
 
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('main')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -554,7 +555,8 @@ export default function AddToFavoritesModal({
               <Text style={styles.customButtonText}>Not listed? Add custom restaurant</Text>
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     )
   }
@@ -570,7 +572,8 @@ export default function AddToFavoritesModal({
 
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('main')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -634,7 +637,8 @@ export default function AddToFavoritesModal({
               <Text style={styles.customButtonText}>Not listed? Add custom brand</Text>
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     )
   }
@@ -643,7 +647,8 @@ export default function AddToFavoritesModal({
   if (currentView === 'restaurant-custom') {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('restaurant-list')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -677,7 +682,8 @@ export default function AddToFavoritesModal({
               </Text>
             </TouchableOpacity>
           </ScrollView>
-        </SafeAreaView>
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     )
   }
@@ -686,7 +692,8 @@ export default function AddToFavoritesModal({
   if (currentView === 'brand-custom') {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('brand-list')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -720,7 +727,8 @@ export default function AddToFavoritesModal({
               </Text>
             </TouchableOpacity>
           </ScrollView>
-        </SafeAreaView>
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     )
   }
@@ -729,7 +737,8 @@ export default function AddToFavoritesModal({
   if (currentView === 'restaurant-confirm') {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('restaurant-custom')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -772,7 +781,8 @@ export default function AddToFavoritesModal({
               </TouchableOpacity>
             </View>
           </ScrollView>
-        </SafeAreaView>
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     )
   }
@@ -781,7 +791,8 @@ export default function AddToFavoritesModal({
   if (currentView === 'brand-confirm') {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCurrentView('brand-custom')}>
               <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -824,7 +835,8 @@ export default function AddToFavoritesModal({
               </TouchableOpacity>
             </View>
           </ScrollView>
-        </SafeAreaView>
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     )
   }
@@ -874,13 +886,15 @@ export default function AddToFavoritesModal({
     // Otherwise show food search - embedded as view (not nested modal)
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
           <FoodSearchView
             onClose={handleClose}
             filterType="generic"
             onFoodSelected={handleFoodSelect}
           />
-        </SafeAreaView>
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     )
   }

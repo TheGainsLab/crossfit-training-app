@@ -10,6 +10,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '@/components/ui/Card'
 import { createClient } from '@/lib/supabase/client'
@@ -450,8 +451,9 @@ export default function MealBuilderModal({
   if (showPortionInput && selectedFood) {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <View style={styles.container}>
-          <View style={styles.header}>
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <View style={styles.header}>
             <TouchableOpacity 
               onPress={() => {
                 setShowPortionInput(false)
@@ -479,7 +481,8 @@ export default function MealBuilderModal({
               />
             </Card>
           </ScrollView>
-        </View>
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     )
   }
@@ -488,13 +491,15 @@ export default function MealBuilderModal({
   if (showFoodSearch) {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <View style={styles.container}>
-          <FoodSearchView
-            onClose={() => setShowFoodSearch(false)}
-            filterType="all"
-            onFoodSelected={handleFoodSelect}
-          />
-        </View>
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <FoodSearchView
+              onClose={() => setShowFoodSearch(false)}
+              filterType="all"
+              onFoodSelected={handleFoodSelect}
+            />
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     )
   }
@@ -503,14 +508,18 @@ export default function MealBuilderModal({
   if (showSavedFoodsModal) {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-        <SavedFoodsPickerView
-          mode={savedFoodsMode}
-          onClose={() => {
-            setShowSavedFoodsModal(false)
-            setSavedFoodsMode(null)
-          }}
-          onFoodSelected={handleAddSavedFood}
-        />
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <SavedFoodsPickerView
+              mode={savedFoodsMode}
+              onClose={() => {
+                setShowSavedFoodsModal(false)
+                setSavedFoodsMode(null)
+              }}
+              onFoodSelected={handleAddSavedFood}
+            />
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     )
   }
@@ -518,11 +527,12 @@ export default function MealBuilderModal({
   // Main meal builder screen
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose} style={styles.backButton}>
-            <Ionicons name="close" size={24} color="#282B34" />
-          </TouchableOpacity>
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={handleClose} style={styles.backButton}>
+              <Ionicons name="close" size={24} color="#282B34" />
+            </TouchableOpacity>
           <Text style={styles.headerTitle}>Meal Builder</Text>
         </View>
 
@@ -752,9 +762,9 @@ export default function MealBuilderModal({
               </View>
             </>
           )}
-        </View>
-      </View>
-
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   )
 }
