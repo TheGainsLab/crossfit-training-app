@@ -91,13 +91,14 @@ export default function MealBuilderView({
       const { data, error } = await supabase.functions.invoke('nutrition-search', {
         body: {
           query: ingredient.search_term,
-          limit: 1,
+          limit: 10,
         },
       })
 
       if (error) throw error
 
-      const foods = data?.data?.foods?.food
+      // Handle different response formats from FatSecret API
+      const foods = data?.data?.foods?.food || data?.foods?.food
 
       if (!foods || (Array.isArray(foods) && foods.length === 0)) {
         Alert.alert('Not Found', `Could not find nutrition data for ${ingredient.name}`)
