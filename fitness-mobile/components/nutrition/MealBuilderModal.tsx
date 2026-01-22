@@ -68,6 +68,7 @@ export default function MealBuilderModal({
   const [loadingDefaults, setLoadingDefaults] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>('protein')
   const [searchInitialQuery, setSearchInitialQuery] = useState<string | undefined>(undefined)
+  const [loadingIngredient, setLoadingIngredient] = useState<string | null>(null)
 
   const supabase = createClient()
 
@@ -90,10 +91,47 @@ export default function MealBuilderModal({
     }
   }
 
-  // Chip click = shortcut to search with that ingredient name pre-filled
-  const handleDefaultIngredientSelect = (ingredient: DefaultIngredient) => {
-    setSearchInitialQuery(ingredient.search_term)
-    setShowFoodSearch(true)
+  // Chip click = search API for food_id, then show portion picker
+  const handleDefaultIngredientSelect = async (ingredient: DefaultIngredient) => {
+    if (loadingIngredient) return
+
+    setLoadingIngredient(ingredient.name)
+    try {
+      const { data, error } = await supabase.functions.invoke('nutrition-search', {
+        body: {
+          query: ingredient.search_term,
+          pageNumber: 0,
+          maxResults: 10,
+          filterType: 'generic', // Generic ingredients, not branded
+        },
+      })
+
+      if (error) throw error
+
+      // Edge function returns data.data.foods as already-normalized array
+      const foods = data?.data?.foods
+
+      if (!foods || foods.length === 0) {
+        // Fall back to manual search if no results
+        setSearchInitialQuery(ingredient.search_term)
+        setShowFoodSearch(true)
+        return
+      }
+
+      // Auto-select first result and go to portion picker
+      const foodItem = foods[0]
+      await handleFoodSelect({
+        food_id: foodItem.food_id,
+        food_name: foodItem.food_name || ingredient.name,
+      })
+    } catch (error) {
+      console.error('Error selecting default ingredient:', error)
+      // Fall back to manual search on error
+      setSearchInitialQuery(ingredient.search_term)
+      setShowFoodSearch(true)
+    } finally {
+      setLoadingIngredient(null)
+    }
   }
 
   const resetModal = () => {
