@@ -514,8 +514,6 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
     )
   }
 
-  const totalItems = data.restaurants.length + data.brands.length + data.meals.length
-
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView style={{ flex: 1 }}>
@@ -528,6 +526,14 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
           <Text style={styles.headerTitle}>Frequent Foods</Text>
         </View>
       )}
+
+      {/* Purpose explanation - always visible */}
+      <View style={styles.purposeCard}>
+        <Text style={styles.purposeTitle}>Skip the search</Text>
+        <Text style={styles.purposeText}>
+          Add your regular meals and favorite foods here for instant one-tap logging.
+        </Text>
+      </View>
 
       {/* Favorite Meals */}
       <View style={styles.section}>
@@ -794,14 +800,6 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
       </View>
 
       {/* Empty state */}
-      {totalItems === 0 && (
-        <Card style={styles.emptyState}>
-          <Text style={styles.emptyStateTitle}>No Frequent Foods Yet</Text>
-          <Text style={styles.emptyStateText}>
-            Tap the "+ Add" buttons above to set up your go-to meals, restaurants, and foods for quick daily logging
-          </Text>
-        </Card>
-      )}
 
       {/* Delete confirmation modal - keep as Modal since it's a small overlay */}
       {deleteConfirmation && (
@@ -906,6 +904,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F9FAFB',
+  },
+  purposeCard: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FE5858',
+  },
+  purposeTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  purposeText: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
   },
   header: {
     flexDirection: 'row',
