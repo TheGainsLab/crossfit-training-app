@@ -829,6 +829,23 @@ export default function NutritionPage() {
     )
   }
 
+  // Show MealBuilder for creating/editing favorite templates (swap-out screen, not modal)
+  if (showMealBuilder) {
+    return (
+      <MealBuilder
+        userId={userId!}
+        initialTemplate={currentMeal}
+        selectedMealType={selectedMealType}
+        onSave={handleTemplateSaved}
+        onCancel={() => {
+          setShowMealBuilder(false)
+          setCurrentMeal(null)
+        }}
+        onAddFood={handleAddFood}
+      />
+    )
+  }
+
   return (
     <View style={styles.container}>
       <DailySummaryCard summary={dailySummary} logs={todayLogs} onDelete={(id) => setDeleteConfirmModal({ visible: true, entryId: id, entryName: todayLogs.find(l => l.id === id)?.food_name || '' })} bmr={bmr} />
@@ -844,13 +861,8 @@ export default function NutritionPage() {
         />
       </View>
 
-      {/* MealBuilder for creating/editing favorite templates (still uses modal for this specific flow) */}
-      {showMealBuilder && <Modal visible={showMealBuilder} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setShowMealBuilder(false); setCurrentMeal(null) }}>
-        <MealBuilder userId={userId!} initialTemplate={currentMeal} selectedMealType={selectedMealType} onSave={handleTemplateSaved} onCancel={() => { setShowMealBuilder(false); setCurrentMeal(null) }} onAddFood={handleAddFood} />
-      </Modal>}
-
-      {/* Note: FoodLoggingScreen and MealBuilderScreen are now swap-out screens rendered above,
-          not modals. This prevents iOS modal stacking crashes. */}
+      {/* Note: MealBuilder, FoodLoggingScreen and MealBuilderScreen are now swap-out screens rendered above,
+          not modals. This prevents iOS modal stacking crashes and SafeAreaView issues. */}
 
       <Modal visible={deleteTemplateModal.visible} transparent={true} animationType="fade" onRequestClose={() => setDeleteTemplateModal({ visible: false, templateId: null, templateName: null })}>
         <View style={styles.modalOverlay}><View style={styles.modalContent}><View style={styles.modalHeader}><Text style={styles.modalTitle}>Delete Favorite</Text></View><View style={styles.modalBody}><Text style={styles.modalBodyText}>Are you sure you want to delete "{deleteTemplateModal.templateName}"?</Text></View><View style={styles.modalButtons}><TouchableOpacity style={styles.modalButton} onPress={() => setDeleteTemplateModal({ visible: false, templateId: null, templateName: null })}><Text>Cancel</Text></TouchableOpacity><TouchableOpacity style={[styles.modalButton, styles.modalButtonDelete]} onPress={async () => { const id = deleteTemplateModal.templateId; setDeleteTemplateModal({ visible: false, templateId: null, templateName: null }); if (id) await executeDeleteTemplate(id) }}><Text style={{ color: '#FFF' }}>Delete</Text></TouchableOpacity></View></View></View>

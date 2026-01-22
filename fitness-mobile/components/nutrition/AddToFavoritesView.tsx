@@ -1,0 +1,1165 @@
+import React, { useState, useEffect } from 'react'
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
+import { Card } from '@/components/ui/Card'
+import { createClient } from '@/lib/supabase/client'
+import FoodSearchView from './FoodSearchView'
+import PortionAdjustInput from './PortionAdjustInput'
+import {
+  getDefaultRestaurants,
+  getDefaultBrands,
+  searchRestaurants,
+  searchBrands,
+  normalizeRestaurantName,
+  normalizeBrandName,
+  DefaultRestaurant,
+  DefaultBrand,
+} from '@/lib/api/defaultFoodSources'
+
+interface AddToFavoritesViewProps {
+  onClose: () => void
+  onAdded?: () => void
+  initialMode?: 'meal' | 'restaurant' | 'brand' | 'food'
+}
+
+type ViewState = 'main' | 'restaurant-list' | 'brand-list' | 'restaurant-custom' | 'brand-custom' | 'restaurant-confirm' | 'brand-confirm' | 'generic-search'
+
+export default function AddToFavoritesView({
+  onClose,
+  onAdded,
+  initialMode,
+}: AddToFavoritesViewProps) {
+  const [currentView, setCurrentView] = useState<ViewState>('main')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [customName, setCustomName] = useState('')
+  const [normalizedName, setNormalizedName] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [userFavorites, setUserFavorites] = useState<string[]>([])
+  const [userHidden, setUserHidden] = useState<string[]>([])
+  const [selectedFood, setSelectedFood] = useState<any>(null)
+  const [showPortionInput, setShowPortionInput] = useState(false)
+
+  // Database-loaded defaults
+  const [defaultRestaurants, setDefaultRestaurants] = useState<DefaultRestaurant[]>([])
+  const [defaultBrands, setDefaultBrands] = useState<DefaultBrand[]>([])
+  const [loadingDefaults, setLoadingDefaults] = useState(false)
+
+  const supabase = createClient()
+
+  // Load defaults from database
+  const loadDefaults = async (type: 'restaurant' | 'brand') => {
+    setLoadingDefaults(true)
+    try {
+      if (type === 'restaurant' && defaultRestaurants.length === 0) {
+        const restaurants = await getDefaultRestaurants()
+        setDefaultRestaurants(restaurants)
+      } else if (type === 'brand' && defaultBrands.length === 0) {
+        const brands = await getDefaultBrands()
+        setDefaultBrands(brands)
+      }
+    } catch (error) {
+      console.error('Error loading defaults:', error)
+    } finally {
+      setLoadingDefaults(false)
+    }
+  }
+
+  // Set initial view based on initialMode prop
+  useEffect(() => {
+    if (initialMode) {
+      switch (initialMode) {
+        case 'restaurant':
+          setCurrentView('restaurant-list')
+          loadUserData('restaurant')
+          loadDefaults('restaurant')
+          break
+        case 'brand':
+          setCurrentView('brand-list')
+          loadUserData('brand')
+          loadDefaults('brand')
+          break
+        case 'food':
+          setCurrentView('generic-search')
+          break
+        case 'meal':
+          setCurrentView('main')
+          break
+        default:
+          setCurrentView('main')
+      }
+    } else {
+      setCurrentView('main')
+    }
+  }, [initialMode])
+
+  const loadUserData = async (type: 'restaurant' | 'brand') => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', user.id)
+        .single()
+
+      if (!userData) return
+
+      if (type === 'restaurant') {
+        const [favs, hidden] = await Promise.all([
+          supabase.from('favorite_restaurants')
+            .select('restaurant_name')
+            .eq('user_id', userData.id),
+          supabase.from('hidden_restaurants')
+            .select('restaurant_name')
+            .eq('user_id', userData.id),
+        ])
+        setUserFavorites(favs.data?.map(r => r.restaurant_name) || [])
+        setUserHidden(hidden.data?.map(r => r.restaurant_name) || [])
+      } else {
+        const [favs, hidden] = await Promise.all([
+          supabase.from('favorite_brands')
+            .select('brand_name')
+            .eq('user_id', userData.id),
+          supabase.from('hidden_brands')
+            .select('brand_name')
+            .eq('user_id', userData.id),
+        ])
+        setUserFavorites(favs.data?.map(b => b.brand_name) || [])
+        setUserHidden(hidden.data?.map(b => b.brand_name) || [])
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error)
+    }
+  }
+
+  const resetState = () => {
+    setCurrentView('main')
+    setSearchQuery('')
+    setCustomName('')
+    setNormalizedName('')
+    setUserFavorites([])
+    setUserHidden([])
+    setSelectedFood(null)
+    setShowPortionInput(false)
+  }
+
+  const handleClose = () => {
+    resetState()
+    onClose()
+  }
+
+  const handleCustomRestaurantSubmit = async () => {
+    if (!customName.trim()) {
+      Alert.alert('Error', 'Please enter a restaurant name')
+      return
+    }
+
+    let restaurants = defaultRestaurants
+    if (restaurants.length === 0) {
+      restaurants = await getDefaultRestaurants()
+      setDefaultRestaurants(restaurants)
+    }
+
+    const normalized = normalizeRestaurantName(customName, restaurants)
+
+    if (normalized) {
+      setNormalizedName(normalized)
+      setCurrentView('restaurant-confirm')
+    } else {
+      addRestaurant(customName.trim(), customName.trim())
+    }
+  }
+
+  const handleCustomBrandSubmit = async () => {
+    if (!customName.trim()) {
+      Alert.alert('Error', 'Please enter a brand name')
+      return
+    }
+
+    let brands = defaultBrands
+    if (brands.length === 0) {
+      brands = await getDefaultBrands()
+      setDefaultBrands(brands)
+    }
+
+    const normalized = normalizeBrandName(customName, brands)
+
+    if (normalized) {
+      setNormalizedName(normalized)
+      setCurrentView('brand-confirm')
+    } else {
+      addBrand(customName.trim(), customName.trim())
+    }
+  }
+
+  const addRestaurant = async (displayName: string, fatsecretName: string) => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase.functions.invoke('favorites-manage', {
+        body: {
+          action: 'add_restaurant',
+          restaurant_name: displayName,
+          fatsecret_brand_filter: fatsecretName,
+        },
+      })
+
+      if (error) throw error
+
+      Alert.alert('Success', `${displayName} added to Frequent Foods`)
+      if (onAdded) onAdded()
+      handleClose()
+    } catch (error: any) {
+      console.error('Error adding restaurant:', error)
+      Alert.alert('Error', error.message || 'Failed to add restaurant')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const addBrand = async (displayName: string, fatsecretName: string) => {
+    try {
+      setLoading(true)
+      const { data, error} = await supabase.functions.invoke('favorites-manage', {
+        body: {
+          action: 'add_brand',
+          brand_name: displayName,
+          fatsecret_brand_filter: fatsecretName,
+        },
+      })
+
+      if (error) throw error
+
+      Alert.alert('Success', `${displayName} added to Frequent Foods`)
+      if (onAdded) onAdded()
+      handleClose()
+    } catch (error: any) {
+      console.error('Error adding brand:', error)
+      Alert.alert('Error', error.message || 'Failed to add brand')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const hideRestaurant = async (restaurantName: string) => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase.functions.invoke('favorites-manage', {
+        body: {
+          action: 'hide_restaurant',
+          restaurant_name: restaurantName,
+        },
+      })
+
+      if (error) throw error
+      await loadUserData('restaurant')
+    } catch (error: any) {
+      console.error('Error hiding restaurant:', error)
+      Alert.alert('Error', error.message || 'Failed to hide restaurant')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const hideBrand = async (brandName: string) => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase.functions.invoke('favorites-manage', {
+        body: {
+          action: 'hide_brand',
+          brand_name: brandName,
+        },
+      })
+
+      if (error) throw error
+      await loadUserData('brand')
+    } catch (error: any) {
+      console.error('Error hiding brand:', error)
+      Alert.alert('Error', error.message || 'Failed to hide brand')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleFoodSelect = async (foodItem: any) => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase.functions.invoke('nutrition-food', {
+        body: {
+          foodId: foodItem.food_id,
+          normalize: true,
+        },
+      })
+
+      if (error) throw error
+
+      const foodData = data?.data?.food
+      if (!foodData) {
+        throw new Error('Failed to load food details')
+      }
+
+      const servings = foodData.servings?.serving || []
+      const firstServing = Array.isArray(servings) ? servings[0] : servings
+
+      const GRAMS_PER_OZ = 28.35
+      let normalizedData: any = null
+
+      if (firstServing) {
+        let grams: number | null = null
+
+        if (firstServing.metric_serving_amount && firstServing.metric_serving_unit === 'g') {
+          grams = parseFloat(firstServing.metric_serving_amount)
+        } else if (firstServing.serving_description) {
+          const desc = firstServing.serving_description.toLowerCase()
+          const ozMatch = desc.match(/([\d.]+)\s*oz/)
+          const gMatch = desc.match(/([\d.]+)\s*g/)
+
+          if (ozMatch) {
+            grams = parseFloat(ozMatch[1]) * GRAMS_PER_OZ
+          } else if (gMatch) {
+            grams = parseFloat(gMatch[1])
+          }
+        }
+
+        if (grams && grams > 0) {
+          normalizedData = {
+            caloriesPerGram: parseFloat(firstServing.calories || '0') / grams,
+            proteinPerGram: parseFloat(firstServing.protein || '0') / grams,
+            carbsPerGram: parseFloat(firstServing.carbohydrate || '0') / grams,
+            fatPerGram: parseFloat(firstServing.fat || '0') / grams,
+            fiberPerGram: parseFloat(firstServing.fiber || '0') / grams,
+            sodiumPerGram: parseFloat(firstServing.sodium || '0') / grams,
+          }
+        }
+      }
+
+      const preparedFood = {
+        food_id: foodData.food_id,
+        food_name: foodData.food_name,
+        name: foodData.food_name,
+        brand_name: foodData.brand_name || null,
+        servings: servings,
+        selectedServing: firstServing,
+        normalized_nutrition: normalizedData ? {
+          calories_per_gram: normalizedData.caloriesPerGram,
+          protein_per_gram: normalizedData.proteinPerGram,
+          carbs_per_gram: normalizedData.carbsPerGram,
+          fat_per_gram: normalizedData.fatPerGram,
+          fiber_per_gram: normalizedData.fiberPerGram,
+          sodium_per_gram: normalizedData.sodiumPerGram,
+        } : undefined,
+        raw_serving: normalizedData ? undefined : {
+          serving_id: firstServing?.serving_id || '0',
+          serving_description: firstServing?.serving_description || '',
+          calories: parseFloat(firstServing?.calories || '0'),
+          protein: parseFloat(firstServing?.protein || '0'),
+          carbohydrate: parseFloat(firstServing?.carbohydrate || '0'),
+          fat: parseFloat(firstServing?.fat || '0'),
+        },
+      }
+
+      setSelectedFood(preparedFood)
+      setShowPortionInput(true)
+    } catch (error: any) {
+      console.error('Error loading food details:', error)
+      Alert.alert('Error', error.message || 'Failed to load food details')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSaveFavorite = async (amount: number, unit: string) => {
+    if (!selectedFood) return
+
+    try {
+      setLoading(true)
+
+      const payload: any = {
+        action: 'add_food',
+        food_id: selectedFood.food_id,
+        food_name: selectedFood.food_name,
+        food_type: 'generic',
+        brand_name: selectedFood.brand_name,
+        default_amount: amount,
+        default_unit: unit,
+      }
+
+      if (selectedFood.normalized_nutrition) {
+        payload.calories_per_gram = selectedFood.normalized_nutrition.calories_per_gram
+        payload.protein_per_gram = selectedFood.normalized_nutrition.protein_per_gram
+        payload.carbs_per_gram = selectedFood.normalized_nutrition.carbs_per_gram
+        payload.fat_per_gram = selectedFood.normalized_nutrition.fat_per_gram
+        payload.fiber_per_gram = selectedFood.normalized_nutrition.fiber_per_gram
+        payload.sodium_per_gram = selectedFood.normalized_nutrition.sodium_per_gram
+      } else if (selectedFood.raw_serving) {
+        payload.serving_id = selectedFood.raw_serving.serving_id
+        payload.serving_description = selectedFood.raw_serving.serving_description
+        payload.raw_serving_calories = selectedFood.raw_serving.calories
+        payload.raw_serving_protein = selectedFood.raw_serving.protein
+        payload.raw_serving_carbs = selectedFood.raw_serving.carbohydrate
+        payload.raw_serving_fat = selectedFood.raw_serving.fat
+      }
+
+      const { data, error } = await supabase.functions.invoke('favorites-manage', {
+        body: payload,
+      })
+
+      if (error) throw error
+
+      Alert.alert('Success', `${selectedFood.food_name} added to Frequent Foods`)
+      setShowPortionInput(false)
+      setSelectedFood(null)
+      if (onAdded) onAdded()
+      handleClose()
+    } catch (error: any) {
+      console.error('Error saving favorite:', error)
+      Alert.alert('Error', error.message || 'Failed to save favorite')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Restaurant List View
+  if (currentView === 'restaurant-list') {
+    const visibleRestaurants = searchRestaurants(searchQuery, defaultRestaurants)
+      .filter(restaurant =>
+        !userFavorites.includes(restaurant.fatsecret_name) &&
+        !userHidden.includes(restaurant.fatsecret_name)
+      )
+
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setCurrentView('main')}>
+            <Ionicons name="arrow-back" size={24} color="#282B34" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Add Restaurant</Text>
+        </View>
+
+        <View style={styles.content}>
+          <View style={styles.searchBox}>
+            <Ionicons name="search" size={20} color="#9CA3AF" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search restaurants..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+            />
+          </View>
+
+          {loadingDefaults ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#FE5858" />
+            </View>
+          ) : (
+            <ScrollView style={styles.sourceList}>
+              {visibleRestaurants.map((restaurant) => (
+                <View key={restaurant.id} style={styles.sourceItemWithButtons}>
+                  <Text style={styles.sourceEmoji}>{restaurant.emoji}</Text>
+                  <Text style={styles.sourceNameWithButtons}>{restaurant.name}</Text>
+                  <View style={styles.actionButtons}>
+                    <TouchableOpacity
+                      style={styles.addButton}
+                      onPress={() => addRestaurant(restaurant.name, restaurant.fatsecret_name)}
+                      disabled={loading}
+                    >
+                      <Text style={styles.addButtonText}>Add</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => hideRestaurant(restaurant.fatsecret_name)}
+                      disabled={loading}
+                    >
+                      <Text style={styles.removeButtonText}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          <TouchableOpacity
+            style={styles.customButton}
+            onPress={() => {
+              setCustomName('')
+              setCurrentView('restaurant-custom')
+            }}
+          >
+            <Text style={styles.customButtonText}>Not listed? Add custom restaurant</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  // Brand List View
+  if (currentView === 'brand-list') {
+    const visibleBrands = searchBrands(searchQuery, defaultBrands)
+      .filter(brand =>
+        !userFavorites.includes(brand.fatsecret_name) &&
+        !userHidden.includes(brand.fatsecret_name)
+      )
+
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setCurrentView('main')}>
+            <Ionicons name="arrow-back" size={24} color="#282B34" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Add Brand</Text>
+        </View>
+
+        <View style={styles.content}>
+          <View style={styles.searchBox}>
+            <Ionicons name="search" size={20} color="#9CA3AF" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search brands..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+            />
+          </View>
+
+          {loadingDefaults ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#FE5858" />
+            </View>
+          ) : (
+            <ScrollView style={styles.sourceList}>
+              {visibleBrands.map((brand) => (
+                <View key={brand.id} style={styles.sourceItemWithButtons}>
+                  <Text style={styles.sourceEmoji}>{brand.emoji}</Text>
+                  <Text style={styles.sourceNameWithButtons}>{brand.name}</Text>
+                  <View style={styles.actionButtons}>
+                    <TouchableOpacity
+                      style={styles.addButton}
+                      onPress={() => addBrand(brand.name, brand.fatsecret_name)}
+                      disabled={loading}
+                    >
+                      <Text style={styles.addButtonText}>Add</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => hideBrand(brand.fatsecret_name)}
+                      disabled={loading}
+                    >
+                      <Text style={styles.removeButtonText}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          <TouchableOpacity
+            style={styles.customButton}
+            onPress={() => {
+              setCustomName('')
+              setCurrentView('brand-custom')
+            }}
+          >
+            <Text style={styles.customButtonText}>Not listed? Add custom brand</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  // Custom Restaurant Entry
+  if (currentView === 'restaurant-custom') {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setCurrentView('restaurant-list')}>
+            <Ionicons name="arrow-back" size={24} color="#282B34" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Custom Restaurant</Text>
+        </View>
+
+        <ScrollView style={styles.content}>
+          <Card style={{ padding: 16 }}>
+            <Text style={styles.label}>Restaurant Name</Text>
+            <TextInput
+              style={styles.input}
+              value={customName}
+              onChangeText={setCustomName}
+              placeholder="e.g., Local Pizza Place"
+              autoCapitalize="words"
+              autoFocus
+            />
+            <Text style={styles.hint}>
+              We'll check if this matches a known restaurant
+            </Text>
+          </Card>
+
+          <TouchableOpacity
+            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+            onPress={handleCustomRestaurantSubmit}
+            disabled={loading}
+          >
+            <Text style={styles.saveButtonText}>
+              {loading ? 'Adding...' : 'Continue'}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    )
+  }
+
+  // Custom Brand Entry
+  if (currentView === 'brand-custom') {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setCurrentView('brand-list')}>
+            <Ionicons name="arrow-back" size={24} color="#282B34" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Custom Brand</Text>
+        </View>
+
+        <ScrollView style={styles.content}>
+          <Card style={{ padding: 16 }}>
+            <Text style={styles.label}>Brand Name</Text>
+            <TextInput
+              style={styles.input}
+              value={customName}
+              onChangeText={setCustomName}
+              placeholder="e.g., Store Brand"
+              autoCapitalize="words"
+              autoFocus
+            />
+            <Text style={styles.hint}>
+              We'll check if this matches a known brand
+            </Text>
+          </Card>
+
+          <TouchableOpacity
+            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+            onPress={handleCustomBrandSubmit}
+            disabled={loading}
+          >
+            <Text style={styles.saveButtonText}>
+              {loading ? 'Adding...' : 'Continue'}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    )
+  }
+
+  // Restaurant Confirmation
+  if (currentView === 'restaurant-confirm') {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setCurrentView('restaurant-custom')}>
+            <Ionicons name="arrow-back" size={24} color="#282B34" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Confirm Restaurant</Text>
+        </View>
+
+        <ScrollView style={styles.content}>
+          <Card style={{ padding: 24 }}>
+            <Text style={styles.confirmLabel}>You entered:</Text>
+            <Text style={styles.userInput}>{customName}</Text>
+
+            <Text style={styles.confirmLabel}>Did you mean:</Text>
+            <Text style={styles.normalizedName}>{normalizedName}</Text>
+
+            <Text style={styles.hint}>
+              Using the correct name helps us find menu items
+            </Text>
+          </Card>
+
+          <View style={styles.confirmButtons}>
+            <TouchableOpacity
+              style={[styles.confirmButton, styles.confirmButtonYes]}
+              onPress={() => addRestaurant(normalizedName, normalizedName)}
+              disabled={loading}
+            >
+              <Text style={styles.confirmButtonTextYes}>
+                {loading ? 'Adding...' : `Yes, add ${normalizedName}`}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.confirmButton, styles.confirmButtonNo]}
+              onPress={() => addRestaurant(customName.trim(), customName.trim())}
+              disabled={loading}
+            >
+              <Text style={styles.confirmButtonTextNo}>
+                No, use "{customName}"
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    )
+  }
+
+  // Brand Confirmation
+  if (currentView === 'brand-confirm') {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setCurrentView('brand-custom')}>
+            <Ionicons name="arrow-back" size={24} color="#282B34" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Confirm Brand</Text>
+        </View>
+
+        <ScrollView style={styles.content}>
+          <Card style={{ padding: 24 }}>
+            <Text style={styles.confirmLabel}>You entered:</Text>
+            <Text style={styles.userInput}>{customName}</Text>
+
+            <Text style={styles.confirmLabel}>Did you mean:</Text>
+            <Text style={styles.normalizedName}>{normalizedName}</Text>
+
+            <Text style={styles.hint}>
+              Using the correct name helps us find products
+            </Text>
+          </Card>
+
+          <View style={styles.confirmButtons}>
+            <TouchableOpacity
+              style={[styles.confirmButton, styles.confirmButtonYes]}
+              onPress={() => addBrand(normalizedName, normalizedName)}
+              disabled={loading}
+            >
+              <Text style={styles.confirmButtonTextYes}>
+                {loading ? 'Adding...' : `Yes, add ${normalizedName}`}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.confirmButton, styles.confirmButtonNo]}
+              onPress={() => addBrand(customName.trim(), customName.trim())}
+              disabled={loading}
+            >
+              <Text style={styles.confirmButtonTextNo}>
+                No, use "{customName}"
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    )
+  }
+
+  // Generic Search
+  if (currentView === 'generic-search') {
+    if (showPortionInput && selectedFood) {
+      return (
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => {
+              setShowPortionInput(false)
+              setSelectedFood(null)
+            }}>
+              <Ionicons name="arrow-back" size={24} color="#282B34" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Set Default Portion</Text>
+          </View>
+
+          <ScrollView style={styles.content}>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FE5858" />
+                <Text style={styles.loadingText}>Saving...</Text>
+              </View>
+            ) : (
+              <PortionAdjustInput
+                food={selectedFood}
+                defaultAmount={1}
+                defaultUnit="oz"
+                showSaveButton={true}
+                onSave={handleSaveFavorite}
+                onCancel={() => {
+                  setShowPortionInput(false)
+                  setSelectedFood(null)
+                }}
+              />
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      )
+    }
+
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <FoodSearchView
+          onClose={handleClose}
+          filterType="generic"
+          onFoodSelected={handleFoodSelect}
+        />
+      </SafeAreaView>
+    )
+  }
+
+  // Main menu
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleClose}>
+          <Ionicons name="close" size={24} color="#282B34" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Add to Frequent Foods</Text>
+      </View>
+
+      <ScrollView style={styles.content}>
+        <View style={styles.optionsList}>
+          <TouchableOpacity
+            style={styles.option}
+            onPress={() => {
+              setSearchQuery('')
+              setCurrentView('restaurant-list')
+              loadDefaults('restaurant')
+              loadUserData('restaurant')
+            }}
+          >
+            <View style={styles.optionIcon}>
+              <Ionicons name="restaurant" size={32} color="#FE5858" />
+            </View>
+            <View style={styles.optionText}>
+              <Text style={styles.optionTitle}>Add Restaurant</Text>
+              <Text style={styles.optionDescription}>
+                Chipotle, Panera, McDonald's, etc.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.option}
+            onPress={() => {
+              setSearchQuery('')
+              setCurrentView('brand-list')
+              loadDefaults('brand')
+              loadUserData('brand')
+            }}
+          >
+            <View style={styles.optionIcon}>
+              <Ionicons name="pricetag" size={32} color="#3B82F6" />
+            </View>
+            <View style={styles.optionText}>
+              <Text style={styles.optionTitle}>Add Brand</Text>
+              <Text style={styles.optionDescription}>
+                Kirkland, Tyson, Trader Joe's, etc.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.option}
+            onPress={() => setCurrentView('generic-search')}
+          >
+            <View style={styles.optionIcon}>
+              <Ionicons name="nutrition" size={32} color="#10B981" />
+            </View>
+            <View style={styles.optionText}>
+              <Text style={styles.optionTitle}>Add Ingredient</Text>
+              <Text style={styles.optionDescription}>
+                Salmon, chicken breast, eggs, rice, etc.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <Text style={styles.comingSoonLabel}>Quick Add Options</Text>
+
+          <TouchableOpacity
+            style={[styles.option, styles.optionDisabled]}
+            disabled
+          >
+            <View style={styles.optionIcon}>
+              <Ionicons name="barcode" size={32} color="#9CA3AF" />
+            </View>
+            <View style={styles.optionText}>
+              <Text style={styles.optionTitle}>Scan Barcode</Text>
+              <Text style={styles.optionDescription}>
+                Use main screen barcode scanner, then save
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.option, styles.optionDisabled]}
+            disabled
+          >
+            <View style={styles.optionIcon}>
+              <Ionicons name="camera" size={32} color="#9CA3AF" />
+            </View>
+            <View style={styles.optionText}>
+              <Text style={styles.optionTitle}>Take Photo</Text>
+              <Text style={styles.optionDescription}>
+                Use main screen photo feature, then save
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    gap: 12,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  content: {
+    flex: 1,
+  },
+  optionsList: {
+    padding: 16,
+    gap: 12,
+  },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  optionDisabled: {
+    opacity: 0.5,
+  },
+  optionIcon: {
+    marginRight: 16,
+  },
+  optionText: {
+    flex: 1,
+  },
+  optionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  optionDescription: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 12,
+  },
+  comingSoonLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    backgroundColor: '#FFFFFF',
+    marginBottom: 8,
+  },
+  hint: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  saveButton: {
+    backgroundColor: '#FE5858',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+    margin: 16,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    margin: 16,
+    marginBottom: 8,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#1F2937',
+  },
+  sourceList: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  sourceEmoji: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+  sourceItemWithButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  sourceNameWithButtons: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginRight: 12,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  addButton: {
+    backgroundColor: '#FE5858',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  removeButton: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  removeButtonText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  customButton: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+  },
+  customButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  confirmLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  userInput: {
+    fontSize: 18,
+    color: '#6B7280',
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  normalizedName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 16,
+  },
+  confirmButtons: {
+    padding: 16,
+    gap: 12,
+  },
+  confirmButton: {
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  confirmButtonYes: {
+    backgroundColor: '#FE5858',
+  },
+  confirmButtonNo: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  confirmButtonTextYes: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  confirmButtonTextNo: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  loadingContainer: {
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+})

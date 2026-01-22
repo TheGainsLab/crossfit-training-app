@@ -8,8 +8,8 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
-  SafeAreaView,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { createMealTemplate, updateMealTemplate, MealTemplate, MealTemplateItem } from '@/lib/api/mealTemplates'
 import FoodSearchView from './FoodSearchView'
@@ -202,20 +202,20 @@ export default function MealBuilder({
   // Render search view (swap-out pattern - no modal)
   if (currentView === 'search') {
     return (
-      <View style={styles.fullScreenContainer}>
+      <SafeAreaView style={styles.fullScreenContainer} edges={['top', 'left', 'right']}>
         <FoodSearchView
           onClose={() => setCurrentView('main')}
           onFoodSelected={handleFoodSelectedFromSearch}
           filterType="all"
         />
-      </View>
+      </SafeAreaView>
     )
   }
 
   // Render details view (swap-out pattern - no modal)
   if (currentView === 'details' && selectedFoodForDetails.foodId && selectedFoodForDetails.foodName) {
     return (
-      <View style={styles.fullScreenContainer}>
+      <SafeAreaView style={styles.fullScreenContainer} edges={['top', 'left', 'right']}>
         <FoodSelectionView
           foodId={selectedFoodForDetails.foodId}
           foodName={selectedFoodForDetails.foodName}
@@ -225,12 +225,13 @@ export default function MealBuilder({
           }}
           onAdd={handleFoodAdded}
         />
-      </View>
+      </SafeAreaView>
     )
   }
 
   // Main builder view
   return (
+    <SafeAreaView style={styles.fullScreenContainer} edges={['top', 'left', 'right']}>
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* Template Header */}
       <View style={styles.header}>
@@ -337,6 +338,7 @@ export default function MealBuilder({
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </SafeAreaView>
   )
 }
 

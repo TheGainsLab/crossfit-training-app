@@ -13,11 +13,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '@/components/ui/Card'
 import { createClient } from '@/lib/supabase/client'
-import AddToFavoritesModal from './AddToFavoritesModal'
+import AddToFavoritesView from './AddToFavoritesView'
+import MealBuilderView from './MealBuilderView'
 import RestaurantMenuBrowser from './RestaurantMenuBrowser'
 import BrandMenuBrowser from './BrandMenuBrowser'
 import PortionAdjustInput from './PortionAdjustInput'
-import MealBuilderModal from './MealBuilderModal'
 
 interface FrequentFoodsData {
   restaurants: any[]
@@ -43,8 +43,9 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
   const [brandFoods, setBrandFoods] = useState<Record<number, any[]>>({})
   const [loadingRestaurantFoods, setLoadingRestaurantFoods] = useState<Record<number, boolean>>({})
   const [loadingBrandFoods, setLoadingBrandFoods] = useState<Record<number, boolean>>({})
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [addModalMode, setAddModalMode] = useState<'meal' | 'restaurant' | 'brand' | 'food' | undefined>(undefined)
+  // View switching state (no more modals)
+  const [showAddToFavorites, setShowAddToFavorites] = useState(false)
+  const [addFavoritesMode, setAddFavoritesMode] = useState<'meal' | 'restaurant' | 'brand' | 'food' | undefined>(undefined)
   const [showMealBuilder, setShowMealBuilder] = useState(false)
   const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null)
   const [selectedBrand, setSelectedBrand] = useState<any>(null)
@@ -403,6 +404,36 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
     )
   }
 
+  // View switching - render full-screen views instead of modals (prevents iOS freezing)
+  if (showAddToFavorites) {
+    return (
+      <AddToFavoritesView
+        onClose={() => {
+          setShowAddToFavorites(false)
+          setAddFavoritesMode(undefined)
+        }}
+        onAdded={() => {
+          setShowAddToFavorites(false)
+          setAddFavoritesMode(undefined)
+          loadFavorites()
+        }}
+        initialMode={addFavoritesMode}
+      />
+    )
+  }
+
+  if (showMealBuilder) {
+    return (
+      <MealBuilderView
+        onClose={() => setShowMealBuilder(false)}
+        onSaved={() => {
+          setShowMealBuilder(false)
+          loadFavorites()
+        }}
+      />
+    )
+  }
+
   if (selectedRestaurant) {
     return (
       <RestaurantMenuBrowser
@@ -514,15 +545,17 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
               color="#6B7280" 
             />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.addSectionButton}
-            onPress={() => setShowMealBuilder(true)}
+            onPress={() => {
+              setShowMealBuilder(true)
+            }}
           >
             <Ionicons name="add-circle" size={20} color="#FE5858" />
             <Text style={styles.addSectionButtonText}>Add</Text>
           </TouchableOpacity>
         </View>
-        
+
         {expandedSections.meals && data.meals.length > 0 && (
           <View style={styles.itemsList}>
             {data.meals.map((meal) => (
@@ -566,11 +599,11 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
               color="#6B7280" 
             />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.addSectionButton}
             onPress={() => {
-              setAddModalMode('restaurant')
-              setShowAddModal(true)
+              setAddFavoritesMode('restaurant')
+              setShowAddToFavorites(true)
             }}
           >
             <Ionicons name="add-circle" size={20} color="#FE5858" />
@@ -671,11 +704,11 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
               color="#6B7280" 
             />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.addSectionButton}
             onPress={() => {
-              setAddModalMode('brand')
-              setShowAddModal(true)
+              setAddFavoritesMode('brand')
+              setShowAddToFavorites(true)
             }}
           >
             <Ionicons name="add-circle" size={20} color="#FE5858" />
@@ -770,32 +803,7 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
         </Card>
       )}
 
-      {/* Add modal */}
-      <AddToFavoritesModal
-        visible={showAddModal}
-        onClose={() => {
-          setShowAddModal(false)
-          setAddModalMode(undefined)
-        }}
-        onAdded={() => {
-          setShowAddModal(false)
-          setAddModalMode(undefined)
-          loadFavorites()
-        }}
-        initialMode={addModalMode}
-      />
-
-      {/* Meal Builder Modal */}
-      <MealBuilderModal
-        visible={showMealBuilder}
-        onClose={() => setShowMealBuilder(false)}
-        onSaved={() => {
-          setShowMealBuilder(false)
-          loadFavorites()
-        }}
-      />
-
-      {/* Delete confirmation modal */}
+      {/* Delete confirmation modal - keep as Modal since it's a small overlay */}
       {deleteConfirmation && (
         <Modal
           visible={deleteConfirmation.visible}
