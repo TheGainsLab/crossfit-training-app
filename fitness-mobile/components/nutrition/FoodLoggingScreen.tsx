@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Constants from 'expo-constants'
 import { Ionicons } from '@expo/vector-icons'
 import FoodSearchView from './FoodSearchView'
 import FoodSelectionView from './FoodSelectionView'
@@ -45,6 +46,8 @@ export default function FoodLoggingScreen({
   const [currentView, setCurrentView] = useState<ScreenView>('search')
   const [selectedFood, setSelectedFood] = useState<{ foodId: string; foodName: string } | null>(null)
   const insets = useSafeAreaInsets()
+  // Use Constants.statusBarHeight as fallback when insets aren't available
+  const topInset = insets.top > 0 ? insets.top : (Constants.statusBarHeight || 0)
 
   const handleBack = () => {
     if (currentView === 'details') {
@@ -71,7 +74,7 @@ export default function FoodLoggingScreen({
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: topInset }]}>
       {currentView === 'search' ? (
         <FoodSearchView
           onClose={handleBack}

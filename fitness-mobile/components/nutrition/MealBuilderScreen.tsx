@@ -8,8 +8,10 @@ import {
   Alert,
   StyleSheet,
   ActivityIndicator,
+  Platform,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Constants from 'expo-constants'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '@/components/ui/Card'
 import { createClient } from '@/lib/supabase/client'
@@ -85,6 +87,8 @@ export default function MealBuilderScreen({
   const [searchSelectedFood, setSearchSelectedFood] = useState<{ foodId: string; foodName: string } | null>(null)
 
   const insets = useSafeAreaInsets()
+  // Use Constants.statusBarHeight as fallback when insets aren't available
+  const topInset = insets.top > 0 ? insets.top : (Constants.statusBarHeight || 0)
   const supabase = createClient()
 
   useEffect(() => {
@@ -473,7 +477,7 @@ export default function MealBuilderScreen({
   // Render portion input view
   if (currentView === 'portion' && selectedFood) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: topInset }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#282B34" />
@@ -500,7 +504,7 @@ export default function MealBuilderScreen({
   // Render food search view
   if (currentView === 'search') {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: topInset }]}>
         <FoodSearchView
           onClose={handleBack}
           onFoodSelected={handleSearchFoodSelected}
@@ -513,7 +517,7 @@ export default function MealBuilderScreen({
   // Render food selection/details view (after search)
   if (currentView === 'searchDetails' && searchSelectedFood) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: topInset }]}>
         <FoodSelectionView
           foodId={searchSelectedFood.foodId}
           foodName={searchSelectedFood.foodName}
@@ -527,7 +531,7 @@ export default function MealBuilderScreen({
   // Render saved foods picker view
   if (currentView === 'savedFoods' && savedFoodsMode) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: topInset }]}>
         <SavedFoodsPickerView
           mode={savedFoodsMode}
           onBack={handleBack}
@@ -539,7 +543,7 @@ export default function MealBuilderScreen({
 
   // Main meal builder view
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: topInset }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="close" size={24} color="#282B34" />
