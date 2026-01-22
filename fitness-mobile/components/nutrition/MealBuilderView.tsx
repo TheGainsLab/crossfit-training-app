@@ -105,9 +105,7 @@ export default function MealBuilderView({
       const foods = data?.data?.foods
 
       if (!foods || foods.length === 0) {
-        // Fall back to manual search if no results
-        setSearchInitialQuery(ingredient.search_term)
-        setShowFoodSearch(true)
+        Alert.alert('Not Found', `Could not find "${ingredient.name}" in the database.`)
         return
       }
 
@@ -119,9 +117,7 @@ export default function MealBuilderView({
       })
     } catch (error) {
       console.error('Error selecting default ingredient:', error)
-      // Fall back to manual search on error
-      setSearchInitialQuery(ingredient.search_term)
-      setShowFoodSearch(true)
+      Alert.alert('Error', 'Failed to look up ingredient. Please try again.')
     } finally {
       setLoadingIngredient(null)
     }
