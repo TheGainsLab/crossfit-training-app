@@ -95,6 +95,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingTop: 59, // Hardcoded for iOS Dynamic Island safe area
   },
 })
