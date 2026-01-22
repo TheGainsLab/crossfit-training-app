@@ -9,7 +9,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '@/components/ui/Card'
 import { createClient } from '@/lib/supabase/client'
@@ -83,6 +83,10 @@ export default function MealBuilderScreen({
 
   // For search -> details flow
   const [searchSelectedFood, setSearchSelectedFood] = useState<{ foodId: string; foodName: string } | null>(null)
+
+  // DEBUG: Check what safe area insets are being returned
+  const debugInsets = useSafeAreaInsets()
+  console.log('🔍 MealBuilderScreen safe area insets:', JSON.stringify(debugInsets))
 
   const supabase = createClient()
 
@@ -914,7 +918,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    paddingTop: 59, // Hardcoded for iOS Dynamic Island safe area
   },
   header: {
     flexDirection: 'row',
