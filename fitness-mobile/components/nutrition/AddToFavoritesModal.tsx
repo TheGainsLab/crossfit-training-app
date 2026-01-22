@@ -993,6 +993,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+    paddingTop: 59, // Hardcoded for iOS Dynamic Island safe area
   },
   modalHeader: {
     flexDirection: 'row',

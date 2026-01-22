@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Modal,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '@/components/ui/Card'
 import { createClient } from '@/lib/supabase/client'
@@ -431,8 +432,9 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
 
   if (selectedFood) {
     return (
-      <ScrollView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <ScrollView style={{ flex: 1 }}>
+          <View style={styles.header}>
           <TouchableOpacity onPress={() => setSelectedFood(null)} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#282B34" />
           </TouchableOpacity>
@@ -476,14 +478,16 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
             onCancel={() => setSelectedFood(null)}
           />
         </Card>
-      </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
     )
   }
 
   const totalItems = data.restaurants.length + data.brands.length + data.meals.length
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <ScrollView style={{ flex: 1 }}>
       {/* Header */}
       {onBack && (
         <View style={styles.header}>
@@ -879,7 +883,8 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
           </View>
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   )
 }
 

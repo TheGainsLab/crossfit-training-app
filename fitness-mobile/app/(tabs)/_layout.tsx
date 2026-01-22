@@ -60,6 +60,7 @@ export default function TabLayout() {
         name="nutrition"
         options={{
           title: 'Nutrition',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="nutrition-outline" size={size} color={color} />
           ),
