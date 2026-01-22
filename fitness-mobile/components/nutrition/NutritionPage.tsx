@@ -11,6 +11,7 @@ import {
   Platform,
   TextInput,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/native'
@@ -847,7 +848,7 @@ export default function NutritionPage() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <DailySummaryCard summary={dailySummary} logs={todayLogs} onDelete={(id) => setDeleteConfirmModal({ visible: true, entryId: id, entryName: todayLogs.find(l => l.id === id)?.food_name || '' })} bmr={bmr} />
       <View style={styles.contentArea}>
         <LoggingInterface
@@ -906,7 +907,7 @@ export default function NutritionPage() {
           )}
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   )
 }
 
