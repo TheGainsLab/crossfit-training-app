@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '@/components/ui/Card'
 import { createClient } from '@/lib/supabase/client'
-import FoodSearchModal from './FoodSearchModal'
+import FoodSearchView from './FoodSearchView'
 import PortionAdjustInput from './PortionAdjustInput'
 import {
   getDefaultIngredients,
@@ -484,15 +484,34 @@ export default function MealBuilderModal({
     )
   }
 
-  // Show food search
+  // Show food search - render as view inside the same modal (not nested modal)
   if (showFoodSearch) {
     return (
-      <FoodSearchModal
-        visible={visible}
-        onClose={() => setShowFoodSearch(false)}
-        filterType="all"
-        onFoodSelected={handleFoodSelect}
-      />
+      <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+        <View style={styles.container}>
+          <FoodSearchView
+            onClose={() => setShowFoodSearch(false)}
+            filterType="all"
+            onFoodSelected={handleFoodSelect}
+          />
+        </View>
+      </Modal>
+    )
+  }
+
+  // Show saved foods picker - render as view inside the same modal (not nested modal)
+  if (showSavedFoodsModal) {
+    return (
+      <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+        <SavedFoodsPickerView
+          mode={savedFoodsMode}
+          onClose={() => {
+            setShowSavedFoodsModal(false)
+            setSavedFoodsMode(null)
+          }}
+          onFoodSelected={handleAddSavedFood}
+        />
+      </Modal>
     )
   }
 
@@ -736,38 +755,27 @@ export default function MealBuilderModal({
         </View>
       </View>
 
-      {/* Saved Foods Picker Modal */}
-      <SavedFoodsPicker
-        visible={showSavedFoodsModal}
-        mode={savedFoodsMode}
-        onClose={() => {
-          setShowSavedFoodsModal(false)
-          setSavedFoodsMode(null)
-        }}
-        onFoodSelected={handleAddSavedFood}
-      />
     </Modal>
   )
 }
 
-// Saved Foods Picker Component
-interface SavedFoodsPickerProps {
-  visible: boolean
+// Saved Foods Picker View Component (no Modal wrapper - prevents nesting)
+interface SavedFoodsPickerViewProps {
   mode: 'ingredients' | 'restaurants' | 'brands' | null
   onClose: () => void
   onFoodSelected: (food: any) => void
 }
 
-function SavedFoodsPicker({ visible, mode, onClose, onFoodSelected }: SavedFoodsPickerProps) {
+function SavedFoodsPickerView({ mode, onClose, onFoodSelected }: SavedFoodsPickerViewProps) {
   const [foods, setFoods] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
-    if (visible && mode) {
+    if (mode) {
       loadFoods()
     }
-  }, [visible, mode])
+  }, [mode])
 
   const loadFoods = async () => {
     try {
@@ -840,55 +848,53 @@ function SavedFoodsPicker({ visible, mode, onClose, onFoodSelected }: SavedFoods
   }
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#282B34" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{getModeTitle()}</Text>
-        </View>
-
-        <ScrollView style={styles.content}>
-          {loading ? (
-            <View style={{ padding: 40, alignItems: 'center' }}>
-              <ActivityIndicator size="large" color="#FE5858" />
-            </View>
-          ) : foods.length === 0 ? (
-            <Card style={{ margin: 16, padding: 24 }}>
-              <Text style={styles.emptyText}>
-                {mode === 'ingredients' && 'No ingredients saved yet'}
-                {mode === 'restaurants' && 'No restaurant items saved yet'}
-                {mode === 'brands' && 'No brand items saved yet'}
-              </Text>
-            </Card>
-          ) : (
-            <View style={{ padding: 16 }}>
-              {foods.map((food) => (
-                <TouchableOpacity
-                  key={food.id}
-                  style={styles.savedFoodPickerItem}
-                  onPress={() => onFoodSelected(food)}
-                >
-                  <View style={styles.savedFoodInfo}>
-                    <Text style={styles.savedFoodName}>{food.food_name}</Text>
-                    <Text style={styles.savedFoodDetails}>
-                      {food.default_amount} {food.default_unit}
-                      {(food.restaurant_name || food.brand_name) && (
-                        <Text style={{ color: '#9CA3AF' }}>
-                          {' • '}{food.restaurant_name || food.brand_name}
-                        </Text>
-                      )}
-                    </Text>
-                  </View>
-                  <Ionicons name="add-circle" size={28} color="#FE5858" />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </ScrollView>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onClose} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#282B34" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{getModeTitle()}</Text>
       </View>
-    </Modal>
+
+      <ScrollView style={styles.content}>
+        {loading ? (
+          <View style={{ padding: 40, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#FE5858" />
+          </View>
+        ) : foods.length === 0 ? (
+          <Card style={{ margin: 16, padding: 24 }}>
+            <Text style={styles.emptyText}>
+              {mode === 'ingredients' && 'No ingredients saved yet'}
+              {mode === 'restaurants' && 'No restaurant items saved yet'}
+              {mode === 'brands' && 'No brand items saved yet'}
+            </Text>
+          </Card>
+        ) : (
+          <View style={{ padding: 16 }}>
+            {foods.map((food) => (
+              <TouchableOpacity
+                key={food.id}
+                style={styles.savedFoodPickerItem}
+                onPress={() => onFoodSelected(food)}
+              >
+                <View style={styles.savedFoodInfo}>
+                  <Text style={styles.savedFoodName}>{food.food_name}</Text>
+                  <Text style={styles.savedFoodDetails}>
+                    {food.default_amount} {food.default_unit}
+                    {(food.restaurant_name || food.brand_name) && (
+                      <Text style={{ color: '#9CA3AF' }}>
+                        {' • '}{food.restaurant_name || food.brand_name}
+                      </Text>
+                    )}
+                  </Text>
+                </View>
+                <Ionicons name="add-circle" size={28} color="#FE5858" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    </View>
   )
 }
 

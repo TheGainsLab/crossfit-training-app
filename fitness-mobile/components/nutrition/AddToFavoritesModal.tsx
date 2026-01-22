@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '@/components/ui/Card'
 import { createClient } from '@/lib/supabase/client'
-import FoodSearchModal from './FoodSearchModal'
+import FoodSearchView from './FoodSearchView'
 import PortionAdjustInput from './PortionAdjustInput'
 import {
   getDefaultRestaurants,
@@ -871,14 +871,17 @@ export default function AddToFavoritesModal({
       )
     }
 
-    // Otherwise show food search
+    // Otherwise show food search - embedded as view (not nested modal)
     return (
-      <FoodSearchModal
-        visible={visible}
-        onClose={handleClose}
-        filterType="generic"
-        onFoodSelected={handleFoodSelect}
-      />
+      <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
+          <FoodSearchView
+            onClose={handleClose}
+            filterType="generic"
+            onFoodSelected={handleFoodSelect}
+          />
+        </SafeAreaView>
+      </Modal>
     )
   }
 
