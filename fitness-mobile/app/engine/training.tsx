@@ -3509,7 +3509,7 @@ export default function EnginePage() {
         {/* Completion Form or Review Card */}
         {isCompleted && (
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Workout Complete!</Text>
+            <Text style={[styles.sectionTitle, { textAlign: 'center' }]}>Workout Complete!</Text>
             
             {saveSuccess ? (
               /* Review Card - shown after successful save */
