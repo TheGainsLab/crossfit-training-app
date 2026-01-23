@@ -3233,35 +3233,13 @@ export default function EnginePage() {
               {(isActive || isPaused || isCompleted) && (
                 <>
                   <Text style={[
-                    styles.timerPhase, 
+                    styles.timerPhase,
                     { color: isPaused ? '#F59E0B' : currentPhase === 'work' ? '#10B981' : '#6B7280' }
                   ]}>
                     {isPaused ? 'PAUSED' : currentPhase === 'work' ? 'Work' : 'Rest'}
                   </Text>
-                  
-                  {currentPhase === 'rest' && isActive && !isCompleted ? (
-                    <View style={styles.restScoreContainer}>
-                      <Text style={styles.restScoreLabel}>Log Last Interval Output:</Text>
-                      <View style={styles.restScoreInputWrapper}>
-                        <TextInput
-                          style={styles.restScoreInput}
-                          value={currentIntervalScore}
-                          onChangeText={setCurrentIntervalScore}
-                          placeholder={`Enter ${timeTrialSelectedUnit === 'cal' ? 'calories' : timeTrialSelectedUnit}`}
-                          keyboardType="numeric"
-                          placeholderTextColor="#9CA3AF"
-                        />
-                        <TouchableOpacity 
-                          style={styles.restScoreSaveButton}
-                          onPress={saveCurrentIntervalScore}
-                        >
-                          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ) : (
-                    <>
-                      {(() => {
+
+                  {(() => {
                         // Calculate goal for current interval
                         let goalText = ''
                         if (currentInt && currentPhase === 'work') {
@@ -3304,8 +3282,6 @@ export default function EnginePage() {
                         }
                         return null
                       })()}
-                    </>
-                  )}
                 </>
               )}
             </View>
@@ -3491,7 +3467,7 @@ export default function EnginePage() {
                 onIntervalOutputChange={(intervalId, value) => {
                   const numValue = parseFloat(value)
                   const outputValue = isNaN(numValue) || numValue < 0 ? null : numValue
-                  
+
                   setSessionData(prev => ({
                     ...prev,
                     intervals: prev.intervals.map(interval =>
@@ -3501,6 +3477,8 @@ export default function EnginePage() {
                     )
                   }))
                 }}
+                currentPhase={currentPhase}
+                isWorkoutComplete={isCompleted}
               />
             )}
           </KeyboardAvoidingView>

@@ -30,6 +30,8 @@ interface IntervalRowProps {
   target: any
   shouldShowInput: boolean
   onOutputChange: (intervalId: number, value: string) => void
+  currentPhase?: 'work' | 'rest'
+  isWorkoutComplete?: boolean
 }
 
 export default function IntervalRow({
@@ -40,8 +42,13 @@ export default function IntervalRow({
   maxDuration,
   target,
   shouldShowInput,
-  onOutputChange
+  onOutputChange,
+  currentPhase = 'work',
+  isWorkoutComplete = false
 }: IntervalRowProps) {
+  // Determine if this interval's input is editable
+  // Editable when: (rest phase AND interval is completed) OR (workout is complete)
+  const isInputActive = isCompleted && (currentPhase === 'rest' || isWorkoutComplete)
   
   // Calculate bar width normalized to max duration
   const barWidth = normalizeBarWidth(interval.duration, maxDuration)
@@ -187,13 +194,14 @@ export default function IntervalRow({
           <TextInput
             style={[
               styles.intervalInput,
-              !(isCurrent || isCompleted) && styles.intervalInputDisabled
+              !isInputActive && styles.intervalInputDisabled,
+              isInputActive && styles.intervalInputActive
             ]}
             value={interval.actualOutput?.toString() ?? ''}
             onChangeText={(text) => onOutputChange(interval.id, text)}
             keyboardType="decimal-pad"
             placeholder="—"
-            editable={isCurrent || isCompleted}
+            editable={isInputActive}
           />
         ) : target ? (
           target.needsRocketRacesA ? (
@@ -388,5 +396,10 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
     backgroundColor: '#f3f4f6',
     color: '#9ca3af',
+  },
+  intervalInputActive: {
+    borderColor: '#FE5858',
+    borderWidth: 2,
+    backgroundColor: '#FEF2F2',
   },
 })

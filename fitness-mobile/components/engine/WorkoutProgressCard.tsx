@@ -38,6 +38,8 @@ interface WorkoutProgressCardProps {
   calculateTargetPaceWithData: (interval: Interval) => any
   shouldShowIntervalInputs: () => boolean
   onIntervalOutputChange: (intervalId: number, value: string) => void
+  currentPhase?: 'work' | 'rest'
+  isWorkoutComplete?: boolean
 }
 
 const INTERVAL_ROW_HEIGHT = 68 // Approximate height of each row including margin
@@ -50,7 +52,9 @@ export default function WorkoutProgressCard({
   selectedModality,
   calculateTargetPaceWithData,
   shouldShowIntervalInputs,
-  onIntervalOutputChange
+  onIntervalOutputChange,
+  currentPhase = 'work',
+  isWorkoutComplete = false
 }: WorkoutProgressCardProps) {
   const scrollViewRef = useRef<ScrollView>(null)
   
@@ -116,6 +120,8 @@ export default function WorkoutProgressCard({
                 target={target}
                 shouldShowInput={shouldShowIntervalInputs()}
                 onOutputChange={onIntervalOutputChange}
+                currentPhase={currentPhase}
+                isWorkoutComplete={isWorkoutComplete}
               />
             </React.Fragment>
           )
