@@ -175,7 +175,7 @@ export default function IntervalRow({
         </View>
       )}
       
-      {/* Right labels - Target pace/intensity details */}
+      {/* Right labels - Target goal for this interval */}
       <View style={styles.targetContainer}>
         {target ? (
           target.needsRocketRacesA ? (
@@ -186,13 +186,13 @@ export default function IntervalRow({
             <Text style={styles.maxEffortText}>
               Max Effort
             </Text>
-          ) : (
+          ) : target.pace ? (
             <View style={styles.targetInfo}>
               <Text style={[
-                styles.intensityText,
+                styles.goalText,
                 isCurrent && styles.currentText
               ]}>
-                {target.intensity}%
+                {Math.round(target.pace * (interval.duration / 60))} {target.units || 'cal'}
               </Text>
               {target.source === 'metrics_adjusted' && (
                 <View style={styles.aiBadge}>
@@ -200,6 +200,8 @@ export default function IntervalRow({
                 </View>
               )}
             </View>
+          ) : (
+            <Text style={styles.noBaselineText}>—</Text>
           )
         ) : (
           <Text style={styles.noBaselineText}>—</Text>
@@ -310,13 +312,18 @@ const styles = StyleSheet.create({
     color: '#282B34',
   },
   targetContainer: {
-    width: 80,
+    width: 70,
     alignItems: 'flex-end',
   },
   targetInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  goalText: {
+    color: '#282B34',
+    fontWeight: '600',
+    fontSize: 14,
   },
   intensityText: {
     color: '#6b7280',
