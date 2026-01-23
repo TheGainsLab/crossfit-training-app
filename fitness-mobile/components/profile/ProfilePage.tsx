@@ -17,7 +17,6 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { getMealTemplates, deleteMealTemplate, MealTemplate } from '@/lib/api/mealTemplates'
-import { SupportChatCard } from '@/components/chat/SupportChatCard'
 import FrequentFoodsScreen from '@/components/nutrition/FrequentFoodsScreen'
 import { Ionicons } from '@expo/vector-icons'
 
@@ -2093,11 +2092,6 @@ export default function ProfilePage() {
             Manage your go-to meals, restaurants, and foods for quick logging ({frequentFoodsCount} saved)
           </Text>
         </View>
-
-        {/* Support Chat Section */}
-        {userId && (
-          <SupportChatCard userId={userId} />
-        )}
 
         {/* Sign Out Section */}
         <View style={styles.sectionCard}>
