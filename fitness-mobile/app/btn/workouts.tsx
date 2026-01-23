@@ -825,7 +825,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterButtonActive: {
-    backgroundColor: '#FE5858',
+    backgroundColor: '#FEF2F2',
     borderColor: '#FE5858',
   },
   filterButtonText: {
@@ -834,7 +834,8 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   filterButtonTextActive: {
-    color: '#FFFFFF',
+    color: '#FE5858',
+    fontWeight: '600',
   },
   workoutList: {
     paddingHorizontal: 20,

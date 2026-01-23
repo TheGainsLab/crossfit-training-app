@@ -4492,7 +4492,7 @@ const styles = StyleSheet.create({
   },
   categoryButtonActive: {
     borderColor: '#FE5858',
-    backgroundColor: '#FE5858',
+    backgroundColor: '#FEF2F2',
   },
   categoryButtonText: {
     fontSize: 14,
@@ -4500,7 +4500,8 @@ const styles = StyleSheet.create({
     color: '#282B34',
   },
   categoryButtonTextActive: {
-    color: '#FFFFFF',
+    color: '#FE5858',
+    fontWeight: '600',
   },
   equipmentSubMenu: {
     backgroundColor: '#F8FBFE',
@@ -4525,7 +4526,7 @@ const styles = StyleSheet.create({
   },
   equipmentButtonActive: {
     borderColor: '#FE5858',
-    backgroundColor: '#FE5858',
+    backgroundColor: '#FEF2F2',
   },
   equipmentButtonText: {
     fontSize: 14,
@@ -4533,7 +4534,8 @@ const styles = StyleSheet.create({
     color: '#282B34',
   },
   equipmentButtonTextActive: {
-    color: '#FFFFFF',
+    color: '#FE5858',
+    fontWeight: '600',
   },
   unitSelectionCard: {
     backgroundColor: '#F8FBFE',
@@ -4568,7 +4570,7 @@ const styles = StyleSheet.create({
   },
   unitButtonActive: {
     borderColor: '#FE5858',
-    backgroundColor: '#FE5858',
+    backgroundColor: '#FEF2F2',
   },
   unitButtonText: {
     fontSize: 13,
@@ -4577,7 +4579,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   unitButtonTextActive: {
-    color: '#FFFFFF',
+    color: '#FE5858',
+    fontWeight: '600',
   },
   baselineWarning: {
     backgroundColor: '#DAE2EA',

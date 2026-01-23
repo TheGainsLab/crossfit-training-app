@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   },
   metricButtonActive: {
     borderColor: '#FE5858',
-    backgroundColor: '#FE5858',
+    backgroundColor: '#FEF2F2',
   },
   metricButtonText: {
     color: '#282B34',
@@ -112,7 +112,8 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   metricButtonTextActive: {
-    color: '#FFFFFF',
+    color: '#FE5858',
+    fontWeight: '600',
   }
 })
 
