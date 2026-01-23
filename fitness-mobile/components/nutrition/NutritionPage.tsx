@@ -862,6 +862,7 @@ export default function NutritionPage() {
       <FrequentFoodsScreen
         onBack={() => setShowFrequentFoods(false)}
         mealType={selectedMealType}
+        onFoodLogged={() => setRefreshKey(k => k + 1)}
       />
     )
   }

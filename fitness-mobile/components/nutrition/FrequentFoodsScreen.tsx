@@ -29,9 +29,10 @@ interface FrequentFoodsData {
 interface FrequentFoodsScreenProps {
   onBack?: () => void
   mealType?: string | null
+  onFoodLogged?: () => void
 }
 
-export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsScreenProps) {
+export default function FrequentFoodsScreen({ onBack, mealType, onFoodLogged }: FrequentFoodsScreenProps) {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<FrequentFoodsData>({
     restaurants: [],
@@ -192,7 +193,9 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
       })
 
       if (error) throw error
-      
+
+      if (onFoodLogged) onFoodLogged()
+
       // Show toast with undo/edit options
       setLoggedFoodToast({
         visible: true,
@@ -311,12 +314,13 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
       // Update meal template log count
       await supabase
         .from('meal_templates')
-        .update({ 
+        .update({
           log_count: (meal.log_count || 0) + 1,
           last_logged_at: new Date().toISOString(),
         })
         .eq('id', meal.id)
 
+      if (onFoodLogged) onFoodLogged()
       Alert.alert('Success', `Logged: ${meal.template_name} (${items.length} items)`)
     } catch (error) {
       console.error('Error quick logging meal:', error)
