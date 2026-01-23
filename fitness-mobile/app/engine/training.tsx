@@ -3453,15 +3453,21 @@ export default function EnginePage() {
             {(isActive || isPaused) && (
               <>
                 <View style={styles.timerControls}>
-                  <TouchableOpacity style={styles.stopButton} onPress={resetWorkout}>
-                    <Ionicons name="close" size={24} color="#FFFFFF" />
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.pauseButton} 
-                    onPress={isActive ? pauseWorkout : resumeWorkout}
-                  >
-                    <Ionicons name={isActive ? "pause" : "play"} size={24} color="#FFFFFF" />
-                  </TouchableOpacity>
+                  <View style={styles.timerControlItem}>
+                    <TouchableOpacity style={styles.stopButton} onPress={resetWorkout}>
+                      <Ionicons name="close" size={24} color="#FE5858" />
+                    </TouchableOpacity>
+                    <Text style={styles.timerControlLabel}>Exit</Text>
+                  </View>
+                  <View style={styles.timerControlItem}>
+                    <TouchableOpacity
+                      style={styles.pauseButton}
+                      onPress={isActive ? pauseWorkout : resumeWorkout}
+                    >
+                      <Ionicons name={isActive ? "pause" : "play"} size={24} color="#6B7280" />
+                    </TouchableOpacity>
+                    <Text style={styles.timerControlLabel}>{isActive ? 'Pause' : 'Restart'}</Text>
+                  </View>
                 </View>
                 <TouchableOpacity 
                   style={styles.skipWorkoutButton} 
@@ -4091,8 +4097,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 24,
+    gap: 64,
     paddingVertical: 24,
+  },
+  timerControlItem: {
+    alignItems: 'center',
+  },
+  timerControlLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 8,
   },
   restScoreContainer: {
     marginTop: 8,
@@ -4182,7 +4197,9 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#FE5858',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#FE5858',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -4195,7 +4212,9 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#6B7280',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#6B7280',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
