@@ -3466,22 +3466,6 @@ export default function EnginePage() {
                 baselines={baselines}
                 selectedModality={selectedModality}
                 calculateTargetPaceWithData={calculateTargetPaceWithData}
-                shouldShowIntervalInputs={shouldShowIntervalInputs}
-                onIntervalOutputChange={(intervalId, value) => {
-                  const numValue = parseFloat(value)
-                  const outputValue = isNaN(numValue) || numValue < 0 ? null : numValue
-
-                  setSessionData(prev => ({
-                    ...prev,
-                    intervals: prev.intervals.map(interval =>
-                      interval.id === intervalId
-                        ? { ...interval, actualOutput: outputValue }
-                        : interval
-                    )
-                  }))
-                }}
-                currentPhase={currentPhase}
-                isWorkoutComplete={isCompleted}
               />
             )}
           </KeyboardAvoidingView>

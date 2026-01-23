@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, TextInput, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
 import Svg, { Line } from 'react-native-svg'
 import { calculateFluxPeriods, calculateBurstTimes, formatTime, normalizeBarWidth } from '@/lib/engine/progressHelpers'
 
@@ -28,10 +28,6 @@ interface IntervalRowProps {
   isCompleted: boolean
   maxDuration: number
   target: any
-  shouldShowInput: boolean
-  onOutputChange: (intervalId: number, value: string) => void
-  currentPhase?: 'work' | 'rest'
-  isWorkoutComplete?: boolean
 }
 
 export default function IntervalRow({
@@ -40,16 +36,8 @@ export default function IntervalRow({
   isCurrent,
   isCompleted,
   maxDuration,
-  target,
-  shouldShowInput,
-  onOutputChange,
-  currentPhase = 'work',
-  isWorkoutComplete = false
+  target
 }: IntervalRowProps) {
-  // Determine if this interval's input is editable
-  // Editable when: (rest phase AND interval is completed) OR (workout is complete)
-  const isInputActive = isCompleted && (currentPhase === 'rest' || isWorkoutComplete)
-  
   // Calculate bar width normalized to max duration
   const barWidth = normalizeBarWidth(interval.duration, maxDuration)
   
@@ -187,23 +175,9 @@ export default function IntervalRow({
         </View>
       )}
       
-      {/* Right labels - Input box OR Target pace/intensity details */}
+      {/* Right labels - Target pace/intensity details */}
       <View style={styles.targetContainer}>
-        {shouldShowInput ? (
-          // Show input box for workouts with rest segments
-          <TextInput
-            style={[
-              styles.intervalInput,
-              !isInputActive && styles.intervalInputDisabled,
-              isInputActive && styles.intervalInputActive
-            ]}
-            value={interval.actualOutput?.toString() ?? ''}
-            onChangeText={(text) => onOutputChange(interval.id, text)}
-            keyboardType="decimal-pad"
-            placeholder="—"
-            editable={isInputActive}
-          />
-        ) : target ? (
+        {target ? (
           target.needsRocketRacesA ? (
             <Text style={styles.errorText}>
               {target.message}
@@ -378,28 +352,5 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     fontStyle: 'italic',
     fontSize: 10,
-  },
-  intervalInput: {
-    width: 80,
-    height: 44,
-    padding: 8,
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
-    borderWidth: 1,
-    borderColor: '#282B34',
-    borderRadius: 6,
-    backgroundColor: '#ffffff',
-    color: '#282B34',
-  },
-  intervalInputDisabled: {
-    borderColor: '#d1d5db',
-    backgroundColor: '#f3f4f6',
-    color: '#9ca3af',
-  },
-  intervalInputActive: {
-    borderColor: '#FE5858',
-    borderWidth: 2,
-    backgroundColor: '#FEF2F2',
   },
 })
