@@ -22,9 +22,10 @@ serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const token = authHeader.replace(/^Bearer\s+/i, '')
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    // Use service role to bypass RLS - we verify the user manually above
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
     
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) {
