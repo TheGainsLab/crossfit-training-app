@@ -250,7 +250,7 @@ export default function EnginePage() {
     { value: 'assault_bike', label: 'Assault Bike', category: 'Cycling' },
     { value: 'airdyne_bike', label: 'AirDyne Bike', category: 'Cycling' },
     { value: 'other_bike', label: 'Other Bike', category: 'Cycling' },
-    { value: 'outdoor_bike_ride', label: 'Outdoor Bike Ride', category: 'Cycling' },
+    { value: 'outdoor_bike_ride', label: 'Outdoor Ride', category: 'Cycling' },
     { value: 'c2_ski_erg', label: 'C2 Ski Erg', category: 'Ski' },
     { value: 'assault_runner', label: 'Assault Runner Treadmill', category: 'Treadmill' },
     { value: 'trueform_treadmill', label: 'TrueForm Treadmill', category: 'Treadmill' },
@@ -4516,7 +4516,7 @@ const styles = StyleSheet.create({
   },
   equipmentButton: {
     flex: 1,
-    minWidth: '45%',
+    minWidth: '30%',
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderRadius: 6,
