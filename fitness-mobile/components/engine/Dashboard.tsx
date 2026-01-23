@@ -106,23 +106,16 @@ export default function Dashboard({
   }, [showTrainingView, internalView, onTrainingViewShown])
 
   const getDayStatus = (workout: any) => {
-    if (!workout) return 'locked'
+    if (!workout) return 'upcoming'
 
     const dayNumber = workout.program_day_number || workout.day_number
-    const daysPerMonth = getDaysPerMonth()
-    const maxAllowedDay = (user?.current_day || 0) + 30 // Allow some buffer
-
-    if (dayNumber > maxAllowedDay) return 'locked'
 
     const isCompleted = completedSessions.some((session: any) =>
       session.program_day_number === dayNumber ||
       session.day_number === dayNumber
     )
 
-    if (isCompleted) return 'completed'
-    if (dayNumber <= (user?.current_day || 0)) return 'available'
-
-    return 'upcoming'
+    return isCompleted ? 'completed' : 'upcoming'
   }
 
   const getMonthAccess = (monthNumber: number) => {
