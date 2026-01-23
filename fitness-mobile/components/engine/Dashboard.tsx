@@ -245,12 +245,14 @@ export default function Dashboard({
         onPress={() => handleDayClick(workout)}
         disabled={status === 'locked'}
       >
-        <Text style={styles.dayNumber}>
-          Day {dayNumber}
-        </Text>
-        <Text style={styles.dayType} numberOfLines={2}>
-          {getWorkoutTypeDisplayName(workout.day_type || '')}
-        </Text>
+        <View style={styles.dayCardContent}>
+          <Text style={styles.dayNumber}>
+            Day {dayNumber}
+          </Text>
+          <Text style={styles.dayType} numberOfLines={1}>
+            {getWorkoutTypeDisplayName(workout.day_type || '')}
+          </Text>
+        </View>
         {status === 'completed' && (
           <Text style={styles.completedBadge}>Completed</Text>
         )}
@@ -585,33 +587,35 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   daysRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     gap: 8,
   },
   dayWrapper: {
-    width: '48%',
+    width: '100%',
   },
   dayCard: {
-    padding: 12,
+    padding: 16,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#FE5858',
+    borderLeftWidth: 4,
+    flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 90,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    minHeight: 60,
+  },
+  dayCardContent: {
+    flex: 1,
   },
   dayNumber: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 2,
     color: '#282B34',
   },
   dayType: {
-    fontSize: 11,
-    textAlign: 'center',
-    color: '#282B34',
-    flexWrap: 'wrap',
+    fontSize: 13,
+    color: '#6b7280',
   },
   completedBadge: {
     marginTop: 4,
