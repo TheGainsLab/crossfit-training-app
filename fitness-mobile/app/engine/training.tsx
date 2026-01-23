@@ -4028,24 +4028,24 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   timerWorkoutTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
     color: '#282B34',
     marginBottom: 8,
   },
   timerPhase: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '600',
     marginBottom: 8,
   },
   timerGoal: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '500',
     color: '#6B7280',
     marginBottom: 4,
   },
   timerRound: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '500',
     color: '#6B7280',
   },
@@ -4075,14 +4075,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 64,
+    gap: 80,
     paddingVertical: 24,
   },
   timerControlItem: {
     alignItems: 'center',
   },
   timerControlLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
     color: '#6B7280',
     marginTop: 8,
@@ -4210,7 +4210,7 @@ const styles = StyleSheet.create({
   skipWorkoutButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#282B34',
     textDecorationLine: 'underline',
   },
   timerContainer: {
