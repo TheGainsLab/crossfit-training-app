@@ -279,7 +279,7 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
       }
 
       // Log each item in the meal
-      const logPromises = items.map(item => 
+      const logPromises = items.map(item =>
         supabase.functions.invoke('food-log', {
           body: {
             food_id: item.food_id,
@@ -295,6 +295,7 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
             sodium: item.sodium || 0,
             source: 'meal_template',
             meal_template_id: meal.id,
+            meal_type: mealType,
           },
         })
       )
