@@ -694,22 +694,22 @@ class EngineDatabaseService {
     }
 
     console.log('Loading unlocked workout days for user:', userData)
-    
-    // Check if user has access to all months
-    if (userData.months_unlocked >= 36) {
+
+    // Check if user has access to all months (use correct field name from database)
+    if (userData.engine_months_unlocked >= 36) {
       console.log('User has access to all months, loading all workouts')
       return await this.loadWorkouts()
     }
 
     let maxUnlockedDay = 0
-    
-    // For trial users, only allow first month (days 1-20)
-    if (userData.subscription_status === 'trial') {
+
+    // For inactive/trial users, only allow first month (days 1-20)
+    if (userData.subscription_status === 'INACTIVE' || userData.subscription_status === 'trial') {
       maxUnlockedDay = 20
     }
     // For active users, allow based on current day progression
-    else if (userData.subscription_status === 'active') {
-      maxUnlockedDay = (userData.current_day || 0) + 20 // Current day plus buffer
+    else if (userData.subscription_status === 'ACTIVE' || userData.subscription_status === 'active') {
+      maxUnlockedDay = (userData.engine_current_day || 0) + 20 // Current day plus buffer
     }
 
     console.log('Max unlocked day:', maxUnlockedDay)

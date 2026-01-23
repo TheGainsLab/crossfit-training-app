@@ -132,17 +132,20 @@ export default function Dashboard({
       return monthNumber === 1
     }
 
-    if (user.months_unlocked >= 36) {
+    // Check engine_months_unlocked (correct field name from database)
+    if (user.engine_months_unlocked >= 36) {
       return true
     }
 
-    if (user.subscription_status === 'trial') {
+    // For inactive/trial users, only allow first month
+    if (user.subscription_status === 'INACTIVE' || user.subscription_status === 'trial') {
       return monthNumber === 1
     }
 
-    if (user.subscription_status === 'active') {
-      const maxMonth = Math.ceil((user.current_day || 1) / daysPerMonth)
-      return monthNumber <= maxMonth
+    // For active users, allow based on current day progression or months unlocked
+    if (user.subscription_status === 'ACTIVE' || user.subscription_status === 'active') {
+      const maxMonth = Math.ceil((user.engine_current_day || 1) / daysPerMonth)
+      return monthNumber <= Math.max(maxMonth, user.engine_months_unlocked || 1)
     }
 
     return monthNumber === 1
