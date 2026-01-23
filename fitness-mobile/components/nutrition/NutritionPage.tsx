@@ -549,18 +549,25 @@ export default function NutritionPage() {
           }
           
           // Generate slider options based on unit
-          const options = displayUnit === 'oz' 
+          // oz mode: each value = that many ounces
+          // 100g mode: each value = that many 100g portions
+          const options = displayUnit === 'oz'
             ? [1, 2, 3, 4, 6, 8, 12, 16]
-            : displayUnit === 'g'
-            ? [50, 100, 150, 200, 250, 300, 350, 400]
-            : [0.5, 1, 1.5, 2, 2.5, 3] // cups/other
-          
+            : [1, 2, 3, 4, 5, 6, 7, 8] // multiples of 100g
+
+          // For grams, convert AI estimate to 100g units
+          let sliderAmount = displayAmount
+          if (displayUnit === 'g') {
+            sliderAmount = Math.round(displayAmount / 100) || 1
+            displayUnit = '×100g' // Show as multiples of 100g
+          }
+
           // Find closest option
-          const closestOption = options.reduce((prev, curr) => 
-            Math.abs(curr - displayAmount) < Math.abs(prev - displayAmount) ? curr : prev
+          const closestOption = options.reduce((prev, curr) =>
+            Math.abs(curr - sliderAmount) < Math.abs(prev - sliderAmount) ? curr : prev
           )
 
-          // Calculate nutrition per unit (per oz or per g)
+          // Calculate nutrition per unit (per 1 oz or per 100g)
           const baseCalories = parseFloat(serving?.calories || '0')
           const baseProtein = parseFloat(serving?.protein || '0')
           const baseCarbs = parseFloat(serving?.carbohydrate || '0')
@@ -583,13 +590,13 @@ export default function NutritionPage() {
             }
           }
 
-          // Calculate per-unit nutrition based on displayUnit
+          // Calculate per-unit nutrition
           let nutritionPerUnit
           const GRAMS_PER_OZ = 28.35
 
           if (servingWeightInGrams && servingWeightInGrams > 0) {
-            // We have actual weight, calculate per oz or per g
             if (displayUnit === 'oz') {
+              // Per 1 oz
               const servingWeightInOz = servingWeightInGrams / GRAMS_PER_OZ
               nutritionPerUnit = {
                 calories: baseCalories / servingWeightInOz,
@@ -598,12 +605,12 @@ export default function NutritionPage() {
                 fat: baseFat / servingWeightInOz,
               }
             } else {
-              // Per gram
+              // Per 100g
               nutritionPerUnit = {
-                calories: baseCalories / servingWeightInGrams,
-                protein: baseProtein / servingWeightInGrams,
-                carbohydrate: baseCarbs / servingWeightInGrams,
-                fat: baseFat / servingWeightInGrams,
+                calories: (baseCalories / servingWeightInGrams) * 100,
+                protein: (baseProtein / servingWeightInGrams) * 100,
+                carbohydrate: (baseCarbs / servingWeightInGrams) * 100,
+                fat: (baseFat / servingWeightInGrams) * 100,
               }
             }
           } else {

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { createClient } from '@/lib/supabase/client'
+import FoodSearchView from './FoodSearchView'
 
 interface FoodItem {
   id: string
@@ -41,7 +43,110 @@ export default function PhotoResultSlider({
 }: PhotoResultSliderProps) {
   const [foods, setFoods] = useState<FoodItem[]>(initialFoods)
   const [saveAsFavorite, setSaveAsFavorite] = useState(false)
+  const [replacingFoodId, setReplacingFoodId] = useState<string | null>(null)
+  const [loadingReplacement, setLoadingReplacement] = useState(false)
   const usesImperial = userUnits?.includes('lbs')
+  const supabase = createClient()
+
+  // Handle tapping food name to replace it
+  const handleFoodNameTap = (foodId: string) => {
+    setReplacingFoodId(foodId)
+  }
+
+  // Handle selecting a replacement food from search
+  const handleReplacementSelect = async (selectedFood: { food_id: string; food_name: string }) => {
+    if (!replacingFoodId) return
+
+    setLoadingReplacement(true)
+    try {
+      // Fetch full food details
+      const { data, error } = await supabase.functions.invoke('nutrition-food', {
+        body: { foodId: selectedFood.food_id, normalize: true },
+      })
+
+      if (error) throw error
+
+      const foodData = data?.data?.food
+      if (!foodData) throw new Error('Failed to load food details')
+
+      // Get the serving and extract nutrition per oz (or per 100g)
+      const servings = foodData.servings?.serving || []
+      const serving = Array.isArray(servings) ? servings[0] : servings
+
+      // Extract serving weight
+      let servingWeightInGrams: number | null = null
+      if (serving?.metric_serving_amount && serving?.metric_serving_unit === 'g') {
+        servingWeightInGrams = parseFloat(serving.metric_serving_amount)
+      } else if (serving?.serving_description) {
+        const desc = serving.serving_description.toLowerCase()
+        const ozMatch = desc.match(/([\d.]+)\s*oz/)
+        const gMatch = desc.match(/([\d.]+)\s*g\b/)
+        if (ozMatch) servingWeightInGrams = parseFloat(ozMatch[1]) * 28.35
+        else if (gMatch) servingWeightInGrams = parseFloat(gMatch[1])
+      }
+
+      const baseCalories = parseFloat(serving?.calories || '0')
+      const baseProtein = parseFloat(serving?.protein || '0')
+      const baseCarbs = parseFloat(serving?.carbohydrate || '0')
+      const baseFat = parseFloat(serving?.fat || '0')
+
+      // Find the food being replaced to keep its portion
+      const foodBeingReplaced = foods.find(f => f.id === replacingFoodId)
+      if (!foodBeingReplaced) throw new Error('Food not found')
+
+      // Calculate nutrition per unit (per oz or per 100g)
+      let nutritionPerUnit
+      const GRAMS_PER_OZ = 28.35
+
+      if (servingWeightInGrams && servingWeightInGrams > 0) {
+        if (foodBeingReplaced.unit === 'oz') {
+          const servingWeightInOz = servingWeightInGrams / GRAMS_PER_OZ
+          nutritionPerUnit = {
+            calories: baseCalories / servingWeightInOz,
+            protein: baseProtein / servingWeightInOz,
+            carbohydrate: baseCarbs / servingWeightInOz,
+            fat: baseFat / servingWeightInOz,
+          }
+        } else {
+          // Per 100g
+          nutritionPerUnit = {
+            calories: (baseCalories / servingWeightInGrams) * 100,
+            protein: (baseProtein / servingWeightInGrams) * 100,
+            carbohydrate: (baseCarbs / servingWeightInGrams) * 100,
+            fat: (baseFat / servingWeightInGrams) * 100,
+          }
+        }
+      } else {
+        // Fallback
+        nutritionPerUnit = {
+          calories: baseCalories,
+          protein: baseProtein,
+          carbohydrate: baseCarbs,
+          fat: baseFat,
+        }
+      }
+
+      // Update the food item, keeping the portion
+      setFoods(prev => prev.map(food =>
+        food.id === replacingFoodId
+          ? {
+              ...food,
+              food_name: foodData.food_name,
+              entry_data: { ...food.entry_data, food_id: foodData.food_id, food_name: foodData.food_name },
+              nutritionPerUnit,
+              confidence: 'high' as const, // User manually selected, so high confidence
+            }
+          : food
+      ))
+
+      setReplacingFoodId(null)
+    } catch (error) {
+      console.error('Error replacing food:', error)
+      Alert.alert('Error', 'Failed to load food details. Please try again.')
+    } finally {
+      setLoadingReplacement(false)
+    }
+  }
 
   const updateAmount = (id: string, newAmount: number) => {
     setFoods(prev => prev.map(food => 
@@ -52,34 +157,41 @@ export default function PhotoResultSlider({
   const toggleUnit = (id: string) => {
     setFoods(prev => prev.map(food => {
       if (food.id !== id) return food
-      
+
       const isCurrentlyOz = food.unit === 'oz'
-      const newUnit = isCurrentlyOz ? 'g' : 'oz'
-      
-      // Convert current amount
-      const newAmount = isCurrentlyOz 
-        ? Math.round(food.amount * 28.35) // oz to g
-        : Math.round(food.amount / 28.35) // g to oz
-      
+      const newUnit = isCurrentlyOz ? '×100g' : 'oz'
+
+      // Convert amount: oz to 100g multiples or vice versa
+      // 1 oz ≈ 28.35g, so X oz ≈ X * 0.2835 × 100g portions
+      // Reverse: X × 100g = X * 3.527 oz
+      const newAmount = isCurrentlyOz
+        ? Math.round(food.amount * 0.2835) || 1 // oz to 100g multiples
+        : Math.round(food.amount * 3.527) || 1  // 100g multiples to oz
+
       // Generate new options
       const newOptions = isCurrentlyOz
-        ? [50, 100, 150, 200, 250, 300, 350, 400] // grams
-        : [2, 4, 6, 8, 10, 12, 14, 16] // oz
-      
-      // Find closest option to converted amount
-      const closestOption = newOptions.reduce((prev, curr) => 
+        ? [1, 2, 3, 4, 5, 6, 7, 8] // 100g multiples
+        : [1, 2, 3, 4, 6, 8, 12, 16] // oz
+
+      // Find closest option
+      const closestOption = newOptions.reduce((prev, curr) =>
         Math.abs(curr - newAmount) < Math.abs(prev - newAmount) ? curr : prev
       )
-      
+
       // Convert nutrition per unit
-      const conversionFactor = isCurrentlyOz ? 28.35 : (1 / 28.35)
+      // oz → 100g: multiply by (28.35 / 100) ≈ 0.2835... wait no
+      // If nutritionPerUnit is per 1oz, and we want per 100g:
+      // per 100g = per oz * (100 / 28.35) = per oz * 3.527
+      // If nutritionPerUnit is per 100g, and we want per oz:
+      // per oz = per 100g * (28.35 / 100) = per 100g * 0.2835
+      const conversionFactor = isCurrentlyOz ? 3.527 : 0.2835
       const newNutritionPerUnit = {
-        calories: food.nutritionPerUnit.calories / conversionFactor,
-        protein: food.nutritionPerUnit.protein / conversionFactor,
-        carbohydrate: food.nutritionPerUnit.carbohydrate / conversionFactor,
-        fat: food.nutritionPerUnit.fat / conversionFactor,
+        calories: food.nutritionPerUnit.calories * conversionFactor,
+        protein: food.nutritionPerUnit.protein * conversionFactor,
+        carbohydrate: food.nutritionPerUnit.carbohydrate * conversionFactor,
+        fat: food.nutritionPerUnit.fat * conversionFactor,
       }
-      
+
       return {
         ...food,
         amount: closestOption,
@@ -131,9 +243,31 @@ export default function PhotoResultSlider({
     }
   }
 
+  // Show search view when replacing a food
+  if (replacingFoodId) {
+    const foodBeingReplaced = foods.find(f => f.id === replacingFoodId)
+    return (
+      <View style={styles.container}>
+        {loadingReplacement ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FE5858" />
+            <Text style={styles.loadingText}>Loading food details...</Text>
+          </View>
+        ) : (
+          <FoodSearchView
+            onClose={() => setReplacingFoodId(null)}
+            onFoodSelected={handleReplacementSelect}
+            filterType="generic"
+            initialQuery={foodBeingReplaced?.food_name}
+          />
+        )}
+      </View>
+    )
+  }
+
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -166,8 +300,15 @@ export default function PhotoResultSlider({
             >
               {/* Food Header */}
               <View style={styles.foodHeader}>
-                <View style={styles.foodNameContainer}>
-                  <Text style={styles.foodName}>{food.food_name}</Text>
+                <TouchableOpacity
+                  style={styles.foodNameContainer}
+                  onPress={() => handleFoodNameTap(food.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.foodNameRow}>
+                    <Text style={styles.foodName}>{food.food_name}</Text>
+                    <Ionicons name="pencil" size={14} color="#9CA3AF" style={{ marginLeft: 6 }} />
+                  </View>
                   {food.description && (
                     <Text style={styles.foodDescription}>{food.description}</Text>
                   )}
@@ -175,7 +316,8 @@ export default function PhotoResultSlider({
                   <Text style={styles.aiEstimate}>
                     AI suggested: {food.aiEstimate} {food.unit}
                   </Text>
-                </View>
+                  <Text style={styles.tapToChange}>Tap to change food</Text>
+                </TouchableOpacity>
                 <View style={styles.caloriesContainer}>
                   <Text style={styles.caloriesValue}>
                     {Math.round(food.nutritionPerUnit.calories * food.amount)}
@@ -441,6 +583,26 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#6B7280',
     fontStyle: 'italic',
+  },
+  foodNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tapToChange: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: '#6B7280',
   },
   caloriesContainer: {
     alignItems: 'flex-end',
