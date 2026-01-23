@@ -808,17 +808,12 @@ export default function EnginePage() {
     }
   }, [intervalScores])
 
-  // Timer effect
+  // Timer effect - runs continuously while workout is active
+  // Only depends on isActive to prevent interval recreation during phase transitions
   useEffect(() => {
-    if (isActive && timeRemaining > 0) {
+    if (isActive) {
       intervalRef.current = setInterval(() => {
-        setTimeRemaining(prev => {
-          const newTime = prev - 1
-          if (newTime === 0) {
-            handlePhaseCompletion()
-          }
-          return newTime
-        })
+        setTimeRemaining(prev => Math.max(0, prev - 1))
       }, 1000)
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current)
@@ -827,7 +822,15 @@ export default function EnginePage() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [isActive, timeRemaining, currentPhase, currentInterval])
+  }, [isActive])
+
+  // Phase completion effect - handles transitions when timer reaches 0
+  // Separate from timer to ensure seamless transitions without interval recreation
+  useEffect(() => {
+    if (isActive && timeRemaining === 0 && !isCompleted) {
+      handlePhaseCompletion()
+    }
+  }, [timeRemaining, isActive, isCompleted])
 
   // Helper function to construct workout object from engineData
   const constructWorkoutFromEngineData = (engineData: any): any => {
