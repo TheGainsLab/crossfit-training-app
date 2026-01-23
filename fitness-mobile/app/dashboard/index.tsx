@@ -1167,19 +1167,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
   },
   weekButtonActive: {
-    backgroundColor: '#FE5858',
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FE5858',
   },
   weekButtonInactive: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#D1D5DB',
   },
   weekButtonText: {
     fontSize: 14,
     fontWeight: '600',
   },
   weekButtonTextActive: {
-    color: '#FFFFFF',
+    color: '#FE5858',
   },
   weekButtonTextInactive: {
     color: '#282B34',
