@@ -559,19 +559,61 @@ export default function NutritionPage() {
           const closestOption = options.reduce((prev, curr) => 
             Math.abs(curr - displayAmount) < Math.abs(prev - displayAmount) ? curr : prev
           )
-          
+
           // Calculate nutrition per unit (per oz or per g)
           const baseCalories = parseFloat(serving?.calories || '0')
           const baseProtein = parseFloat(serving?.protein || '0')
           const baseCarbs = parseFloat(serving?.carbohydrate || '0')
           const baseFat = parseFloat(serving?.fat || '0')
-          const baseUnits = parseFloat(serving?.number_of_units || f.entry_data?.number_of_units || '1')
-          
-          const nutritionPerUnit = {
-            calories: baseUnits > 0 ? baseCalories / baseUnits : baseCalories,
-            protein: baseUnits > 0 ? baseProtein / baseUnits : baseProtein,
-            carbohydrate: baseUnits > 0 ? baseCarbs / baseUnits : baseCarbs,
-            fat: baseUnits > 0 ? baseFat / baseUnits : baseFat,
+
+          // Extract actual serving weight from metric_serving_amount or serving_description
+          let servingWeightInGrams: number | null = null
+
+          if (serving?.metric_serving_amount && serving?.metric_serving_unit === 'g') {
+            servingWeightInGrams = parseFloat(serving.metric_serving_amount)
+          } else if (serving?.serving_description) {
+            const desc = serving.serving_description.toLowerCase()
+            const ozMatch = desc.match(/([\d.]+)\s*oz/)
+            const gMatch = desc.match(/([\d.]+)\s*g\b/)
+
+            if (ozMatch) {
+              servingWeightInGrams = parseFloat(ozMatch[1]) * 28.35
+            } else if (gMatch) {
+              servingWeightInGrams = parseFloat(gMatch[1])
+            }
+          }
+
+          // Calculate per-unit nutrition based on displayUnit
+          let nutritionPerUnit
+          const GRAMS_PER_OZ = 28.35
+
+          if (servingWeightInGrams && servingWeightInGrams > 0) {
+            // We have actual weight, calculate per oz or per g
+            if (displayUnit === 'oz') {
+              const servingWeightInOz = servingWeightInGrams / GRAMS_PER_OZ
+              nutritionPerUnit = {
+                calories: baseCalories / servingWeightInOz,
+                protein: baseProtein / servingWeightInOz,
+                carbohydrate: baseCarbs / servingWeightInOz,
+                fat: baseFat / servingWeightInOz,
+              }
+            } else {
+              // Per gram
+              nutritionPerUnit = {
+                calories: baseCalories / servingWeightInGrams,
+                protein: baseProtein / servingWeightInGrams,
+                carbohydrate: baseCarbs / servingWeightInGrams,
+                fat: baseFat / servingWeightInGrams,
+              }
+            }
+          } else {
+            // Fallback: assume serving data is already per-unit (may be inaccurate)
+            nutritionPerUnit = {
+              calories: baseCalories,
+              protein: baseProtein,
+              carbohydrate: baseCarbs,
+              fat: baseFat,
+            }
           }
           
           // Determine confidence based on match quality
