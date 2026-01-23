@@ -38,11 +38,21 @@ interface MealItem {
   serving_description?: string
 }
 
+interface EditingMeal {
+  id: number
+  template_name: string
+  total_calories: number
+  total_protein: number
+  total_carbohydrate: number
+  total_fat: number
+}
+
 interface MealBuilderViewProps {
   onClose: () => void
   onSaved?: () => void
   onLogMeal?: (items: MealItem[]) => Promise<void>
   preselectedMealType?: string | null
+  editingMeal?: EditingMeal | null
 }
 
 export default function MealBuilderView({
@@ -50,8 +60,9 @@ export default function MealBuilderView({
   onSaved,
   onLogMeal,
   preselectedMealType,
+  editingMeal,
 }: MealBuilderViewProps) {
-  const [mealName, setMealName] = useState('')
+  const [mealName, setMealName] = useState(editingMeal?.template_name || '')
   const [loggingMode, setLoggingMode] = useState<'log' | 'logAndSave' | 'save' | null>(null)
   const [mealItems, setMealItems] = useState<MealItem[]>([])
   const [showFoodSearch, setShowFoodSearch] = useState(false)
@@ -64,12 +75,55 @@ export default function MealBuilderView({
   const [loadingDefaults, setLoadingDefaults] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>('protein')
   const [searchInitialQuery, setSearchInitialQuery] = useState<string | undefined>(undefined)
+  const [loadingExistingMeal, setLoadingExistingMeal] = useState(!!editingMeal)
 
   const supabase = createClient()
 
   useEffect(() => {
     loadDefaultIngredients()
+    if (editingMeal) {
+      loadExistingMealItems()
+    }
   }, [])
+
+  const loadExistingMealItems = async () => {
+    if (!editingMeal) return
+
+    try {
+      setLoadingExistingMeal(true)
+      const { data: items, error } = await supabase
+        .from('meal_template_items')
+        .select('*')
+        .eq('meal_template_id', editingMeal.id)
+        .order('sort_order')
+
+      if (error) throw error
+
+      if (items && items.length > 0) {
+        const loadedItems: MealItem[] = items.map(item => ({
+          id: item.id.toString(),
+          food_id: item.food_id,
+          food_name: item.food_name,
+          amount: item.number_of_units || 1,
+          unit: 'serving',
+          calories: item.calories || 0,
+          protein: item.protein || 0,
+          carbs: item.carbohydrate || 0,
+          fat: item.fat || 0,
+          fiber: item.fiber || 0,
+          sodium: item.sodium || 0,
+          serving_id: item.serving_id,
+          serving_description: item.serving_description,
+        }))
+        setMealItems(loadedItems)
+      }
+    } catch (error) {
+      console.error('Error loading meal items:', error)
+      Alert.alert('Error', 'Failed to load meal items')
+    } finally {
+      setLoadingExistingMeal(false)
+    }
+  }
 
   const loadDefaultIngredients = async () => {
     try {
@@ -341,10 +395,12 @@ export default function MealBuilderView({
       setSaving(true)
 
       const totals = calculateTotals()
+      const isEditing = !!editingMeal
 
       const { data, error } = await supabase.functions.invoke('favorites-manage', {
         body: {
-          action: 'add_meal_template',
+          action: isEditing ? 'update_meal_template' : 'add_meal_template',
+          template_id: isEditing ? editingMeal.id : undefined,
           template_name: mealName.trim(),
           items: mealItems.map(item => ({
             food_id: item.food_id,
@@ -372,7 +428,7 @@ export default function MealBuilderView({
 
       if (error) throw error
 
-      Alert.alert('Success', 'Meal template saved!')
+      Alert.alert('Success', isEditing ? 'Meal template updated!' : 'Meal template saved!')
       resetState()
       if (onSaved) onSaved()
       onClose()
@@ -462,9 +518,16 @@ export default function MealBuilderView({
         <TouchableOpacity onPress={handleClose} style={styles.backButton}>
           <Ionicons name="close" size={24} color="#282B34" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Meal Builder</Text>
+        <Text style={styles.headerTitle}>{editingMeal ? 'Edit Meal' : 'Meal Builder'}</Text>
       </View>
 
+      {loadingExistingMeal ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#FE5858" />
+          <Text style={{ marginTop: 12, color: '#6B7280' }}>Loading meal...</Text>
+        </View>
+      ) : (
+      <>
       <ScrollView style={styles.content}>
         {/* Meal Name Input */}
         <Card style={styles.section}>
@@ -686,6 +749,8 @@ export default function MealBuilderView({
           </>
         )}
       </View>
+      </>
+      )}
     </SafeAreaView>
   )
 }

@@ -47,6 +47,7 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
   const [showAddToFavorites, setShowAddToFavorites] = useState(false)
   const [addFavoritesMode, setAddFavoritesMode] = useState<'meal' | 'restaurant' | 'brand' | 'food' | undefined>(undefined)
   const [showMealBuilder, setShowMealBuilder] = useState(false)
+  const [editingMeal, setEditingMeal] = useState<any>(null)
   const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null)
   const [selectedBrand, setSelectedBrand] = useState<any>(null)
   const [selectedFood, setSelectedFood] = useState<any>(null)
@@ -425,11 +426,16 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
   if (showMealBuilder) {
     return (
       <MealBuilderView
-        onClose={() => setShowMealBuilder(false)}
+        onClose={() => {
+          setShowMealBuilder(false)
+          setEditingMeal(null)
+        }}
         onSaved={() => {
           setShowMealBuilder(false)
+          setEditingMeal(null)
           loadFavorites()
         }}
+        editingMeal={editingMeal}
       />
     )
   }
@@ -565,21 +571,32 @@ export default function FrequentFoodsScreen({ onBack, mealType }: FrequentFoodsS
         {expandedSections.meals && data.meals.length > 0 && (
           <View style={styles.itemsList}>
             {data.meals.map((meal) => (
-              <TouchableOpacity
-                key={meal.id}
-                style={styles.savedFoodItem}
-                onPress={() => quickLogMeal(meal)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.savedFoodInfo}>
-                  <Text style={styles.savedFoodName}>{meal.template_name}</Text>
-                  <Text style={styles.savedFoodDetails}>
-                    {Math.round(meal.total_calories)} cal
-                    {meal.log_count > 0 && ` • Logged ${meal.log_count}x`}
-                  </Text>
-                </View>
+              <View key={meal.id} style={styles.mealItemRow}>
+                <TouchableOpacity
+                  style={styles.mealItemTouchable}
+                  onPress={() => quickLogMeal(meal)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.savedFoodInfo}>
+                    <Text style={styles.savedFoodName}>{meal.template_name}</Text>
+                    <Text style={styles.savedFoodDetails}>
+                      {Math.round(meal.total_calories)} cal
+                      {meal.log_count > 0 && ` • Logged ${meal.log_count}x`}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setEditingMeal(meal)
+                    setShowMealBuilder(true)
+                  }}
+                  style={styles.editMealButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="create-outline" size={20} color="#3B82F6" />
+                </TouchableOpacity>
                 <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-              </TouchableOpacity>
+              </View>
             ))}
           </View>
         )}
@@ -1173,6 +1190,20 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     backgroundColor: '#F8FBFE',
+  },
+  mealItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#F8FBFE',
+  },
+  mealItemTouchable: {
+    flex: 1,
+  },
+  editMealButton: {
+    padding: 8,
+    marginRight: 8,
   },
   savedFoodInfo: {
     flex: 1,

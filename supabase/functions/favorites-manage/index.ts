@@ -107,7 +107,15 @@ serve(async (req) => {
       case 'add_meal_template':
         result = await addMealTemplate(supabase, userId, params)
         break
-      
+
+      case 'update_meal_template':
+        result = await updateMealTemplate(supabase, userId, params)
+        break
+
+      case 'delete_meal_template':
+        result = await deleteMealTemplate(supabase, userId, params)
+        break
+
       default:
         return new Response(
           JSON.stringify({ success: false, error: `Unknown action: ${action}` }),
@@ -455,6 +463,113 @@ async function addMealTemplate(supabase: any, userId: number, params: any) {
   if (itemsError) throw itemsError
 
   return template
+}
+
+// Update meal template with items
+async function updateMealTemplate(supabase: any, userId: number, params: any) {
+  const { template_id, template_name, items, totals } = params
+
+  if (!template_id) {
+    throw new Error('template_id required')
+  }
+
+  if (!template_name) {
+    throw new Error('template_name required')
+  }
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    throw new Error('items array required with at least one item')
+  }
+
+  // Verify the template belongs to this user
+  const { data: existing } = await supabase
+    .from('meal_templates')
+    .select('id')
+    .eq('id', template_id)
+    .eq('user_id', userId)
+    .single()
+
+  if (!existing) {
+    throw new Error('Meal template not found or access denied')
+  }
+
+  // Update the meal template
+  const { data: template, error: templateError } = await supabase
+    .from('meal_templates')
+    .update({
+      template_name,
+      total_calories: totals.calories || 0,
+      total_protein: totals.protein || 0,
+      total_carbohydrate: totals.carbohydrate || 0,
+      total_fat: totals.fat || 0,
+      total_fiber: totals.fiber || 0,
+      total_sodium: totals.sodium || 0,
+    })
+    .eq('id', template_id)
+    .select()
+    .single()
+
+  if (templateError) throw templateError
+
+  // Delete existing items
+  const { error: deleteError } = await supabase
+    .from('meal_template_items')
+    .delete()
+    .eq('meal_template_id', template_id)
+
+  if (deleteError) throw deleteError
+
+  // Add new items
+  const itemsToInsert = items.map((item: any, index: number) => ({
+    meal_template_id: template.id,
+    food_id: item.food_id,
+    food_name: item.food_name,
+    serving_id: item.serving_id || '0',
+    serving_description: item.serving_description || '',
+    number_of_units: item.number_of_units || 1,
+    calories: item.calories || 0,
+    protein: item.protein || 0,
+    carbohydrate: item.carbohydrate || 0,
+    fat: item.fat || 0,
+    fiber: item.fiber || 0,
+    sugar: item.sugar || 0,
+    sodium: item.sodium || 0,
+    sort_order: index,
+  }))
+
+  const { error: itemsError } = await supabase
+    .from('meal_template_items')
+    .insert(itemsToInsert)
+
+  if (itemsError) throw itemsError
+
+  return template
+}
+
+// Delete meal template
+async function deleteMealTemplate(supabase: any, userId: number, params: any) {
+  const { id } = params
+
+  if (!id) {
+    throw new Error('id required')
+  }
+
+  // Delete items first (cascade should handle this, but be explicit)
+  await supabase
+    .from('meal_template_items')
+    .delete()
+    .eq('meal_template_id', id)
+
+  // Delete the template
+  const { error } = await supabase
+    .from('meal_templates')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId)
+
+  if (error) throw error
+
+  return { deleted: true }
 }
 
 
