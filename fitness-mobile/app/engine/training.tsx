@@ -3346,8 +3346,8 @@ export default function EnginePage() {
                       const burstStatus = getBurstStatus(currentInt, elapsedTime)
                       if (burstStatus?.isActive) {
                         return (
-                          <Text style={styles.statusText}>
-                            Burst: {formatTime(burstStatus.timeRemainingInBurst)}
+                          <Text style={[styles.statusText, { color: '#FF6B00', fontWeight: '700' }]}>
+                            BURST!
                           </Text>
                         )
                       } else if (burstStatus?.nextBurstIn) {
