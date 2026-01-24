@@ -738,20 +738,24 @@ export default function EnginePage() {
 
   const loadPerformanceMetrics = async () => {
     if (!connected || !selectedModality || !workout?.day_type) return
-    
+
     setLoadingMetrics(true)
     try {
       const userIdStr = engineDatabaseService.getUserId()
       if (!userIdStr) return
 
+      // For Rocket Races B, we need to load metrics from Rocket Races A (inherited pace)
+      const dayTypeToQuery = workout.day_type === 'rocket_races_b' ? 'rocket_races_a' : workout.day_type
+
       const metrics = await engineDatabaseService.getPerformanceMetrics(
         userIdStr,
-        workout.day_type,
+        dayTypeToQuery,
         selectedModality
       ) as any
-      
+
       console.log('📈 LOADED PERFORMANCE METRICS:', {
         dayType: workout.day_type,
+        queryDayType: dayTypeToQuery,
         modality: selectedModality,
         hasMetrics: !!metrics,
         rollingAvgRatio: metrics?.rolling_avg_ratio,
@@ -759,7 +763,7 @@ export default function EnginePage() {
         learnedMaxPace: metrics?.learned_max_pace,
         last4Ratios: metrics?.last_4_ratios
       })
-      
+
       setPerformanceMetrics(metrics)
     } catch (error) {
       console.error('Error loading performance metrics:', error)
