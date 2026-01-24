@@ -2966,13 +2966,88 @@ export default function EnginePage() {
                   // If no blocks, show single continuous workout
                   if (blocksMap.size === 0 && sessionData.intervals.length > 0) {
                     const int = sessionData.intervals[0]
-                    
-                    // Determine target display
-                    let targetDisplay = ''
                     const paceRange = int.paceRange
-                    const isMaxEffort = paceRange === 'max_effort' || 
+                    const isMaxEffort = paceRange === 'max_effort' ||
                                         (typeof paceRange === 'string' && paceRange.toLowerCase().includes('max'))
-                    
+
+                    // Check if this is a flux interval - expand into segments
+                    const isFluxInterval = int.fluxDuration && int.baseDuration
+
+                    if (isFluxInterval) {
+                      // Expand flux interval into segment cards
+                      const fluxPeriods = calculateFluxPeriods(
+                        int.baseDuration!,
+                        int.fluxDuration!,
+                        int.duration
+                      )
+
+                      return (
+                        <View style={styles.blockBreakdown}>
+                          <Text style={styles.blockTitle}>Workout</Text>
+                          {fluxPeriods.map((period, segIndex) => {
+                            const segmentDuration = period.end - period.start
+                            const isFluxSegment = period.type === 'flux'
+
+                            // Calculate goal for this segment
+                            let segmentGoal = ''
+                            if (isMaxEffort) {
+                              segmentGoal = 'Max Effort'
+                            } else if (hasMatchingBaseline && baselines[selectedModality]?.baseline) {
+                              if (paceRange && Array.isArray(paceRange) && paceRange.length >= 2) {
+                                const baseline = baselines[selectedModality].baseline
+                                let intensityMultiplier = (paceRange[0] + paceRange[1]) / 2
+
+                                // Apply flux intensity for flux segments
+                                if (isFluxSegment) {
+                                  const fluxIntensity = int.fluxIntensity !== null && int.fluxIntensity !== undefined
+                                    ? int.fluxIntensity
+                                    : (int.fluxStartIntensity || 0.75) + (period.index * (int.fluxIncrement || 0.05))
+                                  intensityMultiplier *= fluxIntensity
+                                }
+
+                                let adjustedMultiplier = intensityMultiplier
+                                if (performanceMetrics?.rolling_avg_ratio) {
+                                  adjustedMultiplier *= performanceMetrics.rolling_avg_ratio
+                                }
+                                const targetPacePerMin = baseline * adjustedMultiplier
+                                const segmentDurationMinutes = segmentDuration / 60
+                                const goalForSegment = Math.round(targetPacePerMin * segmentDurationMinutes)
+                                segmentGoal = `${goalForSegment} ${timeTrialSelectedUnit === 'cal' ? 'calories' : timeTrialSelectedUnit}`
+                              } else {
+                                segmentGoal = '⚠️ Complete time trial'
+                              }
+                            } else {
+                              segmentGoal = '⚠️ Complete time trial'
+                            }
+
+                            return (
+                              <View key={`seg-${segIndex}`} style={styles.roundCard}>
+                                <View style={styles.roundDetails}>
+                                  <View style={styles.roundDetailRow}>
+                                    <View style={styles.roundDetailItem}>
+                                      <Text style={[
+                                        styles.roundDetailLabel,
+                                        isFluxSegment && { color: '#3B82F6' }
+                                      ]}>
+                                        {isFluxSegment ? 'FLUX' : 'WORK'}
+                                      </Text>
+                                      <Text style={styles.roundDetailValue}>{formatTime(segmentDuration)}</Text>
+                                    </View>
+                                    <View style={styles.roundDetailItem}>
+                                      <Text style={styles.roundDetailLabel}>Goal</Text>
+                                      <Text style={styles.roundGoalValue}>{segmentGoal}</Text>
+                                    </View>
+                                  </View>
+                                </View>
+                              </View>
+                            )
+                          })}
+                        </View>
+                      )
+                    }
+
+                    // Non-flux continuous workout - show simple display
+                    let targetDisplay = ''
                     if (isMaxEffort) {
                       targetDisplay = 'Target: Max Effort'
                     } else if (hasMatchingBaseline && baselines[selectedModality]?.baseline) {
@@ -2998,7 +3073,7 @@ export default function EnginePage() {
                     } else {
                       targetDisplay = '⚠️ Complete time trial to see targets'
                     }
-                    
+
                     return (
                       <View style={styles.blockBreakdown}>
                         <Text style={styles.blockTitle}>Workout</Text>
