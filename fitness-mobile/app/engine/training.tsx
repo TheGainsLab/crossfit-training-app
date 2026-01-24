@@ -2590,11 +2590,11 @@ export default function EnginePage() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Workout Info - only show on equipment and preview views, not active view */}
         {workoutView !== 'active' && (
-          <View style={styles.card}>
+          <View style={styles.dayHeaderSection}>
             <Text style={styles.dayLabel}>
               Day {workout.day_number} - {getWorkoutTypeDisplayName(workout.day_type || 'conditioning')}
             </Text>
-            
+
             {/* Equipment display - only show in preview view */}
             {workoutView === 'preview' && selectedModality && (
               <TouchableOpacity
@@ -2602,9 +2602,9 @@ export default function EnginePage() {
                   setSelectedModality('')
                   setWorkoutView('equipment')
                 }}
-                style={{ marginTop: 8 }}
+                style={{ marginTop: 8, alignItems: 'center' }}
               >
-                <Text style={styles.equipmentText}>
+                <Text style={[styles.equipmentText, { textAlign: 'center' }]}>
                   {modalities.find(m => m.value === selectedModality)?.label || 'Not selected'}
                   <Text style={{ color: '#FE5858', fontWeight: '500' }}> (change)</Text>
                 </Text>
@@ -4171,6 +4171,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#282B34',
+  },
+  dayHeaderSection: {
+    padding: 24,
+    marginBottom: 16,
   },
   dayLabel: {
     fontSize: 24,
