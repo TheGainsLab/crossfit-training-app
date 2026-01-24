@@ -2290,6 +2290,28 @@ export default function EnginePage() {
           console.error('⚠️ Error updating performance metrics:', metricsError)
           // Don't fail the save if metrics update fails
         }
+
+        // For time trial days, update the baseline in time_trials table
+        if (workout.day_type === 'time_trial') {
+          try {
+            await engineDatabaseService.saveTimeTrial({
+              modality: selectedModality,
+              date: new Date().toISOString().split('T')[0],
+              is_current: true,
+              units: timeTrialSelectedUnit,
+              baseline_pace: avgPace,
+              calculated_rpm: avgPace
+            })
+            console.log('✅ TIME TRIAL BASELINE UPDATED:', {
+              modality: selectedModality,
+              baseline_pace: avgPace,
+              units: timeTrialSelectedUnit
+            })
+          } catch (baselineError) {
+            console.error('⚠️ Error updating time trial baseline:', baselineError)
+            // Don't fail the save if baseline update fails
+          }
+        }
       }
 
       // Store saved values for review card display BEFORE resetting
