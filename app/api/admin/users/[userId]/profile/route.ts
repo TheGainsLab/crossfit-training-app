@@ -139,6 +139,31 @@ export async function GET(
       .order('date', { ascending: false })
       .limit(1)
 
+    // Fetch recent ENGINE workout sessions with full details
+    const { data: recentEngineSessions } = await supabase
+      .from('workout_sessions')
+      .select(`
+        id,
+        date,
+        day_type,
+        modality,
+        total_output,
+        actual_pace,
+        target_pace,
+        performance_ratio,
+        total_work_seconds,
+        total_rest_seconds,
+        peak_heart_rate,
+        average_heart_rate,
+        perceived_exertion,
+        units,
+        completed
+      `)
+      .eq('user_id', targetId)
+      .eq('completed', true)
+      .order('date', { ascending: false })
+      .limit(10)
+
     // Calculate last activity
     let lastActivity: Date | null = null
 
@@ -187,12 +212,31 @@ export async function GET(
       admin_name: (n.admin as any)?.name || null
     })) || []
 
+    // Format ENGINE sessions for display
+    const engineSessions = recentEngineSessions?.map(session => ({
+      id: session.id,
+      date: session.date,
+      day_type: session.day_type,
+      modality: session.modality,
+      total_output: session.total_output,
+      actual_pace: session.actual_pace,
+      target_pace: session.target_pace,
+      performance_ratio: session.performance_ratio,
+      total_work_seconds: session.total_work_seconds,
+      total_rest_seconds: session.total_rest_seconds,
+      peak_heart_rate: session.peak_heart_rate,
+      average_heart_rate: session.average_heart_rate,
+      perceived_exertion: session.perceived_exertion,
+      units: session.units
+    })) || []
+
     return NextResponse.json({
       success: true,
       user,
       subscription: subscription || null,
       engagement,
       recentWorkouts,
+      engineSessions,
       notes
     })
 

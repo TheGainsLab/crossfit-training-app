@@ -18,7 +18,11 @@ import {
   MessageCircle,
   FileText,
   Plus,
-  Send
+  Send,
+  Heart,
+  Flame,
+  Zap,
+  Timer
 } from 'lucide-react'
 
 interface UserProfile {
@@ -63,6 +67,23 @@ interface RecentWorkout {
   block: string | null
 }
 
+interface EngineSession {
+  id: string
+  date: string
+  day_type: string | null
+  modality: string | null
+  total_output: number | null
+  actual_pace: number | null
+  target_pace: number | null
+  performance_ratio: number | null
+  total_work_seconds: number | null
+  total_rest_seconds: number | null
+  peak_heart_rate: number | null
+  average_heart_rate: number | null
+  perceived_exertion: number | null
+  units: string | null
+}
+
 interface AdminNote {
   id: number
   content: string
@@ -90,6 +111,7 @@ interface UserDetailData {
   subscription: SubscriptionData | null
   engagement: EngagementData
   recentWorkouts: RecentWorkout[]
+  engineSessions: EngineSession[]
   notes: AdminNote[]
 }
 
@@ -312,7 +334,7 @@ export default function UserDetailPage() {
     )
   }
 
-  const { user, subscription, engagement, recentWorkouts, notes } = data
+  const { user, subscription, engagement, recentWorkouts, engineSessions, notes } = data
 
   return (
     <div className="space-y-6">
@@ -465,6 +487,137 @@ export default function UserDetailPage() {
           <p className="text-gray-500 text-sm">No recent workouts</p>
         )}
       </InfoCard>
+
+      {/* ENGINE Sessions */}
+      {engineSessions && engineSessions.length > 0 && (
+        <InfoCard title="ENGINE Sessions">
+          <div className="space-y-4">
+            {engineSessions.map((session) => {
+              const formatDuration = (seconds: number | null) => {
+                if (!seconds) return '-'
+                const mins = Math.floor(seconds / 60)
+                const secs = seconds % 60
+                return `${mins}:${secs.toString().padStart(2, '0')}`
+              }
+
+              const formatModality = (modality: string | null) => {
+                if (!modality) return '-'
+                return modality
+                  .replace(/_/g, ' ')
+                  .replace(/\b\w/g, l => l.toUpperCase())
+              }
+
+              const formatDayType = (dayType: string | null) => {
+                if (!dayType) return '-'
+                return dayType
+                  .replace(/_/g, ' ')
+                  .replace(/\b\w/g, l => l.toUpperCase())
+              }
+
+              const performancePercent = session.performance_ratio
+                ? (session.performance_ratio * 100).toFixed(0)
+                : null
+
+              return (
+                <div key={session.id} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                  {/* Session Header */}
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-coral/10 text-coral">
+                        ENGINE: {formatDayType(session.day_type)}
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1">{formatModality(session.modality)}</p>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {new Date(session.date).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  {/* Training Summary Stats */}
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    {/* Work Duration */}
+                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Timer className="w-3 h-3 text-gray-400" />
+                        <span className="text-xs text-gray-500 uppercase">Work Duration</span>
+                      </div>
+                      <p className="text-lg font-bold text-gray-900">
+                        {formatDuration(session.total_work_seconds)}
+                      </p>
+                    </div>
+
+                    {/* Total Work Goal (Output/Calories) */}
+                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Flame className="w-3 h-3 text-gray-400" />
+                        <span className="text-xs text-gray-500 uppercase">Total Work Goal</span>
+                      </div>
+                      <p className="text-lg font-bold text-gray-900">
+                        {session.total_output ?? '-'} <span className="text-sm font-normal text-gray-500">{session.units || 'cal'}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Performance Metrics */}
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    {/* Pace */}
+                    <div className="text-center p-2 bg-white rounded border border-gray-200">
+                      <p className="text-xs text-gray-500 mb-1">Pace</p>
+                      <p className="font-semibold text-gray-900">
+                        {session.actual_pace?.toFixed(1) ?? '-'}
+                      </p>
+                    </div>
+
+                    {/* Output */}
+                    <div className="text-center p-2 bg-white rounded border border-gray-200">
+                      <p className="text-xs text-gray-500 mb-1">Output</p>
+                      <p className="font-semibold text-gray-900">
+                        {session.total_output ?? '-'}
+                      </p>
+                    </div>
+
+                    {/* Performance */}
+                    <div className="text-center p-2 bg-white rounded border border-gray-200">
+                      <p className="text-xs text-gray-500 mb-1">Performance</p>
+                      <p className={`font-semibold ${
+                        performancePercent && parseFloat(performancePercent) >= 100
+                          ? 'text-green-600'
+                          : performancePercent && parseFloat(performancePercent) >= 90
+                            ? 'text-yellow-600'
+                            : 'text-gray-900'
+                      }`}>
+                        {performancePercent ? `${performancePercent}%` : '-'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Heart Rate Section (if present) */}
+                  {(session.peak_heart_rate || session.average_heart_rate) && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="flex items-center gap-4 text-sm">
+                        {session.average_heart_rate && (
+                          <div className="flex items-center gap-1">
+                            <Heart className="w-3 h-3 text-red-400" />
+                            <span className="text-gray-500">Avg HR:</span>
+                            <span className="font-medium text-gray-900">{session.average_heart_rate} bpm</span>
+                          </div>
+                        )}
+                        {session.peak_heart_rate && (
+                          <div className="flex items-center gap-1">
+                            <Heart className="w-3 h-3 text-red-500" />
+                            <span className="text-gray-500">Max HR:</span>
+                            <span className="font-medium text-gray-900">{session.peak_heart_rate} bpm</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </InfoCard>
+      )}
 
       {/* Admin Notes */}
       <InfoCard title="Admin Notes">
