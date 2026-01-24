@@ -744,18 +744,14 @@ export default function EnginePage() {
       const userIdStr = engineDatabaseService.getUserId()
       if (!userIdStr) return
 
-      // For Rocket Races B, we need to load metrics from Rocket Races A (inherited pace)
-      const dayTypeToQuery = workout.day_type === 'rocket_races_b' ? 'rocket_races_a' : workout.day_type
-
       const metrics = await engineDatabaseService.getPerformanceMetrics(
         userIdStr,
-        dayTypeToQuery,
+        workout.day_type,
         selectedModality
       ) as any
 
       console.log('📈 LOADED PERFORMANCE METRICS:', {
         dayType: workout.day_type,
-        queryDayType: dayTypeToQuery,
         modality: selectedModality,
         hasMetrics: !!metrics,
         rollingAvgRatio: metrics?.rolling_avg_ratio,
@@ -1869,10 +1865,18 @@ export default function EnginePage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Check if Rocket Races A was completed
-  const rocketRacesACompleted = workoutHistory?.some((session: any) => 
-    session.day_type === 'rocket_races_a' && session.completed === true
-  ) ? true : (workoutHistory?.length > 0 ? false : null)
+  // For Rocket Races B, find the paired Rocket Races A session (3 days earlier)
+  const pairedRocketRacesADay = workout?.day_type === 'rocket_races_b' && selectedDay ? selectedDay - 3 : null
+
+  // Find the specific paired Rocket Races A session
+  const pairedRocketRacesASession = pairedRocketRacesADay ? workoutHistory?.find((session: any) =>
+    session.day_type === 'rocket_races_a' &&
+    session.completed === true &&
+    (session.program_day_number === pairedRocketRacesADay || session.program_day === pairedRocketRacesADay)
+  ) : null
+
+  // Check if the paired Rocket Races A was completed
+  const rocketRacesACompleted = pairedRocketRacesASession ? true : (workoutHistory?.length > 0 ? false : null)
 
   // Calculate target pace using baseline and performance metrics
   // For flux days, this accepts an optional fluxIntensity parameter to calculate flux period pace
@@ -1885,38 +1889,41 @@ export default function EnginePage() {
     const units = baselines[selectedModality].units;
     const dayType = workout?.day_type;
 
-    // Special handling for Rocket Races B: check if Rocket Races A was completed
+    // Special handling for Rocket Races B: use pace from paired Rocket Races A (3 days earlier)
     if (dayType === 'rocket_races_b') {
-      if (rocketRacesACompleted === false) {
-        // Rocket Races A not completed - show message
+      if (!pairedRocketRacesASession) {
+        // Paired Rocket Races A not completed - show message
         return {
           needsRocketRacesA: true,
-          message: 'Complete Rocket Races A',
-          units: units,
-          baseline: baseline
-        };
-      } else if (rocketRacesACompleted === true && performanceMetrics?.learned_max_pace) {
-        // Rocket Races A completed - use inherited pace
-        const calculatedIntensity = baseline > 0 
-          ? Math.round((performanceMetrics.learned_max_pace / baseline) * 100)
-          : 100;
-        
-        return {
-          pace: performanceMetrics.learned_max_pace,
-          units: units,
-          intensity: calculatedIntensity,
-          baseline: baseline,
-          source: 'inherited_from_rocket_races_a'
-        };
-      } else if (rocketRacesACompleted === true) {
-        // Rocket Races A completed but no metrics yet
-        return {
-          needsRocketRacesA: true,
-          message: 'Complete Rocket Races A',
+          message: `Complete Rocket Races A (Day ${pairedRocketRacesADay})`,
           units: units,
           baseline: baseline
         };
       }
+
+      // Use actual_pace from the paired Rocket Races A session
+      const inheritedPace = pairedRocketRacesASession.actual_pace || pairedRocketRacesASession.calculated_rpm
+      if (inheritedPace) {
+        const calculatedIntensity = baseline > 0
+          ? Math.round((inheritedPace / baseline) * 100)
+          : 100;
+
+        return {
+          pace: inheritedPace,
+          units: units,
+          intensity: calculatedIntensity,
+          baseline: baseline,
+          source: `inherited_from_day_${pairedRocketRacesADay}`
+        };
+      }
+
+      // Paired session exists but no pace data
+      return {
+        needsRocketRacesA: true,
+        message: `Complete Rocket Races A (Day ${pairedRocketRacesADay})`,
+        units: units,
+        baseline: baseline
+      };
       // If rocketRacesACompleted is null, we're still loading - return null
       return null;
     }
