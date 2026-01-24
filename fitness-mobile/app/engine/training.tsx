@@ -3254,35 +3254,94 @@ export default function EnginePage() {
               {/* Phase, Goal, and Round info - only show when workout has started */}
               {(isActive || isPaused || isCompleted) && (
                 <>
-                  <Text style={[
-                    styles.timerPhase,
-                    { color: isPaused ? '#F59E0B' : currentPhase === 'work' ? '#10B981' : '#6B7280' }
-                  ]}>
-                    {isPaused ? 'PAUSED' : currentPhase === 'work' ? 'Work' : 'Rest'}
-                  </Text>
+                  {(() => {
+                    // For flux intervals, show WORK or FLUX as phase
+                    const isFluxInterval = currentInt?.fluxDuration && currentInt?.baseDuration
+                    let phaseText = isPaused ? 'PAUSED' : currentPhase === 'work' ? 'Work' : 'Rest'
+                    let phaseColor = isPaused ? '#F59E0B' : currentPhase === 'work' ? '#10B981' : '#6B7280'
+
+                    if (isFluxInterval && currentPhase === 'work' && !isPaused) {
+                      const elapsedTime = (currentInt?.duration || 0) - timeRemaining
+                      const fluxStatus = getFluxStatus(currentInt, elapsedTime)
+                      if (fluxStatus?.isActive) {
+                        phaseText = 'FLUX'
+                        phaseColor = '#3B82F6' // Blue for flux
+                      } else {
+                        phaseText = 'WORK'
+                        phaseColor = '#10B981' // Green for work
+                      }
+                    }
+
+                    return (
+                      <Text style={[styles.timerPhase, { color: phaseColor }]}>
+                        {phaseText}
+                      </Text>
+                    )
+                  })()}
 
                   {(() => {
-                        // Calculate goal for current interval
+                        // Calculate goal for current interval or segment
                         let goalText = ''
                         if (currentInt && currentPhase === 'work') {
                           const paceRange = currentInt.paceRange
-                          const isMaxEffort = paceRange === 'max_effort' || 
+                          const isMaxEffort = paceRange === 'max_effort' ||
                                               (typeof paceRange === 'string' && paceRange.toLowerCase().includes('max'))
-                          
+
                           if (isMaxEffort) {
                             goalText = 'Max Effort'
                           } else if (hasMatchingBaseline && baselines[selectedModality]?.baseline) {
                             if (paceRange && Array.isArray(paceRange) && paceRange.length >= 2) {
                               const baseline = baselines[selectedModality].baseline
-                              const intensityMultiplier = (paceRange[0] + paceRange[1]) / 2
-                              let adjustedMultiplier = intensityMultiplier
-                              if (performanceMetrics?.rolling_avg_ratio) {
-                                adjustedMultiplier *= performanceMetrics.rolling_avg_ratio
+
+                              // Check if this is a flux interval
+                              const isFluxInterval = currentInt.fluxDuration && currentInt.baseDuration
+
+                              if (isFluxInterval) {
+                                // Calculate current segment goal for flux intervals
+                                const elapsedTime = (currentInt.duration || 0) - timeRemaining
+                                const fluxPeriods = calculateFluxPeriods(
+                                  currentInt.baseDuration,
+                                  currentInt.fluxDuration,
+                                  currentInt.duration
+                                )
+
+                                // Find current period using start/end times
+                                let currentPeriod = fluxPeriods.find(p => elapsedTime >= p.start && elapsedTime < p.end) || fluxPeriods[0]
+
+                                // Calculate segment duration from start/end
+                                const segmentDuration = currentPeriod.end - currentPeriod.start
+
+                                // Calculate pace for this segment
+                                let intensityMultiplier = (paceRange[0] + paceRange[1]) / 2
+                                if (currentPeriod.type === 'flux') {
+                                  // Apply flux intensity
+                                  const fluxIntensity = currentInt.fluxIntensity !== null && currentInt.fluxIntensity !== undefined
+                                    ? currentInt.fluxIntensity
+                                    : (currentInt.fluxStartIntensity || 0.75) + (currentPeriod.index * (currentInt.fluxIncrement || 0.05))
+                                  intensityMultiplier *= fluxIntensity
+                                }
+
+                                let adjustedMultiplier = intensityMultiplier
+                                if (performanceMetrics?.rolling_avg_ratio) {
+                                  adjustedMultiplier *= performanceMetrics.rolling_avg_ratio
+                                }
+
+                                const targetPace = baseline * adjustedMultiplier
+                                const segmentDurationMinutes = segmentDuration / 60
+                                const goal = Math.round(targetPace * segmentDurationMinutes)
+                                goalText = `Goal: ${goal} ${timeTrialSelectedUnit === 'cal' ? 'calories' : timeTrialSelectedUnit}`
+                              } else {
+                                // Standard interval goal calculation
+                                const intensityMultiplier = (paceRange[0] + paceRange[1]) / 2
+                                let adjustedMultiplier = intensityMultiplier
+                                if (performanceMetrics?.rolling_avg_ratio) {
+                                  adjustedMultiplier *= performanceMetrics.rolling_avg_ratio
+                                }
+                                const targetPace = baseline * adjustedMultiplier
+                                const durationMinutes = (currentInt.duration || 0) / 60
+                                const goal = Math.round(targetPace * durationMinutes)
+                                goalText = `Goal: ${goal} ${timeTrialSelectedUnit === 'cal' ? 'calories' : timeTrialSelectedUnit}`
                               }
-                              const targetPace = baseline * adjustedMultiplier
-                              const durationMinutes = (currentInt.duration || 0) / 60
-                              const goal = Math.round(targetPace * durationMinutes)
-                              goalText = `Goal: ${goal} ${timeTrialSelectedUnit === 'cal' ? 'calories' : timeTrialSelectedUnit}`
                             }
                           }
                         }
@@ -3499,6 +3558,7 @@ export default function EnginePage() {
               <WorkoutProgressCard
                 intervals={sessionData.intervals}
                 currentInterval={currentInterval}
+                elapsedTimeInInterval={currentInt ? (currentInt.duration - timeRemaining) : 0}
                 isActive={isActive}
                 baselines={baselines}
                 selectedModality={selectedModality}

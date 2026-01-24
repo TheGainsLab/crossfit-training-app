@@ -28,6 +28,11 @@ interface IntervalRowProps {
   isCompleted: boolean
   maxDuration: number
   target: any
+  // Flux segment props
+  isFluxSegment?: boolean
+  fluxSegmentType?: 'base' | 'flux'
+  fluxSegmentDuration?: number
+  fluxSegmentIntensity?: number
 }
 
 export default function IntervalRow({
@@ -36,17 +41,29 @@ export default function IntervalRow({
   isCurrent,
   isCompleted,
   maxDuration,
-  target
+  target,
+  isFluxSegment,
+  fluxSegmentType,
+  fluxSegmentDuration,
+  fluxSegmentIntensity
 }: IntervalRowProps) {
+  // For flux segments, use segment duration; otherwise use interval duration
+  const displayDuration = isFluxSegment && fluxSegmentDuration ? fluxSegmentDuration : interval.duration
+
   // Calculate bar width normalized to max duration
-  const barWidth = normalizeBarWidth(interval.duration, maxDuration)
-  
-  // Determine bar color based on status
-  const barColor = isCurrent ? '#FE5858' : isCompleted ? '#DAE2EA' : '#282B34'
-  
-  // Check if this is a flux interval
-  const isFlux = interval.fluxDuration && interval.baseDuration
-  
+  const barWidth = normalizeBarWidth(displayDuration, maxDuration)
+
+  // Determine bar color based on status and segment type
+  let barColor = isCurrent ? '#FE5858' : isCompleted ? '#DAE2EA' : '#282B34'
+
+  // For flux segments, use blue for FLUX when current
+  if (isFluxSegment && fluxSegmentType === 'flux' && isCurrent) {
+    barColor = '#3B82F6' // Blue for active flux
+  }
+
+  // Check if this is a flux interval (for legacy rendering - not used when isFluxSegment is true)
+  const isFlux = !isFluxSegment && interval.fluxDuration && interval.baseDuration
+
   // Check if this is a polarized interval with bursts
   const hasBursts = interval.burstTiming && interval.burstTiming.length > 0
   
@@ -55,23 +72,57 @@ export default function IntervalRow({
       style={[
         styles.intervalRow,
         isCurrent && styles.currentRow,
-        isCompleted && styles.completedRow
+        isCompleted && styles.completedRow,
+        isFluxSegment && fluxSegmentType === 'flux' && isCurrent && styles.fluxCurrentRow
       ]}
     >
-      {/* Left label - Round number */}
+      {/* Left label - WORK/FLUX for segments, Round number for intervals */}
       <View style={styles.labelContainer}>
-        <Text style={[
-          styles.labelText,
-          isCurrent && styles.currentText,
-          isCompleted && styles.completedText
-        ]}>
-          R{interval.roundNumber || index + 1}
-        </Text>
+        {isFluxSegment ? (
+          <Text style={[
+            styles.labelText,
+            fluxSegmentType === 'flux' && styles.fluxLabelText,
+            isCurrent && (fluxSegmentType === 'flux' ? styles.fluxCurrentText : styles.currentText),
+            isCompleted && styles.completedText
+          ]}>
+            {fluxSegmentType === 'base' ? 'WORK' : 'FLUX'}
+          </Text>
+        ) : (
+          <Text style={[
+            styles.labelText,
+            isCurrent && styles.currentText,
+            isCompleted && styles.completedText
+          ]}>
+            R{interval.roundNumber || index + 1}
+          </Text>
+        )}
       </View>
       
       {/* Bar chart */}
-      {isFlux ? (
-        // Flux intervals: render separate bars for each segment
+      {isFluxSegment ? (
+        // Flux segment: render a simple bar for this segment
+        <View style={styles.barContainer}>
+          <View style={styles.barBackground} />
+          <View
+            style={[
+              styles.progressBar,
+              {
+                width: `${Math.min(barWidth, 100)}%`,
+                backgroundColor: barColor
+              }
+            ]}
+          >
+            <Text style={[
+              styles.barText,
+              isCurrent && (fluxSegmentType === 'flux' ? styles.fluxCurrentBarText : styles.currentBarText),
+              isCompleted && styles.completedBarText
+            ]}>
+              {formatTime(displayDuration)}
+            </Text>
+          </View>
+        </View>
+      ) : isFlux ? (
+        // Legacy: Flux intervals with segmented view (now unused since we expand)
         <View style={styles.fluxBarContainer}>
           {(() => {
             const fluxPeriods = calculateFluxPeriods(
@@ -82,12 +133,12 @@ export default function IntervalRow({
               interval.fluxIncrement || 0.05
             )
             const totalWidth = barWidth
-            
+
             return fluxPeriods.map((period, periodIdx) => {
               const segmentDuration = period.duration
               const segmentWidth = (segmentDuration / interval.duration) * totalWidth
               const isBase = period.type === 'base'
-              
+
               return (
                 <View
                   key={periodIdx}
@@ -104,8 +155,8 @@ export default function IntervalRow({
                       styles.fluxLabel,
                       { color: '#282B34' }
                     ]}>
-                      {Math.round((interval.fluxIntensity !== null && interval.fluxIntensity !== undefined 
-                        ? interval.fluxIntensity 
+                      {Math.round((interval.fluxIntensity !== null && interval.fluxIntensity !== undefined
+                        ? interval.fluxIntensity
                         : period.intensity) * 100)}%
                     </Text>
                   )}
@@ -190,9 +241,9 @@ export default function IntervalRow({
             <View style={styles.targetInfo}>
               <Text style={[
                 styles.goalText,
-                isCurrent && styles.currentText
+                isCurrent && (isFluxSegment && fluxSegmentType === 'flux' ? styles.fluxCurrentText : styles.currentText)
               ]}>
-                {Math.round(target.pace * (interval.duration / 60))} {target.units || 'cal'}
+                {Math.round(target.pace * (displayDuration / 60))} {target.units || 'cal'}
               </Text>
               {target.source === 'metrics_adjusted' && (
                 <View style={styles.aiBadge}>
@@ -245,6 +296,18 @@ const styles = StyleSheet.create({
   },
   completedText: {
     color: '#DAE2EA',
+  },
+  fluxLabelText: {
+    color: '#3B82F6',
+  },
+  fluxCurrentText: {
+    color: '#3B82F6',
+  },
+  fluxCurrentRow: {
+    borderColor: '#3B82F6',
+  },
+  fluxCurrentBarText: {
+    color: '#FFFFFF',
   },
   fluxBarContainer: {
     flex: 1,
