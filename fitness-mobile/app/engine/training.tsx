@@ -2299,12 +2299,11 @@ export default function EnginePage() {
               date: new Date().toISOString().split('T')[0],
               is_current: true,
               units: timeTrialSelectedUnit,
-              baseline_pace: avgPace,
               calculated_rpm: avgPace
             })
             console.log('✅ TIME TRIAL BASELINE UPDATED:', {
               modality: selectedModality,
-              baseline_pace: avgPace,
+              calculated_rpm: avgPace,
               units: timeTrialSelectedUnit
             })
           } catch (baselineError) {
