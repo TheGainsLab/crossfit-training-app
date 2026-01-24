@@ -2163,7 +2163,8 @@ export default function EnginePage() {
         
         sessionData.intervals.forEach(interval => {
           const paceRange = interval.paceRange
-          const isMaxEffort = paceRange === 'max_effort' || 
+          const isMaxEffort = interval.isMaxEffort ||
+                              paceRange === 'max_effort' ||
                               (typeof paceRange === 'string' && paceRange.toLowerCase().includes('max'))
           
           if (!isMaxEffort && paceRange && Array.isArray(paceRange) && paceRange.length >= 2) {
@@ -2976,7 +2977,8 @@ export default function EnginePage() {
                   if (blocksMap.size === 0 && sessionData.intervals.length > 0) {
                     const int = sessionData.intervals[0]
                     const paceRange = int.paceRange
-                    const isMaxEffort = paceRange === 'max_effort' ||
+                    const isMaxEffort = int.isMaxEffort ||
+                                        paceRange === 'max_effort' ||
                                         (typeof paceRange === 'string' && paceRange.toLowerCase().includes('max'))
 
                     // Check if this is a flux interval - expand into segments
@@ -3122,7 +3124,8 @@ export default function EnginePage() {
                       intervals.forEach((interval, roundIndex) => {
                         const restDuration = interval.restDuration || 0
                         const paceRange = interval.paceRange
-                        const isMaxEffort = paceRange === 'max_effort' ||
+                        const isMaxEffort = interval.isMaxEffort ||
+                                            paceRange === 'max_effort' ||
                                             (typeof paceRange === 'string' && paceRange.toLowerCase().includes('max'))
 
                         // Check if this is a flux interval
@@ -3465,7 +3468,8 @@ export default function EnginePage() {
                         let goalText = ''
                         if (currentInt && currentPhase === 'work') {
                           const paceRange = currentInt.paceRange
-                          const isMaxEffort = paceRange === 'max_effort' ||
+                          const isMaxEffort = currentInt.isMaxEffort ||
+                                              paceRange === 'max_effort' ||
                                               (typeof paceRange === 'string' && paceRange.toLowerCase().includes('max'))
 
                           if (isMaxEffort) {
