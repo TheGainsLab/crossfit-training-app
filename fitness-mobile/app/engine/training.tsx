@@ -3058,7 +3058,7 @@ export default function EnginePage() {
                             const targetPacePerMin = baseline * adjustedMultiplier
                             const workDurationMinutes = workDuration / 60
                             const goalForInterval = Math.round(targetPacePerMin * workDurationMinutes)
-                            goalDisplay = `${goalForInterval} ${timeTrialSelectedUnit}`
+                            goalDisplay = `${goalForInterval} ${timeTrialSelectedUnit === 'cal' ? 'calories' : timeTrialSelectedUnit}`
                           } else {
                             goalDisplay = '⚠️ Complete time trial'
                           }
