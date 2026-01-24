@@ -190,7 +190,16 @@ export default function EnginePage() {
   const [expandedBreakdown, setExpandedBreakdown] = useState(false)
   const [expandedHistory, setExpandedHistory] = useState(false)
   const [expandedSummary, setExpandedSummary] = useState(false)
-  
+
+  // Reset collapsible sections when entering preview view
+  useEffect(() => {
+    if (workoutView === 'preview') {
+      setExpandedBreakdown(false)
+      setExpandedHistory(false)
+      setExpandedSummary(false)
+    }
+  }, [workoutView])
+
   // Time trial specific state
   const [timeTrialScore, setTimeTrialScore] = useState('')
   const [timeTrialUnits, setTimeTrialUnits] = useState('')
