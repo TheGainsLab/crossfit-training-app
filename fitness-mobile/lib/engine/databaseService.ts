@@ -157,13 +157,14 @@ class EngineDatabaseService {
     try {
       console.log('🔍 Loading baseline for:', { userId: this.userId, modality, units })
 
-      // Get most recent time trial from workout_sessions (single source of truth)
+      // Get most recent COMPLETED time trial from workout_sessions (single source of truth)
       let query = this.supabase
         .from('workout_sessions')
         .select('*')
         .eq('user_id', this.userId)
         .eq('modality', modality)
         .eq('day_type', 'time_trial')
+        .eq('completed', true)
 
       if (units) {
         query = query.eq('units', units)
@@ -175,12 +176,19 @@ class EngineDatabaseService {
         .limit(1)
         .maybeSingle()
 
-      if (!error && data) {
+      if (error) {
+        console.error('❌ Error querying baseline:', error)
+        return null
+      }
+
+      if (data) {
         console.log('✅ Baseline found from workout_sessions:', {
+          id: data.id,
           modality,
           units: data.units,
           calculated_rpm: data.calculated_rpm,
-          date: data.date
+          date: data.date,
+          created_at: data.created_at
         })
         return data
       }
