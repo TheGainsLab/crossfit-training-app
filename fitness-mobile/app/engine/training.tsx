@@ -1883,23 +1883,6 @@ export default function EnginePage() {
     (session.program_day_number === pairedRocketRacesADay || session.program_day === pairedRocketRacesADay)
   ) : null
 
-  // Debug logging for Rocket Races B
-  if (workout?.day_type === 'rocket_races_b') {
-    console.log('🚀 ROCKET RACES B DEBUG:', {
-      selectedDay,
-      pairedRocketRacesADay,
-      workoutHistoryLength: workoutHistory?.length,
-      rocketRacesASessions: workoutHistory?.filter((s: any) => s.day_type === 'rocket_races_a').map((s: any) => ({
-        program_day_number: s.program_day_number,
-        program_day: s.program_day,
-        actual_pace: s.actual_pace,
-        completed: s.completed
-      })),
-      pairedSessionFound: !!pairedRocketRacesASession,
-      pairedSessionPace: pairedRocketRacesASession?.actual_pace
-    })
-  }
-
   // Check if the paired Rocket Races A was completed
   const rocketRacesACompleted = pairedRocketRacesASession ? true : (workoutHistory?.length > 0 ? false : null)
 
