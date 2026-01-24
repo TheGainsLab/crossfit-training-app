@@ -336,40 +336,27 @@ class EngineDatabaseService {
     }
   }
 
-  // Load time trial baselines
+  // Load time trial baselines from workout_sessions (single source of truth)
   async loadTimeTrialBaselines(modality: string) {
     if (!this.userId || !this.supabase) return null
-    
+
     try {
-      // First try to get the current baseline
-      const { data: currentData, error: currentError } = await this.supabase
-        .from('time_trials')
+      // Get most recent time trial from workout_sessions
+      const { data, error } = await this.supabase
+        .from('workout_sessions')
         .select('*')
         .eq('user_id', this.userId)
-        .eq('modality', modality)
-        .eq('is_current', true)
-        .limit(1)
-        .single()
-      
-      if (!currentError && currentData) {
-        return currentData
-      }
-      
-      // Fallback: get most recent by date
-      const { data: recentData, error: recentError } = await this.supabase
-        .from('time_trials')
-        .select('*')
-        .eq('user_id', this.userId)
+        .eq('day_type', 'time_trial')
         .eq('modality', modality)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(1)
         .single()
-      
-      if (!recentError && recentData) {
-        return recentData
+
+      if (!error && data) {
+        return data
       }
-      
+
       return null
     } catch (error) {
       console.error('Error loading time trial baselines:', error)
