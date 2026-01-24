@@ -3389,14 +3389,27 @@ export default function EnginePage() {
                       {/* Progress circle */}
                       {(() => {
                         // Calculate duration based on current phase (work or rest)
-                        const totalDuration = currentPhase === 'work' 
+                        const totalDuration = currentPhase === 'work'
                           ? (currentInt?.duration || 600)
                           : (currentInt?.restDuration || 0)
                         const progress = totalDuration > 0 ? ((totalDuration - timeRemaining) / totalDuration) * 100 : 0
                         const offset = circumference - (progress / 100) * circumference
-                        // Use green for work phase, gray for rest/completed
-                        const strokeColor = isCompleted ? '#10B981' : (currentPhase === 'work' && isActive) ? '#10B981' : '#6B7280'
-                        
+
+                        // Check if in burst for polarized days
+                        let strokeColor = '#6B7280' // default gray
+                        if (isCompleted) {
+                          strokeColor = '#10B981' // green when completed
+                        } else if (currentPhase === 'work' && isActive) {
+                          // Check for polarized burst
+                          if (workout?.day_type === 'polarized' && currentInt?.burstTiming) {
+                            const elapsedTime = (currentInt?.duration || 0) - timeRemaining
+                            const burstStatus = getBurstStatus(currentInt, elapsedTime)
+                            strokeColor = burstStatus?.isActive ? '#FF6B00' : '#10B981' // bright orange during burst, green otherwise
+                          } else {
+                            strokeColor = '#10B981' // green for normal work
+                          }
+                        }
+
                         return (
                           <Circle
                             cx={center}
