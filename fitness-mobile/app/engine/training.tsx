@@ -3339,8 +3339,8 @@ export default function EnginePage() {
                       const fluxStatus = getFluxStatus(currentInt, elapsedTime)
                       if (fluxStatus?.isActive) {
                         return (
-                          <Text style={styles.statusText}>
-                            Flux: {formatTime(fluxStatus.timeRemainingInFlux)} @ {(fluxStatus.currentIntensity * 100).toFixed(0)}%
+                          <Text style={[styles.statusText, { color: '#3B82F6', fontWeight: '700' }]}>
+                            FLUX! @ {(fluxStatus.currentIntensity * 100).toFixed(0)}%
                           </Text>
                         )
                       } else if (fluxStatus?.nextFluxIn) {
@@ -3414,7 +3414,7 @@ export default function EnginePage() {
                         const progress = totalDuration > 0 ? ((totalDuration - timeRemaining) / totalDuration) * 100 : 0
                         const offset = circumference - (progress / 100) * circumference
 
-                        // Check if in burst for polarized days
+                        // Check if in burst/flux for special day types
                         let strokeColor = '#6B7280' // default gray
                         if (isCompleted) {
                           strokeColor = '#10B981' // green when completed
@@ -3423,7 +3423,12 @@ export default function EnginePage() {
                           if (workout?.day_type === 'polarized' && currentInt?.burstTiming) {
                             const elapsedTime = (currentInt?.duration || 0) - timeRemaining
                             const burstStatus = getBurstStatus(currentInt, elapsedTime)
-                            strokeColor = burstStatus?.isActive ? '#FF6B00' : '#10B981' // bright orange during burst, green otherwise
+                            strokeColor = burstStatus?.isActive ? '#FF6B00' : '#10B981' // bright orange during burst
+                          // Check for flux period
+                          } else if ((workout?.day_type === 'flux' || workout?.day_type === 'flux_stages') && currentInt?.fluxDuration) {
+                            const elapsedTime = (currentInt?.duration || 0) - timeRemaining
+                            const fluxStatus = getFluxStatus(currentInt, elapsedTime)
+                            strokeColor = fluxStatus?.isActive ? '#3B82F6' : '#10B981' // bright blue during flux
                           } else {
                             strokeColor = '#10B981' // green for normal work
                           }
