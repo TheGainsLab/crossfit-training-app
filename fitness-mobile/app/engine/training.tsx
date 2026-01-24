@@ -717,9 +717,17 @@ export default function EnginePage() {
       }))
       
       // Combine and filter by modality and day_type
+      // For Rocket Races B, also include Rocket Races A sessions (needed for pace inheritance)
       const allData = [...(allSessions || []), ...convertedTrials]
       const filteredSessions = allData.filter((session: any) => {
-        return session.modality === selectedModality && session.day_type === workout.day_type
+        if (session.modality !== selectedModality) return false
+
+        // For Rocket Races B, include both A and B sessions
+        if (workout.day_type === 'rocket_races_b') {
+          return session.day_type === 'rocket_races_b' || session.day_type === 'rocket_races_a'
+        }
+
+        return session.day_type === workout.day_type
       })
       
       const sortedSessions = filteredSessions.sort((a: any, b: any) => {
