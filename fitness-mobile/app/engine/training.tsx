@@ -3542,17 +3542,17 @@ export default function EnginePage() {
             {/* Start Button and Back to Preview - Only show when not started */}
             {!isActive && !isPaused && !isCompleted && (
               <View style={styles.timerStartContainer}>
-                <TouchableOpacity 
-                  style={styles.backToPreviewButton} 
+                <TouchableOpacity
+                  style={styles.backToPreviewButton}
                   onPress={() => setWorkoutView('preview')}
                 >
-                  <Ionicons name="arrow-back" size={20} color="#282B34" />
-                  <Text style={styles.backToPreviewButtonText}>Back to Preview</Text>
+                  <Ionicons name="arrow-back" size={16} color="#282B34" />
+                  <Text style={styles.backToPreviewButtonText}>Preview</Text>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity style={styles.startButtonFull} onPress={startWorkout}>
-                  <Ionicons name="play-circle" size={20} color="#FFFFFF" />
-                  <Text style={styles.startButtonFullText}>Start Workout</Text>
+                  <Ionicons name="play" size={16} color="#FFFFFF" />
+                  <Text style={styles.startButtonFullText}>Start</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -4306,25 +4306,27 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   timerStartContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 8,
     gap: 12,
   },
   backToPreviewButton: {
     backgroundColor: '#DAE2EA',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    borderWidth: 2,
+    gap: 6,
+    borderWidth: 1.5,
     borderColor: '#282B34',
   },
   backToPreviewButtonText: {
     color: '#282B34',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   timerControls: {
@@ -4480,22 +4482,22 @@ const styles = StyleSheet.create({
   },
   startButtonFull: {
     backgroundColor: '#FE5858',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowRadius: 4,
+    elevation: 2,
   },
   startButtonFullText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   pauseButtonFull: {
