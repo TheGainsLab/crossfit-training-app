@@ -3034,66 +3034,163 @@ export default function EnginePage() {
                         )
                       }
                       
-                      // Add each round card
+                      // Add each round card (with flux segment expansion)
                       intervals.forEach((interval, roundIndex) => {
-                        const uniqueKey = `block-${blockNum}-round-${roundIndex}`
-                        const workDuration = interval.duration || 0
                         const restDuration = interval.restDuration || 0
                         const paceRange = interval.paceRange
-                        const isMaxEffort = paceRange === 'max_effort' || 
+                        const isMaxEffort = paceRange === 'max_effort' ||
                                             (typeof paceRange === 'string' && paceRange.toLowerCase().includes('max'))
-                        
-                        // Calculate goal for this specific interval
-                        let goalDisplay = ''
-                        if (isMaxEffort) {
-                          goalDisplay = 'Max Effort'
-                        } else if (hasMatchingBaseline && baselines[selectedModality]?.baseline) {
-                          if (paceRange && Array.isArray(paceRange) && paceRange.length >= 2) {
-                            const baseline = baselines[selectedModality].baseline
-                            const intensityMultiplier = (paceRange[0] + paceRange[1]) / 2
-                            let adjustedMultiplier = intensityMultiplier
-                            if (performanceMetrics?.rolling_avg_ratio) {
-                              adjustedMultiplier *= performanceMetrics.rolling_avg_ratio
+
+                        // Check if this is a flux interval
+                        const isFluxInterval = interval.fluxDuration && interval.baseDuration
+
+                        if (isFluxInterval) {
+                          // Expand flux interval into segment cards
+                          const fluxPeriods = calculateFluxPeriods(
+                            interval.baseDuration!,
+                            interval.fluxDuration!,
+                            interval.duration
+                          )
+
+                          // Add round header
+                          blockElements.push(
+                            <View key={`block-${blockNum}-round-${roundIndex}-header`} style={styles.roundBadge}>
+                              <Text style={styles.roundBadgeText}>Round {roundIndex + 1}</Text>
+                            </View>
+                          )
+
+                          // Add each segment
+                          fluxPeriods.forEach((period, segIndex) => {
+                            const segmentDuration = period.end - period.start
+                            const isFluxSegment = period.type === 'flux'
+
+                            // Calculate goal for this segment
+                            let segmentGoal = ''
+                            if (isMaxEffort) {
+                              segmentGoal = 'Max Effort'
+                            } else if (hasMatchingBaseline && baselines[selectedModality]?.baseline) {
+                              if (paceRange && Array.isArray(paceRange) && paceRange.length >= 2) {
+                                const baseline = baselines[selectedModality].baseline
+                                let intensityMultiplier = (paceRange[0] + paceRange[1]) / 2
+
+                                // Apply flux intensity for flux segments
+                                if (isFluxSegment) {
+                                  const fluxIntensity = interval.fluxIntensity !== null && interval.fluxIntensity !== undefined
+                                    ? interval.fluxIntensity
+                                    : (interval.fluxStartIntensity || 0.75) + (period.index * (interval.fluxIncrement || 0.05))
+                                  intensityMultiplier *= fluxIntensity
+                                }
+
+                                let adjustedMultiplier = intensityMultiplier
+                                if (performanceMetrics?.rolling_avg_ratio) {
+                                  adjustedMultiplier *= performanceMetrics.rolling_avg_ratio
+                                }
+                                const targetPacePerMin = baseline * adjustedMultiplier
+                                const segmentDurationMinutes = segmentDuration / 60
+                                const goalForSegment = Math.round(targetPacePerMin * segmentDurationMinutes)
+                                segmentGoal = `${goalForSegment} ${timeTrialSelectedUnit === 'cal' ? 'calories' : timeTrialSelectedUnit}`
+                              } else {
+                                segmentGoal = '⚠️ Complete time trial'
+                              }
+                            } else {
+                              segmentGoal = '⚠️ Complete time trial'
                             }
-                            const targetPacePerMin = baseline * adjustedMultiplier
-                            const workDurationMinutes = workDuration / 60
-                            const goalForInterval = Math.round(targetPacePerMin * workDurationMinutes)
-                            goalDisplay = `${goalForInterval} ${timeTrialSelectedUnit === 'cal' ? 'calories' : timeTrialSelectedUnit}`
+
+                            blockElements.push(
+                              <View key={`block-${blockNum}-round-${roundIndex}-seg-${segIndex}`} style={styles.roundCard}>
+                                <View style={styles.roundDetails}>
+                                  <View style={styles.roundDetailRow}>
+                                    <View style={styles.roundDetailItem}>
+                                      <Text style={[
+                                        styles.roundDetailLabel,
+                                        isFluxSegment && { color: '#3B82F6' }
+                                      ]}>
+                                        {isFluxSegment ? 'FLUX' : 'WORK'}
+                                      </Text>
+                                      <Text style={styles.roundDetailValue}>{formatTime(segmentDuration)}</Text>
+                                    </View>
+                                    <View style={styles.roundDetailItem}>
+                                      <Text style={styles.roundDetailLabel}>Goal</Text>
+                                      <Text style={styles.roundGoalValue}>{segmentGoal}</Text>
+                                    </View>
+                                  </View>
+                                </View>
+                              </View>
+                            )
+                          })
+
+                          // Add rest after all segments if there's rest
+                          if (restDuration > 0) {
+                            blockElements.push(
+                              <View key={`block-${blockNum}-round-${roundIndex}-rest`} style={styles.roundCard}>
+                                <View style={styles.roundDetails}>
+                                  <View style={styles.roundDetailRow}>
+                                    <View style={styles.roundDetailItem}>
+                                      <Text style={[styles.roundDetailLabel, { color: '#6B7280' }]}>Rest</Text>
+                                      <Text style={styles.roundDetailValue}>{formatTime(restDuration)}</Text>
+                                    </View>
+                                  </View>
+                                </View>
+                              </View>
+                            )
+                          }
+                        } else {
+                          // Standard interval (non-flux)
+                          const uniqueKey = `block-${blockNum}-round-${roundIndex}`
+                          const workDuration = interval.duration || 0
+
+                          // Calculate goal for this specific interval
+                          let goalDisplay = ''
+                          if (isMaxEffort) {
+                            goalDisplay = 'Max Effort'
+                          } else if (hasMatchingBaseline && baselines[selectedModality]?.baseline) {
+                            if (paceRange && Array.isArray(paceRange) && paceRange.length >= 2) {
+                              const baseline = baselines[selectedModality].baseline
+                              const intensityMultiplier = (paceRange[0] + paceRange[1]) / 2
+                              let adjustedMultiplier = intensityMultiplier
+                              if (performanceMetrics?.rolling_avg_ratio) {
+                                adjustedMultiplier *= performanceMetrics.rolling_avg_ratio
+                              }
+                              const targetPacePerMin = baseline * adjustedMultiplier
+                              const workDurationMinutes = workDuration / 60
+                              const goalForInterval = Math.round(targetPacePerMin * workDurationMinutes)
+                              goalDisplay = `${goalForInterval} ${timeTrialSelectedUnit === 'cal' ? 'calories' : timeTrialSelectedUnit}`
+                            } else {
+                              goalDisplay = '⚠️ Complete time trial'
+                            }
                           } else {
                             goalDisplay = '⚠️ Complete time trial'
                           }
-                        } else {
-                          goalDisplay = '⚠️ Complete time trial'
-                        }
-                        
-                        blockElements.push(
-                          <View key={uniqueKey} style={styles.roundCard}>
-                            <View style={styles.roundHeader}>
-                              <View style={styles.roundBadge}>
-                                <Text style={styles.roundBadgeText}>Round {roundIndex + 1}</Text>
-                              </View>
-                            </View>
-                            
-                            <View style={styles.roundDetails}>
-                              <View style={styles.roundDetailRow}>
-                                <View style={styles.roundDetailItem}>
-                                  <Text style={styles.roundDetailLabel}>Work</Text>
-                                  <Text style={styles.roundDetailValue}>{formatTime(workDuration)}</Text>
+
+                          blockElements.push(
+                            <View key={uniqueKey} style={styles.roundCard}>
+                              <View style={styles.roundHeader}>
+                                <View style={styles.roundBadge}>
+                                  <Text style={styles.roundBadgeText}>Round {roundIndex + 1}</Text>
                                 </View>
-                                {restDuration > 0 && (
+                              </View>
+
+                              <View style={styles.roundDetails}>
+                                <View style={styles.roundDetailRow}>
                                   <View style={styles.roundDetailItem}>
-                                    <Text style={styles.roundDetailLabel}>Rest</Text>
-                                    <Text style={styles.roundDetailValue}>{formatTime(restDuration)}</Text>
+                                    <Text style={styles.roundDetailLabel}>Work</Text>
+                                    <Text style={styles.roundDetailValue}>{formatTime(workDuration)}</Text>
                                   </View>
-                                )}
-                                <View style={styles.roundDetailItem}>
-                                  <Text style={styles.roundDetailLabel}>Goal</Text>
-                                  <Text style={styles.roundGoalValue}>{goalDisplay}</Text>
+                                  {restDuration > 0 && (
+                                    <View style={styles.roundDetailItem}>
+                                      <Text style={styles.roundDetailLabel}>Rest</Text>
+                                      <Text style={styles.roundDetailValue}>{formatTime(restDuration)}</Text>
+                                    </View>
+                                  )}
+                                  <View style={styles.roundDetailItem}>
+                                    <Text style={styles.roundDetailLabel}>Goal</Text>
+                                    <Text style={styles.roundGoalValue}>{goalDisplay}</Text>
+                                  </View>
                                 </View>
                               </View>
                             </View>
-                          </View>
-                        )
+                          )
+                        }
                       })
                       
                       return blockElements
