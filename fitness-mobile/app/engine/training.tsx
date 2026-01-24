@@ -4882,6 +4882,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     marginTop: 12,
+    width: '50%',
+    alignSelf: 'center',
   },
   nextButtonText: {
     color: '#FFFFFF',
