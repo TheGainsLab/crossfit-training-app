@@ -490,6 +490,7 @@ serve(async (req) => {
     }
 
     if (result.error) {
+      console.error('❌ Database upsert failed:', result.error)
       return new Response(
         JSON.stringify({ success: false, error: result.error.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
