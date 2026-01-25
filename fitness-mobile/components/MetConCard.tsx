@@ -138,9 +138,23 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
 
             {metconData.workoutNotes && (
               <View style={styles.notesContainer}>
-                <Text style={styles.notes}>
-                  {metconData.workoutNotes.split(' + ').join('\n')}
-                </Text>
+                {(() => {
+                  const colonIndex = metconData.workoutNotes.indexOf(':');
+                  if (colonIndex === -1) {
+                    return <Text style={styles.notes}>{metconData.workoutNotes}</Text>;
+                  }
+                  const header = metconData.workoutNotes.substring(0, colonIndex + 1).trim();
+                  const movementsPart = metconData.workoutNotes.substring(colonIndex + 1).trim();
+                  const movements = movementsPart.split(' + ').map(m => m.trim());
+                  return (
+                    <>
+                      <Text style={styles.notesHeader}>{header}</Text>
+                      {movements.map((movement, idx) => (
+                        <Text key={idx} style={styles.notesMovement}>• {movement}</Text>
+                      ))}
+                    </>
+                  );
+                })()}
               </View>
             )}
 
@@ -462,19 +476,24 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   notesContainer: {
-    backgroundColor: '#FFEDD5',
-    borderLeftWidth: 4,
-    borderLeftColor: '#FB923C',
-    padding: 16,
-    borderTopRightRadius: 8,
-    borderBottomRightRadius: 8,
     marginBottom: 16,
   },
   notes: {
     fontSize: 14,
-    color: '#9A3412',
-    fontWeight: '500',
+    color: '#282B34',
     lineHeight: 22,
+  },
+  notesHeader: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 4,
+  },
+  notesMovement: {
+    fontSize: 14,
+    color: '#282B34',
+    lineHeight: 22,
+    paddingLeft: 8,
   },
   completedScoreContainer: {
     marginTop: 16,
