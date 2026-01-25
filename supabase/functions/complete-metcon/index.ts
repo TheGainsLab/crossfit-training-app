@@ -440,6 +440,7 @@ serve(async (req) => {
       const { data, error } = await supabase
         .from('program_metcons')
         .update({
+          workout_type: 'program',
           user_id: completionData.userId,
           user_score: completionData.workoutScore,
           percentile: percentile.toFixed(2),
@@ -463,6 +464,7 @@ serve(async (req) => {
       const { data, error } = await supabase
         .from('program_metcons')
         .insert({
+          workout_type: 'program',
           program_id: completionData.programId,
           week: completionData.week,
           day: completionData.day,
