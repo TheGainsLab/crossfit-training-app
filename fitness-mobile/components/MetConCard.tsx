@@ -137,9 +137,11 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
             </View>
 
             {metconData.workoutNotes && (
-              <Text style={styles.notes}>
-                {metconData.workoutNotes}
-              </Text>
+              <View style={styles.notesContainer}>
+                <Text style={styles.notes}>
+                  {metconData.workoutNotes.split(' + ').join('\n')}
+                </Text>
+              </View>
             )}
 
             {isCompleted && !isExpanded && (
@@ -459,10 +461,20 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginLeft: 8,
   },
+  notesContainer: {
+    backgroundColor: '#FFEDD5',
+    borderLeftWidth: 4,
+    borderLeftColor: '#FB923C',
+    padding: 16,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+    marginBottom: 16,
+  },
   notes: {
     fontSize: 14,
-    color: '#282B34',
-    marginBottom: 16,
+    color: '#9A3412',
+    fontWeight: '500',
+    lineHeight: 22,
   },
   completedScoreContainer: {
     marginTop: 16,
