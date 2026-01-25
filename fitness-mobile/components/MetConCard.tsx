@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
   },
   cardDefault: {
     borderWidth: 2,
-    borderColor: '#DAE2EA',
+    borderColor: '#282B34',
   },
   cardCompleted: {
     borderWidth: 2,
