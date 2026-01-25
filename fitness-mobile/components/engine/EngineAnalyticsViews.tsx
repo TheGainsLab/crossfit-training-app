@@ -303,6 +303,7 @@ export function EngineHistoryView({ engineData }: { engineData: any }) {
 
   return (
     <View style={styles.sectionGap}>
+      <SectionHeader title="My History" />
       <Card style={{ padding: 16 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
           Select Modality
