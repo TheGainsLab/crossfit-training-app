@@ -459,6 +459,7 @@ export function EngineComparisonsView({ engineData }: { engineData: any }) {
 
   return (
     <View style={styles.sectionGap}>
+      <SectionHeader title="Comparisons" />
       <Card style={{ padding: 16 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
           Select Modality
@@ -620,13 +621,14 @@ export function EngineTargetsView({ engineData }: { engineData: any }) {
 
   const filteredSessions = React.useMemo(() => {
     if (!selectedDayType || !selectedModality) return []
-    return engineData.sessions?.filter((s: any) => 
+    return engineData.sessions?.filter((s: any) =>
       s.day_type === selectedDayType && s.modality === selectedModality && s.target_pace && s.actual_pace
     ).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()) || []
   }, [engineData.sessions, selectedDayType, selectedModality])
 
   return (
     <View style={styles.sectionGap}>
+      <SectionHeader title="Targets vs Actual" />
       <Card style={{ padding: 16 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
@@ -736,6 +738,7 @@ export function EngineRecordsView({ engineData }: { engineData: any }) {
 
   return (
     <View style={styles.sectionGap}>
+      <SectionHeader title="Personal Records" />
       <Card style={{ padding: 16 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
@@ -867,6 +870,7 @@ export function EngineHeartRateView({ engineData }: { engineData: any }) {
 
   return (
     <View style={styles.sectionGap}>
+      <SectionHeader title="HR Analytics" />
       <Card style={{ padding: 16 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
@@ -990,8 +994,8 @@ export function EngineWorkRestView({ engineData }: { engineData: any }) {
   }, [engineData.sessions, selectedModality, selectedRatios])
 
   const toggleRatio = (ratio: string) => {
-    setSelectedRatios(prev => 
-      prev.includes(ratio) 
+    setSelectedRatios(prev =>
+      prev.includes(ratio)
         ? prev.filter(r => r !== ratio)
         : [...prev, ratio]
     )
@@ -999,13 +1003,14 @@ export function EngineWorkRestView({ engineData }: { engineData: any }) {
 
   return (
     <View style={styles.sectionGap}>
+      <SectionHeader title="Work:Rest Ratio" />
       <Card style={{ padding: 16 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
           {availableModalities.map((m) => (
-            <TouchableOpacity 
-              key={m} 
-              onPress={() => { 
+            <TouchableOpacity
+              key={m}
+              onPress={() => {
                 setSelectedModality(m)
                 setSelectedRatios([])
               }}
@@ -1084,7 +1089,7 @@ export function EngineVariabilityView({ engineData }: { engineData: any }) {
 
   const variabilityData = React.useMemo(() => {
     if (!selectedDayType || !selectedModality) return null
-    const sessions = engineData.sessions?.filter((s: any) => 
+    const sessions = engineData.sessions?.filter((s: any) =>
       s.day_type === selectedDayType && s.modality === selectedModality && s.actual_pace
     ).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()) || []
     if (sessions.length < 2) return null
@@ -1101,6 +1106,7 @@ export function EngineVariabilityView({ engineData }: { engineData: any }) {
 
   return (
     <View style={styles.sectionGap}>
+      <SectionHeader title="Variability Trend" />
       <Card style={{ padding: 16 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
