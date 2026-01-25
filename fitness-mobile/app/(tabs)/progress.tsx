@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#DAE2EA',
     borderBottomWidth: 2,
-    borderBottomColor: '#FE5858',
+    borderBottomColor: '#282B34',
   },
   heatmapHeaderCell: {
     width: 80,
@@ -628,7 +628,8 @@ const styles = StyleSheet.create({
     padding: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 50,
+    minHeight: 60,
+    height: 60,
   },
   heatmapCellValue: {
     fontSize: 14,
@@ -1727,21 +1728,21 @@ function MetConTab({ metconData }: { metconData: any }) {
                               <View style={[styles.heatmapCellContent, { 
                                 backgroundColor: color.bg,
                                 borderWidth: 1,
-                                borderColor: color.border
+                                borderColor: '#282B34'
                               }]}>
                                 {percentile !== null ? (
                                   <View>
-                                    <Text style={[styles.heatmapCellValue, { color: color.text }]}>
+                                    <Text style={[styles.heatmapCellValue, { color: '#FE5858' }]}>
                                       {percentile}%
                                     </Text>
                                     {sessions > 0 ? (
-                                      <Text style={[styles.heatmapCellSessions, { color: color.text }]}>
+                                      <Text style={[styles.heatmapCellSessions, { color: '#FE5858' }]}>
                                         {sessions} {sessions === 1 ? 'workout' : 'workouts'}
                                       </Text>
                                     ) : null}
                                   </View>
                                 ) : (
-                                  <Text style={[styles.heatmapCellValue, { color: color.text }]}>—</Text>
+                                  <Text style={[styles.heatmapCellValue, { color: '#FE5858' }]}>—</Text>
                                 )}
                               </View>
                             </View>
@@ -1753,7 +1754,7 @@ function MetConTab({ metconData }: { metconData: any }) {
                           <View style={[styles.heatmapCellContent, { 
                             backgroundColor: avgColor.bg,
                             borderWidth: 1,
-                            borderColor: avgColor.border
+                            borderColor: '#282B34'
                           }]}>
                             {exerciseAvg && exerciseAvg.avgPercentile > 0 ? (
                               <View>
@@ -1765,7 +1766,7 @@ function MetConTab({ metconData }: { metconData: any }) {
                                 </Text>
                               </View>
                             ) : (
-                              <Text style={[styles.heatmapCellValue, { color: avgColor.text }]}>—</Text>
+                              <Text style={[styles.heatmapCellValue, { color: '#FE5858' }]}>—</Text>
                             )}
                           </View>
                         </View>
@@ -1788,7 +1789,7 @@ function MetConTab({ metconData }: { metconData: any }) {
                           <View style={[styles.heatmapCellContent, { 
                             backgroundColor: domainColor.bg,
                             borderWidth: 1,
-                            borderColor: domainColor.border
+                            borderColor: '#282B34'
                           }]}>
                             {avgValue !== null ? (
                               <View>
@@ -1802,7 +1803,7 @@ function MetConTab({ metconData }: { metconData: any }) {
                                 ) : null}
                               </View>
                             ) : (
-                              <Text style={[styles.heatmapCellValue, { color: domainColor.text }]}>—</Text>
+                              <Text style={[styles.heatmapCellValue, { color: '#FE5858' }]}>—</Text>
                             )}
                           </View>
                         </View>
@@ -1814,7 +1815,7 @@ function MetConTab({ metconData }: { metconData: any }) {
                         backgroundColor: '#FE5858', 
                         minHeight: 60,
                         borderWidth: 1,
-                        borderColor: '#FE5858'
+                        borderColor: '#282B34'
                       }]}>
                         {globalAvg !== null ? (
                           <View>
