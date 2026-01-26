@@ -132,16 +132,19 @@ const styles = StyleSheet.create({
   },
   categorySectionHeader: {
     marginBottom: 12,
+    alignItems: 'center',
   },
   categorySectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#282B34',
     marginBottom: 4,
+    textAlign: 'center',
   },
   categorySectionSubtitle: {
     fontSize: 14,
     color: '#6B7280',
+    textAlign: 'center',
   },
   categoryGrid: {
     flexDirection: 'row',
