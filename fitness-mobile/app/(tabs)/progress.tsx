@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     color: '#4B5563',
   },
   categoryGridContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FBFE',
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginTop: 16,
