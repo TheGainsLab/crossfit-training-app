@@ -53,17 +53,27 @@ export default function MetConHeatMap({
 
   // Extract unique exercises and time domains
   const exercises = [...new Set(heatmapCells.map((c) => c.exercise_name))].sort()
+
+  // Helper to normalize time range format (handle both - and – characters)
+  const normalizeTimeRange = (range: string): string => {
+    return range.replace(/[-–]/g, '-') // Normalize all dashes to regular hyphen
+  }
+
   const timeDomains = [...new Set(heatmapCells.map((c) => c.time_range).filter(Boolean))]
     .sort((a, b) => {
+      // Use normalized versions for comparison
+      const normalizedA = normalizeTimeRange(a as string)
+      const normalizedB = normalizeTimeRange(b as string)
+
       const order: Record<string, number> = {
-        '1:00–5:00': 1,
-        '5:00–10:00': 2,
-        '10:00–15:00': 3,
-        '15:00–20:00': 4,
-        '20:00–30:00': 5,
+        '1:00-5:00': 1,
+        '5:00-10:00': 2,
+        '10:00-15:00': 3,
+        '15:00-20:00': 4,
+        '20:00-30:00': 5,
         '30:00+': 6,
       }
-      return (order[a as string] || 7) - (order[b as string] || 7)
+      return (order[normalizedA] || 7) - (order[normalizedB] || 7)
     }) as string[]
 
   if (!heatmapCells || heatmapCells.length === 0 || exercises.length === 0) {

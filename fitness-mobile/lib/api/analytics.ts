@@ -633,16 +633,22 @@ export async function fetchMovementSessionHistory(
   })
 }
 
+export interface MetConHeatmapCell {
+  exercise_name: string
+  time_range: string
+  session_count: number
+  avg_percentile: number
+  avg_heart_rate?: number | null
+  max_heart_rate?: number | null
+  avg_rpe?: number | null
+  avg_quality?: number | null
+}
+
 export interface MetConData {
   totalMetCons: number
   avgPercentile: number
   timeDomains: string[]
-  heatmapCells: Array<{
-    exercise_name: string
-    time_range: string
-    session_count: number
-    avg_percentile: number
-  }>
+  heatmapCells: MetConHeatmapCell[]
 }
 
 export async function fetchMetConAnalytics(
@@ -650,7 +656,7 @@ export async function fetchMetConAnalytics(
 ): Promise<MetConData | null> {
   const supabase = createClient()
 
-  // Get MetCon completions WITH percentile and tasks (like web app)
+  // Get MetCon completions WITH percentile, HR data, and tasks
   const { data: metconCompletions, error: metconError } = await supabase
     .from('program_metcons')
     .select('*, metcons(time_range, workout_id, tasks)')
@@ -671,7 +677,34 @@ export async function fetchMetConAnalytics(
     }
   }
 
-  // Process heatmap - extract exercises from tasks, just like web app
+  // Also fetch performance logs for METCON block to get RPE/Quality
+  const { data: metconLogs } = await supabase
+    .from('performance_logs')
+    .select('exercise_name, rpe, completion_quality, week, day, program_id')
+    .eq('user_id', userId)
+    .eq('block', 'METCON')
+
+  // Build lookup for RPE/Quality by exercise
+  const rpeQualityMap: Record<string, { totalRpe: number; rpeCount: number; totalQuality: number; qualityCount: number }> = {}
+  metconLogs?.forEach((log: any) => {
+    const exercise = log.exercise_name
+    if (!exercise) return
+
+    if (!rpeQualityMap[exercise]) {
+      rpeQualityMap[exercise] = { totalRpe: 0, rpeCount: 0, totalQuality: 0, qualityCount: 0 }
+    }
+
+    if (log.rpe !== null && log.rpe !== undefined) {
+      rpeQualityMap[exercise].totalRpe += parseFloat(log.rpe) || 0
+      rpeQualityMap[exercise].rpeCount++
+    }
+    if (log.completion_quality !== null && log.completion_quality !== undefined) {
+      rpeQualityMap[exercise].totalQuality += parseFloat(log.completion_quality) || 0
+      rpeQualityMap[exercise].qualityCount++
+    }
+  })
+
+  // Process heatmap - extract exercises from tasks
   const timeDomains = new Set<string>()
   const heatmapMap: Record<string, any> = {}
 
@@ -685,7 +718,11 @@ export async function fetchMetConAnalytics(
     const timeRange = metcon.time_range
     timeDomains.add(timeRange)
 
-    // Extract exercises from tasks (like web app does)
+    // Get HR data from completion
+    const avgHR = completion.avg_heart_rate ? parseFloat(completion.avg_heart_rate) : null
+    const maxHR = completion.max_heart_rate ? parseFloat(completion.max_heart_rate) : null
+
+    // Extract exercises from tasks
     const tasks = metcon.tasks || []
     tasks.forEach((task: any) => {
       const exerciseName = task.exercise
@@ -699,26 +736,54 @@ export async function fetchMetConAnalytics(
           time_range: timeRange,
           session_count: 0,
           total_percentile: 0,
+          total_avg_hr: 0,
+          avg_hr_count: 0,
+          total_max_hr: 0,
+          max_hr_count: 0,
         }
       }
 
       heatmapMap[key].session_count += 1
       heatmapMap[key].total_percentile += percentile
+
+      if (avgHR !== null) {
+        heatmapMap[key].total_avg_hr += avgHR
+        heatmapMap[key].avg_hr_count++
+      }
+      if (maxHR !== null) {
+        heatmapMap[key].total_max_hr += maxHR
+        heatmapMap[key].max_hr_count++
+      }
     })
   })
 
-  // Calculate averages
-  const heatmapCells = Object.values(heatmapMap).map((cell: any) => ({
-    exercise_name: cell.exercise_name,
-    time_range: cell.time_range,
-    session_count: cell.session_count,
-    avg_percentile:
-      cell.session_count > 0
+  // Calculate averages and build final heatmap cells
+  const heatmapCells: MetConHeatmapCell[] = Object.values(heatmapMap).map((cell: any) => {
+    const exerciseRpeQuality = rpeQualityMap[cell.exercise_name]
+
+    return {
+      exercise_name: cell.exercise_name,
+      time_range: cell.time_range,
+      session_count: cell.session_count,
+      avg_percentile: cell.session_count > 0
         ? Math.round(cell.total_percentile / cell.session_count)
         : 0,
-  }))
+      avg_heart_rate: cell.avg_hr_count > 0
+        ? Math.round(cell.total_avg_hr / cell.avg_hr_count)
+        : null,
+      max_heart_rate: cell.max_hr_count > 0
+        ? Math.round(cell.total_max_hr / cell.max_hr_count)
+        : null,
+      avg_rpe: exerciseRpeQuality?.rpeCount > 0
+        ? Math.round((exerciseRpeQuality.totalRpe / exerciseRpeQuality.rpeCount) * 10) / 10
+        : null,
+      avg_quality: exerciseRpeQuality?.qualityCount > 0
+        ? Math.round((exerciseRpeQuality.totalQuality / exerciseRpeQuality.qualityCount) * 10) / 10
+        : null,
+    }
+  })
 
-  // Calculate overall average percentile from program_metcons directly
+  // Calculate overall average percentile
   const totalPercentiles = (metconCompletions as any[]).reduce(
     (sum: number, c: any) => sum + (parseFloat(c.percentile) || 0),
     0
