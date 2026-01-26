@@ -177,12 +177,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#282B34',
     borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     alignSelf: 'flex-start',
   },
   contentBackButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#F8FBFE',
     fontWeight: '600',
   },
@@ -1033,7 +1033,7 @@ export default function ProgressPage() {
             style={styles.contentBackButton}
             activeOpacity={0.7}
           >
-            <Text style={styles.contentBackButtonText}>← Back to Overview</Text>
+            <Text style={styles.contentBackButtonText}>← Back</Text>
           </TouchableOpacity>
         )}
         
