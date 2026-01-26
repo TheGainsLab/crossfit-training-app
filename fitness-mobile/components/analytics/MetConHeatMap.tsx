@@ -391,7 +391,6 @@ export default function MetConHeatMap({
                           styles.cellContent,
                           {
                             backgroundColor: hasData ? '#F8FBFE' : '#F3F4F6',
-                            borderColor: '#282B34',
                           },
                         ]}
                       >
@@ -438,7 +437,6 @@ export default function MetConHeatMap({
                       styles.cellContent,
                       {
                         backgroundColor: exerciseAvg !== null ? '#F8FBFE' : '#F3F4F6',
-                        borderColor: '#282B34',
                       },
                     ]}
                   >
@@ -488,7 +486,6 @@ export default function MetConHeatMap({
                       styles.cellContent,
                       {
                         backgroundColor: domainAvg !== null ? '#F8FBFE' : '#F3F4F6',
-                        borderColor: '#282B34',
                       },
                     ]}
                   >
@@ -704,16 +701,14 @@ const styles = StyleSheet.create({
   headerCell: {
     width: 80,
     padding: 12,
-    borderRightWidth: 1,
-    borderRightColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
   exerciseHeaderCell: {
     width: 120,
     padding: 12,
-    borderRightWidth: 1,
-    borderRightColor: '#E5E7EB',
+    borderRightWidth: 2,
+    borderRightColor: '#282B34',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -734,8 +729,6 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
     minHeight: 60,
     alignItems: 'stretch',
   },
@@ -743,8 +736,8 @@ const styles = StyleSheet.create({
     width: 120,
     padding: 12,
     backgroundColor: '#DAE2EA',
-    borderRightWidth: 1,
-    borderRightColor: '#E5E7EB',
+    borderRightWidth: 2,
+    borderRightColor: '#282B34',
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
@@ -758,8 +751,6 @@ const styles = StyleSheet.create({
   dataCell: {
     width: 80,
     padding: 4,
-    borderRightWidth: 1,
-    borderRightColor: '#E5E7EB',
   },
   exerciseAvgCell: {
     width: 80,
@@ -772,8 +763,7 @@ const styles = StyleSheet.create({
     padding: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 52,
-    borderWidth: 1,
+    height: 52,
   },
   cellValue: {
     fontSize: 14,
