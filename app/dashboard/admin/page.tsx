@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   Users,
-  MessageSquare,
   Dumbbell,
   Upload,
   ArrowRight
@@ -145,12 +144,6 @@ export default function AdminDashboardPage() {
             icon={Dumbbell}
             label="Training Analytics"
             description="View workout stats and training data"
-          />
-          <QuickLink
-            href="/dashboard/admin/chat"
-            icon={MessageSquare}
-            label="Chat Conversations"
-            description="Browse AI coach conversations"
           />
           <QuickLink
             href="/dashboard/admin/metcons-import"
