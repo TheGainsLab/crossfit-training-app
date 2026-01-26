@@ -2388,7 +2388,7 @@ export default function EnginePage() {
               style={styles.backButton}
               onPress={handleBackToDashboard}
             >
-              <Ionicons name="arrow-back" size={16} color="#EDFBFE" style={{ marginRight: 6 }} />
+              <Ionicons name="arrow-back" size={16} color="#F4FBFE" style={{ marginRight: 6 }} />
               <Text style={styles.backButtonText}>Back to Day Menu</Text>
             </TouchableOpacity>
           </View>
@@ -2592,7 +2592,7 @@ export default function EnginePage() {
           style={styles.backButton}
           onPress={handleBackToDashboard}
         >
-          <Ionicons name="arrow-back" size={16} color="#EDFBFE" style={{ marginRight: 6 }} />
+          <Ionicons name="arrow-back" size={16} color="#F4FBFE" style={{ marginRight: 6 }} />
           <Text style={styles.backButtonText}>{programId ? 'Back to Day Menu' : 'Back'}</Text>
         </TouchableOpacity>
       </View>
@@ -3797,7 +3797,7 @@ export default function EnginePage() {
                   style={styles.reviewNavButton}
                   onPress={handleBackToDashboard}
                 >
-                  <Ionicons name="arrow-back" size={20} color="#EDFBFE" />
+                  <Ionicons name="arrow-back" size={20} color="#F4FBFE" />
                   <Text style={styles.reviewNavButtonText}>{programId ? 'Back to Day Menu' : 'Back to Training'}</Text>
                 </TouchableOpacity>
 
@@ -3896,7 +3896,7 @@ export default function EnginePage() {
                   value={rpeValue}
                   onValueChange={(value) => setRpeValue(value)}
                   minimumTrackTintColor="#FE5858"
-                  maximumTrackTintColor="#F4FBFE"
+                  maximumTrackTintColor="#C4E2EA"
                   thumbTintColor="#FE5858"
                   style={styles.slider}
                 />
@@ -4093,11 +4093,11 @@ const getBurstStatus = (interval: Interval, elapsedTime: number): any => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -4108,7 +4108,7 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
@@ -4163,7 +4163,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: '#EDFBFE',
+    color: '#F4FBFE',
     fontWeight: '600',
   },
   headerTitle: {
@@ -4330,7 +4330,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backToPreviewButton: {
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -4423,7 +4423,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
@@ -4518,7 +4518,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   pauseButtonFull: {
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
@@ -4699,9 +4699,9 @@ const styles = StyleSheet.create({
   },
   summaryStatCard: {
     width: '48%',
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     borderWidth: 1,
-    borderColor: '#F4FBFE',
+    borderColor: '#C4E2EA',
     borderRadius: 8,
     padding: 12,
   },
@@ -4735,7 +4735,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   reviewNavButtonText: {
-    color: '#EDFBFE',
+    color: '#F4FBFE',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -4776,7 +4776,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   equipmentSubMenu: {
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
@@ -4810,7 +4810,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   unitSelectionCard: {
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     borderRadius: 8,
     padding: 24,
     borderWidth: 1,
@@ -4855,7 +4855,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   baselineWarning: {
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     borderRadius: 12,
     padding: 16,
     marginTop: 16,
@@ -4909,7 +4909,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
     padding: 12,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     borderRadius: 8,
     marginBottom: 24,
   },
@@ -4963,7 +4963,7 @@ const styles = StyleSheet.create({
   },
   breakdownContent: {
     padding: 16,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -5021,7 +5021,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#F4FBFE',
+    borderColor: '#C4E2EA',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -5054,7 +5054,7 @@ const styles = StyleSheet.create({
   },
   roundDetailItem: {
     flex: 1,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     padding: 10,
     borderRadius: 6,
   },
@@ -5075,7 +5075,7 @@ const styles = StyleSheet.create({
     color: '#FE5858',
   },
   roundRestItem: {
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     padding: 10,
     borderRadius: 6,
     marginTop: 8,
@@ -5102,18 +5102,18 @@ const styles = StyleSheet.create({
   effortBadgeText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#EDFBFE',
+    color: '#F4FBFE',
   },
   historyContent: {
     padding: 16,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   historyItem: {
     padding: 16,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -5128,7 +5128,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: '#282B34',
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 8,
@@ -5159,7 +5159,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   summaryCard: {
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
@@ -5273,7 +5273,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   historyBadgeText: {
-    color: '#EDFBFE',
+    color: '#F4FBFE',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -5298,10 +5298,10 @@ const styles = StyleSheet.create({
   performanceRatioText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#EDFBFE',
+    color: '#F4FBFE',
   },
   actualPaceBadge: {
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     borderRadius: 8,
     paddingVertical: 4,
     paddingHorizontal: 8,
@@ -5316,7 +5316,7 @@ const styles = StyleSheet.create({
   performanceSummaryCard: {
     marginTop: 16,
     padding: 16,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#FE5858',
@@ -5376,7 +5376,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   monthCard: {
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     borderRadius: 12,
     padding: 20,
     borderWidth: 2,
@@ -5410,7 +5410,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   weekTabActive: {
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
   },
   weekTabText: {
     fontSize: 14,
@@ -5455,7 +5455,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   dayCard: {
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,

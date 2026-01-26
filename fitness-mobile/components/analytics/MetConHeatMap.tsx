@@ -400,7 +400,7 @@ export default function MetConHeatMap({
                         style={[
                           styles.cellContent,
                           {
-                            backgroundColor: hasData ? '#EDFBFE' : '#F3F4F6',
+                            backgroundColor: hasData ? '#F4FBFE' : '#F3F4F6',
                           },
                         ]}
                       >
@@ -446,7 +446,7 @@ export default function MetConHeatMap({
                     style={[
                       styles.cellContent,
                       {
-                        backgroundColor: exerciseAvg !== null ? '#EDFBFE' : '#F3F4F6',
+                        backgroundColor: exerciseAvg !== null ? '#F4FBFE' : '#F3F4F6',
                       },
                     ]}
                   >
@@ -495,7 +495,7 @@ export default function MetConHeatMap({
                     style={[
                       styles.cellContent,
                       {
-                        backgroundColor: domainAvg !== null ? '#EDFBFE' : '#F3F4F6',
+                        backgroundColor: domainAvg !== null ? '#F4FBFE' : '#F3F4F6',
                       },
                     ]}
                   >
@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     borderBottomWidth: 2,
     borderBottomColor: '#282B34',
   },
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
     borderLeftColor: '#282B34',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
   },
   headerText: {
     fontSize: 12,
@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
   exerciseCell: {
     width: 120,
     padding: 12,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     borderRightWidth: 2,
     borderRightColor: '#282B34',
     justifyContent: 'center',
@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
   },
   totalRow: {
     flexDirection: 'row',
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     borderTopWidth: 2,
     borderTopColor: '#282B34',
     minHeight: 60,
@@ -807,7 +807,7 @@ const styles = StyleSheet.create({
   totalRowHeader: {
     width: 120,
     padding: 12,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     borderRightWidth: 2,
     borderRightColor: '#282B34',
     justifyContent: 'center',
@@ -823,7 +823,7 @@ const styles = StyleSheet.create({
     padding: 4,
     borderLeftWidth: 2,
     borderLeftColor: '#282B34',
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
   },
   globalCellContent: {
     borderRadius: 6,
@@ -838,13 +838,13 @@ const styles = StyleSheet.create({
   globalValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#EDFBFE',
+    color: '#F4FBFE',
     textAlign: 'center',
   },
   globalLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#EDFBFE',
+    color: '#F4FBFE',
     marginTop: 2,
   },
   emptyContainer: {

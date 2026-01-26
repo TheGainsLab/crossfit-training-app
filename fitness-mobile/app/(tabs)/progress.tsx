@@ -44,7 +44,7 @@ type TabType = 'overview' | 'skills' | 'strength' | 'technical' | 'accessories' 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
   },
   loadingContainer: {
     flex: 1,
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     color: '#4B5563',
   },
   categoryGridContainer: {
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginTop: 16,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
   contentBackButtonText: {
     fontSize: 14,
-    color: '#EDFBFE',
+    color: '#F4FBFE',
     fontWeight: '600',
   },
   contentContainer: {
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   blockBadge: {
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     borderWidth: 0,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
   },
   heatmapHeaderRow: {
     flexDirection: 'row',
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     borderBottomWidth: 2,
     borderBottomColor: '#282B34',
   },
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
     borderRightColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
   },
   heatmapHeaderText: {
     fontSize: 12,
@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
   heatmapExerciseCell: {
     width: 120,
     padding: 12,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     borderRightWidth: 1,
     borderRightColor: '#E5E7EB',
     justifyContent: 'center',

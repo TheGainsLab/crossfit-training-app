@@ -129,7 +129,7 @@ export default function ProgramPage() {
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={16} color="#EDFBFE" style={{ marginRight: 6 }} />
+            <Ionicons name="arrow-back" size={16} color="#F4FBFE" style={{ marginRight: 6 }} />
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
         </View>
@@ -269,7 +269,7 @@ function DayCard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
   },
   loadingContainer: {
     flex: 1,
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     borderColor: '#282B34',
   },
   backButtonText: {
-    color: '#EDFBFE',
+    color: '#F4FBFE',
     fontSize: 16,
     fontWeight: '700',
   },

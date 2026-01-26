@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   },
   heatmapHeaderRow: {
     flexDirection: 'row',
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
     borderBottomWidth: 2,
     borderBottomColor: '#FE5858',
   },
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     borderRightColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
   },
   heatmapHeaderText: {
     fontSize: 12,
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   heatmapExerciseCell: {
     width: 120,
     padding: 12,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     borderRightWidth: 1,
     borderRightColor: '#E5E7EB',
     justifyContent: 'center',
@@ -1671,7 +1671,7 @@ function MetConTab({ metconData }: { metconData: any }) {
     if (percentile === null) {
       return { bg: '#F3F4F6', text: '#9CA3AF', border: '#D1D5DB' } // gray-100, gray-400, gray-300
     }
-    return { bg: '#EDFBFE', text: '#282B34', border: '#FE5858' } // light blue-gray bg, dark gray text, red border
+    return { bg: '#F4FBFE', text: '#282B34', border: '#FE5858' } // light blue-gray bg, dark gray text, red border
   }
 
   // Extract unique exercises and time domains
@@ -1743,7 +1743,7 @@ function MetConTab({ metconData }: { metconData: any }) {
             if (percentile === null) {
               return { bg: '#F3F4F6', text: '#9CA3AF', border: '#D1D5DB' } // gray-100, gray-400, gray-300
             }
-            return { bg: '#EDFBFE', text: '#282B34', border: '#FE5858' } // light blue-gray bg, dark gray text, red border
+            return { bg: '#F4FBFE', text: '#282B34', border: '#FE5858' } // light blue-gray bg, dark gray text, red border
           }
 
           // Extract unique exercises and time domains
@@ -1879,8 +1879,8 @@ function MetConTab({ metconData }: { metconData: any }) {
                   })}
 
                   {/* Time Domain Avg Row */}
-                  <View style={[styles.heatmapRow, { borderTopWidth: 2, borderTopColor: '#282B34', backgroundColor: '#EDFBFE' }]}>
-                    <View style={[styles.heatmapExerciseCell, { backgroundColor: '#F4FBFE', borderRightWidth: 2, borderRightColor: '#282B34' }]}>
+                  <View style={[styles.heatmapRow, { borderTopWidth: 2, borderTopColor: '#282B34', backgroundColor: '#F4FBFE' }]}>
+                    <View style={[styles.heatmapExerciseCell, { backgroundColor: '#C4E2EA', borderRightWidth: 2, borderRightColor: '#282B34' }]}>
                       <Text style={[styles.heatmapExerciseText, { fontWeight: '700' }]} numberOfLines={0}>Time Domain Avg</Text>
                     </View>
                     {timeDomains.map((domain: string) => {
@@ -1923,15 +1923,15 @@ function MetConTab({ metconData }: { metconData: any }) {
                       }]}>
                         {globalAvg !== null ? (
                           <View>
-                            <Text style={[styles.heatmapCellValue, { color: '#EDFBFE', fontSize: 18, fontWeight: '700' }]}>
+                            <Text style={[styles.heatmapCellValue, { color: '#F4FBFE', fontSize: 18, fontWeight: '700' }]}>
                               {globalAvg}%
                             </Text>
-                            <Text style={[styles.heatmapCellSessions, { color: '#EDFBFE', fontSize: 10, fontWeight: '600', marginTop: 4 }]}>
+                            <Text style={[styles.heatmapCellSessions, { color: '#F4FBFE', fontSize: 10, fontWeight: '600', marginTop: 4 }]}>
                               FITNESS
                             </Text>
                           </View>
                         ) : (
-                          <Text style={[styles.heatmapCellValue, { color: '#EDFBFE' }]}>—</Text>
+                          <Text style={[styles.heatmapCellValue, { color: '#F4FBFE' }]}>—</Text>
                         )}
                       </View>
                     </View>

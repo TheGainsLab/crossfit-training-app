@@ -918,11 +918,11 @@ export default function WorkoutPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -933,7 +933,7 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
@@ -989,7 +989,7 @@ const styles = StyleSheet.create({
     borderColor: '#282B34',
   },
   backButtonText: {
-    color: '#EDFBFE',
+    color: '#F4FBFE',
     fontSize: 14,
     fontWeight: '700',
   },
@@ -1025,7 +1025,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   blockContainerDefault: {
-    borderColor: '#F4FBFE',
+    borderColor: '#C4E2EA',
   },
   blockContainerComplete: {
     borderColor: '#FE5858',
@@ -1077,13 +1077,13 @@ const styles = StyleSheet.create({
     marginTop: 32,
     paddingTop: 24,
     borderTopWidth: 1,
-    borderTopColor: '#F4FBFE',
+    borderTopColor: '#C4E2EA',
   },
   navButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
   },
   navButtonPrimary: {
     paddingHorizontal: 16,
@@ -1100,7 +1100,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   navButtonTextPrimary: {
-    color: '#EDFBFE',
+    color: '#F4FBFE',
     fontSize: 16,
     fontWeight: '700',
   },

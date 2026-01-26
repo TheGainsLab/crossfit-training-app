@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#E5E7EB',
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     marginBottom: 12,
   },
   defaultOptionActive: {
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   nutritionSummary: {
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,

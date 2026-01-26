@@ -843,11 +843,11 @@ export default function Dashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#EDFBFE',
+    backgroundColor: '#F4FBFE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1143,7 +1143,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#C4E2EA',
   },
   navButtonDisabled: {
     backgroundColor: '#E5E7EB',
