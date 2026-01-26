@@ -166,14 +166,24 @@ export default function SessionReviewPage() {
           <BlockHeader title="METCONS" count={metconExercises.length} />
 
           <View style={styles.metconContent}>
-            {/* Workout Title & Format */}
+            {/* Workout Title, Format & Tasks */}
             <View style={styles.metconTitleContainer}>
               <Text style={styles.metconTitle}>
                 {metconData.metcon.workout_id}
               </Text>
               <Text style={styles.metconFormat}>
-                {metconData.metcon.format}
+                {metconData.metcon.format}:
               </Text>
+              {metconData.metcon.tasks && metconData.metcon.tasks.length > 0 && (
+                <View style={styles.metconTasksList}>
+                  {metconData.metcon.tasks.map((task: any, index: number) => (
+                    <Text key={index} style={styles.metconTaskItem}>
+                      • {task.reps} {task.exercise}
+                      {(task.weight_male || task.weight_female) ? ` ${task.weight_male}/${task.weight_female}` : ''}
+                    </Text>
+                  ))}
+                </View>
+              )}
             </View>
 
             {/* Score & Percentile */}
@@ -227,24 +237,6 @@ export default function SessionReviewPage() {
               </View>
 
             </View>
-
-            {/* MetCon Tasks */}
-            {metconData.metcon.tasks && metconData.metcon.tasks.length > 0 && (
-              <View style={styles.metconTasksSection}>
-                <Text style={styles.metconTasksTitle}>Workout</Text>
-                {metconData.metcon.tasks.map((task: any, index: number) => (
-                  <View key={index} style={styles.metconTaskRow}>
-                    <Text style={styles.metconTaskReps}>{task.reps}</Text>
-                    <Text style={styles.metconTaskExercise}>{task.exercise}</Text>
-                    {(task.weight_male || task.weight_female) && (
-                      <Text style={styles.metconTaskWeight}>
-                        ({task.weight_male}/{task.weight_female} lbs)
-                      </Text>
-                    )}
-                  </View>
-                ))}
-              </View>
-            )}
 
             {/* Exercise Breakdown */}
             {metconExercises.length > 0 ? (
@@ -614,6 +606,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  metconTasksList: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  metconTaskItem: {
+    fontSize: 15,
+    color: '#374151',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
   metconScoreSection: {
     marginBottom: 24,
   },
@@ -702,41 +704,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-  },
-  metconTasksSection: {
-    marginTop: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  metconTasksTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#282B34',
-    marginBottom: 12,
-  },
-  metconTaskRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  metconTaskReps: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#282B34',
-    width: 50,
-  },
-  metconTaskExercise: {
-    fontSize: 15,
-    color: '#374151',
-    flex: 1,
-  },
-  metconTaskWeight: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginLeft: 8,
   },
 })
 
