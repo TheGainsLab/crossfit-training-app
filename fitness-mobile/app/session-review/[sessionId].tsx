@@ -490,7 +490,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   headerColumn: {
-    minWidth: 180,
+    minWidth: 140,
+    maxWidth: 160,
     marginRight: 8,
   },
   headerColumnSmall: {
@@ -524,14 +525,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   exerciseNameContainer: {
-    flex: 1,
+    minWidth: 140,
+    maxWidth: 160,
     marginRight: 8,
   },
   exerciseName: {
     fontWeight: '600',
     color: '#111827',
     fontSize: 16,
-    flexShrink: 1,
+    flexWrap: 'wrap',
   },
   columnContainer: {
     minWidth: 56,
