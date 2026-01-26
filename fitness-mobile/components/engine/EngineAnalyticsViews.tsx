@@ -1179,12 +1179,11 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
             style={{
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 8,
               backgroundColor: '#FE5858', borderWidth: 1, borderColor: '#282B34', borderRadius: 8,
-              paddingHorizontal: 16, paddingVertical: 12, alignSelf: 'flex-start',
+              paddingHorizontal: 12, paddingVertical: 8, alignSelf: 'flex-start',
             }}
             activeOpacity={0.7}
           >
-            <Ionicons name="arrow-back" size={16} color="#F8FBFE" style={{ marginRight: 6 }} />
-            <Text style={{ fontSize: 16, color: '#F8FBFE', fontWeight: '600' }}>Back to Overview</Text>
+            <Text style={{ fontSize: 14, color: '#F8FBFE', fontWeight: '600' }}>← Back</Text>
           </TouchableOpacity>
         )}
         {hasData && (
@@ -1220,12 +1219,11 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
         style={{
           flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
           backgroundColor: '#FE5858', borderWidth: 1, borderColor: '#282B34', borderRadius: 8,
-          paddingHorizontal: 16, paddingVertical: 12, alignSelf: 'flex-start',
+          paddingHorizontal: 12, paddingVertical: 8, alignSelf: 'flex-start',
         }}
         activeOpacity={0.7}
       >
-        <Ionicons name="arrow-back" size={16} color="#F8FBFE" style={{ marginRight: 6 }} />
-        <Text style={{ fontSize: 16, color: '#F8FBFE', fontWeight: '600' }}>Back</Text>
+        <Text style={{ fontSize: 14, color: '#F8FBFE', fontWeight: '600' }}>← Back</Text>
       </TouchableOpacity>
 
       {currentView === 'history' && <EngineHistoryView engineData={engineData} />}

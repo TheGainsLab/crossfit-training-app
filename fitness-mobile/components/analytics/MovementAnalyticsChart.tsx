@@ -100,7 +100,7 @@ export default function MovementAnalyticsChart({
   return (
     <View style={styles.sectionGap}>
       {/* Metric Selector */}
-      <Card style={{ borderWidth: 1, borderColor: '#E5E7EB', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+      <Card style={{ borderWidth: 1, borderColor: '#282B34', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
           Select Metric
         </Text>
