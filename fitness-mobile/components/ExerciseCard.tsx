@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   section: {
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
     borderRadius: 8,
     padding: 16,
   },

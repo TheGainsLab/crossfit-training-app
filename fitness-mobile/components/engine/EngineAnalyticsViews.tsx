@@ -1183,7 +1183,7 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
             }}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 14, color: '#F4FBFE', fontWeight: '600' }}>← Back</Text>
+            <Text style={{ fontSize: 14, color: '#F6FBFE', fontWeight: '600' }}>← Back</Text>
           </TouchableOpacity>
         )}
         {hasData && (
@@ -1223,7 +1223,7 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
         }}
         activeOpacity={0.7}
       >
-        <Text style={{ fontSize: 14, color: '#F4FBFE', fontWeight: '600' }}>← Back</Text>
+        <Text style={{ fontSize: 14, color: '#F6FBFE', fontWeight: '600' }}>← Back</Text>
       </TouchableOpacity>
 
       {currentView === 'history' && <EngineHistoryView engineData={engineData} />}

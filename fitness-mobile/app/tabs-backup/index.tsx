@@ -11,7 +11,7 @@ export default function TabOneScreen() {
   }, [])
 
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4FBFE' }}>
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F6FBFE' }}>
       <ActivityIndicator size="large" color="#FE5858" />
     </View>
   )

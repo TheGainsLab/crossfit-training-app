@@ -295,7 +295,7 @@ export default function SignIn() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
   },
   scrollContent: {
     flexGrow: 1,

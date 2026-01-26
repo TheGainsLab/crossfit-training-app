@@ -80,13 +80,13 @@ export default function SubscriptionGate({
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
     justifyContent: 'center',
     alignItems: 'center',
   },
   gateContainer: {
     flex: 1,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,

@@ -364,12 +364,12 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   barText: {
-    color: '#F4FBFE',
+    color: '#F6FBFE',
     fontSize: 12,
     fontWeight: '600',
   },
   currentBarText: {
-    color: '#F4FBFE',
+    color: '#F6FBFE',
   },
   completedBarText: {
     color: '#282B34',

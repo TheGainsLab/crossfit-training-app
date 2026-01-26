@@ -410,7 +410,7 @@ export default function SessionReviewPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
   },
   loadingContainer: {
     flex: 1,

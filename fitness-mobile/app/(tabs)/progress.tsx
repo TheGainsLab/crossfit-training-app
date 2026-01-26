@@ -44,7 +44,7 @@ type TabType = 'overview' | 'skills' | 'strength' | 'technical' | 'accessories' 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
   },
   loadingContainer: {
     flex: 1,
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     color: '#4B5563',
   },
   categoryGridContainer: {
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginTop: 16,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
   contentBackButtonText: {
     fontSize: 14,
-    color: '#F4FBFE',
+    color: '#F6FBFE',
     fontWeight: '600',
   },
   contentContainer: {
@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
   heatmapExerciseCell: {
     width: 120,
     padding: 12,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
     borderRightWidth: 1,
     borderRightColor: '#E5E7EB',
     justifyContent: 'center',

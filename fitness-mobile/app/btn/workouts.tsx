@@ -862,7 +862,7 @@ const styles = StyleSheet.create({
   },
   workoutCard: {
     padding: 16,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
     marginBottom: 16,
   },
   workoutHeader: {

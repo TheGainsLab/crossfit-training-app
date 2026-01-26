@@ -35,7 +35,7 @@ export default function ProgramDetailScreen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color="#F4FBFE" />
+          <Ionicons name="arrow-back" size={24} color="#F6FBFE" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Plan Details</Text>
       </View>
@@ -95,7 +95,7 @@ export default function ProgramDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
   },
   header: {
     backgroundColor: '#282B34',
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#F4FBFE',
+    color: '#F6FBFE',
   },
   content: {
     padding: 24,

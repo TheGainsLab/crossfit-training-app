@@ -400,7 +400,7 @@ export default function MetConHeatMap({
                         style={[
                           styles.cellContent,
                           {
-                            backgroundColor: hasData ? '#F4FBFE' : '#F3F4F6',
+                            backgroundColor: hasData ? '#F6FBFE' : '#F3F4F6',
                           },
                         ]}
                       >
@@ -446,7 +446,7 @@ export default function MetConHeatMap({
                     style={[
                       styles.cellContent,
                       {
-                        backgroundColor: exerciseAvg !== null ? '#F4FBFE' : '#F3F4F6',
+                        backgroundColor: exerciseAvg !== null ? '#F6FBFE' : '#F3F4F6',
                       },
                     ]}
                   >
@@ -495,7 +495,7 @@ export default function MetConHeatMap({
                     style={[
                       styles.cellContent,
                       {
-                        backgroundColor: domainAvg !== null ? '#F4FBFE' : '#F3F4F6',
+                        backgroundColor: domainAvg !== null ? '#F6FBFE' : '#F3F4F6',
                       },
                     ]}
                   >
@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
   },
   totalRow: {
     flexDirection: 'row',
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
     borderTopWidth: 2,
     borderTopColor: '#282B34',
     minHeight: 60,
@@ -838,13 +838,13 @@ const styles = StyleSheet.create({
   globalValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#F4FBFE',
+    color: '#F6FBFE',
     textAlign: 'center',
   },
   globalLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#F4FBFE',
+    color: '#F6FBFE',
     marginTop: 2,
   },
   emptyContainer: {

@@ -293,11 +293,11 @@ export default function PurchaseScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#E5E7EB',
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
     marginBottom: 12,
   },
   defaultOptionActive: {
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
 
   // Nutrition summary
   nutritionSummary: {
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,

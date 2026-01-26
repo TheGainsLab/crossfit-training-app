@@ -30,7 +30,7 @@ export default function SubscriptionsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Explore plans</Text>
         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-          <Ionicons name="close" size={28} color="#F4FBFE" />
+          <Ionicons name="close" size={28} color="#F6FBFE" />
         </TouchableOpacity>
       </View>
 
@@ -79,7 +79,7 @@ export default function SubscriptionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4FBFE',
+    backgroundColor: '#F6FBFE',
   },
   header: {
     backgroundColor: '#282B34',
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#F4FBFE',
+    color: '#F6FBFE',
   },
   closeButton: {
     position: 'absolute',

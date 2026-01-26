@@ -319,7 +319,7 @@ export default function Dashboard({
             }
           }}
         >
-          <Ionicons name="arrow-back" size={16} color="#F4FBFE" style={{ marginRight: 6 }} />
+          <Ionicons name="arrow-back" size={16} color="#F6FBFE" style={{ marginRight: 6 }} />
           <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Select a Month</Text>
@@ -360,7 +360,7 @@ export default function Dashboard({
             style={styles.backButton}
             onPress={() => setInternalView('months')}
           >
-            <Ionicons name="arrow-back" size={16} color="#F4FBFE" style={{ marginRight: 6 }} />
+            <Ionicons name="arrow-back" size={16} color="#F6FBFE" style={{ marginRight: 6 }} />
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: '#F4FBFE',
+    color: '#F6FBFE',
     fontWeight: '600',
   },
   monthsGrid: {
