@@ -1,7 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { BTNAnalyticsData } from '@/lib/api/btn'
-import BTNHeatMap from './BTNHeatMap'
+import MetConHeatMap from '@/components/analytics/MetConHeatMap'
 import { Card } from '@/components/ui/Card'
 
 interface BTNAnalyticsViewsProps {
@@ -16,7 +16,14 @@ export function PerformanceView({ heatmapData }: BTNAnalyticsViewsProps) {
     <View style={styles.container}>
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>Percentile Heatmap ({completions})</Text>
-        <BTNHeatMap data={heatmapData} metric="percentile" hideTitle />
+        <MetConHeatMap
+          heatmapCells={heatmapData.heatmapCells}
+          exerciseAverages={heatmapData.exerciseAverages}
+          globalFitnessScore={heatmapData.globalFitnessScore}
+          timeDomainWorkoutCounts={heatmapData.timeDomainWorkoutCounts}
+          metric="percentile"
+          hideTitle
+        />
       </Card>
     </View>
   )
@@ -24,7 +31,7 @@ export function PerformanceView({ heatmapData }: BTNAnalyticsViewsProps) {
 
 export function EffortView({ heatmapData }: BTNAnalyticsViewsProps) {
   const cells = heatmapData?.heatmapCells || []
-  
+
   // Calculate global RPE
   const validRpe = cells.filter(c => c.avg_rpe !== null && c.avg_rpe !== undefined)
   const workoutCount = validRpe.reduce((sum, c) => sum + c.session_count, 0)
@@ -34,7 +41,14 @@ export function EffortView({ heatmapData }: BTNAnalyticsViewsProps) {
       {validRpe.length > 0 ? (
         <Card style={styles.card}>
           <Text style={styles.cardTitle}>RPE Heatmap ({workoutCount})</Text>
-          <BTNHeatMap data={heatmapData} metric="rpe" hideTitle />
+          <MetConHeatMap
+            heatmapCells={heatmapData.heatmapCells}
+            exerciseAverages={heatmapData.exerciseAverages}
+            globalFitnessScore={heatmapData.globalFitnessScore}
+            timeDomainWorkoutCounts={heatmapData.timeDomainWorkoutCounts}
+            metric="rpe"
+            hideTitle
+          />
         </Card>
       ) : (
         <Card style={styles.emptyCard}>
@@ -49,7 +63,7 @@ export function EffortView({ heatmapData }: BTNAnalyticsViewsProps) {
 
 export function QualityView({ heatmapData }: BTNAnalyticsViewsProps) {
   const cells = heatmapData?.heatmapCells || []
-  
+
   // Calculate global Quality
   const validQuality = cells.filter(c => c.avg_quality !== null && c.avg_quality !== undefined)
   const workoutCount = validQuality.reduce((sum, c) => sum + c.session_count, 0)
@@ -59,7 +73,14 @@ export function QualityView({ heatmapData }: BTNAnalyticsViewsProps) {
       {validQuality.length > 0 ? (
         <Card style={styles.card}>
           <Text style={styles.cardTitle}>Quality Heatmap ({workoutCount})</Text>
-          <BTNHeatMap data={heatmapData} metric="quality" hideTitle />
+          <MetConHeatMap
+            heatmapCells={heatmapData.heatmapCells}
+            exerciseAverages={heatmapData.exerciseAverages}
+            globalFitnessScore={heatmapData.globalFitnessScore}
+            timeDomainWorkoutCounts={heatmapData.timeDomainWorkoutCounts}
+            metric="quality"
+            hideTitle
+          />
         </Card>
       ) : (
         <Card style={styles.emptyCard}>
@@ -74,7 +95,7 @@ export function QualityView({ heatmapData }: BTNAnalyticsViewsProps) {
 
 export function HeartRateView({ heatmapData }: BTNAnalyticsViewsProps) {
   const cells = heatmapData?.heatmapCells || []
-  
+
   // Check if we have any HR data
   const validHR = cells.filter(c => c.avg_heart_rate !== null && c.avg_heart_rate !== undefined)
   const workoutCount = validHR.reduce((sum, c) => sum + c.session_count, 0)
@@ -84,7 +105,14 @@ export function HeartRateView({ heatmapData }: BTNAnalyticsViewsProps) {
       {validHR.length > 0 ? (
         <Card style={styles.card}>
           <Text style={styles.cardTitle}>Heart Rate Heatmap ({workoutCount})</Text>
-          <BTNHeatMap data={heatmapData} metric="heartrate" hideTitle />
+          <MetConHeatMap
+            heatmapCells={heatmapData.heatmapCells}
+            exerciseAverages={heatmapData.exerciseAverages}
+            globalFitnessScore={heatmapData.globalFitnessScore}
+            timeDomainWorkoutCounts={heatmapData.timeDomainWorkoutCounts}
+            metric="heartrate"
+            hideTitle
+          />
         </Card>
       ) : (
         <Card style={styles.emptyCard}>

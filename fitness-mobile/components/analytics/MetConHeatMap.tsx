@@ -1,12 +1,31 @@
 import React, { useState } from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal } from 'react-native'
-import { BTNAnalyticsData } from '@/lib/api/btn'
 import { Card } from '@/components/ui/Card'
 
 type MetricType = 'percentile' | 'rpe' | 'quality' | 'heartrate'
 
-interface BTNHeatMapProps {
-  data: BTNAnalyticsData
+export interface HeatmapCell {
+  exercise_name: string
+  time_range: string | null
+  session_count: number
+  avg_percentile: number
+  avg_heart_rate?: number | null
+  max_heart_rate?: number | null
+  avg_rpe?: number | null
+  avg_quality?: number | null
+}
+
+export interface ExerciseAverage {
+  exercise_name: string
+  total_sessions: number
+  overall_avg_percentile: number
+}
+
+interface MetConHeatMapProps {
+  heatmapCells: HeatmapCell[]
+  exerciseAverages: ExerciseAverage[]
+  globalFitnessScore: number | null
+  timeDomainWorkoutCounts?: Record<string, number>
   metric?: MetricType
   hideTitle?: boolean
 }
@@ -17,31 +36,49 @@ interface CellDetail {
   value: number | null
   sessions: number
   percentile: number | null
-  hrData?: { avgHR: number | null, maxHR: number | null } | null
-  rpeData?: { avgRpe: number | null, avgQuality: number | null } | null
+  hrData?: { avgHR: number | null; maxHR: number | null } | null
+  rpeData?: { avgRpe: number | null; avgQuality: number | null } | null
 }
 
-export default function BTNHeatMap({ 
-  data, 
+export default function MetConHeatMap({
+  heatmapCells,
+  exerciseAverages,
+  globalFitnessScore,
+  timeDomainWorkoutCounts,
   metric = 'percentile',
-  hideTitle = false
-}: BTNHeatMapProps) {
+  hideTitle = false,
+}: MetConHeatMapProps) {
   const [selectedCell, setSelectedCell] = useState<CellDetail | null>(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
-  if (!data || !data.exercises || data.exercises.length === 0) {
-    const emptyMessage = metric === 'percentile' 
-      ? 'Complete more workouts to see exercise-specific performance data!'
-      : metric === 'rpe'
-      ? 'Log workouts with RPE to see effort statistics!'
-      : metric === 'quality'
-      ? 'Log workouts with Quality ratings to see statistics!'
-      : 'Log workouts with Heart Rate to see statistics!'
-    
+
+  // Extract unique exercises and time domains
+  const exercises = [...new Set(heatmapCells.map((c) => c.exercise_name))].sort()
+  const timeDomains = [...new Set(heatmapCells.map((c) => c.time_range).filter(Boolean))]
+    .sort((a, b) => {
+      const order: Record<string, number> = {
+        '1:00–5:00': 1,
+        '5:00–10:00': 2,
+        '10:00–15:00': 3,
+        '15:00–20:00': 4,
+        '20:00–30:00': 5,
+        '30:00+': 6,
+      }
+      return (order[a as string] || 7) - (order[b as string] || 7)
+    }) as string[]
+
+  if (!heatmapCells || heatmapCells.length === 0 || exercises.length === 0) {
+    const emptyMessage =
+      metric === 'percentile'
+        ? 'Complete more workouts to see exercise-specific performance data!'
+        : metric === 'rpe'
+          ? 'Log workouts with RPE to see effort statistics!'
+          : metric === 'quality'
+            ? 'Log workouts with Quality ratings to see statistics!'
+            : 'Log workouts with Heart Rate to see statistics!'
+
     return (
       <View style={styles.emptyContainer}>
-        {!hideTitle && (
-          <Text style={styles.emptyTitle}>{getMetricTitle(metric)}</Text>
-        )}
+        {!hideTitle && <Text style={styles.emptyTitle}>{getMetricTitle(metric)}</Text>}
         <View style={styles.emptyCard}>
           <Text style={styles.emptyEmoji}>💪</Text>
           <Text style={styles.emptyTitleText}>No {getMetricTitle(metric)} Data Yet</Text>
@@ -51,11 +88,9 @@ export default function BTNHeatMap({
     )
   }
 
-  const { exercises, timeDomains } = data
-
   const getCellValue = (exercise: string, timeDomain: string): number | null => {
-    const cell = data.heatmapCells.find(
-      cell => cell.exercise_name === exercise && cell.time_range === timeDomain
+    const cell = heatmapCells.find(
+      (c) => c.exercise_name === exercise && c.time_range === timeDomain
     )
     if (!cell) return null
 
@@ -74,39 +109,42 @@ export default function BTNHeatMap({
   }
 
   const getSessionCount = (exercise: string, timeDomain: string): number => {
-    const cell = data.heatmapCells.find(
-      cell => cell.exercise_name === exercise && cell.time_range === timeDomain
+    const cell = heatmapCells.find(
+      (c) => c.exercise_name === exercise && c.time_range === timeDomain
     )
     return cell ? cell.session_count : 0
   }
 
-  const getHRData = (exercise: string, timeDomain: string): { avgHR: number | null, maxHR: number | null } | null => {
-    const cell = data.heatmapCells.find(
-      cell => cell.exercise_name === exercise && cell.time_range === timeDomain
+  const getHRData = (
+    exercise: string,
+    timeDomain: string
+  ): { avgHR: number | null; maxHR: number | null } | null => {
+    const cell = heatmapCells.find(
+      (c) => c.exercise_name === exercise && c.time_range === timeDomain
     )
-    return cell ? {
-      avgHR: cell.avg_heart_rate ?? null,
-      maxHR: cell.max_heart_rate ?? null
-    } : null
+    return cell
+      ? {
+          avgHR: cell.avg_heart_rate ?? null,
+          maxHR: cell.max_heart_rate ?? null,
+        }
+      : null
   }
 
   const getPercentile = (exercise: string, timeDomain: string): number | null => {
-    const cell = data.heatmapCells.find(
-      cell => cell.exercise_name === exercise && cell.time_range === timeDomain
+    const cell = heatmapCells.find(
+      (c) => c.exercise_name === exercise && c.time_range === timeDomain
     )
     return cell ? cell.avg_percentile : null
   }
 
   const calculateExerciseAverage = (exercise: string): number | null => {
-    const exerciseCells = data.heatmapCells.filter(
-      cell => cell.exercise_name === exercise
-    )
+    const exerciseCells = heatmapCells.filter((c) => c.exercise_name === exercise)
     if (exerciseCells.length === 0) return null
 
     let totalWeighted = 0
     let totalSessions = 0
 
-    exerciseCells.forEach(cell => {
+    exerciseCells.forEach((cell) => {
       let value: number | null = null
       switch (metric) {
         case 'percentile':
@@ -133,15 +171,13 @@ export default function BTNHeatMap({
   }
 
   const calculateTimeDomainAverage = (timeDomain: string): number | null => {
-    const domainCells = data.heatmapCells.filter(
-      cell => cell.time_range === timeDomain
-    )
+    const domainCells = heatmapCells.filter((c) => c.time_range === timeDomain)
     if (domainCells.length === 0) return null
 
     let totalWeighted = 0
     let totalSessions = 0
 
-    domainCells.forEach(cell => {
+    domainCells.forEach((cell) => {
       let value: number | null = null
       switch (metric) {
         case 'percentile':
@@ -171,7 +207,7 @@ export default function BTNHeatMap({
     let totalWeighted = 0
     let totalSessions = 0
 
-    data.heatmapCells.forEach(cell => {
+    heatmapCells.forEach((cell) => {
       let value: number | null = null
       switch (metric) {
         case 'percentile':
@@ -199,10 +235,10 @@ export default function BTNHeatMap({
 
   const formatCellValue = (value: number | null): string => {
     if (value === null) return '—'
-    
+
     switch (metric) {
       case 'percentile':
-        return `${value}%`
+        return `${Math.round(value)}%`
       case 'rpe':
         return value.toFixed(1)
       case 'quality':
@@ -222,82 +258,20 @@ export default function BTNHeatMap({
     return 'D'
   }
 
-  const getCellColor = (value: number | null): string => {
-    if (value === null) return '#F3F4F6' // gray-100
-
-    switch (metric) {
-      case 'percentile':
-        if (value >= 90) return '#1E40AF' // blue-800
-        if (value >= 75) return '#2563EB' // blue-600
-        if (value >= 50) return '#3B82F6' // blue-500
-        if (value >= 25) return '#60A5FA' // blue-400
-        return '#93C5FD' // blue-300
-      case 'rpe':
-        if (value >= 9) return '#DC2626' // red-600
-        if (value >= 8) return '#EF4444' // red-500
-        if (value >= 7) return '#F97316' // orange-500
-        if (value >= 6) return '#FB923C' // orange-400
-        return '#FCD34D' // yellow-300
-      case 'quality':
-        if (value >= 3.5) return '#10B981' // green-500
-        if (value >= 2.5) return '#34D399' // green-400
-        if (value >= 1.5) return '#FCD34D' // yellow-300
-        return '#FCA5A5' // red-300
-      case 'heartrate':
-        if (value >= 180) return '#DC2626' // red-600
-        if (value >= 160) return '#EF4444' // red-500
-        if (value >= 140) return '#F97316' // orange-500
-        if (value >= 120) return '#FB923C' // orange-400
-        return '#FCD34D' // yellow-300
-      default:
-        return '#F3F4F6'
-    }
-  }
-
-  const getTextColor = (value: number | null): string => {
-    if (value === null) return '#9CA3AF' // gray-400
-    // Use white text for darker backgrounds
-    switch (metric) {
-      case 'percentile':
-        return value >= 50 ? '#FFFFFF' : '#1F2937'
-      case 'rpe':
-        return value >= 7 ? '#FFFFFF' : '#1F2937'
-      case 'quality':
-        return value >= 3.5 ? '#FFFFFF' : '#1F2937'
-      case 'heartrate':
-        return value >= 160 ? '#FFFFFF' : '#1F2937'
-      default:
-        return '#1F2937'
-    }
-  }
-
-  const getMetricTitle = (metricType: MetricType): string => {
-    switch (metricType) {
-      case 'percentile': return 'Percentile Heatmap'
-      case 'rpe': return 'RPE Heatmap'
-      case 'quality': return 'Quality Heatmap'
-      case 'heartrate': return 'Heart Rate Heatmap'
-      default: return 'MetCon Heat Map'
-    }
-  }
-
-  const hasMedal = (percentile: number | null): boolean => {
-    return percentile !== null && percentile >= 90
-  }
-
   const handleCellPress = (exercise: string, timeDomain: string) => {
     const cellValue = getCellValue(exercise, timeDomain)
     const sessions = getSessionCount(exercise, timeDomain)
     const percentile = getPercentile(exercise, timeDomain)
-    const hrData = metric === 'heartrate' ? getHRData(exercise, timeDomain) : null
-    const rpeData = metric === 'rpe' || metric === 'quality' ? {
-      avgRpe: data.heatmapCells.find(
-        cell => cell.exercise_name === exercise && cell.time_range === timeDomain
-      )?.avg_rpe ?? null,
-      avgQuality: data.heatmapCells.find(
-        cell => cell.exercise_name === exercise && cell.time_range === timeDomain
-      )?.avg_quality ?? null
-    } : null
+    const hrData = getHRData(exercise, timeDomain)
+    const cell = heatmapCells.find(
+      (c) => c.exercise_name === exercise && c.time_range === timeDomain
+    )
+    const rpeData = cell
+      ? {
+          avgRpe: cell.avg_rpe ?? null,
+          avgQuality: cell.avg_quality ?? null,
+        }
+      : null
 
     if (cellValue !== null || sessions > 0) {
       setSelectedCell({
@@ -307,7 +281,52 @@ export default function BTNHeatMap({
         sessions,
         percentile,
         hrData,
-        rpeData
+        rpeData,
+      })
+      setShowDetailModal(true)
+    }
+  }
+
+  const handleExerciseAvgPress = (exercise: string) => {
+    const exerciseAvg = calculateExerciseAverage(exercise)
+    const exerciseData = exerciseAverages.find((avg) => avg.exercise_name === exercise)
+    const exercisePercentile = exerciseData?.overall_avg_percentile || null
+
+    if (exerciseAvg !== null || (exerciseData && exerciseData.total_sessions > 0)) {
+      setSelectedCell({
+        exercise,
+        timeDomain: 'All Time Domains',
+        value: exerciseAvg,
+        sessions: exerciseData?.total_sessions || 0,
+        percentile: exercisePercentile,
+        hrData: null,
+        rpeData: null,
+      })
+      setShowDetailModal(true)
+    }
+  }
+
+  const handleTimeDomainAvgPress = (timeDomain: string) => {
+    const domainAvg = calculateTimeDomainAverage(timeDomain)
+    const totalWorkouts = timeDomainWorkoutCounts?.[timeDomain] || 0
+    const domainCells = heatmapCells.filter((c) => c.time_range === timeDomain)
+    const domainPercentile =
+      domainCells.length > 0
+        ? Math.round(
+            domainCells.reduce((sum, cell) => sum + cell.avg_percentile * cell.session_count, 0) /
+              domainCells.reduce((sum, cell) => sum + cell.session_count, 0)
+          )
+        : null
+
+    if (domainAvg !== null || totalWorkouts > 0) {
+      setSelectedCell({
+        exercise: 'All Exercises',
+        timeDomain,
+        value: domainAvg,
+        sessions: totalWorkouts,
+        percentile: domainPercentile,
+        hrData: null,
+        rpeData: null,
       })
       setShowDetailModal(true)
     }
@@ -321,131 +340,122 @@ export default function BTNHeatMap({
           <Text style={styles.subtitle}>{getMetricSubtitle(metric)}</Text>
         </>
       )}
-      
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View>
           {/* Header Row */}
-          <View style={styles.row}>
-            <View style={[styles.cell, styles.headerCell, styles.exerciseHeaderCell]}>
+          <View style={styles.headerRow}>
+            <View style={styles.exerciseHeaderCell}>
               <Text style={styles.headerText}>Exercise</Text>
             </View>
-            {timeDomains.map(domain => (
-              <View key={domain} style={[styles.cell, styles.headerCell, styles.timeDomainCell]}>
-                <Text style={styles.headerText} numberOfLines={2}>{domain}</Text>
+            {timeDomains.map((domain) => (
+              <View key={domain} style={styles.headerCell}>
+                <Text style={styles.headerText}>{domain}</Text>
               </View>
             ))}
-            <View style={[styles.cell, styles.headerCell, styles.totalCell]}>
+            <View style={styles.exerciseAvgHeaderCell}>
               <Text style={styles.headerText}>Exercise Avg</Text>
             </View>
           </View>
 
           {/* Data Rows */}
-          {exercises.map(exercise => {
+          {exercises.map((exercise) => {
             const exerciseAvg = calculateExerciseAverage(exercise)
-            const exerciseData = data.exerciseAverages.find(
-              avg => avg.exercise_name === exercise
-            )
-            const exercisePercentile = exerciseData?.overall_avg_percentile || null
+            const exerciseData = exerciseAverages.find((avg) => avg.exercise_name === exercise)
 
             return (
               <View key={exercise} style={styles.row}>
-                <View style={[styles.cell, styles.exerciseCell]}>
-                  <Text style={styles.exerciseText} numberOfLines={2}>
+                {/* Exercise Name */}
+                <View style={styles.exerciseCell}>
+                  <Text style={styles.exerciseText} numberOfLines={0}>
                     {exercise}
                   </Text>
                 </View>
-                {timeDomains.map(domain => {
+
+                {/* Time Domain Cells */}
+                {timeDomains.map((domain) => {
                   const cellValue = getCellValue(exercise, domain)
                   const sessions = getSessionCount(exercise, domain)
-                  const percentile = getPercentile(exercise, domain)
-                  const hrData = metric === 'heartrate' ? getHRData(exercise, domain) : null
+                  const hrData = getHRData(exercise, domain)
+                  const hasData = cellValue !== null
 
                   return (
                     <TouchableOpacity
                       key={domain}
-                      style={[styles.cell, styles.timeDomainCell]}
+                      style={styles.dataCell}
                       onPress={() => handleCellPress(exercise, domain)}
                       activeOpacity={0.7}
                     >
-                      <View style={[
-                        styles.valueBox,
-                        { backgroundColor: getCellColor(cellValue) }
-                      ]}>
-                        {hasMedal(percentile) && (
-                          <Text style={styles.medal}>🏅</Text>
-                        )}
-                        {cellValue !== null ? (
+                      <View
+                        style={[
+                          styles.cellContent,
+                          {
+                            backgroundColor: hasData ? '#F8FBFE' : '#F3F4F6',
+                            borderColor: '#282B34',
+                          },
+                        ]}
+                      >
+                        {hasData ? (
                           <View>
                             {metric === 'heartrate' && hrData ? (
                               <>
-                                <Text style={[styles.valueText, { color: getTextColor(cellValue) }]}>
+                                <Text style={styles.cellValue}>
                                   {Math.round(hrData.avgHR || 0)} / {Math.round(hrData.maxHR || 0)}
                                 </Text>
                                 {sessions > 0 && (
-                                  <Text style={[styles.sessionText, { color: getTextColor(cellValue) }]}>
-                                    {sessions} {sessions === 1 ? 'wkt' : 'wkts'}
+                                  <Text style={styles.cellSessions}>
+                                    {sessions} {sessions === 1 ? 'workout' : 'workouts'}
                                   </Text>
                                 )}
                               </>
                             ) : (
                               <>
-                                <Text style={[styles.valueText, { color: getTextColor(cellValue) }]}>
-                                  {formatCellValue(cellValue)}
-                                </Text>
+                                <Text style={styles.cellValue}>{formatCellValue(cellValue)}</Text>
                                 {sessions > 0 && (
-                                  <Text style={[styles.sessionText, { color: getTextColor(cellValue) }]}>
-                                    {sessions} {sessions === 1 ? 'wkt' : 'wkts'}
+                                  <Text style={styles.cellSessions}>
+                                    {sessions} {sessions === 1 ? 'workout' : 'workouts'}
                                   </Text>
                                 )}
                               </>
                             )}
                           </View>
                         ) : (
-                          <Text style={[styles.valueText, { color: '#9CA3AF' }]}>—</Text>
+                          <Text style={styles.cellValueEmpty}>—</Text>
                         )}
                       </View>
                     </TouchableOpacity>
                   )
                 })}
+
+                {/* Exercise Average Cell */}
                 <TouchableOpacity
-                  style={[styles.cell, styles.totalCell]}
-                  onPress={() => {
-                    // Show exercise average details
-                    if (exerciseAvg !== null || (exerciseData && exerciseData.total_sessions > 0)) {
-                      setSelectedCell({
-                        exercise,
-                        timeDomain: 'All Time Domains',
-                        value: exerciseAvg,
-                        sessions: exerciseData?.total_sessions || 0,
-                        percentile: exercisePercentile,
-                        hrData: null,
-                        rpeData: null
-                      })
-                      setShowDetailModal(true)
-                    }
-                  }}
+                  style={styles.exerciseAvgCell}
+                  onPress={() => handleExerciseAvgPress(exercise)}
                   activeOpacity={0.7}
                 >
-                  <View style={[
-                    styles.valueBox,
-                    { backgroundColor: getCellColor(exerciseAvg) }
-                  ]}>
-                    {hasMedal(exercisePercentile) && (
-                      <Text style={styles.medal}>🏅</Text>
-                    )}
+                  <View
+                    style={[
+                      styles.cellContent,
+                      {
+                        backgroundColor: exerciseAvg !== null ? '#F8FBFE' : '#F3F4F6',
+                        borderColor: '#282B34',
+                      },
+                    ]}
+                  >
                     {exerciseAvg !== null ? (
                       <View>
-                        <Text style={[styles.valueText, styles.boldText, { color: getTextColor(exerciseAvg) }]}>
-                          {formatCellValue(exerciseAvg)}
+                        <Text style={[styles.cellValue, styles.boldText]}>
+                          Avg: {formatCellValue(exerciseAvg)}
                         </Text>
                         {exerciseData && exerciseData.total_sessions > 0 && (
-                          <Text style={[styles.sessionText, { color: getTextColor(exerciseAvg) }]}>
-                            {exerciseData.total_sessions} {exerciseData.total_sessions === 1 ? 'wkt' : 'wkts'}
+                          <Text style={styles.cellSessions}>
+                            {exerciseData.total_sessions}{' '}
+                            {exerciseData.total_sessions === 1 ? 'workout' : 'workouts'}
                           </Text>
                         )}
                       </View>
                     ) : (
-                      <Text style={[styles.valueText, { color: '#9CA3AF' }]}>—</Text>
+                      <Text style={styles.cellValueEmpty}>—</Text>
                     )}
                   </View>
                 </TouchableOpacity>
@@ -454,79 +464,68 @@ export default function BTNHeatMap({
           })}
 
           {/* Time Domain Average Row */}
-          <View style={[styles.row, styles.totalRow]}>
-            <View style={[styles.cell, styles.exerciseCell, styles.totalRowHeader]}>
+          <View style={styles.totalRow}>
+            <View style={styles.totalRowHeader}>
               <Text style={styles.totalRowText}>Time Domain Avg</Text>
             </View>
-            {timeDomains.map(domain => {
+            {timeDomains.map((domain) => {
               const domainAvg = calculateTimeDomainAverage(domain)
-              const totalWorkouts = data.timeDomainWorkoutCounts?.[domain] || 0
-              const domainCells = data.heatmapCells.filter(
-                cell => cell.time_range === domain
-              )
-              const domainPercentile = domainCells.length > 0
-                ? Math.round(domainCells.reduce((sum, cell) => 
-                    sum + (cell.avg_percentile * cell.session_count), 0) / 
-                    domainCells.reduce((sum, cell) => sum + cell.session_count, 0))
-                : null
+              const totalWorkouts =
+                timeDomainWorkoutCounts?.[domain] ||
+                heatmapCells
+                  .filter((c) => c.time_range === domain)
+                  .reduce((sum, c) => sum + c.session_count, 0)
 
               return (
                 <TouchableOpacity
                   key={domain}
-                  style={[styles.cell, styles.timeDomainCell]}
-                  onPress={() => {
-                    // Show time domain average details
-                    if (domainAvg !== null || totalWorkouts > 0) {
-                      setSelectedCell({
-                        exercise: 'All Exercises',
-                        timeDomain: domain,
-                        value: domainAvg,
-                        sessions: totalWorkouts,
-                        percentile: domainPercentile,
-                        hrData: null,
-                        rpeData: null
-                      })
-                      setShowDetailModal(true)
-                    }
-                  }}
+                  style={styles.dataCell}
+                  onPress={() => handleTimeDomainAvgPress(domain)}
                   activeOpacity={0.7}
                 >
-                  <View style={[
-                    styles.valueBox,
-                    { backgroundColor: getCellColor(domainAvg) }
-                  ]}>
-                    {hasMedal(domainPercentile) && (
-                      <Text style={styles.medal}>🏅</Text>
-                    )}
+                  <View
+                    style={[
+                      styles.cellContent,
+                      {
+                        backgroundColor: domainAvg !== null ? '#F8FBFE' : '#F3F4F6',
+                        borderColor: '#282B34',
+                      },
+                    ]}
+                  >
                     {domainAvg !== null ? (
                       <View>
-                        <Text style={[styles.valueText, styles.boldText, { color: getTextColor(domainAvg) }]}>
-                          {formatCellValue(domainAvg)}
+                        <Text style={[styles.cellValue, styles.boldText]}>
+                          Avg: {formatCellValue(domainAvg)}
                         </Text>
                         {totalWorkouts > 0 && (
-                          <Text style={[styles.sessionText, { color: getTextColor(domainAvg) }]}>
-                            {totalWorkouts} {totalWorkouts === 1 ? 'wkt' : 'wkts'}
+                          <Text style={styles.cellSessions}>
+                            {totalWorkouts} {totalWorkouts === 1 ? 'workout' : 'workouts'}
                           </Text>
                         )}
                       </View>
                     ) : (
-                      <Text style={[styles.valueText, { color: '#9CA3AF' }]}>—</Text>
+                      <Text style={styles.cellValueEmpty}>—</Text>
                     )}
                   </View>
                 </TouchableOpacity>
               )
             })}
-            <View style={[styles.cell, styles.totalCell, styles.globalCell]}>
-              <View style={styles.globalBox}>
-                {hasMedal(data.globalFitnessScore) && (
-                  <Text style={styles.medal}>🏅</Text>
-                )}
+
+            {/* Global Average Cell */}
+            <View style={styles.globalCell}>
+              <View style={styles.globalCellContent}>
                 {(() => {
-                  const globalAvg = metric === 'percentile' ? data.globalFitnessScore : getGlobalAverage()
-                  const label = metric === 'percentile' ? 'FITNESS' : 
-                                metric === 'rpe' ? 'AVG RPE' :
-                                metric === 'quality' ? 'AVG QUALITY' : 'AVG HR'
-                  
+                  const globalAvg =
+                    metric === 'percentile' ? globalFitnessScore : getGlobalAverage()
+                  const label =
+                    metric === 'percentile'
+                      ? 'FITNESS'
+                      : metric === 'rpe'
+                        ? 'AVG RPE'
+                        : metric === 'quality'
+                          ? 'AVG QUALITY'
+                          : 'AVG HR'
+
                   return globalAvg !== null ? (
                     <View>
                       <Text style={styles.globalValue}>{formatCellValue(globalAvg)}</Text>
@@ -544,12 +543,7 @@ export default function BTNHeatMap({
 
       {/* Legend */}
       <View style={styles.legend}>
-        <Text style={styles.legendTitle}>Performance Medal:</Text>
-        <View style={styles.legendItem}>
-          <Text style={styles.medalIcon}>🏅</Text>
-          <Text style={styles.legendText}>90%+</Text>
-        </View>
-        <Text style={styles.tapHint}>Tap cells for details</Text>
+        <Text style={styles.legendText}>Tap cells for details</Text>
       </View>
 
       {/* Cell Detail Modal */}
@@ -572,13 +566,13 @@ export default function BTNHeatMap({
                     <Text style={styles.closeButtonText}>✕</Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 <View style={styles.modalBody}>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Exercise:</Text>
                     <Text style={styles.detailValue}>{selectedCell.exercise}</Text>
                   </View>
-                  
+
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Time Domain:</Text>
                     <Text style={styles.detailValue}>{selectedCell.timeDomain}</Text>
@@ -587,10 +581,14 @@ export default function BTNHeatMap({
                   {selectedCell.value !== null ? (
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>
-                        {metric === 'percentile' ? 'Percentile' :
-                         metric === 'rpe' ? 'RPE' :
-                         metric === 'quality' ? 'Quality' :
-                         'Heart Rate'}:
+                        {metric === 'percentile'
+                          ? 'Percentile'
+                          : metric === 'rpe'
+                            ? 'RPE'
+                            : metric === 'quality'
+                              ? 'Quality'
+                              : 'Heart Rate'}
+                        :
                       </Text>
                       <Text style={styles.detailValue}>
                         {metric === 'heartrate' && selectedCell.hrData
@@ -605,7 +603,7 @@ export default function BTNHeatMap({
                     </View>
                   )}
 
-                  {selectedCell.percentile !== null && (
+                  {selectedCell.percentile !== null && metric !== 'percentile' && (
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>Percentile:</Text>
                       <Text style={styles.detailValue}>{selectedCell.percentile}%</Text>
@@ -619,27 +617,25 @@ export default function BTNHeatMap({
                     </Text>
                   </View>
 
-                  {selectedCell.rpeData && selectedCell.rpeData.avgRpe !== null && (
+                  {selectedCell.rpeData && selectedCell.rpeData.avgRpe !== null && metric !== 'rpe' && (
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>Avg RPE:</Text>
-                      <Text style={styles.detailValue}>{selectedCell.rpeData.avgRpe.toFixed(1)}/10</Text>
-                    </View>
-                  )}
-
-                  {selectedCell.rpeData && selectedCell.rpeData.avgQuality !== null && (
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Avg Quality:</Text>
                       <Text style={styles.detailValue}>
-                        {getQualityGrade(selectedCell.rpeData.avgQuality)}
+                        {selectedCell.rpeData.avgRpe.toFixed(1)}/10
                       </Text>
                     </View>
                   )}
 
-                  {hasMedal(selectedCell.percentile) && (
-                    <View style={styles.medalBadge}>
-                      <Text style={styles.medalBadgeText}>🏅 Elite Performance (90%+)</Text>
-                    </View>
-                  )}
+                  {selectedCell.rpeData &&
+                    selectedCell.rpeData.avgQuality !== null &&
+                    metric !== 'quality' && (
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Avg Quality:</Text>
+                        <Text style={styles.detailValue}>
+                          {getQualityGrade(selectedCell.rpeData.avgQuality)}
+                        </Text>
+                      </View>
+                    )}
                 </View>
               </View>
             )}
@@ -650,13 +646,33 @@ export default function BTNHeatMap({
   )
 }
 
+function getMetricTitle(metricType: MetricType): string {
+  switch (metricType) {
+    case 'percentile':
+      return 'Percentile Heatmap'
+    case 'rpe':
+      return 'RPE Heatmap'
+    case 'quality':
+      return 'Quality Heatmap'
+    case 'heartrate':
+      return 'Heart Rate Heatmap'
+    default:
+      return 'MetCon Heat Map'
+  }
+}
+
 function getMetricSubtitle(metricType: MetricType): string {
   switch (metricType) {
-    case 'percentile': return 'Task Level Percentile Analysis'
-    case 'rpe': return 'Rate of Perceived Exertion'
-    case 'quality': return 'Movement Quality Grades'
-    case 'heartrate': return 'Average Heart Rate (bpm)'
-    default: return 'Task Level Analysis'
+    case 'percentile':
+      return 'Task Level Percentile Analysis'
+    case 'rpe':
+      return 'Rate of Perceived Exertion'
+    case 'quality':
+      return 'Movement Quality Grades'
+    case 'heartrate':
+      return 'Average Heart Rate (bpm)'
+    default:
+      return 'Task Level Analysis'
   }
 }
 
@@ -679,95 +695,123 @@ const styles = StyleSheet.create({
     color: '#282B34',
     marginBottom: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    backgroundColor: '#DAE2EA',
+    borderBottomWidth: 2,
+    borderBottomColor: '#282B34',
+  },
+  headerCell: {
+    width: 80,
+    padding: 12,
+    borderRightWidth: 1,
+    borderRightColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exerciseHeaderCell: {
+    width: 120,
+    padding: 12,
+    borderRightWidth: 1,
+    borderRightColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exerciseAvgHeaderCell: {
+    width: 80,
+    padding: 12,
+    borderLeftWidth: 2,
+    borderLeftColor: '#282B34',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DAE2EA',
+  },
+  headerText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#282B34',
+    textAlign: 'center',
+  },
   row: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
-  },
-  cell: {
-    padding: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 90,
-    minHeight: 70,
-  },
-  headerCell: {
-    backgroundColor: '#F9FAFB',
-    borderRightWidth: 1,
-    borderRightColor: '#E5E7EB',
-  },
-  exerciseHeaderCell: {
-    minWidth: 120,
-    alignItems: 'flex-start',
+    minHeight: 60,
+    alignItems: 'stretch',
   },
   exerciseCell: {
+    width: 120,
+    padding: 12,
     backgroundColor: '#DAE2EA',
-    minWidth: 120,
-    alignItems: 'flex-start',
     borderRightWidth: 1,
     borderRightColor: '#E5E7EB',
-  },
-  timeDomainCell: {
-    minWidth: 90,
-  },
-  totalCell: {
-    backgroundColor: '#F8FBFE',
-    borderLeftWidth: 2,
-    borderLeftColor: '#282B34',
-    minWidth: 100,
-  },
-  headerText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#282B34',
-    textAlign: 'center',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   exerciseText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#282B34',
+    flexWrap: 'wrap',
+    flexShrink: 1,
   },
-  valueBox: {
-    width: 75,
-    height: 65,
-    borderRadius: 8,
-    justifyContent: 'center',
+  dataCell: {
+    width: 80,
+    padding: 4,
+    borderRightWidth: 1,
+    borderRightColor: '#E5E7EB',
+  },
+  exerciseAvgCell: {
+    width: 80,
+    padding: 4,
+    borderLeftWidth: 2,
+    borderLeftColor: '#282B34',
+  },
+  cellContent: {
+    borderRadius: 6,
+    padding: 8,
     alignItems: 'center',
-    position: 'relative',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
+    justifyContent: 'center',
+    minHeight: 52,
+    borderWidth: 1,
   },
-  valueText: {
+  cellValue: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#FE5858',
+    textAlign: 'center',
+  },
+  cellValueEmpty: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#9CA3AF',
     textAlign: 'center',
   },
   boldText: {
     fontWeight: '700',
   },
-  sessionText: {
+  cellSessions: {
     fontSize: 10,
     marginTop: 2,
-    opacity: 0.75,
-  },
-  medal: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    fontSize: 12,
+    color: '#FE5858',
+    textAlign: 'center',
   },
   totalRow: {
+    flexDirection: 'row',
     backgroundColor: '#F8FBFE',
     borderTopWidth: 2,
     borderTopColor: '#282B34',
+    minHeight: 60,
+    alignItems: 'stretch',
   },
   totalRowHeader: {
+    width: 120,
+    padding: 12,
     backgroundColor: '#DAE2EA',
     borderRightWidth: 2,
     borderRightColor: '#282B34',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   totalRowText: {
     fontSize: 12,
@@ -775,33 +819,33 @@ const styles = StyleSheet.create({
     color: '#282B34',
   },
   globalCell: {
+    width: 80,
+    padding: 4,
+    borderLeftWidth: 2,
+    borderLeftColor: '#282B34',
     backgroundColor: '#DAE2EA',
   },
-  globalBox: {
-    width: 75,
-    height: 65,
-    borderRadius: 8,
-    backgroundColor: '#FE5858',
-    justifyContent: 'center',
+  globalCellContent: {
+    borderRadius: 6,
+    padding: 8,
     alignItems: 'center',
-    position: 'relative',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    justifyContent: 'center',
+    minHeight: 52,
+    backgroundColor: '#FE5858',
+    borderWidth: 1,
+    borderColor: '#282B34',
   },
   globalValue: {
     fontSize: 16,
     fontWeight: '700',
     color: '#F8FBFE',
+    textAlign: 'center',
   },
   globalLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#F8FBFE',
     marginTop: 2,
-    opacity: 0.75,
   },
   emptyContainer: {
     backgroundColor: '#FFFFFF',
@@ -844,32 +888,12 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  legendTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#282B34',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  medalIcon: {
-    fontSize: 16,
   },
   legendText: {
     fontSize: 12,
-    color: '#666',
-  },
-  tapHint: {
-    fontSize: 11,
     color: '#9CA3AF',
     fontStyle: 'italic',
-    marginLeft: 12,
   },
   modalOverlay: {
     flex: 1,
@@ -937,41 +961,4 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'right',
   },
-  medalBadge: {
-    marginTop: 8,
-    padding: 12,
-    backgroundColor: '#FEF3C7',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FCD34D',
-  },
-  medalBadgeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#92400E',
-    textAlign: 'center',
-  },
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
