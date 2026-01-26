@@ -541,7 +541,7 @@ export default function SettingsPage() {
                     <Switch
                       value={equipment.includes(eq)}
                       onValueChange={(checked) => handleEquipmentChange(eq, checked)}
-                      trackColor={{ false: '#DAE2EA', true: '#FE5858' }}
+                      trackColor={{ false: '#C4E2EA', true: '#FE5858' }}
                       thumbColor={equipment.includes(eq) ? '#fff' : '#f4f3f4'}
                     />
                     <Text style={styles.equipmentLabel}>{eq}</Text>
@@ -560,7 +560,7 @@ export default function SettingsPage() {
                     <Switch
                       value={equipment.includes(eq)}
                       onValueChange={(checked) => handleEquipmentChange(eq, checked)}
-                      trackColor={{ false: '#DAE2EA', true: '#FE5858' }}
+                      trackColor={{ false: '#C4E2EA', true: '#FE5858' }}
                       thumbColor={equipment.includes(eq) ? '#fff' : '#f4f3f4'}
                     />
                     <Text style={styles.equipmentLabel}>{eq}</Text>
@@ -579,7 +579,7 @@ export default function SettingsPage() {
                     <Switch
                       value={equipment.includes(eq)}
                       onValueChange={(checked) => handleEquipmentChange(eq, checked)}
-                      trackColor={{ false: '#DAE2EA', true: '#FE5858' }}
+                      trackColor={{ false: '#C4E2EA', true: '#FE5858' }}
                       thumbColor={equipment.includes(eq) ? '#fff' : '#f4f3f4'}
                     />
                     <Text style={styles.equipmentLabel}>{eq}</Text>
@@ -1105,7 +1105,7 @@ const styles = StyleSheet.create({
   skillCategory: {
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#DAE2EA',
+    borderColor: '#C4E2EA',
     borderRadius: 8,
     padding: 16,
   },
@@ -1159,12 +1159,12 @@ const styles = StyleSheet.create({
   benchmarkGroup: {
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#DAE2EA',
+    borderColor: '#C4E2EA',
     borderRadius: 8,
     padding: 16,
   },
   benchmarkHeader: {
-    backgroundColor: '#DAE2EA',
+    backgroundColor: '#C4E2EA',
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
@@ -1199,7 +1199,7 @@ const styles = StyleSheet.create({
   liftGroup: {
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#DAE2EA',
+    borderColor: '#C4E2EA',
     borderRadius: 8,
     padding: 16,
   },

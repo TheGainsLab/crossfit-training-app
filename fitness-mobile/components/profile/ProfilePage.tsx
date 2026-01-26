@@ -309,7 +309,7 @@ const progressStyles = StyleSheet.create({
   progressBarBackground: {
     width: '100%',
     height: 16,
-    backgroundColor: '#DAE2EA',
+    backgroundColor: '#C4E2EA',
     borderRadius: 999,
   },
   progressBarFill: {
@@ -323,7 +323,7 @@ const progressStyles = StyleSheet.create({
   foundationBarBackground: {
     width: '100%',
     height: 16,
-    backgroundColor: '#DAE2EA',
+    backgroundColor: '#C4E2EA',
     borderRadius: 999,
     overflow: 'hidden',
     flexDirection: 'row',
@@ -337,7 +337,7 @@ const progressStyles = StyleSheet.create({
     left: 0,
     height: 16,
     borderRadius: 999,
-    backgroundColor: '#DAE2EA',
+    backgroundColor: '#C4E2EA',
   },
   targetContainer: {
     marginTop: 4,
@@ -747,7 +747,7 @@ export default function ProfilePage() {
               height: 8,
               borderRadius: 4,
               borderWidth: 1,
-              borderColor: '#DAE2EA',
+              borderColor: '#C4E2EA',
               backgroundColor: index < filledCount ? '#FE5858' : 'transparent'
             }}
           />
@@ -2214,7 +2214,7 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#DAE2EA',
+    borderColor: '#C4E2EA',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -2285,7 +2285,7 @@ const styles = StyleSheet.create({
   technicalCard: {
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#DAE2EA',
+    borderColor: '#C4E2EA',
     borderRadius: 8,
     padding: 16,
   },
@@ -2405,7 +2405,7 @@ const styles = StyleSheet.create({
   skillCategoryCard: {
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#DAE2EA',
+    borderColor: '#C4E2EA',
     borderRadius: 8,
     padding: 16,
   },
@@ -2441,7 +2441,7 @@ const styles = StyleSheet.create({
     color: '#FE5858',
   },
   skillLevelIntermediate: {
-    color: '#DAE2EA',
+    color: '#C4E2EA',
   },
   skillLevelBeginner: {
     color: '#4B5563',

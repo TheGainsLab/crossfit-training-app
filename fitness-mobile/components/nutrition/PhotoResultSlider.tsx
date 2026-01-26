@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
   sliderTrack: {
     position: 'relative',
     height: 44,
-    backgroundColor: '#DAE2EA',
+    backgroundColor: '#C4E2EA',
     borderRadius: 22,
     paddingHorizontal: 4,
     justifyContent: 'center',
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     height: 4,
-    backgroundColor: '#DAE2EA',
+    backgroundColor: '#C4E2EA',
     borderRadius: 2,
   },
   sliderTrackActive: {
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#DAE2EA',
+    backgroundColor: '#C4E2EA',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,

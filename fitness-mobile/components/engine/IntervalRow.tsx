@@ -54,7 +54,7 @@ export default function IntervalRow({
   const barWidth = normalizeBarWidth(displayDuration, maxDuration)
 
   // Determine bar color based on status and segment type
-  let barColor = isCurrent ? '#FE5858' : isCompleted ? '#DAE2EA' : '#282B34'
+  let barColor = isCurrent ? '#FE5858' : isCompleted ? '#C4E2EA' : '#282B34'
 
   // For flux segments, use blue for FLUX when current
   if (isFluxSegment && fluxSegmentType === 'flux' && isCurrent) {
@@ -146,7 +146,7 @@ export default function IntervalRow({
                     styles.fluxSegment,
                     {
                       width: `${segmentWidth}%`,
-                      backgroundColor: isBase ? '#FE5858' : '#DAE2EA'
+                      backgroundColor: isBase ? '#FE5858' : '#C4E2EA'
                     }
                   ]}
                 >
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     color: '#FE5858',
   },
   completedText: {
-    color: '#DAE2EA',
+    color: '#C4E2EA',
   },
   fluxLabelText: {
     color: '#3B82F6',

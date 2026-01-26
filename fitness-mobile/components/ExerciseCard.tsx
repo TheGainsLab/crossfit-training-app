@@ -294,7 +294,7 @@ export default function ExerciseCard({
                 value={formData.rpe}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, rpe: value }))}
                 minimumTrackTintColor="#FE5858"
-                maximumTrackTintColor="#DAE2EA"
+                maximumTrackTintColor="#C4E2EA"
                 thumbTintColor="#FE5858"
                 style={styles.slider}
               />
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: 8,
     borderWidth: 1,
-    borderColor: '#DAE2EA',
+    borderColor: '#C4E2EA',
     borderRadius: 8,
     backgroundColor: '#FFFFFF',
     fontSize: 14,
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: 12,
     borderWidth: 1,
-    borderColor: '#DAE2EA',
+    borderColor: '#C4E2EA',
     borderRadius: 8,
     backgroundColor: '#FFFFFF',
     fontSize: 14,

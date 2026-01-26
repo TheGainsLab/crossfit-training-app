@@ -366,7 +366,7 @@ export default function MetConCard({ metconData, onComplete }: MetConCardProps) 
                     value={taskRPEs[taskGroup.exercise] || 5}
                     onValueChange={(value) => handleTaskRPE(taskGroup.exercise, value)}
                     minimumTrackTintColor="#FE5858"
-                    maximumTrackTintColor="#DAE2EA"
+                    maximumTrackTintColor="#C4E2EA"
                     thumbTintColor="#FE5858"
                     disabled={isSubmitting}
                   />
@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#DAE2EA',
+    borderColor: '#C4E2EA',
   },
   benchmarkLabel: {
     fontSize: 12,
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: 12,
     borderWidth: 1,
-    borderColor: '#DAE2EA',
+    borderColor: '#C4E2EA',
     borderRadius: 8,
     backgroundColor: '#FFFFFF',
     fontSize: 16,
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: 12,
     borderWidth: 1,
-    borderColor: '#DAE2EA',
+    borderColor: '#C4E2EA',
     borderRadius: 8,
     backgroundColor: '#FFFFFF',
     fontSize: 16,
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#DAE2EA',
+    borderColor: '#C4E2EA',
     marginBottom: 16,
   },
   taskHeader: {

@@ -1025,7 +1025,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   blockContainerDefault: {
-    borderColor: '#DAE2EA',
+    borderColor: '#C4E2EA',
   },
   blockContainerComplete: {
     borderColor: '#FE5858',
@@ -1077,13 +1077,13 @@ const styles = StyleSheet.create({
     marginTop: 32,
     paddingTop: 24,
     borderTopWidth: 1,
-    borderTopColor: '#DAE2EA',
+    borderTopColor: '#C4E2EA',
   },
   navButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#DAE2EA',
+    backgroundColor: '#C4E2EA',
   },
   navButtonPrimary: {
     paddingHorizontal: 16,

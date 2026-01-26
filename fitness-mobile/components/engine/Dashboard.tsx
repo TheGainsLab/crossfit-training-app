@@ -229,7 +229,7 @@ export default function Dashboard({
     const dayNumber = workout.program_day_number || workout.day_number
     
     // Set background color based on completion status
-    const backgroundColor = status === 'completed' ? '#DAE2EA' : '#FFFFFF'
+    const backgroundColor = status === 'completed' ? '#C4E2EA' : '#FFFFFF'
 
     return (
       <TouchableOpacity
