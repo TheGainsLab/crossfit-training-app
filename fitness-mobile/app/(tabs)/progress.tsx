@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryCard: {
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#282B34',
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FE5858',
   },
   filterButtonInactive: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   filterButtonText: {
     fontSize: 14,
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   blockBadge: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#DAE2EA',
     borderWidth: 0,
     paddingHorizontal: 12,
     paddingVertical: 6,

@@ -23,7 +23,7 @@ export function StatCard({ label, value, subtitle, icon }: StatCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
