@@ -926,12 +926,13 @@ export async function fetchBTNAnalytics(equipmentFilter?: 'all' | 'barbell' | 'n
       .in('workout_id', workoutIds.length > 0 ? workoutIds : [0])
 
     // Process workouts into heat map data
-    const exerciseTimeMap = new Map<string, Map<string, { 
+    const exerciseTimeMap = new Map<string, Map<string, {
       workoutIds: Set<number>
       totalPercentile: number
       totalAvgHR: number
       totalMaxHR: number
-      hrCount: number
+      avgHrCount: number
+      maxHrCount: number
       totalRpe: number
       rpeCount: number
       totalQuality: number
@@ -987,12 +988,13 @@ export async function fetchBTNAnalytics(equipmentFilter?: 'all' | 'barbell' | 'n
         const exerciseMap = exerciseTimeMap.get(exerciseName)!
         
         if (!exerciseMap.has(timeRange)) {
-          exerciseMap.set(timeRange, { 
+          exerciseMap.set(timeRange, {
             workoutIds: new Set(),
-            totalPercentile: 0, 
-            totalAvgHR: 0, 
-            totalMaxHR: 0, 
-            hrCount: 0,
+            totalPercentile: 0,
+            totalAvgHR: 0,
+            totalMaxHR: 0,
+            avgHrCount: 0,
+            maxHrCount: 0,
             totalRpe: 0,
             rpeCount: 0,
             totalQuality: 0,
@@ -1010,10 +1012,11 @@ export async function fetchBTNAnalytics(equipmentFilter?: 'all' | 'barbell' | 'n
           
           if (avgHR !== null && !isNaN(avgHR)) {
             timeData.totalAvgHR += avgHR
-            timeData.hrCount++
+            timeData.avgHrCount++
           }
           if (maxHR !== null && !isNaN(maxHR)) {
             timeData.totalMaxHR += maxHR
+            timeData.maxHrCount++
           }
           
           // Track RPE/Quality
@@ -1065,8 +1068,8 @@ export async function fetchBTNAnalytics(equipmentFilter?: 'all' | 'barbell' | 'n
           time_range: timeRange,
           session_count: workoutCount,
           avg_percentile: workoutCount > 0 ? Math.round(data.totalPercentile / workoutCount) : 0,
-          avg_heart_rate: data.hrCount > 0 ? Math.round(data.totalAvgHR / data.hrCount) : null,
-          max_heart_rate: data.hrCount > 0 ? Math.round(data.totalMaxHR / data.hrCount) : null,
+          avg_heart_rate: data.avgHrCount > 0 ? Math.round(data.totalAvgHR / data.avgHrCount) : null,
+          max_heart_rate: data.maxHrCount > 0 ? Math.round(data.totalMaxHR / data.maxHrCount) : null,
           avg_rpe: data.rpeCount > 0 ? Math.round((data.totalRpe / data.rpeCount) * 10) / 10 : null,
           avg_quality: data.qualityCount > 0 ? Math.round((data.totalQuality / data.qualityCount) * 10) / 10 : null,
         })
