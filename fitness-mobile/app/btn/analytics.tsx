@@ -7,8 +7,10 @@ import {
   Alert,
   StyleSheet,
   TouchableOpacity,
+  SafeAreaView,
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { createClient } from '@/lib/supabase/client'
 import { fetchBTNAnalytics, BTNAnalyticsData } from '@/lib/api/btn'
 import { Card } from '@/components/ui/Card'
@@ -101,11 +103,23 @@ export default function BTNAnalyticsPage() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Analytics</Text>
-        <Text style={styles.subtitle}>Track your performance across exercises and time domains</Text>
+    <SafeAreaView style={styles.safeArea}>
+      {/* Navigation Header */}
+      <View style={styles.navHeader}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.push('/(tabs)')}
+        >
+          <Ionicons name="arrow-back" size={24} color="#282B34" />
+          <Text style={styles.backButtonText}>Back</Text>
+        </TouchableOpacity>
       </View>
+
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Analytics</Text>
+          <Text style={styles.subtitle}>Track your performance across exercises and time domains</Text>
+        </View>
 
       {/* Equipment Filter */}
       <Card style={styles.filterCard}>
@@ -200,10 +214,34 @@ export default function BTNAnalyticsPage() {
         </View>
       )}
     </ScrollView>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  navHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#282B34',
+    fontWeight: '500',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
