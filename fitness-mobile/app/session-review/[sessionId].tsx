@@ -54,19 +54,6 @@ export default function SessionReviewPage() {
     })
   }
 
-  const getPerformanceTierColor = (tier: string) => {
-    switch (tier) {
-      case 'Advanced':
-        return { backgroundColor: '#D1FAE5', color: '#065F46' }
-      case 'Good':
-        return { backgroundColor: '#DBEAFE', color: '#1E40AF' }
-      case 'Average':
-        return { backgroundColor: '#FEF3C7', color: '#92400E' }
-      default:
-        return { backgroundColor: '#F3F4F6', color: '#374151' }
-    }
-  }
-
   const renderExerciseRow = (exercise: Exercise, index: number) => {
     const sets = exercise.sets || '-'
     const reps = exercise.reps || '-'
@@ -173,7 +160,6 @@ export default function SessionReviewPage() {
     // If we have detailed MetCon data, render the rich panel
     if (sessionData.metconData) {
       const { metconData } = sessionData
-      const tierColors = getPerformanceTierColor(metconData.performance_tier || '')
       return (
         <Card style={styles.blockCard}>
           {/* MetCon Header */}
@@ -240,21 +226,6 @@ export default function SessionReviewPage() {
                 </View>
               </View>
 
-              {/* Performance Tier */}
-              {metconData.performance_tier ? (
-                <View style={styles.tierContainer}>
-                  <View
-                    style={[
-                      styles.tierBadge,
-                      { backgroundColor: tierColors.backgroundColor }
-                    ]}
-                  >
-                    <Text style={[styles.tierText, { color: tierColors.color }]}>
-                      {metconData.performance_tier}
-                    </Text>
-                  </View>
-                </View>
-              ) : null}
             </View>
 
             {/* Exercise Breakdown */}
@@ -705,18 +676,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
     fontWeight: '500',
-  },
-  tierContainer: {
-    alignItems: 'center',
-  },
-  tierBadge: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  tierText: {
-    fontSize: 14,
-    fontWeight: '700',
   },
   metconExerciseBreakdown: {
     marginTop: 16,
