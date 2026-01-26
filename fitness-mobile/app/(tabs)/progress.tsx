@@ -836,6 +836,13 @@ export default function ProgressPage() {
         // isEngine should ONLY be true for standalone Engine users
         // Premium/Full-Program users should have both false to see all analytics blocks
         const subscriptionTier = (userData as any).subscription_tier.toUpperCase().trim()
+
+        // BTN users should use the dedicated BTN analytics page
+        if (subscriptionTier === 'BTN') {
+          router.replace('/btn/analytics')
+          return
+        }
+
         if (subscriptionTier === 'APPLIED_POWER') {
           setIsAppliedPower(true)
         } else if (subscriptionTier === 'ENGINE') {
