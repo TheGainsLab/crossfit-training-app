@@ -130,6 +130,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 16,
   },
+  categorySectionHeader: {
+    marginBottom: 12,
+  },
+  categorySectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#282B34',
+    marginBottom: 4,
+  },
+  categorySectionSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
   categoryGrid: {
     flexDirection: 'row',
     gap: 8,
@@ -1143,9 +1156,13 @@ function OverviewTab({
       )}
 
       {/* Segment Summary - removed per design update */}
-      
+
       {/* Category Cards Grid */}
       <View style={styles.categoryGridContainer}>
+        <View style={styles.categorySectionHeader}>
+          <Text style={styles.categorySectionTitle}>Training Categories</Text>
+          <Text style={styles.categorySectionSubtitle}>Tap to explore detailed analytics</Text>
+        </View>
         <View style={styles.categoryGrid}>
           {/* Left Column */}
           <View style={styles.categoryColumn}>
