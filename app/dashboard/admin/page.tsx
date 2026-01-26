@@ -61,8 +61,8 @@ function StatBadge({ label, value, color }: { label: string; value: number; colo
   }
 
   return (
-    <div className={`px-3 py-2 rounded-lg ${colorClasses[color]}`}>
-      <span className="text-lg font-bold">{value}</span>
+    <div className={`px-4 py-3 rounded-lg min-w-[120px] text-center ${colorClasses[color]}`}>
+      <span className="text-xl font-bold">{value}</span>
       <span className="text-sm ml-1">{label}</span>
     </div>
   )
@@ -105,12 +105,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Admin Dashboard</h2>
-        <p className="text-gray-500 mt-1">Quick overview and navigation</p>
-      </div>
-
       {/* Quick Stats Row */}
       {!loading && stats && (
         <div className="flex flex-wrap gap-3">
