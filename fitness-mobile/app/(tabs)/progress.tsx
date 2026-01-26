@@ -1653,7 +1653,6 @@ function MetConTab({ metconData }: { metconData: any }) {
             onPress={() => setActiveMetric(tab.key)}
             activeOpacity={0.7}
           >
-            <Text style={metconTabStyles.metricTabIcon}>{tab.icon}</Text>
             <Text
               style={[
                 metconTabStyles.metricTabLabel,
