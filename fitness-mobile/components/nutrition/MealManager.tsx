@@ -147,7 +147,7 @@ export default function MealManager({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
   },
   header: {
     flexDirection: 'row',

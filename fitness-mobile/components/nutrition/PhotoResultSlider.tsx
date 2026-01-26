@@ -501,7 +501,7 @@ export default function PhotoResultSlider({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
   },
   scrollView: {
     flex: 1,
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#F8FBFE',
+    borderColor: '#EDFBFE',
   },
   foodCardWarning: {
     borderColor: '#F59E0B',
@@ -656,7 +656,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#F8FBFE',
+    borderColor: '#EDFBFE',
   },
   sliderOptionSelected: {
     width: 44,
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F8FBFE',
+    borderTopColor: '#EDFBFE',
   },
   macroItem: {
     alignItems: 'center',

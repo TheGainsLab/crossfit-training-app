@@ -1088,7 +1088,7 @@ function LoggingInterface({ selectedMealType, mealTemplates, onMealTypeSelect, o
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FBFE' },
+  container: { flex: 1, backgroundColor: '#EDFBFE' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 16, fontSize: 16, color: '#666' },
   contentArea: { flex: 1 },
@@ -1124,7 +1124,7 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   templatesList: { gap: 8 },
-  templateItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FBFE', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#E5E7EB' },
+  templateItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EDFBFE', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#E5E7EB' },
   templateContent: { flex: 1 },
   templateName: { fontSize: 16, fontWeight: '500', color: '#1F2937' },
   templateDetails: { fontSize: 12, color: '#6B7280', marginTop: 2 },

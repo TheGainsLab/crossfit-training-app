@@ -914,11 +914,11 @@ export default function SettingsPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -929,7 +929,7 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,

@@ -166,11 +166,11 @@ export default function SubscriptionStatusScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
     justifyContent: 'center',
     alignItems: 'center',
   },

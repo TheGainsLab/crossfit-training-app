@@ -1081,7 +1081,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
     borderRadius: 8,
   },
   mealItemInfo: {

@@ -14,7 +14,7 @@ import { EngineTab } from '@/components/engine/EngineAnalyticsViews'
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
   },
   loadingContainer: {
     flex: 1,

@@ -12,7 +12,7 @@ export default function TabLayout() {
   }, [])
 
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FBFE' }}>
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EDFBFE' }}>
       <ActivityIndicator size="large" color="#FE5858" />
     </View>
   )

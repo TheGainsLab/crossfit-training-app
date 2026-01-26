@@ -1194,14 +1194,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 10,
     borderRadius: 8,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
   },
   mealItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
     borderRadius: 8,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
   },
   mealItemTouchable: {
     flex: 1,

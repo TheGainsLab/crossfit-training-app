@@ -918,11 +918,11 @@ export default function WorkoutPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -933,7 +933,7 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#F8FBFE',
+    backgroundColor: '#EDFBFE',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
@@ -989,7 +989,7 @@ const styles = StyleSheet.create({
     borderColor: '#282B34',
   },
   backButtonText: {
-    color: '#F8FBFE',
+    color: '#EDFBFE',
     fontSize: 14,
     fontWeight: '700',
   },
@@ -1100,7 +1100,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   navButtonTextPrimary: {
-    color: '#F8FBFE',
+    color: '#EDFBFE',
     fontSize: 16,
     fontWeight: '700',
   },
