@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     borderBottomColor: '#FE5858',
   },
   title: {

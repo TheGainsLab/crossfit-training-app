@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FE5858',
   },
   secondary: {
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
   },
   outline: {
     borderWidth: 2,

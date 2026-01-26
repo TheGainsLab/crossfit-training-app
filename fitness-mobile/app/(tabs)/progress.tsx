@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   blockBadge: {
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     borderWidth: 0,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
   },
   heatmapHeaderRow: {
     flexDirection: 'row',
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     borderBottomWidth: 2,
     borderBottomColor: '#282B34',
   },
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
     borderRightColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
   },
   heatmapHeaderText: {
     fontSize: 12,

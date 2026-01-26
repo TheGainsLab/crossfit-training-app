@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   },
   heatmapHeaderRow: {
     flexDirection: 'row',
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     borderBottomWidth: 2,
     borderBottomColor: '#FE5858',
   },
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     borderRightColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
   },
   heatmapHeaderText: {
     fontSize: 12,
@@ -1880,7 +1880,7 @@ function MetConTab({ metconData }: { metconData: any }) {
 
                   {/* Time Domain Avg Row */}
                   <View style={[styles.heatmapRow, { borderTopWidth: 2, borderTopColor: '#282B34', backgroundColor: '#EDFBFE' }]}>
-                    <View style={[styles.heatmapExerciseCell, { backgroundColor: '#C4E2EA', borderRightWidth: 2, borderRightColor: '#282B34' }]}>
+                    <View style={[styles.heatmapExerciseCell, { backgroundColor: '#F4FBFE', borderRightWidth: 2, borderRightColor: '#282B34' }]}>
                       <Text style={[styles.heatmapExerciseText, { fontWeight: '700' }]} numberOfLines={0}>Time Domain Avg</Text>
                     </View>
                     {timeDomains.map((domain: string) => {

@@ -1626,7 +1626,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
   },
   navButtonDisabled: {
     backgroundColor: '#E5E7EB',

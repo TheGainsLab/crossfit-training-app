@@ -3896,7 +3896,7 @@ export default function EnginePage() {
                   value={rpeValue}
                   onValueChange={(value) => setRpeValue(value)}
                   minimumTrackTintColor="#FE5858"
-                  maximumTrackTintColor="#C4E2EA"
+                  maximumTrackTintColor="#F4FBFE"
                   thumbTintColor="#FE5858"
                   style={styles.slider}
                 />
@@ -4330,7 +4330,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backToPreviewButton: {
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -4518,7 +4518,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   pauseButtonFull: {
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
@@ -4701,7 +4701,7 @@ const styles = StyleSheet.create({
     width: '48%',
     backgroundColor: '#EDFBFE',
     borderWidth: 1,
-    borderColor: '#C4E2EA',
+    borderColor: '#F4FBFE',
     borderRadius: 8,
     padding: 12,
   },
@@ -4855,7 +4855,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   baselineWarning: {
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     borderRadius: 12,
     padding: 16,
     marginTop: 16,
@@ -4909,7 +4909,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
     padding: 12,
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     borderRadius: 8,
     marginBottom: 24,
   },
@@ -5021,7 +5021,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#C4E2EA',
+    borderColor: '#F4FBFE',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -5159,7 +5159,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   summaryCard: {
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
@@ -5316,7 +5316,7 @@ const styles = StyleSheet.create({
   performanceSummaryCard: {
     marginTop: 16,
     padding: 16,
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#FE5858',
@@ -5376,7 +5376,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   monthCard: {
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     borderRadius: 12,
     padding: 20,
     borderWidth: 2,
@@ -5410,7 +5410,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   weekTabActive: {
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
   },
   weekTabText: {
     fontSize: 14,
@@ -5455,7 +5455,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   dayCard: {
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,

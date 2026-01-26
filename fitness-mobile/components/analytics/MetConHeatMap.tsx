@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     borderBottomWidth: 2,
     borderBottomColor: '#282B34',
   },
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
     borderLeftColor: '#282B34',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
   },
   headerText: {
     fontSize: 12,
@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
   exerciseCell: {
     width: 120,
     padding: 12,
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     borderRightWidth: 2,
     borderRightColor: '#282B34',
     justifyContent: 'center',
@@ -807,7 +807,7 @@ const styles = StyleSheet.create({
   totalRowHeader: {
     width: 120,
     padding: 12,
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
     borderRightWidth: 2,
     borderRightColor: '#282B34',
     justifyContent: 'center',
@@ -823,7 +823,7 @@ const styles = StyleSheet.create({
     padding: 4,
     borderLeftWidth: 2,
     borderLeftColor: '#282B34',
-    backgroundColor: '#C4E2EA',
+    backgroundColor: '#F4FBFE',
   },
   globalCellContent: {
     borderRadius: 6,
