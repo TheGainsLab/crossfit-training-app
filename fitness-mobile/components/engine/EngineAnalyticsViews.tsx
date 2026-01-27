@@ -1032,9 +1032,6 @@ export function EngineWorkRestView({ engineData }: { engineData: any }) {
       {chartData && (
         <Card style={{ padding: 16 }}>
           <SectionHeader title="Average Pace by Ratio" />
-          <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 16, textAlign: 'center' }}>
-            Comparing {selectedRatios.length} ratio{selectedRatios.length !== 1 ? 's' : ''}
-          </Text>
           <HorizontalBarChart
             data={chartData.data}
             labels={chartData.labels}
