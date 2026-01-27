@@ -882,7 +882,7 @@ export function EngineHeartRateView({ engineData }: { engineData: any }) {
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Modality</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
           {availableModalities.map((m) => (
-            <TouchableOpacity key={m} onPress={() => { setSelectedModality(m); setSelectedDayType('') }}
+            <TouchableOpacity key={m} onPress={() => setSelectedModality(m)}
               style={[styles.metricButton, selectedModality === m && styles.metricButtonActive]}>
               <Text style={[styles.metricButtonText, selectedModality === m && styles.metricButtonTextActive]}>{formatModality(m)}</Text>
             </TouchableOpacity>
@@ -894,7 +894,7 @@ export function EngineHeartRateView({ engineData }: { engineData: any }) {
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>Select Metric</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
           {metrics.map((m) => (
-            <TouchableOpacity key={m.id} onPress={() => { setSelectedMetric(m.id); setSelectedDayType('') }}
+            <TouchableOpacity key={m.id} onPress={() => setSelectedMetric(m.id)}
               style={[styles.metricButton, selectedMetric === m.id && styles.metricButtonActive]}>
               <Text style={[styles.metricButtonText, selectedMetric === m.id && styles.metricButtonTextActive]}>{m.label}</Text>
             </TouchableOpacity>
