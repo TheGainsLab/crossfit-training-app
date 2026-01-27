@@ -842,14 +842,13 @@ export function EngineHeartRateView({ engineData }: { engineData: any }) {
         const pace = calculatePace(session); const avgHR = session.average_heart_rate ? parseFloat(session.average_heart_rate) : null
         const baseline = baselines[session.modality || 'unknown']; const durationMinutes = session.total_work_seconds ? session.total_work_seconds / 60 : 0
         if (pace !== null && avgHR !== null && avgHR > 0) {
-          // HR Efficiency: absolute work output per heartbeat (no baseline normalization)
+          // HR Efficiency: work output per heartbeat
           const efficiency = (pace / avgHR) * 1000
-          // Training Load: squared intensity factor for non-linear stress
-          // Low intensity (70%) gets reduced: 0.49x
-          // Max effort (100%) unchanged: 1.0x
-          // Super-maximal (110%) amplified: 1.21x
+          // Training Load: cubed intensity + sqrt duration
+          // Cubing intensity heavily weights high-intensity work
+          // Sqrt duration dampens effect of long easy sessions
           const intensityFactor = baseline && baseline > 0 ? pace / baseline : 1
-          const trainingLoad = Math.pow(intensityFactor, 2) * avgHR * durationMinutes
+          const trainingLoad = Math.pow(intensityFactor, 3) * avgHR * Math.sqrt(durationMinutes)
           efficiencies.push(efficiency); trainingLoads.push(trainingLoad)
         }
       })
