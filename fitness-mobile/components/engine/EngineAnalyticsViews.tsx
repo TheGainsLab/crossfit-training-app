@@ -779,7 +779,6 @@ export function EngineRecordsView({ engineData }: { engineData: any }) {
 
 export function EngineHeartRateView({ engineData }: { engineData: any }) {
   const [selectedMetric, setSelectedMetric] = useState('sessions')
-  const [selectedDayType, setSelectedDayType] = useState('')
   const [selectedModality, setSelectedModality] = useState('')
 
   const metrics = [
@@ -906,39 +905,13 @@ export function EngineHeartRateView({ engineData }: { engineData: any }) {
       {chartData.data.length > 0 ? (
         <Card style={{ padding: 16 }}>
           <SectionHeader title={`${selectedMetricInfo?.label} by Day Type`} />
-          <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 16 }}>Click a bar to see recent sessions</Text>
           <HorizontalBarChart
             data={chartData.data} labels={chartData.labels}
             maxValue={Math.max(...chartData.data)} unit={selectedMetricInfo?.unit}
-            onPressRow={(index) => setSelectedDayType(chartData.dayTypes[index])}
           />
         </Card>
       ) : (
         <Card><Text style={styles.noDataText}>No heart rate data available.</Text></Card>
-      )}
-
-      {selectedDayType && allDayTypeStats[selectedDayType] && (
-        <View style={styles.activityList}>
-          <SectionHeader title={`Recent ${formatDayType(selectedDayType)} Sessions`} />
-          {allDayTypeStats[selectedDayType].all_sessions.slice(0, 5).map((session: any, index: number) => (
-            <Card key={session.id || index}>
-              <View style={styles.activityCardHeader}>
-                <Text style={styles.activityMeta}>{formatDate(session.date)}</Text>
-                <Text style={styles.activityMeta}>Day {session.program_day_number}</Text>
-              </View>
-              <View style={styles.statsRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 11, color: '#9CA3AF' }}>AVG HR</Text>
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: '#EF4444' }}>{session.average_heart_rate} bpm</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 11, color: '#9CA3AF' }}>PEAK HR</Text>
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: '#DC2626' }}>{session.peak_heart_rate} bpm</Text>
-                </View>
-              </View>
-            </Card>
-          ))}
-        </View>
       )}
     </View>
   )
