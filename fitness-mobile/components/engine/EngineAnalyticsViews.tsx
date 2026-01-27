@@ -780,6 +780,7 @@ export function EngineRecordsView({ engineData }: { engineData: any }) {
 export function EngineHeartRateView({ engineData }: { engineData: any }) {
   const [selectedMetric, setSelectedMetric] = useState('sessions')
   const [selectedModality, setSelectedModality] = useState('')
+  const [selectedDayType, setSelectedDayType] = useState('') // unused but prevents bundler error
 
   const metrics = [
     { id: 'sessions', label: 'Sessions', unit: '' },
