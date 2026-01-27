@@ -863,7 +863,7 @@ async function assignExercises(
     for (const selectedExercise of selectedExercises) {
       // Derive effective level for notes parsing
       let effectiveLevel = 'Intermediate'
-      const programNotes = parseProgramNotes(selectedExercise.program_notes, effectiveLevel, isDeload, false, week)
+      const programNotes = parseProgramNotes(selectedExercise.program_notes, effectiveLevel, isDeload && block !== 'SKILLS', false, week)
       if (!programNotes.sets && !programNotes.weightTime) {
         // Ensure sensible defaults
         programNotes.sets = programNotes.sets || 3
@@ -873,7 +873,7 @@ async function assignExercises(
       if (selectedExercise.one_rm_reference && selectedExercise.one_rm_reference !== 'None') {
         const oneRM = user.oneRMs[find1RMIndex(selectedExercise.one_rm_reference)]
         if (oneRM) {
-          const percent = programNotes.percent1RM || (isDeload ? 0.5 : 0.65)
+          const percent = programNotes.percent1RM || (isDeload && block !== 'SKILLS' ? 0.5 : 0.65)
           let calculatedWeight = Math.round(oneRM * percent)
           const requiredEquipment = selectedExercise.required_equipment || []
           const isBarbell = requiredEquipment.includes('Barbell')
@@ -973,7 +973,7 @@ try {
           effectiveLevel = 'Intermediate';
         }
 
-        let programNotes = parseProgramNotes(exercise.program_notes, effectiveLevel, isDeload, false, week);
+        let programNotes = parseProgramNotes(exercise.program_notes, effectiveLevel, isDeload && block !== 'SKILLS', false, week);
         if (!programNotes.sets || !programNotes.reps) {
           return null; // Skip exercises with no valid program notes
         }
@@ -985,7 +985,7 @@ try {
         if (exercise.one_rm_reference && exercise.one_rm_reference !== 'None') {
           const oneRM = user.oneRMs[find1RMIndex(exercise.one_rm_reference)];
           if (oneRM) {
-            const percent = programNotes.percent1RM || (isDeload ? 0.5 : 0.65);
+            const percent = programNotes.percent1RM || (isDeload && block !== 'SKILLS' ? 0.5 : 0.65);
             let calculatedWeight = Math.round(oneRM * percent);
             
             const requiredEquipment = exercise.required_equipment || [];
@@ -1094,7 +1094,7 @@ try {
           effectiveLevel = 'Intermediate';
         }
 
-        let programNotes = parseProgramNotes(exercise.program_notes, effectiveLevel, isDeload, false, week);
+        let programNotes = parseProgramNotes(exercise.program_notes, effectiveLevel, isDeload && block !== 'SKILLS', false, week);
         if (!programNotes.sets || !programNotes.reps) {
           continue;
         }
@@ -1106,7 +1106,7 @@ try {
         if (exercise.one_rm_reference && exercise.one_rm_reference !== 'None') {
           const oneRM = user.oneRMs[find1RMIndex(exercise.one_rm_reference)];
           if (oneRM) {
-            const percent = programNotes.percent1RM || (isDeload ? 0.5 : 0.65);
+            const percent = programNotes.percent1RM || (isDeload && block !== 'SKILLS' ? 0.5 : 0.65);
             let calculatedWeight = Math.round(oneRM * percent);
 
             const requiredEquipment = exercise.required_equipment || [];
