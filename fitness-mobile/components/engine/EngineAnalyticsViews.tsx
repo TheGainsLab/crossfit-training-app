@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#C4E2EA',
     backgroundColor: '#FFFFFF',
   },
   metricButtonActive: {
@@ -387,12 +387,21 @@ export function EngineHistoryView({ engineData }: { engineData: any }) {
                 <Text style={{ fontSize: 16, fontWeight: '600', color: '#282B34', marginBottom: 16, textAlign: 'center' }}>
                   {selectedMetric === 'output' ? 'Output Over Time' : 'Pace Over Time'}
                 </Text>
-                <HorizontalBarChart
-                  data={filteredSessions.map((s: any) => selectedMetric === 'output' ? parseFloat(s.total_output) : Math.round(parseFloat(s.actual_pace) || 0))}
-                  labels={filteredSessions.map((s: any) => formatDate(s.date).split(',')[0])}
-                  maxValue={Math.max(...filteredSessions.map((s: any) => selectedMetric === 'output' ? parseFloat(s.total_output) : Math.round(parseFloat(s.actual_pace) || 0)), 1)}
-                  unit={selectedMetric === 'output' ? ` ${filteredSessions[0]?.units || ''}` : ` ${filteredSessions[0]?.units || ''}/min`}
-                />
+                {(() => {
+                  const sortedSessions = [...filteredSessions].sort((a: any, b: any) => {
+                    const aVal = selectedMetric === 'output' ? parseFloat(a.total_output) : parseFloat(a.actual_pace) || 0
+                    const bVal = selectedMetric === 'output' ? parseFloat(b.total_output) : parseFloat(b.actual_pace) || 0
+                    return bVal - aVal // highest to lowest
+                  })
+                  return (
+                    <HorizontalBarChart
+                      data={sortedSessions.map((s: any) => selectedMetric === 'output' ? parseFloat(s.total_output) : Math.round(parseFloat(s.actual_pace) || 0))}
+                      labels={sortedSessions.map((s: any) => formatDate(s.date).split(',')[0])}
+                      maxValue={Math.max(...sortedSessions.map((s: any) => selectedMetric === 'output' ? parseFloat(s.total_output) : Math.round(parseFloat(s.actual_pace) || 0)), 1)}
+                      unit={selectedMetric === 'output' ? ` ${sortedSessions[0]?.units || ''}` : ` ${sortedSessions[0]?.units || ''}/min`}
+                    />
+                  )
+                })()}
               </Card>
             </ScrollView>
           )}
@@ -680,14 +689,14 @@ export function EngineTargetsView({ engineData }: { engineData: any }) {
                   return (
                     <>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 11, color: '#9CA3AF', width: 60 }}>TARGET</Text>
+                        <Text style={{ fontSize: 11, color: '#282B34', width: 60 }}>TARGET</Text>
                         <View style={{ flex: 1, height: 12, backgroundColor: '#E5E7EB', borderRadius: 4, marginHorizontal: 8 }}>
                           <View style={{ height: '100%', width: targetWidth, backgroundColor: '#0B21D0', borderRadius: 4 }} />
                         </View>
                         <Text style={{ fontSize: 12, fontWeight: '600', width: 60, textAlign: 'right' }}>{Math.round(targetPace)}</Text>
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 11, color: '#9CA3AF', width: 60 }}>ACTUAL</Text>
+                        <Text style={{ fontSize: 11, color: '#282B34', width: 60 }}>ACTUAL</Text>
                         <View style={{ flex: 1, height: 12, backgroundColor: '#E5E7EB', borderRadius: 4, marginHorizontal: 8 }}>
                           <View style={{ height: '100%', width: actualWidth, backgroundColor: '#FE5858', borderRadius: 4 }} />
                         </View>
