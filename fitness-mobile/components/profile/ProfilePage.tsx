@@ -1232,6 +1232,70 @@ export default function ProfilePage() {
           )}
         </View>
 
+        {/* Olympic Lifts */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>OLYMPIC LIFTS</Text>
+            <TouchableOpacity onPress={() => toggleCategory('olympic-lifts')}>
+              <Text style={styles.toggleText}>
+                [{expandedCategories.includes('olympic-lifts') ? '- Hide' : '+ View'}]
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.sectionDivider} />
+          <Text style={styles.sectionDescription}>Key Olympic lifting ratios</Text>
+
+          {expandedCategories.includes('olympic-lifts') && (
+            <>
+              <OlympicProgress
+                lift="Snatch"
+                weight={formatWeight(profile.one_rms.snatch)}
+                current={profile.one_rms.snatch && profile.one_rms.back_squat
+                  ? Math.round((profile.one_rms.snatch / profile.one_rms.back_squat) * 100)
+                  : 0}
+                target={60}
+                field="snatch"
+                isEditing={editingLift === 'snatch'}
+                displayValue={liftValues['snatch'] !== undefined ? liftValues['snatch'] : (profile.one_rms.snatch ? profile.one_rms.snatch.toString() : '')}
+                onPress={() => {
+                  setEditingLift('snatch')
+                  setLiftValues({...liftValues, snatch: profile.one_rms.snatch ? profile.one_rms.snatch.toString() : ''})
+                }}
+                onBlur={() => {
+                  const value = liftValues['snatch'] || (profile.one_rms.snatch ? profile.one_rms.snatch.toString() : '')
+                  saveLift('snatch', value)
+                }}
+                onChangeText={(text) => setLiftValues({...liftValues, snatch: text})}
+                saving={savingLift}
+                unit={profile.user_summary.units.includes('kg') ? 'kg' : 'lbs'}
+              />
+
+              <OlympicProgress
+                lift="Clean & Jerk"
+                weight={formatWeight(profile.one_rms.clean_and_jerk)}
+                current={profile.one_rms.clean_and_jerk && profile.one_rms.back_squat
+                  ? Math.round((profile.one_rms.clean_and_jerk / profile.one_rms.back_squat) * 100)
+                  : 0}
+                target={76}
+                field="clean_and_jerk"
+                isEditing={editingLift === 'clean_and_jerk'}
+                displayValue={liftValues['clean_and_jerk'] !== undefined ? liftValues['clean_and_jerk'] : (profile.one_rms.clean_and_jerk ? profile.one_rms.clean_and_jerk.toString() : '')}
+                onPress={() => {
+                  setEditingLift('clean_and_jerk')
+                  setLiftValues({...liftValues, clean_and_jerk: profile.one_rms.clean_and_jerk ? profile.one_rms.clean_and_jerk.toString() : ''})
+                }}
+                onBlur={() => {
+                  const value = liftValues['clean_and_jerk'] || (profile.one_rms.clean_and_jerk ? profile.one_rms.clean_and_jerk.toString() : '')
+                  saveLift('clean_and_jerk', value)
+                }}
+                onChangeText={(text) => setLiftValues({...liftValues, clean_and_jerk: text})}
+                saving={savingLift}
+                unit={profile.user_summary.units.includes('kg') ? 'kg' : 'lbs'}
+              />
+            </>
+          )}
+        </View>
+
         {/* 1RM Lifts Overview */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
@@ -1359,70 +1423,6 @@ export default function ProfilePage() {
                 </View>
               </View>
             </View>
-          )}
-        </View>
-
-        {/* Olympic Lifts */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>OLYMPIC LIFTS</Text>
-            <TouchableOpacity onPress={() => toggleCategory('olympic-lifts')}>
-              <Text style={styles.toggleText}>
-                [{expandedCategories.includes('olympic-lifts') ? '- Hide' : '+ View'}]
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.sectionDivider} />
-          <Text style={styles.sectionDescription}>Key Olympic lifting ratios</Text>
-          
-          {expandedCategories.includes('olympic-lifts') && (
-            <>
-              <OlympicProgress
-                lift="Snatch"
-                weight={formatWeight(profile.one_rms.snatch)}
-                current={profile.one_rms.snatch && profile.one_rms.back_squat
-                  ? Math.round((profile.one_rms.snatch / profile.one_rms.back_squat) * 100)
-                  : 0}
-                target={60}
-                field="snatch"
-                isEditing={editingLift === 'snatch'}
-                displayValue={liftValues['snatch'] !== undefined ? liftValues['snatch'] : (profile.one_rms.snatch ? profile.one_rms.snatch.toString() : '')}
-                onPress={() => {
-                  setEditingLift('snatch')
-                  setLiftValues({...liftValues, snatch: profile.one_rms.snatch ? profile.one_rms.snatch.toString() : ''})
-                }}
-                onBlur={() => {
-                  const value = liftValues['snatch'] || (profile.one_rms.snatch ? profile.one_rms.snatch.toString() : '')
-                  saveLift('snatch', value)
-                }}
-                onChangeText={(text) => setLiftValues({...liftValues, snatch: text})}
-                saving={savingLift}
-                unit={profile.user_summary.units.includes('kg') ? 'kg' : 'lbs'}
-              />
-              
-              <OlympicProgress
-                lift="Clean & Jerk"
-                weight={formatWeight(profile.one_rms.clean_and_jerk)}
-                current={profile.one_rms.clean_and_jerk && profile.one_rms.back_squat
-                  ? Math.round((profile.one_rms.clean_and_jerk / profile.one_rms.back_squat) * 100)
-                  : 0}
-                target={76}
-                field="clean_and_jerk"
-                isEditing={editingLift === 'clean_and_jerk'}
-                displayValue={liftValues['clean_and_jerk'] !== undefined ? liftValues['clean_and_jerk'] : (profile.one_rms.clean_and_jerk ? profile.one_rms.clean_and_jerk.toString() : '')}
-                onPress={() => {
-                  setEditingLift('clean_and_jerk')
-                  setLiftValues({...liftValues, clean_and_jerk: profile.one_rms.clean_and_jerk ? profile.one_rms.clean_and_jerk.toString() : ''})
-                }}
-                onBlur={() => {
-                  const value = liftValues['clean_and_jerk'] || (profile.one_rms.clean_and_jerk ? profile.one_rms.clean_and_jerk.toString() : '')
-                  saveLift('clean_and_jerk', value)
-                }}
-                onChangeText={(text) => setLiftValues({...liftValues, clean_and_jerk: text})}
-                saving={savingLift}
-                unit={profile.user_summary.units.includes('kg') ? 'kg' : 'lbs'}
-              />
-            </>
           )}
         </View>
 
