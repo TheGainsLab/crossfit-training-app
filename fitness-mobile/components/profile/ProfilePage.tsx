@@ -2462,7 +2462,11 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   oneRMLiftGroup: {
-    marginBottom: 24,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#C4E2EA',
+    borderRadius: 8,
+    padding: 16,
   },
   oneRMLiftGroupTitle: {
     fontSize: 18,
