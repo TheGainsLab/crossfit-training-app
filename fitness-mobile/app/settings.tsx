@@ -16,6 +16,13 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { SectionHeader } from '@/components/ui/SectionHeader'
+import ProgramSelector from '@/components/engine/ProgramSelector'
+import {
+  getUserCurrentProgram,
+  getEngineProgramById,
+  hasEngineProgramAccess,
+  EngineProgram,
+} from '@/lib/api/enginePrograms'
 
 interface UserSettings {
   name: string
@@ -111,6 +118,12 @@ export default function SettingsPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  // Engine Program state
+  const [showProgramSelector, setShowProgramSelector] = useState(false)
+  const [currentEngineProgram, setCurrentEngineProgram] = useState<EngineProgram | null>(null)
+  const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null)
+  const [currentProgramId, setCurrentProgramId] = useState<string | null>(null)
+
   useEffect(() => {
     loadUserSettings()
   }, [])
@@ -128,7 +141,7 @@ export default function SettingsPage() {
 
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, name, email, body_weight, units, gender, conditioning_benchmarks')
+        .select('id, name, email, body_weight, units, gender, conditioning_benchmarks, subscription_tier, preferred_engine_program_id')
         .eq('auth_id', user.id)
         .single()
 
@@ -139,6 +152,8 @@ export default function SettingsPage() {
       }
 
       setUserId(userData.id)
+      setSubscriptionTier(userData.subscription_tier || null)
+      setCurrentProgramId(userData.preferred_engine_program_id || null)
       setSettings({
         name: userData.name || '',
         email: userData.email || '',
@@ -147,6 +162,14 @@ export default function SettingsPage() {
         gender: userData.gender || '',
         conditioning_benchmarks: userData.conditioning_benchmarks || {}
       })
+
+      // Load current Engine Program if user has one
+      if (userData.preferred_engine_program_id) {
+        const { program } = await getEngineProgramById(userData.preferred_engine_program_id)
+        if (program) {
+          setCurrentEngineProgram(program)
+        }
+      }
 
       // Load 1RMs
       const { data: oneRMData } = await supabase
@@ -528,6 +551,31 @@ export default function SettingsPage() {
           </TouchableOpacity>
         </Card>
 
+        {/* Engine Program - Only show for ENGINE or PREMIUM users */}
+        {hasEngineProgramAccess(subscriptionTier) && (
+          <Card style={styles.sectionCard}>
+            <SectionHeader title="Engine Program" />
+
+            <TouchableOpacity
+              style={styles.subscriptionRow}
+              onPress={() => setShowProgramSelector(true)}
+            >
+              <Ionicons name="barbell-outline" size={24} color="#FE5858" style={{ marginRight: 12 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.subscriptionText}>
+                  {currentEngineProgram?.display_name || 'Select a program'}
+                </Text>
+                <Text style={styles.subscriptionSubtext}>
+                  {currentEngineProgram
+                    ? `${currentEngineProgram.frequency_per_week} days/week • ${currentEngineProgram.total_days} workouts`
+                    : 'Choose your conditioning program'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            </TouchableOpacity>
+          </Card>
+        )}
+
         {/* Equipment */}
         <Card style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Equipment</Text>
@@ -907,6 +955,25 @@ export default function SettingsPage() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Engine Program Selector Modal */}
+      {userId && (
+        <ProgramSelector
+          visible={showProgramSelector}
+          onClose={() => setShowProgramSelector(false)}
+          userId={userId}
+          currentProgramId={currentProgramId}
+          subscriptionTier={subscriptionTier}
+          onProgramChanged={async (newProgramId) => {
+            setCurrentProgramId(newProgramId)
+            // Reload the program details
+            const { program } = await getEngineProgramById(newProgramId)
+            if (program) {
+              setCurrentEngineProgram(program)
+            }
+          }}
+        />
+      )}
     </View>
   )
 }
