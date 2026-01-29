@@ -16,7 +16,7 @@ export interface EngineProgram {
 export interface UserProgramInfo {
   currentProgramId: string | null
   subscriptionTier: string | null
-  currentProgramDay: number | null
+  engineCurrentDay: number | null
 }
 
 /**
@@ -53,7 +53,7 @@ export async function getUserCurrentProgram(userId: number): Promise<{
 
   const { data, error } = await supabase
     .from('users')
-    .select('preferred_engine_program_id, subscription_tier, current_program_day')
+    .select('preferred_engine_program_id, subscription_tier, engine_current_day')
     .eq('id', userId)
     .single()
 
@@ -66,7 +66,7 @@ export async function getUserCurrentProgram(userId: number): Promise<{
     data: {
       currentProgramId: data?.preferred_engine_program_id || null,
       subscriptionTier: data?.subscription_tier || null,
-      currentProgramDay: data?.current_program_day || null,
+      engineCurrentDay: data?.engine_current_day || null,
     },
     error: null,
   }
@@ -95,8 +95,8 @@ export async function switchEngineProgram(
   }
 
   // For Pure Engine users, reset to day 1
-  if (subscriptionTier === 'ENGINE') {
-    updateData.current_program_day = 1
+  if (subscriptionTier?.toUpperCase() === 'ENGINE') {
+    updateData.engine_current_day = 1
   }
 
   const { error } = await supabase
@@ -107,18 +107,6 @@ export async function switchEngineProgram(
   if (error) {
     console.error('Error switching engine program:', error)
     return { success: false, error }
-  }
-
-  // Optionally log the program switch for history
-  try {
-    await supabase.from('program_switch_history').insert({
-      user_id: userId,
-      new_program_id: newProgramId,
-      switched_at: new Date().toISOString(),
-    })
-  } catch (historyError) {
-    // Non-critical - don't fail the switch if history logging fails
-    console.warn('Failed to log program switch history:', historyError)
   }
 
   return { success: true, error: null }
