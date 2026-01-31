@@ -143,25 +143,6 @@ interface AthleteProfile {
   profileGeneratedAt: string | null
 }
 
-interface AnalyticsDashboard {
-  summary: {
-    trainingDays: number
-    totalExercises: number
-    averageRPE: number
-    averageQuality: number
-    strongestBlock: string
-    weakestBlock: string
-    overallProgress: 'improving' | 'declining' | 'stable'
-    nextFocus: string
-  }
-  recommendations: {
-    type: string
-    priority: string
-    text: string
-    icon: string
-  }[]
-}
-
 interface UserDetailData {
   user: UserProfile
   subscription: SubscriptionData | null
@@ -253,11 +234,6 @@ export default function UserDetailPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState<TabType>('overview')
 
-  // Analytics state
-  const [analytics, setAnalytics] = useState<AnalyticsDashboard | null>(null)
-  const [analyticsLoading, setAnalyticsLoading] = useState(false)
-  const [analyticsRange, setAnalyticsRange] = useState('30d')
-
   // Chat state
   const [chatConversation, setChatConversation] = useState<ChatConversation | null>(null)
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
@@ -323,32 +299,6 @@ export default function UserDetailPage() {
 
     fetchChat()
   }, [userId])
-
-  // Fetch analytics when tab changes to analytics
-  useEffect(() => {
-    if (activeTab === 'analytics' && !analytics && !analyticsLoading) {
-      fetchAnalytics()
-    }
-  }, [activeTab])
-
-  const fetchAnalytics = async () => {
-    setAnalyticsLoading(true)
-    try {
-      const res = await fetch(`/api/analytics/${userId}/dashboard?range=${analyticsRange}`)
-      const result = await res.json()
-
-      if (result.success) {
-        setAnalytics({
-          summary: result.data.summary,
-          recommendations: result.data.recommendations || []
-        })
-      }
-    } catch (err) {
-      console.error('Error fetching analytics:', err)
-    } finally {
-      setAnalyticsLoading(false)
-    }
-  }
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !chatConversation || sendingMessage) return
@@ -1172,105 +1122,220 @@ export default function UserDetailPage() {
       {/* Analytics Tab */}
       {activeTab === 'analytics' && (
         <div className="space-y-6">
-          {analyticsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-coral"></div>
-            </div>
-          ) : analytics ? (
+          {engineSessions && engineSessions.length > 0 ? (
             <>
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <p className="text-sm text-gray-500 mb-1">Training Days</p>
-                  <p className="text-2xl font-bold text-gray-900">{analytics.summary.trainingDays}</p>
-                </div>
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <p className="text-sm text-gray-500 mb-1">Total Exercises</p>
-                  <p className="text-2xl font-bold text-gray-900">{analytics.summary.totalExercises}</p>
-                </div>
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <p className="text-sm text-gray-500 mb-1">Avg RPE</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {analytics.summary.averageRPE ? analytics.summary.averageRPE.toFixed(1) : '-'}
-                  </p>
-                </div>
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <p className="text-sm text-gray-500 mb-1">Avg Quality</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {analytics.summary.averageQuality ? analytics.summary.averageQuality.toFixed(1) : '-'}
-                  </p>
-                </div>
-              </div>
+              {/* ENGINE Analytics - computed from actual session data */}
+              {(() => {
+                // Compute summary stats from ENGINE sessions
+                const totalSessions = engineSessions.length
+                const sessionsWithPerf = engineSessions.filter(s => s.performance_ratio !== null)
+                const avgPerformance = sessionsWithPerf.length > 0
+                  ? sessionsWithPerf.reduce((sum, s) => sum + (s.performance_ratio || 0), 0) / sessionsWithPerf.length
+                  : null
+                const sessionsWithRPE = engineSessions.filter(s => s.perceived_exertion !== null)
+                const avgRPE = sessionsWithRPE.length > 0
+                  ? sessionsWithRPE.reduce((sum, s) => sum + (s.perceived_exertion || 0), 0) / sessionsWithRPE.length
+                  : null
+                const sessionsWithHR = engineSessions.filter(s => s.average_heart_rate !== null)
+                const avgHR = sessionsWithHR.length > 0
+                  ? Math.round(sessionsWithHR.reduce((sum, s) => sum + (s.average_heart_rate || 0), 0) / sessionsWithHR.length)
+                  : null
+                const totalWorkSeconds = engineSessions.reduce((sum, s) => sum + (s.total_work_seconds || 0), 0)
 
-              {/* Progress Overview */}
-              <InfoCard title="Progress Overview">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                    <span className="text-gray-600">Overall Progress</span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      analytics.summary.overallProgress === 'improving'
-                        ? 'bg-green-100 text-green-700'
-                        : analytics.summary.overallProgress === 'declining'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {analytics.summary.overallProgress.charAt(0).toUpperCase() + analytics.summary.overallProgress.slice(1)}
-                    </span>
-                  </div>
-                  {analytics.summary.strongestBlock && (
-                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                      <span className="text-gray-600">Strongest Block</span>
-                      <span className="font-medium text-gray-900">{analytics.summary.strongestBlock}</span>
-                    </div>
-                  )}
-                  {analytics.summary.weakestBlock && (
-                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                      <span className="text-gray-600">Needs Work</span>
-                      <span className="font-medium text-gray-900">{analytics.summary.weakestBlock}</span>
-                    </div>
-                  )}
-                  {analytics.summary.nextFocus && (
-                    <div className="bg-coral/5 rounded-lg p-4 mt-4">
-                      <p className="text-sm font-medium text-coral">Recommended Focus</p>
-                      <p className="text-gray-700 mt-1">{analytics.summary.nextFocus}</p>
-                    </div>
-                  )}
-                </div>
-              </InfoCard>
+                // Group by modality
+                const byModality = engineSessions.reduce((acc, s) => {
+                  const mod = s.modality || 'Unknown'
+                  acc[mod] = (acc[mod] || 0) + 1
+                  return acc
+                }, {} as { [key: string]: number })
 
-              {/* Recommendations */}
-              {analytics.recommendations && analytics.recommendations.length > 0 && (
-                <InfoCard title="Training Recommendations">
-                  <div className="space-y-3">
-                    {analytics.recommendations.map((rec, idx) => (
-                      <div
-                        key={idx}
-                        className={`flex items-start gap-3 p-3 rounded-lg ${
-                          rec.priority === 'high'
-                            ? 'bg-red-50 border border-red-100'
-                            : rec.priority === 'medium'
-                              ? 'bg-yellow-50 border border-yellow-100'
-                              : 'bg-gray-50 border border-gray-100'
-                        }`}
-                      >
-                        <span className="text-lg">{rec.icon}</span>
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm">{rec.text}</p>
-                          <p className="text-xs text-gray-500 capitalize mt-1">
-                            {rec.priority} priority • {rec.type.replace(/_/g, ' ')}
-                          </p>
-                        </div>
+                const formatDuration = (seconds: number) => {
+                  const hours = Math.floor(seconds / 3600)
+                  const mins = Math.floor((seconds % 3600) / 60)
+                  if (hours > 0) return `${hours}h ${mins}m`
+                  return `${mins}m`
+                }
+
+                return (
+                  <>
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white rounded-lg border border-gray-200 p-4">
+                        <p className="text-sm text-gray-500 mb-1">Total Sessions</p>
+                        <p className="text-2xl font-bold text-gray-900">{totalSessions}</p>
                       </div>
-                    ))}
-                  </div>
-                </InfoCard>
-              )}
+                      <div className="bg-white rounded-lg border border-gray-200 p-4">
+                        <p className="text-sm text-gray-500 mb-1">Total Work Time</p>
+                        <p className="text-2xl font-bold text-gray-900">{formatDuration(totalWorkSeconds)}</p>
+                      </div>
+                      <div className="bg-white rounded-lg border border-gray-200 p-4">
+                        <p className="text-sm text-gray-500 mb-1">Avg Performance</p>
+                        <p className={`text-2xl font-bold ${
+                          avgPerformance && avgPerformance >= 1 ? 'text-green-600' : 'text-gray-900'
+                        }`}>
+                          {avgPerformance ? `${(avgPerformance * 100).toFixed(0)}%` : '-'}
+                        </p>
+                      </div>
+                      <div className="bg-white rounded-lg border border-gray-200 p-4">
+                        <p className="text-sm text-gray-500 mb-1">Avg RPE</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {avgRPE ? avgRPE.toFixed(1) : '-'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Modality Breakdown */}
+                    <InfoCard title="Sessions by Modality">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {Object.entries(byModality).map(([modality, count]) => (
+                          <div key={modality} className="bg-gray-50 rounded-lg p-3 text-center">
+                            <p className="text-xs text-gray-500 mb-1">
+                              {modality.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </p>
+                            <p className="text-xl font-bold text-gray-900">{count}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {avgHR && (
+                        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
+                          <Heart className="w-4 h-4 text-red-400" />
+                          <span className="text-sm text-gray-600">Average Heart Rate:</span>
+                          <span className="font-semibold text-gray-900">{avgHR} bpm</span>
+                        </div>
+                      )}
+                    </InfoCard>
+
+                    {/* All Sessions */}
+                    <InfoCard title="All ENGINE Sessions">
+                      <div className="space-y-3">
+                        {engineSessions.map((session) => {
+                          const formatSessionDuration = (seconds: number | null) => {
+                            if (!seconds) return '-'
+                            const mins = Math.floor(seconds / 60)
+                            const secs = seconds % 60
+                            return `${mins}:${secs.toString().padStart(2, '0')}`
+                          }
+                          const performancePercent = session.performance_ratio
+                            ? (session.performance_ratio * 100).toFixed(0)
+                            : null
+
+                          return (
+                            <div key={session.id} className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium text-gray-900">
+                                    {session.day_type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Session'}
+                                  </p>
+                                  <span className="text-xs px-2 py-0.5 bg-gray-200 rounded text-gray-600">
+                                    {session.modality?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || '-'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                                  <span>{formatSessionDuration(session.total_work_seconds)} work</span>
+                                  {session.total_output && (
+                                    <span>{session.total_output} {session.units || 'cal'}</span>
+                                  )}
+                                  {session.perceived_exertion && (
+                                    <span>RPE {session.perceived_exertion}</span>
+                                  )}
+                                  {session.average_heart_rate && (
+                                    <span className="flex items-center gap-1">
+                                      <Heart className="w-3 h-3 text-red-400" />
+                                      {session.average_heart_rate} bpm
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className={`font-semibold ${
+                                  performancePercent && parseFloat(performancePercent) >= 100
+                                    ? 'text-green-600'
+                                    : performancePercent && parseFloat(performancePercent) >= 90
+                                      ? 'text-yellow-600'
+                                      : 'text-gray-900'
+                                }`}>
+                                  {performancePercent ? `${performancePercent}%` : '-'}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  {new Date(session.date).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </InfoCard>
+                  </>
+                )
+              })()}
+            </>
+          ) : recentWorkouts && recentWorkouts.length > 0 ? (
+            <>
+              {/* BTN/Performance Log Analytics */}
+              {(() => {
+                // Group by block
+                const byBlock = recentWorkouts.reduce((acc, w) => {
+                  const block = w.block || 'General'
+                  acc[block] = (acc[block] || 0) + 1
+                  return acc
+                }, {} as { [key: string]: number })
+
+                return (
+                  <>
+                    {/* Summary */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white rounded-lg border border-gray-200 p-4">
+                        <p className="text-sm text-gray-500 mb-1">Total Workouts</p>
+                        <p className="text-2xl font-bold text-gray-900">{recentWorkouts.length}</p>
+                      </div>
+                      <div className="bg-white rounded-lg border border-gray-200 p-4">
+                        <p className="text-sm text-gray-500 mb-1">Training Blocks</p>
+                        <p className="text-2xl font-bold text-gray-900">{Object.keys(byBlock).length}</p>
+                      </div>
+                    </div>
+
+                    {/* Workouts by Block */}
+                    <InfoCard title="Workouts by Block">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {Object.entries(byBlock).map(([block, count]) => (
+                          <div key={block} className="bg-gray-50 rounded-lg p-3 text-center">
+                            <p className="text-xs text-gray-500 mb-1">{block}</p>
+                            <p className="text-xl font-bold text-gray-900">{count}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </InfoCard>
+
+                    {/* Recent Workouts */}
+                    <InfoCard title="Recent Workouts">
+                      <div className="space-y-2">
+                        {recentWorkouts.map((workout) => (
+                          <div
+                            key={workout.id}
+                            className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg"
+                          >
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {workout.exercise_name || 'Workout'}
+                              </p>
+                              <p className="text-sm text-gray-500">{workout.block || 'General'}</p>
+                            </div>
+                            <span className="text-sm text-gray-500">
+                              {new Date(workout.logged_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </InfoCard>
+                  </>
+                )
+              })()}
             </>
           ) : (
             <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
               <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No analytics data available</p>
-              <p className="text-gray-400 text-sm mt-1">This user may not have enough workout history</p>
+              <p className="text-gray-500">No training data available</p>
+              <p className="text-gray-400 text-sm mt-1">This user has not completed any workouts yet</p>
             </div>
           )}
         </div>
