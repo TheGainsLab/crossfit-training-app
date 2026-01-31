@@ -230,6 +230,105 @@ export async function GET(
       units: session.units
     })) || []
 
+    // Fetch additional profile data for athlete view
+    const [oneRMsResult, skillsResult, userProfileResult, userDetailsResult] = await Promise.all([
+      // 1RMs from user_one_rms table
+      supabase
+        .from('user_one_rms')
+        .select('one_rm_index, exercise_name, one_rm')
+        .eq('user_id', targetId),
+
+      // Skills from user_skills table
+      supabase
+        .from('user_skills')
+        .select('skill_name, skill_level')
+        .eq('user_id', targetId),
+
+      // Profile data from user_profiles table (contains benchmarks and other intake data)
+      supabase
+        .from('user_profiles')
+        .select('profile_data, generated_at')
+        .eq('user_id', targetId)
+        .order('generated_at', { ascending: false })
+        .limit(1)
+        .single(),
+
+      // Additional user details (height, age, body_weight, gender, units, conditioning_benchmarks)
+      supabase
+        .from('users')
+        .select('height, age, body_weight, gender, units, conditioning_benchmarks, equipment')
+        .eq('id', targetId)
+        .single()
+    ])
+
+    // Format 1RMs
+    const liftMapping: { [key: number]: string } = {
+      0: 'snatch',
+      1: 'clean_and_jerk',
+      2: 'power_snatch',
+      3: 'power_clean',
+      4: 'clean_only',
+      5: 'jerk_only',
+      6: 'back_squat',
+      7: 'front_squat',
+      8: 'overhead_squat',
+      9: 'deadlift',
+      10: 'bench_press',
+      11: 'push_press',
+      12: 'strict_press',
+      13: 'weighted_pullup'
+    }
+
+    const oneRMs: { [key: string]: number | null } = {}
+    if (oneRMsResult.data) {
+      oneRMsResult.data.forEach((rm: any) => {
+        const fieldName = liftMapping[rm.one_rm_index]
+        if (fieldName) {
+          oneRMs[fieldName] = rm.one_rm
+        }
+      })
+    }
+
+    // Format skills
+    const skills: { [key: string]: string } = {}
+    if (skillsResult.data) {
+      skillsResult.data.forEach((skill: any) => {
+        skills[skill.skill_name] = skill.skill_level
+      })
+    }
+
+    // Get benchmarks from conditioning_benchmarks or profile_data
+    const benchmarks = userDetailsResult.data?.conditioning_benchmarks ||
+      userProfileResult.data?.profile_data?.benchmarks || {}
+
+    // Build athlete profile data
+    const athleteProfile = {
+      // Physical stats
+      height: userDetailsResult.data?.height || null,
+      age: userDetailsResult.data?.age || null,
+      body_weight: userDetailsResult.data?.body_weight || null,
+      gender: userDetailsResult.data?.gender || null,
+      units: userDetailsResult.data?.units || 'Imperial (lbs)',
+      equipment: userDetailsResult.data?.equipment || [],
+
+      // 1RMs
+      oneRMs,
+
+      // Skills
+      skills,
+
+      // Benchmarks
+      benchmarks,
+
+      // Additional intake data from profile
+      skillsAssessment: userProfileResult.data?.profile_data?.skills_assessment || null,
+      technicalFocus: userProfileResult.data?.profile_data?.technical_focus || null,
+      accessoryNeeds: userProfileResult.data?.profile_data?.accessory_needs || null,
+
+      // When profile was generated
+      profileGeneratedAt: userProfileResult.data?.generated_at || null
+    }
+
     return NextResponse.json({
       success: true,
       user,
@@ -237,7 +336,8 @@ export async function GET(
       engagement,
       recentWorkouts,
       engineSessions,
-      notes
+      notes,
+      athleteProfile
     })
 
   } catch (error) {
