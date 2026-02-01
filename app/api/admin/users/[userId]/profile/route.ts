@@ -395,31 +395,31 @@ export async function GET(
       .eq('user_id', targetId)
       .order('generated_at', { ascending: false })
 
-    // Collect all metconIds from program data to fetch MetCon details
-    const metconIds = new Set<number>()
+    // Collect all workoutIds (string names) from program data to fetch MetCon details
+    const workoutIds = new Set<string>()
     programsData?.forEach((p: any) => {
       const weeks = p.program_data?.weeks || []
       weeks.forEach((week: any) => {
         const days = week.days || []
         days.forEach((day: any) => {
-          if (day.metconData?.metconId) {
-            metconIds.add(day.metconData.metconId)
+          if (day.metconData?.workoutId) {
+            workoutIds.add(day.metconData.workoutId)
           }
         })
       })
     })
 
-    // Fetch MetCon details from metcons table
-    let metconLookup: { [key: number]: any } = {}
-    if (metconIds.size > 0) {
+    // Fetch MetCon details from metcons table by workout_id (string name)
+    let metconLookup: { [key: string]: any } = {}
+    if (workoutIds.size > 0) {
       const { data: metconsData } = await supabase
         .from('metcons')
-        .select('id, name, format, tasks, time_cap, rx_weights')
-        .in('id', Array.from(metconIds))
+        .select('id, workout_id, name, format, tasks, time_cap, rx_weights')
+        .in('workout_id', Array.from(workoutIds))
 
       if (metconsData) {
         metconsData.forEach((m: any) => {
-          metconLookup[m.id] = m
+          metconLookup[m.workout_id] = m
         })
       }
     }
@@ -432,13 +432,13 @@ export async function GET(
       const enrichedWeeks = (programData.weeks || []).map((week: any) => ({
         ...week,
         days: (week.days || []).map((day: any) => {
-          if (day.metconData?.metconId && metconLookup[day.metconData.metconId]) {
-            const metcon = metconLookup[day.metconData.metconId]
+          if (day.metconData?.workoutId && metconLookup[day.metconData.workoutId]) {
+            const metcon = metconLookup[day.metconData.workoutId]
             return {
               ...day,
               metconData: {
                 ...day.metconData,
-                name: metcon.name,
+                name: metcon.name || metcon.workout_id,
                 format: metcon.format,
                 tasks: metcon.tasks,
                 timeCap: metcon.time_cap,

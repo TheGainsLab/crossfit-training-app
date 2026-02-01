@@ -1294,54 +1294,96 @@ export default function UserDetailPage() {
                                       {isDayExpanded && (
                                         <div className="px-4 pb-4 space-y-3">
                                           {/* Blocks */}
-                                          {filteredBlocks?.map((block, blockIndex) => (
-                                            <div key={blockIndex} className="bg-gray-50 rounded-lg p-3">
-                                              <h5 className="text-sm font-semibold text-coral mb-2">{block.blockName}</h5>
-                                              <div className="space-y-1">
-                                                {block.exercises?.map((exercise, exIndex) => {
-                                                  // Look up performance data for this exercise
-                                                  const perfKey = `${program.id}-${weekNum}-${day.day}-${(block.blockName || '').toUpperCase()}-${exercise.name.toLowerCase().trim()}`
-                                                  const perfData = performanceLookup?.[perfKey]
+                                          {filteredBlocks?.map((block, blockIndex) => {
+                                            const isMetconBlock = block.blockName?.toUpperCase() === 'METCONS'
+                                            const metconData = isMetconBlock ? day.metconData : null
 
-                                                  return (
-                                                    <div key={exIndex} className="text-sm text-gray-700 flex justify-between items-start gap-2">
-                                                      <span className="font-medium flex-1">{exercise.name}</span>
-                                                      <div className="flex items-center gap-3 text-xs">
-                                                        <span className="text-gray-500">
-                                                          {exercise.sets && exercise.reps ? `${exercise.sets}x${exercise.reps}` : ''}
-                                                          {exercise.weightTime ? ` @ ${exercise.weightTime}` : ''}
+                                            return (
+                                              <div key={blockIndex} className="bg-gray-50 rounded-lg p-3">
+                                                <h5 className="text-sm font-semibold text-coral mb-2">{block.blockName}</h5>
+
+                                                {/* MetCon Structure - show format and tasks */}
+                                                {isMetconBlock && metconData && (
+                                                  <div className="mb-3 p-2 bg-white rounded border border-gray-200">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                      <span className="font-semibold text-gray-800">{metconData.workoutId || metconData.name}</span>
+                                                      {metconData.timeCap && (
+                                                        <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">
+                                                          {metconData.timeCap} min cap
                                                         </span>
-                                                        {perfData ? (
-                                                          <>
-                                                            {perfData.rpe && (
-                                                              <span className="text-blue-600 font-medium" title="RPE">
-                                                                RPE: {perfData.rpe}
-                                                              </span>
-                                                            )}
-                                                            {perfData.quality_grade && (
-                                                              <span className={`px-1.5 py-0.5 rounded text-white font-semibold ${
-                                                                perfData.quality_grade === 'A' ? 'bg-green-500' :
-                                                                perfData.quality_grade === 'B' ? 'bg-blue-500' :
-                                                                perfData.quality_grade === 'C' ? 'bg-yellow-500' :
-                                                                'bg-red-500'
-                                                              }`} title="Quality">
-                                                                {perfData.quality_grade}
-                                                              </span>
-                                                            )}
-                                                          </>
-                                                        ) : (
-                                                          <span className="text-gray-300 italic">—</span>
-                                                        )}
-                                                      </div>
+                                                      )}
                                                     </div>
-                                                  )
-                                                })}
-                                                {(!block.exercises || block.exercises.length === 0) && (
-                                                  <p className="text-xs text-gray-400 italic">No exercises</p>
+                                                    {metconData.format && (
+                                                      <p className="text-sm text-gray-600 mb-2">{metconData.format}</p>
+                                                    )}
+                                                    {metconData.tasks && Array.isArray(metconData.tasks) && metconData.tasks.length > 0 && (
+                                                      <div className="text-sm text-gray-700 space-y-0.5">
+                                                        {metconData.tasks.map((task: any, taskIndex: number) => (
+                                                          <div key={taskIndex} className="flex items-center gap-1">
+                                                            <span className="text-gray-400">•</span>
+                                                            <span>
+                                                              {task.reps && `${task.reps} `}
+                                                              {task.exercise}
+                                                              {(task.weight_male || task.weight_female) && (
+                                                                <span className="text-gray-500 ml-1">
+                                                                  ({task.weight_male}/{task.weight_female})
+                                                                </span>
+                                                              )}
+                                                            </span>
+                                                          </div>
+                                                        ))}
+                                                      </div>
+                                                    )}
+                                                  </div>
                                                 )}
+
+                                                {/* Exercises with performance data */}
+                                                <div className="space-y-1">
+                                                  {block.exercises?.map((exercise, exIndex) => {
+                                                    // Look up performance data for this exercise
+                                                    const perfKey = `${program.id}-${weekNum}-${day.day}-${(block.blockName || '').toUpperCase()}-${exercise.name.toLowerCase().trim()}`
+                                                    const perfData = performanceLookup?.[perfKey]
+
+                                                    return (
+                                                      <div key={exIndex} className="text-sm text-gray-700 flex justify-between items-start gap-2">
+                                                        <span className="font-medium flex-1">{exercise.name}</span>
+                                                        <div className="flex items-center gap-3 text-xs">
+                                                          <span className="text-gray-500">
+                                                            {exercise.sets && exercise.reps ? `${exercise.sets}x${exercise.reps}` : ''}
+                                                            {exercise.weightTime ? ` @ ${exercise.weightTime}` : ''}
+                                                          </span>
+                                                          {perfData ? (
+                                                            <>
+                                                              {perfData.rpe && (
+                                                                <span className="text-blue-600 font-medium" title="RPE">
+                                                                  RPE: {perfData.rpe}
+                                                                </span>
+                                                              )}
+                                                              {perfData.quality_grade && (
+                                                                <span className={`px-1.5 py-0.5 rounded text-white font-semibold ${
+                                                                  perfData.quality_grade === 'A' ? 'bg-green-500' :
+                                                                  perfData.quality_grade === 'B' ? 'bg-blue-500' :
+                                                                  perfData.quality_grade === 'C' ? 'bg-yellow-500' :
+                                                                  'bg-red-500'
+                                                                }`} title="Quality">
+                                                                  {perfData.quality_grade}
+                                                                </span>
+                                                              )}
+                                                            </>
+                                                          ) : (
+                                                            <span className="text-gray-300 italic">—</span>
+                                                          )}
+                                                        </div>
+                                                      </div>
+                                                    )
+                                                  })}
+                                                  {(!block.exercises || block.exercises.length === 0) && (
+                                                    <p className="text-xs text-gray-400 italic">No exercises</p>
+                                                  )}
+                                                </div>
                                               </div>
-                                            </div>
-                                          ))}
+                                            )
+                                          })}
                                         </div>
                                       )}
                                     </div>
