@@ -71,6 +71,7 @@ interface RecentWorkout {
   logged_at: string
   exercise_name: string | null
   block: string | null
+  rpe: number | null
 }
 
 interface EngineSession {
@@ -233,6 +234,9 @@ export default function UserDetailPage() {
 
   // Tab state
   const [activeTab, setActiveTab] = useState<TabType>('overview')
+
+  // Analytics filter state
+  const [selectedBlock, setSelectedBlock] = useState<string | null>(null)
 
   // Chat state
   const [chatConversation, setChatConversation] = useState<ChatConversation | null>(null)
@@ -1135,10 +1139,6 @@ export default function UserDetailPage() {
               const avgPerformance = sessionsWithPerf.length > 0
                 ? sessionsWithPerf.reduce((sum, s) => sum + (s.performance_ratio || 0), 0) / sessionsWithPerf.length
                 : null
-              const sessionsWithRPE = hasEngineSessions ? engineSessions.filter(s => s.perceived_exertion !== null) : []
-              const avgRPE = sessionsWithRPE.length > 0
-                ? sessionsWithRPE.reduce((sum, s) => sum + (s.perceived_exertion || 0), 0) / sessionsWithRPE.length
-                : null
               const sessionsWithHR = hasEngineSessions ? engineSessions.filter(s => s.average_heart_rate !== null) : []
               const avgHR = sessionsWithHR.length > 0
                 ? Math.round(sessionsWithHR.reduce((sum, s) => sum + (s.average_heart_rate || 0), 0) / sessionsWithHR.length)
@@ -1164,6 +1164,25 @@ export default function UserDetailPage() {
                   }, {} as { [key: string]: number })
                 : {}
 
+              // Calculate Avg RPE - for ENGINE from perceived_exertion, for BTN from rpe field
+              // Filter by selected block if one is selected
+              let avgRPE: number | null = null
+              if (hasEngineSessions) {
+                const sessionsWithRPE = engineSessions.filter(s => s.perceived_exertion !== null)
+                avgRPE = sessionsWithRPE.length > 0
+                  ? sessionsWithRPE.reduce((sum, s) => sum + (s.perceived_exertion || 0), 0) / sessionsWithRPE.length
+                  : null
+              } else if (hasWorkouts) {
+                // Filter by selected block if one is selected
+                const filteredWorkouts = selectedBlock
+                  ? recentWorkouts.filter(w => (w.block || 'General') === selectedBlock)
+                  : recentWorkouts
+                const workoutsWithRPE = filteredWorkouts.filter(w => w.rpe !== null)
+                avgRPE = workoutsWithRPE.length > 0
+                  ? workoutsWithRPE.reduce((sum, w) => sum + (w.rpe || 0), 0) / workoutsWithRPE.length
+                  : null
+              }
+
               const formatDuration = (seconds: number) => {
                 const hours = Math.floor(seconds / 3600)
                 const mins = Math.floor((seconds % 3600) / 60)
@@ -1180,30 +1199,32 @@ export default function UserDetailPage() {
 
               return (
                 <>
-                  {/* Summary Cards - Same layout for all users */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* Summary Cards */}
+                  <div className={`grid gap-4 ${hasEngineSessions ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2'}`}>
                     <div className="bg-white rounded-lg border border-gray-200 p-4">
                       <p className="text-sm text-gray-500 mb-1">Total Workouts</p>
                       <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
                     </div>
+                    {hasEngineSessions && (
+                      <>
+                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                          <p className="text-sm text-gray-500 mb-1">Total Work Time</p>
+                          <p className="text-2xl font-bold text-gray-900">{formatDuration(totalWorkSeconds)}</p>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                          <p className="text-sm text-gray-500 mb-1">Avg Performance</p>
+                          <p className={`text-2xl font-bold ${
+                            avgPerformance && avgPerformance >= 1 ? 'text-green-600' : 'text-gray-900'
+                          }`}>
+                            {avgPerformance ? `${(avgPerformance * 100).toFixed(0)}%` : '-'}
+                          </p>
+                        </div>
+                      </>
+                    )}
                     <div className="bg-white rounded-lg border border-gray-200 p-4">
                       <p className="text-sm text-gray-500 mb-1">
-                        {hasEngineSessions ? 'Total Work Time' : 'Training Blocks'}
+                        {selectedBlock ? `Avg RPE (${selectedBlock})` : 'Avg RPE'}
                       </p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {hasEngineSessions ? formatDuration(totalWorkSeconds) : Object.keys(byBlock).length}
-                      </p>
-                    </div>
-                    <div className="bg-white rounded-lg border border-gray-200 p-4">
-                      <p className="text-sm text-gray-500 mb-1">Avg Performance</p>
-                      <p className={`text-2xl font-bold ${
-                        avgPerformance && avgPerformance >= 1 ? 'text-green-600' : 'text-gray-900'
-                      }`}>
-                        {avgPerformance ? `${(avgPerformance * 100).toFixed(0)}%` : '-'}
-                      </p>
-                    </div>
-                    <div className="bg-white rounded-lg border border-gray-200 p-4">
-                      <p className="text-sm text-gray-500 mb-1">Avg RPE</p>
                       <p className="text-2xl font-bold text-gray-900">
                         {avgRPE ? avgRPE.toFixed(1) : '-'}
                       </p>
@@ -1234,15 +1255,40 @@ export default function UserDetailPage() {
                   )}
 
                   {hasWorkouts && Object.keys(byBlock).length > 0 && (
-                    <InfoCard title="Workouts by Block">
+                    <InfoCard title="Workouts by Block (click to filter RPE)">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {Object.entries(byBlock).map(([block, count]) => (
-                          <div key={block} className="bg-gray-50 rounded-lg p-3 text-center">
-                            <p className="text-xs text-gray-500 mb-1">{block}</p>
-                            <p className="text-xl font-bold text-gray-900">{count}</p>
-                          </div>
-                        ))}
+                        {Object.entries(byBlock).map(([block, count]) => {
+                          const isSelected = selectedBlock === block
+                          return (
+                            <button
+                              key={block}
+                              onClick={() => setSelectedBlock(isSelected ? null : block)}
+                              className={`rounded-lg p-3 text-center transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-coral text-white ring-2 ring-coral ring-offset-2'
+                                  : 'bg-gray-50 hover:bg-gray-100'
+                              }`}
+                            >
+                              <p className={`text-xs mb-1 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                                {block}
+                              </p>
+                              <p className={`text-xl font-bold ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                                {count}
+                              </p>
+                            </button>
+                          )
+                        })}
                       </div>
+                      {selectedBlock && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <button
+                            onClick={() => setSelectedBlock(null)}
+                            className="text-sm text-coral hover:text-coral/80"
+                          >
+                            Clear filter (show all)
+                          </button>
+                        </div>
+                      )}
                     </InfoCard>
                   )}
 
@@ -1307,7 +1353,10 @@ export default function UserDetailPage() {
                             <p className="font-medium text-gray-900">
                               {workout.exercise_name || 'Workout'}
                             </p>
-                            <p className="text-sm text-gray-500">{workout.block || 'General'}</p>
+                            <p className="text-sm text-gray-500">
+                              {workout.block || 'General'}
+                              {workout.rpe && ` • RPE ${workout.rpe}`}
+                            </p>
                           </div>
                           <span className="text-sm text-gray-500">
                             {new Date(workout.logged_at).toLocaleDateString()}
