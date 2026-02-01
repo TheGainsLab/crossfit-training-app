@@ -301,15 +301,18 @@ export async function GET(
     const benchmarks = userDetailsResult.data?.conditioning_benchmarks ||
       userProfileResult.data?.profile_data?.benchmarks || {}
 
-    // Build athlete profile data
+    // Get user_summary from profile_data (this is where intake data is stored)
+    const userSummary = userProfileResult.data?.profile_data?.user_summary || {}
+
+    // Build athlete profile data - check users table first, then fall back to profile_data.user_summary
     const athleteProfile = {
-      // Physical stats
+      // Physical stats (users table or profile_data.user_summary)
       height: userDetailsResult.data?.height || null,
       age: userDetailsResult.data?.age || null,
-      body_weight: userDetailsResult.data?.body_weight || null,
-      gender: userDetailsResult.data?.gender || null,
-      units: userDetailsResult.data?.units || 'Imperial (lbs)',
-      equipment: userDetailsResult.data?.equipment || [],
+      body_weight: userDetailsResult.data?.body_weight || userSummary.body_weight || null,
+      gender: userDetailsResult.data?.gender || userSummary.gender || null,
+      units: userDetailsResult.data?.units || userSummary.units || 'Imperial (lbs)',
+      equipment: userDetailsResult.data?.equipment || userSummary.equipment || [],
 
       // 1RMs
       oneRMs,
