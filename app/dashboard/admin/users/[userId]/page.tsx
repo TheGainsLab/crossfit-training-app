@@ -72,6 +72,9 @@ interface RecentWorkout {
   exercise_name: string | null
   block: string | null
   rpe: number | null
+  week: number | null
+  day: number | null
+  program_id: number | null
 }
 
 interface EngineSession {
@@ -1132,11 +1135,11 @@ export default function UserDetailPage() {
               const hasEngineSessions = engineSessions && engineSessions.length > 0
               const hasWorkouts = recentWorkouts && recentWorkouts.length > 0
 
-              // Count unique training days (not individual entries) for BTN users
-              const uniqueTrainingDays = hasWorkouts
-                ? new Set(recentWorkouts.map(w => new Date(w.logged_at).toDateString())).size
+              // Count unique sessions using (program_id, week, day) - matching mobile's sessionKey logic
+              const uniqueSessions = hasWorkouts
+                ? new Set(recentWorkouts.map(w => `${w.program_id || 0}-W${w.week || 0}D${w.day || 0}`)).size
                 : 0
-              const totalCount = hasEngineSessions ? engineSessions.length : uniqueTrainingDays
+              const totalCount = hasEngineSessions ? engineSessions.length : uniqueSessions
 
               // ENGINE-specific stats
               const sessionsWithPerf = hasEngineSessions ? engineSessions.filter(s => s.performance_ratio !== null) : []
@@ -1160,21 +1163,23 @@ export default function UserDetailPage() {
                   }, {} as { [key: string]: number })
                 : {}
 
-              // Count unique training DAYS per block (not individual entries)
+              // Count unique exercise names per block (matching mobile's movements logic)
               const byBlock = hasWorkouts
                 ? (() => {
-                    // Create a Set of unique (block, date) combinations
-                    const uniqueBlockDays = new Set<string>()
+                    // Group by block, then count unique exercise names within each block
+                    const exercisesByBlock: { [block: string]: Set<string> } = {}
                     recentWorkouts.forEach(w => {
                       const block = w.block || 'General'
-                      const date = new Date(w.logged_at).toDateString()
-                      uniqueBlockDays.add(`${block}|${date}`)
+                      const exerciseName = w.exercise_name || 'Unknown'
+                      if (!exercisesByBlock[block]) {
+                        exercisesByBlock[block] = new Set()
+                      }
+                      exercisesByBlock[block].add(exerciseName)
                     })
-                    // Count unique days per block
+                    // Count unique exercise names per block
                     const counts: { [key: string]: number } = {}
-                    uniqueBlockDays.forEach(key => {
-                      const block = key.split('|')[0]
-                      counts[block] = (counts[block] || 0) + 1
+                    Object.entries(exercisesByBlock).forEach(([block, exercises]) => {
+                      counts[block] = exercises.size
                     })
                     return counts
                   })()

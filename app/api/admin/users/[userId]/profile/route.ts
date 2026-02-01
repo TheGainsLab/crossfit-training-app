@@ -113,7 +113,7 @@ export async function GET(
       // All workouts (no limit for admin analytics)
       supabase
         .from('performance_logs')
-        .select('id, logged_at, exercise_name, block, rpe')
+        .select('id, logged_at, exercise_name, block, rpe, week, day, program_id')
         .eq('user_id', targetId)
         .order('logged_at', { ascending: false }),
 
@@ -201,7 +201,10 @@ export async function GET(
       logged_at: w.logged_at,
       exercise_name: w.exercise_name,
       block: w.block,
-      rpe: w.rpe
+      rpe: w.rpe,
+      week: w.week,
+      day: w.day,
+      program_id: w.program_id
     })) || []
 
     const notes = notesResult.data?.map(n => ({
