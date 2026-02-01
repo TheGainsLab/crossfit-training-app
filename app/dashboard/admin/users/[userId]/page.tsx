@@ -28,7 +28,13 @@ import {
   ClipboardList,
   Info,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Edit3,
+  X,
+  Check,
+  Trash2,
+  RefreshCw,
+  Search
 } from 'lucide-react'
 
 interface UserProfile {
@@ -219,6 +225,24 @@ interface UserDetailData {
 
 type TabType = 'overview' | 'profile' | 'program' | 'analytics'
 
+interface ExerciseOption {
+  id: number
+  name: string
+  requiredEquipment: string[]
+  difficultyLevel: string | null
+  programNotes: any
+  scalingOptions: string[] | null
+}
+
+interface EditContext {
+  programId: number
+  week: number
+  day: number
+  blockName: string
+  exerciseIndex: number
+  currentExercise: ProgramExercise
+}
+
 function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-5">
@@ -307,6 +331,16 @@ export default function UserDetailPage() {
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
   const [programBlockFilter, setProgramBlockFilter] = useState<string | null>(null)
 
+  // Program edit state
+  const [editMode, setEditMode] = useState(false)
+  const [editContext, setEditContext] = useState<EditContext | null>(null)
+  const [exercisePickerOpen, setExercisePickerOpen] = useState(false)
+  const [exerciseOptions, setExerciseOptions] = useState<ExerciseOption[]>([])
+  const [exerciseSearch, setExerciseSearch] = useState('')
+  const [loadingExercises, setLoadingExercises] = useState(false)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [editAction, setEditAction] = useState<'swap' | 'add' | null>(null)
+
   // Toggle functions for collapsible sections
   const toggleProgram = (programId: number) => {
     setExpandedPrograms(prev => {
@@ -342,6 +376,133 @@ export default function UserDetailPage() {
       }
       return next
     })
+  }
+
+  // Program edit functions
+  const fetchExercisesForBlock = async (blockName: string) => {
+    setLoadingExercises(true)
+    try {
+      const params = new URLSearchParams({
+        blockType: blockName,
+        userId: userId
+      })
+      const res = await fetch(`/api/admin/exercises?${params}`)
+      const result = await res.json()
+      if (result.success) {
+        setExerciseOptions(result.exercises)
+      }
+    } catch (err) {
+      console.error('Error fetching exercises:', err)
+    } finally {
+      setLoadingExercises(false)
+    }
+  }
+
+  const openExercisePicker = (
+    action: 'swap' | 'add',
+    programId: number,
+    week: number,
+    day: number,
+    blockName: string,
+    exerciseIndex: number,
+    currentExercise: ProgramExercise
+  ) => {
+    setEditAction(action)
+    setEditContext({ programId, week, day, blockName, exerciseIndex, currentExercise })
+    setExerciseSearch('')
+    fetchExercisesForBlock(blockName)
+    setExercisePickerOpen(true)
+  }
+
+  const closeExercisePicker = () => {
+    setExercisePickerOpen(false)
+    setEditContext(null)
+    setEditAction(null)
+    setExerciseSearch('')
+  }
+
+  const handleSelectExercise = async (exercise: ExerciseOption) => {
+    if (!editContext || !editAction) return
+
+    setSavingEdit(true)
+    try {
+      const res = await fetch(`/api/admin/programs/${editContext.programId}/edit`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          week: editContext.week,
+          day: editContext.day,
+          blockName: editContext.blockName,
+          action: editAction,
+          exerciseIndex: editAction === 'swap' ? editContext.exerciseIndex : undefined,
+          newExercise: {
+            name: exercise.name,
+            sets: editContext.currentExercise?.sets || '',
+            reps: editContext.currentExercise?.reps || '',
+            weightTime: editContext.currentExercise?.weightTime || '',
+            notes: ''
+          }
+        })
+      })
+      const result = await res.json()
+      if (result.success) {
+        // Refresh data
+        const refreshRes = await fetch(`/api/admin/users/${userId}/profile`)
+        const refreshResult = await refreshRes.json()
+        if (refreshResult.success) {
+          setData(refreshResult)
+        }
+        closeExercisePicker()
+      } else {
+        alert(result.error || 'Failed to save')
+      }
+    } catch (err) {
+      console.error('Error saving exercise:', err)
+      alert('Failed to save changes')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const handleRemoveExercise = async (
+    programId: number,
+    week: number,
+    day: number,
+    blockName: string,
+    exerciseIndex: number
+  ) => {
+    if (!confirm('Are you sure you want to remove this exercise?')) return
+
+    setSavingEdit(true)
+    try {
+      const res = await fetch(`/api/admin/programs/${programId}/edit`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          week,
+          day,
+          blockName,
+          action: 'remove',
+          exerciseIndex
+        })
+      })
+      const result = await res.json()
+      if (result.success) {
+        // Refresh data
+        const refreshRes = await fetch(`/api/admin/users/${userId}/profile`)
+        const refreshResult = await refreshRes.json()
+        if (refreshResult.success) {
+          setData(refreshResult)
+        }
+      } else {
+        alert(result.error || 'Failed to remove')
+      }
+    } catch (err) {
+      console.error('Error removing exercise:', err)
+      alert('Failed to remove exercise')
+    } finally {
+      setSavingEdit(false)
+    }
   }
 
   // Chat state
@@ -1162,33 +1323,56 @@ export default function UserDetailPage() {
             </div>
           </InfoCard>
 
-          {/* Block Filter */}
+          {/* Block Filter & Edit Mode */}
           {programs && programs.length > 0 && (
-            <InfoCard title="Filter by Block">
-              <div className="flex flex-wrap gap-2">
-                {['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS', 'ENGINE'].map((blockName) => (
+            <div className="flex gap-4 flex-wrap">
+              <InfoCard title="Filter by Block">
+                <div className="flex flex-wrap gap-2">
+                  {['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS', 'ENGINE'].map((blockName) => (
+                    <button
+                      key={blockName}
+                      onClick={() => setProgramBlockFilter(programBlockFilter === blockName ? null : blockName)}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        programBlockFilter === blockName
+                          ? 'bg-coral text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {blockName}
+                    </button>
+                  ))}
+                  {programBlockFilter && (
+                    <button
+                      onClick={() => setProgramBlockFilter(null)}
+                      className="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-200 text-gray-600 hover:bg-gray-300"
+                    >
+                      Clear Filter
+                    </button>
+                  )}
+                </div>
+              </InfoCard>
+
+              <InfoCard title="Edit Mode">
+                <div className="flex items-center gap-3">
                   <button
-                    key={blockName}
-                    onClick={() => setProgramBlockFilter(programBlockFilter === blockName ? null : blockName)}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                      programBlockFilter === blockName
+                    onClick={() => setEditMode(!editMode)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                      editMode
                         ? 'bg-coral text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    {blockName}
+                    <Edit3 className="w-4 h-4" />
+                    {editMode ? 'Editing On' : 'Edit Program'}
                   </button>
-                ))}
-                {programBlockFilter && (
-                  <button
-                    onClick={() => setProgramBlockFilter(null)}
-                    className="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-200 text-gray-600 hover:bg-gray-300"
-                  >
-                    Clear Filter
-                  </button>
-                )}
-              </div>
-            </InfoCard>
+                  {editMode && (
+                    <p className="text-xs text-gray-500">
+                      Click swap/remove on uncompleted exercises
+                    </p>
+                  )}
+                </div>
+              </InfoCard>
+            </div>
           )}
 
           {/* Program Structure */}
@@ -1295,7 +1479,9 @@ export default function UserDetailPage() {
                                         <div className="px-4 pb-4 space-y-3">
                                           {/* Blocks */}
                                           {filteredBlocks?.map((block, blockIndex) => {
-                                            const isMetconBlock = block.blockName?.toUpperCase() === 'METCONS'
+                                            const blockUpper = (block.blockName || '').toUpperCase()
+                                            const isMetconBlock = blockUpper === 'METCONS'
+                                            const isEditableBlock = ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES'].includes(blockUpper)
                                             const metconData = isMetconBlock ? day.metconData : null
 
                                             return (
@@ -1323,11 +1509,13 @@ export default function UserDetailPage() {
                                                 <div className="space-y-1">
                                                   {block.exercises?.map((exercise, exIndex) => {
                                                     // Look up performance data for this exercise
-                                                    const perfKey = `${program.id}-${weekNum}-${day.day}-${(block.blockName || '').toUpperCase()}-${exercise.name.toLowerCase().trim()}`
+                                                    const perfKey = `${program.id}-${weekNum}-${day.day}-${blockUpper}-${exercise.name.toLowerCase().trim()}`
                                                     const perfData = performanceLookup?.[perfKey]
+                                                    const isCompleted = !!perfData
+                                                    const canEdit = editMode && isEditableBlock && !isCompleted
 
                                                     return (
-                                                      <div key={exIndex} className="text-sm text-gray-700 flex justify-between items-start gap-2">
+                                                      <div key={exIndex} className={`text-sm text-gray-700 flex justify-between items-start gap-2 ${canEdit ? 'bg-white p-2 rounded border border-gray-200' : ''}`}>
                                                         <span className="font-medium flex-1">{exercise.name}</span>
                                                         <div className="flex items-center gap-3 text-xs">
                                                           <span className="text-gray-500">
@@ -1352,6 +1540,25 @@ export default function UserDetailPage() {
                                                                 </span>
                                                               )}
                                                             </>
+                                                          ) : canEdit ? (
+                                                            <div className="flex items-center gap-1">
+                                                              <button
+                                                                onClick={() => openExercisePicker('swap', program.id, weekNum, day.day, block.blockName, exIndex, exercise)}
+                                                                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                                                title="Swap exercise"
+                                                                disabled={savingEdit}
+                                                              >
+                                                                <RefreshCw className="w-3.5 h-3.5" />
+                                                              </button>
+                                                              <button
+                                                                onClick={() => handleRemoveExercise(program.id, weekNum, day.day, block.blockName, exIndex)}
+                                                                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                                                title="Remove exercise"
+                                                                disabled={savingEdit}
+                                                              >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                              </button>
+                                                            </div>
                                                           ) : (
                                                             <span className="text-gray-300 italic">—</span>
                                                           )}
@@ -1361,6 +1568,17 @@ export default function UserDetailPage() {
                                                   })}
                                                   {(!block.exercises || block.exercises.length === 0) && (
                                                     <p className="text-xs text-gray-400 italic">No exercises</p>
+                                                  )}
+                                                  {/* Add exercise button */}
+                                                  {editMode && isEditableBlock && (
+                                                    <button
+                                                      onClick={() => openExercisePicker('add', program.id, weekNum, day.day, block.blockName, -1, { name: '', sets: '', reps: '', weightTime: '', notes: '' })}
+                                                      className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 mt-2"
+                                                      disabled={savingEdit}
+                                                    >
+                                                      <Plus className="w-3.5 h-3.5" />
+                                                      Add exercise
+                                                    </button>
                                                   )}
                                                 </div>
                                               </div>
@@ -1681,6 +1899,109 @@ export default function UserDetailPage() {
               <p className="text-gray-400 text-sm mt-1">This user has not completed any workouts yet</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Exercise Picker Modal */}
+      {exercisePickerOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/50" onClick={closeExercisePicker} />
+            <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {editAction === 'swap' ? 'Swap Exercise' : 'Add Exercise'}
+                </h3>
+                <button
+                  onClick={closeExercisePicker}
+                  className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="p-4 border-b">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search exercises..."
+                    value={exerciseSearch}
+                    onChange={(e) => setExerciseSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coral focus:border-coral text-sm"
+                  />
+                </div>
+                {editContext && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Block: {editContext.blockName}
+                    {editAction === 'swap' && editContext.currentExercise?.name && (
+                      <> • Replacing: {editContext.currentExercise.name}</>
+                    )}
+                  </p>
+                )}
+              </div>
+
+              {/* Exercise List */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {loadingExercises ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-coral border-t-transparent" />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {exerciseOptions
+                      .filter(ex =>
+                        exerciseSearch === '' ||
+                        ex.name.toLowerCase().includes(exerciseSearch.toLowerCase())
+                      )
+                      .map((exercise) => (
+                        <button
+                          key={exercise.id}
+                          onClick={() => handleSelectExercise(exercise)}
+                          disabled={savingEdit}
+                          className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-coral hover:bg-coral/5 transition-colors disabled:opacity-50"
+                        >
+                          <p className="font-medium text-gray-900">{exercise.name}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {exercise.difficultyLevel && (
+                              <span className="text-xs px-2 py-0.5 bg-gray-100 rounded text-gray-600">
+                                {exercise.difficultyLevel}
+                              </span>
+                            )}
+                            {exercise.requiredEquipment?.length > 0 && (
+                              <span className="text-xs text-gray-500">
+                                {exercise.requiredEquipment.join(', ')}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      ))
+                    }
+                    {exerciseOptions.filter(ex =>
+                      exerciseSearch === '' ||
+                      ex.name.toLowerCase().includes(exerciseSearch.toLowerCase())
+                    ).length === 0 && (
+                      <p className="text-center text-gray-500 py-4">
+                        No exercises found
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 border-t bg-gray-50">
+                <button
+                  onClick={closeExercisePicker}
+                  className="w-full py-2 text-gray-600 hover:text-gray-800 text-sm font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
