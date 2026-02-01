@@ -1132,7 +1132,11 @@ export default function UserDetailPage() {
               const hasEngineSessions = engineSessions && engineSessions.length > 0
               const hasWorkouts = recentWorkouts && recentWorkouts.length > 0
 
-              const totalCount = hasEngineSessions ? engineSessions.length : (hasWorkouts ? recentWorkouts.length : 0)
+              // Count unique training days (not individual entries) for BTN users
+              const uniqueTrainingDays = hasWorkouts
+                ? new Set(recentWorkouts.map(w => new Date(w.logged_at).toDateString())).size
+                : 0
+              const totalCount = hasEngineSessions ? engineSessions.length : uniqueTrainingDays
 
               // ENGINE-specific stats
               const sessionsWithPerf = hasEngineSessions ? engineSessions.filter(s => s.performance_ratio !== null) : []
@@ -1156,12 +1160,24 @@ export default function UserDetailPage() {
                   }, {} as { [key: string]: number })
                 : {}
 
+              // Count unique training DAYS per block (not individual entries)
               const byBlock = hasWorkouts
-                ? recentWorkouts.reduce((acc, w) => {
-                    const block = w.block || 'General'
-                    acc[block] = (acc[block] || 0) + 1
-                    return acc
-                  }, {} as { [key: string]: number })
+                ? (() => {
+                    // Create a Set of unique (block, date) combinations
+                    const uniqueBlockDays = new Set<string>()
+                    recentWorkouts.forEach(w => {
+                      const block = w.block || 'General'
+                      const date = new Date(w.logged_at).toDateString()
+                      uniqueBlockDays.add(`${block}|${date}`)
+                    })
+                    // Count unique days per block
+                    const counts: { [key: string]: number } = {}
+                    uniqueBlockDays.forEach(key => {
+                      const block = key.split('|')[0]
+                      counts[block] = (counts[block] || 0) + 1
+                    })
+                    return counts
+                  })()
                 : {}
 
               // Calculate Avg RPE - for ENGINE from perceived_exertion, for BTN from rpe field
