@@ -285,6 +285,49 @@ export default function UserDetailPage() {
   // Analytics filter state
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null)
 
+  // Program tab state - collapsible sections and block filter
+  const [expandedPrograms, setExpandedPrograms] = useState<Set<number>>(new Set())
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set())
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
+  const [programBlockFilter, setProgramBlockFilter] = useState<string | null>(null)
+
+  // Toggle functions for collapsible sections
+  const toggleProgram = (programId: number) => {
+    setExpandedPrograms(prev => {
+      const next = new Set(prev)
+      if (next.has(programId)) {
+        next.delete(programId)
+      } else {
+        next.add(programId)
+      }
+      return next
+    })
+  }
+
+  const toggleWeek = (key: string) => {
+    setExpandedWeeks(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
+
+  const toggleDay = (key: string) => {
+    setExpandedDays(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
+
   // Chat state
   const [chatConversation, setChatConversation] = useState<ChatConversation | null>(null)
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
@@ -1103,84 +1146,201 @@ export default function UserDetailPage() {
             </div>
           </InfoCard>
 
+          {/* Block Filter */}
+          {programs && programs.length > 0 && (
+            <InfoCard title="Filter by Block">
+              <div className="flex flex-wrap gap-2">
+                {['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'METCONS', 'ENGINE'].map((blockName) => (
+                  <button
+                    key={blockName}
+                    onClick={() => setProgramBlockFilter(programBlockFilter === blockName ? null : blockName)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      programBlockFilter === blockName
+                        ? 'bg-coral text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {blockName}
+                  </button>
+                ))}
+                {programBlockFilter && (
+                  <button
+                    onClick={() => setProgramBlockFilter(null)}
+                    className="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-200 text-gray-600 hover:bg-gray-300"
+                  >
+                    Clear Filter
+                  </button>
+                )}
+              </div>
+            </InfoCard>
+          )}
+
           {/* Program Structure */}
           {programs && programs.length > 0 ? (
-            programs.map((program, programIndex) => (
-              <InfoCard key={program.id} title={`Program ${programIndex + 1} - Generated ${new Date(program.generatedAt).toLocaleDateString()}`}>
-                <div className="space-y-4">
-                  {/* Weeks */}
-                  {program.weeksGenerated.sort((a, b) => a - b).map((weekNum) => {
-                    const weekData = program.programData.weeks?.find(w => w.week === weekNum)
-                    if (!weekData) return null
+            programs.map((program, programIndex) => {
+              const isProgramExpanded = expandedPrograms.has(program.id)
 
-                    return (
-                      <div key={weekNum} className="border border-gray-200 rounded-lg overflow-hidden">
-                        <div className="bg-gray-100 px-4 py-2 font-semibold text-gray-700">
-                          Week {weekNum}
-                        </div>
-                        <div className="divide-y divide-gray-100">
-                          {weekData.days?.sort((a, b) => a.day - b.day).map((day) => (
-                            <div key={day.day} className="p-4">
-                              <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-medium text-gray-900">
-                                  Day {day.day}: {day.dayName || `Day ${day.day}`}
-                                </h4>
-                                <span className="text-xs text-gray-500">
-                                  {day.blocks?.reduce((sum, b) => sum + (b.exercises?.length || 0), 0) || 0} exercises
-                                </span>
+              return (
+                <div key={program.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  {/* Program Header - Clickable */}
+                  <button
+                    onClick={() => toggleProgram(program.id)}
+                    className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {isProgramExpanded ? (
+                        <ChevronUp className="w-5 h-5 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                      )}
+                      <div className="text-left">
+                        <h3 className="font-semibold text-gray-900">
+                          Program {programIndex + 1}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          Generated {new Date(program.generatedAt).toLocaleDateString()} • {program.weeksGenerated.length} weeks
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Program Content - Collapsible */}
+                  {isProgramExpanded && (
+                    <div className="p-4 space-y-3">
+                      {/* Weeks */}
+                      {program.weeksGenerated.sort((a, b) => a - b).map((weekNum) => {
+                        const weekData = program.programData.weeks?.find(w => w.week === weekNum)
+                        if (!weekData) return null
+
+                        const weekKey = `${program.id}-${weekNum}`
+                        const isWeekExpanded = expandedWeeks.has(weekKey)
+
+                        return (
+                          <div key={weekNum} className="border border-gray-200 rounded-lg overflow-hidden">
+                            {/* Week Header - Clickable */}
+                            <button
+                              onClick={() => toggleWeek(weekKey)}
+                              className="w-full flex items-center justify-between px-4 py-3 bg-gray-100 hover:bg-gray-150 transition-colors"
+                            >
+                              <div className="flex items-center gap-2">
+                                {isWeekExpanded ? (
+                                  <ChevronUp className="w-4 h-4 text-gray-500" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                                )}
+                                <span className="font-semibold text-gray-700">Week {weekNum}</span>
                               </div>
+                              <span className="text-xs text-gray-500">
+                                {weekData.days?.length || 0} days
+                              </span>
+                            </button>
 
-                              {/* Blocks */}
-                              <div className="space-y-3">
-                                {day.blocks?.map((block, blockIndex) => (
-                                  <div key={blockIndex} className="bg-gray-50 rounded-lg p-3">
-                                    <h5 className="text-sm font-semibold text-coral mb-2">{block.blockName}</h5>
-                                    <div className="space-y-1">
-                                      {block.exercises?.map((exercise, exIndex) => (
-                                        <div key={exIndex} className="text-sm text-gray-700 flex justify-between items-start">
-                                          <span className="font-medium">{exercise.name}</span>
-                                          <span className="text-gray-500 text-xs ml-2">
-                                            {exercise.sets && exercise.reps ? `${exercise.sets}x${exercise.reps}` : ''}
-                                            {exercise.weightTime ? ` @ ${exercise.weightTime}` : ''}
+                            {/* Week Content - Collapsible */}
+                            {isWeekExpanded && (
+                              <div className="divide-y divide-gray-100">
+                                {weekData.days?.sort((a, b) => a.day - b.day).map((day) => {
+                                  const dayKey = `${program.id}-${weekNum}-${day.day}`
+                                  const isDayExpanded = expandedDays.has(dayKey)
+
+                                  // Filter blocks based on programBlockFilter
+                                  const filteredBlocks = programBlockFilter
+                                    ? day.blocks?.filter(b => b.blockName?.toUpperCase() === programBlockFilter)
+                                    : day.blocks
+
+                                  // Check if MetCon/Engine should be shown based on filter
+                                  const showMetcon = !programBlockFilter || programBlockFilter === 'METCONS'
+                                  const showEngine = !programBlockFilter || programBlockFilter === 'ENGINE'
+
+                                  // Skip day if filter is active and no matching blocks
+                                  if (programBlockFilter &&
+                                      (!filteredBlocks || filteredBlocks.length === 0) &&
+                                      !(showMetcon && day.metconData) &&
+                                      !(showEngine && day.engineData)) {
+                                    return null
+                                  }
+
+                                  return (
+                                    <div key={day.day}>
+                                      {/* Day Header - Clickable */}
+                                      <button
+                                        onClick={() => toggleDay(dayKey)}
+                                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          {isDayExpanded ? (
+                                            <ChevronUp className="w-4 h-4 text-gray-400" />
+                                          ) : (
+                                            <ChevronDown className="w-4 h-4 text-gray-400" />
+                                          )}
+                                          <span className="font-medium text-gray-900">
+                                            Day {day.day}: {day.dayName || `Day ${day.day}`}
                                           </span>
                                         </div>
-                                      ))}
-                                      {(!block.exercises || block.exercises.length === 0) && (
-                                        <p className="text-xs text-gray-400 italic">No exercises</p>
+                                        <span className="text-xs text-gray-500">
+                                          {day.blocks?.reduce((sum, b) => sum + (b.exercises?.length || 0), 0) || 0} exercises
+                                          {day.metconData && ' + MetCon'}
+                                          {day.engineData && ' + Engine'}
+                                        </span>
+                                      </button>
+
+                                      {/* Day Content - Collapsible */}
+                                      {isDayExpanded && (
+                                        <div className="px-4 pb-4 space-y-3">
+                                          {/* Blocks */}
+                                          {filteredBlocks?.map((block, blockIndex) => (
+                                            <div key={blockIndex} className="bg-gray-50 rounded-lg p-3">
+                                              <h5 className="text-sm font-semibold text-coral mb-2">{block.blockName}</h5>
+                                              <div className="space-y-1">
+                                                {block.exercises?.map((exercise, exIndex) => (
+                                                  <div key={exIndex} className="text-sm text-gray-700 flex justify-between items-start">
+                                                    <span className="font-medium">{exercise.name}</span>
+                                                    <span className="text-gray-500 text-xs ml-2">
+                                                      {exercise.sets && exercise.reps ? `${exercise.sets}x${exercise.reps}` : ''}
+                                                      {exercise.weightTime ? ` @ ${exercise.weightTime}` : ''}
+                                                    </span>
+                                                  </div>
+                                                ))}
+                                                {(!block.exercises || block.exercises.length === 0) && (
+                                                  <p className="text-xs text-gray-400 italic">No exercises</p>
+                                                )}
+                                              </div>
+                                            </div>
+                                          ))}
+
+                                          {/* MetCon Data */}
+                                          {showMetcon && day.metconData && (
+                                            <div className="bg-orange-50 rounded-lg p-3">
+                                              <h5 className="text-sm font-semibold text-orange-600 mb-2">METCON</h5>
+                                              <p className="text-sm text-gray-700">
+                                                {day.metconData.name || day.metconData.metconId || 'MetCon workout'}
+                                              </p>
+                                            </div>
+                                          )}
+
+                                          {/* Engine Data */}
+                                          {showEngine && day.engineData && (
+                                            <div className="bg-blue-50 rounded-lg p-3">
+                                              <h5 className="text-sm font-semibold text-blue-600 mb-2">ENGINE</h5>
+                                              <p className="text-sm text-gray-700">
+                                                {day.engineData.dayType || day.engineData.modality || 'Engine workout'}
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
                                       )}
                                     </div>
-                                  </div>
-                                ))}
-
-                                {/* MetCon Data */}
-                                {day.metconData && (
-                                  <div className="bg-orange-50 rounded-lg p-3">
-                                    <h5 className="text-sm font-semibold text-orange-600 mb-2">METCON</h5>
-                                    <p className="text-sm text-gray-700">
-                                      {day.metconData.name || day.metconData.metconId || 'MetCon workout'}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Engine Data */}
-                                {day.engineData && (
-                                  <div className="bg-blue-50 rounded-lg p-3">
-                                    <h5 className="text-sm font-semibold text-blue-600 mb-2">ENGINE</h5>
-                                    <p className="text-sm text-gray-700">
-                                      {day.engineData.dayType || day.engineData.modality || 'Engine workout'}
-                                    </p>
-                                  </div>
-                                )}
+                                  )
+                                })}
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  })}
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
-              </InfoCard>
-            ))
+              )
+            })
           ) : (
             <InfoCard title="Program Structure">
               <div className="text-center py-8">
