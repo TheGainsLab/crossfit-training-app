@@ -139,7 +139,7 @@ export async function GET(
       .order('date', { ascending: false })
       .limit(1)
 
-    // Fetch recent ENGINE workout sessions with full details
+    // Fetch all ENGINE workout sessions with full details (no limit for admin analytics)
     const { data: recentEngineSessions } = await supabase
       .from('workout_sessions')
       .select(`
@@ -162,7 +162,6 @@ export async function GET(
       .eq('user_id', targetId)
       .eq('completed', true)
       .order('date', { ascending: false })
-      .limit(10)
 
     // Calculate last activity
     let lastActivity: Date | null = null
