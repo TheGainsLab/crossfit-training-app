@@ -1247,15 +1247,13 @@ export default function UserDetailPage() {
                                     ? day.blocks?.filter(b => b.blockName?.toUpperCase() === programBlockFilter)
                                     : day.blocks
 
-                                  // Check if MetCon/Engine should be shown based on filter
+                                  // Check if MetCon should be shown based on filter
                                   const showMetcon = !programBlockFilter || programBlockFilter === 'METCONS'
-                                  const showEngine = !programBlockFilter || programBlockFilter === 'ENGINE'
 
                                   // Skip day if filter is active and no matching blocks
                                   if (programBlockFilter &&
                                       (!filteredBlocks || filteredBlocks.length === 0) &&
-                                      !(showMetcon && day.metconData) &&
-                                      !(showEngine && day.engineData)) {
+                                      !(showMetcon && day.metconData)) {
                                     return null
                                   }
 
@@ -1279,7 +1277,6 @@ export default function UserDetailPage() {
                                         <span className="text-xs text-gray-500">
                                           {day.blocks?.reduce((sum, b) => sum + (b.exercises?.length || 0), 0) || 0} exercises
                                           {day.metconData && ' + MetCon'}
-                                          {day.engineData && ' + Engine'}
                                         </span>
                                       </button>
 
@@ -1313,16 +1310,6 @@ export default function UserDetailPage() {
                                               <h5 className="text-sm font-semibold text-orange-600 mb-2">METCON</h5>
                                               <p className="text-sm text-gray-700">
                                                 {day.metconData.name || day.metconData.metconId || 'MetCon workout'}
-                                              </p>
-                                            </div>
-                                          )}
-
-                                          {/* Engine Data */}
-                                          {showEngine && day.engineData && (
-                                            <div className="bg-blue-50 rounded-lg p-3">
-                                              <h5 className="text-sm font-semibold text-blue-600 mb-2">ENGINE</h5>
-                                              <p className="text-sm text-gray-700">
-                                                {day.engineData.dayType || day.engineData.modality || 'Engine workout'}
                                               </p>
                                             </div>
                                           )}
