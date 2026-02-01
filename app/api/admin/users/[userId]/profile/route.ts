@@ -113,7 +113,7 @@ export async function GET(
       // All workouts (no limit for admin analytics)
       supabase
         .from('performance_logs')
-        .select('id, logged_at, exercise_name, block, rpe, week, day, program_id')
+        .select('id, logged_at, exercise_name, block, rpe, quality_grade, sets, reps, weight_time, result, week, day, program_id')
         .eq('user_id', targetId)
         .order('logged_at', { ascending: false }),
 
@@ -202,10 +202,36 @@ export async function GET(
       exercise_name: w.exercise_name,
       block: w.block,
       rpe: w.rpe,
+      quality_grade: w.quality_grade,
+      sets: w.sets,
+      reps: w.reps,
+      weight_time: w.weight_time,
+      result: w.result,
       week: w.week,
       day: w.day,
       program_id: w.program_id
     })) || []
+
+    // Create performance lookup map for matching exercises in programs
+    // Key: "programId-week-day-block-exerciseName" (normalized)
+    const performanceLookup: { [key: string]: { rpe: number | null; quality_grade: string | null; sets: string | null; reps: string | null; weight_time: string | null; result: string | null; logged_at: string } } = {}
+    recentWorkouts.forEach(w => {
+      if (w.program_id && w.week && w.day && w.exercise_name) {
+        const key = `${w.program_id}-${w.week}-${w.day}-${(w.block || '').toUpperCase()}-${w.exercise_name.toLowerCase().trim()}`
+        // Keep the most recent entry (since recentWorkouts is sorted by logged_at desc)
+        if (!performanceLookup[key]) {
+          performanceLookup[key] = {
+            rpe: w.rpe,
+            quality_grade: w.quality_grade,
+            sets: w.sets,
+            reps: w.reps,
+            weight_time: w.weight_time,
+            result: w.result,
+            logged_at: w.logged_at
+          }
+        }
+      }
+    })
 
     const notes = notesResult.data?.map(n => ({
       id: n.id,
@@ -445,7 +471,8 @@ export async function GET(
         completed: metconsCompleted,
         taskCount: metconTaskCount
       },
-      programs
+      programs,
+      performanceLookup
     })
 
   } catch (error) {

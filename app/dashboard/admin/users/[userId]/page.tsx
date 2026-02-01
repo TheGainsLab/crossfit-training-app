@@ -72,9 +72,24 @@ interface RecentWorkout {
   exercise_name: string | null
   block: string | null
   rpe: number | null
+  quality_grade: string | null
+  sets: string | null
+  reps: string | null
+  weight_time: string | null
+  result: string | null
   week: number | null
   day: number | null
   program_id: number | null
+}
+
+interface PerformanceLookupEntry {
+  rpe: number | null
+  quality_grade: string | null
+  sets: string | null
+  reps: string | null
+  weight_time: string | null
+  result: string | null
+  logged_at: string
 }
 
 interface EngineSession {
@@ -199,6 +214,7 @@ interface UserDetailData {
   athleteProfile?: AthleteProfile
   metconStats?: MetConStats
   programs?: Program[]
+  performanceLookup?: { [key: string]: PerformanceLookupEntry }
 }
 
 type TabType = 'overview' | 'profile' | 'program' | 'analytics'
@@ -471,7 +487,7 @@ export default function UserDetailPage() {
     )
   }
 
-  const { user, subscription, engagement, recentWorkouts, engineSessions, notes, athleteProfile, metconStats, programs } = data
+  const { user, subscription, engagement, recentWorkouts, engineSessions, notes, athleteProfile, metconStats, programs, performanceLookup } = data
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', icon: <Info className="w-4 h-4" /> },
@@ -1282,15 +1298,44 @@ export default function UserDetailPage() {
                                             <div key={blockIndex} className="bg-gray-50 rounded-lg p-3">
                                               <h5 className="text-sm font-semibold text-coral mb-2">{block.blockName}</h5>
                                               <div className="space-y-1">
-                                                {block.exercises?.map((exercise, exIndex) => (
-                                                  <div key={exIndex} className="text-sm text-gray-700 flex justify-between items-start">
-                                                    <span className="font-medium">{exercise.name}</span>
-                                                    <span className="text-gray-500 text-xs ml-2">
-                                                      {exercise.sets && exercise.reps ? `${exercise.sets}x${exercise.reps}` : ''}
-                                                      {exercise.weightTime ? ` @ ${exercise.weightTime}` : ''}
-                                                    </span>
-                                                  </div>
-                                                ))}
+                                                {block.exercises?.map((exercise, exIndex) => {
+                                                  // Look up performance data for this exercise
+                                                  const perfKey = `${program.id}-${weekNum}-${day.day}-${(block.blockName || '').toUpperCase()}-${exercise.name.toLowerCase().trim()}`
+                                                  const perfData = performanceLookup?.[perfKey]
+
+                                                  return (
+                                                    <div key={exIndex} className="text-sm text-gray-700 flex justify-between items-start gap-2">
+                                                      <span className="font-medium flex-1">{exercise.name}</span>
+                                                      <div className="flex items-center gap-3 text-xs">
+                                                        <span className="text-gray-500">
+                                                          {exercise.sets && exercise.reps ? `${exercise.sets}x${exercise.reps}` : ''}
+                                                          {exercise.weightTime ? ` @ ${exercise.weightTime}` : ''}
+                                                        </span>
+                                                        {perfData ? (
+                                                          <>
+                                                            {perfData.rpe && (
+                                                              <span className="text-blue-600 font-medium" title="RPE">
+                                                                RPE: {perfData.rpe}
+                                                              </span>
+                                                            )}
+                                                            {perfData.quality_grade && (
+                                                              <span className={`px-1.5 py-0.5 rounded text-white font-semibold ${
+                                                                perfData.quality_grade === 'A' ? 'bg-green-500' :
+                                                                perfData.quality_grade === 'B' ? 'bg-blue-500' :
+                                                                perfData.quality_grade === 'C' ? 'bg-yellow-500' :
+                                                                'bg-red-500'
+                                                              }`} title="Quality">
+                                                                {perfData.quality_grade}
+                                                              </span>
+                                                            )}
+                                                          </>
+                                                        ) : (
+                                                          <span className="text-gray-300 italic">—</span>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  )
+                                                })}
                                                 {(!block.exercises || block.exercises.length === 0) && (
                                                   <p className="text-xs text-gray-400 italic">No exercises</p>
                                                 )}
