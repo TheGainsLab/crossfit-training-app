@@ -1122,69 +1122,96 @@ export default function UserDetailPage() {
       {/* Analytics Tab */}
       {activeTab === 'analytics' && (
         <div className="space-y-6">
-          {engineSessions && engineSessions.length > 0 ? (
-            <>
-              {/* ENGINE Analytics - computed from actual session data */}
-              {(() => {
-                // Compute summary stats from ENGINE sessions
-                const totalSessions = engineSessions.length
-                const sessionsWithPerf = engineSessions.filter(s => s.performance_ratio !== null)
-                const avgPerformance = sessionsWithPerf.length > 0
-                  ? sessionsWithPerf.reduce((sum, s) => sum + (s.performance_ratio || 0), 0) / sessionsWithPerf.length
-                  : null
-                const sessionsWithRPE = engineSessions.filter(s => s.perceived_exertion !== null)
-                const avgRPE = sessionsWithRPE.length > 0
-                  ? sessionsWithRPE.reduce((sum, s) => sum + (s.perceived_exertion || 0), 0) / sessionsWithRPE.length
-                  : null
-                const sessionsWithHR = engineSessions.filter(s => s.average_heart_rate !== null)
-                const avgHR = sessionsWithHR.length > 0
-                  ? Math.round(sessionsWithHR.reduce((sum, s) => sum + (s.average_heart_rate || 0), 0) / sessionsWithHR.length)
-                  : null
-                const totalWorkSeconds = engineSessions.reduce((sum, s) => sum + (s.total_work_seconds || 0), 0)
+          {(engineSessions && engineSessions.length > 0) || (recentWorkouts && recentWorkouts.length > 0) ? (
+            (() => {
+              // Compute stats from ENGINE sessions (if any)
+              const hasEngineSessions = engineSessions && engineSessions.length > 0
+              const hasWorkouts = recentWorkouts && recentWorkouts.length > 0
 
-                // Group by modality
-                const byModality = engineSessions.reduce((acc, s) => {
-                  const mod = s.modality || 'Unknown'
-                  acc[mod] = (acc[mod] || 0) + 1
-                  return acc
-                }, {} as { [key: string]: number })
+              const totalCount = hasEngineSessions ? engineSessions.length : (hasWorkouts ? recentWorkouts.length : 0)
 
-                const formatDuration = (seconds: number) => {
-                  const hours = Math.floor(seconds / 3600)
-                  const mins = Math.floor((seconds % 3600) / 60)
-                  if (hours > 0) return `${hours}h ${mins}m`
-                  return `${mins}m`
-                }
+              // ENGINE-specific stats
+              const sessionsWithPerf = hasEngineSessions ? engineSessions.filter(s => s.performance_ratio !== null) : []
+              const avgPerformance = sessionsWithPerf.length > 0
+                ? sessionsWithPerf.reduce((sum, s) => sum + (s.performance_ratio || 0), 0) / sessionsWithPerf.length
+                : null
+              const sessionsWithRPE = hasEngineSessions ? engineSessions.filter(s => s.perceived_exertion !== null) : []
+              const avgRPE = sessionsWithRPE.length > 0
+                ? sessionsWithRPE.reduce((sum, s) => sum + (s.perceived_exertion || 0), 0) / sessionsWithRPE.length
+                : null
+              const sessionsWithHR = hasEngineSessions ? engineSessions.filter(s => s.average_heart_rate !== null) : []
+              const avgHR = sessionsWithHR.length > 0
+                ? Math.round(sessionsWithHR.reduce((sum, s) => sum + (s.average_heart_rate || 0), 0) / sessionsWithHR.length)
+                : null
+              const totalWorkSeconds = hasEngineSessions
+                ? engineSessions.reduce((sum, s) => sum + (s.total_work_seconds || 0), 0)
+                : 0
 
-                return (
-                  <>
-                    {/* Summary Cards */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-white rounded-lg border border-gray-200 p-4">
-                        <p className="text-sm text-gray-500 mb-1">Total Sessions</p>
-                        <p className="text-2xl font-bold text-gray-900">{totalSessions}</p>
-                      </div>
-                      <div className="bg-white rounded-lg border border-gray-200 p-4">
-                        <p className="text-sm text-gray-500 mb-1">Total Work Time</p>
-                        <p className="text-2xl font-bold text-gray-900">{formatDuration(totalWorkSeconds)}</p>
-                      </div>
-                      <div className="bg-white rounded-lg border border-gray-200 p-4">
-                        <p className="text-sm text-gray-500 mb-1">Avg Performance</p>
-                        <p className={`text-2xl font-bold ${
-                          avgPerformance && avgPerformance >= 1 ? 'text-green-600' : 'text-gray-900'
-                        }`}>
-                          {avgPerformance ? `${(avgPerformance * 100).toFixed(0)}%` : '-'}
-                        </p>
-                      </div>
-                      <div className="bg-white rounded-lg border border-gray-200 p-4">
-                        <p className="text-sm text-gray-500 mb-1">Avg RPE</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {avgRPE ? avgRPE.toFixed(1) : '-'}
-                        </p>
-                      </div>
+              // Group by modality (ENGINE) or block (BTN)
+              const byModality = hasEngineSessions
+                ? engineSessions.reduce((acc, s) => {
+                    const mod = s.modality || 'Unknown'
+                    acc[mod] = (acc[mod] || 0) + 1
+                    return acc
+                  }, {} as { [key: string]: number })
+                : {}
+
+              const byBlock = hasWorkouts
+                ? recentWorkouts.reduce((acc, w) => {
+                    const block = w.block || 'General'
+                    acc[block] = (acc[block] || 0) + 1
+                    return acc
+                  }, {} as { [key: string]: number })
+                : {}
+
+              const formatDuration = (seconds: number) => {
+                const hours = Math.floor(seconds / 3600)
+                const mins = Math.floor((seconds % 3600) / 60)
+                if (hours > 0) return `${hours}h ${mins}m`
+                return `${mins}m`
+              }
+
+              const formatSessionDuration = (seconds: number | null) => {
+                if (!seconds) return '-'
+                const mins = Math.floor(seconds / 60)
+                const secs = seconds % 60
+                return `${mins}:${secs.toString().padStart(2, '0')}`
+              }
+
+              return (
+                <>
+                  {/* Summary Cards - Same layout for all users */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <p className="text-sm text-gray-500 mb-1">Total Workouts</p>
+                      <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
                     </div>
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <p className="text-sm text-gray-500 mb-1">
+                        {hasEngineSessions ? 'Total Work Time' : 'Training Blocks'}
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {hasEngineSessions ? formatDuration(totalWorkSeconds) : Object.keys(byBlock).length}
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <p className="text-sm text-gray-500 mb-1">Avg Performance</p>
+                      <p className={`text-2xl font-bold ${
+                        avgPerformance && avgPerformance >= 1 ? 'text-green-600' : 'text-gray-900'
+                      }`}>
+                        {avgPerformance ? `${(avgPerformance * 100).toFixed(0)}%` : '-'}
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <p className="text-sm text-gray-500 mb-1">Avg RPE</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {avgRPE ? avgRPE.toFixed(1) : '-'}
+                      </p>
+                    </div>
+                  </div>
 
-                    {/* Modality Breakdown */}
+                  {/* Breakdown Section */}
+                  {hasEngineSessions && Object.keys(byModality).length > 0 && (
                     <InfoCard title="Sessions by Modality">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {Object.entries(byModality).map(([modality, count]) => (
@@ -1204,97 +1231,9 @@ export default function UserDetailPage() {
                         </div>
                       )}
                     </InfoCard>
+                  )}
 
-                    {/* All Sessions */}
-                    <InfoCard title="All ENGINE Sessions">
-                      <div className="space-y-3">
-                        {engineSessions.map((session) => {
-                          const formatSessionDuration = (seconds: number | null) => {
-                            if (!seconds) return '-'
-                            const mins = Math.floor(seconds / 60)
-                            const secs = seconds % 60
-                            return `${mins}:${secs.toString().padStart(2, '0')}`
-                          }
-                          const performancePercent = session.performance_ratio
-                            ? (session.performance_ratio * 100).toFixed(0)
-                            : null
-
-                          return (
-                            <div key={session.id} className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <p className="font-medium text-gray-900">
-                                    {session.day_type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Session'}
-                                  </p>
-                                  <span className="text-xs px-2 py-0.5 bg-gray-200 rounded text-gray-600">
-                                    {session.modality?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || '-'}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                                  <span>{formatSessionDuration(session.total_work_seconds)} work</span>
-                                  {session.total_output && (
-                                    <span>{session.total_output} {session.units || 'cal'}</span>
-                                  )}
-                                  {session.perceived_exertion && (
-                                    <span>RPE {session.perceived_exertion}</span>
-                                  )}
-                                  {session.average_heart_rate && (
-                                    <span className="flex items-center gap-1">
-                                      <Heart className="w-3 h-3 text-red-400" />
-                                      {session.average_heart_rate} bpm
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className={`font-semibold ${
-                                  performancePercent && parseFloat(performancePercent) >= 100
-                                    ? 'text-green-600'
-                                    : performancePercent && parseFloat(performancePercent) >= 90
-                                      ? 'text-yellow-600'
-                                      : 'text-gray-900'
-                                }`}>
-                                  {performancePercent ? `${performancePercent}%` : '-'}
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                  {new Date(session.date).toLocaleDateString()}
-                                </p>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </InfoCard>
-                  </>
-                )
-              })()}
-            </>
-          ) : recentWorkouts && recentWorkouts.length > 0 ? (
-            <>
-              {/* BTN/Performance Log Analytics */}
-              {(() => {
-                // Group by block
-                const byBlock = recentWorkouts.reduce((acc, w) => {
-                  const block = w.block || 'General'
-                  acc[block] = (acc[block] || 0) + 1
-                  return acc
-                }, {} as { [key: string]: number })
-
-                return (
-                  <>
-                    {/* Summary */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-white rounded-lg border border-gray-200 p-4">
-                        <p className="text-sm text-gray-500 mb-1">Total Workouts</p>
-                        <p className="text-2xl font-bold text-gray-900">{recentWorkouts.length}</p>
-                      </div>
-                      <div className="bg-white rounded-lg border border-gray-200 p-4">
-                        <p className="text-sm text-gray-500 mb-1">Training Blocks</p>
-                        <p className="text-2xl font-bold text-gray-900">{Object.keys(byBlock).length}</p>
-                      </div>
-                    </div>
-
-                    {/* Workouts by Block */}
+                  {hasWorkouts && Object.keys(byBlock).length > 0 && (
                     <InfoCard title="Workouts by Block">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {Object.entries(byBlock).map(([block, count]) => (
@@ -1305,32 +1244,81 @@ export default function UserDetailPage() {
                         ))}
                       </div>
                     </InfoCard>
+                  )}
 
-                    {/* Recent Workouts */}
-                    <InfoCard title="Recent Workouts">
-                      <div className="space-y-2">
-                        {recentWorkouts.map((workout) => (
-                          <div
-                            key={workout.id}
-                            className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg"
-                          >
-                            <div>
-                              <p className="font-medium text-gray-900">
-                                {workout.exercise_name || 'Workout'}
-                              </p>
-                              <p className="text-sm text-gray-500">{workout.block || 'General'}</p>
+                  {/* All Workouts List */}
+                  <InfoCard title="All Workouts">
+                    <div className="space-y-3">
+                      {hasEngineSessions && engineSessions.map((session) => {
+                        const performancePercent = session.performance_ratio
+                          ? (session.performance_ratio * 100).toFixed(0)
+                          : null
+
+                        return (
+                          <div key={session.id} className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-gray-900">
+                                  {session.day_type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Session'}
+                                </p>
+                                <span className="text-xs px-2 py-0.5 bg-gray-200 rounded text-gray-600">
+                                  {session.modality?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || '-'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                                <span>{formatSessionDuration(session.total_work_seconds)} work</span>
+                                {session.total_output && (
+                                  <span>{session.total_output} {session.units || 'cal'}</span>
+                                )}
+                                {session.perceived_exertion && (
+                                  <span>RPE {session.perceived_exertion}</span>
+                                )}
+                                {session.average_heart_rate && (
+                                  <span className="flex items-center gap-1">
+                                    <Heart className="w-3 h-3 text-red-400" />
+                                    {session.average_heart_rate} bpm
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <span className="text-sm text-gray-500">
-                              {new Date(workout.logged_at).toLocaleDateString()}
-                            </span>
+                            <div className="text-right">
+                              <p className={`font-semibold ${
+                                performancePercent && parseFloat(performancePercent) >= 100
+                                  ? 'text-green-600'
+                                  : performancePercent && parseFloat(performancePercent) >= 90
+                                    ? 'text-yellow-600'
+                                    : 'text-gray-900'
+                              }`}>
+                                {performancePercent ? `${performancePercent}%` : '-'}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {new Date(session.date).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </InfoCard>
-                  </>
-                )
-              })()}
-            </>
+                        )
+                      })}
+                      {hasWorkouts && recentWorkouts.map((workout) => (
+                        <div
+                          key={workout.id}
+                          className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg"
+                        >
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {workout.exercise_name || 'Workout'}
+                            </p>
+                            <p className="text-sm text-gray-500">{workout.block || 'General'}</p>
+                          </div>
+                          <span className="text-sm text-gray-500">
+                            {new Date(workout.logged_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </InfoCard>
+                </>
+              )
+            })()
           ) : (
             <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
               <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />

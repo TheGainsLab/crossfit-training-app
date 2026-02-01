@@ -110,13 +110,12 @@ export async function GET(
         .eq('user_id', targetId)
         .gte('logged_at', thirtyDaysAgo.toISOString()),
 
-      // Recent workouts (last 10)
+      // All workouts (no limit for admin analytics)
       supabase
         .from('performance_logs')
         .select('id, logged_at, exercise_name, block')
         .eq('user_id', targetId)
-        .order('logged_at', { ascending: false })
-        .limit(10),
+        .order('logged_at', { ascending: false }),
 
       // Admin notes
       supabase
