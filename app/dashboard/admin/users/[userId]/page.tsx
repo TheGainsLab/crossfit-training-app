@@ -243,6 +243,24 @@ interface EditContext {
   currentExercise: ProgramExercise
 }
 
+interface MetConOption {
+  id: number
+  workoutId: string
+  format: string | null
+  timeRange: string | null
+  workoutNotes: string | null
+  tasks: any[]
+  requiredEquipment: string[]
+  level: string | null
+}
+
+interface MetConEditContext {
+  programId: number
+  week: number
+  day: number
+  currentMetconId: string | null
+}
+
 function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-5">
@@ -340,6 +358,14 @@ export default function UserDetailPage() {
   const [loadingExercises, setLoadingExercises] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
   const [editAction, setEditAction] = useState<'swap' | 'add' | null>(null)
+
+  // MetCon picker state
+  const [metconPickerOpen, setMetconPickerOpen] = useState(false)
+  const [metconEditContext, setMetconEditContext] = useState<MetConEditContext | null>(null)
+  const [metconOptions, setMetconOptions] = useState<MetConOption[]>([])
+  const [metconSearch, setMetconSearch] = useState('')
+  const [loadingMetcons, setLoadingMetcons] = useState(false)
+  const [savingMetcon, setSavingMetcon] = useState(false)
 
   // Toggle functions for collapsible sections
   const toggleProgram = (programId: number) => {
@@ -502,6 +528,78 @@ export default function UserDetailPage() {
       alert('Failed to remove exercise')
     } finally {
       setSavingEdit(false)
+    }
+  }
+
+  // MetCon picker functions
+  const fetchMetcons = async () => {
+    setLoadingMetcons(true)
+    try {
+      const params = new URLSearchParams({
+        userId: userId,
+        limit: '100'
+      })
+      const res = await fetch(`/api/admin/metcons?${params}`)
+      const result = await res.json()
+      if (result.success) {
+        setMetconOptions(result.metcons)
+      }
+    } catch (err) {
+      console.error('Error fetching metcons:', err)
+    } finally {
+      setLoadingMetcons(false)
+    }
+  }
+
+  const openMetconPicker = (
+    programId: number,
+    week: number,
+    day: number,
+    currentMetconId: string | null
+  ) => {
+    setMetconEditContext({ programId, week, day, currentMetconId })
+    setMetconSearch('')
+    fetchMetcons()
+    setMetconPickerOpen(true)
+  }
+
+  const closeMetconPicker = () => {
+    setMetconPickerOpen(false)
+    setMetconEditContext(null)
+    setMetconSearch('')
+  }
+
+  const handleSelectMetcon = async (metcon: MetConOption) => {
+    if (!metconEditContext) return
+
+    setSavingMetcon(true)
+    try {
+      const res = await fetch(`/api/admin/programs/${metconEditContext.programId}/metcon`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          week: metconEditContext.week,
+          day: metconEditContext.day,
+          newMetconId: metcon.id
+        })
+      })
+      const result = await res.json()
+      if (result.success) {
+        // Refresh data
+        const refreshRes = await fetch(`/api/admin/users/${userId}/profile`)
+        const refreshResult = await refreshRes.json()
+        if (refreshResult.success) {
+          setData(refreshResult)
+        }
+        closeMetconPicker()
+      } else {
+        alert(result.error || 'Failed to swap MetCon')
+      }
+    } catch (err) {
+      console.error('Error swapping metcon:', err)
+      alert('Failed to swap MetCon')
+    } finally {
+      setSavingMetcon(false)
     }
   }
 
@@ -1484,9 +1582,32 @@ export default function UserDetailPage() {
                                             const isEditableBlock = ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES'].includes(blockUpper)
                                             const metconData = isMetconBlock ? day.metconData : null
 
+                                            // Check if MetCon is completed (any exercise in block has performance data)
+                                            const isMetconCompleted = isMetconBlock && block.exercises?.some((ex) => {
+                                              const perfKey = `${program.id}-${weekNum}-${day.day}-${blockUpper}-${ex.name.toLowerCase().trim()}`
+                                              return !!performanceLookup?.[perfKey]
+                                            })
+                                            const canSwapMetcon = editMode && isMetconBlock && !isMetconCompleted
+
                                             return (
                                               <div key={blockIndex} className="bg-gray-50 rounded-lg p-3">
-                                                <h5 className="text-sm font-semibold text-coral mb-2">{block.blockName}</h5>
+                                                <div className="flex items-center justify-between mb-2">
+                                                  <h5 className="text-sm font-semibold text-coral">{block.blockName}</h5>
+                                                  {canSwapMetcon && (
+                                                    <button
+                                                      onClick={() => openMetconPicker(program.id, weekNum, day.day, metconData?.workoutId || null)}
+                                                      className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                      title="Swap MetCon"
+                                                      disabled={savingMetcon}
+                                                    >
+                                                      <RefreshCw className="w-3 h-3" />
+                                                      Swap
+                                                    </button>
+                                                  )}
+                                                  {isMetconBlock && isMetconCompleted && (
+                                                    <span className="text-xs text-green-600 font-medium">Completed</span>
+                                                  )}
+                                                </div>
 
                                                 {/* MetCon Structure - show workout notes */}
                                                 {isMetconBlock && metconData && (
@@ -1995,6 +2116,132 @@ export default function UserDetailPage() {
               <div className="p-4 border-t bg-gray-50">
                 <button
                   onClick={closeExercisePicker}
+                  className="w-full py-2 text-gray-600 hover:text-gray-800 text-sm font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MetCon Picker Modal */}
+      {metconPickerOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/50" onClick={closeMetconPicker} />
+            <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Swap MetCon
+                </h3>
+                <button
+                  onClick={closeMetconPicker}
+                  className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="p-4 border-b">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search metcons by name or description..."
+                    value={metconSearch}
+                    onChange={(e) => setMetconSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coral focus:border-coral text-sm"
+                  />
+                </div>
+                {metconEditContext?.currentMetconId && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Current: {metconEditContext.currentMetconId}
+                  </p>
+                )}
+              </div>
+
+              {/* MetCon List */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {loadingMetcons ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-coral border-t-transparent" />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {metconOptions
+                      .filter(mc =>
+                        metconSearch === '' ||
+                        mc.workoutId?.toLowerCase().includes(metconSearch.toLowerCase()) ||
+                        mc.workoutNotes?.toLowerCase().includes(metconSearch.toLowerCase())
+                      )
+                      .map((metcon) => (
+                        <button
+                          key={metcon.id}
+                          onClick={() => handleSelectMetcon(metcon)}
+                          disabled={savingMetcon || metcon.workoutId === metconEditContext?.currentMetconId}
+                          className={`w-full text-left p-4 rounded-lg border transition-colors disabled:opacity-50 ${
+                            metcon.workoutId === metconEditContext?.currentMetconId
+                              ? 'border-coral bg-coral/5'
+                              : 'border-gray-200 hover:border-coral hover:bg-coral/5'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-semibold text-gray-900">{metcon.workoutId}</p>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {metcon.format && (
+                                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                                  {metcon.format}
+                                </span>
+                              )}
+                              {metcon.timeRange && (
+                                <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                                  {metcon.timeRange}
+                                </span>
+                              )}
+                              {metcon.level && (
+                                <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
+                                  {metcon.level}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {metcon.workoutNotes && (
+                            <p className="text-sm text-gray-600 mt-2 line-clamp-3 whitespace-pre-line">
+                              {metcon.workoutNotes}
+                            </p>
+                          )}
+                          {metcon.requiredEquipment?.length > 0 && (
+                            <p className="text-xs text-gray-400 mt-2">
+                              Equipment: {metcon.requiredEquipment.join(', ')}
+                            </p>
+                          )}
+                          {metcon.workoutId === metconEditContext?.currentMetconId && (
+                            <p className="text-xs text-coral mt-2 font-medium">Current MetCon</p>
+                          )}
+                        </button>
+                      ))
+                    }
+                    {metconOptions.filter(mc =>
+                      metconSearch === '' ||
+                      mc.workoutId?.toLowerCase().includes(metconSearch.toLowerCase()) ||
+                      mc.workoutNotes?.toLowerCase().includes(metconSearch.toLowerCase())
+                    ).length === 0 && (
+                      <p className="text-center text-gray-500 py-4">
+                        No metcons found
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 border-t bg-gray-50">
+                <button
+                  onClick={closeMetconPicker}
                   className="w-full py-2 text-gray-600 hover:text-gray-800 text-sm font-medium"
                 >
                   Cancel
