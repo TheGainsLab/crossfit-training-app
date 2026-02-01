@@ -1307,10 +1307,30 @@ export default function UserDetailPage() {
                                           {/* MetCon Data */}
                                           {showMetcon && day.metconData && (
                                             <div className="bg-orange-50 rounded-lg p-3">
-                                              <h5 className="text-sm font-semibold text-orange-600 mb-2">METCON</h5>
-                                              <p className="text-sm text-gray-700">
-                                                {day.metconData.name || day.metconData.metconId || 'MetCon workout'}
-                                              </p>
+                                              <h5 className="text-sm font-semibold text-orange-600 mb-2">
+                                                METCON{day.metconData.format ? ` - ${day.metconData.format}` : ''}
+                                              </h5>
+                                              {day.metconData.name && (
+                                                <p className="text-sm font-medium text-gray-900 mb-2">{day.metconData.name}</p>
+                                              )}
+                                              {day.metconData.timeCap && (
+                                                <p className="text-xs text-gray-500 mb-2">Time Cap: {day.metconData.timeCap}</p>
+                                              )}
+                                              {day.metconData.tasks && Array.isArray(day.metconData.tasks) && day.metconData.tasks.length > 0 && (
+                                                <div className="space-y-1">
+                                                  {day.metconData.tasks.map((task: any, taskIndex: number) => (
+                                                    <div key={taskIndex} className="text-sm text-gray-700">
+                                                      {task.reps && <span className="font-medium">{task.reps}</span>}
+                                                      {task.reps && task.exercise && ' '}
+                                                      {task.exercise}
+                                                      {task.weight && <span className="text-gray-500 text-xs ml-1">@ {task.weight}</span>}
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              )}
+                                              {!day.metconData.tasks && !day.metconData.name && (
+                                                <p className="text-sm text-gray-500">MetCon ID: {day.metconData.metconId}</p>
+                                              )}
                                             </div>
                                           )}
                                         </div>

@@ -369,13 +369,68 @@ export async function GET(
       .eq('user_id', targetId)
       .order('generated_at', { ascending: false })
 
-    // Format programs for admin view
-    const programs = programsData?.map((p: any) => ({
-      id: p.id,
-      generatedAt: p.generated_at,
-      weeksGenerated: p.weeks_generated || [],
-      programData: p.program_data || { weeks: [] }
-    })) || []
+    // Collect all metconIds from program data to fetch MetCon details
+    const metconIds = new Set<number>()
+    programsData?.forEach((p: any) => {
+      const weeks = p.program_data?.weeks || []
+      weeks.forEach((week: any) => {
+        const days = week.days || []
+        days.forEach((day: any) => {
+          if (day.metconData?.metconId) {
+            metconIds.add(day.metconData.metconId)
+          }
+        })
+      })
+    })
+
+    // Fetch MetCon details from metcons table
+    let metconLookup: { [key: number]: any } = {}
+    if (metconIds.size > 0) {
+      const { data: metconsData } = await supabase
+        .from('metcons')
+        .select('id, name, format, tasks, time_cap, rx_weights')
+        .in('id', Array.from(metconIds))
+
+      if (metconsData) {
+        metconsData.forEach((m: any) => {
+          metconLookup[m.id] = m
+        })
+      }
+    }
+
+    // Format programs for admin view with enriched MetCon data
+    const programs = programsData?.map((p: any) => {
+      const programData = p.program_data || { weeks: [] }
+
+      // Enrich metconData in each day with full MetCon details
+      const enrichedWeeks = (programData.weeks || []).map((week: any) => ({
+        ...week,
+        days: (week.days || []).map((day: any) => {
+          if (day.metconData?.metconId && metconLookup[day.metconData.metconId]) {
+            const metcon = metconLookup[day.metconData.metconId]
+            return {
+              ...day,
+              metconData: {
+                ...day.metconData,
+                name: metcon.name,
+                format: metcon.format,
+                tasks: metcon.tasks,
+                timeCap: metcon.time_cap,
+                rxWeights: metcon.rx_weights
+              }
+            }
+          }
+          return day
+        })
+      }))
+
+      return {
+        id: p.id,
+        generatedAt: p.generated_at,
+        weeksGenerated: p.weeks_generated || [],
+        programData: { weeks: enrichedWeeks }
+      }
+    }) || []
 
     return NextResponse.json({
       success: true,
