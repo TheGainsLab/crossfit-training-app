@@ -1306,15 +1306,15 @@ export default function UserDetailPage() {
                                                 {isMetconBlock && metconData && (
                                                   <div className="mb-3 p-2 bg-white rounded border border-gray-200">
                                                     <div className="flex items-center gap-2 mb-2">
-                                                      <span className="font-semibold text-gray-800">{metconData.workoutId || metconData.name}</span>
-                                                      {metconData.timeCap && (
+                                                      <span className="font-semibold text-gray-800">{metconData.workoutId}</span>
+                                                      {metconData.timeRange && (
                                                         <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">
-                                                          {metconData.timeCap} min cap
+                                                          {metconData.timeRange}
                                                         </span>
                                                       )}
                                                     </div>
-                                                    {metconData.format && (
-                                                      <p className="text-sm text-gray-600 mb-2">{metconData.format}</p>
+                                                    {(metconData.format || metconData.workoutFormat) && (
+                                                      <p className="text-sm text-gray-600 mb-2">{metconData.format || metconData.workoutFormat}</p>
                                                     )}
                                                     {metconData.tasks && Array.isArray(metconData.tasks) && metconData.tasks.length > 0 && (
                                                       <div className="text-sm text-gray-700 space-y-0.5">

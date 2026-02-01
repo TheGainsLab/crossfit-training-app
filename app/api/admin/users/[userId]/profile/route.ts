@@ -410,11 +410,12 @@ export async function GET(
     })
 
     // Fetch MetCon details from metcons table by workout_id (string name)
+    // We mainly need the tasks array - format/timeRange already in metconData
     let metconLookup: { [key: string]: any } = {}
     if (workoutIds.size > 0) {
       const { data: metconsData } = await supabase
         .from('metcons')
-        .select('id, workout_id, name, format, tasks, time_cap, rx_weights')
+        .select('id, workout_id, format, tasks, time_range, workout_notes')
         .in('workout_id', Array.from(workoutIds))
 
       if (metconsData) {
@@ -438,11 +439,11 @@ export async function GET(
               ...day,
               metconData: {
                 ...day.metconData,
-                name: metcon.name || metcon.workout_id,
-                format: metcon.format,
+                // Use metcon table data if available, fall back to original metconData
+                format: metcon.format || day.metconData.workoutFormat,
                 tasks: metcon.tasks,
-                timeCap: metcon.time_cap,
-                rxWeights: metcon.rx_weights
+                timeRange: metcon.time_range || day.metconData.timeRange,
+                workoutNotes: metcon.workout_notes || day.metconData.workoutNotes
               }
             }
           }
