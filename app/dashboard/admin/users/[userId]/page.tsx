@@ -499,6 +499,17 @@ export default function UserDetailPage() {
                 />
               )}
             </>
+          ) : user.subscription_tier ? (
+            // Fallback to users table subscription data (used by mobile app)
+            <>
+              <InfoRow
+                label="Status"
+                value=""
+                badge={<StatusBadge status={user.subscription_status || 'active'} />}
+              />
+              <InfoRow label="Plan" value={user.subscription_tier} />
+              <InfoRow label="Source" value="User Profile" />
+            </>
           ) : (
             <p className="text-gray-500 text-sm">No active subscription</p>
           )}
@@ -531,11 +542,11 @@ export default function UserDetailPage() {
 
         {/* Program Status */}
         <InfoCard title="Training Program">
-          {user.current_program ? (
+          {user.current_program || user.subscription_tier ? (
             <>
               <InfoRow
                 label="Current Program"
-                value={user.current_program}
+                value={user.current_program || user.subscription_tier || '-'}
               />
               <InfoRow label="Tier" value={user.subscription_tier || '-'} />
             </>
@@ -1024,11 +1035,11 @@ export default function UserDetailPage() {
       {activeTab === 'program' && (
         <div className="space-y-6">
           <InfoCard title="Current Training Program">
-            {user.current_program ? (
+            {user.current_program || user.subscription_tier ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-coral/5 rounded-lg border border-coral/20">
                   <div>
-                    <p className="font-semibold text-gray-900">{user.current_program}</p>
+                    <p className="font-semibold text-gray-900">{user.current_program || user.subscription_tier}</p>
                     <p className="text-sm text-gray-500">Subscription Tier: {user.subscription_tier || 'Unknown'}</p>
                   </div>
                   <span className="px-3 py-1 bg-coral/10 text-coral rounded-full text-sm font-medium">
