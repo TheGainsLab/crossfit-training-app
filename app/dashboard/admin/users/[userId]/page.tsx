@@ -1302,7 +1302,7 @@ export default function UserDetailPage() {
                                               <div key={blockIndex} className="bg-gray-50 rounded-lg p-3">
                                                 <h5 className="text-sm font-semibold text-coral mb-2">{block.blockName}</h5>
 
-                                                {/* MetCon Structure - show format and tasks */}
+                                                {/* MetCon Structure - show workout notes */}
                                                 {isMetconBlock && metconData && (
                                                   <div className="mb-3 p-2 bg-white rounded border border-gray-200">
                                                     <div className="flex items-center gap-2 mb-2">
@@ -1313,26 +1313,8 @@ export default function UserDetailPage() {
                                                         </span>
                                                       )}
                                                     </div>
-                                                    {(metconData.format || metconData.workoutFormat) && (
-                                                      <p className="text-sm text-gray-600 mb-2">{metconData.format || metconData.workoutFormat}</p>
-                                                    )}
-                                                    {metconData.tasks && Array.isArray(metconData.tasks) && metconData.tasks.length > 0 && (
-                                                      <div className="text-sm text-gray-700 space-y-0.5">
-                                                        {metconData.tasks.map((task: any, taskIndex: number) => (
-                                                          <div key={taskIndex} className="flex items-center gap-1">
-                                                            <span className="text-gray-400">•</span>
-                                                            <span>
-                                                              {task.reps && `${task.reps} `}
-                                                              {task.exercise}
-                                                              {(task.weight_male || task.weight_female) && (
-                                                                <span className="text-gray-500 ml-1">
-                                                                  ({task.weight_male}/{task.weight_female})
-                                                                </span>
-                                                              )}
-                                                            </span>
-                                                          </div>
-                                                        ))}
-                                                      </div>
+                                                    {metconData.workoutNotes && (
+                                                      <p className="text-sm text-gray-700 whitespace-pre-line">{metconData.workoutNotes}</p>
                                                     )}
                                                   </div>
                                                 )}
