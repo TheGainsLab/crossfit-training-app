@@ -989,16 +989,35 @@ export default function ProgressPage() {
   }
 
   // Calculate task counts for each category
+  // Counts unique (exercise, session) pairs - each exercise on each unique day counts as 1
+  // Multiple sets of same exercise on same day = 1
+  // Same exercise on different day = counts again
   const getTaskCount = (category: TabType): number => {
+    // Helper to count unique (exercise, session) pairs from movements data
+    const countUniqueExerciseSessions = (movements: Record<string, any> | undefined): number => {
+      if (!movements) return 0
+      let count = 0
+      Object.values(movements).forEach((movement: any) => {
+        if (movement.sessions) {
+          // Count unique (week, day) combinations for this exercise
+          const uniqueSessions = new Set(
+            movement.sessions.map((s: any) => `W${s.week || 0}D${s.day || 0}`)
+          )
+          count += uniqueSessions.size
+        }
+      })
+      return count
+    }
+
     switch (category) {
       case 'skills':
-        return skillsData?.skillsAnalysis?.skills ? Object.keys(skillsData.skillsAnalysis.skills).length : 0
+        return countUniqueExerciseSessions(skillsData?.skillsAnalysis?.skills)
       case 'strength':
-        return strengthData?.strengthAnalysis?.movements ? Object.keys(strengthData.strengthAnalysis.movements).length : 0
+        return countUniqueExerciseSessions(strengthData?.strengthAnalysis?.movements)
       case 'technical':
-        return technicalData?.technicalWorkAnalysis?.movements ? Object.keys(technicalData.technicalWorkAnalysis.movements).length : 0
+        return countUniqueExerciseSessions(technicalData?.technicalWorkAnalysis?.movements)
       case 'accessories':
-        return accessoriesData?.accessoriesAnalysis?.movements ? Object.keys(accessoriesData.accessoriesAnalysis.movements).length : 0
+        return countUniqueExerciseSessions(accessoriesData?.accessoriesAnalysis?.movements)
       case 'metcons':
         if (!metconData?.heatmapCells) return 0
         const uniqueExercises = new Set(metconData.heatmapCells.map((c: any) => c.exercise_name))

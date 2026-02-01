@@ -1174,23 +1174,25 @@ export default function UserDetailPage() {
                   }, {} as { [key: string]: number })
                 : {}
 
-              // Count unique exercise names per block (matching mobile's movements logic)
+              // Count unique (exercise, session) pairs per block
+              // Each unique exercise on a unique day counts as 1
+              // Multiple sets of same exercise on same day = 1
+              // Same exercise on different day = counts again
               const byBlock = hasWorkouts
                 ? (() => {
-                    // Group by block, then count unique exercise names within each block
-                    const exercisesByBlock: { [block: string]: Set<string> } = {}
+                    const counts: { [block: string]: number } = {}
+                    // Use Set to track unique (block, exercise, session) combinations
+                    const uniqueCombinations = new Set<string>()
                     recentWorkouts.forEach(w => {
                       const block = w.block || 'General'
-                      const exerciseName = w.exercise_name || 'Unknown'
-                      if (!exercisesByBlock[block]) {
-                        exercisesByBlock[block] = new Set()
-                      }
-                      exercisesByBlock[block].add(exerciseName)
+                      const exercise = w.exercise_name || 'Unknown'
+                      const sessionKey = `${w.program_id || 0}-W${w.week || 0}D${w.day || 0}`
+                      uniqueCombinations.add(`${block}|${exercise}|${sessionKey}`)
                     })
-                    // Count unique exercise names per block
-                    const counts: { [key: string]: number } = {}
-                    Object.entries(exercisesByBlock).forEach(([block, exercises]) => {
-                      counts[block] = exercises.size
+                    // Count per block
+                    uniqueCombinations.forEach(key => {
+                      const block = key.split('|')[0]
+                      counts[block] = (counts[block] || 0) + 1
                     })
                     return counts
                   })()
