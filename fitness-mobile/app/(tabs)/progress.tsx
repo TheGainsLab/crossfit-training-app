@@ -1019,9 +1019,10 @@ export default function ProgressPage() {
       case 'accessories':
         return countUniqueExerciseSessions(accessoriesData?.accessoriesAnalysis?.movements)
       case 'metcons':
+        // Sum all session_counts to get total task entries across all MetCon completions
+        // Each exercise in each MetCon counts as 1 task (not unique - pullups in 3 MetCons = 3 tasks)
         if (!metconData?.heatmapCells) return 0
-        const uniqueExercises = new Set(metconData.heatmapCells.map((c: any) => c.exercise_name))
-        return uniqueExercises.size
+        return metconData.heatmapCells.reduce((sum: number, c: any) => sum + (c.session_count || 0), 0)
       case 'engine':
         return engineData?.sessions?.length || 0
       default:

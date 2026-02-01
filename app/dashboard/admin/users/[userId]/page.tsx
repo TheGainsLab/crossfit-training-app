@@ -147,6 +147,11 @@ interface AthleteProfile {
   profileGeneratedAt: string | null
 }
 
+interface MetConStats {
+  completed: number
+  taskCount: number
+}
+
 interface UserDetailData {
   user: UserProfile
   subscription: SubscriptionData | null
@@ -155,6 +160,7 @@ interface UserDetailData {
   engineSessions: EngineSession[]
   notes: AdminNote[]
   athleteProfile?: AthleteProfile
+  metconStats?: MetConStats
 }
 
 type TabType = 'overview' | 'profile' | 'program' | 'analytics'
@@ -384,7 +390,7 @@ export default function UserDetailPage() {
     )
   }
 
-  const { user, subscription, engagement, recentWorkouts, engineSessions, notes, athleteProfile } = data
+  const { user, subscription, engagement, recentWorkouts, engineSessions, notes, athleteProfile, metconStats } = data
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', icon: <Info className="w-4 h-4" /> },
@@ -1323,6 +1329,22 @@ export default function UserDetailPage() {
                           </button>
                         </div>
                       )}
+                    </InfoCard>
+                  )}
+
+                  {/* MetCon Stats */}
+                  {metconStats && metconStats.completed > 0 && (
+                    <InfoCard title="MetCon Stats">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gray-50 rounded-lg p-4 text-center">
+                          <p className="text-sm text-gray-500 mb-1">MetCons Completed</p>
+                          <p className="text-2xl font-bold text-gray-900">{metconStats.completed}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4 text-center">
+                          <p className="text-sm text-gray-500 mb-1">MetCon Tasks</p>
+                          <p className="text-2xl font-bold text-gray-900">{metconStats.taskCount}</p>
+                        </div>
+                      </div>
                     </InfoCard>
                   )}
 

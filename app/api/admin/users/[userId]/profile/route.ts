@@ -214,6 +214,34 @@ export async function GET(
       admin_name: (n.admin as any)?.name || null
     })) || []
 
+    // Fetch MetCon completions from program_metcons
+    const { data: metconCompletions } = await supabase
+      .from('program_metcons')
+      .select(`
+        id,
+        metcon_id,
+        result_type,
+        result_value,
+        result_time,
+        percentile,
+        created_at,
+        metcon:metcons(name, tasks)
+      `)
+      .eq('user_id', targetId)
+      .order('created_at', { ascending: false })
+
+    // Calculate MetCon stats
+    const metconsCompleted = metconCompletions?.length || 0
+    // Count total tasks across all MetCon completions
+    // Each exercise in each MetCon counts as 1 task
+    let metconTaskCount = 0
+    metconCompletions?.forEach((completion: any) => {
+      const tasks = completion.metcon?.tasks
+      if (Array.isArray(tasks)) {
+        metconTaskCount += tasks.length
+      }
+    })
+
     // Format ENGINE sessions for display
     const engineSessions = recentEngineSessions?.map(session => ({
       id: session.id,
@@ -342,7 +370,11 @@ export async function GET(
       recentWorkouts,
       engineSessions,
       notes,
-      athleteProfile
+      athleteProfile,
+      metconStats: {
+        completed: metconsCompleted,
+        taskCount: metconTaskCount
+      }
     })
 
   } catch (error) {
