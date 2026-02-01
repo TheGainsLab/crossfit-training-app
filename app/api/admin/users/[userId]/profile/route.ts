@@ -362,6 +362,21 @@ export async function GET(
       profileGeneratedAt: userProfileResult.data?.generated_at || null
     }
 
+    // Fetch user's training programs
+    const { data: programsData } = await supabase
+      .from('programs')
+      .select('id, generated_at, program_data, weeks_generated')
+      .eq('user_id', targetId)
+      .order('generated_at', { ascending: false })
+
+    // Format programs for admin view
+    const programs = programsData?.map((p: any) => ({
+      id: p.id,
+      generatedAt: p.generated_at,
+      weeksGenerated: p.weeks_generated || [],
+      programData: p.program_data || { weeks: [] }
+    })) || []
+
     return NextResponse.json({
       success: true,
       user,
@@ -374,7 +389,8 @@ export async function GET(
       metconStats: {
         completed: metconsCompleted,
         taskCount: metconTaskCount
-      }
+      },
+      programs
     })
 
   } catch (error) {

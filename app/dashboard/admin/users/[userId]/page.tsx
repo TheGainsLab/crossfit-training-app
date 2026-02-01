@@ -152,6 +152,43 @@ interface MetConStats {
   taskCount: number
 }
 
+interface ProgramExercise {
+  name: string
+  sets: number | string
+  reps: number | string
+  weightTime: string
+  notes: string
+}
+
+interface ProgramBlock {
+  blockName: string
+  exercises: ProgramExercise[]
+}
+
+interface ProgramDay {
+  day: number
+  dayName: string
+  blocks: ProgramBlock[]
+  metconData?: any
+  engineData?: any
+}
+
+interface ProgramWeek {
+  week: number
+  days: ProgramDay[]
+}
+
+interface ProgramData {
+  weeks: ProgramWeek[]
+}
+
+interface Program {
+  id: number
+  generatedAt: string
+  weeksGenerated: number[]
+  programData: ProgramData
+}
+
 interface UserDetailData {
   user: UserProfile
   subscription: SubscriptionData | null
@@ -161,6 +198,7 @@ interface UserDetailData {
   notes: AdminNote[]
   athleteProfile?: AthleteProfile
   metconStats?: MetConStats
+  programs?: Program[]
 }
 
 type TabType = 'overview' | 'profile' | 'program' | 'analytics'
@@ -390,7 +428,7 @@ export default function UserDetailPage() {
     )
   }
 
-  const { user, subscription, engagement, recentWorkouts, engineSessions, notes, athleteProfile, metconStats } = data
+  const { user, subscription, engagement, recentWorkouts, engineSessions, notes, athleteProfile, metconStats, programs } = data
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', icon: <Info className="w-4 h-4" /> },
@@ -1040,103 +1078,115 @@ export default function UserDetailPage() {
       {/* Program Tab */}
       {activeTab === 'program' && (
         <div className="space-y-6">
-          <InfoCard title="Current Training Program">
-            {user.current_program || user.subscription_tier ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-coral/5 rounded-lg border border-coral/20">
-                  <div>
-                    <p className="font-semibold text-gray-900">{user.current_program || user.subscription_tier}</p>
-                    <p className="text-sm text-gray-500">Subscription Tier: {user.subscription_tier || 'Unknown'}</p>
-                  </div>
-                  <span className="px-3 py-1 bg-coral/10 text-coral rounded-full text-sm font-medium">
-                    Active
-                  </span>
+          {/* Program Summary */}
+          <InfoCard title="Program Summary">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-coral/5 rounded-lg border border-coral/20">
+                <div>
+                  <p className="font-semibold text-gray-900">{user.current_program || user.subscription_tier || 'No Program'}</p>
+                  <p className="text-sm text-gray-500">Subscription Tier: {user.subscription_tier || 'Unknown'}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-500 mb-1">Ability Level</p>
-                    <p className="font-semibold text-gray-900">{user.ability_level || 'Not set'}</p>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-500 mb-1">Workouts (30d)</p>
-                    <p className="font-semibold text-gray-900">{engagement.workouts_30d}</p>
-                  </div>
+                <span className="px-3 py-1 bg-coral/10 text-coral rounded-full text-sm font-medium">
+                  {programs && programs.length > 0 ? `${programs.length} Program${programs.length > 1 ? 's' : ''}` : 'No Programs'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-500 mb-1">Ability Level</p>
+                  <p className="font-semibold text-gray-900">{user.ability_level || 'Not set'}</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-500 mb-1">Workouts (30d)</p>
+                  <p className="font-semibold text-gray-900">{engagement.workouts_30d}</p>
                 </div>
               </div>
-            ) : (
+            </div>
+          </InfoCard>
+
+          {/* Program Structure */}
+          {programs && programs.length > 0 ? (
+            programs.map((program, programIndex) => (
+              <InfoCard key={program.id} title={`Program ${programIndex + 1} - Generated ${new Date(program.generatedAt).toLocaleDateString()}`}>
+                <div className="space-y-4">
+                  {/* Weeks */}
+                  {program.weeksGenerated.sort((a, b) => a - b).map((weekNum) => {
+                    const weekData = program.programData.weeks?.find(w => w.week === weekNum)
+                    if (!weekData) return null
+
+                    return (
+                      <div key={weekNum} className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="bg-gray-100 px-4 py-2 font-semibold text-gray-700">
+                          Week {weekNum}
+                        </div>
+                        <div className="divide-y divide-gray-100">
+                          {weekData.days?.sort((a, b) => a.day - b.day).map((day) => (
+                            <div key={day.day} className="p-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="font-medium text-gray-900">
+                                  Day {day.day}: {day.dayName || `Day ${day.day}`}
+                                </h4>
+                                <span className="text-xs text-gray-500">
+                                  {day.blocks?.reduce((sum, b) => sum + (b.exercises?.length || 0), 0) || 0} exercises
+                                </span>
+                              </div>
+
+                              {/* Blocks */}
+                              <div className="space-y-3">
+                                {day.blocks?.map((block, blockIndex) => (
+                                  <div key={blockIndex} className="bg-gray-50 rounded-lg p-3">
+                                    <h5 className="text-sm font-semibold text-coral mb-2">{block.blockName}</h5>
+                                    <div className="space-y-1">
+                                      {block.exercises?.map((exercise, exIndex) => (
+                                        <div key={exIndex} className="text-sm text-gray-700 flex justify-between items-start">
+                                          <span className="font-medium">{exercise.name}</span>
+                                          <span className="text-gray-500 text-xs ml-2">
+                                            {exercise.sets && exercise.reps ? `${exercise.sets}x${exercise.reps}` : ''}
+                                            {exercise.weightTime ? ` @ ${exercise.weightTime}` : ''}
+                                          </span>
+                                        </div>
+                                      ))}
+                                      {(!block.exercises || block.exercises.length === 0) && (
+                                        <p className="text-xs text-gray-400 italic">No exercises</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+
+                                {/* MetCon Data */}
+                                {day.metconData && (
+                                  <div className="bg-orange-50 rounded-lg p-3">
+                                    <h5 className="text-sm font-semibold text-orange-600 mb-2">METCON</h5>
+                                    <p className="text-sm text-gray-700">
+                                      {day.metconData.name || day.metconData.metconId || 'MetCon workout'}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Engine Data */}
+                                {day.engineData && (
+                                  <div className="bg-blue-50 rounded-lg p-3">
+                                    <h5 className="text-sm font-semibold text-blue-600 mb-2">ENGINE</h5>
+                                    <p className="text-sm text-gray-700">
+                                      {day.engineData.dayType || day.engineData.modality || 'Engine workout'}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </InfoCard>
+            ))
+          ) : (
+            <InfoCard title="Program Structure">
               <div className="text-center py-8">
                 <ClipboardList className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">No active training program</p>
-              </div>
-            )}
-          </InfoCard>
-
-          {/* Recent Activity for Program context */}
-          <InfoCard title="Recent Workout Activity">
-            {recentWorkouts.length > 0 ? (
-              <div className="space-y-2">
-                {recentWorkouts.map((workout) => (
-                  <div
-                    key={workout.id}
-                    className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {workout.exercise_name || 'Workout'}
-                      </p>
-                      <p className="text-sm text-gray-500">{workout.block || 'General'}</p>
-                    </div>
-                    <span className="text-sm text-gray-500">
-                      {new Date(workout.logged_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-sm text-center py-4">No recent workout activity</p>
-            )}
-          </InfoCard>
-
-          {/* ENGINE Sessions in Program Tab */}
-          {engineSessions && engineSessions.length > 0 && (
-            <InfoCard title="Recent ENGINE Sessions">
-              <div className="space-y-3">
-                {engineSessions.slice(0, 5).map((session) => {
-                  const formatDuration = (seconds: number | null) => {
-                    if (!seconds) return '-'
-                    const mins = Math.floor(seconds / 60)
-                    const secs = seconds % 60
-                    return `${mins}:${secs.toString().padStart(2, '0')}`
-                  }
-                  const performancePercent = session.performance_ratio
-                    ? (session.performance_ratio * 100).toFixed(0)
-                    : null
-
-                  return (
-                    <div key={session.id} className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {session.day_type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Session'}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {session.modality?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} • {formatDuration(session.total_work_seconds)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className={`font-semibold ${
-                          performancePercent && parseFloat(performancePercent) >= 100
-                            ? 'text-green-600'
-                            : 'text-gray-900'
-                        }`}>
-                          {performancePercent ? `${performancePercent}%` : '-'}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {new Date(session.date).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  )
-                })}
+                <p className="text-gray-500">No program data available</p>
+                <p className="text-gray-400 text-sm mt-1">This user may not have generated a training program yet</p>
               </div>
             </InfoCard>
           )}
