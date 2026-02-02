@@ -232,6 +232,114 @@ interface ExerciseOption {
   difficultyLevel: string | null
   programNotes: any
   scalingOptions: string[] | null
+  oneRmReference: string | null
+}
+
+// 1RM reference mapping - same order as user's oneRMs array
+const ONE_RM_LIFTS = [
+  'Snatch', 'Power Snatch', 'Clean and Jerk', 'Power Clean', 'Clean (Only)', 'Jerk (Only)',
+  'Back Squat', 'Front Squat', 'Overhead Squat', 'Deadlift', 'Bench Press', 'Push Press',
+  'Strict Press', 'Weighted Pullup'
+]
+
+function find1RMIndex(exercise: string): number {
+  return ONE_RM_LIFTS.indexOf(exercise)
+}
+
+function roundWeight(weight: number, userUnits: string): number {
+  if (!weight || isNaN(weight)) return weight
+  if (userUnits === 'Metric (kg)') {
+    return Math.round(weight / 2.5) * 2.5
+  } else {
+    return Math.round(weight / 5) * 5
+  }
+}
+
+// Parse program_notes value like "3x2,50%" or "2x20"
+function parseProgramNotes(notesValue: string): { sets: number; reps: string; percent: number | null } {
+  if (!notesValue) return { sets: 0, reps: '', percent: null }
+
+  // Split by comma to separate sets/reps from percentage
+  const parts = notesValue.split(',')
+  const setsReps = parts[0] // e.g., "3x2" or "2x20"
+  const percentStr = parts[1]?.trim() // e.g., "50%" or undefined
+
+  // Parse sets and reps
+  const [setsStr, repsStr] = setsReps.split('x')
+  const sets = parseInt(setsStr) || 0
+  const reps = repsStr || ''
+
+  // Parse percentage if present
+  let percent: number | null = null
+  if (percentStr && percentStr.endsWith('%')) {
+    percent = parseInt(percentStr.replace('%', '')) || null
+  }
+
+  return { sets, reps, percent }
+}
+
+// Get the user's level for a specific exercise based on block type
+function getUserLevelForExercise(
+  blockName: string,
+  exerciseName: string,
+  userAbilityLevel: string | null,
+  skillsAssessment: AthleteProfile['skillsAssessment'] | null
+): string {
+  const blockUpper = blockName.toUpperCase()
+
+  // For SKILLS block, check the user's skill-specific level
+  if (blockUpper === 'SKILLS' && skillsAssessment) {
+    const exerciseLower = exerciseName.toLowerCase().trim()
+
+    if (skillsAssessment.advanced?.some(s => s.toLowerCase().includes(exerciseLower) || exerciseLower.includes(s.toLowerCase()))) {
+      return 'Advanced'
+    }
+    if (skillsAssessment.intermediate?.some(s => s.toLowerCase().includes(exerciseLower) || exerciseLower.includes(s.toLowerCase()))) {
+      return 'Intermediate'
+    }
+    if (skillsAssessment.beginner?.some(s => s.toLowerCase().includes(exerciseLower) || exerciseLower.includes(s.toLowerCase()))) {
+      return 'Beginner'
+    }
+    // Not found in skills assessment, fall back to overall level
+  }
+
+  // For other blocks or if skill not found, use overall ability level
+  return userAbilityLevel || 'Intermediate'
+}
+
+// Calculate the weight based on 1RM percentage
+function calculateWeight(
+  percent: number,
+  oneRmReference: string | null,
+  oneRMs: { [key: string]: number | null } | undefined,
+  units: string,
+  gender: string | null,
+  requiredEquipment: string[]
+): string {
+  if (!percent || !oneRmReference || oneRmReference === 'None' || !oneRMs) {
+    return ''
+  }
+
+  const oneRMIndex = find1RMIndex(oneRmReference)
+  if (oneRMIndex === -1) return ''
+
+  // oneRMs is an object with lift names as keys
+  const oneRM = oneRMs[oneRmReference]
+
+  if (!oneRM || oneRM <= 0) return ''
+
+  let calculatedWeight = oneRM * (percent / 100)
+
+  // Apply barbell floor if needed
+  const isBarbell = requiredEquipment.includes('Barbell')
+  if (isBarbell) {
+    const weightFloor = gender === 'Female'
+      ? (units === 'Metric (kg)' ? 15 : 35)
+      : (units === 'Metric (kg)' ? 20 : 45)
+    calculatedWeight = Math.max(calculatedWeight, weightFloor)
+  }
+
+  return roundWeight(calculatedWeight, units).toString()
 }
 
 interface EditContext {
@@ -450,6 +558,63 @@ export default function UserDetailPage() {
   const handleSelectExercise = async (exercise: ExerciseOption) => {
     if (!editContext || !editAction) return
 
+    // Calculate sets/reps/weight based on exercise's program_notes and user's profile
+    let sets: string | number = ''
+    let reps: string = ''
+    let weightTime: string = ''
+
+    if (exercise.programNotes && data?.athleteProfile) {
+      // Determine user's level for this exercise
+      const userLevel = getUserLevelForExercise(
+        editContext.blockName,
+        exercise.name,
+        data.user.ability_level,
+        data.athleteProfile.skillsAssessment
+      )
+
+      // Try to get program notes for user's level, with fallbacks
+      const levelFallbacks = ['Elite', 'Advanced', 'Intermediate', 'Beginner']
+      const startIndex = levelFallbacks.indexOf(userLevel)
+      let notesValue: string | null = null
+
+      // First try exact level, then fall back to lower levels
+      for (let i = startIndex; i < levelFallbacks.length && !notesValue; i++) {
+        if (exercise.programNotes[levelFallbacks[i]]) {
+          notesValue = exercise.programNotes[levelFallbacks[i]]
+        }
+      }
+      // If still no match, try higher levels
+      for (let i = startIndex - 1; i >= 0 && !notesValue; i--) {
+        if (exercise.programNotes[levelFallbacks[i]]) {
+          notesValue = exercise.programNotes[levelFallbacks[i]]
+        }
+      }
+
+      if (notesValue) {
+        const parsed = parseProgramNotes(notesValue)
+        sets = parsed.sets || ''
+        reps = parsed.reps || ''
+
+        // Calculate weight if there's a percentage and 1RM reference
+        if (parsed.percent && exercise.oneRmReference) {
+          weightTime = calculateWeight(
+            parsed.percent,
+            exercise.oneRmReference,
+            data.athleteProfile.oneRMs,
+            data.athleteProfile.units || 'Imperial (lbs)',
+            data.athleteProfile.gender,
+            exercise.requiredEquipment
+          )
+        }
+      }
+    }
+
+    // Fall back to old exercise values if we couldn't calculate new ones
+    if (!sets && !reps) {
+      sets = editContext.currentExercise?.sets || ''
+      reps = editContext.currentExercise?.reps?.toString() || ''
+    }
+
     setSavingEdit(true)
     try {
       const res = await fetch(`/api/admin/programs/${editContext.programId}/edit`, {
@@ -463,9 +628,9 @@ export default function UserDetailPage() {
           exerciseIndex: editAction === 'swap' ? editContext.exerciseIndex : undefined,
           newExercise: {
             name: exercise.name,
-            sets: editContext.currentExercise?.sets || '',
-            reps: editContext.currentExercise?.reps || '',
-            weightTime: editContext.currentExercise?.weightTime || '',
+            sets,
+            reps,
+            weightTime,
             notes: ''
           }
         })

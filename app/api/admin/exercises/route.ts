@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     // Build query for exercises
     let query = supabase
       .from('exercises')
-      .select('id, name, required_equipment, difficulty_level, program_notes, scaling_options')
+      .select('id, name, required_equipment, difficulty_level, program_notes, scaling_options, one_rm_reference')
       .eq(canBeColumn, true)
       .order('name')
 
@@ -120,6 +120,7 @@ export async function GET(request: NextRequest) {
       difficultyLevel: ex.difficulty_level,
       programNotes: ex.program_notes,
       scalingOptions: ex.scaling_options,
+      oneRmReference: ex.one_rm_reference,
       hasAllEquipment: true // Already filtered, so all have equipment
     }))
 
