@@ -1126,7 +1126,85 @@ export function EngineVariabilityView({ engineData }: { engineData: any }) {
 
 export function EngineTab({ engineData, userId, onBackToOverview }: { engineData: any; userId: number | null; onBackToOverview?: () => void }) {
   const [currentView, setCurrentView] = useState('menu')
-  
+  const [selectedSummaryModality, setSelectedSummaryModality] = useState<string>('')
+
+  // Helper function to format modality names for display
+  const formatModalityName = (modality: string | null): string => {
+    if (!modality) return 'Unknown'
+    return modality
+      .split('_')
+      .map((word: string) => word.toLowerCase() === 'c2' ? 'C2' : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+  }
+
+  // Helper function to get the most used modality
+  const getMostUsedModality = (): string => {
+    if (!engineData?.sessions || !engineData?.timeTrials) return ''
+    const modalityCounts: Record<string, number> = {}
+    engineData.sessions.forEach((s: any) => {
+      if (s.modality) modalityCounts[s.modality] = (modalityCounts[s.modality] || 0) + 1
+    })
+    engineData.timeTrials.forEach((t: any) => {
+      if (t.modality) modalityCounts[t.modality] = (modalityCounts[t.modality] || 0) + 1
+    })
+    const sorted = Object.entries(modalityCounts).sort((a, b) => b[1] - a[1])
+    return sorted.length > 0 ? sorted[0][0] : ''
+  }
+
+  // Helper function to get modalities with sufficient data for ratios
+  const getModalitiesWithRatioData = (): string[] => {
+    if (!engineData?.sessions || !engineData?.timeTrials) return []
+    const modalities = engineData.modalities || []
+    return modalities.filter((modality: string) => {
+      const hasAnaerobic = engineData.sessions.some((s: any) => s.day_type === 'anaerobic' && s.modality === modality && s.actual_pace)
+      const hasMaxAerobic = engineData.sessions.some((s: any) => s.day_type === 'max_aerobic_power' && s.modality === modality && s.actual_pace)
+      const hasTimeTrial = engineData.timeTrials.some((t: any) => t.modality === modality && (t.calculated_rpm || t.actual_pace))
+      return (hasAnaerobic && hasTimeTrial) || (hasMaxAerobic && hasTimeTrial) || (hasAnaerobic && hasMaxAerobic)
+    })
+  }
+
+  // Helper function to calculate summary ratios
+  const calculateSummaryRatios = (modality: string): { glycolytic: number | null, aerobic: number | null, systems: number | null } => {
+    if (!modality || !engineData?.sessions || !engineData?.timeTrials) return { glycolytic: null, aerobic: null, systems: null }
+
+    // Get anaerobic sessions for this modality
+    const anaerobicSessions = engineData.sessions.filter(
+      (s: any) => s.day_type === 'anaerobic' && s.modality === modality && s.actual_pace && s.actual_pace > 0
+    )
+    const anaerobicAvg = anaerobicSessions.length > 0
+      ? anaerobicSessions.reduce((sum: number, s: any) => sum + parseFloat(s.actual_pace), 0) / anaerobicSessions.length
+      : null
+
+    // Get max aerobic power sessions for this modality
+    const maxAerobicSessions = engineData.sessions.filter(
+      (s: any) => s.day_type === 'max_aerobic_power' && s.modality === modality && s.actual_pace && s.actual_pace > 0
+    )
+    const maxAerobicAvg = maxAerobicSessions.length > 0
+      ? maxAerobicSessions.reduce((sum: number, s: any) => sum + parseFloat(s.actual_pace), 0) / maxAerobicSessions.length
+      : null
+
+    // Get most recent time trial for this modality
+    const modalityTimeTrials = engineData.timeTrials
+      .filter((t: any) => t.modality === modality && (t.calculated_rpm || t.actual_pace))
+      .sort((a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
+    const recentTimeTrial = modalityTimeTrials.length > 0 ? (modalityTimeTrials[0].calculated_rpm || modalityTimeTrials[0].actual_pace) : null
+
+    // Calculate ratios
+    const glycolytic = (anaerobicAvg && recentTimeTrial) ? anaerobicAvg / recentTimeTrial : null
+    const aerobic = (maxAerobicAvg && recentTimeTrial) ? maxAerobicAvg / recentTimeTrial : null
+    const systems = (anaerobicAvg && maxAerobicAvg) ? anaerobicAvg / maxAerobicAvg : null
+
+    return { glycolytic, aerobic, systems }
+  }
+
+  // Initialize selectedSummaryModality on first render
+  React.useEffect(() => {
+    if (!selectedSummaryModality && engineData) {
+      const mostUsed = getMostUsedModality()
+      if (mostUsed) setSelectedSummaryModality(mostUsed)
+    }
+  }, [engineData])
+
   if (!engineData) {
     return (
       <View style={styles.sectionGap}>
@@ -1136,6 +1214,8 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
   }
 
   const hasData = engineData.totalSessions > 0 || engineData.totalTimeTrials > 0
+  const modalitiesWithRatioData = getModalitiesWithRatioData()
+  const summaryRatios = calculateSummaryRatios(selectedSummaryModality)
 
   const analyticsOptions = [
     { id: 'history', title: 'My History', description: 'Performance trends by day type and modality' },
@@ -1165,12 +1245,69 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
           </TouchableOpacity>
         )}
         {hasData && (
-          <Card style={{ paddingTop: 24 }}>
+          <Card style={{ paddingTop: 24, paddingBottom: 16 }}>
             <SectionHeader title="Summary" />
             <View style={[styles.statsRow, { paddingHorizontal: 16 }]}>
               <View style={styles.statCardWrapper}><StatCard label="Workouts" value={engineData.totalSessions} /></View>
               <View style={styles.statCardWrapper}><StatCard label="Time Trials" value={engineData.totalTimeTrials} /></View>
             </View>
+
+            {/* Modality selector and ratio metrics */}
+            {modalitiesWithRatioData.length > 0 && (
+              <>
+                <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
+                  <Text style={{ fontSize: 12, color: '#6B7280', textAlign: 'center', marginBottom: 8 }}>Modality</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                    {modalitiesWithRatioData.map((m: string) => (
+                      <TouchableOpacity
+                        key={m}
+                        onPress={() => setSelectedSummaryModality(m)}
+                        style={[
+                          styles.metricButton,
+                          selectedSummaryModality === m && styles.metricButtonActive
+                        ]}
+                      >
+                        <Text style={[
+                          styles.metricButtonText,
+                          selectedSummaryModality === m && styles.metricButtonTextActive
+                        ]}>{formatModalityName(m)}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Ratio Cards */}
+                {(summaryRatios.glycolytic !== null || summaryRatios.aerobic !== null || summaryRatios.systems !== null) ? (
+                  <View style={{ flexDirection: 'row', paddingHorizontal: 16, gap: 8 }}>
+                    <View style={{ flex: 1, backgroundColor: 'white', borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }}>
+                      <Text style={{ fontSize: 20, fontWeight: '700', color: summaryRatios.glycolytic !== null ? '#FE5858' : '#9CA3AF' }}>
+                        {summaryRatios.glycolytic !== null ? summaryRatios.glycolytic.toFixed(2) : '--'}
+                      </Text>
+                      <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>Glycolytic</Text>
+                      <Text style={{ fontSize: 8, color: '#9CA3AF' }}>Anaerobic/TT</Text>
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: 'white', borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }}>
+                      <Text style={{ fontSize: 20, fontWeight: '700', color: summaryRatios.aerobic !== null ? '#FE5858' : '#9CA3AF' }}>
+                        {summaryRatios.aerobic !== null ? summaryRatios.aerobic.toFixed(2) : '--'}
+                      </Text>
+                      <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>Aerobic</Text>
+                      <Text style={{ fontSize: 8, color: '#9CA3AF' }}>MAP/TT</Text>
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: 'white', borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }}>
+                      <Text style={{ fontSize: 20, fontWeight: '700', color: summaryRatios.systems !== null ? '#FE5858' : '#9CA3AF' }}>
+                        {summaryRatios.systems !== null ? summaryRatios.systems.toFixed(2) : '--'}
+                      </Text>
+                      <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>Systems</Text>
+                      <Text style={{ fontSize: 8, color: '#9CA3AF' }}>Anaerobic/MAP</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <Text style={{ fontSize: 12, color: '#6B7280', textAlign: 'center', paddingHorizontal: 16 }}>
+                    Complete Anaerobic, Max Aerobic Power workouts and Time Trials to see ratios.
+                  </Text>
+                )}
+              </>
+            )}
           </Card>
         )}
         {!hasData && (

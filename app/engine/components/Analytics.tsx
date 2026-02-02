@@ -139,6 +139,9 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   // Interval Variation state
   const [variabilityComparisonDayTypes, setVariabilityComparisonDayTypes] = useState<any[]>([]);
 
+  // Summary metrics state
+  const [selectedSummaryModality, setSelectedSummaryModality] = useState<string>('');
+
   // Helper function to get the page title based on current view
   const getPageTitle = (): string => {
     const titleMap: Record<string, string> = {
@@ -174,6 +177,16 @@ export default function Analytics({ onBack }: AnalyticsProps) {
   useEffect(() => {
     setShowRatioCharts(false);
   }, [dayTypeA, dayTypeB, compareModality]);
+
+  // Initialize selectedSummaryModality to most used modality when data loads
+  useEffect(() => {
+    if (!selectedSummaryModality && (workoutSessions.length > 0 || timeTrials.length > 0)) {
+      const mostUsed = getMostUsedModality();
+      if (mostUsed) {
+        setSelectedSummaryModality(mostUsed);
+      }
+    }
+  }, [workoutSessions, timeTrials]);
 
   const loadProgramVersionAndData = async () => {
     setLoading(true);
@@ -343,6 +356,75 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       'rocket_races_b': 'Rocket Races B'
     };
     return typeMap[dayType] || dayType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Workout';
+  };
+
+  // Helper function to calculate summary ratios (Glycolytic, Aerobic, Systems)
+  const calculateSummaryRatios = (modality: string): { glycolytic: number | null, aerobic: number | null, systems: number | null } => {
+    if (!modality) return { glycolytic: null, aerobic: null, systems: null };
+
+    // Get anaerobic sessions for this modality
+    const anaerobicSessions = workoutSessions.filter(
+      (s: WorkoutSession) => s.day_type === 'anaerobic' && s.modality === modality && s.actual_pace && s.actual_pace > 0
+    );
+    const anaerobicAvg = anaerobicSessions.length > 0
+      ? anaerobicSessions.reduce((sum, s) => sum + (s.actual_pace || 0), 0) / anaerobicSessions.length
+      : null;
+
+    // Get max aerobic power sessions for this modality
+    const maxAerobicSessions = workoutSessions.filter(
+      (s: WorkoutSession) => s.day_type === 'max_aerobic_power' && s.modality === modality && s.actual_pace && s.actual_pace > 0
+    );
+    const maxAerobicAvg = maxAerobicSessions.length > 0
+      ? maxAerobicSessions.reduce((sum, s) => sum + (s.actual_pace || 0), 0) / maxAerobicSessions.length
+      : null;
+
+    // Get most recent time trial for this modality
+    const modalityTimeTrials = timeTrials
+      .filter((t: TimeTrial) => t.modality === modality && t.calculated_rpm && t.calculated_rpm > 0)
+      .sort((a: TimeTrial, b: TimeTrial) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+    const recentTimeTrial = modalityTimeTrials.length > 0 ? modalityTimeTrials[0].calculated_rpm : null;
+
+    // Calculate ratios
+    const glycolytic = (anaerobicAvg && recentTimeTrial) ? anaerobicAvg / recentTimeTrial : null;
+    const aerobic = (maxAerobicAvg && recentTimeTrial) ? maxAerobicAvg / recentTimeTrial : null;
+    const systems = (anaerobicAvg && maxAerobicAvg) ? anaerobicAvg / maxAerobicAvg : null;
+
+    return { glycolytic, aerobic, systems };
+  };
+
+  // Helper function to get the most used modality
+  const getMostUsedModality = (): string => {
+    const modalityCounts: Record<string, number> = {};
+    workoutSessions.forEach((s: WorkoutSession) => {
+      if (s.modality) {
+        modalityCounts[s.modality] = (modalityCounts[s.modality] || 0) + 1;
+      }
+    });
+    timeTrials.forEach((t: TimeTrial) => {
+      if (t.modality) {
+        modalityCounts[t.modality] = (modalityCounts[t.modality] || 0) + 1;
+      }
+    });
+    const sortedModalities = Object.entries(modalityCounts).sort((a, b) => b[1] - a[1]);
+    return sortedModalities.length > 0 ? sortedModalities[0][0] : '';
+  };
+
+  // Helper function to get modalities with sufficient data for ratios
+  const getModalitiesWithRatioData = (): string[] => {
+    const modalities = getAvailableModalities();
+    return modalities.filter(modality => {
+      const hasAnaerobic = workoutSessions.some(
+        (s: WorkoutSession) => s.day_type === 'anaerobic' && s.modality === modality && s.actual_pace
+      );
+      const hasMaxAerobic = workoutSessions.some(
+        (s: WorkoutSession) => s.day_type === 'max_aerobic_power' && s.modality === modality && s.actual_pace
+      );
+      const hasTimeTrial = timeTrials.some(
+        (t: TimeTrial) => t.modality === modality && t.calculated_rpm
+      );
+      // Return true if at least one ratio can be calculated
+      return (hasAnaerobic && hasTimeTrial) || (hasMaxAerobic && hasTimeTrial) || (hasAnaerobic && hasMaxAerobic);
+    });
   };
 
   // Helper function to get days per month based on program version
@@ -998,7 +1080,164 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             </div>
           </div>
         )}
-      
+
+        {/* Summary Section */}
+        {hasData && (
+          <div style={{
+            background: '#DAE2EA',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '1rem',
+            boxShadow: '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            padding: '1.5rem',
+            border: '1px solid #E5E7EB',
+            marginBottom: '1.5rem'
+          }}>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: 'bold',
+              color: '#282B34',
+              marginBottom: '1rem',
+              textAlign: 'center'
+            }}>Summary</h3>
+
+            {/* Workouts and Time Trials row */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '1rem',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{
+                background: 'white',
+                borderRadius: '0.75rem',
+                padding: '1rem 2rem',
+                border: '1px solid #E5E7EB',
+                textAlign: 'center',
+                minWidth: '120px'
+              }}>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#FE5858' }}>
+                  {workoutSessions.filter((s: WorkoutSession) => s.day_type !== 'time_trial').length}
+                </div>
+                <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>Workouts</div>
+              </div>
+              <div style={{
+                background: 'white',
+                borderRadius: '0.75rem',
+                padding: '1rem 2rem',
+                border: '1px solid #E5E7EB',
+                textAlign: 'center',
+                minWidth: '120px'
+              }}>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#FE5858' }}>
+                  {timeTrials.filter((t: TimeTrial) => t.program_day_number).length}
+                </div>
+                <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>Time Trials</div>
+              </div>
+            </div>
+
+            {/* Modality selector for ratios */}
+            {getModalitiesWithRatioData().length > 0 && (
+              <>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  marginBottom: '1rem'
+                }}>
+                  <span style={{ fontSize: '0.875rem', color: '#6B7280' }}>Modality:</span>
+                  <select
+                    value={selectedSummaryModality}
+                    onChange={(e) => setSelectedSummaryModality(e.target.value)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #E5E7EB',
+                      background: 'white',
+                      fontSize: '0.875rem',
+                      color: '#282B34',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {getModalitiesWithRatioData().map((modality) => (
+                      <option key={modality} value={modality}>
+                        {getModalityDisplayName(modality)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Ratio Cards */}
+                {(() => {
+                  const ratios = calculateSummaryRatios(selectedSummaryModality);
+                  const hasAnyRatio = ratios.glycolytic !== null || ratios.aerobic !== null || ratios.systems !== null;
+
+                  if (!hasAnyRatio) {
+                    return (
+                      <div style={{ textAlign: 'center', color: '#6B7280', fontSize: '0.875rem', padding: '1rem' }}>
+                        Not enough data for this modality. Complete Anaerobic, Max Aerobic Power workouts and Time Trials to see ratios.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '0.75rem'
+                    }}>
+                      {/* Glycolytic Ratio */}
+                      <div style={{
+                        background: 'white',
+                        borderRadius: '0.75rem',
+                        padding: '1rem',
+                        border: '1px solid #E5E7EB',
+                        textAlign: 'center'
+                      }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: ratios.glycolytic !== null ? '#FE5858' : '#9CA3AF' }}>
+                          {ratios.glycolytic !== null ? ratios.glycolytic.toFixed(2) : '--'}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '0.25rem' }}>Glycolytic Ratio</div>
+                        <div style={{ fontSize: '0.625rem', color: '#9CA3AF', marginTop: '0.125rem' }}>Anaerobic / TT</div>
+                      </div>
+
+                      {/* Aerobic Ratio */}
+                      <div style={{
+                        background: 'white',
+                        borderRadius: '0.75rem',
+                        padding: '1rem',
+                        border: '1px solid #E5E7EB',
+                        textAlign: 'center'
+                      }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: ratios.aerobic !== null ? '#FE5858' : '#9CA3AF' }}>
+                          {ratios.aerobic !== null ? ratios.aerobic.toFixed(2) : '--'}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '0.25rem' }}>Aerobic Ratio</div>
+                        <div style={{ fontSize: '0.625rem', color: '#9CA3AF', marginTop: '0.125rem' }}>MAP / TT</div>
+                      </div>
+
+                      {/* Systems Ratio */}
+                      <div style={{
+                        background: 'white',
+                        borderRadius: '0.75rem',
+                        padding: '1rem',
+                        border: '1px solid #E5E7EB',
+                        textAlign: 'center'
+                      }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: ratios.systems !== null ? '#FE5858' : '#9CA3AF' }}>
+                          {ratios.systems !== null ? ratios.systems.toFixed(2) : '--'}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '0.25rem' }}>Systems Ratio</div>
+                        <div style={{ fontSize: '0.625rem', color: '#9CA3AF', marginTop: '0.125rem' }}>Anaerobic / MAP</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>
+            )}
+          </div>
+        )}
+
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
