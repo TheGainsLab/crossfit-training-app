@@ -409,6 +409,36 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     return sortedModalities.length > 0 ? sortedModalities[0][0] : '';
   };
 
+  // Helper function to calculate pace stats (peak and average) for a modality
+  const calculatePaceStats = (modality: string): { peak: number | null, average: number | null, units: string } => {
+    if (!modality) return { peak: null, average: null, units: '' };
+
+    // Get all sessions for this modality with actual_pace
+    const modalitySessions = workoutSessions.filter(
+      (s: WorkoutSession) => s.modality === modality && s.actual_pace && s.actual_pace > 0
+    );
+
+    // Include time trials
+    const modalityTimeTrials = timeTrials.filter(
+      (t: TimeTrial) => t.modality === modality && t.calculated_rpm && t.calculated_rpm > 0
+    );
+
+    const allPaces = [
+      ...modalitySessions.map(s => s.actual_pace || 0),
+      ...modalityTimeTrials.map(t => t.calculated_rpm || 0)
+    ].filter(p => p > 0);
+
+    if (allPaces.length === 0) return { peak: null, average: null, units: '' };
+
+    const peak = Math.max(...allPaces);
+    const average = allPaces.reduce((sum, p) => sum + p, 0) / allPaces.length;
+
+    // Get units from first session or time trial
+    const units = modalitySessions[0]?.units || modalityTimeTrials[0]?.units || 'cal/min';
+
+    return { peak, average, units };
+  };
+
   // Helper function to get modalities with sufficient data for ratios
   const getModalitiesWithRatioData = (): string[] => {
     const modalities = getAvailableModalities();
@@ -1081,7 +1111,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
           </div>
         )}
 
-        {/* Summary Section */}
+        {/* Card 1: Summary */}
         {hasData && (
           <div style={{
             background: '#DAE2EA',
@@ -1090,7 +1120,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
             boxShadow: '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
             padding: '1.5rem',
             border: '1px solid #E5E7EB',
-            marginBottom: '1.5rem'
+            marginBottom: '1rem'
           }}>
             <h3 style={{
               fontSize: '1.25rem',
@@ -1105,7 +1135,7 @@ export default function Analytics({ onBack }: AnalyticsProps) {
               display: 'flex',
               justifyContent: 'center',
               gap: '1rem',
-              marginBottom: '1.5rem'
+              marginBottom: '1rem'
             }}>
               <div style={{
                 background: 'white',
@@ -1135,108 +1165,272 @@ export default function Analytics({ onBack }: AnalyticsProps) {
               </div>
             </div>
 
-            {/* Modality selector for ratios */}
-            {getModalitiesWithRatioData().length > 0 && (
-              <>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  marginBottom: '1rem'
-                }}>
-                  <span style={{ fontSize: '0.875rem', color: '#6B7280' }}>Modality:</span>
-                  <select
-                    value={selectedSummaryModality}
-                    onChange={(e) => setSelectedSummaryModality(e.target.value)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #E5E7EB',
-                      background: 'white',
-                      fontSize: '0.875rem',
-                      color: '#282B34',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {getModalitiesWithRatioData().map((modality) => (
-                      <option key={modality} value={modality}>
-                        {getModalityDisplayName(modality)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Ratio Cards */}
-                {(() => {
-                  const ratios = calculateSummaryRatios(selectedSummaryModality);
-                  const hasAnyRatio = ratios.glycolytic !== null || ratios.aerobic !== null || ratios.systems !== null;
-
-                  if (!hasAnyRatio) {
-                    return (
-                      <div style={{ textAlign: 'center', color: '#6B7280', fontSize: '0.875rem', padding: '1rem' }}>
-                        Not enough data for this modality. Complete Anaerobic, Max Aerobic Power workouts and Time Trials to see ratios.
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: '0.75rem'
-                    }}>
-                      {/* Glycolytic Ratio */}
-                      <div style={{
-                        background: 'white',
-                        borderRadius: '0.75rem',
-                        padding: '1rem',
-                        border: '1px solid #E5E7EB',
-                        textAlign: 'center'
-                      }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: ratios.glycolytic !== null ? '#FE5858' : '#9CA3AF' }}>
-                          {ratios.glycolytic !== null ? ratios.glycolytic.toFixed(2) : '--'}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '0.25rem' }}>Glycolytic Ratio</div>
-                        <div style={{ fontSize: '0.625rem', color: '#9CA3AF', marginTop: '0.125rem' }}>Anaerobic / TT</div>
-                      </div>
-
-                      {/* Aerobic Ratio */}
-                      <div style={{
-                        background: 'white',
-                        borderRadius: '0.75rem',
-                        padding: '1rem',
-                        border: '1px solid #E5E7EB',
-                        textAlign: 'center'
-                      }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: ratios.aerobic !== null ? '#FE5858' : '#9CA3AF' }}>
-                          {ratios.aerobic !== null ? ratios.aerobic.toFixed(2) : '--'}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '0.25rem' }}>Aerobic Ratio</div>
-                        <div style={{ fontSize: '0.625rem', color: '#9CA3AF', marginTop: '0.125rem' }}>MAP / TT</div>
-                      </div>
-
-                      {/* Systems Ratio */}
-                      <div style={{
-                        background: 'white',
-                        borderRadius: '0.75rem',
-                        padding: '1rem',
-                        border: '1px solid #E5E7EB',
-                        textAlign: 'center'
-                      }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: ratios.systems !== null ? '#FE5858' : '#9CA3AF' }}>
-                          {ratios.systems !== null ? ratios.systems.toFixed(2) : '--'}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '0.25rem' }}>Systems Ratio</div>
-                        <div style={{ fontSize: '0.625rem', color: '#9CA3AF', marginTop: '0.125rem' }}>Anaerobic / MAP</div>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </>
+            {/* Modality selector */}
+            {getAvailableModalities().length > 0 && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem'
+              }}>
+                <span style={{ fontSize: '0.875rem', color: '#6B7280' }}>Modality:</span>
+                <select
+                  value={selectedSummaryModality}
+                  onChange={(e) => setSelectedSummaryModality(e.target.value)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #E5E7EB',
+                    background: 'white',
+                    fontSize: '0.875rem',
+                    color: '#282B34',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {getAvailableModalities().map((modality) => (
+                    <option key={modality} value={modality}>
+                      {getModalityDisplayName(modality)}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
           </div>
         )}
+
+        {/* Card 2: Energy System Ratios - Vertical Bar Chart */}
+        {hasData && selectedSummaryModality && (() => {
+          const ratios = calculateSummaryRatios(selectedSummaryModality);
+          const hasAnyRatio = ratios.glycolytic !== null || ratios.aerobic !== null || ratios.systems !== null;
+          if (!hasAnyRatio) return null;
+
+          const maxRatio = Math.max(
+            ratios.glycolytic || 0,
+            ratios.aerobic || 0,
+            ratios.systems || 0,
+            1 // minimum scale of 1
+          );
+          const chartHeight = 150;
+
+          return (
+            <div style={{
+              background: '#DAE2EA',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '1rem',
+              boxShadow: '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              padding: '1.5rem',
+              border: '1px solid #E5E7EB',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{
+                fontSize: '1.125rem',
+                fontWeight: 'bold',
+                color: '#282B34',
+                marginBottom: '1rem',
+                textAlign: 'center'
+              }}>Energy System Ratios</h3>
+
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'flex-end',
+                gap: '2rem',
+                height: `${chartHeight + 60}px`,
+                paddingTop: '1rem'
+              }}>
+                {/* Glycolytic Bar */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{
+                    width: '60px',
+                    height: `${chartHeight}px`,
+                    background: '#F3F4F6',
+                    borderRadius: '0.5rem 0.5rem 0 0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'flex-end',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: '100%',
+                      height: ratios.glycolytic !== null ? `${(ratios.glycolytic / maxRatio) * 100}%` : '0%',
+                      background: 'linear-gradient(180deg, #FE5858 0%, #E04848 100%)',
+                      borderRadius: '0.5rem 0.5rem 0 0',
+                      transition: 'height 0.5s ease',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'center',
+                      paddingTop: '0.5rem'
+                    }}>
+                      <span style={{ color: 'white', fontWeight: 'bold', fontSize: '0.875rem' }}>
+                        {ratios.glycolytic !== null ? ratios.glycolytic.toFixed(2) : '--'}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#282B34' }}>Glycolytic</div>
+                    <div style={{ fontSize: '0.625rem', color: '#9CA3AF' }}>Anaerobic/TT</div>
+                  </div>
+                </div>
+
+                {/* Aerobic Bar */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{
+                    width: '60px',
+                    height: `${chartHeight}px`,
+                    background: '#F3F4F6',
+                    borderRadius: '0.5rem 0.5rem 0 0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'flex-end',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: '100%',
+                      height: ratios.aerobic !== null ? `${(ratios.aerobic / maxRatio) * 100}%` : '0%',
+                      background: 'linear-gradient(180deg, #3B82F6 0%, #2563EB 100%)',
+                      borderRadius: '0.5rem 0.5rem 0 0',
+                      transition: 'height 0.5s ease',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'center',
+                      paddingTop: '0.5rem'
+                    }}>
+                      <span style={{ color: 'white', fontWeight: 'bold', fontSize: '0.875rem' }}>
+                        {ratios.aerobic !== null ? ratios.aerobic.toFixed(2) : '--'}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#282B34' }}>Aerobic</div>
+                    <div style={{ fontSize: '0.625rem', color: '#9CA3AF' }}>MAP/TT</div>
+                  </div>
+                </div>
+
+                {/* Systems Bar */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{
+                    width: '60px',
+                    height: `${chartHeight}px`,
+                    background: '#F3F4F6',
+                    borderRadius: '0.5rem 0.5rem 0 0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'flex-end',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: '100%',
+                      height: ratios.systems !== null ? `${(ratios.systems / maxRatio) * 100}%` : '0%',
+                      background: 'linear-gradient(180deg, #8B5CF6 0%, #7C3AED 100%)',
+                      borderRadius: '0.5rem 0.5rem 0 0',
+                      transition: 'height 0.5s ease',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'center',
+                      paddingTop: '0.5rem'
+                    }}>
+                      <span style={{ color: 'white', fontWeight: 'bold', fontSize: '0.875rem' }}>
+                        {ratios.systems !== null ? ratios.systems.toFixed(2) : '--'}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#282B34' }}>Systems</div>
+                    <div style={{ fontSize: '0.625rem', color: '#9CA3AF' }}>Anaerobic/MAP</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Card 3: Pace Performance - Horizontal Bar Chart */}
+        {hasData && selectedSummaryModality && (() => {
+          const paceStats = calculatePaceStats(selectedSummaryModality);
+          if (paceStats.peak === null && paceStats.average === null) return null;
+
+          const maxPace = paceStats.peak || paceStats.average || 1;
+
+          return (
+            <div style={{
+              background: '#DAE2EA',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '1rem',
+              boxShadow: '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              padding: '1.5rem',
+              border: '1px solid #E5E7EB',
+              marginBottom: '1.5rem'
+            }}>
+              <h3 style={{
+                fontSize: '1.125rem',
+                fontWeight: 'bold',
+                color: '#282B34',
+                marginBottom: '0.25rem',
+                textAlign: 'center'
+              }}>Pace Performance</h3>
+              <div style={{
+                fontSize: '0.75rem',
+                color: '#6B7280',
+                textAlign: 'center',
+                marginBottom: '1rem'
+              }}>
+                {getModalityDisplayName(selectedSummaryModality)}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {/* Peak Pace */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: '600', color: '#282B34' }}>Peak Pace</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#FE5858' }}>
+                      {paceStats.peak !== null ? `${paceStats.peak.toFixed(1)} ${paceStats.units}` : '--'}
+                    </span>
+                  </div>
+                  <div style={{
+                    width: '100%',
+                    height: '24px',
+                    background: '#F3F4F6',
+                    borderRadius: '0.5rem',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: paceStats.peak !== null ? '100%' : '0%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, #FE5858 0%, #E04848 100%)',
+                      borderRadius: '0.5rem',
+                      transition: 'width 0.5s ease'
+                    }} />
+                  </div>
+                </div>
+
+                {/* Average Pace */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: '600', color: '#282B34' }}>Average Pace</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#3B82F6' }}>
+                      {paceStats.average !== null ? `${paceStats.average.toFixed(1)} ${paceStats.units}` : '--'}
+                    </span>
+                  </div>
+                  <div style={{
+                    width: '100%',
+                    height: '24px',
+                    background: '#F3F4F6',
+                    borderRadius: '0.5rem',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: paceStats.average !== null ? `${(paceStats.average / maxPace) * 100}%` : '0%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, #3B82F6 0%, #2563EB 100%)',
+                      borderRadius: '0.5rem',
+                      transition: 'width 0.5s ease'
+                    }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         <div style={{
           display: 'grid',

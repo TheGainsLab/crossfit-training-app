@@ -1197,6 +1197,36 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
     return { glycolytic, aerobic, systems }
   }
 
+  // Helper function to calculate pace stats (peak and average) for a modality
+  const calculatePaceStats = (modality: string): { peak: number | null, average: number | null, units: string } => {
+    if (!modality || !engineData?.sessions || !engineData?.timeTrials) return { peak: null, average: null, units: '' }
+
+    // Get all sessions for this modality with actual_pace
+    const modalitySessions = engineData.sessions.filter(
+      (s: any) => s.modality === modality && s.actual_pace && s.actual_pace > 0
+    )
+
+    // Include time trials
+    const modalityTimeTrials = engineData.timeTrials.filter(
+      (t: any) => t.modality === modality && (t.calculated_rpm || t.actual_pace) && (t.calculated_rpm || t.actual_pace) > 0
+    )
+
+    const allPaces = [
+      ...modalitySessions.map((s: any) => parseFloat(s.actual_pace) || 0),
+      ...modalityTimeTrials.map((t: any) => parseFloat(t.calculated_rpm || t.actual_pace) || 0)
+    ].filter(p => p > 0)
+
+    if (allPaces.length === 0) return { peak: null, average: null, units: '' }
+
+    const peak = Math.max(...allPaces)
+    const average = allPaces.reduce((sum, p) => sum + p, 0) / allPaces.length
+
+    // Get units from first session or time trial
+    const units = modalitySessions[0]?.units || modalityTimeTrials[0]?.units || 'cal/min'
+
+    return { peak, average, units }
+  }
+
   // Initialize selectedSummaryModality on first render
   React.useEffect(() => {
     if (!selectedSummaryModality && engineData) {
@@ -1244,72 +1274,173 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
             <Text style={{ fontSize: 14, color: '#F6FBFE', fontWeight: '600' }}>← Back</Text>
           </TouchableOpacity>
         )}
+        {/* Card 1: Summary */}
         {hasData && (
           <Card style={{ paddingTop: 24, paddingBottom: 16 }}>
             <SectionHeader title="Summary" />
-            <View style={[styles.statsRow, { paddingHorizontal: 16 }]}>
+            <View style={[styles.statsRow, { paddingHorizontal: 16, marginBottom: 8 }]}>
               <View style={styles.statCardWrapper}><StatCard label="Workouts" value={engineData.totalSessions} /></View>
               <View style={styles.statCardWrapper}><StatCard label="Time Trials" value={engineData.totalTimeTrials} /></View>
             </View>
 
-            {/* Modality selector and ratio metrics */}
-            {modalitiesWithRatioData.length > 0 && (
-              <>
-                <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
-                  <Text style={{ fontSize: 12, color: '#6B7280', textAlign: 'center', marginBottom: 8 }}>Modality</Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                    {modalitiesWithRatioData.map((m: string) => (
-                      <TouchableOpacity
-                        key={m}
-                        onPress={() => setSelectedSummaryModality(m)}
-                        style={[
-                          styles.metricButton,
-                          selectedSummaryModality === m && styles.metricButtonActive
-                        ]}
-                      >
-                        <Text style={[
-                          styles.metricButtonText,
-                          selectedSummaryModality === m && styles.metricButtonTextActive
-                        ]}>{formatModalityName(m)}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+            {/* Modality selector */}
+            {(engineData.modalities || []).length > 0 && (
+              <View style={{ paddingHorizontal: 16 }}>
+                <Text style={{ fontSize: 12, color: '#6B7280', textAlign: 'center', marginBottom: 8 }}>Modality</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                  {(engineData.modalities || []).map((m: string) => (
+                    <TouchableOpacity
+                      key={m}
+                      onPress={() => setSelectedSummaryModality(m)}
+                      style={[
+                        styles.metricButton,
+                        selectedSummaryModality === m && styles.metricButtonActive
+                      ]}
+                    >
+                      <Text style={[
+                        styles.metricButtonText,
+                        selectedSummaryModality === m && styles.metricButtonTextActive
+                      ]}>{formatModalityName(m)}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
-
-                {/* Ratio Cards */}
-                {(summaryRatios.glycolytic !== null || summaryRatios.aerobic !== null || summaryRatios.systems !== null) ? (
-                  <View style={{ flexDirection: 'row', paddingHorizontal: 16, gap: 8 }}>
-                    <View style={{ flex: 1, backgroundColor: 'white', borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }}>
-                      <Text style={{ fontSize: 20, fontWeight: '700', color: summaryRatios.glycolytic !== null ? '#FE5858' : '#9CA3AF' }}>
-                        {summaryRatios.glycolytic !== null ? summaryRatios.glycolytic.toFixed(2) : '--'}
-                      </Text>
-                      <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>Glycolytic</Text>
-                      <Text style={{ fontSize: 8, color: '#9CA3AF' }}>Anaerobic/TT</Text>
-                    </View>
-                    <View style={{ flex: 1, backgroundColor: 'white', borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }}>
-                      <Text style={{ fontSize: 20, fontWeight: '700', color: summaryRatios.aerobic !== null ? '#FE5858' : '#9CA3AF' }}>
-                        {summaryRatios.aerobic !== null ? summaryRatios.aerobic.toFixed(2) : '--'}
-                      </Text>
-                      <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>Aerobic</Text>
-                      <Text style={{ fontSize: 8, color: '#9CA3AF' }}>MAP/TT</Text>
-                    </View>
-                    <View style={{ flex: 1, backgroundColor: 'white', borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }}>
-                      <Text style={{ fontSize: 20, fontWeight: '700', color: summaryRatios.systems !== null ? '#FE5858' : '#9CA3AF' }}>
-                        {summaryRatios.systems !== null ? summaryRatios.systems.toFixed(2) : '--'}
-                      </Text>
-                      <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>Systems</Text>
-                      <Text style={{ fontSize: 8, color: '#9CA3AF' }}>Anaerobic/MAP</Text>
-                    </View>
-                  </View>
-                ) : (
-                  <Text style={{ fontSize: 12, color: '#6B7280', textAlign: 'center', paddingHorizontal: 16 }}>
-                    Complete Anaerobic, Max Aerobic Power workouts and Time Trials to see ratios.
-                  </Text>
-                )}
-              </>
+              </View>
             )}
           </Card>
         )}
+
+        {/* Card 2: Energy System Ratios - Vertical Bar Chart */}
+        {hasData && selectedSummaryModality && (summaryRatios.glycolytic !== null || summaryRatios.aerobic !== null || summaryRatios.systems !== null) && (() => {
+          const maxRatio = Math.max(
+            summaryRatios.glycolytic || 0,
+            summaryRatios.aerobic || 0,
+            summaryRatios.systems || 0,
+            1
+          )
+          const chartHeight = 120
+
+          return (
+            <Card style={{ padding: 16 }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#282B34', textAlign: 'center', marginBottom: 16 }}>Energy System Ratios</Text>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: 24, height: chartHeight + 50 }}>
+                {/* Glycolytic Bar */}
+                <View style={{ alignItems: 'center' }}>
+                  <View style={{ width: 50, height: chartHeight, backgroundColor: '#F3F4F6', borderTopLeftRadius: 8, borderTopRightRadius: 8, justifyContent: 'flex-end', overflow: 'hidden' }}>
+                    <View style={{
+                      width: '100%',
+                      height: summaryRatios.glycolytic !== null ? `${(summaryRatios.glycolytic / maxRatio) * 100}%` : '0%',
+                      backgroundColor: '#FE5858',
+                      borderTopLeftRadius: 8,
+                      borderTopRightRadius: 8,
+                      alignItems: 'center',
+                      paddingTop: 4
+                    }}>
+                      <Text style={{ color: 'white', fontWeight: '700', fontSize: 12 }}>
+                        {summaryRatios.glycolytic !== null ? summaryRatios.glycolytic.toFixed(2) : '--'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={{ fontSize: 10, fontWeight: '600', color: '#282B34', marginTop: 4 }}>Glycolytic</Text>
+                  <Text style={{ fontSize: 8, color: '#9CA3AF' }}>Anaerobic/TT</Text>
+                </View>
+
+                {/* Aerobic Bar */}
+                <View style={{ alignItems: 'center' }}>
+                  <View style={{ width: 50, height: chartHeight, backgroundColor: '#F3F4F6', borderTopLeftRadius: 8, borderTopRightRadius: 8, justifyContent: 'flex-end', overflow: 'hidden' }}>
+                    <View style={{
+                      width: '100%',
+                      height: summaryRatios.aerobic !== null ? `${(summaryRatios.aerobic / maxRatio) * 100}%` : '0%',
+                      backgroundColor: '#3B82F6',
+                      borderTopLeftRadius: 8,
+                      borderTopRightRadius: 8,
+                      alignItems: 'center',
+                      paddingTop: 4
+                    }}>
+                      <Text style={{ color: 'white', fontWeight: '700', fontSize: 12 }}>
+                        {summaryRatios.aerobic !== null ? summaryRatios.aerobic.toFixed(2) : '--'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={{ fontSize: 10, fontWeight: '600', color: '#282B34', marginTop: 4 }}>Aerobic</Text>
+                  <Text style={{ fontSize: 8, color: '#9CA3AF' }}>MAP/TT</Text>
+                </View>
+
+                {/* Systems Bar */}
+                <View style={{ alignItems: 'center' }}>
+                  <View style={{ width: 50, height: chartHeight, backgroundColor: '#F3F4F6', borderTopLeftRadius: 8, borderTopRightRadius: 8, justifyContent: 'flex-end', overflow: 'hidden' }}>
+                    <View style={{
+                      width: '100%',
+                      height: summaryRatios.systems !== null ? `${(summaryRatios.systems / maxRatio) * 100}%` : '0%',
+                      backgroundColor: '#8B5CF6',
+                      borderTopLeftRadius: 8,
+                      borderTopRightRadius: 8,
+                      alignItems: 'center',
+                      paddingTop: 4
+                    }}>
+                      <Text style={{ color: 'white', fontWeight: '700', fontSize: 12 }}>
+                        {summaryRatios.systems !== null ? summaryRatios.systems.toFixed(2) : '--'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={{ fontSize: 10, fontWeight: '600', color: '#282B34', marginTop: 4 }}>Systems</Text>
+                  <Text style={{ fontSize: 8, color: '#9CA3AF' }}>Anaerobic/MAP</Text>
+                </View>
+              </View>
+            </Card>
+          )
+        })()}
+
+        {/* Card 3: Pace Performance - Horizontal Bar Chart */}
+        {hasData && selectedSummaryModality && (() => {
+          const paceStats = calculatePaceStats(selectedSummaryModality)
+          if (paceStats.peak === null && paceStats.average === null) return null
+
+          const maxPace = paceStats.peak || paceStats.average || 1
+
+          return (
+            <Card style={{ padding: 16 }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#282B34', textAlign: 'center', marginBottom: 4 }}>Pace Performance</Text>
+              <Text style={{ fontSize: 12, color: '#6B7280', textAlign: 'center', marginBottom: 16 }}>{formatModalityName(selectedSummaryModality)}</Text>
+
+              {/* Peak Pace */}
+              <View style={{ marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34' }}>Peak Pace</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#FE5858' }}>
+                    {paceStats.peak !== null ? `${paceStats.peak.toFixed(1)} ${paceStats.units}` : '--'}
+                  </Text>
+                </View>
+                <View style={{ width: '100%', height: 20, backgroundColor: '#F3F4F6', borderRadius: 8, overflow: 'hidden' }}>
+                  <View style={{
+                    width: paceStats.peak !== null ? '100%' : '0%',
+                    height: '100%',
+                    backgroundColor: '#FE5858',
+                    borderRadius: 8
+                  }} />
+                </View>
+              </View>
+
+              {/* Average Pace */}
+              <View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34' }}>Average Pace</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#3B82F6' }}>
+                    {paceStats.average !== null ? `${paceStats.average.toFixed(1)} ${paceStats.units}` : '--'}
+                  </Text>
+                </View>
+                <View style={{ width: '100%', height: 20, backgroundColor: '#F3F4F6', borderRadius: 8, overflow: 'hidden' }}>
+                  <View style={{
+                    width: paceStats.average !== null ? `${(paceStats.average / maxPace) * 100}%` : '0%',
+                    height: '100%',
+                    backgroundColor: '#3B82F6',
+                    borderRadius: 8
+                  }} />
+                </View>
+              </View>
+            </Card>
+          )
+        })()}
         {!hasData && (
           <Card><Text style={styles.noDataText}>No Engine workout data yet. Complete Engine workouts to see detailed analytics!</Text></Card>
         )}
