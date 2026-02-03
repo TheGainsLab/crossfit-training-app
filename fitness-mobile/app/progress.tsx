@@ -31,6 +31,8 @@ import { Card } from '@/components/ui/Card'
 import { StatCard } from '@/components/ui/StatCard'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { Button } from '@/components/ui/Button'
+import BTNAnalyticsTabs from '@/components/btn/BTNAnalyticsTabs'
+import { PerformanceView, EffortView, QualityView, HeartRateView } from '@/components/btn/BTNAnalyticsViews'
 
 const screenWidth = Dimensions.get('window').width
 
@@ -1625,7 +1627,7 @@ function AccessoriesTab({ accessoriesData, userId }: { accessoriesData: any; use
   )
 }
 
-// MetCon Tab Component
+// MetCon Tab Component - Uses shared BTNAnalyticsViews components
 function MetConTab({ metconData }: { metconData: any }) {
   if (!metconData) {
     return (
@@ -1652,43 +1654,8 @@ function MetConTab({ metconData }: { metconData: any }) {
     )
   }
 
-  // Helper functions for heatmap
-  const getPercentile = (exerciseName: string, timeRange: string): number | null => {
-    const cell = metconData.heatmapCells?.find(
-      (c: any) => c.exercise_name === exerciseName && c.time_range === timeRange
-    )
-    return cell ? cell.avg_percentile : null
-  }
-
-  const getSessionCount = (exerciseName: string, timeRange: string): number => {
-    const cell = metconData.heatmapCells?.find(
-      (c: any) => c.exercise_name === exerciseName && c.time_range === timeRange
-    )
-    return cell ? cell.session_count : 0
-  }
-
-  const getHeatmapColor = (percentile: number | null) => {
-    if (percentile === null) {
-      return { bg: '#F3F4F6', text: '#9CA3AF', border: '#D1D5DB' } // gray-100, gray-400, gray-300
-    }
-    return { bg: '#F6FBFE', text: '#282B34', border: '#FE5858' } // light blue-gray bg, dark gray text, red border
-  }
-
-  // Extract unique exercises and time domains
-  const exercises = metconData.heatmapCells 
-    ? [...new Set(metconData.heatmapCells.map((c: any) => c.exercise_name))].sort() as string[]
-    : []
-  const timeDomains = metconData.heatmapCells
-    ? ([...new Set(metconData.heatmapCells.map((c: any) => c.time_range))] as string[]).sort((a: string, b: string) => {
-        const order: { [key: string]: number } = {
-          '1:00–5:00': 1, '5:00–10:00': 2, '10:00–15:00': 3,
-          '15:00–20:00': 4, '20:00–30:00': 5, '30:00+': 6
-        }
-        return (order[a] || 7) - (order[b] || 7)
-      })
-    : []
-
-  // Calculate exercise averages
+  // Calculate exercise averages for the shared component
+  const exercises = [...new Set(metconData.heatmapCells?.map((c: any) => c.exercise_name) || [])] as string[]
   const exerciseAverages = exercises.map((exerciseName: string) => {
     const exerciseCells = metconData.heatmapCells?.filter(
       (c: any) => c.exercise_name === exerciseName
@@ -1696,252 +1663,40 @@ function MetConTab({ metconData }: { metconData: any }) {
     const totalPercentile = exerciseCells.reduce((sum: number, c: any) => sum + c.avg_percentile * c.session_count, 0)
     const totalSessions = exerciseCells.reduce((sum: number, c: any) => sum + c.session_count, 0)
     return {
-      exerciseName,
-      avgPercentile: totalSessions > 0 ? Math.round(totalPercentile / totalSessions) : 0
+      exercise_name: exerciseName,
+      total_sessions: totalSessions,
+      overall_avg_percentile: totalSessions > 0 ? Math.round(totalPercentile / totalSessions) : 0
     }
   })
 
+  // Build analytics data in the format expected by BTNAnalyticsViews
+  const analyticsData = {
+    totalCompletedWorkouts: metconData.totalMetCons,
+    heatmapCells: metconData.heatmapCells,
+    exerciseAverages: exerciseAverages,
+    globalFitnessScore: metconData.avgPercentile,
+    timeDomainWorkoutCounts: metconData.timeDomainWorkoutCounts || {},
+    exercises: exercises,
+  }
+
   return (
     <View style={styles.sectionGap}>
-      <Card>
-        <SectionHeader title="MetCon Performance Overview" />
-        <View style={styles.metconSummaryRow}>
-          <View style={styles.metconStat}>
-            <Text style={styles.metconStatValue}>
-              {metconData.totalMetCons}
-            </Text>
-            <Text style={styles.metconStatLabel}>Total MetCons</Text>
-          </View>
-          <View style={styles.metconStat}>
-            <Text style={styles.metconStatValue}>
-              {metconData.avgPercentile}%
-            </Text>
-            <Text style={styles.metconStatLabel}>Avg Percentile</Text>
-          </View>
-        </View>
-      </Card>
-
-      {/* Heatmap Grid */}
-      {metconData.heatmapCells && metconData.heatmapCells.length > 0 ? (
-        (() => {
-          // Helper functions
-          const getPercentile = (exerciseName: string, timeRange: string): number | null => {
-            const cell = metconData.heatmapCells.find(
-              (c: any) => c.exercise_name === exerciseName && c.time_range === timeRange
-            )
-            return cell ? cell.avg_percentile : null
+      <BTNAnalyticsTabs>
+        {(activeTab) => {
+          switch (activeTab) {
+            case 'performance':
+              return <PerformanceView heatmapData={analyticsData} activeTab={activeTab} />
+            case 'effort':
+              return <EffortView heatmapData={analyticsData} activeTab={activeTab} />
+            case 'quality':
+              return <QualityView heatmapData={analyticsData} activeTab={activeTab} />
+            case 'heartrate':
+              return <HeartRateView heatmapData={analyticsData} activeTab={activeTab} />
+            default:
+              return <PerformanceView heatmapData={analyticsData} activeTab={activeTab} />
           }
-
-          const getSessionCount = (exerciseName: string, timeRange: string): number => {
-            const cell = metconData.heatmapCells.find(
-              (c: any) => c.exercise_name === exerciseName && c.time_range === timeRange
-            )
-            return cell ? cell.session_count : 0
-          }
-
-          const getHeatmapColor = (percentile: number | null) => {
-            if (percentile === null) {
-              return { bg: '#F3F4F6', text: '#9CA3AF', border: '#D1D5DB' } // gray-100, gray-400, gray-300
-            }
-            return { bg: '#F6FBFE', text: '#282B34', border: '#FE5858' } // light blue-gray bg, dark gray text, red border
-          }
-
-          // Extract unique exercises and time domains
-          const exercises = ([...new Set(metconData.heatmapCells.map((c: any) => c.exercise_name))] as string[]).sort()
-          const timeDomains = ([...new Set(metconData.heatmapCells.map((c: any) => c.time_range))] as string[]).sort((a: string, b: string) => {
-            const order: { [key: string]: number } = {
-              '1:00–5:00': 1, '5:00–10:00': 2, '10:00–15:00': 3,
-              '15:00–20:00': 4, '20:00–30:00': 5, '30:00+': 6
-            }
-            return (order[a] || 7) - (order[b] || 7)
-          })
-
-          // Calculate exercise averages
-          const exerciseAverages = exercises.map(exerciseName => {
-            const exerciseCells = metconData.heatmapCells.filter(
-              (c: any) => c.exercise_name === exerciseName
-            )
-            const totalPercentile = exerciseCells.reduce((sum: number, c: any) => sum + c.avg_percentile * c.session_count, 0)
-            const totalSessions = exerciseCells.reduce((sum: number, c: any) => sum + c.session_count, 0)
-            return {
-              exerciseName,
-              avgPercentile: totalSessions > 0 ? Math.round(totalPercentile / totalSessions) : 0
-            }
-          })
-
-          // Calculate time domain averages
-          const calculateTimeDomainAverage = (domain: string): number | null => {
-            const domainCells = metconData.heatmapCells.filter(
-              (cell: any) => cell.time_range === domain
-            )
-            if (domainCells.length === 0) return null
-            const total = domainCells.reduce(
-              (sum: number, cell: any) => sum + cell.avg_percentile * cell.session_count,
-              0
-            )
-            const sessions = domainCells.reduce(
-              (sum: number, cell: any) => sum + cell.session_count,
-              0
-            )
-            return sessions > 0 ? Math.round(total / sessions) : null
-          }
-
-          // Calculate global average (fitness score)
-          const globalAvg = metconData.avgPercentile || null
-
-          return (
-            <Card>
-              <SectionHeader title="Exercise Performance Heatmap" />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View>
-                  {/* Header Row */}
-                  <View style={styles.heatmapHeaderRow}>
-                    <View style={styles.heatmapExerciseHeaderCell}>
-                      <Text style={styles.heatmapHeaderText}>Exercise</Text>
-                    </View>
-                    {timeDomains.map((domain: string) => (
-                      <View key={domain} style={styles.heatmapHeaderCell}>
-                        <Text style={styles.heatmapHeaderText}>{domain}</Text>
-                      </View>
-                    ))}
-                    <View style={styles.heatmapExerciseAvgHeaderCell}>
-                      <Text style={styles.heatmapHeaderText}>Exercise Avg</Text>
-                    </View>
-                  </View>
-
-                  {/* Exercise Rows */}
-                  {exercises.map((exerciseName: string) => {
-                    const exerciseAvg = exerciseAverages.find((e: any) => e.exerciseName === exerciseName)
-                    const avgColor = getHeatmapColor(exerciseAvg?.avgPercentile || null)
-                    
-                    return (
-                      <View key={exerciseName} style={styles.heatmapRow}>
-                        {/* Exercise Name */}
-                        <View style={styles.heatmapExerciseCell}>
-                          <Text style={styles.heatmapExerciseText} numberOfLines={0}>{exerciseName}</Text>
-                        </View>
-                        
-                        {/* Time Domain Cells */}
-                        {timeDomains.map((domain: string) => {
-                          const percentile = getPercentile(exerciseName, domain)
-                          const sessions = getSessionCount(exerciseName, domain)
-                          const color = getHeatmapColor(percentile)
-                          
-                          return (
-                            <View key={domain} style={styles.heatmapCell}>
-                              <View style={[styles.heatmapCellContent, { 
-                                backgroundColor: color.bg,
-                                borderWidth: 1,
-                                borderColor: color.border
-                              }]}>
-                                {percentile !== null ? (
-                                  <View>
-                                    <Text style={[styles.heatmapCellValue, { color: color.text }]}>
-                                      {percentile}%
-                                    </Text>
-                                    {sessions > 0 ? (
-                                      <Text style={[styles.heatmapCellSessions, { color: color.text }]}>
-                                        {sessions} {sessions === 1 ? 'workout' : 'workouts'}
-                                      </Text>
-                                    ) : null}
-                                  </View>
-                                ) : (
-                                  <Text style={[styles.heatmapCellValue, { color: color.text }]}>—</Text>
-                                )}
-                              </View>
-                            </View>
-                          )
-                        })}
-                        
-                        {/* Exercise Average Cell */}
-                        <View style={styles.heatmapExerciseAvgCell}>
-                          <View style={[styles.heatmapCellContent, { 
-                            backgroundColor: avgColor.bg,
-                            borderWidth: 1,
-                            borderColor: avgColor.border
-                          }]}>
-                            {exerciseAvg && exerciseAvg.avgPercentile > 0 ? (
-                              <View>
-                                <Text style={[styles.heatmapCellValue, { color: '#FE5858', fontWeight: '700' }]}>
-                                  Avg: {exerciseAvg.avgPercentile}%
-                                </Text>
-                                <Text style={[styles.heatmapCellSessions, { color: '#FE5858' }]}>
-                                  {metconData.heatmapCells.filter((c: any) => c.exercise_name === exerciseName).reduce((sum: number, c: any) => sum + c.session_count, 0)} {metconData.heatmapCells.filter((c: any) => c.exercise_name === exerciseName).reduce((sum: number, c: any) => sum + c.session_count, 0) === 1 ? 'workout' : 'workouts'}
-                                </Text>
-                              </View>
-                            ) : (
-                              <Text style={[styles.heatmapCellValue, { color: avgColor.text }]}>—</Text>
-                            )}
-                          </View>
-                        </View>
-                      </View>
-                    )
-                  })}
-
-                  {/* Time Domain Avg Row */}
-                  <View style={[styles.heatmapRow, { borderTopWidth: 2, borderTopColor: '#282B34', backgroundColor: '#F6FBFE' }]}>
-                    <View style={[styles.heatmapExerciseCell, { backgroundColor: '#C4E2EA', borderRightWidth: 2, borderRightColor: '#282B34' }]}>
-                      <Text style={[styles.heatmapExerciseText, { fontWeight: '700' }]} numberOfLines={0}>Time Domain Avg</Text>
-                    </View>
-                    {timeDomains.map((domain: string) => {
-                      const avgValue = calculateTimeDomainAverage(domain)
-                      const domainColor = getHeatmapColor(avgValue)
-                      const totalWorkouts = metconData.heatmapCells.filter((c: any) => c.time_range === domain).reduce((sum: number, c: any) => sum + c.session_count, 0)
-                      
-                      return (
-                        <View key={domain} style={styles.heatmapCell}>
-                          <View style={[styles.heatmapCellContent, { 
-                            backgroundColor: domainColor.bg,
-                            borderWidth: 1,
-                            borderColor: domainColor.border
-                          }]}>
-                            {avgValue !== null ? (
-                              <View>
-                                <Text style={[styles.heatmapCellValue, { color: '#FE5858', fontWeight: '700' }]}>
-                                  Avg: {avgValue}%
-                                </Text>
-                                {totalWorkouts > 0 ? (
-                                  <Text style={[styles.heatmapCellSessions, { color: '#FE5858' }]}>
-                                    {totalWorkouts} {totalWorkouts === 1 ? 'workout' : 'workouts'}
-                                  </Text>
-                                ) : null}
-                              </View>
-                            ) : (
-                              <Text style={[styles.heatmapCellValue, { color: domainColor.text }]}>—</Text>
-                            )}
-                          </View>
-                        </View>
-                      )
-                    })}
-                    {/* Global Average Cell */}
-                    <View style={styles.heatmapExerciseAvgCell}>
-                      <View style={[styles.heatmapCellContent, { 
-                        backgroundColor: '#FE5858', 
-                        minHeight: 60,
-                        borderWidth: 1,
-                        borderColor: '#FE5858'
-                      }]}>
-                        {globalAvg !== null ? (
-                          <View>
-                            <Text style={[styles.heatmapCellValue, { color: '#F6FBFE', fontSize: 18, fontWeight: '700' }]}>
-                              {globalAvg}%
-                            </Text>
-                            <Text style={[styles.heatmapCellSessions, { color: '#F6FBFE', fontSize: 10, fontWeight: '600', marginTop: 4 }]}>
-                              FITNESS
-                            </Text>
-                          </View>
-                        ) : (
-                          <Text style={[styles.heatmapCellValue, { color: '#F6FBFE' }]}>—</Text>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              </ScrollView>
-            </Card>
-          )
-        })()
-      ) : null}
+        }}
+      </BTNAnalyticsTabs>
     </View>
   )
 }
