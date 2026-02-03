@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import engineDatabaseService from '@/lib/engine/databaseService'
+import { getUserCurrentProgram, type EngineProgram } from '@/lib/api/enginePrograms'
 
 interface DashboardProps {
   onDayClick: (dayNumber: number, dayType?: string) => void
@@ -28,33 +29,54 @@ export default function Dashboard({
   const [workouts, setWorkouts] = useState<any[]>([])
   const [completedSessions, setCompletedSessions] = useState<any[]>([])
   const [programVersion, setProgramVersion] = useState<string | null>(null)
+  const [currentProgram, setCurrentProgram] = useState<EngineProgram | null>(null)
   const [internalView, setInternalView] = useState<InternalView>('main')
 
-  const totalMonths = 36
-
+  // Helper functions - defined before being used
   const getDaysPerMonth = () => {
-    if (!programVersion) return 20
-    return programVersion === '3-day' ? 12 : 20
+    if (!currentProgram) return 20
+    
+    // For shorter programs (High Rocks, VO2Maximizer), calculate days per month
+    const totalDays = currentProgram.total_days
+    const daysPerWeek = currentProgram.frequency_per_week
+    
+    // Calculate approximate days per month (4 weeks)
+    return daysPerWeek * 4
   }
 
   const getDaysPerWeek = () => {
-    if (!programVersion) return 5
-    return programVersion === '3-day' ? 3 : 5
+    return currentProgram?.frequency_per_week || 5
   }
+
+  // Memoize totalMonths calculation
+  const totalMonths = useMemo(() => {
+    if (!currentProgram) return 36
+    return Math.ceil(currentProgram.total_days / getDaysPerMonth())
+  }, [currentProgram])
 
   const loadProgramVersion = useCallback(async () => {
     if (!engineDatabaseService.isConnected()) return null
 
     try {
-      const version = await engineDatabaseService.loadProgramVersion()
-      const finalVersion = version || '5-day'
-      setProgramVersion(finalVersion)
-      return finalVersion
+      const programId = await engineDatabaseService.loadProgramVersion()
+      const finalProgramId = programId || 'main_5day'
+      setProgramVersion(finalProgramId)
+      
+      // Fetch program details
+      const userId = engineDatabaseService.getUserId()
+      if (userId) {
+        const { program } = await getUserCurrentProgram(parseInt(userId))
+        if (program) {
+          setCurrentProgram(program)
+        }
+      }
+      
+      return finalProgramId
     } catch (error) {
       console.error('Error loading program version:', error)
-      const defaultVersion = '5-day'
-      setProgramVersion(defaultVersion)
-      return defaultVersion
+      const defaultProgramId = 'main_5day'
+      setProgramVersion(defaultProgramId)
+      return defaultProgramId
     }
   }, [])
 
@@ -63,23 +85,34 @@ export default function Dashboard({
 
     setLoading(true)
     try {
-      const version = await engineDatabaseService.loadProgramVersion()
-      const userProgramVersion = version || '5-day'
-      setProgramVersion(prev => prev || userProgramVersion)
+      const programId = await engineDatabaseService.loadProgramVersion()
+      const userProgramId = programId || 'main_5day'
+      setProgramVersion(prev => prev || userProgramId)
+
+      // Load program metadata
+      const userId = engineDatabaseService.getUserId()
+      if (userId) {
+        const { program } = await getUserCurrentProgram(parseInt(userId))
+        if (program) {
+          setCurrentProgram(program)
+        }
+      }
 
       const [progress, workoutsData] = await Promise.all([
         engineDatabaseService.loadUserProgress(),
-        engineDatabaseService.getWorkoutsForProgram(userProgramVersion)
+        engineDatabaseService.getWorkoutsForProgram(userProgramId)
       ])
 
       if (progress.user) {
         setUser(progress.user)
       }
 
+      // Filter sessions for current program
       const allSessions = progress.completedSessions || []
       const filteredSessions = allSessions.filter((session: any) => {
-        const sessionProgramVersion = session.program_version || '5-day'
-        return sessionProgramVersion === userProgramVersion
+        const sessionProgramId = session.program_id || session.engine_program_id
+        // Include sessions that match current program or have no program set (backward compatibility)
+        return !sessionProgramId || sessionProgramId === userProgramId
       })
 
       setCompletedSessions(filteredSessions)
@@ -165,7 +198,7 @@ export default function Dashboard({
 
     const daysPerMonth = getDaysPerMonth()
     const dayNum = workout.program_day_number || workout.day_number
-    const isTimeTrialDay = dayNum % daysPerMonth === 1 || (programVersion === '3-day' && dayNum % 12 === 1)
+    const isTimeTrialDay = dayNum % daysPerMonth === 1
     const dayType = workout.day_type || (isTimeTrialDay ? 'time_trial' : undefined)
 
     onDayClick(dayNum, dayType)
@@ -262,7 +295,7 @@ export default function Dashboard({
       <View style={styles.header}>
         <Text style={styles.title}>ENGINE PROGRAM</Text>
         <Text style={styles.subtitle}>
-          {programVersion === '3-day' ? '3-Day Program' : '5-Day Program'}
+          {currentProgram?.display_name || 'Engine 5-Day'}
         </Text>
       </View>
 
@@ -274,9 +307,11 @@ export default function Dashboard({
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>
-            {Math.round((completedSessions.length / (programVersion === '3-day' ? 108 : 180)) * 100)}%
+            {currentProgram 
+              ? Math.round((completedSessions.length / currentProgram.total_days) * 100)
+              : 0}%
           </Text>
-          <Text style={styles.statLabel}>Percentage</Text>
+          <Text style={styles.statLabel}>Progress</Text>
         </View>
       </View>
 
@@ -292,7 +327,9 @@ export default function Dashboard({
           </TouchableOpacity>
         </View>
         <Text style={styles.sectionDescription}>
-          Select a month to view your training days. Program: {programVersion === '3-day' ? 'Engine 3-Day' : 'Engine 5-Day'}
+          {currentProgram 
+            ? `${currentProgram.description || currentProgram.display_name} • ${currentProgram.frequency_per_week} days/week`
+            : 'Select a month to view your training days.'}
         </Text>
       </View>
 
