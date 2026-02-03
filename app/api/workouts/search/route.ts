@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const q = url.searchParams.get('q') || ''
   const level = url.searchParams.get('level') || undefined
   const format = url.searchParams.get('format') || undefined
+  const year = url.searchParams.get('year') || undefined
   // Support both categorical time domain (sprint/short/...) and human-readable time range (1:00–5:00, ...)
   const timeDomainParam = url.searchParams.get('timeDomain') || ''
   const timeRangeParam = url.searchParams.get('timeRange') || ''
@@ -34,6 +35,7 @@ export async function GET(req: NextRequest) {
   if (q) query = query.ilike('name', `%${q}%`)
   if (level) query = query.eq('event_level', level)
   if (format) query = query.eq('format', format)
+  if (year) query = query.eq('event_year', Number(year))
   // Determine whether to filter by time_range or time_domain
   const isTimeRangeValue = (val: string) => /\d\d?:\d\d|\+|–/.test(val)
   if (timeRangeParam) {
