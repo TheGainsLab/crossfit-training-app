@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { Suspense, useEffect, useMemo, useState, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 
 // ============================================================================
@@ -223,7 +223,7 @@ function WorkoutCard({
 // Main Page Component
 // ============================================================================
 
-export default function WorkoutsPage() {
+function WorkoutsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -506,5 +506,23 @@ export default function WorkoutsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Wrap in Suspense for useSearchParams (required in Next.js 15)
+export default function WorkoutsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-ice-blue">
+        <div className="mx-auto max-w-5xl p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-charcoal">Competition Workouts</h1>
+          </div>
+          <LoadingSkeleton />
+        </div>
+      </div>
+    }>
+      <WorkoutsPageContent />
+    </Suspense>
   )
 }
