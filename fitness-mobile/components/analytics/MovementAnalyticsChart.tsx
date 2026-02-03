@@ -166,7 +166,7 @@ export default function MovementAnalyticsChart({
               <Text style={{ fontSize: 28, fontWeight: '700', color: '#FE5858' }}>
                 {headlineStats.mostVolume ? headlineStats.mostVolume.volume.toLocaleString() : '--'}
               </Text>
-              <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 2 }}>reps</Text>
+              <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 2 }}>lbs</Text>
               <View style={{ height: 1, backgroundColor: '#E5E7EB', width: '80%', marginVertical: 8 }} />
               <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34' }}>Most Volume</Text>
               <Text style={{ fontSize: 10, color: '#9CA3AF', textAlign: 'center', marginTop: 2 }} numberOfLines={1}>
