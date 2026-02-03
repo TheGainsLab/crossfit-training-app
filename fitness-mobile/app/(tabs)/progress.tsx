@@ -36,6 +36,8 @@ import MovementAnalyticsChart from '@/components/analytics/MovementAnalyticsChar
 import SkillsAnalyticsChart from '@/components/analytics/SkillsAnalyticsChart'
 import MetConHeatMap from '@/components/analytics/MetConHeatMap'
 import { EngineTab as EngineAnalyticsTab } from '@/components/engine/EngineAnalyticsViews'
+import BTNAnalyticsTabs from '@/components/btn/BTNAnalyticsTabs'
+import { PerformanceView, EffortView, QualityView, HeartRateView } from '@/components/btn/BTNAnalyticsViews'
 
 const screenWidth = Dimensions.get('window').width
 
@@ -1587,12 +1589,8 @@ function AccessoriesTab({ accessoriesData, userId }: { accessoriesData: any; use
   )
 }
 
-// MetCon Tab Component
-type MetConMetricType = 'percentile' | 'rpe' | 'quality' | 'heartrate'
-
+// MetCon Tab Component - Uses shared BTNAnalyticsViews components
 function MetConTab({ metconData }: { metconData: any }) {
-  const [activeMetric, setActiveMetric] = useState<MetConMetricType>('percentile')
-
   if (!metconData) {
     return (
       <View>
@@ -1633,106 +1631,35 @@ function MetConTab({ metconData }: { metconData: any }) {
     }
   })
 
-  const metricTabs: { key: MetConMetricType; label: string; icon: string }[] = [
-    { key: 'percentile', label: 'Performance', icon: '📊' },
-    { key: 'rpe', label: 'Effort', icon: '💪' },
-    { key: 'quality', label: 'Quality', icon: '⭐' },
-    { key: 'heartrate', label: 'Heart Rate', icon: '❤️' },
-  ]
-
-  const getHeatmapTitle = (metric: MetConMetricType): string => {
-    switch (metric) {
-      case 'percentile':
-        return 'Percentile Heatmap'
-      case 'rpe':
-        return 'RPE Heatmap'
-      case 'quality':
-        return 'Quality Heatmap'
-      case 'heartrate':
-        return 'Heart Rate Heatmap'
-      default:
-        return 'Performance Heatmap'
-    }
+  // Build analytics data in the format expected by BTNAnalyticsViews
+  const analyticsData = {
+    totalCompletedWorkouts: metconData.totalMetCons,
+    heatmapCells: metconData.heatmapCells,
+    exerciseAverages: exerciseAverages,
+    globalFitnessScore: metconData.avgPercentile,
+    timeDomainWorkoutCounts: metconData.timeDomainWorkoutCounts || {},
+    exercises: exercises,
   }
 
   return (
     <View style={styles.sectionGap}>
-      {/* Metric Tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={metconTabStyles.tabsContainer}
-      >
-        {metricTabs.map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[
-              metconTabStyles.metricTab,
-              activeMetric === tab.key && metconTabStyles.metricTabActive,
-            ]}
-            onPress={() => setActiveMetric(tab.key)}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                metconTabStyles.metricTabLabel,
-                activeMetric === tab.key && metconTabStyles.metricTabLabelActive,
-              ]}
-            >
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {metconData.heatmapCells && metconData.heatmapCells.length > 0 ? (
-        <Card>
-          <SectionHeader title={getHeatmapTitle(activeMetric)} />
-          <MetConHeatMap
-            heatmapCells={metconData.heatmapCells}
-            exerciseAverages={exerciseAverages}
-            globalFitnessScore={metconData.avgPercentile}
-            metric={activeMetric}
-            hideTitle
-          />
-        </Card>
-      ) : null}
+      <BTNAnalyticsTabs>
+        {(activeTab) => {
+          switch (activeTab) {
+            case 'performance':
+              return <PerformanceView heatmapData={analyticsData} activeTab={activeTab} />
+            case 'effort':
+              return <EffortView heatmapData={analyticsData} activeTab={activeTab} />
+            case 'quality':
+              return <QualityView heatmapData={analyticsData} activeTab={activeTab} />
+            case 'heartrate':
+              return <HeartRateView heatmapData={analyticsData} activeTab={activeTab} />
+            default:
+              return <PerformanceView heatmapData={analyticsData} activeTab={activeTab} />
+          }
+        }}
+      </BTNAnalyticsTabs>
     </View>
   )
 }
-
-const metconTabStyles = StyleSheet.create({
-  tabsContainer: {
-    paddingHorizontal: 4,
-    paddingVertical: 8,
-    gap: 8,
-    flexDirection: 'row',
-  },
-  metricTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    gap: 6,
-  },
-  metricTabActive: {
-    backgroundColor: '#FE5858',
-    borderColor: '#FE5858',
-  },
-  metricTabIcon: {
-    fontSize: 16,
-  },
-  metricTabLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  metricTabLabelActive: {
-    color: '#FFFFFF',
-  },
-})
 
