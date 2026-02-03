@@ -88,7 +88,6 @@ function RootLayoutNav() {
         <Stack.Screen name="dashboard/index" options={{ headerShown: false }} />
         <Stack.Screen name="workout/[programId]/week/[week]/day/[day]" options={{ headerShown: false }} />
         <Stack.Screen name="program" options={{ headerShown: false }} />
-        <Stack.Screen name="progress" options={{ headerShown: false }} />
         <Stack.Screen name="profile" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
         <Stack.Screen name="session-review/[sessionId]" options={{ headerShown: false }} />
