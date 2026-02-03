@@ -147,7 +147,12 @@ export default function Dashboard() {
   const calculateProgramContext = async (program: any, subscriptionTier: string, userId: number) => {
     try {
       // Determine program name based on subscription tier
-      const programType = subscriptionTier === 'APPLIED_POWER' ? 'Applied Power' : 'Full Program'
+      let programType = 'Full Program'
+      if (subscriptionTier === 'APPLIED_POWER') {
+        programType = 'Applied Power'
+      } else if (subscriptionTier === 'ENGINE') {
+        programType = 'Engine'
+      }
       const programNameText = `${programType} (${program.weeks_generated?.length || 0}-Week)`
       setProgramName(programNameText)
 
