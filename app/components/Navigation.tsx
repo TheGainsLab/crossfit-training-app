@@ -13,6 +13,7 @@ export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [todaysHref, setTodaysHref] = useState<string>('/dashboard')
   const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const pathname = usePathname()
 
   useEffect(() => {
@@ -22,19 +23,21 @@ export default function Navigation() {
       const authedUser = (session?.user as User) || null
       setUser(authedUser)
       if (authedUser) {
-        // Refresh name and subscription tier on auth change
+        // Refresh name, subscription tier, and role on auth change
         supabase
           .from('users')
-          .select('name, subscription_tier')
+          .select('name, subscription_tier, role')
           .eq('auth_id', authedUser.id)
           .single()
-          .then(({ data }: { data?: { name?: string, subscription_tier?: string } | null }) => {
+          .then(({ data }: { data?: { name?: string, subscription_tier?: string, role?: string } | null }) => {
             if (data?.name) setUserName(data.name)
             if (data?.subscription_tier) setSubscriptionTier(data.subscription_tier)
+            if (data?.role) setUserRole(data.role)
           })
       } else {
         setUserName('')
         setSubscriptionTier(null)
+        setUserRole(null)
       }
       setIsLoading(false)
     })
@@ -142,10 +145,10 @@ export default function Navigation() {
       if (user) {
         setUser(user)
         
-        // Get user's name and subscription tier from the database
+        // Get user's name, subscription tier, and role from the database
         const { data: userData, error } = await supabase
           .from('users')
-          .select('name, subscription_tier')
+          .select('name, subscription_tier, role')
           .eq('auth_id', user.id)
           .single()
         
@@ -161,6 +164,11 @@ export default function Navigation() {
           setSubscriptionTier(userData.subscription_tier)
         } else {
           console.warn('loadUser - NO subscription_tier found in user data!')
+        }
+
+        if (userData?.role) {
+          console.log('loadUser - setting userRole to:', userData.role)
+          setUserRole(userData.role)
         }
       }
       setIsLoading(false)
@@ -192,6 +200,11 @@ export default function Navigation() {
 
   // Don't show navigation on auth pages
   if (pathname?.startsWith('/auth')) {
+    return null
+  }
+
+  // Only show navigation for admin users
+  if (!user || userRole !== 'admin') {
     return null
   }
 
