@@ -97,8 +97,86 @@ export default function MovementAnalyticsChart({
     totalVolume: 'Total Volume'
   }
 
+  // Calculate headline stats
+  const headlineStats = React.useMemo(() => {
+    if (!movements || movements.length === 0) {
+      return { maxWeight: null, mostVolume: null }
+    }
+
+    // Find max weight across all movements
+    let maxWeightMovement: { name: string; weight: number } | null = null
+    let mostVolumeMovement: { name: string; volume: number } | null = null
+
+    movements.forEach(movement => {
+      const weight = isNaN(movement.maxWeight) ? 0 : movement.maxWeight
+      const volume = isNaN(movement.totalVolume) ? 0 : movement.totalVolume
+
+      if (weight > 0 && (!maxWeightMovement || weight > maxWeightMovement.weight)) {
+        maxWeightMovement = { name: movement.name, weight }
+      }
+
+      if (volume > 0 && (!mostVolumeMovement || volume > mostVolumeMovement.volume)) {
+        mostVolumeMovement = { name: movement.name, volume }
+      }
+    })
+
+    return { maxWeight: maxWeightMovement, mostVolume: mostVolumeMovement }
+  }, [movements])
+
   return (
     <View style={styles.sectionGap}>
+      {/* Headline Summary Card */}
+      {(headlineStats.maxWeight || headlineStats.mostVolume) && (
+        <Card style={{ padding: 16 }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#282B34', textAlign: 'center', marginBottom: 16 }}>
+            Strength Summary
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            {/* Max Weight */}
+            <View style={{
+              flex: 1,
+              backgroundColor: '#F3F4F6',
+              borderRadius: 12,
+              padding: 16,
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: '#E5E7EB'
+            }}>
+              <Text style={{ fontSize: 28, fontWeight: '700', color: '#FE5858' }}>
+                {headlineStats.maxWeight ? Math.round(headlineStats.maxWeight.weight) : '--'}
+              </Text>
+              <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 2 }}>lbs</Text>
+              <View style={{ height: 1, backgroundColor: '#E5E7EB', width: '80%', marginVertical: 8 }} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34' }}>Max Weight</Text>
+              <Text style={{ fontSize: 10, color: '#9CA3AF', textAlign: 'center', marginTop: 2 }} numberOfLines={1}>
+                {headlineStats.maxWeight?.name || '--'}
+              </Text>
+            </View>
+
+            {/* Most Volume */}
+            <View style={{
+              flex: 1,
+              backgroundColor: '#F3F4F6',
+              borderRadius: 12,
+              padding: 16,
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: '#E5E7EB'
+            }}>
+              <Text style={{ fontSize: 28, fontWeight: '700', color: '#FE5858' }}>
+                {headlineStats.mostVolume ? headlineStats.mostVolume.volume.toLocaleString() : '--'}
+              </Text>
+              <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 2 }}>reps</Text>
+              <View style={{ height: 1, backgroundColor: '#E5E7EB', width: '80%', marginVertical: 8 }} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34' }}>Most Volume</Text>
+              <Text style={{ fontSize: 10, color: '#9CA3AF', textAlign: 'center', marginTop: 2 }} numberOfLines={1}>
+                {headlineStats.mostVolume?.name || '--'}
+              </Text>
+            </View>
+          </View>
+        </Card>
+      )}
+
       {/* Metric Selector */}
       <Card style={{ borderWidth: 1, borderColor: '#282B34', paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: '#282B34', marginBottom: 12, textAlign: 'center' }}>
