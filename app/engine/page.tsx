@@ -223,151 +223,199 @@ export default function EnginePage() {
         {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            THE YEAR OF THE ENGINE: WHERE CONDITIONING MEETS INTELLIGENCE
+            The Year of the Engine
           </h1>
-          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
-            Most conditioning programs juggle Zone 2, intervals, and sprints—good at first, then predictable. The Year of the Engine is different. Built on a decade of coaching 10,000+ athletes and powered by a machine-learning engine, it becomes a true training partner, ensuring every second of effort drives measurable progress.
-          </p>
-        </div>
-
-        {/* A Coach With a Computer Chip Section */}
-        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
-            A Coach With a Computer Chip in Their Head
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight">
+            Conditioning, Treated as a System
           </h2>
-          <p className="text-xl font-semibold text-gray-800 mb-6 text-center">
-            No more guesswork. Just guaranteed progress.
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mb-6">
+            Most conditioning programs rotate randomly between Zone 2, intervals, and sprints.
           </p>
-          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-            After every session, you log your score. Our AI processes your performance instantly and adjusts the next workout with precision:
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mb-6">
+            That's not the problem.
           </p>
-          <ul className="space-y-4 max-w-3xl mx-auto mb-6">
-            <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700"><strong>Crush a target?</strong> Your pacing automatically gets harder.</span>
-            </li>
-            <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700"><strong>Come up short?</strong> It fine-tunes the difficulty to keep you in the ideal stimulus zone.</span>
-            </li>
-          </ul>
-          <p className="text-lg text-gray-700 leading-relaxed">
-            Each energy system adapts independently—if your sprint engine climbs while your aerobic power lags, the program adjusts both separately so your entire engine rises together.
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mb-6">
+            The problem is that most of them don't adapt with enough precision. Targets stay fixed. Progress stalls. Effort goes up, results don't.
           </p>
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mb-6">
+            The Year of the Engine is a conditioning system that evolves with you. Built on structured training data and adaptive pacing, it treats conditioning as something measurable, adjustable, and trainable over time.
+          </p>
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed font-semibold">
+            Not random workouts. Not static cycles. A system designed to build your engine—deliberately.
+          </p>
+
+          {/* 📱 IMAGE PLACEHOLDER */}
+          <div className="mt-12 bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
+            <p className="text-gray-400 italic text-sm">
+              📱 Image Placeholder<br/>
+              Conditioning, mapped—not guessed. See how performance changes across effort durations, not just best days.
+            </p>
+          </div>
         </div>
 
-        {/* Foundation Section */}
+        {/* Adaptive Conditioning Section */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
-            A FOUNDATION OF 25 TRAINING STRUCTURES — SUPERCHARGED BY AI
+            Adaptive Conditioning — Not Guesswork
           </h2>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            The program is built on 25 proven frameworks engineered to stress every muscle fiber and energy system.
+            Good conditioning isn't about pushing harder. It's about applying the right stimulus, at the right time.
+          </p>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            After every session, your performance is logged and analyzed. The system adjusts what comes next:
           </p>
           <ul className="space-y-4 max-w-3xl mx-auto mb-6">
             <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700"><strong>Variable Pacing Sessions:</strong> From long grinds to sharp burners, your body learns to answer any demand.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Hit the target → pacing tightens</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700"><strong>Dynamic Work-to-Rest Ratios:</strong> Intelligent interval manipulation builds recovery capacity and pacing control.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Miss the target → difficulty recalibrates</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Improve in one domain → others adjust independently</span>
+            </li>
+          </ul>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            Aerobic capacity, repeatability, and short-duration power are trained as separate but connected systems—so progress stays balanced instead of accidental.
+          </p>
+          <p className="text-lg text-gray-700 leading-relaxed font-semibold">
+            No manual tweaking. No chasing exhaustion. Just conditioning that stays aligned with your actual capacity.
+          </p>
+
+          {/* 📱 IMAGE PLACEHOLDER */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image Placeholder<br/>
+              Targets evolve as you do. Pacing adjusts session by session to maintain the intended stimulus.
+            </p>
+          </div>
+        </div>
+
+        {/* Built on Structure Section */}
+        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
+            Built on Structure, Not Variety
+          </h2>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            The Year of the Engine is built on 25 proven conditioning structures—each designed to stress different energy systems, fiber types, and pacing demands.
+          </p>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            These frameworks stay consistent. What changes is the target.
+          </p>
+          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+            Because the structure doesn't drift, progress becomes measurable:
+          </p>
+          <ul className="space-y-4 max-w-3xl mx-auto mb-6">
+            <li className="flex items-start">
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Variable pacing sessions across short, medium, and long efforts</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Changing work-to-rest ratios to build recovery tolerance</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Mixed-demand sessions that test pacing under fatigue</span>
             </li>
           </ul>
           <p className="text-lg text-gray-700 leading-relaxed font-semibold">
-            Every workout is calibrated to exactly where you are today—not where a template thinks you should be.
+            Every workout is calibrated to where you are today—not where a template assumes you should be.
           </p>
+
+          {/* 📱 IMAGE PLACEHOLDER */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image Placeholder<br/>
+              Consistency creates clarity. Stable structures make adaptation visible.
+            </p>
+          </div>
         </div>
 
-        {/* Analytics Section */}
+        {/* Conditioning You Can See Section */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
-            UNMATCHED ANALYTICS: SEE YOUR ENGINE IN HIGH DEFINITION
+            Conditioning You Can See
           </h2>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed text-center">
-            Go beyond generic tracking with the most advanced conditioning analytics available.
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            Most conditioning programs tell you how hard to go. The Year of the Engine shows you what it costs.
           </p>
-          <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Your Personal Fitness Dashboard</h3>
-          <ul className="space-y-4 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+            Your conditioning profile reveals:
+          </p>
+          <ul className="space-y-4 max-w-3xl mx-auto mb-6">
             <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700"><strong>Energy System Profiling:</strong> Compare your aerobic, anaerobic, and glycolytic engines with live trend tracking.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Performance trends across effort durations</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700"><strong>Target Completion Intelligence:</strong> Measure how consistently you're hitting rising expectations.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Target completion consistency over time</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700"><strong>Heart Rate Efficiency Metrics:</strong> See training load, intensity distribution, and cardiovascular improvements across workout types.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Heart-rate–based efficiency and training load</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700"><strong>Advanced Recovery Insights:</strong> Learn how you handle work intervals longer than rest and what that reveals about your metabolism and pacing under fatigue.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Recovery and tolerance patterns under fatigue</span>
             </li>
           </ul>
-          <p className="text-lg text-gray-700 mt-6 leading-relaxed font-semibold text-center">
-            This is elite-level data—finally made accessible.
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            This isn't data for motivation. It's data for decisions.
           </p>
+          <p className="text-lg text-gray-700 leading-relaxed font-semibold">
+            If the system sees it, you see it.
+          </p>
+
+          {/* 📱 IMAGE PLACEHOLDER */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image Placeholder<br/>
+              Output is only half the story. Efficiency and fatigue explain what's really improving.
+            </p>
+          </div>
         </div>
 
-        {/* YOE Advantage Section */}
+        {/* Why It Works Section */}
         <div className="bg-gradient-to-br from-[#FE5858] to-[#ff6b6b] rounded-xl shadow-lg p-8 md:p-12 mb-12 text-white">
-          <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">THE YOE ADVANTAGE</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">Why The Year of the Engine Works</h2>
           <ul className="space-y-5 max-w-3xl mx-auto">
             <li className="flex items-start">
-              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg"><strong>AI-Powered Personalization:</strong> Targets adjust after every workout for continuous progress.</span>
+              <span className="text-lg mr-2">•</span>
+              <span className="text-lg"><strong>Adaptive by design</strong> Targets adjust after every session to maintain the right stimulus.</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg"><strong>Proven Foundations:</strong> A decade of results across 10,000+ athletes and 25 refined training structures.</span>
+              <span className="text-lg mr-2">•</span>
+              <span className="text-lg"><strong>Structured, not chaotic</strong> Progress comes from consistency, not novelty.</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg"><strong>Deep, Actionable Analytics:</strong> Insights no other app provides.</span>
+              <span className="text-lg mr-2">•</span>
+              <span className="text-lg"><strong>Integrated with Gains AI analytics</strong> Conditioning lives in the same system as strength and skills.</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg"><strong>Dynamic & Adaptive Training:</strong> Your program evolves session by session.</span>
-            </li>
-            <li className="flex items-start">
-              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg"><strong>Comprehensive Conditioning:</strong> Every energy system. Every fiber. One integrated plan.</span>
+              <span className="text-lg mr-2">•</span>
+              <span className="text-lg"><strong>Comprehensive engine development</strong> Aerobic base, repeatability, and high-output work trained together.</span>
             </li>
           </ul>
         </div>
 
         {/* CTA Section */}
         <div className="text-center bg-white rounded-xl shadow-lg p-8 md:p-12">
-          <p className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">
-            Start your 3-Day Free Trial and experience the future of conditioning.
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+            Conditioning, Done Intentionally
+          </h2>
+          <p className="text-lg text-gray-700 mb-6 max-w-3xl mx-auto leading-relaxed">
+            The Year of the Engine isn't about surviving workouts. It's about building capacity you can rely on.
+          </p>
+          <p className="text-lg text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed">
+            If you want conditioning that adapts, explains itself, and compounds— this is the system.
+          </p>
+          <p className="text-xl font-semibold text-gray-900 mb-8">
+            Start your 3-day free trial and train your engine with intent.
           </p>
           <button
             onClick={handleSubscribe}
