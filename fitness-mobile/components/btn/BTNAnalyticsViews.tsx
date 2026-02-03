@@ -117,7 +117,18 @@ function Top3Card({
 }) {
   const top3 = getTop3Exercises(cells, metric)
 
-  if (top3.length === 0) return null
+  // Debug: show card even if no data to verify rendering
+  if (top3.length === 0) {
+    return (
+      <Card style={styles.top3Card}>
+        <Text style={styles.top3Title}>Your Top 3</Text>
+        <Text style={styles.top3Subtitle}>{getMetricLabel(metric)}</Text>
+        <Text style={{ textAlign: 'center', color: '#6B7280', fontSize: 12 }}>
+          Complete more workouts to see your top exercises
+        </Text>
+      </Card>
+    )
+  }
 
   const maxValue = Math.max(...top3.map(e => e.value))
   const medals = ['gold', 'silver', '#CD7F32'] // gold, silver, bronze colors
