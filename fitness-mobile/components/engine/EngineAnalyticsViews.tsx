@@ -1351,7 +1351,7 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
                     <View style={{
                       width: '100%',
                       height: summaryRatios.aerobic !== null ? `${(summaryRatios.aerobic / maxRatio) * 100}%` : '0%',
-                      backgroundColor: '#3B82F6',
+                      backgroundColor: '#FE5858',
                       borderTopLeftRadius: 8,
                       borderTopRightRadius: 8,
                       alignItems: 'center',
@@ -1372,7 +1372,7 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
                     <View style={{
                       width: '100%',
                       height: summaryRatios.systems !== null ? `${(summaryRatios.systems / maxRatio) * 100}%` : '0%',
-                      backgroundColor: '#8B5CF6',
+                      backgroundColor: '#FE5858',
                       borderTopLeftRadius: 8,
                       borderTopRightRadius: 8,
                       alignItems: 'center',
@@ -1425,7 +1425,7 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
               <View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
                   <Text style={{ fontSize: 12, fontWeight: '600', color: '#282B34' }}>Average Pace</Text>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#3B82F6' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#FE5858' }}>
                     {paceStats.average !== null ? `${paceStats.average.toFixed(1)} ${paceStats.units}` : '--'}
                   </Text>
                 </View>
@@ -1433,7 +1433,7 @@ export function EngineTab({ engineData, userId, onBackToOverview }: { engineData
                   <View style={{
                     width: paceStats.average !== null ? `${(paceStats.average / maxPace) * 100}%` : '0%',
                     height: '100%',
-                    backgroundColor: '#3B82F6',
+                    backgroundColor: '#FE5858',
                     borderRadius: 8
                   }} />
                 </View>
