@@ -119,177 +119,219 @@ export default function AppliedPowerPage() {
         {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            APPLIED POWER: YOUR STRENGTH, DECODED
+            Applied Power
           </h1>
-          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
-            Move beyond generic programs. This is AI-powered strength training that acts as your personal coach—pinpointing weaknesses, enhancing technique, and building truly resilient, functional power.
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight">
+            Strength, Treated as a System
+          </h2>
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mb-6">
+            Most strength programs are built around one idea: lift heavier over time.
           </p>
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mb-6">
+            That works—to a point.
+          </p>
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mb-6">
+            But durable, transferable strength isn't just about load. It depends on balance, efficiency, and technical control. When those break down, progress stalls—or injuries follow.
+          </p>
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mb-6">
+            Applied Power is a strength and weightlifting system built to expose and address limiting factors. Using structured strength data and ratio-based analysis, it treats strength as something measurable, diagnosable, and trainable—not just something you chase.
+          </p>
+          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed font-semibold">
+            Not generic programming. Not one-size-fits-all progressions. A system designed to build better strength.
+          </p>
+
+          {/* 📱 IMAGE PLACEHOLDER */}
+          <div className="mt-12 bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
+            <p className="text-gray-400 italic text-sm">
+              📱 Image Placeholder<br/>
+              Strength, in context. Ratios and benchmarks reveal what's actually limiting progress.
+            </p>
+          </div>
         </div>
 
-        {/* The Truth About Getting Strong Section */}
+        {/* Getting Strong Section */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
-            THE TRUTH ABOUT GETTING STRONG
+            Getting Strong Is Simple. Getting Strong Well Is Not.
           </h2>
-          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-            Anyone can get stronger by showing up and lifting heavy. The principles are simple.
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            Anyone can add weight to a bar by showing up consistently.
           </p>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed font-semibold">
-            But elite, transferable, injury-proof strength comes from far more than adding weight to a bar.
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            But strength that transfers—on the platform, in sport, and over time—requires more than effort.
+          </p>
+          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+            It requires:
           </p>
           <ul className="space-y-3 max-w-3xl mx-auto mb-6">
             <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700">It comes from <strong>balance</strong>.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Balance between muscle groups</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700">It comes from <strong>technique</strong>.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Efficient movement patterns</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700">It comes from <strong>efficiency</strong>.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Technical consistency under load</span>
             </li>
           </ul>
-          <p className="text-lg text-gray-700 mb-4 leading-relaxed font-semibold">
-            Applied Power transforms your effort into its most effective form.
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            Applied Power doesn't just increase output. It improves how that output is produced.
           </p>
-          <p className="text-lg text-gray-700 leading-relaxed">
-            We combine rock-solid strength principles with AI-driven analysis that identifies your limiting factors—so every session builds not just more strength, but better strength. It's like training with a world-class coach who sees what you can't and adjusts your plan in real time.
+          <p className="text-lg text-gray-700 leading-relaxed font-semibold">
+            By combining proven strength principles with continuous analysis, the system identifies where strength leaks occur—and adjusts training to fix causes, not symptoms.
           </p>
+
+          {/* 📱 IMAGE PLACEHOLDER */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image Placeholder<br/>
+              Efficiency matters. Stronger lifts come from better positions and cleaner force transfer.
+            </p>
+          </div>
         </div>
 
-        {/* How It Works Section */}
+        {/* Strength Blueprint Section */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
-            HOW IT WORKS: THE BLUEPRINT FOR SMARTER STRENGTH
+            Your Strength Blueprint
           </h2>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Your training starts with a deep assessment that goes far beyond 1RMs.
+            Applied Power begins with a diagnostic that goes beyond 1RMs.
           </p>
-          <p className="text-xl font-semibold text-gray-800 mb-6">
-            Our AI builds your Strength Blueprint, analyzing:
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            Your Strength Blueprint analyzes:
           </p>
           <ul className="space-y-4 max-w-3xl mx-auto mb-6">
             <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700"><strong>Olympic Lifting Ratios & Efficiency:</strong> Detect technical leaks and power gaps in your snatch, clean, and jerk.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700"><strong>Olympic lifting ratios and efficiency</strong> Snatch, clean, and jerk performance relative to foundational strength.</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700"><strong>Bodyweight Strength Ratios:</strong> Establish realistic, personalized strength targets.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700"><strong>Bodyweight strength ratios</strong> Personalized targets based on size and movement demands.</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 text-[#FE5858] mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg text-gray-700"><strong>Muscular Balance & Imbalances:</strong> Identify where your posterior chain, overhead stability, or trunk strength is lagging—so we can fix issues before they become injuries.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700"><strong>Muscular balance and positional demands</strong> Posterior chain, overhead stability, trunk strength, and positional integrity.</span>
             </li>
           </ul>
           <p className="text-lg text-gray-700 leading-relaxed font-semibold">
-            This blueprint forms the basis of your personalized strength path.
+            This blueprint doesn't label you. It shows you where strength is leaking—and where it can be improved.
           </p>
+
+          {/* 📱 IMAGE PLACEHOLDER */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image Placeholder<br/>
+              See the gaps. Train with intent. Diagnostics turn effort into direction.
+            </p>
+          </div>
         </div>
 
-        {/* Personalized Path Section */}
+        {/* Programming That Responds Section */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">
-            YOUR PERSONALIZED PATH TO POWER
+            Programming That Responds to What You Need
           </h2>
           
           <div className="space-y-8 max-w-3xl mx-auto">
             <div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">1. Targeted Accessory Work</h3>
-              <p className="text-lg text-gray-700 mb-3 leading-relaxed">
-                No guessing. If you're weak overhead, leaking power off the floor, or missing positional integrity, your program automatically integrates accessory work to correct it.
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Targeted Accessory Work</h3>
+              <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+                Accessory training isn't added for variety. It's prescribed to address specific limitations.
+              </p>
+              <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+                If overhead stability, pulling strength, or positional control is lagging, the program integrates the work needed to correct it.
               </p>
               <p className="text-lg text-gray-700 leading-relaxed">
-                If you're already balanced, we push volume and intensity to accelerate raw strength.
+                If balance is solid, volume and intensity progress to drive raw strength.
               </p>
             </div>
 
             <div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">2. Technical Mastery Drills</h3>
-              <p className="text-lg text-gray-700 mb-3 leading-relaxed font-semibold">
-                Strength is a skill.
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Technical Development</h3>
+              <p className="text-lg text-gray-700 mb-4 leading-relaxed font-semibold">
+                Strength is a skill—especially in Olympic lifting.
               </p>
-              <p className="text-lg text-gray-700 mb-3 leading-relaxed">
-                If your Olympic lift ratios fall below ideal ranges, the program prescribes precision drills to improve motor patterns, timing, coordination, and efficiency.
+              <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+                When ratios fall outside effective ranges, Applied Power prescribes technical work to improve:
               </p>
+              <ul className="space-y-3 ml-6 mb-4">
+                <li className="text-lg text-gray-700">• Timing and coordination</li>
+                <li className="text-lg text-gray-700">• Bar path efficiency</li>
+                <li className="text-lg text-gray-700">• Positioning under load</li>
+              </ul>
               <p className="text-lg text-gray-700 leading-relaxed">
-                We break down complex lifts so every rep moves you closer to mastery.
+                Complex lifts are broken down so each rep reinforces better movement.
               </p>
             </div>
 
             <div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">3. Smarter Strength Progression</h3>
-              <p className="text-lg text-gray-700 mb-3 leading-relaxed">
-                Your program evolves with your improvement.
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Adaptive Strength Progression</h3>
+              <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+                As your profile improves, programming evolves.
               </p>
-              <p className="text-lg text-gray-700 mb-3 leading-relaxed">
-                Expect measurable changes in mobility, positioning, bar path efficiency, and overall athleticism—not just heavier lifts.
+              <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+                Changes in mobility, positioning, and efficiency influence progression—not just numbers on the bar.
               </p>
               <p className="text-lg text-gray-700 leading-relaxed font-semibold">
-                You don't just gain strength; you gain control.
+                You don't just lift more. You lift better.
               </p>
             </div>
           </div>
+
+          {/* 📱 IMAGE PLACEHOLDER */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image Placeholder<br/>
+              Progress that reflects real improvement. Not just heavier bars—better movement.
+            </p>
+          </div>
         </div>
 
-        {/* Applied Power Advantage Section */}
+        {/* Why It Works Section */}
         <div className="bg-gradient-to-br from-[#FE5858] to-[#ff6b6b] rounded-xl shadow-lg p-8 md:p-12 mb-12 text-white">
-          <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">THE APPLIED POWER ADVANTAGE</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">Why Applied Power Works</h2>
           <ul className="space-y-5 max-w-3xl mx-auto">
             <li className="flex items-start">
-              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg"><strong>AI-Driven Strength Diagnostics:</strong> Understand your lifting profile with data you've never had access to before.</span>
+              <span className="text-lg mr-2">•</span>
+              <span className="text-lg"><strong>Structured strength diagnostics</strong> Ratios reveal limiting factors static programs miss.</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg"><strong>Precision Programming:</strong> Automatically targets limitations and amplifies strengths.</span>
+              <span className="text-lg mr-2">•</span>
+              <span className="text-lg"><strong>Precision programming</strong> Training targets causes, not symptoms.</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg"><strong>Injury Resilience:</strong> Fix imbalances before they become problems.</span>
+              <span className="text-lg mr-2">•</span>
+              <span className="text-lg"><strong>Injury resilience by design</strong> Imbalances are addressed before they accumulate.</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg"><strong>Technical Skill Development:</strong> Improve bar path, efficiency, and movement IQ.</span>
+              <span className="text-lg mr-2">•</span>
+              <span className="text-lg"><strong>Technical skill development</strong> Efficiency improves alongside force production.</span>
             </li>
             <li className="flex items-start">
-              <svg className="w-6 h-6 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-lg"><strong>Functional, Transferable Power:</strong> Strength that shows up everywhere—on the field, on the platform, and in everyday performance.</span>
+              <span className="text-lg mr-2">•</span>
+              <span className="text-lg"><strong>Strength that transfers</strong> Power that shows up beyond the gym.</span>
             </li>
           </ul>
         </div>
 
         {/* CTA Section */}
         <div className="text-center bg-white rounded-xl shadow-lg p-8 md:p-12">
-          <p className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-            STOP JUST WORKING HARD. START WORKING INTELLIGENTLY.
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+            Strength, Done Intentionally
+          </h2>
+          <p className="text-lg text-gray-700 mb-6 max-w-3xl mx-auto leading-relaxed">
+            Applied Power isn't about grinding harder. It's about building strength that holds up—under load, under fatigue, and over time.
           </p>
-          <p className="text-lg md:text-xl text-gray-700 mb-8">
-            Experience the future of strength. Add Applied Power to your training and build a stronger, smarter, more resilient body.
+          <p className="text-lg text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed">
+            If you want strength training that adapts, explains itself, and compounds— this is the system.
+          </p>
+          <p className="text-xl font-semibold text-gray-900 mb-8">
+            Add Applied Power to your training and build strength with intent
           </p>
           <button
             onClick={handleSubscribe}
