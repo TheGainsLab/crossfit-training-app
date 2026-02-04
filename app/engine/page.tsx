@@ -223,503 +223,291 @@ export default function EnginePage() {
 
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-12 leading-tight">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
             The Year of the Engine
           </h1>
+          <h2 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-12 leading-tight">
+            Exceptional Work Capacity for Any Goal
+          </h2>
           
           <div className="text-left max-w-4xl mx-auto mb-12">
-            <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
-              Most Conditioning Programs Track Workouts. We Track Your Engine.
-            </h3>
-            <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-              Most conditioning apps give you a calorie count, an average heart rate, and maybe a "personal record" badge.
+            <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+              Year of the Engine (YoE) is a comprehensive conditioning system designed to build a complete engine — power, endurance, pacing, and repeatability — across the full range of intensities you face in training and competition.
             </p>
-            <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-              They don't tell you:
+            <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+              YoE uses 25 progressive training frameworks to deliver a broader, deeper, and more effective conditioning stimulus:
             </p>
             <ul className="space-y-3 mb-6 ml-6">
               <li className="flex items-start">
                 <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Whether your aerobic capacity is improving or plateauing</span>
+                <span className="text-lg text-gray-700">Increased power output</span>
               </li>
               <li className="flex items-start">
                 <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Why you're crushing sprints but struggling with sustained efforts</span>
+                <span className="text-lg text-gray-700">Greater endurance at any intensity</span>
               </li>
               <li className="flex items-start">
                 <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">How your pacing breaks down across different work durations</span>
+                <span className="text-lg text-gray-700">New gears for changing demands</span>
               </li>
               <li className="flex items-start">
                 <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Whether you're getting more efficient—or just more exhausted</span>
+                <span className="text-lg text-gray-700">The ability to push above the redline without blowing up</span>
               </li>
             </ul>
-            <p className="text-xl font-semibold text-gray-900 mb-6">
-              You're training blind.
+            <p className="text-lg text-gray-700 font-semibold leading-relaxed">
+              This isn't random suffering. It's structured exposure that teaches you how to produce, sustain, and control output.
             </p>
-            <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-              The Year of the Engine measures what actually matters: how your engine performs across the full spectrum of conditioning demands—and adjusts your training based on what the data reveals.
-            </p>
-            <p className="text-lg text-gray-700 leading-relaxed font-semibold">
-              Not random workouts. Not static targets. A system designed to build your engine deliberately, and show you exactly how it's developing.
+          </div>
+
+          {/* Image Placeholder */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image Placeholder: Modality & Equipment Selection<br/>
+              Caption: Train on the equipment you actually have. The engine adapts — the stimulus stays precise.
             </p>
           </div>
         </div>
 
-        {/* Adaptive Conditioning Section */}
+        {/* Beyond Intervals Section */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
-            Adaptive Conditioning—Built on Real Performance Data
+            Beyond Intervals and Zone 2
           </h2>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            The Year of the Engine doesn't guess. It measures.
+            Most conditioning programs live at the extremes: long and easy, or short and painful.
+          </p>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed font-semibold">
+            Year of the Engine goes further.
           </p>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            After every session, your performance is logged and analyzed. The system adjusts what comes next:
+            Our frameworks target every muscle fiber type and energy pathway by controlling how work is distributed, not just how hard it feels. This includes:
           </p>
-          <ul className="space-y-4 max-w-3xl mx-auto mb-6">
+          <ul className="space-y-3 mb-6 ml-6 max-w-3xl mx-auto">
             <li className="flex items-start">
               <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Hit the target → Pacing tightens for the next session</span>
+              <span className="text-lg text-gray-700">Polarized training</span>
             </li>
             <li className="flex items-start">
               <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Miss the target → Difficulty recalibrates</span>
+              <span className="text-lg text-gray-700">Variable and asymmetric intervals</span>
             </li>
             <li className="flex items-start">
               <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Improve in one domain → That domain's targets adjust independently</span>
+              <span className="text-lg text-gray-700">Decreasing and manipulated rest periods</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Mixed-intensity and fatigue-stacking designs</span>
             </li>
           </ul>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Your aerobic capacity, anaerobic power, and threshold tolerance are trained as separate systems—so progress stays balanced instead of accidental.
+          <p className="text-lg text-gray-700 leading-relaxed">
+            The result is conditioning that transfers directly to MetCons and competition — where pacing, efficiency, and repeatability matter more than raw effort.
           </p>
 
-          {/* 📱 IMAGE PLACEHOLDERS */}
-          <div className="mt-8 bg-gray-100 rounded-lg p-8 mb-6">
+          {/* Image Placeholder */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8">
             <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Training Summary screen<br/>
-              Caption: Before you start, you know the target. After you finish, the system knows whether to push harder or pull back.
-            </p>
-          </div>
-          <div className="bg-gray-100 rounded-lg p-8">
-            <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Target vs. Actual over time (Day 4, 8, 12, 16)<br/>
-              Caption: Targets evolve session by session. When you exceed them, they increase. When you miss, they adjust down. This is what adaptive programming actually looks like.
+              📱 Image Placeholder: Workout Breakdown (Rounds, Work, Rest, Goal)<br/>
+              Caption: Every interval has a purpose. Work duration, rest, and output goals are defined for each segment — so pacing is trained, not guessed.
             </p>
           </div>
         </div>
 
-        {/* Unmatched Range of Stimuli Section */}
+        {/* Perfectly Personal Section */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
-            An Unmatched Range of Stimuli—Each Tracked Independently
+            Perfectly Personal
           </h2>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            The Year of the Engine isn't "intervals and Zone 2."
+            Breadth and depth matter — but personalization is what makes them work.
           </p>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            It's 25+ distinct conditioning frameworks, each designed to stress a different aspect of your engine:
+          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+            Every Year of the Engine session begins with clear expectations:
           </p>
-          <ul className="space-y-4 max-w-3xl mx-auto mb-6">
+          <ul className="space-y-3 mb-6 ml-6 max-w-3xl mx-auto">
             <li className="flex items-start">
               <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Aerobic capacity sessions that build mitochondrial density and oxygen utilization</span>
+              <span className="text-lg text-gray-700">How long you'll work</span>
             </li>
             <li className="flex items-start">
               <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Threshold work that raises your lactate clearance and sustains high output longer</span>
+              <span className="text-lg text-gray-700">How much output you're targeting</span>
             </li>
             <li className="flex items-start">
               <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Anaerobic power sessions that develop short-burst explosiveness</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Density tolerance work that trains recovery speed between efforts</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Variable pacing structures that teach you to control output as demands change</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Multi-block sessions that combine different energy systems in one workout</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">MetCon simulators that test everything you've built under competition-style fatigue</span>
+              <span className="text-lg text-gray-700">How today's intensity compares to your current capacity</span>
             </li>
           </ul>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Each structure has a specific purpose. Each adapts independently based on your performance.
+            Targets are anchored to your own time trial data, so "hard" always means productive.
           </p>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            This isn't variety for variety's sake—it's precision. Your aerobic engine and your anaerobic system don't improve at the same rate. The Year of the Engine tracks them separately, so when you're excelling in one domain and struggling in another, your targets adjust accordingly.
-          </p>
-          <div className="text-center mb-8">
-            <Link href="/engine/taxonomy" className="text-[#FE5858] hover:text-[#ff6b6b] font-semibold text-lg transition-colors underline">
-              Explore the complete framework taxonomy →
-            </Link>
-          </div>
 
-          {/* 📱 IMAGE PLACEHOLDERS */}
+          {/* Image Placeholder */}
           <div className="mt-8 bg-gray-100 rounded-lg p-8 mb-6">
             <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Workout breakdown (4x4 structure)<br/>
-              Caption: Every session shows you exactly what you're doing—work duration, rest duration, target output. No guessing.
+              📱 Image Placeholder: Pre-Workout Training Summary<br/>
+              Caption: Before you start, you know exactly what the session demands. Duration, total work, and intensity are set relative to your current capacity.
             </p>
           </div>
-          <div className="bg-gray-100 rounded-lg p-8 mb-6">
+
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed font-semibold">
+            This isn't motivation — it's calibration.
+          </p>
+          <p className="text-lg text-gray-700 leading-relaxed">
+            By defining expectations upfront, YoE teaches you how to push above the redline deliberately, without guessing or overreaching.
+          </p>
+        </div>
+
+        {/* Execution Without Guesswork Section */}
+        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
+            Execution Without Guesswork
+          </h2>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            During the workout, the app becomes a pacing tool, not just a timer.
+          </p>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            Goals stay visible during every interval, so execution stays precise even as fatigue rises. You're not chasing vibes — you're executing a plan.
+          </p>
+
+          {/* Image Placeholder */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8 mb-6">
             <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Multi-block day (3 blocks with different stimuli)<br/>
-              Caption: Advanced sessions combine multiple energy system demands in one workout—so you learn to transition between pacing strategies under fatigue.
+              📱 Image Placeholder: In-Workout Interval Countdown Screen<br/>
+              Caption: Countdown, round context, and output goal stay visible — so pacing is deliberate even under fatigue.
             </p>
           </div>
-          <div className="bg-gray-100 rounded-lg p-8 mb-8">
-            <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Variable pacing structure (ascending work intervals)<br/>
-              Caption: Some structures test whether you can maintain pace as intervals get longer. Others test whether you can recover faster as rest shrinks. Progress isn't just about going harder—it's about handling complexity.
-            </p>
-          </div>
-          
-          <div className="bg-gray-50 rounded-lg p-6 text-center">
-            <p className="text-lg text-gray-800 font-semibold mb-3">
-              Can I see all 25 day types and what they train?
-            </p>
-            <Link href="/engine/taxonomy" className="text-[#FE5858] hover:text-[#ff6b6b] font-semibold transition-colors underline">
-              Yes. View the complete framework taxonomy →
-            </Link>
-          </div>
+
+          <p className="text-lg text-gray-700 font-semibold leading-relaxed">
+            Great engines aren't built by accident.
+          </p>
+          <p className="text-lg text-gray-700 leading-relaxed">
+            They're built by repeating precision when things get uncomfortable.
+          </p>
         </div>
 
         {/* Independent Adaptation Section */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
-            Independent Adaptation—Because Your Engine Isn't One Thing
+            Independent Adaptation, Total Integration
           </h2>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Your anaerobic power and your aerobic capacity don't improve at the same rate.
+            Each conditioning component adapts independently.
           </p>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Most programs don't account for this. If you crush a sprint session, they assume you're ready for harder endurance work too.
-          </p>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed font-semibold">
-            The Year of the Engine tracks each stimulus type separately.
-          </p>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            When you exceed your Max Aerobic Power targets, those targets increase. When you struggle with Anaerobic sessions, those targets adjust down. Progress in one domain doesn't artificially inflate expectations in another.
+            When you repeat a stimulus, the system evaluates your performance relative to the target and adjusts the next exposure accordingly. Aerobic power, glycolytic power, and other components all progress on their own timelines — instead of being dragged along by a one-size-fits-all plan.
           </p>
 
-          {/* 📱 IMAGE PLACEHOLDERS */}
+          {/* Image Placeholder */}
           <div className="mt-8 bg-gray-100 rounded-lg p-8 mb-6">
             <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Max Aerobic Power history (4 sessions over time)<br/>
-              Caption: Every time you complete a Max Aerobic Power session, it's logged. The system tracks your average pace across all sessions—and adjusts future targets based only on that specific stimulus type.
+              📱 Image Placeholder: Stimulus History (Max Aerobic Power)<br/>
+              Caption: Each stimulus adapts independently. Targets update based on your actual performance — not calendar time or preset progressions.
             </p>
           </div>
-          <div className="bg-gray-100 rounded-lg p-8 mb-6">
-            <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Day Type comparison (Anaerobic vs. Endurance vs. Max Aerobic Power performance)<br/>
-              Caption: See your actual performance across different day types. If you're strong anaerobically but weak aerobically, the data makes it obvious.
-            </p>
-          </div>
-          <div className="bg-gray-100 rounded-lg p-8">
-            <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Average Pace Comparison across multiple day types<br/>
-              Caption: Compare your output across different conditioning structures. This isn't just "how hard did you work"—it's "how does your engine perform under different demands?"
-            </p>
-          </div>
+
+          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+            We don't treat conditioning as one vague quality.
+          </p>
+          <p className="text-lg text-gray-700 leading-relaxed">
+            We break it apart, develop each component intelligently, and then reassemble it into a super-powered engine.
+          </p>
         </div>
 
-        {/* Conditioning You Can See Section */}
+        {/* Analytically Amazing Section */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
-            Analytics That Actually Tell You Something
+            Analytically Amazing
           </h2>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Most conditioning apps show you calories burned and call it progress.
+            Progress isn't a feeling — it's a pattern.
           </p>
-          <p className="text-lg text-gray-700 mb-8 leading-relaxed font-semibold">
-            The Year of the Engine shows you how your engine works—and where it's getting better.
-          </p>
-
-          {/* See Performance Section */}
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            See Your Performance Across Every Stimulus Type
-          </h3>
           <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-            Every day type you complete is logged and tracked independently. You can compare your output across:
+            Year of the Engine gives you visibility into how your conditioning evolves over time:
           </p>
-          <ul className="space-y-3 max-w-3xl mx-auto mb-8 ml-6">
+          <ul className="space-y-3 mb-6 ml-6 max-w-3xl mx-auto">
             <li className="flex items-start">
               <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Short, maximal efforts (anaerobic power)</span>
+              <span className="text-lg text-gray-700">Track performance across all conditioning day types</span>
             </li>
             <li className="flex items-start">
               <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Sustained threshold work (aerobic durability)</span>
+              <span className="text-lg text-gray-700">Compare stimuli to see where you're improving fastest</span>
             </li>
             <li className="flex items-start">
               <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Long endurance sessions (oxidative capacity)</span>
+              <span className="text-lg text-gray-700">Measure output against adaptive targets</span>
             </li>
             <li className="flex items-start">
               <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Variable pacing structures (output control under changing demands)</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Multi-block sessions (system integration under fatigue)</span>
+              <span className="text-lg text-gray-700">Analyze efficiency, consistency, and recovery characteristics</span>
             </li>
           </ul>
+          <p className="text-lg text-gray-700 leading-relaxed">
+            Because your data is structured, the system can even compare performance across different work-to-rest ratios, revealing insights most athletes never see.
+          </p>
 
-          {/* IMAGE PLACEHOLDERS */}
-          <div className="bg-gray-100 rounded-lg p-8 mb-6">
+          {/* Image Placeholder */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8 mb-6">
             <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Day Type comparison (Anaerobic vs. Endurance vs. Max Aerobic Power performance)<br/>
-              Caption: Your anaerobic output might be strong (33 cal/min) while your sustained aerobic work lags (11 cal/min). The data makes it obvious where your engine is imbalanced.
-            </p>
-          </div>
-          <div className="bg-gray-100 rounded-lg p-8 mb-8">
-            <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Average Pace Comparison across multiple day types<br/>
-              Caption: See exactly how you perform across different conditioning structures. This isn't just "how hard did you work"—it's "how does your engine respond to different demands?"
-            </p>
-          </div>
-
-          {/* Energy System Balance */}
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            Track Energy System Balance—Not Just "Fitness"
-          </h3>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Your conditioning profile reveals the ratio between your glycolytic power, aerobic capacity, and anaerobic-to-aerobic balance.
-          </p>
-          <p className="text-lg text-gray-700 mb-8 leading-relaxed">
-            If one system dominates, you'll know exactly where the imbalance is—and which sessions to prioritize.
-          </p>
-
-          <div className="bg-gray-100 rounded-lg p-8 mb-8">
-            <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Analytics Summary (Energy System Ratios)<br/>
-              Caption: Glycolytic (Anaerobic/TT): 2.19. Aerobic (MAP/TT): 0.75. Systems (Anaerobic/MAP): 2.90. This athlete is anaerobically strong but aerobically underdeveloped. The data doesn't just show performance—it shows what needs work.
-            </p>
-          </div>
-
-          {/* Target Progression */}
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            See Whether Targets Are Progressing, Plateauing, or Regressing
-          </h3>
-          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-            Every session shows you what the system expected you to do (target) and what you actually did (actual).
-          </p>
-          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-            Over time, you can see:
-          </p>
-          <ul className="space-y-3 max-w-3xl mx-auto mb-8 ml-6">
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Which day types are improving (targets climbing, performance exceeding expectations)</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Which are stalling (hitting the same targets repeatedly without progression)</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Which need recalibration (consistently missing targets = time to pull back or adjust approach)</span>
-            </li>
-          </ul>
-
-          <div className="bg-gray-100 rounded-lg p-8 mb-8">
-            <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Target vs. Actual over time (Day 4, 8, 12, 16)<br/>
-              Caption: Day 4: Target 10, Actual 11 (exceeded). Day 8: Target 11, Actual 11 (target increased, hit exactly). Day 16: Target 10, Actual 13 (exceeded by 30%). This is what adaptive programming looks like—targets respond to your performance, not to a static template.
-            </p>
-          </div>
-
-          {/* Performance History */}
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            Drill Down Into Performance History for Any Day Type
-          </h3>
-          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-            Want to see every Max Aerobic Power session you've ever done? Or compare your performance on Anaerobic days over the past month?
-          </p>
-          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-            The system tracks:
-          </p>
-          <ul className="space-y-3 max-w-3xl mx-auto mb-8 ml-6">
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Session count (how often you've trained each stimulus)</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Average pace (your typical output for that day type)</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Performance variance (how consistent you are across sessions)</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Longitudinal trends (whether you're improving, plateauing, or regressing)</span>
-            </li>
-          </ul>
-
-          <div className="bg-gray-100 rounded-lg p-8 mb-6">
-            <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Max Aerobic Power history (4 sessions over time)<br/>
-              Caption: Four Max Aerobic Power sessions tracked over time: 10.5 → 11.1 → 10.8 → 12.9 cal/min. Average: 11.3 cal/min (112% of baseline). Progress isn't linear—but the system sees the trend and adjusts accordingly.
-            </p>
-          </div>
-          <div className="bg-gray-100 rounded-lg p-8 mb-8">
-            <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: History - Infinity performance (2 sessions)<br/>
-              Caption: Select any day type and see your complete performance history. The system remembers everything—so you never have to wonder "am I actually getting better at this?"
-            </p>
-          </div>
-
-          {/* Work:Rest Ratio */}
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            Analyze Performance by Work:Rest Ratio
-          </h3>
-          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-            How does your output change based on recovery time?
-          </p>
-          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-            The system tracks your average pace across different work-to-rest ratios:
-          </p>
-          <ul className="space-y-3 max-w-3xl mx-auto mb-8 ml-6">
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">1:3 ratio (lots of rest) → highest sustainable output</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">1:1 ratio (equal work and rest) → moderate output, tests repeatability</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">1:2 ratio (shrinking rest) → tests density tolerance and clearance efficiency</span>
-            </li>
-          </ul>
-
-          <div className="bg-gray-100 rounded-lg p-8 mb-8">
-            <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: Work:Rest Ratio analysis<br/>
-              Caption: 1:3 ratio (4 sessions): 33 cal/min. 1:2 ratio (4 sessions): 17 cal/min. 1:1 ratio (9 sessions): 15 cal/min. This shows how recovery time affects your ability to produce power—intelligence most apps never surface.
-            </p>
-          </div>
-
-          {/* HR Analytics */}
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            Heart Rate Efficiency and Training Load (for athletes using HR monitors)
-          </h3>
-          <p className="text-lg text-gray-700 mb-8 leading-relaxed">
-            See which day types demand the most from your cardiovascular system—and whether you're getting more efficient at handling them over time.
-          </p>
-
-          <div className="bg-gray-100 rounded-lg p-8 mb-6">
-            <p className="text-gray-400 italic text-sm text-center">
-              📱 IMAGE: HR Efficiency by Day Type chart<br/>
-              Caption: Anaerobic sessions: 235 HR efficiency (high output, low sustained demand). Endurance sessions: 130 HR efficiency (prolonged cardiovascular cost for lower instantaneous output). This is the cost of different conditioning demands—not just the result.
-            </p>
-          </div>
-
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Track cumulative training load, average HR, peak HR, and max HR across all sessions to manage intensity and avoid overreaching.
-          </p>
-          <div className="text-center mb-8">
-            <Link href="/engine/hr" className="text-[#FE5858] hover:text-[#ff6b6b] font-semibold text-lg transition-colors underline">
-              Learn more about HR Analytics →
-            </Link>
-          </div>
-
-          {/* Data for Decisions */}
-          <div className="bg-gray-50 rounded-lg p-8 mt-12">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-              This Isn't Data for Motivation—It's Data for Decisions
-            </h3>
-            <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-              The Year of the Engine doesn't just tell you "good job" or show you a graph going up and to the right.
-            </p>
-            <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-              It tells you:
-            </p>
-            <ul className="space-y-3 max-w-3xl mx-auto mb-6 ml-6">
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Where your engine is strong (so you know what you can rely on)</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Where it's weak (so you know what to prioritize)</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Whether you're progressing (targets increasing, performance exceeding expectations)</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Whether you're plateauing (hitting the same targets repeatedly without adaptation)</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Whether you're overreaching (missing targets consistently, training load climbing without gains)</span>
-              </li>
-            </ul>
-            <p className="text-lg text-gray-700 font-semibold text-center">
-              If the system sees it, you see it.<br/>
-              And if you see it, you can act on it.
+              📱 Image Placeholder: Conditioning Analytics / Heatmaps<br/>
+              Caption: No black boxes. Every adjustment comes from data you can see and understand.
             </p>
           </div>
         </div>
 
-        {/* Why It Works Section */}
-        <div className="bg-gradient-to-br from-[#FE5858] to-[#ff6b6b] rounded-xl shadow-lg p-8 md:p-12 mb-12 text-white">
-          <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">Why The Year of the Engine Works</h2>
-          <ul className="space-y-5 max-w-3xl mx-auto">
+        {/* Choose Your Path Section */}
+        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
+            Choose Your Path
+          </h2>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            There are multiple ways to train with Year of the Engine:
+          </p>
+          <ul className="space-y-3 mb-6 ml-6 max-w-3xl mx-auto">
             <li className="flex items-start">
-              <span className="text-lg mr-2">•</span>
-              <span className="text-lg"><strong>Adaptive by Design:</strong> Targets adjust after every session to maintain the right stimulus. You're never coasting, and you're never overreaching without reason.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">5-day and 3-day programs</span>
             </li>
             <li className="flex items-start">
-              <span className="text-lg mr-2">•</span>
-              <span className="text-lg"><strong>Structured, Not Chaotic:</strong> Progress comes from consistency, not novelty. The frameworks stay stable so adaptation becomes measurable.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Classic cycles: 12-week blocks emphasizing one primary stimulus</span>
             </li>
             <li className="flex items-start">
-              <span className="text-lg mr-2">•</span>
-              <span className="text-lg"><strong>Modality-Agnostic:</strong> Train on any equipment: rower, bike, ski erg, echo bike, or run. The system adapts to your performance, not your equipment.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg mr-2">•</span>
-              <span className="text-lg"><strong>Integrated with Gains AI:</strong> Conditioning lives in the same system as your strength and skill training. Your engine development doesn't exist in isolation—it supports everything else you do.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg mr-2">•</span>
-              <span className="text-lg"><strong>Comprehensive Engine Development:</strong> Aerobic base, threshold tolerance, anaerobic power, and repeatability—all trained together, all tracked independently.</span>
+              <span className="text-lg text-gray-700 mr-2">•</span>
+              <span className="text-lg text-gray-700">Engine360: faster 4-week cycles for broader exposure</span>
             </li>
           </ul>
+          <p className="text-lg text-gray-700 font-semibold leading-relaxed">
+            Same system. Same intelligence. Different rhythms.
+          </p>
+
+          {/* Image Placeholder */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image Placeholder: Program Selection Screen<br/>
+              Caption: Different schedules. Same engine.
+            </p>
+          </div>
         </div>
 
         {/* CTA Section */}
         <div className="text-center bg-white rounded-xl shadow-lg p-8 md:p-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-            Build Your Engine. See It Develop.
+            Build an Engine That Transfers
           </h2>
           <p className="text-lg text-gray-700 mb-6 max-w-3xl mx-auto leading-relaxed">
-            The Year of the Engine isn't about surviving workouts.
+            Conditioning isn't about surviving workouts.
+          </p>
+          <p className="text-lg text-gray-700 mb-6 max-w-3xl mx-auto leading-relaxed">
+            It's about producing repeatable output when it matters.
           </p>
           <p className="text-lg text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed">
-            It's about building capacity you can rely on—and having the data to prove it's working.
+            Train with a system that understands your capacity, adapts as you improve, and teaches you how to use your engine — not just test it.
           </p>
           <p className="text-xl font-semibold text-gray-900 mb-8">
-            If you want conditioning that adapts, explains itself, and compounds over time—this is the system.
-          </p>
-          <p className="text-xl font-semibold text-gray-900 mb-8">
-            Download the app and start your 3-day free trial.
+            Download the app and get started today.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
             <button
@@ -757,4 +545,3 @@ export default function EnginePage() {
     </div>
   )
 }
-
