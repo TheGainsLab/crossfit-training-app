@@ -86,37 +86,8 @@ export default function TaxonomyPage() {
           </p>
         </div>
 
-        {/* Three Categories */}
-        <div className="bg-gradient-to-br from-[#FE5858] to-[#ff6b6b] rounded-xl shadow-lg p-8 md:p-12 mb-12 text-white">
-          <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">The Three Categories</h2>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
-              <h3 className="text-2xl font-bold mb-4">Development Sessions</h3>
-              <p className="text-lg leading-relaxed">
-                These sessions build your engine. They create adaptations—mitochondrial density, stroke volume, glycolytic power, clearance efficiency. Most of your training should be development work.
-              </p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
-              <h3 className="text-2xl font-bold mb-4">Expression Sessions</h3>
-              <p className="text-lg leading-relaxed">
-                These sessions test what you've built. They simulate competition demands—long MetCons, late-workout power expression, full-system integration. They don't create primary adaptations; they verify preparedness.
-              </p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
-              <h3 className="text-2xl font-bold mb-4">Diagnostic Sessions</h3>
-              <p className="text-lg leading-relaxed">
-                Time trials. They establish your baseline performance and recalibrate the system periodically. Not a training stimulus—purely measurement.
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Development Sessions */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">
-            Development Sessions (Build Your Engine)
-          </h2>
-
           {/* Time Trial */}
           <div className="mb-10 pb-10 border-b border-gray-200">
             <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Time Trial</h3>
@@ -379,13 +350,6 @@ export default function TaxonomyPage() {
 
         {/* Expression Sessions */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
-            Expression Sessions (Test What You've Built)
-          </h2>
-          <p className="text-lg text-gray-700 mb-10 text-center max-w-4xl mx-auto leading-relaxed">
-            Expression sessions don't create primary adaptations. They verify preparedness—testing whether the development work has translated into competition-ready capacity.
-          </p>
-
           {/* Infinity */}
           <div className="mb-10 pb-10 border-b border-gray-200">
             <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Infinity (MetCon Simulator)</h3>
