@@ -7,6 +7,7 @@ import engineDatabaseService from '@/lib/engine/databaseService';
 import Dashboard from './components/Dashboard';
 import TrainingDayComponent from './components/TrainingDayComponent';
 import Analytics from './components/Analytics';
+import Footer from '../components/Footer';
 
 interface SubscriptionStatus {
   hasAccess: boolean
@@ -754,6 +755,8 @@ export default function EnginePage() {
           </p>
         </div>
       </div>
+
+      <Footer variant="minimal" />
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Footer from './components/Footer'
 
 export default function LandingPage() {
   const [user, setUser] = useState<any>(null)
@@ -401,26 +402,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-800 text-white py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-1 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4 flex items-center">
-                <span style={{ color: '#282B34' }}>G</span>
-                <span style={{ color: '#FE5858' }}>A</span>
-                <span style={{ color: '#FE5858' }}>I</span>
-                <span style={{ color: '#282B34' }}>N</span>
-                <span style={{ color: '#282B34' }}>S</span>
-              </h3>
-              <p className="text-gray-400">Personalized CrossFit training programs powered by GainsAI™. Built by coaches, enhanced by artificial intelligence.</p>
-            </div>
-          </div>
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 The Gains Apps. All rights reserved. GainsAI™ is a trademark of The Gains Apps.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer variant="full" />
     </div>
   )
 }

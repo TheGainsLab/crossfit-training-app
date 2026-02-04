@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import Footer from '../components/Footer';
 
 interface SubscriptionStatus {
   hasAccess: boolean
@@ -355,6 +356,8 @@ export default function AppliedPowerPage() {
           </p>
         </div>
       </div>
+
+      <Footer variant="minimal" />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { GeneratedWorkout, UserProfile } from '@/lib/btn/types';
 import { getAvailableExercises } from '@/lib/btn/utils';
+import Footer from '../components/Footer';
 
 interface SubscriptionStatus {
   hasAccess: boolean
@@ -1214,6 +1215,8 @@ export default function BTNPage() {
           </p>
         </div>
       </div>
+
+      <Footer variant="minimal" />
     </div>
   )
 }

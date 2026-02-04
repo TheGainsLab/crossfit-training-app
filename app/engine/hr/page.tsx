@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Footer from '../../components/Footer';
 
 export default function HRAnalyticsPage() {
   return (
@@ -275,6 +276,8 @@ export default function HRAnalyticsPage() {
           </Link>
         </div>
       </div>
+
+      <Footer variant="minimal" />
     </div>
   );
 }

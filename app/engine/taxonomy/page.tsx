@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Footer from '../../components/Footer';
 
 export default function TaxonomyPage() {
   return (
@@ -519,6 +520,8 @@ export default function TaxonomyPage() {
           </div>
         </div>
       </div>
+
+      <Footer variant="minimal" />
     </div>
   );
 }
