@@ -119,16 +119,13 @@ export default function LandingPage() {
       {/* AI Is A Tool Section */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">AI IS A TOOL — NOT A MAGICIAN</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">AI POWERED?  REALLY?</h2>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
               "AI-powered" has become a hollow buzzword.
             </p>
             <p className="text-lg text-gray-700">
-              The best tools in training are still simple: a barbell, a pull-up bar, and a clock. So why use AI at all?
-            </p>
-            <p className="text-lg text-gray-700">
-              Because AI is a tireless analyst — one that can process your entire training history at once.
+              Training is simple: basics + effort + consistency = results.  So why use AI at all?  Because AI is a tireless analyst.
             </p>
             <p className="text-lg text-gray-700">
               Gains AI doesn't replace coaching. It supports it by:
@@ -139,7 +136,7 @@ export default function LandingPage() {
               <li className="text-lg text-gray-700">• Adjusting pacing, volume, and emphasis based on real data</li>
             </ul>
             <p className="text-lg text-gray-700">
-              Your program stays aligned with your body's actual signals — not averages or templates.
+              Your program stays aligned with your body's actual signals — not group templates.
             </p>
 
             {/* 📱 IMAGE PLACEHOLDER: Heart Rate Heatmap */}
