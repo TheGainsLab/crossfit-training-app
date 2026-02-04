@@ -223,12 +223,9 @@ export default function EnginePage() {
 
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-12 leading-tight">
             The Year of the Engine
           </h1>
-          <h2 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-12 leading-tight">
-            Conditioning That Adapts to You—Not the Other Way Around
-          </h2>
           
           <div className="text-left max-w-4xl mx-auto mb-12">
             <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
