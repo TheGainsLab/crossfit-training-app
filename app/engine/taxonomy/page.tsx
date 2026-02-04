@@ -425,43 +425,6 @@ export default function TaxonomyPage() {
           </div>
         </div>
 
-        {/* How Frameworks Work Together */}
-        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">
-            How the Frameworks Work Together
-          </h2>
-
-          <div className="space-y-8">
-            <div>
-              <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Phase 1: Build the Base</h3>
-              <p className="text-lg text-gray-700 leading-relaxed">
-                Start with <strong>Endurance</strong>, <strong>Polarized</strong>, and <strong>Flux</strong> sessions. These build aerobic capacity, mitochondrial density, and metabolic flexibility—the foundation everything else depends on.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Phase 2: Raise the Ceiling</h3>
-              <p className="text-lg text-gray-700 leading-relaxed">
-                Add <strong>Max Aerobic Power</strong>, <strong>Interval</strong>, and <strong>Threshold</strong> sessions. These increase your VO₂max and lactate threshold—raising the upper limit of what your aerobic system can handle.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Phase 3: Develop Density and Power</h3>
-              <p className="text-lg text-gray-700 leading-relaxed">
-                Introduce <strong>Hybrid Aerobic</strong>, <strong>Devour</strong> variants, and <strong>Anaerobic</strong> sessions. These train repeatability, density tolerance, and glycolytic power.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Phase 4: Test Integration</h3>
-              <p className="text-lg text-gray-700 leading-relaxed">
-                Use <strong>Expression</strong> sessions (<strong>Infinity</strong>, <strong>Towers</strong>, <strong>Afterburner</strong>, <strong>Synthesis</strong>) to verify that your development work translates into competition-ready conditioning.
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Independent Adaptation */}
         <div className="bg-gradient-to-br from-[#FE5858] to-[#ff6b6b] rounded-xl shadow-lg p-8 md:p-12 mb-12 text-white">
           <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center">Independent Adaptation</h2>
