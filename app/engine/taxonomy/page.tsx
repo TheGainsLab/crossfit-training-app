@@ -425,20 +425,6 @@ export default function TaxonomyPage() {
           </div>
         </div>
 
-        {/* Independent Adaptation */}
-        <div className="bg-gradient-to-br from-[#FE5858] to-[#ff6b6b] rounded-xl shadow-lg p-8 md:p-12 mb-12 text-white">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center">Independent Adaptation</h2>
-          <p className="text-lg mb-6 leading-relaxed max-w-4xl mx-auto">
-            Every framework has its own adaptive target.
-          </p>
-          <p className="text-lg mb-6 leading-relaxed max-w-4xl mx-auto">
-            When you exceed your Max Aerobic Power target, that target increases. When you struggle with Anaerobic sessions, that target adjusts down. Progress in one domain doesn't artificially inflate expectations in another.
-          </p>
-          <p className="text-lg font-semibold leading-relaxed max-w-4xl mx-auto text-center">
-            This is how the system stays precise—and why your conditioning develops comprehensively instead of accidentally.
-          </p>
-        </div>
-
         {/* CTA */}
         <div className="text-center bg-white rounded-xl shadow-lg p-8 md:p-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-6">
