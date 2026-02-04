@@ -2917,7 +2917,7 @@ export default function EnginePage() {
                           <View style={styles.intensityRow}>
                             <Text style={styles.intensityLabel}>Time Trial</Text>
                             <View style={styles.intensityBarContainer}>
-                              <View style={[styles.intensityBar, { width: `${baselineWidth}%`, backgroundColor: '#6b7280' }]}>
+                              <View style={[styles.intensityBar, { width: `${baselineWidth}%`, backgroundColor: '#94A3B8' }]}>
                                 <Text style={styles.intensityBarText}>
                                   {Math.round(baselinePace)} {baselines[selectedModality].units}/min
                                 </Text>
@@ -5254,7 +5254,7 @@ const styles = StyleSheet.create({
   },
   intensityPercentage: {
     color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '500',
   },
   historyHeaderContent: {
