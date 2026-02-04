@@ -352,7 +352,7 @@ export default function TaxonomyPage() {
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
           {/* Infinity */}
           <div className="mb-10 pb-10 border-b border-gray-200">
-            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Infinity (MetCon Simulator)</h3>
+            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Infinity</h3>
             <div className="space-y-3">
               <p className="text-lg text-gray-700"><strong>Structure:</strong> Long escalating density, multiple phases, no clear reset</p>
               <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> Prolonged aerobic–glycolytic erosion</p>
@@ -381,7 +381,7 @@ export default function TaxonomyPage() {
 
           {/* Afterburner */}
           <div className="mb-10 pb-10 border-b border-gray-200">
-            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Afterburner (MetCon Simulator)</h3>
+            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Afterburner</h3>
             <div className="space-y-3">
               <p className="text-lg text-gray-700"><strong>Structure:</strong> Anaerobic bursts, aerobic clearing, rising-density aerobic power finish</p>
               <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> Late-stage power expression under fatigue</p>
@@ -397,7 +397,7 @@ export default function TaxonomyPage() {
 
           {/* Synthesis */}
           <div className="mb-10">
-            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Synthesis (Capstone Simulator)</h3>
+            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Synthesis</h3>
             <div className="space-y-3">
               <p className="text-lg text-gray-700"><strong>Structure:</strong> Anaerobic → aerobic → anaerobic → aerobic; no system gets full recovery</p>
               <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> Full-system integration</p>
