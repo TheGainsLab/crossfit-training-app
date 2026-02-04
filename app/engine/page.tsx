@@ -423,36 +423,104 @@ export default function EnginePage() {
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
             Progress isn't a feeling — it's a pattern.
           </p>
-          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-            Year of the Engine gives you visibility into how your conditioning evolves over time:
-          </p>
-          <ul className="space-y-3 mb-6 ml-6 max-w-3xl mx-auto">
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Track performance across all conditioning day types</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Compare stimuli to see where you're improving fastest</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Measure output against adaptive targets</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Analyze efficiency, consistency, and recovery characteristics</span>
-            </li>
-          </ul>
-          <p className="text-lg text-gray-700 leading-relaxed">
-            Because your data is structured, the system can even compare performance across different work-to-rest ratios, revealing insights most athletes never see.
+          <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+            Year of the Engine is built on structured training data, which means performance isn't just recorded — it's understood. Every metric exists to answer a specific coaching question: How is your engine changing, and what should you do next?
           </p>
 
-          {/* Image Placeholder */}
+          {/* Headline Analytics Summary */}
           <div className="mt-8 bg-gray-100 rounded-lg p-8 mb-6">
             <p className="text-gray-400 italic text-sm text-center">
-              📱 Image Placeholder: Conditioning Analytics / Heatmaps<br/>
-              Caption: No black boxes. Every adjustment comes from data you can see and understand.
+              📱 Image Placeholder: Headline Analytics Summary<br/>
+              (Total Work • Energy System Ratios • Pace Overview)<br/>
+              Caption: Your engine at a glance. Total work completed, energy system balance, and pacing characteristics — all in one view.
+            </p>
+          </div>
+          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+            This is your orientation point. Instead of a single "fitness score," you see how much work you've done, how your energy systems compare, and how you express pace in real training.
+          </p>
+          <p className="text-lg text-gray-700 mb-8 leading-relaxed font-semibold">
+            Progress isn't one number. It's volume, balance, and expression — viewed together.
+          </p>
+
+          {/* Stimulus Performance History */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8 mb-6">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image Placeholder: Stimulus Performance History<br/>
+              (Pace / Output Over Repeated Sessions)<br/>
+              Caption: Progress, stimulus by stimulus. Compare repeated exposures to the same conditioning task and see how execution improves over time.
+            </p>
+          </div>
+          <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+            Every conditioning stimulus has its own learning curve. Tracking performance across repeated sessions shows whether gains are coming from improved capacity, better pacing, or increased efficiency — not just surviving the workout.
+          </p>
+
+          {/* Comparison Across Conditioning Stimuli */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8 mb-6">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image Placeholder: Comparison Across Conditioning Stimuli<br/>
+              (Average Pace or Output by Day Type)<br/>
+              Caption: Different demands reveal different strengths. Compare performance across conditioning frameworks to identify overdeveloped systems and limiting factors.
+            </p>
+          </div>
+          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+            Conditioning is multi-dimensional. By comparing how your engine performs under different structures — aerobic, anaerobic, polarized, mixed — strengths and gaps become obvious without guesswork.
+          </p>
+          <p className="text-lg text-gray-700 mb-8 leading-relaxed font-semibold">
+            This is where intelligent emphasis begins.
+          </p>
+
+          {/* Target vs Actual Performance */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8 mb-6">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image Placeholder: Target vs Actual Performance<br/>
+              (Session-by-Session Accountability View)<br/>
+              Caption: No black box adjustments. See how targets compare to actual performance — and understand exactly why training evolves.
+            </p>
+          </div>
+          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+            Targets only matter if they're visible. By showing expectations and outcomes side by side, every session becomes feedback — reinforcing pacing discipline when targets are met, and recalibrating intelligently when they aren't.
+          </p>
+          <p className="text-lg text-gray-700 mb-8 leading-relaxed font-semibold">
+            Missing a target isn't failure. It's data.
+          </p>
+
+          {/* Work-to-Rest Ratio Comparison */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8 mb-6">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image Placeholder: Work-to-Rest Ratio Comparison<br/>
+              (Average Pace by Work:Rest Structure)<br/>
+              Caption: Recovery shows up between efforts. Compare pacing across different work-to-rest ratios to see how efficiently you recover and reproduce output.
+            </p>
+          </div>
+          <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+            Two athletes can produce the same peak output — but only one can repeat it with limited rest. This view exposes recovery capacity and fatigue resistance that traditional metrics miss, guiding smarter interval design and competition preparation.
+          </p>
+
+          {/* Heart Rate Efficiency */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8 mb-6">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image Placeholder: Heart Rate Efficiency<br/>
+              (Work Output per Heartbeat)<br/>
+              Caption: Efficiency reveals adaptation. Heart rate shows what each effort actually costs — exposing aerobic gains and hidden fatigue that pace alone can't.
+            </p>
+          </div>
+          <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+            Output is only half the story. Heart rate efficiency reveals whether improvements are coming from real aerobic adaptation or simply working harder. It's one of the clearest signals of long-term engine development.
+          </p>
+
+          {/* Closing */}
+          <div className="bg-gray-50 rounded-lg p-8 mt-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+              Insight Without Guesswork
+            </h3>
+            <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+              You don't need to interpret raw data or trust opaque algorithms.
+            </p>
+            <p className="text-lg text-gray-700 mb-4 leading-relaxed font-semibold">
+              If the system sees it, you see it.
+            </p>
+            <p className="text-lg text-gray-700 leading-relaxed">
+              Every adjustment is grounded in metrics you can understand — giving you clarity, confidence, and control over how your conditioning evolves.
             </p>
           </div>
         </div>
