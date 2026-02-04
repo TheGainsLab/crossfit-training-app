@@ -99,6 +99,22 @@ export default function TaxonomyPage() {
             </div>
           </div>
 
+          {/* Anaerobic */}
+          <div className="mb-10 pb-10 border-b border-gray-200">
+            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Anaerobic</h3>
+            <div className="space-y-3">
+              <p className="text-lg text-gray-700"><strong>Structure:</strong> Short maximal efforts (~30 seconds), long rest (~2–3 minutes), low total volume</p>
+              <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> Fast glycolytic ATP production</p>
+              <p className="text-lg text-gray-700"><strong>Primary Adaptations:</strong></p>
+              <ul className="ml-8 space-y-2">
+                <li className="text-lg text-gray-700">• Glycolytic power</li>
+                <li className="text-lg text-gray-700">• Increased anaerobic enzyme activity</li>
+              </ul>
+              <p className="text-lg text-gray-700"><strong>Secondary Adaptations:</strong> High-threshold motor unit recruitment, lactate tolerance, neuromuscular coordination</p>
+              <p className="text-lg text-gray-700"><strong>System Role:</strong> Raises anaerobic ceiling; used sparingly</p>
+            </div>
+          </div>
+
           {/* Endurance */}
           <div className="mb-10 pb-10 border-b border-gray-200">
             <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Endurance</h3>
@@ -113,22 +129,6 @@ export default function TaxonomyPage() {
               </ul>
               <p className="text-lg text-gray-700"><strong>Secondary Adaptations:</strong> Fat oxidation efficiency, stroke volume support, autonomic balance</p>
               <p className="text-lg text-gray-700"><strong>System Role:</strong> Aerobic foundation that supports all other training</p>
-            </div>
-          </div>
-
-          {/* Polarized */}
-          <div className="mb-10 pb-10 border-b border-gray-200">
-            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Polarized</h3>
-            <div className="space-y-3">
-              <p className="text-lg text-gray-700"><strong>Structure:</strong> Continuous Zone 2 with very short max-effort bursts (~7 seconds) every several minutes</p>
-              <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> Oxidative work with brief phosphagen perturbations</p>
-              <p className="text-lg text-gray-700"><strong>Primary Adaptations:</strong></p>
-              <ul className="ml-8 space-y-2">
-                <li className="text-lg text-gray-700">• Aerobic base maintenance</li>
-                <li className="text-lg text-gray-700">• Faster oxygen uptake kinetics</li>
-              </ul>
-              <p className="text-lg text-gray-700"><strong>Secondary Adaptations:</strong> PCr resynthesis efficiency, neural sharpness, fast-fiber aerobic contribution</p>
-              <p className="text-lg text-gray-700"><strong>System Role:</strong> Preserves responsiveness during high-volume aerobic phases</p>
             </div>
           </div>
 
@@ -149,22 +149,6 @@ export default function TaxonomyPage() {
             </div>
           </div>
 
-          {/* Interval */}
-          <div className="mb-10 pb-10 border-b border-gray-200">
-            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Interval</h3>
-            <div className="space-y-3">
-              <p className="text-lg text-gray-700"><strong>Structure:</strong> Moderate-length severe intervals (e.g., 2–3 minutes), moderate rest, repeatable intensity</p>
-              <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> High aerobic power without maximal strain</p>
-              <p className="text-lg text-gray-700"><strong>Primary Adaptations:</strong></p>
-              <ul className="ml-8 space-y-2">
-                <li className="text-lg text-gray-700">• Aerobic power development</li>
-                <li className="text-lg text-gray-700">• Sustained high VO₂ tolerance</li>
-              </ul>
-              <p className="text-lg text-gray-700"><strong>Secondary Adaptations:</strong> Lactate clearance at high output, improved recovery between efforts</p>
-              <p className="text-lg text-gray-700"><strong>System Role:</strong> Bread-and-butter aerobic power work</p>
-            </div>
-          </div>
-
           {/* Threshold */}
           <div className="mb-10 pb-10 border-b border-gray-200">
             <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Threshold</h3>
@@ -180,19 +164,30 @@ export default function TaxonomyPage() {
             </div>
           </div>
 
-          {/* Anaerobic */}
+          {/* Polarized */}
           <div className="mb-10 pb-10 border-b border-gray-200">
-            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Anaerobic</h3>
+            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Polarized</h3>
             <div className="space-y-3">
-              <p className="text-lg text-gray-700"><strong>Structure:</strong> Short maximal efforts (~30 seconds), long rest (~2–3 minutes), low total volume</p>
-              <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> Fast glycolytic ATP production</p>
+              <p className="text-lg text-gray-700"><strong>Structure:</strong> Continuous Zone 2 with very short max-effort bursts (~7 seconds) every several minutes</p>
+              <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> Oxidative work with brief phosphagen perturbations</p>
               <p className="text-lg text-gray-700"><strong>Primary Adaptations:</strong></p>
               <ul className="ml-8 space-y-2">
-                <li className="text-lg text-gray-700">• Glycolytic power</li>
-                <li className="text-lg text-gray-700">• Increased anaerobic enzyme activity</li>
+                <li className="text-lg text-gray-700">• Aerobic base maintenance</li>
+                <li className="text-lg text-gray-700">• Faster oxygen uptake kinetics</li>
               </ul>
-              <p className="text-lg text-gray-700"><strong>Secondary Adaptations:</strong> High-threshold motor unit recruitment, lactate tolerance, neuromuscular coordination</p>
-              <p className="text-lg text-gray-700"><strong>System Role:</strong> Raises anaerobic ceiling; used sparingly</p>
+              <p className="text-lg text-gray-700"><strong>Secondary Adaptations:</strong> PCr resynthesis efficiency, neural sharpness, fast-fiber aerobic contribution</p>
+              <p className="text-lg text-gray-700"><strong>System Role:</strong> Preserves responsiveness during high-volume aerobic phases</p>
+            </div>
+          </div>
+
+          {/* Rocket Races */}
+          <div className="mb-10 pb-10 border-b border-gray-200">
+            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Rocket Races A / Rocket Races B</h3>
+            <div className="space-y-3">
+              <p className="text-lg text-gray-700"><strong>Structure:</strong> Variable pacing structures that test output consistency as demands change</p>
+              <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> Pacing control under variable demands</p>
+              <p className="text-lg text-gray-700"><strong>Primary Adaptations:</strong> Output consistency, adaptive pacing skill</p>
+              <p className="text-lg text-gray-700"><strong>System Role:</strong> Pacing intelligence under unpredictable load</p>
             </div>
           </div>
 
@@ -209,6 +204,38 @@ export default function TaxonomyPage() {
               </ul>
               <p className="text-lg text-gray-700"><strong>Secondary Adaptations:</strong> Improved steady-state resilience, faster return to oxidative dominance</p>
               <p className="text-lg text-gray-700"><strong>System Role:</strong> Bridges base → threshold without breakdown</p>
+            </div>
+          </div>
+
+          {/* Hybrid Aerobic */}
+          <div className="mb-10 pb-10 border-b border-gray-200">
+            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Hybrid Aerobic</h3>
+            <div className="space-y-3">
+              <p className="text-lg text-gray-700"><strong>Structure:</strong> Paired or clustered aerobic-power intervals, short rests, incomplete recovery</p>
+              <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> Sustained severe-domain work under density</p>
+              <p className="text-lg text-gray-700"><strong>Primary Adaptations:</strong></p>
+              <ul className="ml-8 space-y-2">
+                <li className="text-lg text-gray-700">• Aerobic power durability</li>
+                <li className="text-lg text-gray-700">• Incomplete-recovery tolerance</li>
+              </ul>
+              <p className="text-lg text-gray-700"><strong>Secondary Adaptations:</strong> Lactate clearance under density, psychological tolerance of continuous strain</p>
+              <p className="text-lg text-gray-700"><strong>System Role:</strong> Core CrossFit / HYROX conditioning builder</p>
+            </div>
+          </div>
+
+          {/* Hybrid Anaerobic */}
+          <div className="mb-10 pb-10 border-b border-gray-200">
+            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Hybrid Anaerobic</h3>
+            <div className="space-y-3">
+              <p className="text-lg text-gray-700"><strong>Structure:</strong> Anaerobic repeats (~60 seconds and/or ~15 seconds), incomplete recovery, often paired formats</p>
+              <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> Glycolytic power under fatigue</p>
+              <p className="text-lg text-gray-700"><strong>Primary Adaptations:</strong></p>
+              <ul className="ml-8 space-y-2">
+                <li className="text-lg text-gray-700">• Anaerobic repeatability</li>
+                <li className="text-lg text-gray-700">• Glycolytic tolerance</li>
+              </ul>
+              <p className="text-lg text-gray-700"><strong>Secondary Adaptations:</strong> Fast-fiber fatigue resistance, neuromuscular resilience</p>
+              <p className="text-lg text-gray-700"><strong>System Role:</strong> Sharp, high-cost anaerobic development</p>
             </div>
           </div>
 
@@ -320,36 +347,6 @@ export default function TaxonomyPage() {
             </div>
           </div>
 
-          {/* Atomic */}
-          <div className="mb-10 pb-10 border-b border-gray-200">
-            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Atomic</h3>
-            <div className="space-y-3">
-              <p className="text-lg text-gray-700"><strong>Structure:</strong> Very short maximal efforts with long relative rest, followed by aerobic power work</p>
-              <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> Phosphagen priming → aerobic expression</p>
-              <p className="text-lg text-gray-700"><strong>Primary Adaptations:</strong></p>
-              <ul className="ml-8 space-y-2">
-                <li className="text-lg text-gray-700">• Faster VO₂ kinetics</li>
-                <li className="text-lg text-gray-700">• Improved aerobic power efficiency</li>
-              </ul>
-              <p className="text-lg text-gray-700"><strong>Secondary Adaptations:</strong> Neural readiness, cleaner early-interval output</p>
-              <p className="text-lg text-gray-700"><strong>System Role:</strong> High-ROI aerobic builder with low recovery cost</p>
-            </div>
-          </div>
-
-          {/* Rocket Races */}
-          <div className="mb-10">
-            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Rocket Races A / Rocket Races B</h3>
-            <div className="space-y-3">
-              <p className="text-lg text-gray-700"><strong>Structure:</strong> Variable pacing structures that test output consistency as demands change</p>
-              <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> Pacing control under variable demands</p>
-              <p className="text-lg text-gray-700"><strong>Primary Adaptations:</strong> Output consistency, adaptive pacing skill</p>
-              <p className="text-lg text-gray-700"><strong>System Role:</strong> Pacing intelligence under unpredictable load</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Expression Sessions */}
-        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
           {/* Infinity */}
           <div className="mb-10 pb-10 border-b border-gray-200">
             <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Infinity</h3>
@@ -392,6 +389,22 @@ export default function TaxonomyPage() {
                 <li className="text-lg text-gray-700">• Psychological resilience</li>
               </ul>
               <p className="text-lg text-gray-700"><strong>System Role:</strong> "Who has energy left?" simulator</p>
+            </div>
+          </div>
+
+          {/* Atomic */}
+          <div className="mb-10 pb-10 border-b border-gray-200">
+            <h3 className="text-2xl font-bold text-[#FE5858] mb-4">Atomic</h3>
+            <div className="space-y-3">
+              <p className="text-lg text-gray-700"><strong>Structure:</strong> Very short maximal efforts with long relative rest, followed by aerobic power work</p>
+              <p className="text-lg text-gray-700"><strong>Primary Stimulus:</strong> Phosphagen priming → aerobic expression</p>
+              <p className="text-lg text-gray-700"><strong>Primary Adaptations:</strong></p>
+              <ul className="ml-8 space-y-2">
+                <li className="text-lg text-gray-700">• Faster VO₂ kinetics</li>
+                <li className="text-lg text-gray-700">• Improved aerobic power efficiency</li>
+              </ul>
+              <p className="text-lg text-gray-700"><strong>Secondary Adaptations:</strong> Neural readiness, cleaner early-interval output</p>
+              <p className="text-lg text-gray-700"><strong>System Role:</strong> High-ROI aerobic builder with low recovery cost</p>
             </div>
           </div>
 
