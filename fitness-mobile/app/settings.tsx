@@ -16,6 +16,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { SectionHeader } from '@/components/ui/SectionHeader'
+import ProgramSelector from '@/components/engine/ProgramSelector'
+import { getUserCurrentProgram, type EngineProgram } from '@/lib/api/enginePrograms'
 
 interface UserSettings {
   name: string
@@ -110,6 +112,9 @@ export default function SettingsPage() {
   const [userId, setUserId] = useState<number | null>(null)
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [showProgramSelector, setShowProgramSelector] = useState(false)
+  const [currentProgram, setCurrentProgram] = useState<EngineProgram | null>(null)
+  const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null)
 
   useEffect(() => {
     loadUserSettings()
@@ -128,7 +133,7 @@ export default function SettingsPage() {
 
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, name, email, body_weight, units, gender, conditioning_benchmarks')
+        .select('id, name, email, body_weight, units, gender, conditioning_benchmarks, subscription_tier')
         .eq('auth_id', user.id)
         .single()
 
@@ -139,6 +144,7 @@ export default function SettingsPage() {
       }
 
       setUserId(userData.id)
+      setSubscriptionTier(userData.subscription_tier)
       setSettings({
         name: userData.name || '',
         email: userData.email || '',
@@ -147,6 +153,15 @@ export default function SettingsPage() {
         gender: userData.gender || '',
         conditioning_benchmarks: userData.conditioning_benchmarks || {}
       })
+
+      // Load current Engine program if user has Engine access
+      const tier = userData.subscription_tier?.toUpperCase()
+      if (tier === 'ENGINE' || tier === 'PREMIUM') {
+        const { program } = await getUserCurrentProgram(userData.id)
+        if (program) {
+          setCurrentProgram(program)
+        }
+      }
 
       // Load 1RMs
       const { data: oneRMData } = await supabase
@@ -365,6 +380,21 @@ export default function SettingsPage() {
     }
   }
 
+  const handleProgramChanged = async () => {
+    // Reload current program after switching
+    if (userId) {
+      const { program } = await getUserCurrentProgram(userId)
+      if (program) {
+        setCurrentProgram(program)
+      }
+    }
+  }
+
+  const hasEngineAccess = () => {
+    const tier = subscriptionTier?.toUpperCase()
+    return tier === 'ENGINE' || tier === 'PREMIUM'
+  }
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -527,6 +557,44 @@ export default function SettingsPage() {
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
         </Card>
+
+        {/* Engine Program (Only for Engine/Premium users) */}
+        {hasEngineAccess() && currentProgram && (
+          <Card style={styles.sectionCard}>
+            <SectionHeader title="Engine Program" />
+            
+            <TouchableOpacity
+              style={styles.programRow}
+              onPress={() => setShowProgramSelector(true)}
+            >
+              <View style={styles.programIcon}>
+                <Text style={styles.programIconText}>{currentProgram.icon || '🔥'}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.programName}>{currentProgram.display_name}</Text>
+                <Text style={styles.programMeta}>
+                  {currentProgram.frequency_per_week} days/week • {currentProgram.total_days} workouts
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.changeProgramButton}
+                onPress={() => setShowProgramSelector(true)}
+              >
+                <Text style={styles.changeProgramButtonText}>Change</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </Card>
+        )}
+
+        {/* Program Selector Modal */}
+        {userId && (
+          <ProgramSelector
+            visible={showProgramSelector}
+            onClose={() => setShowProgramSelector(false)}
+            userId={userId}
+            onProgramChanged={handleProgramChanged}
+          />
+        )}
 
         {/* Equipment */}
         <Card style={styles.sectionCard}>
@@ -1257,5 +1325,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     marginTop: 2,
+  },
+  programRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  programIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFF5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  programIconText: {
+    fontSize: 24,
+  },
+  programName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#282B34',
+    marginBottom: 2,
+  },
+  programMeta: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  changeProgramButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FE5858',
+    borderRadius: 8,
+  },
+  changeProgramButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 })

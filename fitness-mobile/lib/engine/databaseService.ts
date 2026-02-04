@@ -66,7 +66,7 @@ class EngineDatabaseService {
     }
   }
 
-  // Load user program (current_program)
+  // Load user's preferred Engine program ID
   async loadProgramVersion(): Promise<string | null> {
     if (!this.userId || !this.supabase) {
       console.warn('loadProgramVersion: userId not set')
@@ -76,7 +76,7 @@ class EngineDatabaseService {
     try {
       const { data, error } = await this.supabase
         .from('users')
-        .select('current_program')
+        .select('preferred_engine_program_id')
         .eq('id', this.userId)
         .single()
       
@@ -85,17 +85,10 @@ class EngineDatabaseService {
         return null
       }
       
-      if (data?.current_program) {
-        const value = data.current_program
-        if (value === '5-day' || value === '3-day') {
-          return value
-        }
-        return null
-      }
-      
-      return null
+      // Return the program ID (e.g., 'main_5day', 'high_rocks', 'vo2_maximizer')
+      return data?.preferred_engine_program_id || 'main_5day'
     } catch (error) {
-      console.error('Error loading current_program:', error)
+      console.error('Error loading preferred_engine_program_id:', error)
       return null
     }
   }
@@ -568,23 +561,38 @@ class EngineDatabaseService {
     }
   }
 
-  // Get workouts for program version
-  async getWorkoutsForProgram(programVersion: string) {
+  // Get workouts for a specific Engine program using the new architecture
+  async getWorkoutsForProgram(programId: string) {
     if (!this.supabase) return []
     
-    if (programVersion === '5-day') {
-      // 5-day program: return all workouts
-      return await this.loadWorkouts()
+    try {
+      const { data, error } = await this.supabase
+        .from('engine_program_day_assignments')
+        .select(`
+          engine_workout_day_number,
+          program_sequence_order,
+          workouts!inner(*)
+        `)
+        .eq('engine_program_id', programId)
+        .order('program_sequence_order')
+
+      if (error) {
+        console.error('Error fetching workouts for program:', error)
+        return []
+      }
+
+      // Map the data to include program_day_number for backward compatibility
+      const workouts = (data || []).map((item: any) => ({
+        ...item.workouts,
+        program_day_number: item.program_sequence_order,
+        engine_workout_day_number: item.engine_workout_day_number
+      }))
+
+      return workouts
+    } catch (error) {
+      console.error('Error in getWorkoutsForProgram:', error)
+      return []
     }
-    
-    // For 3-day program, we need to filter workouts
-    // For now, return all workouts and let the component handle filtering
-    // This can be enhanced later with program mapping if needed
-    const allWorkouts = await this.loadWorkouts()
-    
-    // For 3-day, we'd typically filter based on program mapping
-    // For simplicity, return all workouts and filter by program_type in the component
-    return allWorkouts
   }
 }
 

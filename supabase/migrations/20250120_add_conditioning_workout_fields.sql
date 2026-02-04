@@ -1,6 +1,6 @@
 -- Add conditioning workout support to program_metcons table
 -- Conditioning workouts feature cardio machines (Rowing, Bike, Ski)
--- Analytics tracked in units per minute (calories, meters, watts)
+-- Analytics trapleaecked in units per minute (calories, meters, watts)
 
 -- Add workout_type='conditioning' support
 -- Update the check constraint to allow 'conditioning' type
