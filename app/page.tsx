@@ -93,19 +93,23 @@ export default function LandingPage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">TIMELESS PRINCIPLES, MODERNIZED</h2>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              The foundations of training are well understood. Exercise physiology is largely solved — and even CrossFit itself is over 25 years old.
+              Training fundamentals haven't changed in decades.<br/>
+              Exercise science is settled—even CrossFit is 25+ years old.
             </p>
             <p className="text-lg text-gray-700">
-              But athletes still bounce from program to program, chasing novelty, social media hype, or someone else's results.
+              Yet most athletes still jump between programs, chasing trends, Instagram hype, or copying someone else's results.
             </p>
             <p className="text-lg text-gray-700">
-              The problem isn't knowledge. It's delivery.
+              The issue isn't the knowledge.<br/>
+              It's the delivery.
             </p>
             <p className="text-lg text-gray-700">
-              The industry is still stuck in a low-tech model: repackaged group programs born in the era of PDFs and spreadsheets.  Even today, most fitness apps are little more than spreadsheets on your phone — static plans with limited feedback.
+              The industry clings to outdated models: repackaged group classes turned into PDFs, then phone spreadsheets.<br/>
+              Most apps today? Static plans with minimal real feedback.
             </p>
             <p className="text-lg text-gray-700">
-              Gains AI is built differently: a modern system that adapts as you train — making real personalization the standard, not the upgrade.
+              Gains AI is different.<br/>
+              We deliver a modern, adaptive system that evolves with every session you log—turning true personalization into the default, not a premium add-on.
             </p>
 
             {/* 📱 IMAGE PLACEHOLDER: Skills Card */}
