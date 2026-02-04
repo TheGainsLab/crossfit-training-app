@@ -171,17 +171,17 @@ export default function LandingPage() {
               <h3 className="text-2xl font-bold text-gray-900">Comprehensive Diagnostic</h3>
             </div>
             <p className="text-lg text-gray-700 mb-4">
-              At signup, we assess strength, skills, and conditioning across movements and time domains.
+              We start by assessing your real strength, skills, and conditioning across movements and time domains.
             </p>
             <p className="text-lg text-gray-700 mb-6">
-              Imbalances, gaps, and opportunities are visible in your profile — and update continuously as you train.
+              Imbalances, gaps, and high-leverage opportunities show up immediately in your profile—and update live as you train.
             </p>
             
             {/* 📱 IMAGE PLACEHOLDER */}
             <div className="bg-gray-100 rounded-lg p-8">
               <p className="text-gray-400 italic text-sm text-center">
                 📱 Image: Strength Summary + Olympic Lift Ratios<br/>
-                Strength in context. See how your lifts compare to proven ratios — and where improvements matter most.
+                Strength in context. See how your lifts stack up against proven ratios—and pinpoint where gains matter most.
               </p>
             </div>
           </div>
@@ -195,24 +195,24 @@ export default function LandingPage() {
               <h3 className="text-2xl font-bold text-gray-900">AI-Engineered Programming</h3>
             </div>
             <p className="text-lg text-gray-700 mb-4">
-              Your program is built from your actual profile — not a category you were sorted into.
+              Your program is engineered from <strong>your</strong> actual profile—not some bucket or category.
             </p>
-            <p className="text-lg text-gray-700 mb-4">That includes:</p>
+            <p className="text-lg text-gray-700 mb-4">That means:</p>
             <ul className="space-y-3 ml-6 mb-6">
-              <li className="text-lg text-gray-700">• Strength progressions targeted to weak links</li>
-              <li className="text-lg text-gray-700">• Technical work driven by limiting factors</li>
-              <li className="text-lg text-gray-700">• Skill practice structured for exposure, effort, and quality</li>
-              <li className="text-lg text-gray-700">• Conditioning designed across time domains</li>
+              <li className="text-lg text-gray-700">- Strength progressions laser-focused on your weak links</li>
+              <li className="text-lg text-gray-700">- Technical work targeting true limiting factors</li>
+              <li className="text-lg text-gray-700">- Skill practice balanced for exposure, effort, and quality</li>
+              <li className="text-lg text-gray-700">- Conditioning built across realistic time domains</li>
             </ul>
             <p className="text-lg text-gray-700 mb-6">
-              No filler. No junk volume. No generic templates.
+              Zero filler. No junk volume. No generic templates.
             </p>
             
             {/* 📱 IMAGE PLACEHOLDER */}
             <div className="bg-gray-100 rounded-lg p-8">
               <p className="text-gray-400 italic text-sm text-center">
                 📱 Image: Technical Focus Screen<br/>
-                Clear signals. No guesswork. Objective ratios highlight what's limiting progress — so training fixes causes, not symptoms.
+                Clear signals. No guesswork. Objective ratios reveal what's truly holding you back—so you fix root causes, not chase symptoms.
               </p>
             </div>
           </div>
@@ -226,23 +226,23 @@ export default function LandingPage() {
               <h3 className="text-2xl font-bold text-gray-900">Train, Log, and Analyze</h3>
             </div>
             <p className="text-lg text-gray-700 mb-4">
-              Logging takes seconds, but the insight compounds.
+              Logging takes seconds. Insights compound forever.
             </p>
             <p className="text-lg text-gray-700 mb-4">Each session captures:</p>
             <ul className="space-y-3 ml-6 mb-4">
-              <li className="text-lg text-gray-700">• Performance</li>
-              <li className="text-lg text-gray-700">• Perceived effort (RPE)</li>
-              <li className="text-lg text-gray-700">• Self-reported execution quality</li>
+              <li className="text-lg text-gray-700">- Raw performance</li>
+              <li className="text-lg text-gray-700">- Perceived effort (RPE)</li>
+              <li className="text-lg text-gray-700">- Self-reported execution quality</li>
             </ul>
             <p className="text-lg text-gray-700 mb-6">
-              Over time, this builds a personal analytics profile — showing not just what you did, but how it affected you.
+              This builds your personal analytics profile—revealing not just what you did, but <strong>how it impacted you</strong>.
             </p>
             
             {/* 📱 IMAGE PLACEHOLDER */}
             <div className="bg-gray-100 rounded-lg p-8">
               <p className="text-gray-400 italic text-sm text-center">
                 📱 Image: Skills Card (Avg RPE selected)<br/>
-                Effort matters — but context matters more. See how hard different skills actually cost you.
+                Effort counts—but context wins. See exactly how demanding different skills are for <strong>your</strong> body.
               </p>
             </div>
           </div>
@@ -256,22 +256,22 @@ export default function LandingPage() {
               <h3 className="text-2xl font-bold text-gray-900">Continuous Adaptation</h3>
             </div>
             <p className="text-lg text-gray-700 mb-4">
-              As your data accumulates, Gains AI detects patterns that static programs miss:
+              As data builds, Gains AI spots patterns static programs ignore:
             </p>
             <ul className="space-y-3 ml-6 mb-4">
-              <li className="text-lg text-gray-700">• Efficiency changes</li>
-              <li className="text-lg text-gray-700">• Tolerance limits</li>
-              <li className="text-lg text-gray-700">• Technique breakdown under fatigue</li>
+              <li className="text-lg text-gray-700">- Shifts in efficiency</li>
+              <li className="text-lg text-gray-700">- Your real tolerance limits</li>
+              <li className="text-lg text-gray-700">- Technique breakdowns under fatigue</li>
             </ul>
             <p className="text-lg text-gray-700 mb-6">
-              Your training adjusts — pacing, volume, emphasis — so progress continues without burning out.
+              Your plan auto-adjusts—pacing, volume, emphasis—to keep progress rolling without burnout.
             </p>
             
             {/* 📱 IMAGE PLACEHOLDER */}
             <div className="bg-gray-100 rounded-lg p-8">
               <p className="text-gray-400 italic text-sm text-center">
                 📱 Image: Percentile Heatmap<br/>
-                Fitness isn't one number. Performance changes by movement and time domain. We track it all.
+                Fitness isn't a single score. Performance varies by movement and domain—we track it all in detail.
               </p>
             </div>
           </div>
@@ -285,20 +285,20 @@ export default function LandingPage() {
               <h3 className="text-2xl font-bold text-gray-900">Expert Coaching, Amplified</h3>
             </div>
             <p className="text-lg text-gray-700 mb-4">
-              AI provides insight. Coaches provide judgment.
+              AI delivers insights. Coaches deliver judgment.
             </p>
             <p className="text-lg text-gray-700 mb-6">
-              Message us anytime. With full visibility into your data and AI analysis, conversations start at the right level — not with guesswork.
+              Message us anytime. With full visibility into your data + AI analysis, we skip guesswork and jump to targeted help.
             </p>
             <p className="text-lg text-gray-700 mb-6">
-              Share video. Get targeted feedback. Coaching stays human. Decisions stay informed.
+              Share video lifts. Get precise feedback. Coaching stays human. Decisions stay data-informed.
             </p>
             
             {/* 📱 IMAGE PLACEHOLDER */}
             <div className="bg-gray-100 rounded-lg p-8">
               <p className="text-gray-400 italic text-sm text-center">
                 📱 Image: Messaging / Coaching View<br/>
-                Human judgment, backed by data. Coaches see exactly what you see — and what the system sees.
+                Human judgment, supercharged by data. Your coach sees what you see—and what the system sees.
               </p>
             </div>
           </div>
