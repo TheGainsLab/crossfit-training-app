@@ -87,25 +87,22 @@ export default function LandingPage() {
       {/* Timeless Principles Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">TIMELESS PRINCIPLES, TIMELY IMPLEMENTATION</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">TIMELESS PRINCIPLES, MODERNIZED</h2>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
               The foundations of training are well understood. Exercise physiology is largely solved — and even CrossFit itself is over 25 years old.
             </p>
             <p className="text-lg text-gray-700">
-              Yet athletes still churn through programs, chasing novelty, hype, or someone else's results.
+              But athletes still bounce from program to program, chasing novelty, social media hype, or someone else's results.
             </p>
             <p className="text-lg text-gray-700">
               The problem isn't knowledge. It's delivery.
             </p>
             <p className="text-lg text-gray-700">
-              The industry is still stuck in a low-tech model: repackaged group programs born in the era of PDFs and whiteboards. Even today, most fitness apps are little more than spreadsheets on your phone — static plans with limited feedback.
-            </p>
-            <p className="text-lg text-gray-700 font-semibold">
-              Gains AI is built differently.
+              The industry is still stuck in a low-tech model: repackaged group programs born in the era of PDFs and spreadsheets.  Even today, most fitness apps are little more than spreadsheets on your phone — static plans with limited feedback.
             </p>
             <p className="text-lg text-gray-700">
-              We deliver timeless training principles through a modern system that adapts as you train — making real personalization the standard, not the upgrade.
+              Gains AI is built differently: a modern system that adapts as you train — making real personalization the standard, not the upgrade.
             </p>
 
             {/* 📱 IMAGE PLACEHOLDER: Skills Card */}
