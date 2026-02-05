@@ -233,31 +233,10 @@ export default function EnginePage() {
           
           <div className="text-left max-w-4xl mx-auto mb-12">
             <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-              Build a complete, unbreakable engine: explosive power, sustained endurance, smart pacing, and repeatability across every intensity life and competition throw at you.
+              Build a complete, unbreakable engine: power, endurance, pacing, and repeatability across every intensity and time domain. Attack workout on your terms.
             </p>
             <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-              YoE delivers this through 25 progressive training frameworks—structured, purposeful exposure that expands your output, not random grind.
-            </p>
-            <ul className="space-y-3 mb-6 ml-6">
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">-</span>
-                <span className="text-lg text-gray-700">Higher peak power</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">-</span>
-                <span className="text-lg text-gray-700">Deeper endurance at any pace</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">-</span>
-                <span className="text-lg text-gray-700">New gears for shifting demands</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">-</span>
-                <span className="text-lg text-gray-700">Push past redline without blowing up</span>
-              </li>
-            </ul>
-            <p className="text-lg text-gray-700 font-semibold leading-relaxed">
-              This is engineered conditioning: teach your body to produce, sustain, and recover intelligently.
+              YoE delivers 20 progressive training frameworks, structured, purposeful exposure, supercharged by machine learning, so your training adapts to you. Every single session is personalized. YoE combines your effort with our technology to maximize performance.
             </p>
           </div>
 
