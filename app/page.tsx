@@ -40,11 +40,14 @@ export default function LandingPage() {
       <section className="py-20" style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">Stop Doing Someone Else's Workout.</h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl mb-4 max-w-3xl mx-auto">
             Generic programs ignore your real strengths, weaknesses, and goals.
           </p>
-          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl mb-6 max-w-3xl mx-auto">
             Gains AI creates — and constantly evolves — a 100% personalized plan using your data, proven sports science, and AI-amplified expert coaching.
+          </p>
+          <p className="text-lg md:text-xl mb-8 max-w-3xl mx-auto">
+            Plus built-in nutrition tracking (photo logging, barcode scans, favorite meals, macros + BMR/TDEE estimates) — included free for every user, so fueling finally aligns with training.
           </p>
           
           {/* App Download Buttons */}
@@ -75,7 +78,7 @@ export default function LandingPage() {
               Get it on Google Play
             </a>
           </div>
-          <p className="text-sm text-gray-600">3-day free trial • No credit card required.</p>
+          <p className="text-sm text-gray-600">3-day free trial • No credit card required</p>
 
           {/* 📱 IMAGE PLACEHOLDER: Profile Overview + Percentile Heatmap */}
           <div className="mt-12 bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
