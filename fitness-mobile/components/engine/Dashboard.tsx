@@ -110,9 +110,11 @@ export default function Dashboard({
       // Filter sessions for current program
       const allSessions = progress.completedSessions || []
       const filteredSessions = allSessions.filter((session: any) => {
-        const sessionProgramId = session.program_id || session.engine_program_id
-        // Include sessions that match current program or have no program set (backward compatibility)
-        return !sessionProgramId || sessionProgramId === userProgramId
+        const sessionProgramVersion = session.program_version || '5-day'
+        // Derive expected program version from current program (backward compatible)
+        const expectedProgramVersion = currentProgram?.frequency_per_week === 3 ? '3-day' : '5-day'
+        // Include sessions that match or have no version set (backward compatibility)
+        return !session.program_version || sessionProgramVersion === expectedProgramVersion
       })
 
       setCompletedSessions(filteredSessions)
