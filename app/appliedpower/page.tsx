@@ -107,48 +107,57 @@ export default function AppliedPowerPage() {
   // User does not have access - show paywall
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-6">
-          <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Home
-          </Link>
-        </div>
+      {/* Hero Section */}
+      <section className="py-20" style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-6">
+            <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Home
+            </Link>
+          </div>
 
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            Applied Power
-          </h1>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight">
-            Strength, Treated as a System
-          </h2>
-          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mb-6">
-            Most strength programs are built around one idea: lift heavier over time.
-          </p>
-          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mb-6">
-            That works—to a point.
-          </p>
-          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mb-6">
-            But durable, transferable strength isn't just about load. It depends on balance, efficiency, and technical control. When those break down, progress stalls—or injuries follow.
-          </p>
-          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed mb-6">
-            Applied Power is a strength and weightlifting system built to expose and address limiting factors. Using structured strength data and ratio-based analysis, it treats strength as something measurable, diagnosable, and trainable—not just something you chase.
-          </p>
-          <p className="text-lg md:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed font-semibold">
-            Not generic programming. Not one-size-fits-all progressions. A system designed to build better strength.
-          </p>
+          <div className="text-center">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+              Applied Power
+            </h1>
+            <h2 className="text-2xl md:text-3xl font-semibold mb-6 leading-tight">
+              Strength, Treated as a System
+            </h2>
+            
+            <div className="max-w-4xl mx-auto mb-8">
+              <p className="text-lg md:text-xl leading-relaxed mb-6">
+                Most strength programs are built around one idea: lift heavier over time.
+              </p>
+              <p className="text-lg md:text-xl leading-relaxed mb-6">
+                That works—to a point.
+              </p>
+              <p className="text-lg md:text-xl leading-relaxed mb-6">
+                But durable, transferable strength isn't just about load. It depends on balance, efficiency, and technical control. When those break down, progress stalls—or injuries follow.
+              </p>
+              <p className="text-lg md:text-xl leading-relaxed mb-6">
+                Applied Power is a strength and weightlifting system built to expose and address limiting factors. Using structured strength data and ratio-based analysis, it treats strength as something measurable, diagnosable, and trainable—not just something you chase.
+              </p>
+              <p className="text-lg md:text-xl leading-relaxed font-semibold">
+                Not generic programming. Not one-size-fits-all progressions. A system designed to build better strength.
+              </p>
+            </div>
 
-          {/* 📱 IMAGE PLACEHOLDER */}
-          <div className="mt-12 bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
-            <p className="text-gray-400 italic text-sm">
-              📱 Image Placeholder<br/>
-              Strength, in context. Ratios and benchmarks reveal what's actually limiting progress.
-            </p>
+            {/* 📱 IMAGE PLACEHOLDER */}
+            <div className="mt-12 bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
+              <p className="text-gray-400 italic text-sm">
+                📱 Image Placeholder<br/>
+                Strength, in context. Ratios and benchmarks reveal what's actually limiting progress.
+              </p>
+            </div>
           </div>
         </div>
+      </section>
+
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
         {/* Getting Strong Section */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">

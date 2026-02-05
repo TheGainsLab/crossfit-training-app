@@ -212,50 +212,54 @@ export default function EnginePage() {
   // User does not have access - show paywall
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-6">
-          <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Home
-          </Link>
-        </div>
+      {/* Hero Section */}
+      <section className="py-20" style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-6">
+            <Link href="/" className="inline-flex items-center text-[#FE5858] hover:text-[#ff6b6b] font-medium transition-colors">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Home
+            </Link>
+          </div>
 
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            The Year of the Engine
-          </h1>
-          <h2 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-12 leading-tight">
-            Exceptional Work Capacity
-          </h2>
+          <div className="text-center">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+              The Year of the Engine
+            </h1>
+            <h2 className="text-2xl md:text-3xl font-semibold mb-12 leading-tight">
+              Exceptional Work Capacity
+            </h2>
           
-          <div className="text-left max-w-4xl mx-auto mb-12">
-            <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-              Build a complete, unbreakable engine: power, endurance, pacing, and repeatability across every intensity and time domain. Attack workout on your terms.
-            </p>
-            <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-              YoE delivers 20 progressive training frameworks, structured, purposeful exposure, supercharged by machine learning, so your training adapts to you. Every single session is personalized. YoE combines your effort with our technology to maximize performance.
-            </p>
-          </div>
+            <div className="max-w-4xl mx-auto mb-8">
+              <p className="text-lg md:text-xl leading-relaxed mb-6">
+                Build a complete, unbreakable engine: power, endurance, pacing, and repeatability across every intensity and time domain. Attack workout on your terms.
+              </p>
+              <p className="text-lg md:text-xl leading-relaxed mb-6">
+                YoE delivers 20 progressive training frameworks, structured, purposeful exposure, supercharged by machine learning, so your training adapts to you. Every single session is personalized. YoE combines your effort with our technology to maximize performance.
+              </p>
+            </div>
 
-          {/* Image: Modality & Equipment Selection */}
-          <div className="mt-8">
-            <Image
-              src="/engine/modality-equipment-selection.png"
-              alt="Modality & Equipment Selection"
-              width={1200}
-              height={800}
-              className="rounded-lg shadow-lg mx-auto"
-            />
-            <p className="text-sm text-gray-600 text-center mt-3 italic">
-              Any equipment, same results
-            </p>
+            {/* Image: Modality & Equipment Selection */}
+            <div className="mt-8">
+              <Image
+                src="/engine/modality-equipment-selection.png"
+                alt="Modality & Equipment Selection"
+                width={1200}
+                height={800}
+                className="rounded-lg shadow-lg mx-auto"
+              />
+              <p className="text-sm mt-3 italic text-center">
+                Any equipment, same results
+              </p>
+            </div>
           </div>
         </div>
+      </section>
 
-        {/* Beyond Intervals Section */}
+      {/* Beyond Intervals Section */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
             Beyond Intervals and Zone 2

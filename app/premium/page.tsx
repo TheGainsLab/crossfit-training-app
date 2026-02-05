@@ -1,23 +1,19 @@
 export default function PremiumPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Premium</h1>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-extrabold text-gray-900 sm:text-5xl mb-4">
-            Upgrade to Premium
-          </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <section className="py-20" style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">Premium</h1>
+          <h2 className="text-2xl md:text-3xl font-semibold mb-8">Upgrade to Premium</h2>
+          <p className="text-lg md:text-xl max-w-3xl mx-auto">
             [Placeholder content - Premium features and benefits will go here]
           </p>
         </div>
+      </section>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
         {/* Placeholder Feature Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
