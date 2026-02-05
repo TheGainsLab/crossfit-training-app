@@ -28,6 +28,19 @@ export default function MovementAnalyticsChart({
   const [sessionHistory, setSessionHistory] = useState<SessionHistoryRow[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
 
+  // Determine header based on blockType
+  const getSummaryHeader = () => {
+    switch (blockType) {
+      case 'TECHNICAL WORK':
+        return 'Technical Summary'
+      case 'ACCESSORIES':
+        return 'Accessory Summary'
+      case 'STRENGTH AND POWER':
+      default:
+        return 'Strength Summary'
+    }
+  }
+
   const handleCardPress = async (exerciseName: string) => {
     if (!userId) return
     
@@ -129,7 +142,7 @@ export default function MovementAnalyticsChart({
       {(headlineStats.maxWeight || headlineStats.mostVolume) && (
         <Card style={{ padding: 16 }}>
           <Text style={{ fontSize: 16, fontWeight: '700', color: '#282B34', textAlign: 'center', marginBottom: 16 }}>
-            Strength Summary
+            {getSummaryHeader()}
           </Text>
           <View style={{ flexDirection: 'row', gap: 12 }}>
             {/* Max Weight */}

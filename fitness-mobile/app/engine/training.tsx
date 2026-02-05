@@ -3764,7 +3764,7 @@ export default function EnginePage() {
                   style={styles.skipWorkoutButton} 
                   onPress={skipToEnd}
                 >
-                  <Text style={styles.skipWorkoutButtonText}>Skip Workout</Text>
+                  <Text style={styles.skipWorkoutButtonText}>Skip to End</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -4325,9 +4325,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timerDayType: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6B7280',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#282B34',
     marginBottom: 8,
     textTransform: 'capitalize',
   },
@@ -4514,7 +4514,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   skipWorkoutButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#282B34',
     textDecorationLine: 'underline',

@@ -107,6 +107,27 @@ function getMetricLabel(metric: MetricType): string {
   }
 }
 
+// Fitness Score Card Component
+function FitnessScoreCard({
+  score,
+  metric
+}: {
+  score: number | null
+  metric: MetricType
+}) {
+  if (score === null || score === undefined) {
+    return null
+  }
+
+  return (
+    <Card style={styles.fitnessScoreCard}>
+      <Text style={styles.fitnessScoreLabel}>Fitness Score</Text>
+      <Text style={styles.fitnessScoreValue}>{formatValue(score, metric)}</Text>
+      <Text style={styles.fitnessScoreSubtitle}>{getMetricLabel(metric)}</Text>
+    </Card>
+  )
+}
+
 // Top 3 Card Component
 function Top3Card({
   cells,
@@ -131,7 +152,6 @@ function Top3Card({
   }
 
   const maxValue = Math.max(...top3.map(e => e.value))
-  const medals = ['gold', 'silver', '#CD7F32'] // gold, silver, bronze colors
 
   return (
     <Card style={styles.top3Card}>
@@ -144,9 +164,6 @@ function Top3Card({
 
           return (
             <View key={exercise.name} style={styles.top3Item}>
-              <Text style={[styles.top3Medal, { color: medals[index] }]}>
-                {index === 0 ? '1st' : index === 1 ? '2nd' : '3rd'}
-              </Text>
               <View style={styles.top3BarContainer}>
                 <Text style={styles.top3ExerciseName} numberOfLines={1}>
                   {exercise.name}
@@ -157,7 +174,7 @@ function Top3Card({
                       styles.top3Bar,
                       {
                         width: `${percentage}%`,
-                        backgroundColor: index === 0 ? '#FE5858' : index === 1 ? '#F97316' : '#EAB308'
+                        backgroundColor: '#FE5858'
                       }
                     ]}
                   />
@@ -180,6 +197,7 @@ export function PerformanceView({ heatmapData }: BTNAnalyticsViewsProps) {
 
   return (
     <View style={styles.container}>
+      <FitnessScoreCard score={heatmapData?.globalFitnessScore} metric="percentile" />
       <Top3Card cells={cells} metric="percentile" />
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>Percentile Heatmap ({completions})</Text>
@@ -202,11 +220,15 @@ export function EffortView({ heatmapData }: BTNAnalyticsViewsProps) {
   // Calculate global RPE
   const validRpe = cells.filter(c => c.avg_rpe !== null && c.avg_rpe !== undefined)
   const workoutCount = validRpe.reduce((sum, c) => sum + c.session_count, 0)
+  const globalRpe = validRpe.length > 0
+    ? validRpe.reduce((sum, c) => sum + (c.avg_rpe * c.session_count), 0) / workoutCount
+    : null
 
   return (
     <View style={styles.container}>
       {validRpe.length > 0 ? (
         <>
+          <FitnessScoreCard score={globalRpe} metric="rpe" />
           <Top3Card cells={cells} metric="rpe" />
           <Card style={styles.card}>
             <Text style={styles.cardTitle}>RPE Heatmap ({workoutCount})</Text>
@@ -237,11 +259,15 @@ export function QualityView({ heatmapData }: BTNAnalyticsViewsProps) {
   // Calculate global Quality
   const validQuality = cells.filter(c => c.avg_quality !== null && c.avg_quality !== undefined)
   const workoutCount = validQuality.reduce((sum, c) => sum + c.session_count, 0)
+  const globalQuality = validQuality.length > 0
+    ? validQuality.reduce((sum, c) => sum + (c.avg_quality * c.session_count), 0) / workoutCount
+    : null
 
   return (
     <View style={styles.container}>
       {validQuality.length > 0 ? (
         <>
+          <FitnessScoreCard score={globalQuality} metric="quality" />
           <Top3Card cells={cells} metric="quality" />
           <Card style={styles.card}>
             <Text style={styles.cardTitle}>Quality Heatmap ({workoutCount})</Text>
@@ -272,11 +298,15 @@ export function HeartRateView({ heatmapData }: BTNAnalyticsViewsProps) {
   // Check if we have any HR data
   const validHR = cells.filter(c => c.avg_heart_rate !== null && c.avg_heart_rate !== undefined)
   const workoutCount = validHR.reduce((sum, c) => sum + c.session_count, 0)
+  const globalHR = validHR.length > 0
+    ? validHR.reduce((sum, c) => sum + (c.avg_heart_rate * c.session_count), 0) / workoutCount
+    : null
 
   return (
     <View style={styles.container}>
       {validHR.length > 0 ? (
         <>
+          <FitnessScoreCard score={globalHR} metric="heartrate" />
           <Top3Card cells={cells} metric="heartrate" />
           <Card style={styles.card}>
             <Text style={styles.cardTitle}>Heart Rate Heatmap ({workoutCount})</Text>
@@ -324,6 +354,31 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
+  // Fitness Score Card Styles
+  fitnessScoreCard: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  fitnessScoreLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  fitnessScoreValue: {
+    fontSize: 48,
+    fontWeight: '700',
+    color: '#282B34',
+    textAlign: 'center',
+  },
+  fitnessScoreSubtitle: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 4,
+  },
   // Top 3 Card Styles
   top3Card: {
     padding: 16,
@@ -346,12 +401,7 @@ const styles = StyleSheet.create({
   top3Item: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-  },
-  top3Medal: {
-    fontSize: 14,
-    fontWeight: '700',
-    width: 32,
+    gap: 8,
   },
   top3BarContainer: {
     flex: 1,

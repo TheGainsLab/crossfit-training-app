@@ -10,10 +10,10 @@ interface Tab {
 }
 
 const tabs: Tab[] = [
-  { id: 'performance', label: 'Performance', icon: '📊' },
-  { id: 'effort', label: 'Effort', icon: '💪' },
-  { id: 'quality', label: 'Quality', icon: '⭐' },
-  { id: 'heartrate', label: 'Heart Rate', icon: '❤️' },
+  { id: 'performance', label: 'Performance', icon: '' },
+  { id: 'effort', label: 'Effort', icon: '' },
+  { id: 'quality', label: 'Quality', icon: '' },
+  { id: 'heartrate', label: 'Heart Rate', icon: '' },
 ]
 
 interface BTNAnalyticsTabsProps {
@@ -29,13 +29,9 @@ export default function BTNAnalyticsTabs({
 
   return (
     <View style={styles.container}>
-      {/* Tab Navigation */}
+      {/* Tab Navigation - 2x2 Grid */}
       <View style={styles.tabBarContainer}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabBar}
-        >
+        <View style={styles.tabGrid}>
           {tabs.map((tab) => (
             <TouchableOpacity
               key={tab.id}
@@ -45,7 +41,6 @@ export default function BTNAnalyticsTabs({
                 activeTab === tab.id && styles.tabActive
               ]}
             >
-              <Text style={styles.tabIcon}>{tab.icon}</Text>
               <Text style={[
                 styles.tabLabel,
                 activeTab === tab.id && styles.tabLabelActive
@@ -54,7 +49,7 @@ export default function BTNAnalyticsTabs({
               </Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
       </View>
 
       {/* Tab Content */}
@@ -73,33 +68,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
-    paddingVertical: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
-  tabBar: {
-    paddingHorizontal: 8,
-    gap: 8,
+  tabGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
   },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 8,
     backgroundColor: '#F9FAFB',
-    marginRight: 8,
-    minWidth: 100,
-    gap: 6,
+    width: '47%', // Slightly less than 50% to account for gap
+    minHeight: 48,
   },
   tabActive: {
     backgroundColor: '#FE5858',
-  },
-  tabIcon: {
-    fontSize: 16,
   },
   tabLabel: {
     fontSize: 14,
     fontWeight: '500',
     color: '#374151',
+    textAlign: 'center',
   },
   tabLabelActive: {
     color: '#FFFFFF',
