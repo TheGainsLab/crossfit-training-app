@@ -539,8 +539,8 @@ export default function ProfilePage() {
       if (oneRMsData && oneRMsData.length > 0) {
         const liftMapping: { [key: number]: string } = {
           0: 'snatch',
-          1: 'clean_and_jerk',
-          2: 'power_snatch',
+          1: 'power_snatch',
+          2: 'clean_and_jerk',
           3: 'power_clean',
           4: 'clean_only',
           5: 'jerk_only',
@@ -1635,12 +1635,12 @@ export default function ProfilePage() {
                           <Text style={styles.technicalItemText}>
                             {item.hasDeficit ? (
                               <>
-                                <Text style={{ color: '#FE5858', fontWeight: 'bold' }}>{item.title} </Text>
+                                <Text style={{ color: '#282B34', fontWeight: 'bold' }}>{item.title} </Text>
                                 <Text style={{ color: '#282B34' }}>{item.description}</Text>
                               </>
                             ) : (
                               <>
-                                <Text style={{ fontWeight: 'bold' }}>{item.title} </Text>
+                                <Text style={{ color: '#282B34', fontWeight: 'bold' }}>{item.title} </Text>
                                 <Text>{item.description}</Text>
                               </>
                             )}
@@ -1661,12 +1661,12 @@ export default function ProfilePage() {
                           <Text style={styles.technicalItemText}>
                             {item.hasDeficit ? (
                               <>
-                                <Text style={{ color: '#FE5858', fontWeight: 'bold' }}>{item.title} </Text>
+                                <Text style={{ color: '#282B34', fontWeight: 'bold' }}>{item.title} </Text>
                                 <Text style={{ color: '#282B34' }}>{item.description}</Text>
                               </>
                             ) : (
                               <>
-                                <Text style={{ fontWeight: 'bold' }}>{item.title} </Text>
+                                <Text style={{ color: '#282B34', fontWeight: 'bold' }}>{item.title} </Text>
                                 <Text>{item.description}</Text>
                               </>
                             )}
