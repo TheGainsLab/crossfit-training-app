@@ -75,10 +75,18 @@ export default function Dashboard({
         setUser(progress.user)
       }
 
+      // Normalize legacy program_version values to program IDs
+      const normalizeProgramVersion = (version: string | null): string => {
+        if (!version) return 'main_5day'
+        if (version === '5-day' || version === 'Premium') return 'main_5day'
+        if (version === '3-day') return 'main_3day'
+        return version
+      }
+
       const allSessions = progress.completedSessions || []
       const filteredSessions = allSessions.filter((session: any) => {
-        const sessionProgramVersion = session.program_version || '5-day'
-        return sessionProgramVersion === userProgramVersion
+        const normalizedSessionVersion = normalizeProgramVersion(session.program_version)
+        return normalizedSessionVersion === userProgramVersion
       })
 
       setCompletedSessions(filteredSessions)

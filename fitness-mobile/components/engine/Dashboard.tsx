@@ -107,14 +107,20 @@ export default function Dashboard({
         setUser(progress.user)
       }
 
+      // Normalize legacy program_version values to program IDs
+      const normalizeProgramVersion = (version: string | null): string => {
+        if (!version) return 'main_5day'
+        if (version === '5-day' || version === 'Premium') return 'main_5day'
+        if (version === '3-day') return 'main_3day'
+        return version
+      }
+
       // Filter sessions for current program
       const allSessions = progress.completedSessions || []
       const filteredSessions = allSessions.filter((session: any) => {
-        const sessionProgramVersion = session.program_version || '5-day'
-        // Derive expected program version from current program (backward compatible)
-        const expectedProgramVersion = currentProgram?.frequency_per_week === 3 ? '3-day' : '5-day'
-        // Include sessions that match or have no version set (backward compatibility)
-        return !session.program_version || sessionProgramVersion === expectedProgramVersion
+        const normalizedSessionVersion = normalizeProgramVersion(session.program_version)
+        // Include sessions that match the current program
+        return normalizedSessionVersion === userProgramId
       })
 
       setCompletedSessions(filteredSessions)

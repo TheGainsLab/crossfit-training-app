@@ -469,17 +469,33 @@ export default function EnginePage() {
       }
 
       const allSessions = progress.completedSessions || []
+
+      // Normalize legacy program_version values to program IDs
+      const normalizeProgramVersion = (version: string | null): string => {
+        if (!version) return 'main_5day'
+        // Map legacy values to program IDs
+        if (version === '5-day' || version === 'Premium') return 'main_5day'
+        if (version === '3-day') return 'main_3day'
+        // Already a program ID (main_5day, main_3day, high_rocks, vo2_maximizer, etc.)
+        return version
+      }
+
       const filteredSessions = allSessions.filter((session: any) => {
-        const sessionProgramVersion = session.program_version || '5-day'
-        // Include sessions that match or have no version set (backward compatibility)
-        // Also handle legacy sessions saved with 'Premium' instead of '3-day'/'5-day'
-        return !session.program_version ||
-               sessionProgramVersion === userProgramVersion ||
-               (sessionProgramVersion === 'Premium' && userProgramVersion === '5-day')
+        const normalizedSessionVersion = normalizeProgramVersion(session.program_version)
+        // Include sessions that match the current program
+        return normalizedSessionVersion === userProgramVersion
       })
 
+      // Helper to check if program is 3-day
+      const isThreeDay = (programId: string): boolean => {
+        return programId === 'main_3day' ||
+               programId === 'high_rocks' ||
+               programId === 'vo2_maximizer' ||
+               programId === '3-day'
+      }
+
       // Filter workouts by program_type and add program_day_number
-      const programType = userProgramVersion === '3-day' ? 'main_3day' : 'main_5day'
+      const programType = isThreeDay(userProgramVersion) ? 'main_3day' : 'main_5day'
       const filteredWorkouts = (allWorkoutsData || []).map((workout: any) => {
         // For 5-day, program_day_number = day_number
         // For 3-day, we'd need mapping, but for now use day_number
@@ -495,20 +511,21 @@ export default function EnginePage() {
 
       setCompletedSessions(filteredSessions)
       setWorkouts(filteredWorkouts)
-      
+
       // Calculate current month and set up week view
       if (progress.user) {
         const userData = progress.user as any
-        const daysPerMonth = userProgramVersion === '3-day' ? 12 : 20
+        const daysPerMonth = isThreeDay(userProgramVersion) ? 12 : 20
+        const daysPerWeek = isThreeDay(userProgramVersion) ? 3 : 5
         const currentDay = userData.current_day || 1
         const calculatedMonth = Math.ceil(currentDay / daysPerMonth) || 1
         setCurrentMonth(calculatedMonth)
         setSelectedWeek(1) // Start with week 1
-        
+
         // Filter workouts for current month and week 1
         const monthStartDay = (calculatedMonth - 1) * daysPerMonth + 1
-        const weekStartDay = monthStartDay + (1 - 1) * (userProgramVersion === '3-day' ? 3 : 5)
-        const weekEndDay = weekStartDay + (userProgramVersion === '3-day' ? 3 : 5) - 1
+        const weekStartDay = monthStartDay + (1 - 1) * daysPerWeek
+        const weekEndDay = weekStartDay + daysPerWeek - 1
         
         const weekWorkouts = filteredWorkouts.filter((w: any) => {
           const dayNum = w.program_day_number || w.day_number
@@ -571,13 +588,24 @@ export default function EnginePage() {
     }
   }
   
+  // Helper to determine if program is 3-day based on program ID
+  const isThreeDayProgram = (programId: string | null): boolean => {
+    if (!programId) return false
+    // 3-day programs: main_3day, high_rocks, vo2_maximizer
+    // 5-day programs: main_5day (and legacy '5-day', 'Premium')
+    return programId === 'main_3day' ||
+           programId === 'high_rocks' ||
+           programId === 'vo2_maximizer' ||
+           programId === '3-day'
+  }
+
   // Helper functions for week-focused view
   const getDaysPerMonth = () => {
-    return programVersion === '3-day' ? 12 : 20
+    return isThreeDayProgram(programVersion) ? 12 : 20
   }
-  
+
   const getDaysPerWeek = () => {
-    return programVersion === '3-day' ? 3 : 5
+    return isThreeDayProgram(programVersion) ? 3 : 5
   }
   
   const getWeekDays = (month: number, week: number) => {
@@ -912,10 +940,10 @@ export default function EnginePage() {
         return
       }
 
-      // Get user ID
+      // Get user ID and program version
       const { data: userData } = await supabase
         .from('users')
-        .select('id, current_program')
+        .select('id, preferred_engine_program_id')
         .eq('auth_id', user.id)
         .single()
 
@@ -926,7 +954,8 @@ export default function EnginePage() {
 
       const userDataTyped = userData as any
       setUserId(userDataTyped.id)
-      const version = userDataTyped.current_program === '3-day' ? '3-day' : '5-day'
+      // Use program ID (main_5day, high_rocks, etc.) instead of legacy format
+      const version = userDataTyped.preferred_engine_program_id || 'main_5day'
       setProgramVersion(version)
 
       // PATH 1: If we have program context, use engineData from program structure
@@ -2379,9 +2408,7 @@ export default function EnginePage() {
 
     // Week-focused view (default)
     const monthProgress = getMonthProgress()
-    const programName = programVersion === 'Premium' 
-      ? 'PREMIUM PROGRAM • Full Access'
-      : `ENGINE PROGRAM • ${programVersion === '3-day' ? '3-Day' : '5-Day'} Program`
+    const programName = `ENGINE PROGRAM • ${isThreeDayProgram(programVersion) ? '3-Day' : '5-Day'} Program`
 
     return (
       <View style={styles.container}>
