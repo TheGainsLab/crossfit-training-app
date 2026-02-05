@@ -603,7 +603,8 @@ export default function EnginePage() {
   
   const getDayCompletionStatus = (dayNumber: number) => {
     const isCompleted = completedSessions.some((session: any) => {
-      const sessionDay = session.program_day_number || session.day_number
+      // Check all possible day number fields (sessions may use different field names)
+      const sessionDay = session.program_day_number || session.program_day || session.day_number || session.workout_day
       return sessionDay === dayNumber
     })
     return isCompleted ? 100 : 0
