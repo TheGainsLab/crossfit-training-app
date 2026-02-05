@@ -471,7 +471,11 @@ export default function EnginePage() {
       const allSessions = progress.completedSessions || []
       const filteredSessions = allSessions.filter((session: any) => {
         const sessionProgramVersion = session.program_version || '5-day'
-        return sessionProgramVersion === userProgramVersion
+        // Include sessions that match or have no version set (backward compatibility)
+        // Also handle legacy sessions saved with 'Premium' instead of '3-day'/'5-day'
+        return !session.program_version ||
+               sessionProgramVersion === userProgramVersion ||
+               (sessionProgramVersion === 'Premium' && userProgramVersion === '5-day')
       })
 
       // Filter workouts by program_type and add program_day_number
@@ -549,10 +553,9 @@ export default function EnginePage() {
             return
           }
 
-          const tier = profile.subscription_tier.toUpperCase()
-          if (tier === 'FULL-PROGRAM' || tier === 'PREMIUM') {
-            setProgramVersion('Premium')
-          }
+          // Note: Do NOT override programVersion to 'Premium' here
+          // programVersion must remain '3-day' or '5-day' for correct session filtering and saving
+          // The display name handles premium tier separately
         }
       } catch (error) {
         console.error('Error loading user name:', error)
