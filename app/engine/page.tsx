@@ -228,7 +228,7 @@ export default function EnginePage() {
             The Year of the Engine
           </h1>
           <h2 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-12 leading-tight">
-            Exceptional Work Capacity for Any Goal
+            Exceptional Work Capacity
           </h2>
           
           <div className="text-left max-w-4xl mx-auto mb-12">
@@ -271,7 +271,7 @@ export default function EnginePage() {
               className="rounded-lg shadow-lg mx-auto"
             />
             <p className="text-sm text-gray-600 text-center mt-3 italic">
-              Use the gear you have. The engine adapts—the stimulus stays exact.
+              Any equipment, same results
             </p>
           </div>
         </div>
