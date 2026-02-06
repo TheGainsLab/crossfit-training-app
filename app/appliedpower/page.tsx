@@ -340,7 +340,7 @@ export default function AppliedPowerPage() {
             )}
           </button>
           <p className="text-sm text-gray-500 mt-4">
-            Secure payment powered by Stripe {!user && '• Create account during checkout'}
+            Secure payment powered by Stripe • Create account during checkout to download the app on Apple and Google
           </p>
         </div>
       </div>
