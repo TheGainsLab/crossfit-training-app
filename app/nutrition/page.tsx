@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 export default function NutritionPage() {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -85,14 +87,19 @@ export default function NutritionPage() {
               No manual math. Immediate visibility into whether today's fueling supports tomorrow's session.
             </p>
 
-            {/* 📱 IMAGE PLACEHOLDER */}
-            <div className="bg-gray-100 rounded-lg p-8">
-              <p className="text-gray-400 italic text-sm text-center">
-                📱 Image: Today's Summary Dashboard<br/>
-                (cropped to BMR value, progress bar, macro circles, and meal category buttons)<br/>
-                Caption: BMR, intake progress, macros, and remaining targets—see fueling status in seconds.
-              </p>
+            {/* Image: Today's Summary Dashboard */}
+            <div className="rounded-lg overflow-hidden shadow-lg mb-4">
+              <Image
+                src="/nutrition/todays-summary-dashboard.png"
+                alt="Today's Summary Dashboard"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+              />
             </div>
+            <p className="text-center text-gray-600 italic text-sm">
+              BMR, intake progress, macros, and remaining targets—see fueling status in seconds.
+            </p>
           </div>
         </div>
       </section>
@@ -136,50 +143,75 @@ export default function NutritionPage() {
               Adjust portions with sliders or taps—macros and calories recalculate live before you log. Save as favorite for even faster repeats.
             </p>
 
-            {/* 📱 IMAGE PLACEHOLDER 1 - Log Food Screen */}
-            <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-              <p className="text-gray-400 italic text-sm text-center">
-                📱 Image: Log Food Screen<br/>
-                (cropped to meal category buttons + "How are we logging it?" options row: Photo, Barcode, Search, Favorites, Meal Builder)<br/>
-                Caption: Pick your path: Photo AI, barcode, search, favorites, or build custom.
-              </p>
+            {/* Image 1: Log Food Screen */}
+            <div className="rounded-lg overflow-hidden shadow-lg mb-4">
+              <Image
+                src="/nutrition/log-food-screen.png"
+                alt="Log Food Screen"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+              />
             </div>
+            <p className="text-center text-gray-600 italic text-sm mb-8">
+              Pick your path: Photo AI, barcode, search, favorites, or build custom.
+            </p>
 
-            {/* 📱 IMAGE PLACEHOLDER 2 - Search Foods Results */}
-            <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-              <p className="text-gray-400 italic text-sm text-center">
-                📱 Image: Search Foods Results (Grilled Chicken example)<br/>
-                (cropped to search bar + top results list with branded items and macro previews)<br/>
-                Caption: Search any food—home or branded restaurant—with full macros per serving.
-              </p>
+            {/* Image 2: Search Foods Results */}
+            <div className="rounded-lg overflow-hidden shadow-lg mb-4">
+              <Image
+                src="/nutrition/Search-food-results.png"
+                alt="Search Foods Results - Grilled Chicken"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+              />
             </div>
+            <p className="text-center text-gray-600 italic text-sm mb-8">
+              Search any food—home or branded restaurant—with full macros per serving.
+            </p>
 
-            {/* 📱 IMAGE PLACEHOLDER 3 - Pulled Pork Photo Log */}
-            <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-              <p className="text-gray-400 italic text-sm text-center">
-                📱 Image: Pulled Pork Photo Log Screen<br/>
-                (cropped to food name, AI-suggested portion, quantity slider/circles, macros breakdown, meal total, and Log/Save buttons)<br/>
-                Caption: Photo → AI recognition → suggested portion + live macros → log. Effortless precision.
-              </p>
+            {/* Image 3: Pulled Pork Photo Log */}
+            <div className="rounded-lg overflow-hidden shadow-lg mb-4">
+              <Image
+                src="/nutrition/pulled-pork-photo-log.png"
+                alt="Pulled Pork Photo Log Screen"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+              />
             </div>
+            <p className="text-center text-gray-600 italic text-sm mb-8">
+              Photo → AI recognition → suggested portion + live macros → log. Effortless precision.
+            </p>
 
-            {/* 📱 IMAGE PLACEHOLDER 4 - Add Restaurant */}
-            <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-              <p className="text-gray-400 italic text-sm text-center">
-                📱 Image: Add Restaurant Screen<br/>
-                (cropped to search bar + list of restaurants with Add/Remove buttons)<br/>
-                Caption: Save your favorite restaurants—Chipotle, Starbucks, Chick-fil-A, etc.—for quick logging when eating out.
-              </p>
+            {/* Image 4: Add Restaurant Screen */}
+            <div className="rounded-lg overflow-hidden shadow-lg mb-4">
+              <Image
+                src="/nutrition/add-restaurant-screen.png"
+                alt="Add Restaurant Screen"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+              />
             </div>
+            <p className="text-center text-gray-600 italic text-sm mb-8">
+              Save your favorite restaurants—Chipotle, Starbucks, Chick-fil-A, etc.—for quick logging when eating out.
+            </p>
 
-            {/* 📱 IMAGE PLACEHOLDER 5 - Meal Builder */}
-            <div className="bg-white rounded-lg shadow-lg p-8">
-              <p className="text-gray-400 italic text-sm text-center">
-                📱 Image: Meal Builder Screen<br/>
-                (cropped to Meal Name field + Quick Add Ingredients categories/buttons)<br/>
-                Caption: Build custom meals from quick-add favorites—save and log with one tap next time.
-              </p>
+            {/* Image 5: Meal Builder Screen */}
+            <div className="rounded-lg overflow-hidden shadow-lg mb-4">
+              <Image
+                src="/nutrition/Meal-builder-screen.png"
+                alt="Meal Builder Screen"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+              />
             </div>
+            <p className="text-center text-gray-600 italic text-sm">
+              Build custom meals from quick-add favorites—save and log with one tap next time.
+            </p>
           </div>
         </div>
       </section>
