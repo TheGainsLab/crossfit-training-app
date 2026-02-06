@@ -131,6 +131,102 @@ export default function PremiumPage() {
         </div>
       </section>
 
+      {/* How It Works Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">HOW IT WORKS</h2>
+          
+          {/* Step 1 */}
+          <div className="max-w-4xl mx-auto mb-16">
+            <div className="flex items-center mb-6">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
+                <span className="text-white font-bold text-xl">1</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">Comprehensive Diagnostic</h3>
+            </div>
+            <p className="text-lg text-gray-700 mb-4">
+              At signup we'll collect information about your strength, skills, and conditioning.
+            </p>
+            <p className="text-lg text-gray-700 mb-4">
+              Your intake reveals imbalances, gaps, and high-leverage opportunities that show up immediately in your profile.
+            </p>
+            <p className="text-lg text-gray-700">
+              We start by assessing your real strength, skills, and conditioning across movements and time domains. Imbalances, gaps, and high-leverage opportunities show up immediately in your profile—and update live as you train.
+            </p>
+          </div>
+
+          {/* Step 2 */}
+          <div className="max-w-4xl mx-auto mb-16">
+            <div className="flex items-center mb-6">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
+                <span className="text-white font-bold text-xl">2</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">AI-Engineered Programming</h3>
+            </div>
+            <ul className="space-y-3 mb-4">
+              <li className="text-lg text-gray-700">• Technical work on target, attacking weaknesses</li>
+              <li className="text-lg text-gray-700">• Accessories build general strength which raise your ceiling</li>
+              <li className="text-lg text-gray-700">• Strength work where each individual lift progresses at its own pace</li>
+              <li className="text-lg text-gray-700">• MetCons in the highest impact time domains</li>
+            </ul>
+            <p className="text-lg text-gray-700">
+              Every exercise comes with cues to guide your execution and maximize effectiveness.
+            </p>
+          </div>
+
+          {/* Step 3 */}
+          <div className="max-w-4xl mx-auto mb-16">
+            <div className="flex items-center mb-6">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
+                <span className="text-white font-bold text-xl">3</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">Train, Log, and Analyze</h3>
+            </div>
+            <p className="text-lg text-gray-700 mb-4">
+              A few taps builds your analytics and feeds the AI, creating a cycle of perpetual optimization.
+            </p>
+            <p className="text-lg text-gray-700">
+              Sets, reps, RPE and effort. Build a library of data that AI uses for optimization, and the app uses for cutting edge analytics.
+            </p>
+          </div>
+
+          {/* Step 4 */}
+          <div className="max-w-4xl mx-auto mb-16">
+            <div className="flex items-center mb-6">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
+                <span className="text-white font-bold text-xl">4</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">Continuous Adaptation</h3>
+            </div>
+            <p className="text-lg text-gray-700 mb-4">
+              As your data set grows, The Gains AI looks deeply to spot trends and patterns that most apps ignore.
+            </p>
+            <p className="text-lg text-gray-700">
+              Your plan auto-adjusts—pacing, volume, emphasis—to keep progress rolling without burnout.
+            </p>
+          </div>
+
+          {/* Step 5 */}
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center mb-6">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
+                <span className="text-white font-bold text-xl">5</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">Expert Coaching, Amplified</h3>
+            </div>
+            <p className="text-lg text-gray-700 mb-4">
+              AI's analytical ability frees up your coaches to actually coach. Coaches don't need to spend any time crunching numbers; all the data is there.
+            </p>
+            <p className="text-lg text-gray-700 mb-4">
+              Instead, share videos, and ask strategic questions.
+            </p>
+            <p className="text-lg text-gray-700">
+              We can modify your program in an instant, so if you are ready to shift gears, we can guide you toward your next goals without a reset.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
