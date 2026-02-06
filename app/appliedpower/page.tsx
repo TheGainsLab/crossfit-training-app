@@ -176,28 +176,20 @@ export default function AppliedPowerPage() {
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
             Your Strength Blueprint
           </h2>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Applied Power begins with a diagnostic that goes beyond 1RMs.
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed font-semibold">
+            If strength is simple, who needs technology?
           </p>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Your Strength Blueprint analyzes:
+            The GainsAI reviews the relationships among your lifts and identifies gaps and imbalances.
           </p>
-          <ul className="space-y-4 max-w-3xl mx-auto mb-6">
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700"><strong>Olympic lifting ratios and efficiency</strong> Snatch, clean, and jerk performance relative to foundational strength.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700"><strong>Bodyweight strength ratios</strong> Personalized targets based on size and movement demands.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700"><strong>Muscular balance and positional demands</strong> Posterior chain, overhead stability, trunk strength, and positional integrity.</span>
-            </li>
-          </ul>
-          <p className="text-lg text-gray-700 leading-relaxed font-semibold">
-            This blueprint doesn't label you. It shows you where strength is leaking—and where it can be improved.
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            Customized technical work sharpens pulls and reinforces positions.
+          </p>
+          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+            Individualized accessories build strength that raises every bar: core strength, back strength, overhead strength and unilateral strength.
+          </p>
+          <p className="text-lg text-gray-700 leading-relaxed">
+            Strength progressions are lift specific, so you get the exact dose you need every training day.
           </p>
 
           {/* 📱 IMAGE PLACEHOLDER */}
