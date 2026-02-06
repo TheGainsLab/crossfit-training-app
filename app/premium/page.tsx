@@ -227,6 +227,37 @@ export default function PremiumPage() {
         </div>
       </section>
 
+      {/* Data Dominance Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">DATA DOMINANCE</h2>
+          <div className="max-w-4xl mx-auto">
+            <p className="text-lg text-gray-700 mb-8">
+              The Gains AI collects more data than any other platform to feed the AI. But all of that data is also available to you. You can drill down into any aspect of your fitness at any time.
+            </p>
+            
+            <ul className="space-y-4">
+              <li className="flex items-start">
+                <span className="text-lg text-gray-700 mr-2">•</span>
+                <span className="text-lg text-gray-700">Track your skills volume, exertion and quality</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-lg text-gray-700 mr-2">•</span>
+                <span className="text-lg text-gray-700">Follow the progression of your strength and the task level. Are your Olympic lifts keeping up with your strength numbers?</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-lg text-gray-700 mr-2">•</span>
+                <span className="text-lg text-gray-700">Track your MetCons at the task and time domain level so you can pinpoint every aspect of your fitness</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-lg text-gray-700 mr-2">•</span>
+                <span className="text-lg text-gray-700">Compare progress across your energy systems, as well as all intensities and durations of engine work</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
