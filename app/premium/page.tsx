@@ -7,14 +7,20 @@ export default function PremiumPage() {
           <h1 className="text-4xl md:text-6xl font-bold mb-6">Maximize the Value of Every Effort</h1>
           
           <div className="max-w-3xl mx-auto mb-8">
-            <p className="text-lg md:text-xl mb-6">
-              Most programs work… for a while. Then you outgrow them, or your goals change, and your static program can't adjust.
+            <p className="text-lg md:text-xl mb-4">
+              Most programs work… for a while.
             </p>
             <p className="text-lg md:text-xl mb-6">
-              Gains AI does better. We maximize your training with continuous personalization, real-time analytics, and built-in nutrition—so every rep and calorie compounds into faster, more complete progress.
+              Then you outgrow them, your goals shift, or life intervenes—and the static plan can't keep up.
+            </p>
+            <p className="text-lg md:text-xl mb-6 font-semibold">
+              Gains AI does better.
+            </p>
+            <p className="text-lg md:text-xl mb-6">
+              We maximize every rep and calorie with continuous personalization, real-time analytics, and built-in nutrition—so your effort compounds into faster, more complete, sustainable progress.
             </p>
             <p className="text-lg md:text-xl font-semibold">
-              No partial solutions. No cobbling. Just smarter results from the effort you're already putting in.
+              No partial fixes. No cobbling together apps. Just smarter results from the work you're already doing.
             </p>
           </div>
 
@@ -77,16 +83,16 @@ export default function PremiumPage() {
               They're not built for long-term, individualized progress.
             </p>
             <p className="text-lg text-gray-700">
-              They're built to sell—leaning on the reputation of a competitive athlete, viral social media clips, or the promise of "what worked for them."
+              They're built to sell—leaning on a competitive athlete's name, viral clips, or "what worked for them."
             </p>
             <p className="text-lg text-gray-700">
-              Post-sale support? Almost nonexistent.
+              Post-sale support? Minimal at best.
             </p>
             <p className="text-lg text-gray-700">
-              Feedback is minimal at best.
+              Feedback is rare.
             </p>
             <p className="text-lg text-gray-700">
-              Even when coaches are involved, no group program can scale meaningful, ongoing attention across hundreds or thousands of members.
+              Even with coaches, no group program scales real attention across hundreds or thousands of members.
             </p>
             <p className="text-lg text-gray-700 font-semibold mt-8">
               That's why Gains AI is different.
@@ -95,7 +101,7 @@ export default function PremiumPage() {
               We don't approximate.
             </p>
             <p className="text-lg text-gray-700 font-semibold mb-8">
-              We personalize deeply, adapt continuously, and give you the analytics and coaching visibility to make every session count—without relying on hype or hoping you fit the mold.
+              We personalize deeply, adapt continuously, and give you the analytics + coaching visibility to make every session count—without hype or hoping you fit the mold.
             </p>
 
             {/* CTA Buttons */}
@@ -144,15 +150,20 @@ export default function PremiumPage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900">Comprehensive Diagnostic</h3>
             </div>
-            <p className="text-lg text-gray-700 mb-4">
-              At signup we'll collect information about your strength, skills, and conditioning.
+            <p className="text-lg text-gray-700 mb-6">
+              At signup we assess your real strength, skills, and conditioning across movements and time domains.
             </p>
-            <p className="text-lg text-gray-700 mb-4">
-              Your intake reveals imbalances, gaps, and high-leverage opportunities that show up immediately in your profile.
+            <p className="text-lg text-gray-700 mb-6">
+              Imbalances, gaps, and high-leverage opportunities appear immediately in your profile—and update live as you train.
             </p>
-            <p className="text-lg text-gray-700">
-              We start by assessing your real strength, skills, and conditioning across movements and time domains. Imbalances, gaps, and high-leverage opportunities show up immediately in your profile—and update live as you train.
-            </p>
+            
+            {/* 📱 IMAGE PLACEHOLDER */}
+            <div className="bg-gray-100 rounded-lg p-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Image: Strength Summary + Olympic Lift Ratios<br/>
+                Strength in context. See how your lifts stack against proven ratios—and pinpoint what matters most.
+              </p>
+            </div>
           </div>
 
           {/* Step 2 */}
@@ -163,15 +174,27 @@ export default function PremiumPage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900">AI-Engineered Programming</h3>
             </div>
-            <ul className="space-y-3 mb-4">
-              <li className="text-lg text-gray-700">• Technical work on target, attacking weaknesses</li>
-              <li className="text-lg text-gray-700">• Accessories build general strength which raise your ceiling</li>
-              <li className="text-lg text-gray-700">• Strength work where each individual lift progresses at its own pace</li>
-              <li className="text-lg text-gray-700">• MetCons in the highest impact time domains</li>
-            </ul>
-            <p className="text-lg text-gray-700">
-              Every exercise comes with cues to guide your execution and maximize effectiveness.
+            <p className="text-lg text-gray-700 mb-4">
+              Your program is built from your actual data—not a category or template.
             </p>
+            <p className="text-lg text-gray-700 mb-4">That means:</p>
+            <ul className="space-y-3 ml-6 mb-6">
+              <li className="text-lg text-gray-700">• Technical work targeted at true weaknesses</li>
+              <li className="text-lg text-gray-700">• Accessories that raise your overall ceiling</li>
+              <li className="text-lg text-gray-700">• Lift-specific progressions so each movement advances at its own pace</li>
+              <li className="text-lg text-gray-700">• MetCons in the highest-impact time domains</li>
+            </ul>
+            <p className="text-lg text-gray-700 mb-6">
+              Every exercise includes cues to guide execution and maximize effectiveness.
+            </p>
+            
+            {/* 📱 IMAGE PLACEHOLDER */}
+            <div className="bg-gray-100 rounded-lg p-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Image: Technical Focus Screen<br/>
+                Clear signals. No guesswork. Fix root causes, not symptoms.
+              </p>
+            </div>
           </div>
 
           {/* Step 3 */}
@@ -183,11 +206,22 @@ export default function PremiumPage() {
               <h3 className="text-2xl font-bold text-gray-900">Train, Log, and Analyze</h3>
             </div>
             <p className="text-lg text-gray-700 mb-4">
-              A few taps builds your analytics and feeds the AI, creating a cycle of perpetual optimization.
+              Logging takes seconds. Insights compound forever.
             </p>
-            <p className="text-lg text-gray-700">
-              Sets, reps, RPE and effort. Build a library of data that AI uses for optimization, and the app uses for cutting edge analytics.
+            <p className="text-lg text-gray-700 mb-6">
+              Capture sets, reps, RPE, and execution quality.
             </p>
+            <p className="text-lg text-gray-700 mb-6">
+              This builds your personal analytics profile—revealing not just what you did, but how it affected you.
+            </p>
+            
+            {/* 📱 IMAGE PLACEHOLDER */}
+            <div className="bg-gray-100 rounded-lg p-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Image: Skills Card (Avg RPE selected)<br/>
+                Effort matters—but context matters more. See exactly what different tasks cost your body.
+              </p>
+            </div>
           </div>
 
           {/* Step 4 */}
@@ -199,11 +233,24 @@ export default function PremiumPage() {
               <h3 className="text-2xl font-bold text-gray-900">Continuous Adaptation</h3>
             </div>
             <p className="text-lg text-gray-700 mb-4">
-              As your data set grows, The Gains AI looks deeply to spot trends and patterns that most apps ignore.
+              As your data grows, Gains AI spots patterns static programs miss:
             </p>
-            <p className="text-lg text-gray-700">
+            <ul className="space-y-3 ml-6 mb-6">
+              <li className="text-lg text-gray-700">• Shifts in efficiency</li>
+              <li className="text-lg text-gray-700">• Your real tolerance limits</li>
+              <li className="text-lg text-gray-700">• Technique breakdowns under fatigue</li>
+            </ul>
+            <p className="text-lg text-gray-700 mb-6">
               Your plan auto-adjusts—pacing, volume, emphasis—to keep progress rolling without burnout.
             </p>
+            
+            {/* 📱 IMAGE PLACEHOLDER */}
+            <div className="bg-gray-100 rounded-lg p-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Image: Percentile Heatmap<br/>
+                Fitness isn't one number. We track performance across movements, domains, and intensities.
+              </p>
+            </div>
           </div>
 
           {/* Step 5 */}
@@ -215,14 +262,22 @@ export default function PremiumPage() {
               <h3 className="text-2xl font-bold text-gray-900">Expert Coaching, Amplified</h3>
             </div>
             <p className="text-lg text-gray-700 mb-4">
-              AI's analytical ability frees up your coaches to actually coach. Coaches don't need to spend any time crunching numbers; all the data is there.
+              AI handles the analysis so coaches can actually coach.
             </p>
-            <p className="text-lg text-gray-700 mb-4">
-              Instead, share videos, and ask strategic questions.
+            <p className="text-lg text-gray-700 mb-6">
+              Message us anytime. With full visibility into your data + AI insights, we skip guesswork and go straight to targeted help.
             </p>
-            <p className="text-lg text-gray-700">
-              We can modify your program in an instant, so if you are ready to shift gears, we can guide you toward your next goals without a reset.
+            <p className="text-lg text-gray-700 mb-6">
+              Share video lifts. Get precise feedback. Coaching stays human. Decisions stay data-informed.
             </p>
+            
+            {/* 📱 IMAGE PLACEHOLDER */}
+            <div className="bg-gray-100 rounded-lg p-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Image: Messaging / Coaching View<br/>
+                Human judgment, supercharged by data. Your coach sees what you see—and what the system sees.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -231,29 +286,46 @@ export default function PremiumPage() {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">DATA DOMINANCE</h2>
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <p className="text-lg text-gray-700">
+              Most apps store results as notes. Gains AI uses structured data—so both you and the system understand performance precisely.
+            </p>
+            <p className="text-lg text-gray-700 font-semibold">
+              If the system sees it, you see it.
+            </p>
+            <p className="text-lg text-gray-700 mb-6">
+              Track trends. Compare domains. Watch your fitness evolve in real time.
+            </p>
             <p className="text-lg text-gray-700 mb-8">
-              The Gains AI collects more data than any other platform to feed the AI. But all of that data is also available to you. You can drill down into any aspect of your fitness at any time.
+              You own your data—and with it, control over your progress.
             </p>
             
-            <ul className="space-y-4">
+            <ul className="space-y-4 mb-6">
               <li className="flex items-start">
                 <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Track your skills volume, exertion and quality</span>
+                <span className="text-lg text-gray-700">Track skill volume, exertion, and quality</span>
               </li>
               <li className="flex items-start">
                 <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Follow the progression of your strength and the task level. Are your Olympic lifts keeping up with your strength numbers?</span>
+                <span className="text-lg text-gray-700">Follow strength progression and lift ratios—do your Olympic lifts keep pace?</span>
               </li>
               <li className="flex items-start">
                 <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Track your MetCons at the task and time domain level so you can pinpoint every aspect of your fitness</span>
+                <span className="text-lg text-gray-700">Analyze MetCons by task and time domain to pinpoint every piece</span>
               </li>
               <li className="flex items-start">
                 <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Compare progress across your energy systems, as well as all intensities and durations of engine work</span>
+                <span className="text-lg text-gray-700">Compare progress across energy systems, intensities, and durations</span>
               </li>
             </ul>
+
+            {/* 📱 IMAGE PLACEHOLDER */}
+            <div className="bg-gray-100 rounded-lg p-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Image: Combined Analytics (Percentile + HR Heatmaps)<br/>
+                No black boxes. Every adjustment comes from data you can see and understand.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -264,20 +336,28 @@ export default function PremiumPage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">TEAMWORK, NOT TEMPLATES</h2>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Programs are personalized — but never locked in.
+              Programs are personalized—but never locked in.
             </p>
             <p className="text-lg text-gray-700">Change focus anytime:</p>
-            <ul className="space-y-3 ml-6">
+            <ul className="space-y-3 ml-6 mb-6">
               <li className="text-lg text-gray-700">• Emphasize a lift</li>
               <li className="text-lg text-gray-700">• Add or remove skills</li>
               <li className="text-lg text-gray-700">• Adjust for travel, equipment, or schedule</li>
             </ul>
-            <p className="text-lg text-gray-700">
+            <p className="text-lg text-gray-700 mb-6">
               The system adapts without resetting progress or forcing a new program.
             </p>
-            <p className="text-lg text-gray-700">
-              Because your data is structured, flexibility doesn't mean starting over — it means adjusting intelligently.
+            <p className="text-lg text-gray-700 mb-8">
+              Because your data is structured, flexibility means smarter adjustments—not starting over.
             </p>
+
+            {/* 📱 IMAGE PLACEHOLDER */}
+            <div className="bg-white rounded-lg shadow-lg p-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Image: Skills Card or Strength Summary<br/>
+                Your training evolves with you. No resets. Just continuous, intelligent upgrades.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -285,7 +365,7 @@ export default function PremiumPage() {
       {/* Final CTA Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
             Train with a System That Understands You
           </h2>
           <p className="text-lg text-gray-700 mb-8 max-w-3xl mx-auto">
