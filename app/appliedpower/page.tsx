@@ -238,50 +238,21 @@ export default function AppliedPowerPage() {
             Programming That Responds to What You Need
           </h2>
           
-          <div className="space-y-8 max-w-3xl mx-auto">
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Targeted Accessory Work</h3>
-              <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-                Accessory training isn't added for variety. It's prescribed to address specific limitations.
-              </p>
-              <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-                If overhead stability, pulling strength, or positional control is lagging, the program integrates the work needed to correct it.
-              </p>
-              <p className="text-lg text-gray-700 leading-relaxed">
-                If balance is solid, volume and intensity progress to drive raw strength.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Technical Development</h3>
-              <p className="text-lg text-gray-700 mb-4 leading-relaxed font-semibold">
-                Strength is a skill—especially in Olympic lifting.
-              </p>
-              <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-                When ratios fall outside effective ranges, Applied Power prescribes technical work to improve:
-              </p>
-              <ul className="space-y-3 ml-6 mb-4">
-                <li className="text-lg text-gray-700">• Timing and coordination</li>
-                <li className="text-lg text-gray-700">• Bar path efficiency</li>
-                <li className="text-lg text-gray-700">• Positioning under load</li>
-              </ul>
-              <p className="text-lg text-gray-700 leading-relaxed">
-                Complex lifts are broken down so each rep reinforces better movement.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Adaptive Strength Progression</h3>
-              <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-                As your profile improves, programming evolves.
-              </p>
-              <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-                Changes in mobility, positioning, and efficiency influence progression—not just numbers on the bar.
-              </p>
-              <p className="text-lg text-gray-700 leading-relaxed font-semibold">
-                You don't just lift more. You lift better.
-              </p>
-            </div>
+          <div className="max-w-3xl mx-auto">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">The process is simple</h3>
+            
+            <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+              Complete your intake.
+            </p>
+            <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+              Enter your 1RM lifts.
+            </p>
+            <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+              We'll assess your strength to bodyweight ratios to get a sense of your strength levels and set near term goals. Then we look at the ratios between your strength and olympic lifts to identify any technical gaps which can be addressed with technical work. Outstanding strength rarely happens without outstanding technique, so we dial in your technique before we load up the weights.
+            </p>
+            <p className="text-lg text-gray-700 leading-relaxed">
+              The Gains AI programs your lifts independently, so if you have a strong squat but your Olympic lifts are lagging, you'll maintain that squat while we address your Olympic lifts with lighter weights and more reps. As your lifts progress, we can adjust this balance as needed.
+            </p>
           </div>
 
           {/* 📱 IMAGE PLACEHOLDER */}
