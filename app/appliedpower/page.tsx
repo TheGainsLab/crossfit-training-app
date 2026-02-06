@@ -153,25 +153,14 @@ export default function AppliedPowerPage() {
             Getting Strong Is Simple. Getting Strong Well Is Not.
           </h2>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Any decent program can make you strong. Exercise science isn't rocket science. Heavy weights, compound lifts and great technique, consistently applied, will make you stronger.
+            Any decent program can make you strong. Compound movements, heavy weights and good technique are the foundations of strength and power development.
           </p>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            The Gains AI doesn't reinvent the wheel. We make it roll faster. Our intake creates a strength blueprint that highlights each individual lift as well as the relationship among your lifts. Then, we create:
+            The problem is not the knowledge, it's the delivery. Static templates and percentages deliver the basics but fail to account for the differences between athletes. The Gains AI combines the proven principles of strength training and weightlifting with modern technology, AI and data analytics.
           </p>
-          <ul className="space-y-3 max-w-3xl mx-auto mb-6">
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Strength progressions applied for each lift</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Technical work built from your intake blueprint to attack your weaknesses. Pulls, holds, positioning, imbalances, we dig into all of it</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Accessories for general needs: core strength, back strength, overhead strength and unilateral strength</span>
-            </li>
-          </ul>
+          <p className="text-lg text-gray-700 leading-relaxed">
+            Applied Power precisely measures and analyzes all aspects of your strength and power to create a blueprint. Your blueprint becomes your program, fully personalized to develop each aspect of your strength and power individually and synthesizing them into a cohesive whole.
+          </p>
 
           {/* 📱 IMAGE PLACEHOLDER */}
           <div className="mt-8 bg-gray-100 rounded-lg p-8">
