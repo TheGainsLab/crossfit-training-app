@@ -123,21 +123,19 @@ export default function AppliedPowerPage() {
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
               Applied Power
             </h1>
-            <h2 className="text-2xl md:text-3xl font-semibold mb-6 leading-tight">
+            <h2 className="text-2xl md:text-3xl font-semibold mb-8 leading-tight">
               Strength, Treated as a System
             </h2>
             
-            <div className="max-w-4xl mx-auto mb-8">
-              <p className="text-lg md:text-xl leading-relaxed">
-                Combine modern technology, AI and analytics with the proven principles of strength training in a completely personalized strength program to maximize your gains.
-              </p>
-            </div>
+            <p className="text-lg md:text-xl max-w-4xl mx-auto mb-12 leading-relaxed">
+              Build raw, transferable power with a program that's 100% yours—laser-focused on your weak links, ratios, and limiting factors. No generic percentages. No junk volume. Just smarter, faster strength gains.
+            </p>
 
             {/* 📱 IMAGE PLACEHOLDER */}
             <div className="mt-12 bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
               <p className="text-gray-400 italic text-sm">
-                📱 Image Placeholder<br/>
-                Strength, in context. Ratios and benchmarks reveal what's actually limiting progress.
+                📱 Image: Strength Summary + Olympic Lift Ratios<br/>
+                Strength in context. See exactly where you stand against proven ratios—and what to fix first.
               </p>
             </div>
           </div>
@@ -149,86 +147,61 @@ export default function AppliedPowerPage() {
 
         {/* Getting Strong Section */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
-            Getting Strong Is Simple. Getting Strong Well Is Not.
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">
+            Getting Strong Is Simple. Getting Strong Well Is Hard.
           </h2>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Any decent program can make you strong. Compound movements, heavy weights and good technique are the foundations of strength and power development.
+          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+            Heavy compounds + good technique will always be the foundation.
           </p>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            The problem is not the knowledge, it's the delivery. Static templates and percentages deliver the basics but fail to account for the differences between athletes. The Gains AI combines the proven principles of strength training and weightlifting with modern technology, AI and data analytics.
+            Any decent program can add plates… for a while.
           </p>
+          <p className="text-lg text-gray-700 mb-4 leading-relaxed font-semibold">
+            The difference is in the details most programs ignore:
+          </p>
+          <ul className="space-y-3 ml-6 mb-6">
+            <li className="text-lg text-gray-700">• How your squat:deadlift:press ratios actually stack up</li>
+            <li className="text-lg text-gray-700">• Where technique is quietly robbing you of pounds</li>
+            <li className="text-lg text-gray-700">• Which accessories will raise every bar, not just one</li>
+            <li className="text-lg text-gray-700">• How to progress each lift independently without imbalances</li>
+          </ul>
           <p className="text-lg text-gray-700 leading-relaxed">
-            Applied Power precisely measures and analyzes all aspects of your strength and power to create a blueprint. Your blueprint becomes your program, fully personalized to develop each aspect of your strength and power individually and synthesizing them into a cohesive whole.
+            Applied Power measures all of it, then builds a blueprint that evolves with you.
           </p>
 
           {/* 📱 IMAGE PLACEHOLDER */}
           <div className="mt-8 bg-gray-100 rounded-lg p-8">
             <p className="text-gray-400 italic text-sm text-center">
-              📱 Image Placeholder<br/>
-              Efficiency matters. Stronger lifts come from better positions and cleaner force transfer.
+              📱 Image: Technical Focus Screen or Position Efficiency View<br/>
+              Efficiency = free strength. Clean positions and better force transfer show up as bigger lifts, fast.
             </p>
           </div>
         </div>
 
-        {/* Strength Blueprint Section */}
-        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
-            Your Strength Blueprint
-          </h2>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed font-semibold">
-            If strength is simple, who needs technology?
-          </p>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            The GainsAI reviews the relationships among your lifts and identifies gaps and imbalances.
-          </p>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Customized technical work sharpens pulls and reinforces positions.
-          </p>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Individualized accessories build strength that raises every bar: core strength, back strength, overhead strength and unilateral strength.
-          </p>
-          <p className="text-lg text-gray-700 leading-relaxed">
-            Strength progressions are lift specific, so you get the exact dose you need every training day.
-          </p>
-
-          {/* 📱 IMAGE PLACEHOLDER */}
-          <div className="mt-8 bg-gray-100 rounded-lg p-8">
-            <p className="text-gray-400 italic text-sm text-center">
-              📱 Image Placeholder<br/>
-              See the gaps. Train with intent. Diagnostics turn effort into direction.
-            </p>
-          </div>
-        </div>
-
-        {/* Programming That Responds Section */}
+        {/* Your Personal Strength Blueprint Section */}
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">
-            Programming That Responds to What You Need
+            Your Personal Strength Blueprint
           </h2>
-          
-          <div className="max-w-3xl mx-auto">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">The process is simple</h3>
-            
-            <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-              Complete your intake.
-            </p>
-            <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-              Enter your 1RM lifts.
-            </p>
-            <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-              We'll assess your strength to bodyweight ratios to get a sense of your strength levels and set near term goals. Then we look at the ratios between your strength and olympic lifts to identify any technical gaps which can be addressed with technical work. Outstanding strength rarely happens without outstanding technique, so we dial in your technique before we load up the weights.
-            </p>
-            <p className="text-lg text-gray-700 leading-relaxed">
-              The Gains AI programs your lifts independently, so if you have a strong squat but your Olympic lifts are lagging, you'll maintain that squat while we address your Olympic lifts with lighter weights and more reps. As your lifts progress, we can adjust this balance as needed.
-            </p>
-          </div>
+          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+            From day one you see:
+          </p>
+          <ul className="space-y-3 ml-6 mb-6">
+            <li className="text-lg text-gray-700">• Strength-to-bodyweight ratios and immediate goals</li>
+            <li className="text-lg text-gray-700">• Olympic lift ratios that expose technical gaps</li>
+            <li className="text-lg text-gray-700">• Individualized technical drills to fix positions before adding load</li>
+            <li className="text-lg text-gray-700">• Lift-specific progressions—so your strong squat maintains while your lagging clean catches up</li>
+            <li className="text-lg text-gray-700">• Smart accessories chosen for your weak points (core, back, overhead, unilateral)</li>
+          </ul>
+          <p className="text-lg text-gray-700 leading-relaxed font-semibold">
+            Every session is the exact dose you need. Nothing more, nothing less.
+          </p>
 
           {/* 📱 IMAGE PLACEHOLDER */}
           <div className="mt-8 bg-gray-100 rounded-lg p-8">
             <p className="text-gray-400 italic text-sm text-center">
-              📱 Image Placeholder<br/>
-              Progress that reflects real improvement. Not just heavier bars—better movement.
+              📱 Image: Progression Ladder or Weak-Link Targeting<br/>
+              Progress that reflects real improvement—not just heavier bars, better movement.
             </p>
           </div>
         </div>
@@ -239,71 +212,76 @@ export default function AppliedPowerPage() {
             How Applied Power Works
           </h2>
           
-          {/* Step 1 - Intake */}
+          {/* Step 1 */}
           <div className="max-w-4xl mx-auto mb-12">
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
                 <span className="text-white font-bold text-xl">1</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">Intake</h3>
+              <h3 className="text-2xl font-bold text-gray-900">Intake & Diagnostic</h3>
             </div>
             <p className="text-lg text-gray-700 leading-relaxed">
-              We start by assessing your strength levels and the relationships among your lifts. Imbalances, gaps and high impact opportunities show up immediately.
+              Enter your lifts → instantly see ratios, imbalances, and high-impact opportunities.
             </p>
           </div>
 
-          {/* Step 2 - AI Engineering */}
+          {/* Step 2 */}
           <div className="max-w-4xl mx-auto mb-12">
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
                 <span className="text-white font-bold text-xl">2</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">AI Engineering</h3>
+              <h3 className="text-2xl font-bold text-gray-900">AI-Engineered Programming</h3>
             </div>
             <p className="text-lg text-gray-700 leading-relaxed">
-              AI-assisted programs are laser focused on any weak links, targeting limiting factors to deliver quick wins. Progressions focus on individual lifts so every training day is the optimal stimulus.
+              Your blueprint becomes your program. Weak links get targeted volume, strong lifts get maintenance or specialization—independently.
             </p>
           </div>
 
-          {/* Step 3 - Log Results */}
+          {/* Step 3 */}
           <div className="max-w-4xl mx-auto mb-12">
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
                 <span className="text-white font-bold text-xl">3</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">Log results, build a data foundation</h3>
+              <h3 className="text-2xl font-bold text-gray-900">Train, Log, Analyze</h3>
             </div>
             <p className="text-lg text-gray-700 leading-relaxed">
-              In just seconds per day, you can save your results. Sets, reps, RPE and quality, recorded over days and weeks create a personal analytics profile which increases the individualization.
+              Log in seconds (sets, reps, RPE, execution quality). Data compounds into deeper personalization.
             </p>
           </div>
 
-          {/* Step 4 - Ongoing Adaptation */}
+          {/* Step 4 */}
           <div className="max-w-4xl mx-auto mb-12">
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
                 <span className="text-white font-bold text-xl">4</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">Ongoing adaptation</h3>
+              <h3 className="text-2xl font-bold text-gray-900">Continuous Adaptation</h3>
             </div>
             <p className="text-lg text-gray-700 leading-relaxed">
-              As your data set grows, your training gets more personalized. Your program adjusts: shifts in technical work, different accessories, rebalancing of primary lifts as needed.
+              As your numbers and technique evolve, the system rebalances everything: technical emphasis, accessory selection, loading across lifts.
             </p>
           </div>
 
-          {/* Step 5 - AI + Coaching */}
+          {/* Step 5 */}
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
                 <span className="text-white font-bold text-xl">5</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">AI + Coaching = Unstoppable</h3>
+              <h3 className="text-2xl font-bold text-gray-900">AI + Human Coaching</h3>
             </div>
             <p className="text-lg text-gray-700 leading-relaxed mb-4">
-              AI scans your data looking for patterns and making adjustments before you know you need them. This frees up coaches to make a bigger impact. With full visibility into your data + AI analysis, we skip guesswork and jump to targeted help.
+              AI catches patterns early. Coaches see everything the system sees—and give you judgment where it matters most. Send video. Get answers that actually move the needle.
             </p>
-            <p className="text-lg text-gray-700 leading-relaxed">
-              Share video lifts. Get precise feedback. Coaching stays human. Decisions stay data-informed.
+          </div>
+
+          {/* 📱 IMAGE PLACEHOLDER */}
+          <div className="mt-8 bg-gray-100 rounded-lg p-8">
+            <p className="text-gray-400 italic text-sm text-center">
+              📱 Image: Messaging View or Analytics + HR Heatmap<br/>
+              Human judgment, supercharged by data.
             </p>
           </div>
         </div>
@@ -311,16 +289,19 @@ export default function AppliedPowerPage() {
         {/* CTA Section */}
         <div className="text-center bg-white rounded-xl shadow-lg p-8 md:p-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-            Strength, Done Intentionally
+            Strength That Holds Up
           </h2>
           <p className="text-lg text-gray-700 mb-6 max-w-3xl mx-auto leading-relaxed">
-            Applied Power isn't about grinding harder. It's about building strength that holds up—under load, under fatigue, and over time.
+            Applied Power isn't about grinding harder.
           </p>
           <p className="text-lg text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed">
-            If you want strength training that adapts, explains itself, and compounds— this is the system.
+            It's about building strength that transfers—under fatigue, in competition, and for years, not months.
           </p>
           <p className="text-xl font-semibold text-gray-900 mb-8">
-            Add Applied Power to your training and build strength with intent
+            Ready to stop leaving pounds on the platform?
+          </p>
+          <p className="text-lg text-gray-700 mb-8">
+            Download Gains AI and select Applied Power during onboarding.
           </p>
           
           {/* App Download Buttons */}
