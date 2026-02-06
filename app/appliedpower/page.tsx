@@ -233,31 +233,79 @@ export default function AppliedPowerPage() {
           </div>
         </div>
 
-        {/* Why It Works Section */}
-        <div className="bg-gradient-to-br from-[#FE5858] to-[#ff6b6b] rounded-xl shadow-lg p-8 md:p-12 mb-12 text-white">
-          <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">Why Applied Power Works</h2>
-          <ul className="space-y-5 max-w-3xl mx-auto">
-            <li className="flex items-start">
-              <span className="text-lg mr-2">•</span>
-              <span className="text-lg"><strong>Structured strength diagnostics</strong> Ratios reveal limiting factors static programs miss.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg mr-2">•</span>
-              <span className="text-lg"><strong>Precision programming</strong> Training targets causes, not symptoms.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg mr-2">•</span>
-              <span className="text-lg"><strong>Injury resilience by design</strong> Imbalances are addressed before they accumulate.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg mr-2">•</span>
-              <span className="text-lg"><strong>Technical skill development</strong> Efficiency improves alongside force production.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-lg mr-2">•</span>
-              <span className="text-lg"><strong>Strength that transfers</strong> Power that shows up beyond the gym.</span>
-            </li>
-          </ul>
+        {/* How It Works Section */}
+        <div className="bg-white rounded-xl shadow-lg p-8 md:p-12 mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-12 text-center">
+            How Applied Power Works
+          </h2>
+          
+          {/* Step 1 - Intake */}
+          <div className="max-w-4xl mx-auto mb-12">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
+                <span className="text-white font-bold text-xl">1</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">Intake</h3>
+            </div>
+            <p className="text-lg text-gray-700 leading-relaxed">
+              We start by assessing your strength levels and the relationships among your lifts. Imbalances, gaps and high impact opportunities show up immediately.
+            </p>
+          </div>
+
+          {/* Step 2 - AI Engineering */}
+          <div className="max-w-4xl mx-auto mb-12">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
+                <span className="text-white font-bold text-xl">2</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">AI Engineering</h3>
+            </div>
+            <p className="text-lg text-gray-700 leading-relaxed">
+              AI-assisted programs are laser focused on any weak links, targeting limiting factors to deliver quick wins. Progressions focus on individual lifts so every training day is the optimal stimulus.
+            </p>
+          </div>
+
+          {/* Step 3 - Log Results */}
+          <div className="max-w-4xl mx-auto mb-12">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
+                <span className="text-white font-bold text-xl">3</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">Log results, build a data foundation</h3>
+            </div>
+            <p className="text-lg text-gray-700 leading-relaxed">
+              In just seconds per day, you can save your results. Sets, reps, RPE and quality, recorded over days and weeks create a personal analytics profile which increases the individualization.
+            </p>
+          </div>
+
+          {/* Step 4 - Ongoing Adaptation */}
+          <div className="max-w-4xl mx-auto mb-12">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
+                <span className="text-white font-bold text-xl">4</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">Ongoing adaptation</h3>
+            </div>
+            <p className="text-lg text-gray-700 leading-relaxed">
+              As your data set grows, your training gets more personalized. Your program adjusts: shifts in technical work, different accessories, rebalancing of primary lifts as needed.
+            </p>
+          </div>
+
+          {/* Step 5 - AI + Coaching */}
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
+                <span className="text-white font-bold text-xl">5</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">AI + Coaching = Unstoppable</h3>
+            </div>
+            <p className="text-lg text-gray-700 leading-relaxed mb-4">
+              AI scans your data looking for patterns and making adjustments before you know you need them. This frees up coaches to make a bigger impact. With full visibility into your data + AI analysis, we skip guesswork and jump to targeted help.
+            </p>
+            <p className="text-lg text-gray-700 leading-relaxed">
+              Share video lifts. Get precise feedback. Coaching stays human. Decisions stay data-informed.
+            </p>
+          </div>
         </div>
 
         {/* CTA Section */}
