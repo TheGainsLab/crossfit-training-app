@@ -165,34 +165,25 @@ export default function AppliedPowerPage() {
             Getting Strong Is Simple. Getting Strong Well Is Not.
           </h2>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Anyone can add weight to a bar by showing up consistently.
+            Any decent program can make you strong. Exercise science isn't rocket science. Heavy weights, compound lifts and great technique, consistently applied, will make you stronger.
           </p>
           <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            But strength that transfers—on the platform, in sport, and over time—requires more than effort.
-          </p>
-          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
-            It requires:
+            The Gains AI doesn't reinvent the wheel. We make it roll faster. Our intake creates a strength blueprint that highlights each individual lift as well as the relationship among your lifts. Then, we create:
           </p>
           <ul className="space-y-3 max-w-3xl mx-auto mb-6">
             <li className="flex items-start">
               <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Balance between muscle groups</span>
+              <span className="text-lg text-gray-700">Strength progressions applied for each lift</span>
             </li>
             <li className="flex items-start">
               <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Efficient movement patterns</span>
+              <span className="text-lg text-gray-700">Technical work built from your intake blueprint to attack your weaknesses. Pulls, holds, positioning, imbalances, we dig into all of it</span>
             </li>
             <li className="flex items-start">
               <span className="text-lg text-gray-700 mr-2">•</span>
-              <span className="text-lg text-gray-700">Technical consistency under load</span>
+              <span className="text-lg text-gray-700">Accessories for general needs: core strength, back strength, overhead strength and unilateral strength</span>
             </li>
           </ul>
-          <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-            Applied Power doesn't just increase output. It improves how that output is produced.
-          </p>
-          <p className="text-lg text-gray-700 leading-relaxed font-semibold">
-            By combining proven strength principles with continuous analysis, the system identifies where strength leaks occur—and adjusts training to fix causes, not symptoms.
-          </p>
 
           {/* 📱 IMAGE PLACEHOLDER */}
           <div className="mt-8 bg-gray-100 rounded-lg p-8">
