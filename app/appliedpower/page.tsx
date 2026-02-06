@@ -128,20 +128,8 @@ export default function AppliedPowerPage() {
             </h2>
             
             <div className="max-w-4xl mx-auto mb-8">
-              <p className="text-lg md:text-xl leading-relaxed mb-6">
-                Most strength programs are built around one idea: lift heavier over time.
-              </p>
-              <p className="text-lg md:text-xl leading-relaxed mb-6">
-                That works—to a point.
-              </p>
-              <p className="text-lg md:text-xl leading-relaxed mb-6">
-                But durable, transferable strength isn't just about load. It depends on balance, efficiency, and technical control. When those break down, progress stalls—or injuries follow.
-              </p>
-              <p className="text-lg md:text-xl leading-relaxed mb-6">
-                Applied Power is a strength and weightlifting system built to expose and address limiting factors. Using structured strength data and ratio-based analysis, it treats strength as something measurable, diagnosable, and trainable—not just something you chase.
-              </p>
-              <p className="text-lg md:text-xl leading-relaxed font-semibold">
-                Not generic programming. Not one-size-fits-all progressions. A system designed to build better strength.
+              <p className="text-lg md:text-xl leading-relaxed">
+                Combine modern technology, AI and analytics with the proven principles of strength training in a completely personalized strength program to maximize your gains.
               </p>
             </div>
 
