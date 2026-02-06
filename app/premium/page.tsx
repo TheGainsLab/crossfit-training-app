@@ -258,6 +258,30 @@ export default function PremiumPage() {
         </div>
       </section>
 
+      {/* Teamwork Not Templates Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">TEAMWORK, NOT TEMPLATES</h2>
+          <div className="max-w-4xl mx-auto space-y-6">
+            <p className="text-lg text-gray-700">
+              Programs are personalized — but never locked in.
+            </p>
+            <p className="text-lg text-gray-700">Change focus anytime:</p>
+            <ul className="space-y-3 ml-6">
+              <li className="text-lg text-gray-700">• Emphasize a lift</li>
+              <li className="text-lg text-gray-700">• Add or remove skills</li>
+              <li className="text-lg text-gray-700">• Adjust for travel, equipment, or schedule</li>
+            </ul>
+            <p className="text-lg text-gray-700">
+              The system adapts without resetting progress or forcing a new program.
+            </p>
+            <p className="text-lg text-gray-700">
+              Because your data is structured, flexibility doesn't mean starting over — it means adjusting intelligently.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
