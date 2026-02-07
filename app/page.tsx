@@ -112,23 +112,19 @@ export default function LandingPage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">TIMELESS PRINCIPLES, MODERNIZED</h2>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Training fundamentals haven't changed in decades.<br/>
-              Exercise science is settled—even CrossFit is 25+ years old.
+              Training fundamentals don't change. Exercise science is well understood — even CrossFit is over 25 years old.
             </p>
             <p className="text-lg text-gray-700">
-              Yet most athletes still jump between programs, chasing trends, Instagram hype, or copying someone else's results.
+              Yet most athletes still bounce between programs, chasing trends, social media hype, or copying someone else's results.
             </p>
             <p className="text-lg text-gray-700">
-              The issue isn't the knowledge.<br/>
-              It's the delivery.
+              The problem isn't knowledge. It's delivery.
             </p>
             <p className="text-lg text-gray-700">
-              The industry clings to outdated models: repackaged group classes turned into PDFs, then phone spreadsheets.<br/>
-              Most apps today? Static plans with minimal real feedback.
+              The industry still relies on outdated models: group classes turned into spreadsheets, then packaged as apps. Most platforms are static plans with minimal real feedback — fresh coats of paint, but no upgrades underneath.
             </p>
             <p className="text-lg text-gray-700">
-              Gains AI is different.<br/>
-              We deliver a modern, adaptive system that evolves with every session you log—turning true personalization into the default, not a premium add-on.
+              Gains AI is different. It's a modern, adaptive system that evolves with every session you log — making true personalization the default, not a premium add-on.
             </p>
 
             {/* Image: Skills Card */}
