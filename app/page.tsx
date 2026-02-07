@@ -394,20 +394,26 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">TEAMWORK, NOT TEMPLATES</h2>
           <div className="max-w-4xl mx-auto space-y-6">
-            <p className="text-lg text-gray-700">
-              Programs are personalized — but never locked in.
+            <p className="text-lg text-gray-700 font-semibold">
+              Structure that adapts — without starting over.
             </p>
-            <p className="text-lg text-gray-700">Change focus anytime:</p>
+            <p className="text-lg text-gray-700">
+              You can make small changes directly in the app — adjust sets or reps, and the system detects and logs those updates automatically.
+            </p>
+            <p className="text-lg text-gray-700">
+              For bigger adjustments, message real coaches anytime, right in the app. Never an AI chatbot.
+            </p>
+            <p className="text-lg text-gray-700">Shift priorities whenever you need:</p>
             <ul className="space-y-3 ml-6">
-              <li className="text-lg text-gray-700">• Emphasize a lift</li>
-              <li className="text-lg text-gray-700">• Add or remove skills</li>
+              <li className="text-lg text-gray-700">• Practice specific movements before a competition</li>
+              <li className="text-lg text-gray-700">• Drill a newly unlocked skill</li>
               <li className="text-lg text-gray-700">• Adjust for travel, equipment, or schedule</li>
             </ul>
             <p className="text-lg text-gray-700">
-              The system adapts without resetting progress or forcing a new program.
+              Because your training history is stored as structured data, changes don't erase progress or force a reset.
             </p>
             <p className="text-lg text-gray-700">
-              Because your data is structured, flexibility doesn't mean starting over — it means adjusting intelligently.
+              The system absorbs the update, preserves context, and adjusts intelligently — so direction stays clear even as priorities evolve.
             </p>
 
             {/* 📱 IMAGE PLACEHOLDER */}
