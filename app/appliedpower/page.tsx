@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import Footer from '../components/Footer';
 
@@ -131,13 +132,19 @@ export default function AppliedPowerPage() {
               Build raw, transferable power with a program that's 100% yours—laser-focused on your weak links, ratios, and limiting factors. No generic percentages. No junk volume. Just smarter, faster strength gains.
             </p>
 
-            {/* 📱 IMAGE PLACEHOLDER */}
-            <div className="mt-12 bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
-              <p className="text-gray-400 italic text-sm">
-                📱 Image: Strength Summary + Olympic Lift Ratios<br/>
-                Strength in context. See exactly where you stand against proven ratios—and what to fix first.
-              </p>
+            {/* Image: Strength Summary + Olympic Lift Ratios */}
+            <div className="mt-12 rounded-lg overflow-hidden shadow-lg max-w-4xl mx-auto">
+              <Image
+                src="/appliedpower/strength-summary.png"
+                alt="Strength Summary + Olympic Lift Ratios"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+              />
             </div>
+            <p className="text-center text-gray-600 italic text-sm mt-4">
+              Strength in context. See exactly where you stand against proven ratios—and what to fix first.
+            </p>
           </div>
         </div>
       </section>
@@ -169,13 +176,19 @@ export default function AppliedPowerPage() {
             Applied Power measures all of it, then builds a blueprint that evolves with you.
           </p>
 
-          {/* 📱 IMAGE PLACEHOLDER */}
-          <div className="mt-8 bg-gray-100 rounded-lg p-8">
-            <p className="text-gray-400 italic text-sm text-center">
-              📱 Image: Technical Focus Screen or Position Efficiency View<br/>
-              Efficiency = free strength. Clean positions and better force transfer show up as bigger lifts, fast.
-            </p>
+          {/* Image: Technical Focus Screen */}
+          <div className="mt-8 rounded-lg overflow-hidden shadow-lg">
+            <Image
+              src="/appliedpower/technical-focus.png"
+              alt="Technical Focus Screen"
+              width={800}
+              height={600}
+              className="w-full h-auto"
+            />
           </div>
+          <p className="text-center text-gray-600 italic text-sm mt-4">
+            Efficiency = free strength. Clean positions and better force transfer show up as bigger lifts, fast.
+          </p>
         </div>
 
         {/* Your Personal Strength Blueprint Section */}
