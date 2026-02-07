@@ -353,17 +353,29 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">DATA DOMINANCE</h2>
           <div className="max-w-4xl mx-auto space-y-6">
-            <p className="text-lg text-gray-700">
-              Most fitness apps store results as notes. That limits insight to sorting and filtering.
+            <p className="text-lg text-gray-700 font-semibold">
+              From logs to intelligence.
             </p>
             <p className="text-lg text-gray-700">
-              Gains AI is built on structured training data — giving both you and the system the context needed to understand performance precisely.
+              Most fitness apps store results as notes. That limits insight to sorting, filtering, and looking back.
+            </p>
+            <p className="text-lg text-gray-700">
+              Gains AI is built on structured training data.
+            </p>
+            <p className="text-lg text-gray-700">
+              Every lift, interval, skill, and effort signal is captured with context — turning training history into a usable knowledge base.
+            </p>
+            <p className="text-lg text-gray-700">
+              That structure allows the system to understand performance precisely, not approximately.
             </p>
             <p className="text-lg text-gray-700 font-semibold">
               If the system sees it, you see it.
             </p>
             <p className="text-lg text-gray-700">
-              Track trends. Compare domains. Understand how training is evolving in real time. You own your data — and with it, control over your progress.
+              No black boxes. No hidden logic.
+            </p>
+            <p className="text-lg text-gray-700">
+              Track trends. Compare movements and time domains. Watch how your training is evolving in real time. You own your data — and with it, control over your progress.
             </p>
 
             {/* 📱 IMAGE PLACEHOLDER */}
