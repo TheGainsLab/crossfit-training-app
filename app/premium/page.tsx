@@ -310,21 +310,29 @@ export default function PremiumPage() {
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">TEAMWORK, NOT TEMPLATES</h2>
+          <p className="text-xl text-gray-700 text-center font-semibold mb-8 max-w-3xl mx-auto">
+            A system that adapts without losing context.
+          </p>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Programs are personalized—but never locked in.
+              Gains AI is built on structured training data — so flexibility doesn't come at the cost of continuity.
             </p>
-            <p className="text-lg text-gray-700">Change focus anytime:</p>
-            <ul className="space-y-3 ml-6 mb-6">
-              <li className="text-lg text-gray-700">• Emphasize a lift</li>
-              <li className="text-lg text-gray-700">• Add or remove skills</li>
-              <li className="text-lg text-gray-700">• Adjust for travel, equipment, or schedule</li>
-            </ul>
+            <p className="text-lg text-gray-700">
+              Make small changes directly in the app. The system detects and logs them automatically.
+            </p>
             <p className="text-lg text-gray-700 mb-6">
-              The system adapts without resetting progress or forcing a new program.
+              For larger adjustments, coaches can update your training instantly.
+            </p>
+            <p className="text-lg text-gray-700 font-semibold">Shift focus without stopping progress:</p>
+            <ul className="space-y-3 ml-6 mb-6">
+              <li className="text-lg text-gray-700">• Prepare for competition or travel without pausing training</li>
+              <li className="text-lg text-gray-700">• Introduce a new stimulus without rewriting the program</li>
+            </ul>
+            <p className="text-lg text-gray-700 mb-8">
+              Because your training history is preserved as structured data, changes don't erase progress or force a reset.
             </p>
             <p className="text-lg text-gray-700 mb-8">
-              Because your data is structured, flexibility means smarter adjustments—not starting over.
+              The system absorbs the update, maintains context, and adapts intelligently — no matter what comes your way.
             </p>
 
             {/* 📱 IMAGE PLACEHOLDER */}
