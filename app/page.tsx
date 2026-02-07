@@ -150,10 +150,13 @@ export default function LandingPage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">AI POWERED?  REALLY?</h2>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              "AI-powered" has become a hollow buzzword.
+              "AI-powered" has become a hollow buzzword. No one chooses a gym for its computers.
             </p>
             <p className="text-lg text-gray-700">
-              Training is simple: basics + effort + consistency = results.  So why use AI at all?  Because AI is a tireless analyst.
+              Training still comes down to fundamentals: sound principles, effort, and consistency. Barbells, pull-up bars, and a clock will take most athletes further than silicon and servers ever will. So why AI at all?
+            </p>
+            <p className="text-lg text-gray-700">
+              Because used correctly, AI is a tireless analyst.
             </p>
             <p className="text-lg text-gray-700">
               Gains AI doesn't replace coaching. It supports it by:
@@ -164,7 +167,10 @@ export default function LandingPage() {
               <li className="text-lg text-gray-700">• Adjusting pacing, volume, and emphasis based on real data</li>
             </ul>
             <p className="text-lg text-gray-700">
-              Your program stays aligned with your body's actual signals — not group templates.
+              AI keeps your program aligned with your progress — but it never takes control.
+            </p>
+            <p className="text-lg text-gray-700">
+              You can make small adjustments directly in the app. The system recognizes and logs them automatically. For bigger questions, you message real coaches — never an AI chatbot — with full visibility into your data.
             </p>
 
             {/* Image: Heart Rate Heatmap */}
