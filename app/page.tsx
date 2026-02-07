@@ -41,14 +41,23 @@ export default function LandingPage() {
       <section className="py-20" style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">Stop Doing Someone Else's Workout.</h1>
-          <p className="text-xl md:text-2xl mb-4 max-w-3xl mx-auto">
-            Generic programs ignore your real strengths, weaknesses, and goals.
+          <p className="text-xl md:text-2xl mb-6 max-w-3xl mx-auto">
+            Following other people will never get you to your goals.
+          </p>
+          <p className="text-xl md:text-2xl mb-6 max-w-3xl mx-auto font-semibold">
+            Gains AI is not a program.
           </p>
           <p className="text-xl md:text-2xl mb-6 max-w-3xl mx-auto">
-            Gains AI creates — and constantly evolves — a 100% personalized plan using your data, proven sports science, and AI-amplified expert coaching.
+            It's a 100% personalized training system built from your data — combining AI-amplified coaching, proven sports science, and modern technology to deliver training and guidance centered entirely on you.
+          </p>
+          <p className="text-xl md:text-2xl mb-6 max-w-3xl mx-auto font-semibold">
+            You're not adapting to a plan.
+          </p>
+          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto font-semibold">
+            The plan adapts to you.
           </p>
           <p className="text-lg md:text-xl mb-8 max-w-3xl mx-auto">
-            Plus built-in nutrition tracking (photo logging, barcode scans, favorite meals, macros + BMR/TDEE estimates) — included free for every user, so fueling finally aligns with training.
+            It's not just training. Built-in nutrition tracking is included for every user: photo logging, barcode scans, saved meals, macros, and BMR/TDEE estimates — so fueling finally aligns with training, all in one place.
           </p>
           
           {/* App Download Buttons */}
