@@ -269,38 +269,31 @@ export default function PremiumPage() {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">DATA DOMINANCE</h2>
+          <p className="text-xl text-gray-700 text-center font-semibold mb-8 max-w-3xl mx-auto">
+            From training logs to usable knowledge.
+          </p>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Most apps store results as notes. Gains AI uses structured data—so both you and the system understand performance precisely.
+              Most apps store results as notes. That limits understanding to sorting and looking back.
+            </p>
+            <p className="text-lg text-gray-700 font-semibold">
+              Gains AI is built on structured training data.
+            </p>
+            <p className="text-lg text-gray-700">
+              Every lift, interval, skill, and effort signal is captured with context — so both you and the system understand performance precisely.
             </p>
             <p className="text-lg text-gray-700 font-semibold">
               If the system sees it, you see it.
             </p>
-            <p className="text-lg text-gray-700 mb-6">
+            <p className="text-lg text-gray-700">
+              No black boxes. No hidden logic.
+            </p>
+            <p className="text-lg text-gray-700">
               Track trends. Compare domains. Watch your fitness evolve in real time.
             </p>
             <p className="text-lg text-gray-700 mb-8">
-              You own your data—and with it, control over your progress.
+              You own your data — and with it, control over your progress.
             </p>
-            
-            <ul className="space-y-4 mb-6">
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Track skill volume, exertion, and quality</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Follow strength progression and lift ratios—do your Olympic lifts keep pace?</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Analyze MetCons by task and time domain to pinpoint every piece</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Compare progress across energy systems, intensities, and durations</span>
-              </li>
-            </ul>
 
             {/* 📱 IMAGE PLACEHOLDER */}
             <div className="bg-gray-100 rounded-lg p-8">
