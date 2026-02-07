@@ -4,23 +4,29 @@ export default function PremiumPage() {
       {/* Hero Section */}
       <section className="py-20" style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">Maximize the Value of Every Effort</h1>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">MAXIMIZE THE VALUE OF YOUR EFFORT</h1>
           
           <div className="max-w-3xl mx-auto mb-8">
-            <p className="text-lg md:text-xl mb-4">
-              Most programs work… for a while.
+            <p className="text-lg md:text-xl mb-6">
+              Most athletes choose programs based on social media presence or someone else's competition results — not on whether the program actually fits them.
             </p>
             <p className="text-lg md:text-xl mb-6">
-              Then you outgrow them, your goals shift, or life intervenes—and the static plan can't keep up.
+              The result is a partial solution. Some things improve. Others don't. Progress becomes fragmented, and athletes bounce from program to program hoping the next one fixes what the last missed.
             </p>
             <p className="text-lg md:text-xl mb-6 font-semibold">
-              Gains AI does better.
+              Gains AI connects effort to results.
             </p>
             <p className="text-lg md:text-xl mb-6">
-              We maximize every rep and calorie with continuous personalization, real-time analytics, and built-in nutrition—so your effort compounds into faster, more complete, sustainable progress.
+              Instead of following someone else's plan, Gains AI generates training from your data — and continuously refines it as you train. Every rep, interval, and calorie feeds a single, evolving performance model, so effort compounds instead of resetting.
+            </p>
+            <p className="text-lg md:text-xl mb-6 font-semibold">
+              No partial solutions.
+            </p>
+            <p className="text-lg md:text-xl mb-6 font-semibold">
+              No program hopping.
             </p>
             <p className="text-lg md:text-xl font-semibold">
-              No partial fixes. No cobbling together apps. Just smarter results from the work you're already doing.
+              Just a system designed to turn real work into lasting results.
             </p>
           </div>
 
