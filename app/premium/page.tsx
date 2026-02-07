@@ -65,49 +65,28 @@ export default function PremiumPage() {
       {/* Human Physiology Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">Human Physiology Hasn't Changed</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">HUMAN PHYSIOLOGY HASN'T CHANGED</h2>
+          <p className="text-xl text-gray-700 text-center font-semibold mb-8 max-w-3xl mx-auto">
+            Training systems need to.
+          </p>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Strength still demands heavy loads, compound movements, and crisp technique.
-            </p>
-            <p className="text-lg text-gray-700">
-              Skills demand deliberate, off-the-clock practice.
-            </p>
-            <p className="text-lg text-gray-700">
-              Conditioning demands getting out of breath—repeatedly and intelligently.
-            </p>
-            <p className="text-lg text-gray-700">
-              Most programs aren't terrible.
-            </p>
-            <p className="text-lg text-gray-700">
-              They'll deliver something… for a while.
-            </p>
-            <p className="text-lg text-gray-700">
-              But group programs can only ever give you an approximation.
-            </p>
-            <p className="text-lg text-gray-700">
-              They're not built for long-term, individualized progress.
-            </p>
-            <p className="text-lg text-gray-700">
-              They're built to sell—leaning on a competitive athlete's name, viral clips, or "what worked for them."
-            </p>
-            <p className="text-lg text-gray-700">
-              Post-sale support? Minimal at best.
-            </p>
-            <p className="text-lg text-gray-700">
-              Feedback is rare.
-            </p>
-            <p className="text-lg text-gray-700">
-              Even with coaches, no group program scales real attention across hundreds or thousands of members.
-            </p>
-            <p className="text-lg text-gray-700 font-semibold mt-8">
-              That's why Gains AI is different.
+              Exercise physiology is largely understood. Strength is built with heavy compound lifts and sound mechanics. Skills require deliberate practice off the clock. Conditioning improves by getting uncomfortable — repeatedly and intelligently.
             </p>
             <p className="text-lg text-gray-700 font-semibold">
-              We don't approximate.
+              The principles aren't the problem. The delivery is.
             </p>
-            <p className="text-lg text-gray-700 font-semibold mb-8">
-              We personalize deeply, adapt continuously, and give you the analytics + coaching visibility to make every session count—without hype or hoping you fit the mold.
+            <p className="text-lg text-gray-700">
+              Most programs work in parts. But they aren't built for you. They don't know your history and can't track how you're responding. They're designed to scale distribution - to sell broadly, look good publicly, and minimize post-sale involvement. Even well-intentioned coaches can't scale real attention. Success with distribution means coaching will get worse.
+            </p>
+            <p className="text-lg text-gray-700 font-semibold">
+              That's not a coaching failure—It's a systems failure.
+            </p>
+            <p className="text-lg text-gray-700 font-semibold">
+              Gains AI is built differently.
+            </p>
+            <p className="text-lg text-gray-700">
+              Training adapts as your data changes. Context is preserved. Coaches see what the system sees. Personalization runs deep. Adaptation is continuous. And every session feeds back into a system designed to make your effort count — long after most programs would have stopped paying attention.
             </p>
 
             {/* CTA Buttons */}
