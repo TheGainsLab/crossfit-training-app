@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Footer from './components/Footer'
@@ -80,13 +81,19 @@ export default function LandingPage() {
           </div>
           <p className="text-sm text-gray-600">3-day free trial • No credit card required</p>
 
-          {/* 📱 IMAGE PLACEHOLDER: Profile Overview + Percentile Heatmap */}
-          <div className="mt-12 bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
-            <p className="text-gray-400 italic text-sm">
-              📱 Image: Profile Overview + Percentile Heatmap<br/>
-              Your training, mapped — not averaged. Strength, skills, and conditioning analyzed together to build a plan that actually fits you.
-            </p>
+          {/* Image: Profile Overview + Percentile Heatmap */}
+          <div className="mt-12 rounded-lg overflow-hidden shadow-lg max-w-4xl mx-auto">
+            <Image
+              src="/home/profile-overview-percentile-heatmap.png"
+              alt="Profile Overview + Percentile Heatmap"
+              width={800}
+              height={600}
+              className="w-full h-auto"
+            />
           </div>
+          <p className="text-center text-gray-600 italic text-sm mt-4">
+            Your training, mapped — not averaged. Strength, skills, and conditioning analyzed together to build a plan that actually fits you.
+          </p>
         </div>
       </section>
 
@@ -115,13 +122,19 @@ export default function LandingPage() {
               We deliver a modern, adaptive system that evolves with every session you log—turning true personalization into the default, not a premium add-on.
             </p>
 
-            {/* 📱 IMAGE PLACEHOLDER: Skills Card */}
-            <div className="mt-8 bg-gray-100 rounded-lg p-8">
-              <p className="text-gray-400 italic text-sm text-center">
-                📱 Image: Skills Card (Reps / RPE / Quality toggle)<br/>
-                Training is more than checking a box. We track how much you practice, how hard it feels, and how well it's executed.
-              </p>
+            {/* Image: Skills Card */}
+            <div className="mt-8 rounded-lg overflow-hidden shadow-lg">
+              <Image
+                src="/home/skills-card-avg-rpe.png"
+                alt="Skills Card - Reps / RPE / Quality tracking"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+              />
             </div>
+            <p className="text-center text-gray-600 italic text-sm mt-4">
+              Training is more than checking a box. We track how much you practice, how hard it feels, and how well it's executed.
+            </p>
           </div>
         </div>
       </section>
@@ -149,13 +162,19 @@ export default function LandingPage() {
               Your program stays aligned with your body's actual signals — not group templates.
             </p>
 
-            {/* 📱 IMAGE PLACEHOLDER: Heart Rate Heatmap */}
-            <div className="mt-8 bg-white rounded-lg shadow-lg p-8">
-              <p className="text-gray-400 italic text-sm text-center">
-                📱 Image: Heart Rate Heatmap<br/>
-                Output is only half the story. Peak and average heart rate show what each task costs you — revealing efficiency and fatigue.
-              </p>
+            {/* Image: Heart Rate Heatmap */}
+            <div className="mt-8 rounded-lg overflow-hidden shadow-lg">
+              <Image
+                src="/home/HR-Heatmap.png"
+                alt="Heart Rate Heatmap"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+              />
             </div>
+            <p className="text-center text-gray-600 italic text-sm mt-4">
+              Output is only half the story. Peak and average heart rate show what each task costs you — revealing efficiency and fatigue.
+            </p>
           </div>
         </div>
       </section>
@@ -180,13 +199,19 @@ export default function LandingPage() {
               Imbalances, gaps, and high-leverage opportunities show up immediately in your profile—and update live as you train.
             </p>
             
-            {/* 📱 IMAGE PLACEHOLDER */}
-            <div className="bg-gray-100 rounded-lg p-8">
-              <p className="text-gray-400 italic text-sm text-center">
-                📱 Image: Strength Summary + Olympic Lift Ratios<br/>
-                Strength in context. See how your lifts stack up against proven ratios—and pinpoint where gains matter most.
-              </p>
+            {/* Image: Strength Summary + Olympic Lift Ratios */}
+            <div className="rounded-lg overflow-hidden shadow-lg">
+              <Image
+                src="/home/strength-summary-oly-ratios.png"
+                alt="Strength Summary + Olympic Lift Ratios"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+              />
             </div>
+            <p className="text-center text-gray-600 italic text-sm mt-4">
+              Strength in context. See how your lifts stack up against proven ratios—and pinpoint where gains matter most.
+            </p>
           </div>
 
           {/* Step 2 */}
@@ -211,13 +236,19 @@ export default function LandingPage() {
               Zero filler. No junk volume. No generic templates.
             </p>
             
-            {/* 📱 IMAGE PLACEHOLDER */}
-            <div className="bg-gray-100 rounded-lg p-8">
-              <p className="text-gray-400 italic text-sm text-center">
-                📱 Image: Technical Focus Screen<br/>
-                Clear signals. No guesswork. Objective ratios reveal what's truly holding you back—so you fix root causes, not chase symptoms.
-              </p>
+            {/* Image: Technical Focus Screen */}
+            <div className="rounded-lg overflow-hidden shadow-lg">
+              <Image
+                src="/home/technical-focus-screen.png"
+                alt="Technical Focus Screen"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+              />
             </div>
+            <p className="text-center text-gray-600 italic text-sm mt-4">
+              Clear signals. No guesswork. Objective ratios reveal what's truly holding you back—so you fix root causes, not chase symptoms.
+            </p>
           </div>
 
           {/* Step 3 */}
