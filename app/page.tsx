@@ -354,60 +354,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Data Dominance Section */}
+      {/* Data and Teamwork Section */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">DATA DOMINANCE</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">DATA and TEAMWORK, NOT TEMPLATES</h2>
           <div className="max-w-4xl mx-auto space-y-6">
-            <p className="text-lg text-gray-700 font-semibold">
-              From logs to intelligence.
+            <p className="text-lg text-gray-700">
+              The Gains AI turns training logs to intelligence. But there are no black boxes or hidden logic. If the system sees it, you see it. Watch how your training is evolving in real time. You own your data — and with it, control over your progress.
             </p>
             <p className="text-lg text-gray-700">
-              Most fitness apps store results as notes. That limits insight to sorting, filtering, and looking back.
-            </p>
-            <p className="text-lg text-gray-700">
-              Gains AI is built on structured training data.
-            </p>
-            <p className="text-lg text-gray-700">
-              Every lift, interval, skill, and effort signal is captured with context — turning training history into a usable knowledge base.
-            </p>
-            <p className="text-lg text-gray-700">
-              That structure allows the system to understand performance precisely, not approximately.
-            </p>
-            <p className="text-lg text-gray-700 font-semibold">
-              If the system sees it, you see it.
-            </p>
-            <p className="text-lg text-gray-700">
-              No black boxes. No hidden logic.
-            </p>
-            <p className="text-lg text-gray-700">
-              Track trends. Compare movements and time domains. Watch how your training is evolving in real time. You own your data — and with it, control over your progress.
-            </p>
-
-            {/* 📱 IMAGE PLACEHOLDER */}
-            <div className="mt-8 bg-white rounded-lg shadow-lg p-8">
-              <p className="text-gray-400 italic text-sm text-center">
-                📱 Image: Combined Analytics (Percentile + HR Heatmaps)<br/>
-                No black boxes. Every adjustment comes from data you can see and understand.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Teamwork Not Templates Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">TEAMWORK, NOT TEMPLATES</h2>
-          <div className="max-w-4xl mx-auto space-y-6">
-            <p className="text-lg text-gray-700 font-semibold">
-              Structure that adapts — without starting over.
-            </p>
-            <p className="text-lg text-gray-700">
-              You can make small changes directly in the app — adjust sets or reps, and the system detects and logs those updates automatically.
-            </p>
-            <p className="text-lg text-gray-700">
-              For bigger adjustments, message real coaches anytime, right in the app. Never an AI chatbot.
+              Structured data maximizes flexibility. Athletes can make small changes right in the app. The AI detects those and integrates them seamlessly. But the architecture means you can change direction without switching programs or starting over. For bigger adjustments, message real coaches anytime, right in the app. Never an AI chatbot.
             </p>
             <p className="text-lg text-gray-700">Shift priorities whenever you need:</p>
             <ul className="space-y-3 ml-6">
@@ -423,10 +379,10 @@ export default function LandingPage() {
             </p>
 
             {/* 📱 IMAGE PLACEHOLDER */}
-            <div className="mt-8 bg-gray-100 rounded-lg p-8">
+            <div className="mt-8 bg-white rounded-lg shadow-lg p-8">
               <p className="text-gray-400 italic text-sm text-center">
-                📱 Image: Skills Card or Strength Summary<br/>
-                Your training evolves with you. No resets. No starting over. Just smarter adjustments.
+                📱 Image: Combined Analytics (Percentile + HR Heatmaps)<br/>
+                No black boxes. Every adjustment comes from data you can see and understand.
               </p>
             </div>
           </div>
