@@ -1,25 +1,15 @@
-import Image from 'next/image'
-
 export default function NutritionPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <section className="py-20" style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">Nutrition Built In – Fuel That Actually Maximizes Your Training</h1>
+          <h1 className="text-4xl md:text-6xl font-bold mb-8">NUTRITION TRACKING, BUILT IN.</h1>
+          <h2 className="text-3xl md:text-4xl font-bold mb-8">FREE FOR EVERY USER.</h2>
           
           <div className="max-w-3xl mx-auto mb-8">
             <p className="text-lg md:text-xl mb-6">
-              Training without smart fueling is like driving with the parking brake on.
-            </p>
-            <p className="text-lg md:text-xl mb-6">
-              Most apps force you to juggle separate trackers.
-            </p>
-            <p className="text-lg md:text-xl mb-6">
-              Gains AI includes full nutrition logging and tracking—free for every user, deeply integrated with your workouts.
-            </p>
-            <p className="text-lg md:text-xl font-semibold">
-              Log fast. Track accurately. See how macros and calories directly impact recovery, energy, and progress.
+              Training without smart fueling is like driving with the parking brake on. Most apps force you to juggle a separate tracker. Gains AI includes full nutrition logging and tracking — integrated with your training, available to every user, no upsell.
             </p>
           </div>
 
@@ -51,55 +41,31 @@ export default function NutritionPage() {
               Get it on Google Play
             </a>
           </div>
-          <p className="text-sm">3-day free trial • No credit card required</p>
+          <p className="text-sm text-gray-600">3-day free trial · No credit card required</p>
         </div>
       </section>
 
       {/* Your Day at a Glance Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">Your Day at a Glance</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">YOUR DAY AT A GLANCE</h2>
+          <p className="text-xl text-gray-700 text-center font-semibold mb-12 max-w-3xl mx-auto">
+            Instant clarity on whether today's fueling supports tomorrow's session.
+          </p>
           <div className="max-w-4xl mx-auto space-y-6">
-            <p className="text-lg text-gray-700 mb-6">
-              The dashboard gives instant clarity:
+            <p className="text-lg text-gray-700">
+              Your nutrition dashboard shows your personalized BMR estimate, today's intake against your target with a clear visual progress bar, and your macro split with daily totals and remaining targets. Deficit or surplus warnings keep you honest without requiring manual math.
             </p>
-            
-            <ul className="space-y-4 mb-8">
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Personalized BMR estimate (tailored to your profile and activity level)</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Today's intake vs. BMR/goal — visual progress bar + deficit/surplus warning</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Macro split (protein, carbs, fat) with daily totals and remaining targets</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Quick meal timing buttons for real-life structure (Pre/Post-Workout emphasis)</span>
-              </li>
-            </ul>
-
-            <p className="text-lg text-gray-700 mb-8">
-              No manual math. Immediate visibility into whether today's fueling supports tomorrow's session.
+            <p className="text-lg text-gray-700">
+              You see where you stand in seconds — and whether your fueling is aligned with your training.
             </p>
 
-            {/* Image: Today's Summary Dashboard */}
-            <div className="rounded-lg overflow-hidden shadow-lg mb-4">
-              <Image
-                src="/nutrition/todays-summary-dashboard.png"
-                alt="Today's Summary Dashboard"
-                width={800}
-                height={600}
-                className="w-full h-auto"
-              />
+            <div className="bg-gray-100 rounded-lg p-8 mt-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Dashboard screenshot showing BMR, intake progress, macros<br/>
+                Pair with nutrition dashboard screenshot
+              </p>
             </div>
-            <p className="text-center text-gray-600 italic text-sm">
-              BMR, intake progress, macros, and remaining targets—see fueling status in seconds.
-            </p>
           </div>
         </div>
       </section>
@@ -107,158 +73,54 @@ export default function NutritionPage() {
       {/* Log Food Your Way Section */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">Log Food Your Way – Effortless and Precise</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">LOG FOOD YOUR WAY</h2>
+          <p className="text-xl text-gray-700 text-center font-semibold mb-12 max-w-3xl mx-auto">
+            Five ways to log. All of them fast.
+          </p>
           <div className="max-w-4xl mx-auto space-y-6">
-            <p className="text-lg text-gray-700 mb-6">
-              Choose the method that fits the moment—everything feeds the same smart dashboard:
+            <p className="text-lg text-gray-700">
+              Snap a photo and let AI identify the food with a suggested portion. Scan a barcode for exact nutrition facts. Search any food — home-cooked or from a restaurant — from the FatSecret database. Tap a saved favorite for one-step logging. Or build custom meals from individual ingredients and save them for next time.
             </p>
-            
-            <ul className="space-y-4 mb-8">
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700"><strong>Photo Recognition</strong> — Snap a pic → AI identifies food and suggests realistic portion (macros update live)</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700"><strong>Barcode</strong> — Scan packaging → pulls exact nutrition facts</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700"><strong>Search</strong> — Type any food → pull from FatSecret database (home or restaurant items)</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700"><strong>Favorites</strong> — One-tap saved meals or restaurant orders</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700"><strong>Meal Builder</strong> — Combine ingredients into custom, savable meals</span>
-              </li>
-            </ul>
-
-            <p className="text-lg text-gray-700 mb-6">
-              Build your library once: add frequent restaurants and create named meals. Logging becomes near-instant.
-            </p>
-            <p className="text-lg text-gray-700 mb-8">
-              Adjust portions with sliders or taps—macros and calories recalculate live before you log. Save as favorite for even faster repeats.
+            <p className="text-lg text-gray-700">
+              Portions are adjustable before you log, with macros recalculating live. Build your library of frequent meals and restaurants once — after that, logging takes seconds.
             </p>
 
-            {/* Image 1: Log Food Screen */}
-            <div className="rounded-lg overflow-hidden shadow-lg mb-4">
-              <Image
-                src="/nutrition/log-food-screen.png"
-                alt="Log Food Screen"
-                width={800}
-                height={600}
-                className="w-full h-auto"
-              />
+            <div className="bg-gray-100 rounded-lg p-8 mt-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Screenshots showing photo AI, barcode scan, search, favorites, and meal builder<br/>
+                Pair with logging method screenshots
+              </p>
             </div>
-            <p className="text-center text-gray-600 italic text-sm mb-8">
-              Pick your path: Photo AI, barcode, search, favorites, or build custom.
-            </p>
-
-            {/* Image 2: Search Foods Results */}
-            <div className="rounded-lg overflow-hidden shadow-lg mb-4">
-              <Image
-                src="/nutrition/Search-food-results.png"
-                alt="Search Foods Results - Grilled Chicken"
-                width={800}
-                height={600}
-                className="w-full h-auto"
-              />
-            </div>
-            <p className="text-center text-gray-600 italic text-sm mb-8">
-              Search any food—home or branded restaurant—with full macros per serving.
-            </p>
-
-            {/* Image 3: Pulled Pork Photo Log */}
-            <div className="rounded-lg overflow-hidden shadow-lg mb-4">
-              <Image
-                src="/nutrition/pulled-pork-photo-log.png"
-                alt="Pulled Pork Photo Log Screen"
-                width={800}
-                height={600}
-                className="w-full h-auto"
-              />
-            </div>
-            <p className="text-center text-gray-600 italic text-sm mb-8">
-              Photo → AI recognition → suggested portion + live macros → log. Effortless precision.
-            </p>
-
-            {/* Image 4: Add Restaurant Screen */}
-            <div className="rounded-lg overflow-hidden shadow-lg mb-4">
-              <Image
-                src="/nutrition/add-restaurant-screen.png"
-                alt="Add Restaurant Screen"
-                width={800}
-                height={600}
-                className="w-full h-auto"
-              />
-            </div>
-            <p className="text-center text-gray-600 italic text-sm mb-8">
-              Save your favorite restaurants—Chipotle, Starbucks, Chick-fil-A, etc.—for quick logging when eating out.
-            </p>
-
-            {/* Image 5: Meal Builder Screen */}
-            <div className="rounded-lg overflow-hidden shadow-lg mb-4">
-              <Image
-                src="/nutrition/Meal-builder-screen.png"
-                alt="Meal Builder Screen"
-                width={800}
-                height={600}
-                className="w-full h-auto"
-              />
-            </div>
-            <p className="text-center text-gray-600 italic text-sm">
-              Build custom meals from quick-add favorites—save and log with one tap next time.
-            </p>
           </div>
         </div>
       </section>
 
-      {/* Why Integrated Nutrition Wins Section */}
+      {/* Why Integration Matters Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">Why Integrated Nutrition Wins</h2>
-          <div className="max-w-4xl mx-auto">
-            <ul className="space-y-4 mb-8">
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Zero app-switching friction</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Training data informs macro/calorie suggestions (e.g., higher carbs after heavy sessions)</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Access to FatSecret's massive database—log home-cooked or restaurant meals with real data</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Full access included—no upsell, no separate subscription</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-lg text-gray-700 mr-2">•</span>
-                <span className="text-lg text-gray-700">Data you own: trends show how fueling affects performance, recovery, and adaptation</span>
-              </li>
-            </ul>
-            
-            <p className="text-lg text-gray-700 font-semibold text-center">
-              Stop guessing if your macros are holding you back. Make every calorie work as hard as every rep.
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">WHY INTEGRATION MATTERS</h2>
+          <p className="text-xl text-gray-700 text-center font-semibold mb-12 max-w-3xl mx-auto">
+            Nutrition and training in one platform changes both.
+          </p>
+          <div className="max-w-4xl mx-auto space-y-6">
+            <p className="text-lg text-gray-700">
+              When your nutrition data lives alongside your training data, the picture gets sharper. You stop guessing whether your fueling is helping or holding you back. You can see how your intake correlates with recovery, energy, and performance over time.
+            </p>
+            <p className="text-lg text-gray-700">
+              No app-switching. No syncing. No separate subscription. Your nutrition data feeds into the same platform that manages your training — so everything you track contributes to the same picture.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Final CTA Section */}
+      {/* Closing CTA */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-            Ready to fuel smarter?
+            Full nutrition tracking. Fully integrated. Free for every user.
           </h2>
-          <p className="text-lg text-gray-700 mb-8 max-w-3xl mx-auto">
-            Download Gains AI and start logging nutrition alongside your training.
+          <p className="text-xl text-gray-700 mb-8 max-w-3xl mx-auto">
+            Log your meals alongside your training. See how fueling affects performance. Own all of the data.
           </p>
 
           {/* App Download Buttons */}
@@ -289,7 +151,7 @@ export default function NutritionPage() {
               Get it on Google Play
             </a>
           </div>
-          <p className="text-sm text-gray-600">3-day free trial • No credit card required</p>
+          <p className="text-sm text-gray-600">3-day free trial · No credit card required</p>
         </div>
       </section>
     </div>
