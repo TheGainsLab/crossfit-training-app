@@ -201,7 +201,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">HOW IT WORKS</h2>
           <p className="text-xl text-gray-700 text-center max-w-3xl mx-auto mb-12">
-            You don't follow a program from someone else. Your data builds the program — and AI keeps it aligned with your progress.
+            Your data builds the program — and AI keeps it aligned.
           </p>
           
           {/* Step 1 */}
@@ -212,11 +212,8 @@ export default function LandingPage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900">Diagnostic</h3>
             </div>
-            <p className="text-lg text-gray-700 mb-4">
-              Map your real abilities — strength, skills, and conditioning — across movements and time domains.
-            </p>
             <p className="text-lg text-gray-700 mb-6">
-              This process reveals imbalances, gaps, and high-leverage opportunities. Your profile updates continuously as you train, becoming the system's source of truth.
+              Map your strength, skills, and conditioning across movements and time domains to reveal imbalances, gaps, and high-leverage opportunities. Your profile updates continuously as you train.
             </p>
             
             {/* Image: Strength Summary + Olympic Lift Ratios */}
@@ -243,9 +240,8 @@ export default function LandingPage() {
               <h3 className="text-2xl font-bold text-gray-900">AI-Engineered Training</h3>
             </div>
             <p className="text-lg text-gray-700 mb-4">
-              Your personal profile drives your training — so it's fully personalized by design.
+              Your profile is the foundation for personalization.
             </p>
-            <p className="text-lg text-gray-700 mb-4">That means:</p>
             <ul className="space-y-3 ml-6 mb-6">
               <li className="text-lg text-gray-700">• Strength progressions deliver the specific stimulus each lift needs, with accessories selected to support it</li>
               <li className="text-lg text-gray-700">• Technical work tightens pulls and positioning to correct imbalances and close gaps</li>
@@ -253,7 +249,7 @@ export default function LandingPage() {
               <li className="text-lg text-gray-700">• Conditioning spans all relevant time domains and intensities</li>
             </ul>
             <p className="text-lg text-gray-700 mb-6">
-              No filler. Nothing generic.
+              No filler. Nothing generic. Every training session is targeted to you.
             </p>
             
             {/* Image: Technical Focus Screen */}
@@ -277,16 +273,10 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-full flex items-center justify-center mr-4" style={{ backgroundColor: '#FE5858' }}>
                 <span className="text-white font-bold text-xl">3</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">Capture Signal, Not Just Scores</h3>
+              <h3 className="text-2xl font-bold text-gray-900">Log with a few taps</h3>
             </div>
-            <p className="text-lg text-gray-700 mb-4">
-              Logging takes seconds. Insights compound forever.
-            </p>
             <p className="text-lg text-gray-700 mb-6">
-              Each session captures performance data — plus perceived effort (RPE) and execution quality. This turns training into structured data, revealing not just what you did, but how you're responding to it over time.
-            </p>
-            <p className="text-lg text-gray-700 mb-6">
-              That feedback continuously updates your profile and informs what comes next.
+              Logging takes seconds, but insights compound forever. The structured data architecture means that when you log performance data, perceived effort (RPE) and execution quality, you are continuously updating your profile to inform what comes next.
             </p>
             
             {/* 📱 IMAGE PLACEHOLDER */}
@@ -306,14 +296,8 @@ export default function LandingPage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900">Adaptation</h3>
             </div>
-            <p className="text-lg text-gray-700 mb-4">
-              Gains AI detects patterns traditional programs miss.
-            </p>
             <p className="text-lg text-gray-700 mb-6">
-              By mapping results at the task and time-domain level, the system sees all dimensions of your fitness and performance — not just totals or averages.
-            </p>
-            <p className="text-lg text-gray-700 mb-6">
-              Training adjusts automatically — pacing, volume, and emphasis — so the system stays aligned with who you are now, not who you were weeks ago.
+              By mapping results at the task and time-domain level, the system sees all dimensions of your fitness and performance, not just totals or averages. Gains AI detects patterns traditional programs miss. Training adjusts automatically, so as you progress, training keeps up. The program follows you.
             </p>
             
             {/* 📱 IMAGE PLACEHOLDER */}
@@ -333,14 +317,11 @@ export default function LandingPage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900">Expert Coaching, Amplified</h3>
             </div>
-            <p className="text-lg text-gray-700 mb-4">
-              AI provides analysis. Coaches add judgment.
-            </p>
             <p className="text-lg text-gray-700 mb-6">
               Message real coaches anytime. With full visibility into your data and system insights, we skip generic advice and move straight to targeted feedback.
             </p>
             <p className="text-lg text-gray-700 mb-6">
-              Share videos. Get precise corrections. Coaching stays human. Decisions stay data-informed.
+              Share videos. Get precise corrections. AI provides analysis. Coaches add judgment.
             </p>
             
             {/* 📱 IMAGE PLACEHOLDER */}
