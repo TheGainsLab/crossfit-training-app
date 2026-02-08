@@ -108,20 +108,29 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">TIMELESS PRINCIPLES, MODERNIZED</h2>
           <div className="max-w-4xl mx-auto space-y-6">
-            <p className="text-lg text-gray-700">
-              Training fundamentals don't change. Exercise science is well understood — even CrossFit is over 25 years old.
+            <p className="text-lg text-gray-700 font-semibold">
+              Training fundamentals don't change.
             </p>
             <p className="text-lg text-gray-700">
-              Yet most athletes still bounce between programs, chasing trends, social media hype, or copying someone else's results.
+              Exercise science is settled — even CrossFit is over 25 years old.
             </p>
             <p className="text-lg text-gray-700">
-              The problem isn't knowledge. It's delivery.
+              Yet athletes still bounce between programs, chasing trends, hype, or someone else's results.
+            </p>
+            <p className="text-lg text-gray-700 font-semibold">
+              The problem isn't knowledge.
+            </p>
+            <p className="text-lg text-gray-700 font-semibold">
+              It's delivery.
             </p>
             <p className="text-lg text-gray-700">
-              The industry still relies on outdated models: group classes turned into spreadsheets, then packaged as apps. Most platforms are static plans with minimal real feedback — fresh coats of paint, but no upgrades underneath.
+              The industry is stuck on outdated models: group programs, PDFs, and apps that are just static plans with better design. Fresh coats of paint. No structural upgrades.
+            </p>
+            <p className="text-lg text-gray-700 font-semibold">
+              Gains AI is different.
             </p>
             <p className="text-lg text-gray-700">
-              Gains AI is different. It's a modern, adaptive system that evolves with every session you log — making true personalization the default, not a premium add-on.
+              It's a modern, adaptive system that evolves with every session you log — making true personalization the standard, not an expensive add-on.
             </p>
 
             {/* Image: Skills Card */}
