@@ -120,7 +120,7 @@ export default function PurchaseScreen() {
           // User is signed in - update database immediately
           console.log('✅ User signed in, updating subscription_tier in database');
           
-          const subscriptionTier = PROGRAM_TO_TIER[programId as string] || 'PREMIUM';
+          const subscriptionTier = PROGRAM_TO_TIER[programId as ProgramType];
           
           // Update database with subscription info
           const { error: updateError } = await supabase

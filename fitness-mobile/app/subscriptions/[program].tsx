@@ -1,20 +1,71 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { PROGRAMS, ProgramType } from '@/lib/subscriptions';
+import { PROGRAMS, ProgramType, getOfferings } from '@/lib/subscriptions';
 import { Ionicons } from '@expo/vector-icons';
+
+// Map program IDs to RevenueCat offering identifiers
+const OFFERING_IDS: Record<ProgramType, string> = {
+  'btn': 'The Gains AI BTN',
+  'engine': 'The Gains AI Engine',
+  'applied_power': 'The Gains AI Applied Power',
+  'competitor': 'The Gains AI Competitor'
+};
+
+interface PricingInfo {
+  monthly: string | null;
+  quarterly: string | null;
+  yearly: string | null;
+}
 
 export default function ProgramDetailScreen() {
   const router = useRouter();
   const { program: programId } = useLocalSearchParams<{ program: string }>();
+  const [pricing, setPricing] = useState<PricingInfo | null>(null);
+  const [loadingPrices, setLoadingPrices] = useState(true);
 
   const program = PROGRAMS[programId as ProgramType];
+
+  useEffect(() => {
+    loadPricing();
+  }, []);
+
+  const loadPricing = async () => {
+    try {
+      const offerings = await getOfferings();
+      if (offerings?.all) {
+        const offeringId = OFFERING_IDS[programId as ProgramType];
+        const offering = offerings.all[offeringId];
+        if (offering) {
+          const monthly = offering.availablePackages.find(
+            pkg => pkg.identifier === '$rc_monthly' || pkg.identifier === 'monthly'
+          );
+          const quarterly = offering.availablePackages.find(
+            pkg => pkg.identifier === '$rc_three_month' || pkg.identifier === 'quarterly'
+          );
+          const yearly = offering.availablePackages.find(
+            pkg => pkg.identifier === '$rc_annual' || pkg.identifier === 'yearly'
+          );
+          setPricing({
+            monthly: monthly?.product.priceString ?? null,
+            quarterly: quarterly?.product.priceString ?? null,
+            yearly: yearly?.product.priceString ?? null,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading pricing:', error);
+    } finally {
+      setLoadingPrices(false);
+    }
+  };
 
   if (!program) {
     return (
@@ -27,6 +78,11 @@ export default function ProgramDetailScreen() {
   const handleStartTrial = () => {
     router.push(`/subscriptions/purchase/${program.id}`);
   };
+
+  // Use RevenueCat prices if loaded, fall back to hardcoded
+  const monthlyPrice = pricing?.monthly ?? program.monthlyPrice;
+  const quarterlyPrice = pricing?.quarterly ?? program.quarterlyPrice;
+  const yearlyPrice = pricing?.yearly ?? program.yearlyPrice;
 
   return (
     <ScrollView style={styles.container}>
@@ -56,24 +112,36 @@ export default function ProgramDetailScreen() {
 
         <View style={styles.pricingContainer}>
           <Text style={styles.pricingTitle}>Pricing Options:</Text>
-          <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Monthly:</Text>
-            <Text style={styles.priceValue}>{program.monthlyPrice}/month</Text>
-          </View>
-          <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Quarterly:</Text>
-            <Text style={styles.priceValue}>{program.quarterlyPrice}/3 months</Text>
-          </View>
-          <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Yearly:</Text>
-            <Text style={styles.priceValue}>{program.yearlyPrice}/year</Text>
-          </View>
+          {loadingPrices ? (
+            <ActivityIndicator size="small" color="#FE5858" style={{ paddingVertical: 12 }} />
+          ) : (
+            <>
+              {monthlyPrice && (
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Monthly:</Text>
+                  <Text style={styles.priceValue}>{monthlyPrice}/month</Text>
+                </View>
+              )}
+              {quarterlyPrice && (
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Quarterly:</Text>
+                  <Text style={styles.priceValue}>{quarterlyPrice}/3 months</Text>
+                </View>
+              )}
+              {yearlyPrice && (
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Yearly:</Text>
+                  <Text style={styles.priceValue}>{yearlyPrice}/year</Text>
+                </View>
+              )}
+            </>
+          )}
         </View>
 
         <View style={styles.trialInfo}>
           <Ionicons name="gift" size={24} color="#FE5858" />
           <Text style={styles.trialText}>
-            Start with a 3-day free trial, then {program.monthlyPrice}/month
+            Start with a 3-day free trial. Cancel anytime.
           </Text>
         </View>
 

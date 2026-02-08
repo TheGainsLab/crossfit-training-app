@@ -50,10 +50,9 @@ export default function RootLayout() {
           apiKey: 'appl_umJNBJEnUpZyeMlXteBXflPGrXB',
         });
       } else if (Platform.OS === 'android') {
-        // Android key will be added later after Google Play Console setup
-        // await Purchases.configure({
-        //   apiKey: 'your_android_api_key',
-        // });
+        await Purchases.configure({
+          apiKey: 'goog_your_android_api_key', // TODO: Replace with actual Google Play RevenueCat API key
+        });
       }
     };
 
