@@ -53,28 +53,34 @@ export default function PremiumPage() {
       {/* Human Physiology Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">HUMAN PHYSIOLOGY HASN'T CHANGED</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">PHYSIOLOGY HASN'T CHANGED.</h2>
           <p className="text-xl text-gray-700 text-center font-semibold mb-8 max-w-3xl mx-auto">
             Training systems need to.
           </p>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Exercise physiology is largely understood. Strength is built with heavy compound lifts and sound mechanics. Skills require deliberate practice off the clock. Conditioning improves by getting uncomfortable — repeatedly and intelligently.
+              We know how to get strong, skilled, and conditioned. The principles aren't the problem.
             </p>
             <p className="text-lg text-gray-700 font-semibold">
-              The principles aren't the problem. The delivery is.
+              The delivery is.
             </p>
             <p className="text-lg text-gray-700">
-              Most programs work in parts. But they aren't built for you. They don't know your history and can't track how you're responding. They're designed to scale distribution - to sell broadly, look good publicly, and minimize post-sale involvement. Even well-intentioned coaches can't scale real attention. Success with distribution means coaching will get worse.
+              Most programs are designed to maximize signups — and leave coaching to a comment section. Even for motivated coaches, there are only so many hours in a day.
             </p>
             <p className="text-lg text-gray-700 font-semibold">
-              That's not a coaching failure—It's a systems failure.
+              Sales success often means coaching gets worse.
+            </p>
+            <p className="text-lg text-gray-700 font-semibold">
+              We've made that mistake.
+            </p>
+            <p className="text-lg text-gray-700 font-semibold">
+              That's not a coaching failure. It's a systems failure.
             </p>
             <p className="text-lg text-gray-700 font-semibold">
               Gains AI is built differently.
             </p>
             <p className="text-lg text-gray-700">
-              Training adapts as your data changes. Context is preserved. Coaches see what the system sees. Personalization runs deep. Adaptation is continuous. And every session feeds back into a system designed to make your effort count — long after most programs would have stopped paying attention.
+              Every session feeds into a system designed to make your effort count. As you progress, training stays aligned — automatically. Coaches see the same data the system sees, so we can skip generic advice and get straight to what matters. Personalization runs deep. Context is preserved. Adaptation is continuous.
             </p>
 
             {/* CTA Buttons */}
