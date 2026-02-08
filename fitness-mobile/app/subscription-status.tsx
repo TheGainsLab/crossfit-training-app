@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Linking,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -52,7 +53,10 @@ export default function SubscriptionStatusScreen() {
   };
 
   const handleManageSubscription = () => {
-    Linking.openURL('https://apps.apple.com/account/subscriptions');
+    const url = Platform.OS === 'ios'
+      ? 'https://apps.apple.com/account/subscriptions'
+      : 'https://play.google.com/store/account/subscriptions';
+    Linking.openURL(url);
   };
 
   const handleBrowsePrograms = () => {
@@ -113,7 +117,9 @@ export default function SubscriptionStatusScreen() {
 
             <TouchableOpacity style={styles.button} onPress={handleManageSubscription}>
               <Ionicons name="settings-outline" size={20} color="#FE5858" />
-              <Text style={styles.buttonText}>Manage Subscription in App Store</Text>
+              <Text style={styles.buttonText}>
+                Manage Subscription in {Platform.OS === 'ios' ? 'App Store' : 'Play Store'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.button} onPress={handleBrowsePrograms}>

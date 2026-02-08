@@ -12,6 +12,17 @@ serve(async (req) => {
   }
 
   try {
+    // Verify webhook authorization from RevenueCat
+    const authHeader = req.headers.get('Authorization')
+    const expectedToken = Deno.env.get('REVENUECAT_WEBHOOK_SECRET')
+    if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
+      console.error('Unauthorized webhook request')
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const event = await req.json()
     console.log('RevenueCat webhook event:', event.type)
 
@@ -159,6 +170,12 @@ serve(async (req) => {
           .eq('user_id', userId)
           .eq('revenuecat_subscriber_id', appUserId)
 
+        // Update users table to reflect cancellation (still active until period ends)
+        await supabase
+          .from('users')
+          .update({ subscription_status: 'canceled' })
+          .eq('id', userId)
+
         break
       }
 
@@ -173,6 +190,25 @@ serve(async (req) => {
           .eq('user_id', userId)
           .eq('revenuecat_subscriber_id', appUserId)
 
+        // Check if user has any other active subscriptions before revoking access
+        const { data: otherActive } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .limit(1)
+
+        if (!otherActive || otherActive.length === 0) {
+          // No other active subscriptions - revoke access
+          await supabase
+            .from('users')
+            .update({
+              subscription_tier: null,
+              subscription_status: 'expired'
+            })
+            .eq('id', userId)
+        }
+
         break
       }
 
@@ -186,6 +222,12 @@ serve(async (req) => {
           })
           .eq('user_id', userId)
           .eq('revenuecat_subscriber_id', appUserId)
+
+        // Update users table to reflect billing issue
+        await supabase
+          .from('users')
+          .update({ subscription_status: 'past_due' })
+          .eq('id', userId)
 
         break
       }
