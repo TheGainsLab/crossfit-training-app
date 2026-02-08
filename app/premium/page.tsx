@@ -8,25 +8,13 @@ export default function PremiumPage() {
           
           <div className="max-w-3xl mx-auto mb-8">
             <p className="text-lg md:text-xl mb-6">
-              Most athletes choose programs based on social media presence or someone else's competition results — not on whether the program actually fits them.
+              Athletes often follow programs based on social media or someone else's competition results. The result is a partial solution. Some things improve, others don't. Progress becomes fragmented and hard to measure. Athletes bounce to a new program, hoping the next one fixes what the last missed.
             </p>
             <p className="text-lg md:text-xl mb-6">
-              The result is a partial solution. Some things improve. Others don't. Progress becomes fragmented, and athletes bounce from program to program hoping the next one fixes what the last missed.
+              The Gains AI connects your effort to your results, by generating training from your data, and continuously refines it as you train. Every rep, interval, and calorie feeds a single, evolving performance model, so effort compounds instead of resetting.
             </p>
             <p className="text-lg md:text-xl mb-6 font-semibold">
-              Gains AI connects effort to results.
-            </p>
-            <p className="text-lg md:text-xl mb-6">
-              Instead of following someone else's plan, Gains AI generates training from your data — and continuously refines it as you train. Every rep, interval, and calorie feeds a single, evolving performance model, so effort compounds instead of resetting.
-            </p>
-            <p className="text-lg md:text-xl mb-6 font-semibold">
-              No partial solutions.
-            </p>
-            <p className="text-lg md:text-xl mb-6 font-semibold">
-              No program hopping.
-            </p>
-            <p className="text-lg md:text-xl font-semibold">
-              Just a system designed to turn real work into lasting results.
+              You don't follow a program. The program follows you.
             </p>
           </div>
 
