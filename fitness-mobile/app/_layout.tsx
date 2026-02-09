@@ -51,7 +51,7 @@ export default function RootLayout() {
         });
       } else if (Platform.OS === 'android') {
         await Purchases.configure({
-          apiKey: 'goog_your_android_api_key', // TODO: Replace with actual Google Play RevenueCat API key
+          apiKey: 'goog_RijRQlrMpQARWJGCdKKWulDNfOj',
         });
       }
     };
