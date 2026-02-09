@@ -26,7 +26,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.thegainslab.gainsai"
+      "package": "com.thegainslab.gainsai",
+      "targetSdkVersion": 35
     },
     "web": {
       "bundler": "metro",
