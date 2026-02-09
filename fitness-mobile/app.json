@@ -26,8 +26,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.thegainslab.gainsai",
-      "targetSdkVersion": 35
+      "package": "com.thegainslab.gainsai"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +36,14 @@
     "plugins": [
       "expo-router",
       "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "targetSdkVersion": 35
+          }
+        }
+      ],
       [
         "expo-camera",
         {
