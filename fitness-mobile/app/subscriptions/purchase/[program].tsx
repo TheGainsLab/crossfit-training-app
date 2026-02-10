@@ -275,10 +275,10 @@ export default function PurchaseScreen() {
 
         <Text style={styles.disclaimer}>
           By continuing, you agree to our{' '}
-          <Text style={styles.disclaimerLink} onPress={() => Linking.openURL('https://www.thegainsapps.com/terms')}>
+          <Text style={styles.disclaimerLink} onPress={() => Linking.openURL('https://www.thegainsai.com/terms')}>
             Terms of Service
           </Text>{' '}and{' '}
-          <Text style={styles.disclaimerLink} onPress={() => Linking.openURL('https://www.thegainsapps.com/privacy')}>
+          <Text style={styles.disclaimerLink} onPress={() => Linking.openURL('https://www.thegainsai.com/privacy')}>
             Privacy Policy
           </Text>.
           {'\n'}Subscription automatically renews unless cancelled at least 24 hours
