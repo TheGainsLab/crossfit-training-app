@@ -182,8 +182,8 @@ export default function PrivacyPolicy() {
           If you have any questions, concerns, or requests regarding this Privacy Policy, your personal data, or your rights, please contact us at:
         </p>
         <p style={{ marginBottom: '0.5rem' }}><strong>The Gains Apps LLC</strong></p>
-        <p style={{ marginBottom: '0.5rem' }}>Email: <a href="mailto:team@thegainsapps.com" style={{ color: '#FE5858' }}>team@thegainsapps.com</a></p>
-        <p style={{ marginBottom: '1rem' }}>Website: <a href="https://www.thegainsapps.com" style={{ color: '#FE5858' }}>www.thegainsapps.com</a></p>
+        <p style={{ marginBottom: '0.5rem' }}>Email: <a href="mailto:team@thegainsai.com" style={{ color: '#FE5858' }}>team@thegainsai.com</a></p>
+        <p style={{ marginBottom: '1rem' }}>Website: <a href="https://www.thegainsai.com" style={{ color: '#FE5858' }}>www.thegainsai.com</a></p>
         <p style={{ marginBottom: '1rem' }}>
           EU/EEA/UK residents may also lodge a complaint with their local data protection supervisory authority.
         </p>

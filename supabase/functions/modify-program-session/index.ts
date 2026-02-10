@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 // CORS: reflect a trusted origin for browser calls with Authorization header
 const ALLOWED_ORIGINS = [
-  'https://www.thegainsapps.com',
+  'https://www.thegainsai.com',
   'https://crossfit-training-app.vercel.app',
   'http://localhost:3000'
 ];

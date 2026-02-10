@@ -84,7 +84,7 @@ export default function TermsOfService() {
       <section style={{ marginBottom: '2.5rem' }}>
         <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '1rem', color: '#282B34' }}>8. Your Data and Privacy</h2>
         <p style={{ marginBottom: '1rem' }}>
-          We are committed to protecting your privacy. All data you provide to the App remains within the App and is used solely to deliver and improve your experience. We do not sell, rent, share, or disclose your personal information to any third party. For complete details on how we handle your information, please refer to our Privacy Policy available at <a href="https://www.thegainsapps.com/privacy" style={{ color: '#FE5858' }}>www.thegainsapps.com/privacy</a>.
+          We are committed to protecting your privacy. All data you provide to the App remains within the App and is used solely to deliver and improve your experience. We do not sell, rent, share, or disclose your personal information to any third party. For complete details on how we handle your information, please refer to our Privacy Policy available at <a href="https://www.thegainsai.com/privacy" style={{ color: '#FE5858' }}>www.thegainsai.com/privacy</a>.
         </p>
       </section>
 
@@ -177,7 +177,7 @@ export default function TermsOfService() {
       <section style={{ marginBottom: '2.5rem' }}>
         <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '1rem', color: '#282B34' }}>20. Entire Agreement</h2>
         <p style={{ marginBottom: '1rem' }}>
-          These Terms, together with our Privacy Policy (available at <a href="https://www.thegainsapps.com/privacy" style={{ color: '#FE5858' }}>www.thegainsapps.com/privacy</a>), constitute the entire agreement between you and the Company regarding the App and supersede all prior agreements and understandings, whether written or oral.
+          These Terms, together with our Privacy Policy (available at <a href="https://www.thegainsai.com/privacy" style={{ color: '#FE5858' }}>www.thegainsai.com/privacy</a>), constitute the entire agreement between you and the Company regarding the App and supersede all prior agreements and understandings, whether written or oral.
         </p>
       </section>
 
@@ -185,8 +185,8 @@ export default function TermsOfService() {
         <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '1rem', color: '#282B34' }}>21. Contact Information</h2>
         <p style={{ marginBottom: '1rem' }}>If you have any questions about these Terms, please contact us at:</p>
         <p style={{ marginBottom: '0.5rem' }}><strong>The Gains Apps LLC</strong></p>
-        <p style={{ marginBottom: '0.5rem' }}>Email: <a href="mailto:team@thegainsapps.com" style={{ color: '#FE5858' }}>team@thegainsapps.com</a></p>
-        <p style={{ marginBottom: '1rem' }}>Website: <a href="https://www.thegainsapps.com" style={{ color: '#FE5858' }}>www.thegainsapps.com</a></p>
+        <p style={{ marginBottom: '0.5rem' }}>Email: <a href="mailto:team@thegainsai.com" style={{ color: '#FE5858' }}>team@thegainsai.com</a></p>
+        <p style={{ marginBottom: '1rem' }}>Website: <a href="https://www.thegainsai.com" style={{ color: '#FE5858' }}>www.thegainsai.com</a></p>
       </section>
     </div>
   );

@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the base URL from request origin
-    const origin = request.headers.get('origin') || 'https://www.thegainsapps.com'
+    const origin = request.headers.get('origin') || 'https://www.thegainsai.com'
     console.log('🌐 Using origin for URLs:', origin)
 
     // Create Stripe Checkout session - redirect to intake after success
