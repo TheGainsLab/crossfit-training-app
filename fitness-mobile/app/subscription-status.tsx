@@ -158,7 +158,7 @@ export default function SubscriptionStatusScreen() {
             before the end of the current period
           </Text>
           <Text style={styles.infoText}>
-            • You can manage and cancel subscriptions in your App Store account settings
+            • You can manage and cancel subscriptions in your {Platform.OS === 'ios' ? 'App Store' : 'Play Store'} account settings
           </Text>
           <Text style={styles.infoText}>
             • All subscriptions include a 3-day free trial for new subscribers
