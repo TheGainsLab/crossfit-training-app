@@ -97,6 +97,17 @@ export const PROGRAM_TO_TIER: Record<ProgramType, string> = {
 } as const;
 
 /**
+ * Maps program IDs to RevenueCat offering identifiers
+ * Must match the offering identifiers configured in the RevenueCat dashboard
+ */
+export const OFFERING_IDS: Record<ProgramType, string> = {
+  'btn': 'The Gains AI BTN',
+  'engine': 'The Gains AI Engine',
+  'applied_power': 'The Gains AI Applied Power',
+  'competitor': 'The Gains AI Competitor'
+} as const;
+
+/**
  * Check if user has an active subscription to a specific program
  */
 export async function hasActiveSubscription(program?: ProgramType): Promise<boolean> {

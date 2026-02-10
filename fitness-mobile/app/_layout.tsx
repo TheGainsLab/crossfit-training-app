@@ -56,7 +56,7 @@ export default function RootLayout() {
       }
     };
 
-    initializeRevenueCat();
+    initializeRevenueCat().catch(err => console.error('RevenueCat init failed:', err));
   }, []);
 
   if (!loaded) {
