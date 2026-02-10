@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -281,8 +282,14 @@ export default function PurchaseScreen() {
         </TouchableOpacity>
 
         <Text style={styles.disclaimer}>
-          By continuing, you agree to our Terms of Service and Privacy Policy.
-          Subscription automatically renews unless cancelled at least 24 hours
+          By continuing, you agree to our{' '}
+          <Text style={styles.disclaimerLink} onPress={() => Linking.openURL('https://www.thegainsapps.com/terms')}>
+            Terms of Service
+          </Text>{' '}and{' '}
+          <Text style={styles.disclaimerLink} onPress={() => Linking.openURL('https://www.thegainsapps.com/privacy')}>
+            Privacy Policy
+          </Text>.
+          {'\n'}Subscription automatically renews unless cancelled at least 24 hours
           before the end of the current period.
         </Text>
       </View>
@@ -444,6 +451,10 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     textAlign: 'center',
     lineHeight: 18,
+  },
+  disclaimerLink: {
+    color: '#FE5858',
+    textDecorationLine: 'underline',
   },
 });
 
