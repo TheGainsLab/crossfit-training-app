@@ -42,7 +42,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">Stop doing someone else's workouts.</h1>
           <p className="text-xl md:text-2xl mb-6 max-w-3xl mx-auto">
-            Following other people is not the path to your goals. Gains AI is built from your data — combining AI-amplified coaching, proven sports science, and modern technology to deliver training centered entirely on you.
+            Following other people is not the path to your goals. Gains AI combines AI-amplified coaching, proven sports science, and modern technology to deliver training centered entirely on you.
           </p>
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto font-semibold">
             No more following a program. The program follows you.
@@ -76,7 +76,7 @@ export default function LandingPage() {
               Get it on Google Play
             </a>
           </div>
-          <p className="text-sm text-gray-600">3-day free trial • No credit card required</p>
+          <p className="text-sm text-gray-600">Try it free!  3 Day free Trial</p>
 
           {/* Image: Profile Overview + Percentile Heatmap */}
           <div className="mt-12 rounded-lg overflow-hidden shadow-lg max-w-4xl mx-auto">
@@ -109,13 +109,13 @@ export default function LandingPage() {
               The problem isn't knowledge. It's delivery.
             </p>
             <p className="text-lg text-gray-700">
-              The industry is stuck on outdated models: group programs, PDFs, and apps that are just static plans with better design. Fresh coats of paint. No structural upgrades. Programs built to sell to as many people as possible, not to deliver results tailored to you.
+              The industry is stuck on outdated models: group programs, PDFs, and apps that are little more than fancy spreadsheets. Built to sell to as many people as possible, not to deliver results tailored to you.
             </p>
             <p className="text-lg text-gray-700">
-              And here's what keeps the cycle going — any decent program will produce some results if you follow it. So you see progress in a few areas and assume it's working. But what you're actually getting is a partial solution. Strong in one domain, neglected in others. You hit part of the target, but never the bullseye.
+              Most programs produce some results if you follow them.   But the one-size-fits-all approach means you're getting a partial solution; strong in one domain, stagnation in others.  You might hit the target sometimes, but never the bullseye.
             </p>
             <p className="text-lg text-gray-700">
-              Gains AI is different. It's a modern, adaptive system that evolves with every session you log — making true personalization the standard, not an expensive add-on.
+              Gains AI is different. It's a modern, adaptive system that evolves with every completed session  — making true personalization the standard.
             </p>
 
             {/* Image: Skills Card */}
@@ -150,10 +150,7 @@ export default function LandingPage() {
               So why AI at all? Because used correctly, AI is a tireless analyst.
             </p>
             <p className="text-lg text-gray-700">
-              Gains AI doesn't replace coaching. It supports it — detecting subtle performance and fatigue patterns, flagging burnout risk before it shows up as stalled progress, and adjusting pacing, volume, and emphasis based on real data. AI keeps your program aligned with your progress. It never takes control.
-            </p>
-            <p className="text-lg text-gray-700">
-              You can make small adjustments directly in the app. The system recognizes and logs them automatically. For bigger questions, you message real coaches — never an AI chatbot — with full visibility into your data.
+              Gains AI works behind the scenes — detecting patterns, flagging burnout risk, and adjusting pacing, volume, and emphasis based on real data. You also have the flexibility to edit any item in the program, and the AI integrates your changes seamlessly. For bigger questions, you message real coaches — never an AI chatbot — with full visibility into your data.
             </p>
 
             {/* Image: Heart Rate Heatmap */}
@@ -186,7 +183,7 @@ export default function LandingPage() {
               There are no black boxes or hidden logic. Gains AI turns your training logs into intelligence, and every insight is visible to you in real time. You own your data — and with it, control over your progress.
             </p>
             <p className="text-lg text-gray-700">
-              Our structured data architecture is what makes this possible. Your training is organized in layers — program, training blocks, tasks, and the variables within them — so changes can happen at exactly the right level without disrupting everything else. You can shift priorities whenever you need to: practice specific movements before a competition, drill a newly unlocked skill, or adjust for travel, equipment, or schedule changes.
+              Our structured data architecture makes this possible. Your training is organized in layers, so changes — yours or the AI's — happen at exactly the right level without disrupting everything else.  Shift priorities whenever you need to: practice specific movements before a competition, drill a newly unlocked skill, or adjust for travel, equipment, or schedule changes.
             </p>
             <p className="text-lg text-gray-700">
               Because your training history is stored as structured data, changes don't erase progress or force a reset. The system absorbs the update, preserves context, and adjusts intelligently — so direction stays clear even as priorities evolve.
@@ -270,7 +267,7 @@ export default function LandingPage() {
               Get it on Google Play
             </a>
           </div>
-          <p className="text-sm text-gray-600">3-day free trial · No credit card required</p>
+          <p className="text-sm text-gray-600">Try it free!  3 Day free Trial</p>
         </div>
       </section>
 
