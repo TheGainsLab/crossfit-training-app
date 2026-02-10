@@ -13,18 +13,10 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PurchasesPackage } from 'react-native-purchases';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PROGRAMS, ProgramType, getOfferings, purchasePackage, PROGRAM_TO_TIER } from '@/lib/subscriptions';
+import { PROGRAMS, ProgramType, getOfferings, purchasePackage, PROGRAM_TO_TIER, OFFERING_IDS } from '@/lib/subscriptions';
 import { createClient } from '@/lib/supabase/client';
 
 type BillingPeriod = 'monthly' | 'quarterly' | 'yearly';
-
-// Map program IDs to RevenueCat offering identifiers
-const OFFERING_IDS: Record<ProgramType, string> = {
-  'btn': 'The Gains AI BTN',
-  'engine': 'The Gains AI Engine',
-  'applied_power': 'The Gains AI Applied Power',
-  'competitor': 'The Gains AI Competitor'
-};
 
 export default function PurchaseScreen() {
   const router = useRouter();

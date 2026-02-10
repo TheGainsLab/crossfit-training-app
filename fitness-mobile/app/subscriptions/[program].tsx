@@ -8,16 +8,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { PROGRAMS, ProgramType, getOfferings } from '@/lib/subscriptions';
+import { PROGRAMS, ProgramType, getOfferings, OFFERING_IDS } from '@/lib/subscriptions';
 import { Ionicons } from '@expo/vector-icons';
-
-// Map program IDs to RevenueCat offering identifiers
-const OFFERING_IDS: Record<ProgramType, string> = {
-  'btn': 'The Gains AI BTN',
-  'engine': 'The Gains AI Engine',
-  'applied_power': 'The Gains AI Applied Power',
-  'competitor': 'The Gains AI Competitor'
-};
 
 interface PricingInfo {
   monthly: string | null;
