@@ -9,10 +9,6 @@ import {
   ChevronUp,
   ChevronDown,
   User,
-  UserX,
-  Clock,
-  AlertTriangle,
-  CreditCard,
   X,
   RefreshCw,
   ArrowUpDown
@@ -38,14 +34,6 @@ interface Pagination {
   total: number
   totalPages: number
 }
-
-// Quick-access presets that map to regular filter values
-const PRESET_FILTERS = [
-  { id: 'expiring-trials', label: 'Expiring Trials', icon: Clock, filterKey: 'status' as const, filterValue: 'trial' },
-  { id: 'at-risk', label: 'At-Risk (7d+)', icon: AlertTriangle, filterKey: 'activity' as const, filterValue: '7+' },
-  { id: 'past-due', label: 'Past Due', icon: CreditCard, filterKey: 'status' as const, filterValue: 'past_due' },
-  { id: 'win-back', label: 'Win-Back', icon: UserX, filterKey: 'status' as const, filterValue: 'expired' },
-]
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -238,32 +226,6 @@ export default function AdminUsersPage() {
     setRoleFilter('')
   }
 
-  const applyPreset = (preset: typeof PRESET_FILTERS[number]) => {
-    const setters: Record<string, (v: string) => void> = {
-      status: setStatusFilter,
-      activity: setActivityFilter,
-    }
-    const currentValues: Record<string, string> = {
-      status: statusFilter,
-      activity: activityFilter,
-    }
-
-    const setter = setters[preset.filterKey]
-    const current = currentValues[preset.filterKey]
-
-    if (setter) {
-      setter(current === preset.filterValue ? '' : preset.filterValue)
-    }
-  }
-
-  const isPresetActive = (preset: typeof PRESET_FILTERS[number]) => {
-    const currentValues: Record<string, string> = {
-      status: statusFilter,
-      activity: activityFilter,
-    }
-    return currentValues[preset.filterKey] === preset.filterValue
-  }
-
   const handleSort = (column: string) => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
@@ -317,40 +279,19 @@ export default function AdminUsersPage() {
           </button>
         </form>
 
-        {/* Quick filter presets */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-gray-400 font-medium w-14 shrink-0">Quick</span>
-          {PRESET_FILTERS.map((preset) => {
-            const Icon = preset.icon
-            const active = isPresetActive(preset)
-            return (
-              <button
-                key={preset.id}
-                onClick={() => applyPreset(preset)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                  active
-                    ? 'bg-coral text-white'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <Icon className="w-3 h-3" />
-                {preset.label}
-              </button>
-            )
-          })}
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="flex items-center gap-1 ml-auto px-2 py-1 text-xs text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-3 h-3" />
-              Clear all
-            </button>
-          )}
-        </div>
-
         {/* Filter chip groups */}
-        <div className="border-t border-gray-100 pt-3 space-y-2">
+        <div className="space-y-2">
+          {hasActiveFilters && (
+            <div className="flex justify-end">
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3 h-3" />
+                Clear all
+              </button>
+            </div>
+          )}
           <ChipGroup label="Status" options={STATUS_OPTIONS} value={statusFilter} onChange={setStatusFilter} />
           <ChipGroup label="Tier" options={TIER_OPTIONS} value={tierFilter} onChange={setTierFilter} />
           <ChipGroup label="Activity" options={ACTIVITY_OPTIONS} value={activityFilter} onChange={setActivityFilter} />

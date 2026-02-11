@@ -351,7 +351,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       const { error: updateError } = await supabase
         .from('users')
         .update({
-          subscription_status: 'ACTIVE',
+          subscription_status: 'active',
           subscription_tier: planType,
           stripe_customer_id: stripeCustomerId,
           updated_at: new Date().toISOString()
@@ -523,7 +523,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   console.log('Deleting subscription:', subscription.id)
-  
+
   const { error } = await supabase
     .from('subscriptions')
     .update({
@@ -538,11 +538,25 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   } else {
     console.log('Successfully canceled subscription')
   }
+
+  // Sync status to users table
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('user_id')
+    .eq('stripe_subscription_id', subscription.id)
+    .single()
+
+  if (sub) {
+    await supabase
+      .from('users')
+      .update({ subscription_status: 'canceled', updated_at: new Date().toISOString() })
+      .eq('id', sub.user_id)
+  }
 }
 
 async function handlePaymentSucceeded(invoice: any) {
   console.log('Payment succeeded for invoice:', invoice.id)
-  
+
   if (invoice.subscription) {
     const { error } = await supabase
       .from('subscriptions')
@@ -558,6 +572,20 @@ async function handlePaymentSucceeded(invoice: any) {
       console.log('Successfully updated subscription after payment')
     }
 
+    // Sync status to users table
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('user_id')
+      .eq('stripe_subscription_id', invoice.subscription as string)
+      .single()
+
+    if (sub) {
+      await supabase
+        .from('users')
+        .update({ subscription_status: 'active', updated_at: new Date().toISOString() })
+        .eq('id', sub.user_id)
+    }
+
     // NEW: Check if this is a renewal payment (not initial signup)
     if (invoice.billing_reason === 'subscription_cycle') {
       console.log('Renewal payment detected - generating next program')
@@ -568,20 +596,36 @@ async function handlePaymentSucceeded(invoice: any) {
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   console.log('Payment failed for invoice:', invoice.id)
-  
+
   if ((invoice as any).subscription) {
+    const stripeSubId = (invoice as any).subscription as string
+
     const { error } = await supabase
       .from('subscriptions')
       .update({
         status: 'past_due',
         updated_at: new Date().toISOString()
       })
-      .eq('stripe_subscription_id', (invoice as any).subscription as string)
+      .eq('stripe_subscription_id', stripeSubId)
 
     if (error) {
       console.error('Error updating subscription after failed payment:', error)
     } else {
       console.log('Successfully updated subscription after failed payment')
+    }
+
+    // Sync status to users table
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('user_id')
+      .eq('stripe_subscription_id', stripeSubId)
+      .single()
+
+    if (sub) {
+      await supabase
+        .from('users')
+        .update({ subscription_status: 'past_due', updated_at: new Date().toISOString() })
+        .eq('id', sub.user_id)
     }
   }
 }

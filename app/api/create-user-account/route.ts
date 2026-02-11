@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         .insert({
           email: normalizedEmail,  // ← Store as lowercase for consistency
           name: userData.name || email.split('@')[0],
-          subscription_status: 'PENDING',
+          subscription_status: 'pending',
           subscription_tier: subscriptionTier,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
         units: userData.units,
         ability_level: 'Beginner',
         conditioning_benchmarks: userData.conditioningBenchmarks,
-        subscription_status: 'PENDING', // Ensure it's set correctly
+        subscription_status: 'pending', // Ensure it's set correctly
         subscription_tier: productType ? productType.toUpperCase() : 'PREMIUM', // Ensure it's set correctly
         updated_at: new Date().toISOString()
       })
@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
             await supabaseAdmin
               .from('users')
               .update({
-                subscription_status: 'ACTIVE',
+                subscription_status: 'active',
                 updated_at: new Date().toISOString()
               })
               .eq('id', userId)

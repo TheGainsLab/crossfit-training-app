@@ -183,7 +183,7 @@ serve(async (req) => {
             method: 'PATCH',
             headers: supabaseHeaders,
             body: JSON.stringify({
-              subscription_status: 'ACTIVE',
+              subscription_status: 'active',
               subscription_tier: planType,
               stripe_customer_id: stripeCustomerId,
               updated_at: new Date().toISOString()
