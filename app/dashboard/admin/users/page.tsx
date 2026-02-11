@@ -2,10 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import {
   Search,
-  Filter,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
@@ -32,8 +30,6 @@ interface UserData {
   last_activity: string | null
   days_since_activity: number | null
   workouts_30d: number
-  trial_ends?: string | null
-  canceled_at?: string | null
 }
 
 interface Pagination {
@@ -43,13 +39,67 @@ interface Pagination {
   totalPages: number
 }
 
-// Preset filters for "Needs Attention" scenarios
+// Quick-access presets that map to regular filter values
 const PRESET_FILTERS = [
-  { id: 'expiring-trials', label: 'Expiring Trials', icon: Clock, color: 'yellow' },
-  { id: 'at-risk', label: 'At-Risk (7d+)', icon: AlertTriangle, color: 'red' },
-  { id: 'past-due', label: 'Past Due', icon: CreditCard, color: 'red' },
-  { id: 'win-back', label: 'Win-Back', icon: UserX, color: 'gray' },
-] as const
+  { id: 'expiring-trials', label: 'Expiring Trials', icon: Clock, filterKey: 'status' as const, filterValue: 'trial' },
+  { id: 'at-risk', label: 'At-Risk (7d+)', icon: AlertTriangle, filterKey: 'activity' as const, filterValue: '7+' },
+  { id: 'past-due', label: 'Past Due', icon: CreditCard, filterKey: 'status' as const, filterValue: 'past_due' },
+  { id: 'win-back', label: 'Win-Back', icon: UserX, filterKey: 'status' as const, filterValue: 'expired' },
+]
+
+const STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'trial', label: 'Trial' },
+  { value: 'canceled', label: 'Canceled' },
+  { value: 'expired', label: 'Expired' },
+  { value: 'past_due', label: 'Past Due' },
+]
+
+const TIER_OPTIONS = [
+  { value: 'ENGINE', label: 'ENGINE' },
+  { value: 'BTN', label: 'BTN' },
+  { value: 'PREMIUM', label: 'PREMIUM' },
+  { value: 'APPLIED_POWER', label: 'APPLIED_POWER' },
+]
+
+const ACTIVITY_OPTIONS = [
+  { value: '7', label: '< 7d' },
+  { value: '7-14', label: '7\u201314d' },
+  { value: '14-30', label: '14\u201330d' },
+  { value: '30', label: '30d+' },
+]
+
+const ROLE_OPTIONS = [
+  { value: 'athlete', label: 'Athlete' },
+  { value: 'coach', label: 'Coach' },
+  { value: 'admin', label: 'Admin' },
+]
+
+function ChipGroup({ label, options, value, onChange }: {
+  label: string
+  options: { value: string; label: string }[]
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <span className="text-xs text-gray-400 font-medium w-14 shrink-0">{label}</span>
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => onChange(value === opt.value ? '' : opt.value)}
+          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+            value === opt.value
+              ? 'bg-coral text-white'
+              : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 function StatusBadge({ status }: { status: string | null }) {
   const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
@@ -124,74 +174,51 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Filters
-  const [search, setSearch] = useState(searchParams.get('search') || '')
+  // Search: input tracks keystrokes, searchTerm is applied on submit
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '')
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
+
+  // Filter chips
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
   const [tierFilter, setTierFilter] = useState(searchParams.get('tier') || '')
   const [activityFilter, setActivityFilter] = useState(searchParams.get('activity') || '')
   const [roleFilter, setRoleFilter] = useState(searchParams.get('role') || '')
-  const [presetFilter, setPresetFilter] = useState(searchParams.get('preset') || '')
-  const [showFilters, setShowFilters] = useState(false)
+
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  // Fetch users - either from preset filter or regular list
   const fetchUsers = useCallback(async (page: number = 1) => {
     setLoading(true)
     setError(null)
 
     try {
-      // If using a preset filter, use the engagement/users API
-      if (presetFilter) {
-        const engagementFilter = presetFilter === 'past-due' ? 'at-risk' : presetFilter
-        const res = await fetch(`/api/admin/engagement/users?filter=${engagementFilter}`)
-        const data = await res.json()
+      const params = new URLSearchParams()
+      params.set('page', page.toString())
+      params.set('limit', '25')
+      if (searchTerm) params.set('search', searchTerm)
+      if (statusFilter) params.set('status', statusFilter)
+      if (tierFilter) params.set('tier', tierFilter)
+      if (activityFilter) params.set('activity', activityFilter)
+      if (roleFilter) params.set('role', roleFilter)
+      params.set('sortBy', sortBy)
+      params.set('sortOrder', sortOrder)
 
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to fetch users')
-        }
+      const res = await fetch(`/api/admin/users/list?${params.toString()}`)
+      const data = await res.json()
 
-        // For past-due, we need to filter by status
-        let filteredUsers = data.users
-        if (presetFilter === 'past-due') {
-          // Fetch users with past_due status instead
-          const pastDueRes = await fetch('/api/admin/users/list?status=past_due&limit=100')
-          const pastDueData = await pastDueRes.json()
-          filteredUsers = pastDueData.success ? pastDueData.users : []
-        }
-
-        setUsers(filteredUsers)
-        setPagination({ page: 1, limit: 100, total: filteredUsers.length, totalPages: 1 })
-      } else {
-        // Regular user list with filters
-        const params = new URLSearchParams()
-        params.set('page', page.toString())
-        params.set('limit', '25')
-        if (search) params.set('search', search)
-        if (statusFilter) params.set('status', statusFilter)
-        if (tierFilter) params.set('tier', tierFilter)
-        if (activityFilter) params.set('activity', activityFilter)
-        if (roleFilter) params.set('role', roleFilter)
-        params.set('sortBy', sortBy)
-        params.set('sortOrder', sortOrder)
-
-        const res = await fetch(`/api/admin/users/list?${params.toString()}`)
-        const data = await res.json()
-
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to fetch users')
-        }
-
-        setUsers(data.users)
-        setPagination(data.pagination)
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch users')
       }
+
+      setUsers(data.users)
+      setPagination(data.pagination)
     } catch (err: any) {
       console.error('Error fetching users:', err)
       setError(err.message || 'Failed to load users')
     } finally {
       setLoading(false)
     }
-  }, [search, statusFilter, tierFilter, activityFilter, roleFilter, presetFilter, sortBy, sortOrder])
+  }, [searchTerm, statusFilter, tierFilter, activityFilter, roleFilter, sortBy, sortOrder])
 
   useEffect(() => {
     fetchUsers(1)
@@ -199,42 +226,54 @@ export default function AdminUsersPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    setPresetFilter('') // Clear preset when searching
-    fetchUsers(1)
+    setSearchTerm(searchInput)
   }
 
   const clearFilters = () => {
-    setSearch('')
+    setSearchInput('')
+    setSearchTerm('')
     setStatusFilter('')
     setTierFilter('')
     setActivityFilter('')
     setRoleFilter('')
-    setPresetFilter('')
   }
 
-  const applyPresetFilter = (preset: string) => {
-    // Clear other filters when applying preset
-    setSearch('')
-    setStatusFilter('')
-    setTierFilter('')
-    setActivityFilter('')
-    setRoleFilter('')
-    setPresetFilter(preset === presetFilter ? '' : preset)
+  const applyPreset = (preset: typeof PRESET_FILTERS[number]) => {
+    const setters: Record<string, (v: string) => void> = {
+      status: setStatusFilter,
+      activity: setActivityFilter,
+    }
+    const currentValues: Record<string, string> = {
+      status: statusFilter,
+      activity: activityFilter,
+    }
+
+    const setter = setters[preset.filterKey]
+    const current = currentValues[preset.filterKey]
+
+    if (setter) {
+      setter(current === preset.filterValue ? '' : preset.filterValue)
+    }
+  }
+
+  const isPresetActive = (preset: typeof PRESET_FILTERS[number]) => {
+    const currentValues: Record<string, string> = {
+      status: statusFilter,
+      activity: activityFilter,
+    }
+    return currentValues[preset.filterKey] === preset.filterValue
   }
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
-      // Toggle direction if same column
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
     } else {
-      // New column, default to descending
       setSortBy(column)
       setSortOrder('desc')
     }
   }
 
-  const hasActiveFilters = search || statusFilter || tierFilter || activityFilter || roleFilter
-  const hasAnyFilter = hasActiveFilters || presetFilter
+  const hasActiveFilters = searchTerm || statusFilter || tierFilter || activityFilter || roleFilter
 
   return (
     <div className="space-y-4">
@@ -256,66 +295,20 @@ export default function AdminUsersPage() {
         </button>
       </div>
 
-      {/* Preset Filters (Needs Attention) */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm text-gray-500 font-medium">Quick filters:</span>
-        {PRESET_FILTERS.map((preset) => {
-          const Icon = preset.icon
-          const isActive = presetFilter === preset.id
-          return (
-            <button
-              key={preset.id}
-              onClick={() => applyPresetFilter(preset.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-coral text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {preset.label}
-            </button>
-          )
-        })}
-        {hasAnyFilter && (
-          <button
-            onClick={clearFilters}
-            className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700"
-          >
-            <X className="w-4 h-4" />
-            Clear
-          </button>
-        )}
-      </div>
-
-      {/* Search and Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      {/* Search + Filters */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+        {/* Search bar */}
         <form onSubmit={handleSearch} className="flex gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search by name or email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/20 focus:border-coral"
             />
           </div>
-          <button
-            type="button"
-            onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2 border rounded-lg flex items-center gap-2 transition-colors ${
-              hasActiveFilters ? 'border-coral text-coral bg-coral/5' : 'border-gray-200 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <Filter className="w-4 h-4" />
-            Filters
-            {hasActiveFilters && (
-              <span className="bg-coral text-white text-xs px-1.5 py-0.5 rounded-full">
-                {[statusFilter, tierFilter, activityFilter, roleFilter].filter(Boolean).length}
-              </span>
-            )}
-          </button>
           <button
             type="submit"
             className="px-4 py-2 bg-coral text-white rounded-lg hover:bg-coral/90 transition-colors"
@@ -324,73 +317,45 @@ export default function AdminUsersPage() {
           </button>
         </form>
 
-        {/* Filter dropdowns */}
-        {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => { setStatusFilter(e.target.value); setPresetFilter(''); }}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/20"
-                >
-                  <option value="">All Statuses</option>
-                  <option value="active">Active</option>
-                  <option value="trial">Trial</option>
-                  <option value="canceled">Canceled</option>
-                  <option value="expired">Expired</option>
-                  <option value="past_due">Past Due</option>
-                </select>
-              </div>
+        {/* Quick filter presets */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-gray-400 font-medium w-14 shrink-0">Quick</span>
+          {PRESET_FILTERS.map((preset) => {
+            const Icon = preset.icon
+            const active = isPresetActive(preset)
+            return (
+              <button
+                key={preset.id}
+                onClick={() => applyPreset(preset)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  active
+                    ? 'bg-coral text-white'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Icon className="w-3 h-3" />
+                {preset.label}
+              </button>
+            )
+          })}
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-1 ml-auto px-2 py-1 text-xs text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-3 h-3" />
+              Clear all
+            </button>
+          )}
+        </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tier</label>
-                <select
-                  value={tierFilter}
-                  onChange={(e) => { setTierFilter(e.target.value); setPresetFilter(''); }}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/20"
-                >
-                  <option value="">All Tiers</option>
-                  <option value="ENGINE">ENGINE</option>
-                  <option value="BTN">BTN</option>
-                  <option value="PREMIUM">PREMIUM</option>
-                  <option value="APPLIED_POWER">APPLIED_POWER</option>
-                  <option value="FREE">FREE</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Activity</label>
-                <select
-                  value={activityFilter}
-                  onChange={(e) => { setActivityFilter(e.target.value); setPresetFilter(''); }}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/20"
-                >
-                  <option value="">All Activity</option>
-                  <option value="7">Active (last 7 days)</option>
-                  <option value="7-14">Warning (7-14 days)</option>
-                  <option value="14-30">At Risk (14-30 days)</option>
-                  <option value="30">Critical (30+ days)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select
-                  value={roleFilter}
-                  onChange={(e) => { setRoleFilter(e.target.value); setPresetFilter(''); }}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/20"
-                >
-                  <option value="">All Roles</option>
-                  <option value="athlete">Athlete</option>
-                  <option value="coach">Coach</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Filter chip groups */}
+        <div className="border-t border-gray-100 pt-3 space-y-2">
+          <ChipGroup label="Status" options={STATUS_OPTIONS} value={statusFilter} onChange={setStatusFilter} />
+          <ChipGroup label="Tier" options={TIER_OPTIONS} value={tierFilter} onChange={setTierFilter} />
+          <ChipGroup label="Activity" options={ACTIVITY_OPTIONS} value={activityFilter} onChange={setActivityFilter} />
+          <ChipGroup label="Role" options={ROLE_OPTIONS} value={roleFilter} onChange={setRoleFilter} />
+        </div>
       </div>
 
       {/* Error state */}
@@ -461,16 +426,6 @@ export default function AdminUsersPage() {
                     ) : <ArrowUpDown className="w-3 h-3 text-gray-300" />}
                   </div>
                 </th>
-                {presetFilter === 'expiring-trials' && (
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Trial Ends
-                  </th>
-                )}
-                {presetFilter === 'win-back' && (
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Canceled
-                  </th>
-                )}
                 <th
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
                   onClick={() => handleSort('created_at')}
@@ -510,7 +465,7 @@ export default function AdminUsersPage() {
                 ))
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
                     No users found
                   </td>
                 </tr>
@@ -546,16 +501,6 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-4 text-gray-600">
                       {user.workouts_30d}
                     </td>
-                    {presetFilter === 'expiring-trials' && (
-                      <td className="px-4 py-4 text-sm text-gray-600">
-                        {user.trial_ends ? new Date(user.trial_ends).toLocaleDateString() : '-'}
-                      </td>
-                    )}
-                    {presetFilter === 'win-back' && (
-                      <td className="px-4 py-4 text-sm text-gray-600">
-                        {user.canceled_at ? new Date(user.canceled_at).toLocaleDateString() : '-'}
-                      </td>
-                    )}
                     <td className="px-4 py-4 text-sm text-gray-500">
                       {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
                     </td>
@@ -567,7 +512,7 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Pagination */}
-        {!presetFilter && pagination.totalPages > 1 && (
+        {pagination.totalPages > 1 && (
           <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
             <p className="text-sm text-gray-500">
               Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
