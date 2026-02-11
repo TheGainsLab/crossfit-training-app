@@ -154,6 +154,7 @@ export default function NutritionPage() {
   const [dailySummary, setDailySummary] = useState<DailySummary | null>(null)
   const [todayLogs, setTodayLogs] = useState<FoodEntry[]>([])
   const [bmr, setBmr] = useState<number | null>(null)
+  const [tdee, setTdee] = useState<number | null>(null)
 
   // UI state - using swap-out screens instead of modals to prevent iOS freezing
   const [selectedMealType, setSelectedMealType] = useState<string | null>(null)
@@ -402,10 +403,23 @@ export default function NutritionPage() {
             const weightKg = isMetric ? weight : weight * 0.453592
             const heightCm = isMetric ? height : height * 2.54
             const s = gender === 'Male' ? 5 : -161
-            
+
             // Mifflin-St Jeor equation
             const calculatedBmr = 10 * weightKg + 6.25 * heightCm - 5 * age + s
             setBmr(Math.round(calculatedBmr))
+
+            // Calculate TDEE using training_days_per_week
+            const { data: prefsData } = await supabase
+              .from('user_preferences')
+              .select('training_days_per_week')
+              .eq('user_id', (userData as any).id)
+              .single()
+            let trainingDays = 5
+            if (prefsData && typeof (prefsData as any).training_days_per_week === 'number') {
+              trainingDays = (prefsData as any).training_days_per_week
+            }
+            const activityMultiplier = trainingDays <= 2 ? 1.375 : trainingDays <= 4 ? 1.55 : trainingDays <= 6 ? 1.725 : 1.9
+            setTdee(Math.round(calculatedBmr * activityMultiplier))
           }
         }
       }
@@ -899,7 +913,7 @@ export default function NutritionPage() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <DailySummaryCard summary={dailySummary} logs={todayLogs} onDelete={(id) => setDeleteConfirmModal({ visible: true, entryId: id, entryName: todayLogs.find(l => l.id === id)?.food_name || '' })} bmr={bmr} />
+      <DailySummaryCard summary={dailySummary} logs={todayLogs} onDelete={(id) => setDeleteConfirmModal({ visible: true, entryId: id, entryName: todayLogs.find(l => l.id === id)?.food_name || '' })} bmr={bmr} tdee={tdee} />
       <View style={styles.contentArea}>
         <LoggingInterface
           selectedMealType={selectedMealType} mealTemplates={mealTemplates} templatesLoading={templatesLoading}
@@ -961,15 +975,16 @@ export default function NutritionPage() {
   )
 }
 
-function DailySummaryCard({ summary, logs, onDelete, bmr }: { summary: DailySummary | null; logs: FoodEntry[]; onDelete: (id: number) => void; bmr?: number | null }) {
+function DailySummaryCard({ summary, logs, onDelete, bmr, tdee }: { summary: DailySummary | null; logs: FoodEntry[]; onDelete: (id: number) => void; bmr?: number | null; tdee?: number | null }) {
   const [expanded, setExpanded] = useState(false)
   const calories = (summary?.total_calories ?? 0) || logs.reduce((sum, log) => sum + (log.calories || 0), 0)
   const protein = (summary?.total_protein ?? 0) || logs.reduce((sum, log) => sum + (log.protein || 0), 0)
   const carbs = (summary?.total_carbohydrate ?? 0) || logs.reduce((sum, log) => sum + (log.carbohydrate || 0), 0)
   const fat = (summary?.total_fat ?? 0) || logs.reduce((sum, log) => sum + (log.fat || 0), 0)
-  
-  const progressPercentage = bmr ? Math.min(100, (calories / bmr) * 100) : 0
-  
+
+  const tdeeProgressPercentage = tdee ? Math.min(100, (calories / tdee) * 100) : 0
+  const bmrMarkerPosition = (bmr && tdee) ? Math.min(100, (bmr / tdee) * 100) : 0
+
   return (
     <Card style={styles.card}>
       <View style={styles.summaryHeaderRow}>
@@ -978,39 +993,65 @@ function DailySummaryCard({ summary, logs, onDelete, bmr }: { summary: DailySumm
           <Text style={styles.expandText}>{expanded ? '−' : '+'}</Text>
         </TouchableOpacity>
       </View>
-      
-      {/* BMR and Progress Bar - Prominent at top */}
-      {bmr && (
+
+      {/* BMR / TDEE and Progress Bar */}
+      {(bmr || tdee) && (
         <View style={styles.bmrSection}>
           <View style={styles.bmrHeaderRow}>
             <View>
-              <Text style={styles.bmrLabel}>Basal Metabolic Rate (BMR)</Text>
-              <Text style={styles.bmrValue}>{Math.round(bmr)} kcal/day</Text>
+              {bmr && (
+                <>
+                  <Text style={styles.bmrLabel}>BMR</Text>
+                  <Text style={styles.bmrValue}>{Math.round(bmr)} kcal</Text>
+                </>
+              )}
+              {tdee && (
+                <>
+                  <Text style={[styles.bmrLabel, { marginTop: bmr ? 8 : 0 }]}>TDEE</Text>
+                  <Text style={[styles.bmrValue, { color: '#2563EB' }]}>{Math.round(tdee)} kcal</Text>
+                </>
+              )}
             </View>
             <View style={styles.bmrIntakeInfo}>
               <Text style={styles.bmrIntakeLabel}>Today's Intake</Text>
               <Text style={styles.bmrIntakeValue}>{Math.round(calories)} kcal</Text>
-              <Text style={styles.bmrIntakePercentage}>
-                {Math.round(progressPercentage)}% of BMR
-              </Text>
+              {tdee && (
+                <Text style={styles.bmrIntakePercentage}>
+                  {Math.round(tdeeProgressPercentage)}% of TDEE
+                </Text>
+              )}
             </View>
           </View>
-          <View style={styles.bmrProgressContainer}>
-            <View 
-              style={[
-                styles.bmrProgressBar, 
-                { 
-                  width: `${progressPercentage}%`,
-                  backgroundColor: progressPercentage > 100 ? '#F59E0B' : '#10B981'
-                }
-              ]} 
-            />
-          </View>
-          <Text style={styles.bmrProgressText}>
-            {calories >= bmr 
-              ? `${Math.round(calories - bmr)} kcal above BMR` 
-              : `${Math.round(bmr - calories)} kcal below BMR`}
-          </Text>
+          {tdee && (
+            <>
+              <View style={styles.bmrProgressContainer}>
+                <View
+                  style={[
+                    styles.bmrProgressBar,
+                    {
+                      width: `${tdeeProgressPercentage}%`,
+                      backgroundColor: tdeeProgressPercentage > 100 ? '#F59E0B' : '#10B981'
+                    }
+                  ]}
+                />
+                {bmr && bmrMarkerPosition > 0 && (
+                  <View style={{ position: 'absolute', left: `${bmrMarkerPosition}%`, top: -2, bottom: -2, width: 2, backgroundColor: '#6B7280', borderRadius: 1 }} />
+                )}
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                <Text style={styles.bmrProgressText}>
+                  {calories >= tdee
+                    ? `${Math.round(calories - tdee)} kcal above TDEE`
+                    : `${Math.round(tdee - calories)} kcal below TDEE`}
+                </Text>
+                {bmr && (
+                  <Text style={[styles.bmrProgressText, { color: '#9CA3AF' }]}>
+                    BMR
+                  </Text>
+                )}
+              </View>
+            </>
+          )}
         </View>
       )}
       
