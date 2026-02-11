@@ -124,11 +124,12 @@ export async function GET(request: Request) {
       // Daily workouts for chart
       dailyStatsQuery,
 
-      // Program distribution (from active subscriptions)
+      // Program distribution (from active paid subscriptions, excludes trials)
       supabase
         .from('subscriptions')
         .select('entitlement_identifier')
-        .eq('status', 'active'),
+        .eq('status', 'active')
+        .eq('is_trial_period', false),
 
       // Engine workouts in range
       engineWorkoutsQuery
@@ -203,10 +204,10 @@ export async function GET(request: Request) {
       .map(([date, count]) => ({ date, count }))
       .sort((a, b) => a.date.localeCompare(b.date))
 
-    // Calculate program distribution from active subscriptions
+    // Calculate program distribution from active paid subscriptions
     const programCounts: Record<string, number> = {}
     programStatsResult.data?.forEach(sub => {
-      const tier = sub.entitlement_identifier || 'Unknown'
+      const tier = (sub.entitlement_identifier || 'Unknown').toUpperCase()
       programCounts[tier] = (programCounts[tier] || 0) + 1
     })
     const topPrograms = Object.entries(programCounts)
