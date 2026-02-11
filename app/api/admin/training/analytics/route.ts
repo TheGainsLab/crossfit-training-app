@@ -127,7 +127,7 @@ export async function GET(request: Request) {
       // Program distribution (from active paid subscriptions, excludes trials)
       supabase
         .from('subscriptions')
-        .select('entitlement_identifier')
+        .select('plan')
         .eq('status', 'active')
         .eq('is_trial_period', false),
 
@@ -207,7 +207,7 @@ export async function GET(request: Request) {
     // Calculate program distribution from active paid subscriptions
     const programCounts: Record<string, number> = {}
     programStatsResult.data?.forEach(sub => {
-      const tier = (sub.entitlement_identifier || 'Unknown').toUpperCase()
+      const tier = (sub.plan || 'unknown').toUpperCase()
       programCounts[tier] = (programCounts[tier] || 0) + 1
     })
     const topPrograms = Object.entries(programCounts)

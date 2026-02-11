@@ -2,17 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getUserIdFromAuth, isAdmin } from '@/lib/permissions'
 
+interface BlockDetail {
+  blockName: string
+  exercises: string[]
+}
+
 interface ActivityItem {
   id: string
-  type: 'btn' | 'engine' | 'metcon'
   userId: number
   userName: string | null
   userEmail: string | null
   userTier: string | null
   timestamp: string
-  block: string | null
+  week: number
+  day: number
+  blocks: BlockDetail[]
   summary: string
-  details: string[]
 }
 
 export async function GET(request: NextRequest) {
@@ -47,9 +52,8 @@ export async function GET(request: NextRequest) {
 
     const sinceDate = new Date(Date.now() - hours * 60 * 60 * 1000)
 
-    // Fetch recent performance logs (BTN workouts) - skip if filtering for ENGINE or METCON only
+    // Fetch recent performance logs (BTN workouts) - include week and day
     let perfLogs: any[] | null = null
-    let perfError: any = null
     if (!blockFilter || (blockFilter !== 'ENGINE' && blockFilter !== 'METCON')) {
       let perfLogsQuery = supabase
         .from('performance_logs')
@@ -62,29 +66,27 @@ export async function GET(request: NextRequest) {
           reps,
           sets,
           result,
-          logged_at
+          logged_at,
+          week,
+          day
         `)
         .gte('logged_at', sinceDate.toISOString())
         .order('logged_at', { ascending: false })
         .limit(200)
 
-      // Apply block filter for specific BTN blocks
       if (blockFilter) {
         perfLogsQuery = perfLogsQuery.eq('block', blockFilter)
       }
 
       const result = await perfLogsQuery
       perfLogs = result.data
-      perfError = result.error
-
-      if (perfError) {
-        console.error('Error fetching performance logs:', perfError)
+      if (result.error) {
+        console.error('Error fetching performance logs:', result.error)
       }
     }
 
-    // Fetch recent Engine sessions (only if no block filter or filtering for ENGINE)
+    // Fetch recent Engine sessions
     let engineSessions: any[] | null = null
-    let engineError: any = null
     if (!blockFilter || blockFilter === 'ENGINE') {
       const result = await supabase
         .from('workout_sessions')
@@ -97,7 +99,11 @@ export async function GET(request: NextRequest) {
           total_output,
           actual_pace,
           target_pace,
-          performance_ratio
+          performance_ratio,
+          program_day_number,
+          program_id,
+          program_version,
+          modality
         `)
         .eq('completed', true)
         .gte('date', sinceDate.toISOString().split('T')[0])
@@ -105,16 +111,35 @@ export async function GET(request: NextRequest) {
         .limit(100)
 
       engineSessions = result.data
-      engineError = result.error
-
-      if (engineError) {
-        console.error('Error fetching engine sessions:', engineError)
+      if (result.error) {
+        console.error('Error fetching engine sessions:', result.error)
       }
     }
 
-    // Fetch recent MetCon completions (only if no block filter or filtering for METCON)
+    // Build Engine day number -> (week, day) lookup from program_metcons
+    const engineWeekDayMap = new Map<string, { week: number; day: number }>()
+    if (engineSessions && engineSessions.length > 0) {
+      const programIds = [...new Set(engineSessions.map(s => s.program_id).filter(Boolean))]
+      if (programIds.length > 0) {
+        const { data: engineMappings } = await supabase
+          .from('program_metcons')
+          .select('program_id, program_day_number, week, day')
+          .eq('workout_type', 'conditioning')
+          .in('program_id', programIds)
+
+        engineMappings?.forEach((m: any) => {
+          if (m.program_day_number != null && m.week != null && m.day != null) {
+            engineWeekDayMap.set(`${m.program_id}-${m.program_day_number}`, {
+              week: m.week,
+              day: m.day
+            })
+          }
+        })
+      }
+    }
+
+    // Fetch recent MetCon completions
     let metconCompletions: any[] | null = null
-    let metconError: any = null
     if (!blockFilter || blockFilter === 'METCON') {
       const result = await supabase
         .from('program_metcons')
@@ -143,10 +168,8 @@ export async function GET(request: NextRequest) {
         .limit(100)
 
       metconCompletions = result.data
-      metconError = result.error
-
-      if (metconError) {
-        console.error('Error fetching metcon completions:', metconError)
+      if (result.error) {
+        console.error('Error fetching metcon completions:', result.error)
       }
     }
 
@@ -160,14 +183,14 @@ export async function GET(request: NextRequest) {
     })
 
     // Fetch user details
-    let usersMap = new Map<number, { name: string | null, email: string | null, tier: string | null }>()
+    const usersMap = new Map<number, { name: string | null, email: string | null, tier: string | null }>()
     if (userIds.size > 0) {
       const { data: users } = await supabase
         .from('users')
         .select('id, name, email, subscription_tier')
         .in('id', Array.from(userIds))
 
-      users?.forEach(u => {
+      users?.forEach((u: any) => {
         usersMap.set(u.id, {
           name: u.name,
           email: u.email,
@@ -176,159 +199,161 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Group performance logs by user and block for the same day
-    const perfByUserBlockDay = new Map<string, typeof perfLogs>()
-    perfLogs?.forEach(log => {
-      if (!log.user_id || !log.logged_at) return
-      const day = new Date(log.logged_at).toISOString().split('T')[0]
-      const key = `${log.user_id}-${log.block || 'UNKNOWN'}-${day}`
-      if (!perfByUserBlockDay.has(key)) {
-        perfByUserBlockDay.set(key, [])
+    // Group everything by user + week + day into training day cards
+    // Key: "userId-week-day"
+    const trainingDays = new Map<string, {
+      userId: number
+      week: number
+      day: number
+      timestamp: number  // most recent across all blocks
+      blocks: Map<string, string[]>  // blockName -> exercise details
+    }>()
+
+    const getOrCreateDay = (userId: number, week: number, day: number, timestamp: number) => {
+      const key = `${userId}-${week}-${day}`
+      let entry = trainingDays.get(key)
+      if (!entry) {
+        entry = { userId, week, day, timestamp, blocks: new Map() }
+        trainingDays.set(key, entry)
       }
-      perfByUserBlockDay.get(key)!.push(log)
-    })
+      if (timestamp > entry.timestamp) {
+        entry.timestamp = timestamp
+      }
+      return entry
+    }
 
-    // Build activity items from grouped performance logs
-    const activityItems: ActivityItem[] = []
-
-    perfByUserBlockDay.forEach((logs, key) => {
-      if (!logs || logs.length === 0) return
-
-      const [userIdStr, block] = key.split('-')
-      const userId = parseInt(userIdStr)
-      const user = usersMap.get(userId)
-
-      // Apply tier filter
+    // Process BTN performance logs
+    perfLogs?.forEach(log => {
+      if (!log.user_id || !log.week || !log.day) return
+      const user = usersMap.get(log.user_id)
       if (tierFilter && user?.tier !== tierFilter) return
+      if (userIdFilter && log.user_id !== parseInt(userIdFilter)) return
 
-      // Apply user filter
-      if (userIdFilter && userId !== parseInt(userIdFilter)) return
+      const ts = new Date(log.logged_at).getTime()
+      const entry = getOrCreateDay(log.user_id, log.week, log.day, ts)
 
-      // Get the most recent timestamp for this group
-      const mostRecent = logs.reduce((latest, log) => {
-        const logTime = new Date(log.logged_at).getTime()
-        return logTime > latest ? logTime : latest
-      }, 0)
+      const blockName = log.block || 'UNKNOWN'
+      if (!entry.blocks.has(blockName)) {
+        entry.blocks.set(blockName, [])
+      }
 
-      // Build summary of exercises
-      const exercises = logs.map(log => log.exercise_name).filter(Boolean)
-      const uniqueExercises = [...new Set(exercises)]
-      const summary = `${block}: ${uniqueExercises.slice(0, 3).join(', ')}${uniqueExercises.length > 3 ? ` +${uniqueExercises.length - 3} more` : ''}`
+      // Build exercise detail string
+      let detail = log.exercise_name || ''
+      const wt = log.weight_time
+      if (wt && wt !== 'NaN' && wt !== 'nan') {
+        detail += ` @ ${wt}`
+      }
+      if (log.sets && log.reps) detail += ` ${log.sets}x${log.reps}`
+      else if (log.reps) detail += ` x ${log.reps}`
 
-      // Build details with weights/reps
-      const details = logs
-        .filter(log => log.exercise_name)
-        .slice(0, 5)
-        .map(log => {
-          let detail = log.exercise_name || ''
-          // Only show weight_time if it's a valid value (not NaN string, not empty)
-          const wt = log.weight_time
-          if (wt && wt !== 'NaN' && wt !== 'nan') {
-            detail += ` @ ${wt}`
-          }
-          if (log.sets && log.reps) detail += ` ${log.sets}x${log.reps}`
-          else if (log.reps) detail += ` x ${log.reps}`
-          return detail
-        })
-
-      activityItems.push({
-        id: `perf-${key}`,
-        type: 'btn',
-        userId,
-        userName: user?.name || null,
-        userEmail: user?.email || null,
-        userTier: user?.tier || null,
-        timestamp: new Date(mostRecent).toISOString(),
-        block,
-        summary,
-        details
-      })
+      if (detail) {
+        entry.blocks.get(blockName)!.push(detail)
+      }
     })
 
-    // Add Engine sessions with performance data
+    // Process Engine sessions
     engineSessions?.forEach(session => {
       if (!session.user_id) return
       const user = usersMap.get(session.user_id)
-
-      // Apply tier filter
       if (tierFilter && user?.tier !== tierFilter) return
-
-      // Apply user filter
       if (userIdFilter && session.user_id !== parseInt(userIdFilter)) return
 
-      // Build details with performance metrics
-      const details: string[] = []
-      if (session.actual_pace) {
-        details.push(`Pace: ${session.actual_pace}`)
+      // Look up week/day from program_metcons mapping
+      const mapping = session.program_id && session.program_day_number
+        ? engineWeekDayMap.get(`${session.program_id}-${session.program_day_number}`)
+        : null
+
+      if (!mapping) return  // Can't place this session in a training day
+
+      const ts = new Date(session.date).getTime()
+      const entry = getOrCreateDay(session.user_id, mapping.week, mapping.day, ts)
+
+      if (!entry.blocks.has('ENGINE')) {
+        entry.blocks.set('ENGINE', [])
       }
-      if (session.total_output) {
+
+      const details: string[] = []
+      if (session.day_type) {
+        details.push(session.day_type.charAt(0).toUpperCase() + session.day_type.slice(1).replace(/_/g, ' '))
+      }
+      if (session.modality) {
+        details.push(session.modality.replace(/_/g, ' '))
+      }
+      if (session.actual_pace && session.target_pace) {
+        const pct = ((session.actual_pace / session.target_pace) * 100).toFixed(0)
+        details.push(`${pct}% of target pace`)
+      } else if (session.total_output) {
         details.push(`Output: ${session.total_output}`)
       }
-      if (session.performance_ratio) {
-        const pct = (session.performance_ratio * 100).toFixed(0)
-        details.push(`Performance: ${pct}%`)
-      }
 
-      activityItems.push({
-        id: `engine-${session.id}`,
-        type: 'engine',
-        userId: session.user_id,
-        userName: user?.name || null,
-        userEmail: user?.email || null,
-        userTier: user?.tier || null,
-        timestamp: new Date(session.date).toISOString(),
-        block: 'ENGINE',
-        summary: `ENGINE: ${session.day_type || 'Workout'} session`,
-        details
-      })
+      entry.blocks.get('ENGINE')!.push(details.join(' — '))
     })
 
-    // Add MetCon completions
+    // Process MetCon completions
     metconCompletions?.forEach(mc => {
       const mcUserId = (mc.programs as any)?.user_id
-      if (!mcUserId) return
+      if (!mcUserId || !mc.week || !mc.day) return
       const user = usersMap.get(mcUserId)
-
-      // Apply tier filter
       if (tierFilter && user?.tier !== tierFilter) return
-
-      // Apply user filter
       if (userIdFilter && mcUserId !== parseInt(userIdFilter)) return
 
+      const ts = new Date(mc.completed_at).getTime()
+      const entry = getOrCreateDay(mcUserId, mc.week, mc.day, ts)
+
+      if (!entry.blocks.has('METCON')) {
+        entry.blocks.set('METCON', [])
+      }
+
       const workoutId = (mc.metcons as any)?.workout_id || ''
-      const timeRange = (mc.metcons as any)?.time_range || ''
       const format = (mc.metcons as any)?.format || ''
-      const tier = mc.performance_tier || ''
+      const label = workoutId || format || 'MetCon'
+      const parts: string[] = [label]
+      if (mc.user_score) parts.push(`Score: ${mc.user_score}`)
+      if (mc.percentile) parts.push(`${mc.percentile}th percentile`)
+      if (mc.performance_tier) parts.push(mc.performance_tier)
 
-      // Build summary - use workout_id as identifier, or format
-      const metconLabel = workoutId || format || 'MetCon'
+      entry.blocks.get('METCON')!.push(parts.join(' — '))
+    })
 
-      // Build details
-      const details: string[] = []
-      if (mc.user_score) {
-        details.push(`Score: ${mc.user_score}`)
+    // Convert to ActivityItem array
+    const activityItems: ActivityItem[] = []
+
+    trainingDays.forEach((entry, key) => {
+      const user = usersMap.get(entry.userId)
+
+      // Apply block filter: only include days that have the filtered block
+      if (blockFilter && !entry.blocks.has(blockFilter)) return
+
+      // Build blocks array in display order
+      const blockOrder = ['SKILLS', 'TECHNICAL WORK', 'STRENGTH AND POWER', 'ACCESSORIES', 'ENGINE', 'METCON']
+      const blocks: BlockDetail[] = []
+      for (const blockName of blockOrder) {
+        const exercises = entry.blocks.get(blockName)
+        if (exercises && exercises.length > 0) {
+          blocks.push({ blockName, exercises })
+        }
       }
-      if (mc.percentile) {
-        details.push(`Percentile: ${mc.percentile}%`)
-      }
-      if (tier) {
-        details.push(`Tier: ${tier}`)
-      }
-      if (timeRange) {
-        details.push(`Time: ${timeRange}`)
-      }
+      // Add any blocks not in the predefined order
+      entry.blocks.forEach((exercises, blockName) => {
+        if (!blockOrder.includes(blockName) && exercises.length > 0) {
+          blocks.push({ blockName, exercises })
+        }
+      })
+
+      const blockNames = blocks.map(b => b.blockName)
+      const summary = `Week ${entry.week}, Day ${entry.day}: ${blockNames.join(', ')}`
 
       activityItems.push({
-        id: `metcon-${mc.id}`,
-        type: 'metcon',
-        userId: mcUserId,
+        id: key,
+        userId: entry.userId,
         userName: user?.name || null,
         userEmail: user?.email || null,
         userTier: user?.tier || null,
-        timestamp: mc.completed_at,
-        block: 'METCON',
-        summary: `METCON: ${metconLabel}`,
-        details
+        timestamp: new Date(entry.timestamp).toISOString(),
+        week: entry.week,
+        day: entry.day,
+        blocks,
+        summary
       })
     })
 
@@ -345,16 +370,6 @@ export async function GET(request: NextRequest) {
         hours,
         totalItems: activityItems.length,
         returnedItems: limitedItems.length
-      },
-      debug: {
-        perfLogsCount: perfLogs?.length ?? 0,
-        perfError: perfError?.message || null,
-        engineSessionsCount: engineSessions?.length ?? 0,
-        engineError: engineError?.message || null,
-        metconCount: metconCompletions?.length ?? 0,
-        metconError: metconError?.message || null,
-        uniqueUserIds: userIds.size,
-        sinceDate: sinceDate.toISOString()
       }
     })
 
