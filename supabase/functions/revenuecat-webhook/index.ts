@@ -102,7 +102,7 @@ serve(async (req) => {
             .single()
 
           if (existing) {
-            // Update existing subscription
+            // Update existing subscription (clear canceled_at for returning users)
             await supabase
               .from('subscriptions')
               .update({
@@ -111,6 +111,7 @@ serve(async (req) => {
                 current_period_end: expiresAt,
                 billing_interval: billingInterval,
                 is_trial_period: isTrialPeriod,
+                canceled_at: null,
                 updated_at: new Date().toISOString(),
               })
               .eq('id', existing.id)
@@ -174,6 +175,25 @@ serve(async (req) => {
         await supabase
           .from('users')
           .update({ subscription_status: 'canceled' })
+          .eq('id', userId)
+
+        break
+      }
+
+      case 'UNCANCELLATION': {
+        // User reverted their cancellation before period ended
+        await supabase
+          .from('subscriptions')
+          .update({
+            canceled_at: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId)
+          .eq('revenuecat_subscriber_id', appUserId)
+
+        await supabase
+          .from('users')
+          .update({ subscription_status: 'active' })
           .eq('id', userId)
 
         break
