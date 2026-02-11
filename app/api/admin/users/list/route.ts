@@ -220,6 +220,8 @@ export async function GET(request: NextRequest) {
             return days !== null && days > 14 && days <= 30
           case '30':
             return days === null || days > 30
+          case '7+':
+            return days === null || days > 7
           default:
             return true
         }
