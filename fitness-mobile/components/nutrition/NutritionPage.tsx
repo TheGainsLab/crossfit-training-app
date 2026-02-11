@@ -991,64 +991,39 @@ function DailySummaryCard({ summary, logs, onDelete, bmr, tdee }: { summary: Dai
         </TouchableOpacity>
       </View>
 
-      {/* BMR / TDEE and Progress Bar */}
-      {(bmr || tdee) && (
+      {/* Progress Bar with BMR/TDEE markers */}
+      {tdee && (
         <View style={styles.bmrSection}>
-          <View style={styles.bmrHeaderRow}>
-            <View>
-              {bmr && (
-                <>
-                  <Text style={styles.bmrLabel}>BMR</Text>
-                  <Text style={styles.bmrValue}>{Math.round(bmr)} kcal</Text>
-                </>
-              )}
-              {tdee && (
-                <>
-                  <Text style={[styles.bmrLabel, { marginTop: bmr ? 8 : 0 }]}>TDEE</Text>
-                  <Text style={[styles.bmrValue, { color: '#2563EB' }]}>{Math.round(tdee)} kcal</Text>
-                </>
-              )}
-            </View>
-            <View style={styles.bmrIntakeInfo}>
-              <Text style={styles.bmrIntakeLabel}>Today's Intake</Text>
-              <Text style={styles.bmrIntakeValue}>{Math.round(calories)} kcal</Text>
-              {tdee && (
-                <Text style={styles.bmrIntakePercentage}>
-                  {Math.round(tdeeProgressPercentage)}% of TDEE
-                </Text>
-              )}
-            </View>
+          <View style={styles.bmrProgressContainer}>
+            <View
+              style={[
+                styles.bmrProgressBar,
+                {
+                  width: `${tdeeProgressPercentage}%`,
+                  backgroundColor: tdeeProgressPercentage > 100 ? '#F59E0B' : '#10B981'
+                }
+              ]}
+            />
+            {bmr && bmrMarkerPosition > 0 && (
+              <View style={{ position: 'absolute', left: `${bmrMarkerPosition}%`, top: -3, bottom: -3, width: 2, backgroundColor: '#6B7280', borderRadius: 1 }} />
+            )}
           </View>
-          {tdee && (
-            <>
-              <View style={styles.bmrProgressContainer}>
-                <View
-                  style={[
-                    styles.bmrProgressBar,
-                    {
-                      width: `${tdeeProgressPercentage}%`,
-                      backgroundColor: tdeeProgressPercentage > 100 ? '#F59E0B' : '#10B981'
-                    }
-                  ]}
-                />
-                {bmr && bmrMarkerPosition > 0 && (
-                  <View style={{ position: 'absolute', left: `${bmrMarkerPosition}%`, top: -2, bottom: -2, width: 2, backgroundColor: '#6B7280', borderRadius: 1 }} />
-                )}
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                <Text style={styles.bmrProgressText}>
-                  {calories >= tdee
-                    ? `${Math.round(calories - tdee)} kcal above TDEE`
-                    : `${Math.round(tdee - calories)} kcal below TDEE`}
-                </Text>
-                {bmr && (
-                  <Text style={[styles.bmrProgressText, { color: '#9CA3AF' }]}>
-                    BMR
-                  </Text>
-                )}
-              </View>
-            </>
-          )}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+            <Text style={styles.bmrAxisLabel}>0</Text>
+            {bmr && bmrMarkerPosition > 0 && (
+              <Text style={[styles.bmrAxisLabel, { position: 'absolute', left: `${bmrMarkerPosition}%`, transform: [{ translateX: -10 }] }]}>
+                BMR{'\n'}{Math.round(bmr).toLocaleString()}
+              </Text>
+            )}
+            <Text style={[styles.bmrAxisLabel, { textAlign: 'right' }]}>
+              TDEE{'\n'}{Math.round(tdee).toLocaleString()}
+            </Text>
+          </View>
+          <Text style={styles.bmrBelowTdee}>
+            {calories >= tdee
+              ? `${Math.round(calories - tdee).toLocaleString()} kcal above TDEE`
+              : `${Math.round(tdee - calories).toLocaleString()} kcal below TDEE`}
+          </Text>
         </View>
       )}
       
@@ -1181,59 +1156,28 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  bmrHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  bmrLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  bmrValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  bmrIntakeInfo: {
-    alignItems: 'flex-end',
-  },
-  bmrIntakeLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#6B7280',
-    marginBottom: 2,
-  },
-  bmrIntakeValue: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FE5858',
-  },
-  bmrIntakePercentage: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 2,
-  },
   bmrProgressContainer: {
-    height: 12,
+    height: 14,
     backgroundColor: '#E5E7EB',
-    borderRadius: 6,
-    marginTop: 8,
-    marginBottom: 6,
+    borderRadius: 7,
     overflow: 'hidden',
   },
   bmrProgressBar: {
     height: '100%',
-    borderRadius: 6,
+    borderRadius: 7,
   },
-  bmrProgressText: {
-    fontSize: 12,
+  bmrAxisLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
+    lineHeight: 14,
+  },
+  bmrBelowTdee: {
+    fontSize: 13,
+    fontWeight: '600',
     color: '#6B7280',
     textAlign: 'center',
+    marginTop: 12,
   },
   logListContainer: { marginTop: 8 },
   filterContainer: { marginBottom: 12 },
