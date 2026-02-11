@@ -117,7 +117,7 @@ export default function AdminDashboardPage() {
       {/* Active Programs */}
       {!loading && programs.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Programs</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Subscriptions</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {programs.map((program, i) => (
               <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
