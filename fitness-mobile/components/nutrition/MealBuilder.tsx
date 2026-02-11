@@ -21,7 +21,6 @@ interface MealBuilderProps {
   selectedMealType: string | null
   onSave: (template: MealTemplate) => void
   onCancel: () => void
-  onAddFood: () => void
 }
 
 // Internal view states for swap-out pattern (no nested modals)
@@ -33,7 +32,6 @@ export default function MealBuilder({
   selectedMealType,
   onSave,
   onCancel,
-  onAddFood
 }: MealBuilderProps) {
   const [template, setTemplate] = useState<MealTemplate>(
     initialTemplate || {

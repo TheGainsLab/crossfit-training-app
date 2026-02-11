@@ -26,6 +26,7 @@ import PhotoResultSlider from '@/components/nutrition/PhotoResultSlider'
 // Swap-out screen components (prevent iOS modal stacking issues)
 import FoodLoggingScreen from '@/components/nutrition/FoodLoggingScreen'
 import MealBuilderScreen from '@/components/nutrition/MealBuilderScreen'
+import FoodSelectionView from '@/components/nutrition/FoodSelectionView'
 
 // TypeScript interfaces
 interface FoodEntry {
@@ -90,24 +91,6 @@ interface UserProfile {
   [key: string]: unknown
 }
 
-interface FoodSelection {
-  food_id?: string
-  food_name?: string
-  _completeNutritionData?: {
-    food?: unknown
-    entry_data?: {
-      food_id?: string
-      food_name?: string
-      [key: string]: unknown
-    }
-    matched_serving?: unknown
-    available_servings?: unknown[]
-    alternatives?: unknown[]
-    [key: string]: unknown
-  }
-  [key: string]: unknown
-}
-
 interface ImageRecognitionFood {
   found: boolean
   entry_data: {
@@ -162,6 +145,7 @@ export default function NutritionPage() {
   const [showMealBuilderScreen, setShowMealBuilderScreen] = useState(false)
   const [barcodeScannerVisible, setBarcodeScannerVisible] = useState(false)
   const [barcodeScanning, setBarcodeScanning] = useState(false)
+  const [barcodeResult, setBarcodeResult] = useState<{ foodId: string; foodName: string } | null>(null)
   const [imageRecognitionLoading, setImageRecognitionLoading] = useState(false)
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
     visible: boolean
@@ -175,7 +159,6 @@ export default function NutritionPage() {
   }>({ visible: false, templateId: null, templateName: null })
 
   // Search and food queue state
-  const [foodQueue, setFoodQueue] = useState<any[]>([])
   const [refreshKey, setRefreshKey] = useState(0)
   const [photoFoods, setPhotoFoods] = useState<any[]>([])
   const [showPhotoReview, setShowPhotoReview] = useState(false)
@@ -331,34 +314,6 @@ export default function NutritionPage() {
     loadMealTemplates()
     setShowMealBuilder(false)
     setCurrentMeal(null)
-  }
-
-  const handleAddFood = () => {
-    setShowFoodSelector(true)
-  }
-
-  const handleFoodSelected = (food: FoodSelection) => {
-    const foodId = food.food_id || food._completeNutritionData?.entry_data?.food_id
-    const foodName = food.food_name || food._completeNutritionData?.entry_data?.food_name
-    if (!foodId || !foodName) {
-      Alert.alert('Error', 'Invalid food data')
-      return
-    }
-    setSelectedFoodForDetails({ foodId, foodName })
-    setShowFoodSelector(true)
-  }
-
-  const processNextFoodInQueue = () => {
-    if (foodQueue.length > 0) {
-      const nextFood = foodQueue[0]
-      setFoodQueue(prev => prev.slice(1))
-      handleFoodSelected(nextFood)
-    } else {
-      setShowFoodSelector(false)
-      setSelectedFoodForDetails({ foodId: null, foodName: null })
-      setRefreshKey(prev => prev + 1)
-      setSelectedMealType(null)
-    }
   }
 
   const loadUser = async () => {
@@ -586,6 +541,9 @@ export default function NutritionPage() {
           const baseProtein = parseFloat(serving?.protein || '0')
           const baseCarbs = parseFloat(serving?.carbohydrate || '0')
           const baseFat = parseFloat(serving?.fat || '0')
+          const baseFiber = parseFloat(serving?.fiber || '0')
+          const baseSugar = parseFloat(serving?.sugar || '0')
+          const baseSodium = parseFloat(serving?.sodium || '0')
 
           // Extract actual serving weight from metric_serving_amount or serving_description
           let servingWeightInGrams: number | null = null
@@ -617,6 +575,9 @@ export default function NutritionPage() {
                 protein: baseProtein / servingWeightInOz,
                 carbohydrate: baseCarbs / servingWeightInOz,
                 fat: baseFat / servingWeightInOz,
+                fiber: baseFiber / servingWeightInOz,
+                sugar: baseSugar / servingWeightInOz,
+                sodium: baseSodium / servingWeightInOz,
               }
             } else {
               // Per 100g
@@ -625,6 +586,9 @@ export default function NutritionPage() {
                 protein: (baseProtein / servingWeightInGrams) * 100,
                 carbohydrate: (baseCarbs / servingWeightInGrams) * 100,
                 fat: (baseFat / servingWeightInGrams) * 100,
+                fiber: (baseFiber / servingWeightInGrams) * 100,
+                sugar: (baseSugar / servingWeightInGrams) * 100,
+                sodium: (baseSodium / servingWeightInGrams) * 100,
               }
             }
           } else {
@@ -634,6 +598,9 @@ export default function NutritionPage() {
               protein: baseProtein,
               carbohydrate: baseCarbs,
               fat: baseFat,
+              fiber: baseFiber,
+              sugar: baseSugar,
+              sodium: baseSodium,
             }
           }
           
@@ -682,7 +649,10 @@ export default function NutritionPage() {
         const finalProtein = food.nutritionPerUnit.protein * food.amount
         const finalCarbs = food.nutritionPerUnit.carbohydrate * food.amount
         const finalFat = food.nutritionPerUnit.fat * food.amount
-        
+        const finalFiber = (food.nutritionPerUnit.fiber || 0) * food.amount
+        const finalSugar = (food.nutritionPerUnit.sugar || 0) * food.amount
+        const finalSodium = (food.nutritionPerUnit.sodium || 0) * food.amount
+
         await supabase.from('food_entries').insert({
           user_id: userId,
           food_id: food.entry_data.food_id,
@@ -694,9 +664,9 @@ export default function NutritionPage() {
           protein: finalProtein,
           carbohydrate: finalCarbs,
           fat: finalFat,
-          fiber: 0,
-          sugar: 0,
-          sodium: 0,
+          fiber: finalFiber,
+          sugar: finalSugar,
+          sodium: finalSodium,
           meal_type: mealType,
           logged_at: new Date().toISOString(),
         } as any)
@@ -744,9 +714,9 @@ export default function NutritionPage() {
       const { data: barcodeData, error: barcodeError } = await supabase.functions.invoke('nutrition-barcode', { body: { barcode: data, barcodeType: typeMap[type] || 'UPC_A' } })
       if (barcodeError) throw barcodeError
       if (barcodeData?.success && barcodeData?.data?.found) {
-        handleFoodSelected({
-          food_id: barcodeData.data.cache_data.fatsecret_id, food_name: barcodeData.data.cache_data.name, brand_name: barcodeData.data.cache_data.brand_name, food_type: barcodeData.data.cache_data.food_type,
-          _completeNutritionData: barcodeData.data.cache_data.nutrition_data, _entryData: barcodeData.data.entry_data, _matchedServing: barcodeData.data.entry_data, _availableServings: barcodeData.data.available_servings,
+        setBarcodeResult({
+          foodId: barcodeData.data.cache_data.fatsecret_id,
+          foodName: barcodeData.data.cache_data.name,
         })
       } else Alert.alert('Not Found', `Could not find product with barcode: ${data}`)
     } catch (error) {
@@ -769,8 +739,6 @@ export default function NutritionPage() {
       if (insertError) throw insertError
       Alert.alert('Success', 'Food logged successfully!')
       await loadDailyData()
-      if (foodQueue.length > 0) processNextFoodInQueue()
-      else { setShowFoodSelector(false); setSelectedFoodForDetails({ foodId: null, foodName: null }) }
     } catch (error) {
       Alert.alert('Error', 'Failed to log food')
     }
@@ -874,7 +842,10 @@ export default function NutritionPage() {
   if (showFrequentFoods) {
     return (
       <FrequentFoodsScreen
-        onBack={() => setShowFrequentFoods(false)}
+        onBack={() => {
+          setShowFrequentFoods(false)
+          setSelectedMealType(null)
+        }}
         mealType={selectedMealType}
         onFoodLogged={() => setRefreshKey(k => k + 1)}
       />
@@ -894,6 +865,26 @@ export default function NutritionPage() {
     )
   }
 
+  // Show barcode result for serving selection
+  if (barcodeResult) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <FoodSelectionView
+          foodId={barcodeResult.foodId}
+          foodName={barcodeResult.foodName}
+          onBack={() => {
+            setBarcodeResult(null)
+            setSelectedMealType(null)
+          }}
+          onAdd={async (foodData) => {
+            await handleLogFoodEntry(foodData)
+            setBarcodeResult(null)
+          }}
+        />
+      </SafeAreaView>
+    )
+  }
+
   // Show MealBuilder for creating/editing favorite templates (swap-out screen, not modal)
   if (showMealBuilder) {
     return (
@@ -905,14 +896,20 @@ export default function NutritionPage() {
         onCancel={() => {
           setShowMealBuilder(false)
           setCurrentMeal(null)
+          setSelectedMealType(null)
         }}
-        onAddFood={handleAddFood}
       />
     )
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {imageRecognitionLoading && (
+        <View style={styles.imageRecognitionOverlay}>
+          <ActivityIndicator size="large" color="#FE5858" />
+          <Text style={styles.imageRecognitionText}>Analyzing photo...</Text>
+        </View>
+      )}
       <DailySummaryCard summary={dailySummary} logs={todayLogs} onDelete={(id) => setDeleteConfirmModal({ visible: true, entryId: id, entryName: todayLogs.find(l => l.id === id)?.food_name || '' })} bmr={bmr} tdee={tdee} />
       <View style={styles.contentArea}>
         <LoggingInterface
@@ -994,64 +991,39 @@ function DailySummaryCard({ summary, logs, onDelete, bmr, tdee }: { summary: Dai
         </TouchableOpacity>
       </View>
 
-      {/* BMR / TDEE and Progress Bar */}
-      {(bmr || tdee) && (
+      {/* Progress Bar with BMR/TDEE markers */}
+      {tdee && (
         <View style={styles.bmrSection}>
-          <View style={styles.bmrHeaderRow}>
-            <View>
-              {bmr && (
-                <>
-                  <Text style={styles.bmrLabel}>BMR</Text>
-                  <Text style={styles.bmrValue}>{Math.round(bmr)} kcal</Text>
-                </>
-              )}
-              {tdee && (
-                <>
-                  <Text style={[styles.bmrLabel, { marginTop: bmr ? 8 : 0 }]}>TDEE</Text>
-                  <Text style={[styles.bmrValue, { color: '#2563EB' }]}>{Math.round(tdee)} kcal</Text>
-                </>
-              )}
-            </View>
-            <View style={styles.bmrIntakeInfo}>
-              <Text style={styles.bmrIntakeLabel}>Today's Intake</Text>
-              <Text style={styles.bmrIntakeValue}>{Math.round(calories)} kcal</Text>
-              {tdee && (
-                <Text style={styles.bmrIntakePercentage}>
-                  {Math.round(tdeeProgressPercentage)}% of TDEE
-                </Text>
-              )}
-            </View>
+          <View style={styles.bmrProgressContainer}>
+            <View
+              style={[
+                styles.bmrProgressBar,
+                {
+                  width: `${tdeeProgressPercentage}%`,
+                  backgroundColor: tdeeProgressPercentage > 100 ? '#F59E0B' : '#10B981'
+                }
+              ]}
+            />
+            {bmr && bmrMarkerPosition > 0 && (
+              <View style={{ position: 'absolute', left: `${bmrMarkerPosition}%`, top: -3, bottom: -3, width: 2, backgroundColor: '#6B7280', borderRadius: 1 }} />
+            )}
           </View>
-          {tdee && (
-            <>
-              <View style={styles.bmrProgressContainer}>
-                <View
-                  style={[
-                    styles.bmrProgressBar,
-                    {
-                      width: `${tdeeProgressPercentage}%`,
-                      backgroundColor: tdeeProgressPercentage > 100 ? '#F59E0B' : '#10B981'
-                    }
-                  ]}
-                />
-                {bmr && bmrMarkerPosition > 0 && (
-                  <View style={{ position: 'absolute', left: `${bmrMarkerPosition}%`, top: -2, bottom: -2, width: 2, backgroundColor: '#6B7280', borderRadius: 1 }} />
-                )}
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                <Text style={styles.bmrProgressText}>
-                  {calories >= tdee
-                    ? `${Math.round(calories - tdee)} kcal above TDEE`
-                    : `${Math.round(tdee - calories)} kcal below TDEE`}
-                </Text>
-                {bmr && (
-                  <Text style={[styles.bmrProgressText, { color: '#9CA3AF' }]}>
-                    BMR
-                  </Text>
-                )}
-              </View>
-            </>
-          )}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+            <Text style={styles.bmrAxisLabel}>0</Text>
+            {bmr && bmrMarkerPosition > 0 && (
+              <Text style={[styles.bmrAxisLabel, { position: 'absolute', left: `${bmrMarkerPosition}%`, transform: [{ translateX: -10 }] }]}>
+                BMR{'\n'}{Math.round(bmr).toLocaleString()}
+              </Text>
+            )}
+            <Text style={[styles.bmrAxisLabel, { textAlign: 'right' }]}>
+              TDEE{'\n'}{Math.round(tdee).toLocaleString()}
+            </Text>
+          </View>
+          <Text style={styles.bmrBelowTdee}>
+            {calories >= tdee
+              ? `${Math.round(calories - tdee).toLocaleString()} kcal above TDEE`
+              : `${Math.round(tdee - calories).toLocaleString()} kcal below TDEE`}
+          </Text>
         </View>
       )}
       
@@ -1184,59 +1156,28 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  bmrHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  bmrLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  bmrValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  bmrIntakeInfo: {
-    alignItems: 'flex-end',
-  },
-  bmrIntakeLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#6B7280',
-    marginBottom: 2,
-  },
-  bmrIntakeValue: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FE5858',
-  },
-  bmrIntakePercentage: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 2,
-  },
   bmrProgressContainer: {
-    height: 12,
+    height: 14,
     backgroundColor: '#E5E7EB',
-    borderRadius: 6,
-    marginTop: 8,
-    marginBottom: 6,
+    borderRadius: 7,
     overflow: 'hidden',
   },
   bmrProgressBar: {
     height: '100%',
-    borderRadius: 6,
+    borderRadius: 7,
   },
-  bmrProgressText: {
-    fontSize: 12,
+  bmrAxisLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
+    lineHeight: 14,
+  },
+  bmrBelowTdee: {
+    fontSize: 13,
+    fontWeight: '600',
     color: '#6B7280',
     textAlign: 'center',
+    marginTop: 12,
   },
   logListContainer: { marginTop: 8 },
   filterContainer: { marginBottom: 12 },
@@ -1273,4 +1214,17 @@ const styles = StyleSheet.create({
   barcodeScannerPermissionButton: { backgroundColor: '#FE5858', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
   barcodeScannerPermissionButtonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
   emptyText: { fontSize: 16, color: '#666', textAlign: 'center', marginTop: 20 },
+  imageRecognitionOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  imageRecognitionText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
 })
