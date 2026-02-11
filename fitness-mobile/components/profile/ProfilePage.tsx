@@ -437,6 +437,7 @@ export default function ProfilePage() {
   const [userId, setUserId] = useState<number | null>(null)
   const [showFrequentFoods, setShowFrequentFoods] = useState(false)
   const [frequentFoodsCount, setFrequentFoodsCount] = useState(0)
+  const [trainingDaysPerWeek, setTrainingDaysPerWeek] = useState<number>(5)
 
   // Reload profile when screen comes into focus (e.g., returning from Settings)
   useFocusEffect(
@@ -512,6 +513,16 @@ export default function ProfilePage() {
       setHeight((userData as any).height)
       setAge((userData as any).age)
       setIntakeStatus((userData as any).intake_status)
+
+      // Get training_days_per_week for TDEE calculation
+      const { data: prefsData } = await supabase
+        .from('user_preferences')
+        .select('training_days_per_week')
+        .eq('user_id', userIdValue)
+        .single()
+      if (prefsData && typeof (prefsData as any).training_days_per_week === 'number') {
+        setTrainingDaysPerWeek((prefsData as any).training_days_per_week)
+      }
 
       // Get profile data
       const { data: profileData } = await supabase
@@ -675,18 +686,6 @@ export default function ProfilePage() {
     return `${weight} ${unit}`
   }
 
-  const calculateBMI = (): number | null => {
-    if (!profile?.user_summary.body_weight || !height) return null
-    const weight = profile.user_summary.body_weight
-    const isMetric = profile.user_summary.units.includes('kg')
-    
-    const weightKg = isMetric ? weight : weight * 0.453592
-    const heightM = isMetric ? height / 100 : height * 0.0254
-    
-    if (heightM === 0) return null
-    return parseFloat((weightKg / (heightM * heightM)).toFixed(1))
-  }
-
   const calculateBMR = (): number | null => {
     if (!profile?.user_summary.body_weight || !height || !age) return null
     const weight = profile.user_summary.body_weight
@@ -700,6 +699,19 @@ export default function ProfilePage() {
     const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + s
     
     return Math.round(bmr)
+  }
+
+  const getActivityMultiplier = (days: number): number => {
+    if (days <= 2) return 1.375
+    if (days <= 4) return 1.55
+    if (days <= 6) return 1.725
+    return 1.9
+  }
+
+  const calculateTDEE = (): number | null => {
+    const bmr = calculateBMR()
+    if (!bmr) return null
+    return Math.round(bmr * getActivityMultiplier(trainingDaysPerWeek))
   }
 
   const getSkillLevel = (skillName: string): string => {
@@ -1018,16 +1030,16 @@ export default function ProfilePage() {
             <Text style={styles.headerSubtitle}>
               {profile.user_summary.name} • {new Date(profile.generated_at).toLocaleDateString()}
             </Text>
-            {(calculateBMI() !== null || calculateBMR() !== null) && (
+            {(calculateTDEE() !== null || calculateBMR() !== null) && (
               <View style={styles.bmiBmrContainer}>
-                {calculateBMI() !== null && (
-                  <Text style={styles.bmiBmrText}>
-                    <Text style={styles.bmiBmrLabel}>BMI:</Text> {calculateBMI()}
-                  </Text>
-                )}
                 {calculateBMR() !== null && (
                   <Text style={styles.bmiBmrText}>
                     <Text style={styles.bmiBmrLabel}>BMR:</Text> {calculateBMR()} kcal/day
+                  </Text>
+                )}
+                {calculateTDEE() !== null && (
+                  <Text style={styles.bmiBmrText}>
+                    <Text style={styles.bmiBmrLabel}>TDEE:</Text> {calculateTDEE()} kcal/day
                   </Text>
                 )}
               </View>
