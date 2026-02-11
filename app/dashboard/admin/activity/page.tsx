@@ -4,17 +4,22 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Clock, User, MessageSquare, ChevronDown, ChevronUp, RefreshCw, Search, X, Filter } from 'lucide-react'
 
+interface BlockDetail {
+  blockName: string
+  exercises: string[]
+}
+
 interface ActivityItem {
   id: string
-  type: 'btn' | 'engine'
   userId: number
   userName: string | null
   userEmail: string | null
   userTier: string | null
   timestamp: string
-  block: string | null
+  week: number
+  day: number
+  blocks: BlockDetail[]
   summary: string
-  details: string[]
 }
 
 interface UserSearchResult {
@@ -60,8 +65,29 @@ function getTierColor(tier: string | null): string {
   }
 }
 
+function getBlockColor(blockName: string): string {
+  switch (blockName) {
+    case 'SKILLS':
+      return 'text-blue-700 bg-blue-50'
+    case 'TECHNICAL WORK':
+      return 'text-cyan-700 bg-cyan-50'
+    case 'STRENGTH AND POWER':
+      return 'text-red-700 bg-red-50'
+    case 'ACCESSORIES':
+      return 'text-orange-700 bg-orange-50'
+    case 'ENGINE':
+      return 'text-green-700 bg-green-50'
+    case 'METCON':
+      return 'text-purple-700 bg-purple-50'
+    default:
+      return 'text-gray-700 bg-gray-50'
+  }
+}
+
 function ActivityRow({ item, onSendNote, onFilterUser }: { item: ActivityItem; onSendNote: (item: ActivityItem) => void; onFilterUser: (userId: number) => void }) {
   const [expanded, setExpanded] = useState(false)
+
+  const totalExercises = item.blocks.reduce((sum, b) => sum + b.exercises.length, 0)
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
@@ -93,28 +119,49 @@ function ActivityRow({ item, onSendNote, onFilterUser }: { item: ActivityItem; o
         </div>
       </div>
 
-      {/* Workout Summary */}
+      {/* Training Day Summary */}
       <div className="mt-3 pl-10">
-        <p className="text-sm font-medium text-gray-800">{item.summary}</p>
+        <p className="text-sm font-semibold text-gray-900">
+          Week {item.week}, Day {item.day}
+        </p>
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
+          {item.blocks.map((block) => (
+            <span
+              key={block.blockName}
+              className={`px-2 py-0.5 text-xs font-medium rounded ${getBlockColor(block.blockName)}`}
+            >
+              {block.blockName}
+            </span>
+          ))}
+        </div>
 
         {/* Expandable Details */}
-        {item.details.length > 0 && (
+        {totalExercises > 0 && (
           <div className="mt-2">
             <button
               onClick={() => setExpanded(!expanded)}
               className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
             >
               {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              {expanded ? 'Hide details' : `Show ${item.details.length} exercise${item.details.length > 1 ? 's' : ''}`}
+              {expanded ? 'Hide details' : `Show details (${totalExercises} item${totalExercises > 1 ? 's' : ''})`}
             </button>
             {expanded && (
-              <ul className="mt-2 space-y-1">
-                {item.details.map((detail, i) => (
-                  <li key={i} className="text-xs text-gray-600 pl-2 border-l-2 border-gray-200">
-                    {detail}
-                  </li>
+              <div className="mt-2 space-y-3">
+                {item.blocks.map((block) => (
+                  <div key={block.blockName}>
+                    <p className={`text-xs font-semibold mb-1 ${getBlockColor(block.blockName).split(' ')[0]}`}>
+                      {block.blockName}
+                    </p>
+                    <ul className="space-y-0.5">
+                      {block.exercises.map((exercise, i) => (
+                        <li key={i} className="text-xs text-gray-600 pl-2 border-l-2 border-gray-200">
+                          {exercise}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </div>
         )}
@@ -160,7 +207,6 @@ export default function ActivityPage() {
   const [selectedUserInfo, setSelectedUserInfo] = useState<UserSearchResult | null>(null)
   const [noteModal, setNoteModal] = useState<ActivityItem | null>(null)
   const [noteText, setNoteText] = useState('')
-  const [debug, setDebug] = useState<any>(null)
 
   const fetchActivity = async () => {
     setLoading(true)
@@ -179,7 +225,6 @@ export default function ActivityPage() {
       const data = await res.json()
       if (data.success) {
         setActivity(data.activity)
-        setDebug(data.debug)
       }
     } catch (err) {
       console.error('Failed to fetch activity:', err)
@@ -230,7 +275,6 @@ export default function ActivityPage() {
   }
 
   const handleFilterToUser = (userId: number) => {
-    // Find user info from current activity if available
     const userActivity = activity.find(a => a.userId === userId)
     if (userActivity) {
       setUserFilter(userId)
@@ -296,7 +340,7 @@ export default function ActivityPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Activity Feed</h2>
-          <p className="text-gray-500 mt-1">Recent workout completions from your athletes</p>
+          <p className="text-gray-500 mt-1">Recent training day completions from your athletes</p>
         </div>
         <button
           onClick={fetchActivity}
@@ -362,7 +406,7 @@ export default function ActivityPage() {
               className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral/50"
             />
           </div>
-          
+
           {/* Search Dropdown */}
           {showSearchDropdown && userSearchResults.length > 0 && (
             <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
@@ -390,7 +434,7 @@ export default function ActivityPage() {
         </div>
 
         <div className="flex items-center text-sm text-gray-500">
-          {activity.length} activit{activity.length === 1 ? 'y' : 'ies'}
+          {activity.length} training day{activity.length === 1 ? '' : 's'}
         </div>
       </div>
 
@@ -418,23 +462,6 @@ export default function ActivityPage() {
         </div>
       )}
 
-      {/* Debug Info - Remove before shipping */}
-      {debug && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm">
-          <h4 className="font-semibold text-yellow-800 mb-2">Debug Info (remove before shipping)</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-yellow-700">
-            <div>Performance Logs: <strong>{debug.perfLogsCount}</strong></div>
-            <div>Engine Sessions: <strong>{debug.engineSessionsCount}</strong></div>
-            <div>MetCon Completions: <strong>{debug.metconCount}</strong></div>
-            <div>Unique Users: <strong>{debug.uniqueUserIds}</strong></div>
-            <div>Since: <strong>{new Date(debug.sinceDate).toLocaleDateString()}</strong></div>
-            {debug.perfError && <div className="text-red-600 col-span-2">Perf Error: {debug.perfError}</div>}
-            {debug.engineError && <div className="text-red-600 col-span-2">Engine Error: {debug.engineError}</div>}
-            {debug.metconError && <div className="text-red-600 col-span-2">MetCon Error: {debug.metconError}</div>}
-          </div>
-        </div>
-      )}
-
       {/* Activity List */}
       {loading ? (
         <div className="space-y-4">
@@ -444,7 +471,6 @@ export default function ActivityPage() {
         </div>
       ) : activity.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-          <div className="text-4xl mb-4">📭</div>
           <h3 className="text-lg font-medium text-gray-900">No recent activity</h3>
           <p className="text-gray-500 mt-1">No workouts completed in the selected timeframe</p>
         </div>
@@ -462,7 +488,6 @@ export default function ActivityPage() {
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             {noteSuccess ? (
               <div className="text-center py-4">
-                <div className="text-4xl mb-2">✅</div>
                 <p className="text-lg font-medium text-gray-900">Note Sent!</p>
                 <p className="text-sm text-gray-500 mt-1">
                   {noteModal.userName} will see this in their messages
