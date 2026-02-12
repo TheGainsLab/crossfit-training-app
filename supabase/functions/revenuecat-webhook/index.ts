@@ -36,6 +36,7 @@ serve(async (req) => {
     const appUserId = event.event.app_user_id
     const productId = event.event.product_id
     const entitlements = event.event.entitlements || {}
+    const entitlementIds: string[] = event.event.entitlement_ids || [] // Affected entitlements for non-purchase events
     const store = event.event.store // 'app_store' or 'play_store'
     const platform = store === 'app_store' ? 'ios' : 'android'
 
@@ -108,6 +109,7 @@ serve(async (req) => {
               .update({
                 status: 'active',
                 revenuecat_product_id: productId,
+                current_period_start: new Date().toISOString(),
                 current_period_end: expiresAt,
                 billing_interval: billingInterval,
                 is_trial_period: isTrialPeriod,
@@ -137,17 +139,34 @@ serve(async (req) => {
           }
         }
 
-        // Update users table with subscription tier from first active entitlement
+        // Update users table with subscription tier
+        // Determine tier from product_id (most reliable), fall back to first active entitlement
         if (activeEntitlements.length > 0) {
-          const primaryEntitlement = activeEntitlements[0]
           const tierMap: Record<string, string> = {
             'btn': 'BTN',
             'engine': 'ENGINE',
             'applied_power': 'APPLIED_POWER',
             'competitor': 'PREMIUM'
           }
-          const subscriptionTier = tierMap[primaryEntitlement] || primaryEntitlement.toUpperCase()
-          
+
+          // Match product_id to a known entitlement for precise tier
+          let subscriptionTier: string | null = null
+          if (productId) {
+            const productLower = productId.toLowerCase()
+            for (const [entKey, tierValue] of Object.entries(tierMap)) {
+              if (productLower.includes(entKey)) {
+                subscriptionTier = tierValue
+                break
+              }
+            }
+          }
+
+          // Fallback: use the entitlement that matches the product, or first active
+          if (!subscriptionTier) {
+            const primaryEntitlement = activeEntitlements[0]
+            subscriptionTier = tierMap[primaryEntitlement] || primaryEntitlement.toUpperCase()
+          }
+
           await supabase
             .from('users')
             .update({
@@ -161,8 +180,8 @@ serve(async (req) => {
       }
 
       case 'CANCELLATION': {
-        // Mark subscription as canceled but keep active until period ends
-        await supabase
+        // Mark specific subscription(s) as canceled but keep active until period ends
+        let cancelQuery = supabase
           .from('subscriptions')
           .update({
             canceled_at: new Date().toISOString(),
@@ -171,18 +190,33 @@ serve(async (req) => {
           .eq('user_id', userId)
           .eq('revenuecat_subscriber_id', appUserId)
 
-        // Update users table to reflect cancellation (still active until period ends)
-        await supabase
-          .from('users')
-          .update({ subscription_status: 'canceled' })
-          .eq('id', userId)
+        if (entitlementIds.length > 0) {
+          cancelQuery = cancelQuery.in('entitlement_identifier', entitlementIds)
+        }
+        await cancelQuery
+
+        // Only set user status to 'canceled' if no other non-canceled active subs remain
+        const { data: otherActiveSubs } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .is('canceled_at', null)
+          .limit(1)
+
+        if (!otherActiveSubs || otherActiveSubs.length === 0) {
+          await supabase
+            .from('users')
+            .update({ subscription_status: 'canceled' })
+            .eq('id', userId)
+        }
 
         break
       }
 
       case 'UNCANCELLATION': {
         // User reverted their cancellation before period ended
-        await supabase
+        let uncancelQuery = supabase
           .from('subscriptions')
           .update({
             canceled_at: null,
@@ -191,6 +225,12 @@ serve(async (req) => {
           .eq('user_id', userId)
           .eq('revenuecat_subscriber_id', appUserId)
 
+        if (entitlementIds.length > 0) {
+          uncancelQuery = uncancelQuery.in('entitlement_identifier', entitlementIds)
+        }
+        await uncancelQuery
+
+        // User has at least one non-canceled active sub now, so set status to active
         await supabase
           .from('users')
           .update({ subscription_status: 'active' })
@@ -200,8 +240,8 @@ serve(async (req) => {
       }
 
       case 'EXPIRATION': {
-        // Mark subscription as expired
-        await supabase
+        // Mark only the specific subscription(s) as expired
+        let expireQuery = supabase
           .from('subscriptions')
           .update({
             status: 'expired',
@@ -210,10 +250,15 @@ serve(async (req) => {
           .eq('user_id', userId)
           .eq('revenuecat_subscriber_id', appUserId)
 
+        if (entitlementIds.length > 0) {
+          expireQuery = expireQuery.in('entitlement_identifier', entitlementIds)
+        }
+        await expireQuery
+
         // Check if user has any other active subscriptions before revoking access
         const { data: otherActive } = await supabase
           .from('subscriptions')
-          .select('id')
+          .select('id, entitlement_identifier')
           .eq('user_id', userId)
           .eq('status', 'active')
           .limit(1)
@@ -227,14 +272,30 @@ serve(async (req) => {
               subscription_status: 'expired'
             })
             .eq('id', userId)
+        } else {
+          // User still has other active subs — update tier to reflect remaining subscription
+          const tierMap: Record<string, string> = {
+            'btn': 'BTN',
+            'engine': 'ENGINE',
+            'applied_power': 'APPLIED_POWER',
+            'competitor': 'PREMIUM'
+          }
+          const remainingEntitlement = otherActive[0].entitlement_identifier
+          const remainingTier = tierMap[remainingEntitlement] || remainingEntitlement?.toUpperCase()
+          if (remainingTier) {
+            await supabase
+              .from('users')
+              .update({ subscription_tier: remainingTier })
+              .eq('id', userId)
+          }
         }
 
         break
       }
 
       case 'BILLING_ISSUE': {
-        // Mark subscription as having billing issues
-        await supabase
+        // Mark only the specific subscription(s) as having billing issues
+        let billingQuery = supabase
           .from('subscriptions')
           .update({
             status: 'past_due',
@@ -243,11 +304,25 @@ serve(async (req) => {
           .eq('user_id', userId)
           .eq('revenuecat_subscriber_id', appUserId)
 
-        // Update users table to reflect billing issue
-        await supabase
-          .from('users')
-          .update({ subscription_status: 'past_due' })
-          .eq('id', userId)
+        if (entitlementIds.length > 0) {
+          billingQuery = billingQuery.in('entitlement_identifier', entitlementIds)
+        }
+        await billingQuery
+
+        // Only set user status to past_due if no other active subs remain
+        const { data: otherHealthy } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .limit(1)
+
+        if (!otherHealthy || otherHealthy.length === 0) {
+          await supabase
+            .from('users')
+            .update({ subscription_status: 'past_due' })
+            .eq('id', userId)
+        }
 
         break
       }
