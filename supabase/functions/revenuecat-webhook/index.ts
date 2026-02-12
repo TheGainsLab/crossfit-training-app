@@ -93,49 +93,31 @@ serve(async (req) => {
           if (productId.includes('yearly')) billingInterval = 'yearly'
           else if (productId.includes('quarterly')) billingInterval = 'quarterly'
 
-          // Check if subscription already exists
-          const { data: existing } = await supabase
+          // Upsert subscription to avoid duplicate rows when concurrent
+          // RevenueCat events (e.g. INITIAL_PURCHASE + RENEWAL) fire together.
+          // Conflict key: (revenuecat_subscriber_id, entitlement_identifier)
+          const { error: upsertError } = await supabase
             .from('subscriptions')
-            .select('id')
-            .eq('user_id', userId)
-            .eq('revenuecat_subscriber_id', appUserId)
-            .eq('entitlement_identifier', entitlementId)
-            .single()
+            .upsert({
+              user_id: userId,
+              revenuecat_subscriber_id: appUserId,
+              revenuecat_product_id: productId,
+              entitlement_identifier: entitlementId,
+              plan,
+              status: 'active',
+              platform,
+              store,
+              billing_interval: billingInterval,
+              is_trial_period: isTrialPeriod,
+              subscription_start: purchaseDate,
+              current_period_start: purchaseDate,
+              current_period_end: expiresAt,
+              canceled_at: null, // Clear for returning users
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'revenuecat_subscriber_id,entitlement_identifier' })
 
-          if (existing) {
-            // Update existing subscription (clear canceled_at for returning users)
-            await supabase
-              .from('subscriptions')
-              .update({
-                status: 'active',
-                revenuecat_product_id: productId,
-                current_period_start: new Date().toISOString(),
-                current_period_end: expiresAt,
-                billing_interval: billingInterval,
-                is_trial_period: isTrialPeriod,
-                canceled_at: null,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', existing.id)
-          } else {
-            // Create new subscription
-            await supabase
-              .from('subscriptions')
-              .insert({
-                user_id: userId,
-                revenuecat_subscriber_id: appUserId,
-                revenuecat_product_id: productId,
-                entitlement_identifier: entitlementId,
-                plan,
-                status: 'active',
-                platform,
-                store,
-                billing_interval: billingInterval,
-                is_trial_period: isTrialPeriod,
-                subscription_start: purchaseDate,
-                current_period_start: purchaseDate,
-                current_period_end: expiresAt,
-              })
+          if (upsertError) {
+            console.error('Error upserting RevenueCat subscription:', upsertError)
           }
         }
 
