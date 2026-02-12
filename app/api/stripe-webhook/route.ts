@@ -378,16 +378,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     if (session.subscription) {
       const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
       
-      const { data: existingSubscriptions, error: subCheckError } = await supabase
-        .from('subscriptions')
-        .select('id')
-        .eq('user_id', userId)
-
-      if (subCheckError) {
-        console.error('Error checking subscription:', subCheckError)
-        throw new Error('Failed to check subscription')
-      }
-
       // Determine plan type from price ID
       const priceId = (subscription as any).items.data[0].price.id
       const planType = await getPlanFromPriceId(priceId)
@@ -403,38 +393,20 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         subscription_start: toIsoDate((subscription as any).created),
         current_period_start: toIsoDate((subscription as any).current_period_start),
         current_period_end: toIsoDate((subscription as any).current_period_end),
+        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
 
-      if (existingSubscriptions && existingSubscriptions.length > 0) {
-        // Update existing subscription
-        const { error: subUpdateError } = await supabase
-          .from('subscriptions')
-          .update({
-            ...subscriptionData,
-            created_at: undefined // Don't update created_at
-          })
-          .eq('user_id', userId)
+      // Use upsert to avoid duplicate rows when customer.subscription.created
+      // fires concurrently with checkout.session.completed
+      const { error: subUpsertError } = await supabase
+        .from('subscriptions')
+        .upsert(subscriptionData, { onConflict: 'stripe_subscription_id' })
 
-        if (subUpdateError) {
-          console.error('Error updating subscription:', subUpdateError)
-        } else {
-          console.log('Updated existing subscription with Stripe data')
-        }
+      if (subUpsertError) {
+        console.error('Error upserting subscription:', subUpsertError)
       } else {
-        // Create new subscription
-        const { error: subCreateError } = await supabase
-          .from('subscriptions')
-          .insert({
-            ...subscriptionData,
-            created_at: new Date().toISOString()
-          })
-
-        if (subCreateError) {
-          console.error('Error creating subscription:', subCreateError)
-        } else {
-          console.log('Created new subscription with Stripe data')
-        }
+        console.log('Upserted subscription with Stripe data')
       }
     }
 
@@ -489,14 +461,16 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     updated_at: new Date().toISOString()
   }
 
+  // Use upsert to avoid duplicate rows when checkout.session.completed
+  // and customer.subscription.created fire concurrently
   const { error } = await supabase
     .from('subscriptions')
-    .insert(subscriptionData)
+    .upsert(subscriptionData, { onConflict: 'stripe_subscription_id' })
 
   if (error) {
-    console.error('Error creating subscription:', error)
+    console.error('Error upserting subscription:', error)
   } else {
-    console.log('Successfully created subscription record')
+    console.log('Successfully upserted subscription record')
   }
 }
 
