@@ -353,10 +353,11 @@ export default function NutritionPage() {
           const gender = profile.user_summary?.gender
           const units = profile.user_summary?.units as string | undefined
           
-          if (weight && height && age && typeof weight === 'number' && typeof height === 'number' && typeof age === 'number') {
+          if (weight && height && age && typeof weight === 'number' && typeof height === 'number' && typeof age === 'number'
+            && weight > 0 && height > 0 && age >= 13 && age <= 120) {
             const isMetric = units?.includes('kg') || false
-            const weightKg = isMetric ? weight : weight * 0.453592
-            const heightCm = isMetric ? height : height * 2.54
+            const weightKg = isMetric ? weight : Math.round(weight * 0.453592 * 10) / 10
+            const heightCm = isMetric ? height : Math.round(height * 2.54 * 10) / 10
             const s = gender === 'Male' ? 5 : -161
 
             // Mifflin-St Jeor equation
@@ -373,7 +374,7 @@ export default function NutritionPage() {
             if (prefsData && typeof (prefsData as any).training_days_per_week === 'number') {
               trainingDays = (prefsData as any).training_days_per_week
             }
-            const activityMultiplier = trainingDays <= 2 ? 1.375 : trainingDays <= 4 ? 1.55 : trainingDays <= 6 ? 1.725 : 1.9
+            const activityMultiplier = trainingDays <= 1 ? 1.2 : trainingDays <= 3 ? 1.375 : trainingDays <= 5 ? 1.55 : trainingDays <= 6 ? 1.725 : 1.9
             setTdee(Math.round(calculatedBmr * activityMultiplier))
           }
         }
@@ -409,11 +410,11 @@ export default function NutritionPage() {
         const summary: Partial<DailySummary> = {
           date: new Date().toISOString().split('T')[0],
           total_calories: Math.round(foodLogs.reduce((sum, log) => sum + (log.calories || 0), 0)),
-          total_protein: Math.round(foodLogs.reduce((sum, log) => sum + (log.protein || 0), 0) * 10) / 10,
-          total_carbohydrate: Math.round(foodLogs.reduce((sum, log) => sum + (log.carbohydrate || 0), 0) * 10) / 10,
-          total_fat: Math.round(foodLogs.reduce((sum, log) => sum + (log.fat || 0), 0) * 10) / 10,
-          total_fiber: Math.round(foodLogs.reduce((sum, log) => sum + (log.fiber || 0), 0) * 10) / 10,
-          total_sugar: Math.round(foodLogs.reduce((sum, log) => sum + (log.sugar || 0), 0) * 10) / 10,
+          total_protein: Math.round(foodLogs.reduce((sum, log) => sum + (log.protein || 0), 0)),
+          total_carbohydrate: Math.round(foodLogs.reduce((sum, log) => sum + (log.carbohydrate || 0), 0)),
+          total_fat: Math.round(foodLogs.reduce((sum, log) => sum + (log.fat || 0), 0)),
+          total_fiber: Math.round(foodLogs.reduce((sum, log) => sum + (log.fiber || 0), 0)),
+          total_sugar: Math.round(foodLogs.reduce((sum, log) => sum + (log.sugar || 0), 0)),
           total_sodium: Math.round(foodLogs.reduce((sum, log) => sum + (log.sodium || 0), 0)),
         }
         setDailySummary(summary as DailySummary)

@@ -86,6 +86,27 @@ export async function POST(request: NextRequest) {
       // User record exists (created by trigger or webhook)
       userId = existingUser.id
       console.log('✅ Found existing user record:', userId)
+
+      // Backfill subscription fields if trigger created the row with NULLs.
+      // This runs BEFORE the main update below, because that update preserves
+      // an existing 'active' status (set by webhook) but cannot fill NULLs
+      // without knowing they're NULL.
+      const subscriptionTier = productType ? productType.toUpperCase() : 'PREMIUM'
+      const { error: backfillError } = await supabaseAdmin
+        .from('users')
+        .update({
+          subscription_status: 'pending',
+          subscription_tier: subscriptionTier,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+        .is('subscription_status', null)  // Only fill if still NULL
+
+      if (backfillError) {
+        console.error('⚠️ Backfill update error (non-fatal):', backfillError)
+      } else {
+        console.log('✅ Backfilled subscription fields for trigger-created user')
+      }
     } else {
       // Create user record (Option B: API is the primary creator)
       console.log('📝 Creating new user record with subscription tier:', productType || 'PREMIUM')
@@ -146,8 +167,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Update user record with auth ID, subscription tier, and intake data
-    // This ensures correct subscription tier even if trigger created the user
+    // Update user record with auth ID, subscription tier, and intake data.
+    // Read current status first so we don't overwrite 'active' (set by webhook)
+    // with 'pending' — that race causes users to lose access after paying.
+    const { data: currentUser } = await supabaseAdmin
+      .from('users')
+      .select('subscription_status')
+      .eq('id', userId)
+      .single()
+
+    const currentStatus = currentUser?.subscription_status
+    const shouldPreserveStatus = currentStatus === 'active' || currentStatus === 'trialing'
+
     const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({
@@ -158,8 +189,10 @@ export async function POST(request: NextRequest) {
         units: userData.units,
         ability_level: 'Beginner',
         conditioning_benchmarks: userData.conditioningBenchmarks,
-        subscription_status: 'pending', // Ensure it's set correctly
-        subscription_tier: productType ? productType.toUpperCase() : 'PREMIUM', // Ensure it's set correctly
+        // Preserve 'active'/'trialing' status if webhook already set it;
+        // otherwise set to 'pending' (will be upgraded when subscription is verified below)
+        subscription_status: shouldPreserveStatus ? currentStatus : 'pending',
+        subscription_tier: productType ? productType.toUpperCase() : 'PREMIUM',
         updated_at: new Date().toISOString()
       })
       .eq('id', userId)
@@ -234,16 +267,23 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString()
           }
 
+          // Use upsert to handle the case where the webhook already created
+          // this subscription record (race between webhook and API)
           const { error: subError } = await supabaseAdmin
             .from('subscriptions')
-            .insert(subscriptionData)
+            .upsert(subscriptionData, { onConflict: 'stripe_subscription_id' })
 
           if (subError) {
-            console.error('❌ Error creating subscription record:', subError)
+            console.error('❌ Error upserting subscription record:', subError)
             // Don't fail the whole request - subscription can be created by webhook later
-          } else {
-            console.log('✅ Created subscription record')
-            
+          }
+
+          // Always set user to active when we have a verified Stripe subscription,
+          // regardless of whether the upsert was an insert or update
+          if (!subError) {
+            console.log('✅ Upserted subscription record')
+          }
+          {
             // Update user status to ACTIVE since subscription exists
             await supabaseAdmin
               .from('users')
