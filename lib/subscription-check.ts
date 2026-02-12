@@ -44,11 +44,12 @@ export async function checkSubscriptionAccess(
       return { hasAccess: false }
     }
 
-    // Check if subscription is still valid
+    // Check if subscription is still valid (24h grace window covers webhook delay on renewals)
     const periodEnd = new Date(subscription.current_period_end)
     const now = new Date()
+    const graceMs = 24 * 60 * 60 * 1000
 
-    if (periodEnd < now && subscription.status !== 'active') {
+    if (periodEnd.getTime() + graceMs < now.getTime()) {
       return { hasAccess: false }
     }
 
