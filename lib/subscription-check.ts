@@ -38,7 +38,7 @@ export async function checkSubscriptionAccess(
     const { data: subscription, error } = await query
       .order('created_at', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
     if (error || !subscription) {
       return { hasAccess: false }
