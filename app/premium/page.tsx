@@ -53,56 +53,14 @@ export default function PremiumPage() {
             Six training blocks. Each one personalized. All of them connected.
           </p>
           <div className="max-w-4xl mx-auto space-y-6">
-            <p className="text-lg text-gray-700 mb-8">
-              Premium doesn't hand you a single program and hope it covers enough. Your training is organized into six distinct blocks, each targeting a specific domain — and each one built from your athlete profile.
+            <p className="text-lg text-gray-700">
+              Strong on cleans but still getting the hang of double unders? Your program reflects that. Crushing short workouts but gassing out on longer pieces? Every domain moves at your pace, not a template's.
             </p>
-            
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Skills</h3>
-                <p className="text-lg text-gray-700">
-                  Practice movements off the clock. Pull-ups, jump rope, muscle-ups, and more. Controlled volume focused on building capacity without burning you out.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Technical</h3>
-                <p className="text-lg text-gray-700">
-                  Get better at the movements that matter for your lifts. Pulls, holds, and positioning work that corrects imbalances and tightens execution.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Strength & Power</h3>
-                <p className="text-lg text-gray-700">
-                  The core of your lifting. Sets, reps, and weight prescribed to deliver the specific stimulus each lift needs, with progressions that let each movement advance at its own pace.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Accessories</h3>
-                <p className="text-lg text-gray-700">
-                  General strength builders that raise everything else. Core strength, back strength, overhead strength — selected based on where your profile shows the most opportunity.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">MetCon</h3>
-                <p className="text-lg text-gray-700">
-                  CrossFit-style workouts assigned based on your actual strength and skill levels. Not random. Not generic. Workouts you can execute well and benefit from.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Engine</h3>
-                <p className="text-lg text-gray-700">
-                  Conditioning workouts with targets that adjust automatically based on your past results. Machine learning sets the pace — so your goals stay ahead of you, but within reach.
-                </p>
-              </div>
-            </div>
-
-            <p className="text-lg text-gray-700 mt-8">
-              Every block informs the others. Your skills progress influences your MetCon assignments. Your strength numbers shape your accessories. The platform sees the whole picture because it manages the whole picture.
+            <p className="text-lg text-gray-700">
+              Because your training is personalized, your data becomes more valuable. As you log your results, that data feeds an AI engine that keeps your program aligned with your progress — automatically.
+            </p>
+            <p className="text-lg text-gray-700">
+              There are no black boxes. Your analytics tab shows you exactly what the system sees, so you're never guessing what's driving your training.
             </p>
           </div>
         </div>
