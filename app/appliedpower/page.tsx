@@ -51,16 +51,21 @@ export default function AppliedPowerPage() {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">THE PROBLEM</h2>
-          <p className="text-xl text-gray-700 text-center font-semibold mb-12 max-w-3xl mx-auto">
-            Your gym program can't prioritize your lifts the way you need.
-          </p>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Most CrossFit programming distributes its attention across everything — strength, conditioning, skills, MetCons. That's the point. But it also means your squat gets the same generic prescription as everyone else's, your overhead position never gets the focused work it needs, and your clean is stuck at the same weight it was six months ago.
+              Most strength programs work. Lift heavy, use compound movements, recover well — you'll get stronger. That's not the hard part.
             </p>
             <p className="text-lg text-gray-700">
-              You've probably tried bolting on extra lifting before or after class. Maybe you pulled a strength cycle off the internet. But without a system that tracks your progress across lifts and adjusts accordingly, you're guessing — and guessing doesn't close gaps.
+              The hard part is knowing where your time is best spent. Which lifts need more volume. Where technique is limiting your numbers. When a progression has stalled. Most programs can't answer those questions because they don't have your data.
             </p>
+            <p className="text-lg text-gray-700">
+              Gains AI starts by mapping your lifts — not just your maxes, but how they relate to each other and to your body weight. If your clean is lagging relative to your back squat, that points to a technical gap, not a strength gap. The diagnostic tells us where strength work pays off and where technical work or accessories will move the needle faster.
+            </p>
+            <div className="bg-gray-100 rounded-lg p-8 mt-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Strength Summary + Olympic Lift Ratios screenshot
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -70,39 +75,17 @@ export default function AppliedPowerPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">THREE BLOCKS. ALL CONNECTED. ALL YOURS.</h2>
           <p className="text-xl text-gray-700 text-center font-semibold mb-12 max-w-3xl mx-auto">
-            Focused doesn't mean incomplete.
+            Three blocks. All connected. All yours.
           </p>
-          <div className="max-w-4xl mx-auto space-y-8">
-            <p className="text-lg text-gray-700 mb-8">
-              Strength is built on three training blocks that work together to move your lifts forward:
+          <div className="max-w-4xl mx-auto space-y-6">
+            <p className="text-lg text-gray-700">
+              Technical work fixes the positions limiting your lifts. Strength & Power gives each lift the stimulus it needs. Accessories fill the gaps your profile reveals. The platform coordinates all three — so nothing is random and everything supports your progress.
             </p>
-
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Technical</h3>
-                <p className="text-lg text-gray-700">
-                  Pulls, holds, and positioning work that targets the movement quality behind your lifts. If your clean is limited by your pull, this is where it gets fixed. Root causes, not symptoms.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Strength & Power</h3>
-                <p className="text-lg text-gray-700">
-                  The sets, reps, and weight your lifts actually need. Each movement follows its own progression — so a strong deadlift doesn't mask a lagging front squat. Every lift gets the specific stimulus it requires.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Accessories</h3>
-                <p className="text-lg text-gray-700">
-                  General strength builders selected based on where your profile shows the most opportunity. Core strength, back strength, overhead strength — the supporting work that raises everything else.
-                </p>
-              </div>
+            <div className="bg-gray-100 rounded-lg p-8 mt-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Block structure visual
+              </p>
             </div>
-
-            <p className="text-lg text-gray-700 mt-8">
-              These three blocks are coordinated by the platform. Your accessories support your lifts. Your technical work addresses the positions that limit them. Nothing is random. Everything connects.
-            </p>
           </div>
         </div>
       </section>
@@ -111,19 +94,49 @@ export default function AppliedPowerPage() {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">BUILT FROM YOUR DATA</h2>
-          <p className="text-xl text-gray-700 text-center font-semibold mb-12 max-w-3xl mx-auto">
-            Same diagnostic. Same architecture. Scoped to strength.
-          </p>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              It starts with the same diagnostic intake that powers all of Gains AI — mapping your strength across movements to reveal imbalances, gaps, and high-leverage opportunities. From that, the platform builds your athlete profile and generates a lifting program targeted to your specific data.
+              From your diagnostic, the platform generates a program targeted to your data — and adapts it as you train and log.
             </p>
+            <div className="bg-gray-100 rounded-lg p-8 mt-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Technical Focus Screen screenshot
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Train, Log, Learn Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">TRAIN, LOG, LEARN</h2>
+          <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Your training is organized in layers — blocks, tasks, and the variables within them — so the platform can adjust at exactly the right level. Swap an accessory. Modify a rep scheme. Restructure a progression. Every change is precise. Nothing gets rebuilt from scratch.
+              Logging takes seconds. A few taps captures sets, reps, perceived effort, and execution quality.
             </p>
+            <div className="bg-gray-100 rounded-lg p-8 mt-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Logging interface screenshot
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Continuous Adaptation Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">CONTINUOUS ADAPTATION</h2>
+          <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              As you train and log, the system tracks your performance, perceived effort, and execution quality across every task. AI synthesizes all of it to keep your program aligned with your progress — adjusting volume, emphasis, and exercise selection as your data evolves.
+              As your data grows, Gains AI adjusts automatically. If a movement is stalling, the platform intervenes at the task level. If an entire block needs restructuring, it handles that too. If your recovery data shows you need a lighter week, variables adjust across the board.
             </p>
+            <div className="bg-gray-100 rounded-lg p-8 mt-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Percentile Heatmap screenshot
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -132,15 +145,9 @@ export default function AppliedPowerPage() {
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">DESIGNED TO RUN ALONGSIDE YOUR TRAINING</h2>
-          <p className="text-xl text-gray-700 text-center font-semibold mb-12 max-w-3xl mx-auto">
-            Strength fits into your life — not the other way around.
-          </p>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
               This isn't a replacement for your gym programming. It's the dedicated lifting work your gym programming can't give you. Run it before class, after class, or on separate days — the platform adapts to your schedule.
-            </p>
-            <p className="text-lg text-gray-700">
-              And because your training history is stored as structured data, you can shift priorities without starting over. Peaking for a competition? The platform adjusts. Coming back from time off? It accounts for that too. Progress is preserved. Context is never lost.
             </p>
           </div>
         </div>
@@ -155,11 +162,13 @@ export default function AppliedPowerPage() {
           </p>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Full analytics — percentile tracking, RPE trends, execution quality — available in the app so you can see where your lifts are progressing and where they need attention.
+              When you need a human perspective, message real coaches with full visibility into your data. No catching up, no back-and-forth. Share a lift video. Get corrections grounded in what your data already shows.
             </p>
-            <p className="text-lg text-gray-700">
-              When you need a human perspective, message real coaches with full visibility into your data. Share a lift video. Get corrections grounded in what the numbers already show.
-            </p>
+            <div className="bg-gray-100 rounded-lg p-8 mt-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Analytics + Coaching screenshots
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -167,12 +176,9 @@ export default function AppliedPowerPage() {
       {/* Closing CTA */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
             Stop guessing at your strength work. Let the platform build it for you.
           </h2>
-          <p className="text-xl text-gray-700 mb-8 max-w-3xl mx-auto">
-            Three focused training blocks. AI-driven progression. Real coaching. All built from your data.
-          </p>
 
           {/* App Download Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-4">
