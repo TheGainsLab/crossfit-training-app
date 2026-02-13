@@ -122,7 +122,7 @@ export default function PremiumPage() {
                 Logging takes seconds. You capture sets, reps, perceived effort, and execution quality after each session.
               </p>
               <p className="text-lg text-gray-700">
-                But that data compounds. Every session you log becomes structured data that feeds both your analytics and the platform's ability to adapt. You tell the system how it felt. The system already knows how you performed. Over time, this builds a detailed picture of how your body actually responds to training — not in theory, but in practice.
+                Over time, this builds a detailed picture of how your body actually responds to training — not in theory, but in practice.
               </p>
             </div>
             
@@ -139,13 +139,7 @@ export default function PremiumPage() {
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Continuous Adaptation</h3>
             <div className="space-y-4 mb-6">
               <p className="text-lg text-gray-700">
-                As your dataset grows, Gains AI identifies patterns that no static program can account for.
-              </p>
-              <p className="text-lg text-gray-700">
-                Training adjusts automatically — task selection, block structure, volume, and emphasis shift based on your actual progress. If a movement is stalling, the platform intervenes at the task level. If an entire block needs restructuring, it handles that too. If your recovery data shows you need a lighter week, variables adjust across the board.
-              </p>
-              <p className="text-lg text-gray-700">
-                Every adjustment happens at exactly the right level — program, block, task, or variable — and AI manages the ripple effects so your overall training stays balanced. As you progress, the program progresses with you.
+                As your dataset grows, Gains AI adjusts automatically. If a movement is stalling, the platform intervenes at the task level. If an entire block needs restructuring, it handles that too. If your recovery data shows you need a lighter week, variables adjust across the board.
               </p>
             </div>
             
