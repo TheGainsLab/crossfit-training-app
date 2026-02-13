@@ -159,10 +159,7 @@ export default function PremiumPage() {
                 AI handles the analysis. Coaches provide the insight.
               </p>
               <p className="text-lg text-gray-700">
-                Message real coaches anytime — never an AI chatbot. Your coaches have full visibility into your training data and the platform's recommendations, so feedback is precise, contextual, and immediately actionable.
-              </p>
-              <p className="text-lg text-gray-700">
-                Share a video of a lift. Get targeted corrections based on what the data already shows. Coaching stays human. Decisions stay data-informed.
+                Message real coaches anytime — never an AI chatbot. Because your coaches have full visibility into your training data and the platform's recommendations, there's no catching up, no back-and-forth, no digging through spreadsheets. Feedback is precise, contextual, and immediately actionable.
               </p>
             </div>
             
@@ -187,18 +184,6 @@ export default function PremiumPage() {
             <p className="text-lg text-gray-700">
               Gains AI tracks your performance at every level — individual tasks, training blocks, and the overall program. That data isn't hidden behind the AI. Everything the system sees, you see.
             </p>
-            <p className="text-lg text-gray-700">
-              <strong>Percentile Heatmaps</strong> show where you stand across movements and domains — not as a single score, but as a detailed map of your fitness.
-            </p>
-            <p className="text-lg text-gray-700">
-              <strong>Heart Rate Data</strong> reveals what each task actually costs you, showing efficiency and fatigue patterns over time.
-            </p>
-            <p className="text-lg text-gray-700">
-              <strong>Skills Cards</strong> track practice volume, average RPE, and execution trends so you can see how your capacity is building.
-            </p>
-            <p className="text-lg text-gray-700 mb-8">
-              No black boxes. Every adjustment the platform makes comes from data you can see and understand.
-            </p>
 
             <div className="bg-gray-100 rounded-lg p-8">
               <p className="text-gray-400 italic text-sm text-center">
@@ -219,7 +204,7 @@ export default function PremiumPage() {
           </p>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700 mb-8">
-              Premium includes built-in nutrition tracking: photo logging, barcode scans, saved meals, macros, and BMR/TDEE estimates. Your nutrition keeps pace with your training — tracked in the same platform, informed by the same data.
+              Premium includes built-in nutrition tracking: photo logging, barcode scans, saved meals, macros, and BMR/TDEE estimates. Your nutrition keeps pace with your training.
             </p>
 
             <div className="bg-gray-100 rounded-lg p-8">
@@ -240,14 +225,14 @@ export default function PremiumPage() {
             Shift priorities whenever life demands it.
           </p>
           <div className="max-w-4xl mx-auto space-y-6">
-            <p className="text-lg text-gray-700">
-              Need to practice specific movements before a competition? Drill a newly unlocked skill? Adjust for travel, limited equipment, or a schedule change?
+            <p className="text-lg text-gray-700 font-semibold">
+              The program you keep.
             </p>
             <p className="text-lg text-gray-700">
-              Because your training history is stored as structured data, changes don't erase progress or force a reset. The system absorbs the update, preserves context, and adjusts intelligently. You can make small changes directly in the app — the AI detects and integrates them automatically. For bigger shifts, message your coach.
+              Most programs run their course. Gains AI doesn't — because it's built from your data, it evolves as your goals do. Preparing for a competition, adjusting for travel, shifting focus to a new skill — your training adapts without starting over.
             </p>
             <p className="text-lg text-gray-700">
-              Direction stays clear even as priorities evolve.
+              Make small adjustments in the app. The AI integrates them automatically. For bigger shifts, message your coach.
             </p>
           </div>
         </div>
