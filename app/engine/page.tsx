@@ -11,10 +11,10 @@ export default function EnginePage() {
               Exceptional Capacity.
             </p>
             <p className="text-lg md:text-xl mb-6">
-              Most conditioning programs are cobbled together from monostructural sports — recycled Zone 2 work, random intervals, and cookie-cutter sprints. They're better than nothing, but not by much. They don't distinguish between users or account for your training history.
+              Most conditioning programs are cobbled together — recycled Zone 2 work, random intervals, cookie-cutter sprints. They don't distinguish between users or account for your training history.
             </p>
             <p className="text-lg md:text-xl mb-6">
-              The Year of the Engine is different. Twenty progressive training frameworks target every muscle fiber type — polarized training, variable intervals, decreasing rest periods, and more. The result: increased power, greater endurance at any intensity, new gears, and the ability to pace above the redline without blowing up. Not just intervals and Zone 2 — novel stimuli that translate directly to metcon and competition performance.
+              The Year of the Engine is built on 20 distinct training frameworks, each targeting a specific adaptation. The result: new gears, the ability to pace above the redline without blowing up, and conditioning that transfers directly to metcon and competition performance.
             </p>
           </div>
 
@@ -56,8 +56,13 @@ export default function EnginePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">BUILT FOR REAL PERFORMANCE</h2>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Performance requires numerous adaptations: aerobic power, aerobic capacity, threshold tolerance, anaerobic power, density tolerance, pacing control across varied tasks, and more. Conditioning means being ready for anything. The Year of the Engine is built on 20 distinct frameworks, each designed to stress a specific aspect of your engine — polarized training, variable intervals, decreasing rest periods, and more. Every structure has a defined purpose and a measurable adaptation. This isn't variety for variety's sake.
+              Conditioning isn't one system — it's many. Aerobic power, threshold tolerance, anaerobic capacity, pacing control, and more. Each one requires a different stimulus. Each framework in the Year of the Engine is designed to stress a specific adaptation. This isn't variety for variety's sake.
             </p>
+            <div className="bg-gray-100 rounded-lg p-8 mt-8">
+              <p className="text-gray-400 italic text-sm text-center">
+                📱 Frameworks visual
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -74,8 +79,7 @@ export default function EnginePage() {
 
             <div className="bg-gray-100 rounded-lg p-8 mt-8">
               <p className="text-gray-400 italic text-sm text-center">
-                📱 Pre-Workout Training Summary screenshot<br/>
-                Pair with screenshot showing pre-workout targets and context
+                📱 Pre-Workout Training Summary screenshot
               </p>
             </div>
           </div>
@@ -88,13 +92,17 @@ export default function EnginePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">INDEPENDENT ADAPTATION</h2>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Your aerobic capacity doesn't improve at the same rate as your anaerobic power. Your threshold tolerance doesn't progress on the same schedule as your repeatability. Treating them as one system means dragging weak links along and holding strong ones back. Year of the Engine breaks conditioning into its components — each one adapts independently based on your logged performance. Machine learning tracks your response to each framework and adjusts targets accordingly. No arbitrary progressions. The platform develops each piece intelligently, then reassembles them into a superior whole.
+              Your aerobic capacity doesn't improve at the same rate as your anaerobic power. Your threshold tolerance doesn't progress on the same schedule as your repeatability. Treating them as one system means dragging weak links along and holding strong ones back.
             </p>
-
+            <p className="text-lg text-gray-700">
+              Year of the Engine breaks conditioning into its components — each one adapts independently based on your logged performance, then the platform reassembles them into a cohesive program.
+            </p>
+            <p className="text-lg text-gray-700">
+              Within each framework, machine learning adjusts your targets session to session. Exceed your goals, and the next session pushes harder. Come up short, and it meets you where you are.
+            </p>
             <div className="bg-gray-100 rounded-lg p-8 mt-8">
               <p className="text-gray-400 italic text-sm text-center">
-                📱 Stimulus History — Max Aerobic Power screenshot<br/>
-                Pair with screenshot showing performance progression over time
+                📱 Stimulus History — Max Aerobic Power screenshot
               </p>
             </div>
           </div>
@@ -107,13 +115,14 @@ export default function EnginePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">EXECUTION WITHOUT GUESSWORK</h2>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              The app becomes your pacing coach mid-workout. Goals, countdowns, and round context stay front-and-center through fatigue — so you execute the plan instead of chasing feelings. Before you start, the app walks you through what to expect: targets for every segment, intensity comparisons versus your time trial, and your history on that stimulus. Once the clock starts, you see your goal for every interval. Log your score with a few taps — including heart rate data and individual interval results.
+              Before you start, the app walks you through what to expect: targets for every segment, intensity comparisons versus your time trial, and your history on that stimulus.
             </p>
-
+            <p className="text-lg text-gray-700">
+              Once the clock starts, the app becomes your pacing coach. Goals, countdowns, and round context stay front-and-center through fatigue — so you execute the plan instead of chasing feelings.
+            </p>
             <div className="bg-gray-100 rounded-lg p-8 mt-8">
               <p className="text-gray-400 italic text-sm text-center">
-                📱 In-Workout Interval Countdown screenshot<br/>
-                Pair with screenshot showing live workout interface
+                📱 In-Workout Interval Countdown screenshot
               </p>
             </div>
           </div>
@@ -126,13 +135,11 @@ export default function EnginePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">ANALYTICS BUILT FOR CONDITIONING</h2>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Progress isn't vibes. It's visible patterns in structured data. Your dashboard tracks total work and energy system balance, pace and output trends per framework, target versus actual accountability, work-to-rest recovery efficiency, and heart rate output per beat — true aerobic gains that pace alone can't reveal. Compare performance across different work-to-rest ratios for unmatched insight into your recovery. Multi-dimensional insight across every system, every framework, and every session. If the system sees it, you see it.
+              Progress isn't vibes. It's visible patterns in structured data.
             </p>
-
             <div className="bg-gray-100 rounded-lg p-8 mt-8">
               <p className="text-gray-400 italic text-sm text-center">
-                📱 Analytics screenshots — headline summary, stimulus history, comparison, target vs. actual, work:rest ratio, HR efficiency<br/>
-                Pair with comprehensive analytics dashboard screenshots
+                📱 Analytics screenshots with captions — headline summary, stimulus history, comparison, target vs. actual, work:rest ratio, HR efficiency
               </p>
             </div>
           </div>
@@ -142,12 +149,9 @@ export default function EnginePage() {
       {/* Closing CTA */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
             Train with a system that knows your engine — and builds it deliberately.
           </h2>
-          <p className="text-xl text-gray-700 mb-8 max-w-3xl mx-auto">
-            Twenty frameworks. Independent adaptation. Targets calibrated to your data. Conditioning that transfers when it counts.
-          </p>
 
           {/* App Download Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-4">
