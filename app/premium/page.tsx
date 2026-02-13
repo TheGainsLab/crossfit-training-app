@@ -102,13 +102,7 @@ export default function PremiumPage() {
                 Your program is generated directly from your athlete profile — not pulled from a library.
               </p>
               <p className="text-lg text-gray-700">
-                Technical work targets real deficiencies. Strength progressions deliver the specific stimulus each lift needs. Accessories are selected to support your weakest links. Skills work prioritizes execution quality over volume. MetCons match your current capacity. Engine targets push you based on what you've actually done.
-              </p>
-              <p className="text-lg text-gray-700">
-                This is possible because your training is built in layers, and each layer can be modified independently. Your <strong>program</strong> is the overall plan. Within it, <strong>training blocks</strong> target specific domains. Each block contains <strong>tasks</strong> — the individual exercises and movements in your sessions. Within each task, we control the <strong>variables</strong>: sets, reps, weight, and time.
-              </p>
-              <p className="text-lg text-gray-700">
-                That structure means the platform can add or remove a training block, swap a single exercise, or adjust the rep scheme on one movement — without disrupting anything else. Every change is targeted. Nothing gets rebuilt from scratch.
+                Technical work targets real deficiencies. Strength progressions deliver the specific stimulus each lift needs. Accessories are selected to support your weakest links. Skills work prioritizes execution quality over volume. MetCons match your current capacity. Engine targets push you based on what you've actually done. Within each task, we personalize the variables: sets, reps, weight, and time.
               </p>
             </div>
             
