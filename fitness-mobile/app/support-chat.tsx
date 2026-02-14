@@ -190,6 +190,7 @@ export default function SupportChatScreen() {
     if ((!newMessage.trim() && !pendingAttachment) || !userId || !conversation || sending || uploading) return
 
     const messageContent = newMessage.trim() || (pendingAttachment ? `[${pendingAttachment.type === 'image' ? 'Photo' : 'Video'}]` : '')
+    const savedMessage = newMessage
     setNewMessage('')
     setSending(true)
 
@@ -205,6 +206,7 @@ export default function SupportChatScreen() {
         attachments = [uploadResult.attachment]
       } else {
         Alert.alert('Upload failed', uploadResult.error || 'Could not upload attachment')
+        setNewMessage(savedMessage)
         setSending(false)
         return
       }
