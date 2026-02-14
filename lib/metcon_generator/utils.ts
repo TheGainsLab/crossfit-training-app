@@ -1203,7 +1203,7 @@ function calculateWorkoutDuration(exercises: Exercise[], format: string, rounds?
 }
 
 
-function generateWeightForExercise(exerciseName: string): string {
+function generateWeightForExercise(exerciseName: string): string | undefined {
   // Any Dumbbell Exercises (check this FIRST to catch dumbbell exercises before other checks)
   if (exerciseName.includes('Dumbbell')) {
     return '50/35'; // Fixed weight for all dumbbell exercises
