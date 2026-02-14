@@ -1,5 +1,5 @@
 import { Workout, PerformancePrediction, GeneratedWorkout, Exercise } from './types';
-import { exerciseDatabase } from './data';
+import { exerciseDatabase } from '../btn/data';
 
 /**
  * BACKUP: Complete Rep Restrictions for All 21 Exercises
