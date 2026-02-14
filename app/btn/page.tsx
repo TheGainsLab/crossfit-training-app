@@ -24,6 +24,7 @@ function BTNWorkoutGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [savedWorkouts, setSavedWorkouts] = useState<Set<number>>(new Set());
   const [savingWorkouts, setSavingWorkouts] = useState<Set<number>>(new Set());
+  const [autoSaving, setAutoSaving] = useState(false);
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [barbellFilter, setBarbellFilter] = useState<'any' | 'required' | 'excluded'>('any');
   const [dumbbellFilter, setDumbbellFilter] = useState<'any' | 'required' | 'excluded'>('any');
@@ -159,14 +160,32 @@ function BTNWorkoutGenerator() {
       const data = await response.json();
       const workouts = data.workouts as GeneratedWorkout[];
 
-      // Display workouts immediately (no auto-save)
       setGeneratedWorkouts(workouts);
-      setSavedWorkouts(new Set()); // Clear saved state
+      setSavedWorkouts(new Set());
       console.log(`✅ Generated ${workouts.length} workouts`);
-      // Debug: Log pattern values
-      workouts.forEach((w, i) => {
-        console.log(`📋 Workout ${i + 1}: format=${w.format}, pattern=${w.pattern || 'UNDEFINED'}, exercises=${w.exercises.map(e => `${e.reps} ${e.name}`).join(', ')}`);
-      });
+
+      // Auto-save to database
+      setAutoSaving(true);
+      try {
+        const saveResponse = await fetch('/api/btn/save-workouts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workouts })
+        });
+
+        if (saveResponse.ok) {
+          const saveData = await saveResponse.json();
+          console.log(`✅ Auto-saved ${saveData.savedCount} workouts to database`);
+          setSavedWorkouts(new Set(workouts.map((_, i) => i)));
+        } else {
+          const errData = await saveResponse.json();
+          console.warn('⚠️ Auto-save failed:', errData.error);
+        }
+      } catch (saveError) {
+        console.warn('⚠️ Auto-save error:', saveError);
+      } finally {
+        setAutoSaving(false);
+      }
     } catch (error) {
       console.error('❌ Generation failed:', error);
       alert('Failed to generate workouts. Please try again.');
@@ -561,7 +580,22 @@ function BTNWorkoutGenerator() {
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="text-lg font-bold">{workout.name}</h4>
                       <div className="flex gap-2">
-                        {!savedWorkouts.has(index) ? (
+                        {autoSaving ? (
+                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium" style={{ backgroundColor: '#DAE2EA', color: '#282B34' }}>
+                            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            Saving...
+                          </div>
+                        ) : savedWorkouts.has(index) ? (
+                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium" style={{ backgroundColor: '#FE5858', color: '#FFFFFF' }}>
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Saved
+                          </div>
+                        ) : (
                           <>
                             <button
                               onClick={() => saveWorkout(workout, index)}
@@ -580,13 +614,6 @@ function BTNWorkoutGenerator() {
                               Discard
                             </button>
                           </>
-                        ) : (
-                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium" style={{ backgroundColor: '#FE5858', color: '#FFFFFF' }}>
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                            Saved
-                          </div>
                         )}
                       </div>
                     </div>
