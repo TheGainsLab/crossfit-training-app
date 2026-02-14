@@ -25,12 +25,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ hasAccess: false, error: 'User not found' }, { status: 404 })
     }
 
-    console.log(`Checking BTN access for user ${userData.id}, tier: ${userData.subscription_tier}, status: ${userData.subscription_status}`)
-
     // Check BTN feature access (BTN or Premium subscription)
     const accessStatus = await checkBTNFeatureAccess(userData.id)
-
-    console.log(`Access check result:`, accessStatus)
 
     return NextResponse.json(accessStatus)
   } catch (error) {

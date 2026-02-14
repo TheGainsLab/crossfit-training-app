@@ -52,7 +52,6 @@ function BTNWorkoutGenerator() {
   // Fetch user profile
   const fetchUserProfile = async () => {
     try {
-      console.log('📊 Fetching user profile...');
       const response = await fetch('/api/btn/user-profile');
       
       if (!response.ok) {
@@ -64,11 +63,6 @@ function BTNWorkoutGenerator() {
       const data = await response.json();
       if (data.success && data.profile) {
         setUserProfile(data.profile);
-        console.log('✅ User profile loaded:', {
-          equipment: data.profile.equipment.length,
-          skills: Object.keys(data.profile.skills).length,
-          oneRMs: Object.keys(data.profile.oneRMs).length
-        });
       }
     } catch (error) {
       console.error('❌ Error fetching user profile:', error);
@@ -98,7 +92,6 @@ function BTNWorkoutGenerator() {
   // Handle profile refresh from URL parameter
   useEffect(() => {
     if (searchParams.get('refreshed') === 'true') {
-      console.log('🔄 Profile was updated, refreshing...');
       fetchUserProfile();
       // Clean URL by removing the query parameter
       router.replace('/btn', { scroll: false });
@@ -131,12 +124,6 @@ function BTNWorkoutGenerator() {
   const generateWorkouts = async () => {
     setIsGenerating(true);
     try {
-      console.log('🎲 Generating workouts via API...');
-      console.log('Selected domains:', selectedDomains.length > 0 ? selectedDomains : 'all (random)');
-      console.log('Barbell filter:', barbellFilter);
-      console.log('Dumbbell filter:', dumbbellFilter);
-      console.log('Cardio filter:', cardioFilter);
-
       const response = await fetch('/api/btn/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -162,8 +149,6 @@ function BTNWorkoutGenerator() {
 
       setGeneratedWorkouts(workouts);
       setSavedWorkouts(new Set());
-      console.log(`✅ Generated ${workouts.length} workouts`);
-
       // Auto-save to database
       setAutoSaving(true);
       try {
@@ -175,7 +160,6 @@ function BTNWorkoutGenerator() {
 
         if (saveResponse.ok) {
           const saveData = await saveResponse.json();
-          console.log(`✅ Auto-saved ${saveData.savedCount} workouts to database`);
           setSavedWorkouts(new Set(workouts.map((_, i) => i)));
         } else {
           const errData = await saveResponse.json();
@@ -708,8 +692,6 @@ export default function BTNPage() {
     try {
       setCheckingOut(true)
       
-      console.log('🔄 Creating checkout session...')
-      
       // Create checkout session (works for both logged in and logged out users)
       const response = await fetch('/api/btn/create-checkout', {
         method: 'POST',
@@ -717,10 +699,7 @@ export default function BTNPage() {
 
       const data = await response.json()
       
-      console.log('📦 Checkout response:', data)
-
       if (data.url) {
-        console.log('✅ Redirecting to checkout:', data.url)
         window.location.href = data.url
       } else {
         const errorMsg = data.error || 'Error creating checkout session. Please try again.'

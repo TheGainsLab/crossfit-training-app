@@ -28,8 +28,6 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log('🔧 Creating auth account for:', email)
-
     // Create auth account with admin client
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
@@ -58,8 +56,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create user account' }, { status: 500 })
     }
 
-    console.log('✅ Auth account created:', authData.user.id)
-
     // Normalize email to lowercase for consistent lookups
     // The trigger creates users with lowercase email, so we need to match that
     const normalizedEmail = email.toLowerCase()
@@ -85,8 +81,6 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       // User record exists (created by trigger or webhook)
       userId = existingUser.id
-      console.log('✅ Found existing user record:', userId)
-
       // Backfill subscription fields if trigger created the row with NULLs.
       // This runs BEFORE the main update below, because that update preserves
       // an existing 'active' status (set by webhook) but cannot fill NULLs
@@ -105,12 +99,9 @@ export async function POST(request: NextRequest) {
       if (backfillError) {
         console.error('⚠️ Backfill update error (non-fatal):', backfillError)
       } else {
-        console.log('✅ Backfilled subscription fields for trigger-created user')
       }
     } else {
       // Create user record (Option B: API is the primary creator)
-      console.log('📝 Creating new user record with subscription tier:', productType || 'PREMIUM')
-      
       // Determine subscription tier from productType
       const subscriptionTier = productType ? productType.toUpperCase() : 'PREMIUM'
       
@@ -130,8 +121,6 @@ export async function POST(request: NextRequest) {
       if (createError) {
         // Handle duplicate email error gracefully (trigger may have created user)
         if (createError.code === '23505' && createError.message?.includes('email')) {
-          console.log('⚠️ Duplicate email detected (likely created by trigger), finding existing user...')
-          
           // Try to find the user again (trigger may have just created it)
           const { data: retryUser } = await supabaseAdmin
             .from('users')
@@ -141,7 +130,6 @@ export async function POST(request: NextRequest) {
           
           if (retryUser) {
             userId = retryUser.id
-            console.log('✅ Found user record after duplicate error:', userId)
           } else {
             console.error('❌ User creation error (duplicate but not found):', createError)
             return NextResponse.json({ 
@@ -158,7 +146,6 @@ export async function POST(request: NextRequest) {
         }
       } else if (newUser) {
         userId = newUser.id
-        console.log('✅ Created user record:', userId)
       } else {
         return NextResponse.json({ 
           error: 'Failed to create user record', 
@@ -205,20 +192,14 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    console.log('✅ User record updated with auth ID')
-
     // Create subscription record if Stripe session is complete
     if (sessionId) {
       try {
-        console.log('🔍 Retrieving Stripe session to create subscription record:', sessionId)
-        
         const session = await stripe.checkout.sessions.retrieve(sessionId, {
           expand: ['subscription', 'line_items', 'line_items.data.price']
         })
 
         if (session.status === 'complete' && session.subscription) {
-          console.log('✅ Session is complete, creating subscription record')
-          
           // Update user with stripe_customer_id FIRST
           if (session.customer) {
             const { error: customerUpdateError } = await supabaseAdmin
@@ -232,7 +213,6 @@ export async function POST(request: NextRequest) {
             if (customerUpdateError) {
               console.error('❌ Error updating user with stripe_customer_id:', customerUpdateError)
             } else {
-              console.log('✅ Updated user with stripe_customer_id:', session.customer)
             }
           }
           
@@ -281,7 +261,6 @@ export async function POST(request: NextRequest) {
           // Always set user to active when we have a verified Stripe subscription,
           // regardless of whether the upsert was an insert or update
           if (!subError) {
-            console.log('✅ Upserted subscription record')
           }
           {
             // Update user status to ACTIVE since subscription exists
@@ -294,7 +273,6 @@ export async function POST(request: NextRequest) {
               .eq('id', userId)
           }
         } else {
-          console.log('⚠️ Session not complete or no subscription yet, skipping subscription creation')
         }
       } catch (stripeError) {
         console.error('❌ Error retrieving Stripe session:', stripeError)

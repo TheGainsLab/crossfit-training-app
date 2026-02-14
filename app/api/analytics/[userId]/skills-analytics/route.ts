@@ -79,8 +79,6 @@ export async function GET(
       )
     }
 
-    console.log(`🎯 Generating skills analysis for User ${userIdNum}, Type: ${skillType} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
-
     // Calculate date range
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - timeRange)
@@ -162,8 +160,6 @@ export async function GET(
         permissionLevel
       }
     }
-
-    console.log(`✅ Skills analysis generated: ${performanceData.length} sessions analyzed`)
 
     return NextResponse.json(response)
 

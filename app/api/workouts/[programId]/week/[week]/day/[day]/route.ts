@@ -76,8 +76,6 @@ export async function GET(
     const { programId, week, day } = await params
 
     
-    console.log(`🏋️ Fetching workout: Program ${programId}, Week ${week}, Day ${day}`)
-
     // Validate parameters
     const programIdNum = parseInt(programId)
     const weekNum = parseInt(week)
@@ -156,8 +154,6 @@ export async function GET(
       )
     }
 
-    console.log(`✅ Found workout: ${targetDay.dayName} - ${targetDay.mainLift}`)
-
 // ADD THESE LINES HERE:
 // Fetch coach modifications for this specific workout
 const { data: modifications, error: modError } = await supabase
@@ -171,8 +167,6 @@ const { data: modifications, error: modError } = await supabase
 if (modError) {
   console.error('Error fetching modifications:', modError);
 }
-
-console.log(`🔍 Found ${modifications?.length || 0} coach modifications for this workout`);
 
 // Create modification map for easy lookup
 const modificationMap = new Map();
@@ -195,10 +189,8 @@ try {
   
   if (userData && !userError) {
     userGender = userData.gender || 'male'
-    console.log('👤 User gender:', userGender)
   }
 } catch (error) {
-  console.log('⚠️ Could not fetch user gender, using default')
 }
 
 
@@ -231,7 +223,6 @@ blocks: targetDay.blocks.map((block: any) => ({
     
     // Apply modifications if they exist
     if (modification) {
-      console.log(`🔄 Applying modification to ${exercise.name}`);
       if (modification.name) finalExercise.name = modification.name;
       if (modification.sets) finalExercise.sets = modification.sets;
       if (modification.reps) finalExercise.reps = modification.reps;
@@ -254,7 +245,6 @@ blocks: targetDay.blocks.map((block: any) => ({
     }
 
     // Check cache before calling Edge Function
-    console.log(`🔍 Checking cache for workout: user ${program.user_id}, program ${programIdNum}, week ${weekNum}, day ${dayNum}`)
     const { data: cachedMod, error: cacheError } = await supabase
       .from('modified_workouts')
       .select('modified_program, modifications_applied, created_at')
@@ -267,11 +257,8 @@ blocks: targetDay.blocks.map((block: any) => ({
     if (cacheError && cacheError.code !== 'PGRST116') {
       console.warn(`⚠️ Cache check error:`, cacheError)
     }
-    console.log(`📦 Cache result:`, cachedMod ? `FOUND (created ${cachedMod.created_at})` : 'NOT FOUND')
-
     // Apply AI modifications server-side to avoid extra client roundtrip
     try {
-      console.log(`🚀 Calling Edge Function modify-program-session`)
       const aiRes = await fetch(`${process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/modify-program-session`, {
         method: 'POST',
         headers: {
@@ -282,13 +269,6 @@ blocks: targetDay.blocks.map((block: any) => ({
       })
       if (aiRes.ok) {
         const ai = await aiRes.json()
-        console.log(`📥 Edge Function response:`, {
-          success: ai?.success,
-          hasProgram: !!ai?.program,
-          blockCount: ai?.program?.blocks?.length,
-          source: ai?.source,
-          modificationsAppliedCount: ai?.modificationsApplied?.length || 0
-        })
         if (ai?.success && ai?.program?.blocks?.length) {
           // Merge AI modifications with original workout structure
           // This preserves week, day, programId, and ensures exercises maintain proper structure
@@ -429,12 +409,6 @@ blocks: targetDay.blocks.map((block: any) => ({
           workout.totalExercises = workout.blocks.reduce((sum: number, b: any) => 
             sum + (Array.isArray(b.exercises) ? b.exercises.length : 0), 0)
           
-          console.log(`✅ Workout merged:`, {
-            totalBlocks: workout.blocks.length,
-            totalExercises: workout.totalExercises,
-            hasMetconData: !!workout.metconData,
-            source: (workout as any).source || 'original'
-          })
         }
       }
     } catch (e) {

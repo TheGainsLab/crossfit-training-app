@@ -27,8 +27,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log(`📊 Fetching BTN profile for user ${userData.id}`)
-
     // Fetch equipment
     const { data: equipment, error: equipmentError } = await supabase
       .from('user_equipment')
@@ -93,8 +91,6 @@ export async function GET(request: NextRequest) {
       skills: skillsObject,
       oneRMs: oneRMsObject
     }
-
-    console.log(`✅ Profile fetched: ${equipmentArray.length} equipment, ${Object.keys(skillsObject).length} skills, ${Object.keys(oneRMsObject).length} 1RMs`)
 
     return NextResponse.json({
       success: true,

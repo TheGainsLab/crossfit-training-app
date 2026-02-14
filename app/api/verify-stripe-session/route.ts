@@ -14,8 +14,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('🔍 Verifying Stripe session:', sessionId)
-
     // Retrieve the session with line items to get price ID
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
       expand: ['line_items', 'line_items.data.price']
@@ -28,11 +26,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('✅ Stripe session retrieved:', {
-      id: session.id,
-      email: session.customer_details?.email,
-      priceId: session.line_items?.data?.[0]?.price?.id
-    })
 
     return NextResponse.json({
       id: session.id,

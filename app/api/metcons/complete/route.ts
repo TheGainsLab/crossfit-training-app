@@ -210,10 +210,7 @@ export async function POST(request: NextRequest) {
   try {
     const completionData: MetConCompletionData = await request.json()
     
-    console.log('🔥 MetCon completion request:', completionData)
-
     // Step 1: Get the program data to find the MetCon for this week/day
-    console.log(`📋 Fetching program ${completionData.programId}...`)
     const { data: program, error: programError } = await supabase
       .from('programs')
       .select('program_data, user_id')
@@ -229,7 +226,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 2: Extract MetCon data from the program JSON
-    console.log(`🔍 Extracting MetCon for Week ${completionData.week}, Day ${completionData.day}...`)
     const programData = program.program_data
     const weeks = programData.weeks || []
     
@@ -257,10 +253,7 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
 
-    console.log(`✅ Found MetCon: ${metconData.workoutId}`)
-
     // Step 3: Get the MetCon benchmarks from the database
-    console.log(`🎯 Fetching benchmarks for ${metconData.workoutId}...`)
     const { data: metcon, error: metconError } = await supabase
       .from('metcons')
       .select('id, male_p50, male_p90, male_std_dev, female_p50, female_p90, female_std_dev, workout_id, format')
@@ -276,7 +269,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 4: Get user gender
-    console.log('👤 Fetching user gender...')
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('gender')
@@ -292,7 +284,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 5: Parse user score
-    console.log(`🧮 Parsing score: ${completionData.workoutScore}`)
     let parsedUserScore
     try {
       parsedUserScore = parseWorkoutScore(completionData.workoutScore)
@@ -328,14 +319,6 @@ export async function POST(request: NextRequest) {
 
     const performanceTier = getPerformanceTier(percentile)
 
-    console.log(`📊 Percentile calculation:`, {
-      userScore: parsedUserScore.value,
-      benchmarkMean,
-      benchmarkStdDev,
-      lowerIsBetter,
-      percentile,
-      performanceTier
-    })
 
     // Step 8: Check if completion already exists (for updates)
     const { data: existingCompletion } = await supabase
@@ -357,7 +340,6 @@ export async function POST(request: NextRequest) {
     let result
     if (existingCompletion) {
       // Update existing completion
-      console.log('🔄 Updating existing completion...')
       const { data, error } = await supabase
         .from('program_metcons')
         .update({
@@ -380,7 +362,6 @@ export async function POST(request: NextRequest) {
       result = { data, error }
     } else {
       // Create new completion
-      console.log('✨ Creating new completion...')
       const { data, error } = await supabase
         .from('program_metcons')
         .insert({
@@ -413,8 +394,6 @@ export async function POST(request: NextRequest) {
         error: result.error.message 
       }, { status: 500 })
     }
-
-    console.log('✅ MetCon completion saved successfully:', result.data)
 
     // Populate exercise_percentile_log
     if (result.data) {

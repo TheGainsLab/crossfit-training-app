@@ -25,8 +25,6 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log('🎯 Recalculating ability level for user:', userId)
-
     // Call determine-user-ability function
     const abilityResponse = await fetch(
       `${supabaseUrl}/functions/v1/determine-user-ability`,
@@ -50,8 +48,6 @@ export async function POST(request: NextRequest) {
     }
 
     const abilityResult = await abilityResponse.json()
-    console.log(`✅ Ability determined: ${abilityResult.ability} (${abilityResult.advancedCount} advanced, ${abilityResult.intermediateCount} intermediate)`)
-
     // Update users table with new ability_level
     const { error: abilityUpdateError } = await supabaseAdmin
       .from('users')
@@ -68,8 +64,6 @@ export async function POST(request: NextRequest) {
         details: abilityUpdateError.message
       }, { status: 500 })
     }
-
-    console.log(`✅ Updated ability_level to: ${abilityResult.ability}`)
 
     return NextResponse.json({
       success: true,

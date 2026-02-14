@@ -235,9 +235,6 @@ export async function POST(request: NextRequest) {
 
     const { workoutId, userScore, notes, avgHeartRate, maxHeartRate, taskCompletions }: LogResultRequest = await request.json()
 
-    console.log(`🔥 BTN result logging for workout ${workoutId}, user ${userData.id}`)
-    console.log(`📋 Received taskCompletions:`, taskCompletions ? `${taskCompletions.length} tasks` : 'none', taskCompletions)
-
     if (!workoutId || !userScore) {
       return NextResponse.json(
         { error: 'Missing required fields: workoutId, userScore' },
@@ -289,10 +286,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`📊 Workout: ${workout.workout_name}, Format: ${workout.workout_format}`)
-    console.log(`📈 Benchmarks - Median: ${workout.median_score}, Excellent: ${workout.excellent_score}`)
-    console.log(`👤 User score: ${userScore}`)
-
     // Step 3: Parse scores
     let parsedUserScore
     try {
@@ -311,8 +304,6 @@ export async function POST(request: NextRequest) {
     const medianValue = parseBenchmarkScore(workout.median_score, workout.workout_format)
     const excellentValue = parseBenchmarkScore(workout.excellent_score, workout.workout_format)
 
-    console.log(`🔢 Parsed values - User: ${parsedUserScore.value}, Median: ${medianValue}, Excellent: ${excellentValue}`)
-
     // Step 4: Calculate percentile
     const lowerIsBetter = isLowerBetter(workout.workout_format)
     const percentile = calculatePercentile(
@@ -323,8 +314,6 @@ export async function POST(request: NextRequest) {
     )
 
     const performanceTier = getPerformanceTier(percentile)
-
-    console.log(`✅ Calculated percentile: ${percentile}% (${performanceTier})`)
 
     // Calculate workout-level RPE/Quality from task completions (if provided)
     let avgRpe: number | null = null
@@ -394,18 +383,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`💾 Result saved successfully${avgHeartRate ? ` (Avg HR: ${avgHeartRate}, Max HR: ${maxHeartRate || 'N/A'})` : ''}`)
-    console.log(`🔍 Checking taskCompletions:`, {
-      hasTaskCompletions: !!taskCompletions,
-      length: taskCompletions?.length || 0,
-      hasUpdatedWorkout: !!updatedWorkout,
-      willLog: !!(taskCompletions && taskCompletions.length > 0 && updatedWorkout)
-    })
 
     // Step 6: Log task-level completions to performance_logs (if provided)
     if (taskCompletions && taskCompletions.length > 0 && updatedWorkout) {
-      console.log(`📊 Logging ${taskCompletions.length} task completions to performance_logs`)
-      
       // Create service role client for performance_logs writes
       const serviceSupabase = createServiceClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -458,7 +438,6 @@ export async function POST(request: NextRequest) {
           if (updateErr) {
             console.error(`❌ Error updating performance log for ${task.exerciseName}:`, updateErr)
           } else {
-            console.log(`✅ Updated performance log for ${task.exerciseName}`)
           }
         } else {
           // Insert new log
@@ -469,13 +448,11 @@ export async function POST(request: NextRequest) {
           if (insertErr) {
             console.error(`❌ Error inserting performance log for ${task.exerciseName}:`, insertErr)
           } else {
-            console.log(`✅ Created performance log for ${task.exerciseName}`)
           }
         }
       })
 
       await Promise.all(taskLogPromises)
-      console.log(`✅ All task completions logged to performance_logs`)
     }
 
     // Populate exercise_percentile_log (skip for BTN - metcon_id is required but BTN workouts don't have one)

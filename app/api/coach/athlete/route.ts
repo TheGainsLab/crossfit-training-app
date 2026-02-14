@@ -80,8 +80,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('👥 Fetching athletes for coach:', coachData.id)
-
     // Get all active coach-athlete relationships for this coach
     const { data: relationships, error: relationshipsError } = await supabase
       .from('coach_athlete_relationships')
@@ -147,7 +145,6 @@ export async function GET(request: NextRequest) {
 
     // Process athlete data with activity metrics
     
-console.log("📊 Relationships data:", JSON.stringify(relationships, null, 2))
     const athletesWithMetrics = relationships.map(rel => {
       
 const athlete = Array.isArray(rel.users) ? rel.users[0] : rel.users
@@ -209,8 +206,6 @@ const athlete = Array.isArray(rel.users) ? rel.users[0] : rel.users
     const athletesNeedingAttention = athletesWithMetrics.filter(a => a?.recentActivity.healthStatus === 'needs_attention').length
     const athletesWithWarnings = athletesWithMetrics.filter(a => a?.recentActivity.healthStatus === 'warning').length
     const recentlyActiveathletes = athletesWithMetrics.filter(a => a?.recentActivity.healthStatus === 'good').length
-
-    console.log(`✅ Retrieved ${totalAthletes} athletes for coach ${coachData.id}`)
 
     return NextResponse.json({
       success: true,

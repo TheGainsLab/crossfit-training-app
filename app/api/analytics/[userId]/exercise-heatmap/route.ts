@@ -113,8 +113,6 @@ export async function GET(
       )
     }
 
-    console.log(`🔥 Generating exercise heat map for User ${userIdNum} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
-
     // Optional equipment filter
     const equip = new URL(request.url).searchParams.get('equip') || ''
 
@@ -222,8 +220,6 @@ export async function GET(
       })
     }
 
-    console.log(`📊 Processing ${rawData.length} completed MetCons (filtering at task level)`)
-
     // Step 2: Fetch RPE/Quality data from performance_logs for all MetCons (both Premium and BTN)
     const programIds = [...new Set(rawData.map((w: any) => w.program_id).filter(Boolean))]
     const { data: rpeQualityData, error: rpeError } = await supabase
@@ -281,8 +277,6 @@ export async function GET(
       totalCompletedWorkouts: rawData.length, // Use all workouts, not filtered
       timeDomainWorkoutCounts
     }
-
-    console.log(`✅ Heat map generated: ${exercises.length} exercises, ${timeDomains.length} time domains, ${responseData.heatmapCells.length} cells`)
 
     return NextResponse.json({
       success: true,
@@ -384,8 +378,6 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
     }
   })
 
-  console.log('🔍 Processing raw data for heat map...')
-
   // Process each workout
   rawData.forEach(workout => {
     const percentile = parseFloat(workout.percentile)
@@ -397,7 +389,6 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
     const isBTN = workout.source === 'btn'
 
     if (!timeRange) {
-      console.log(`⚠️ Skipping workout without time_range`)
       return
     }
 
@@ -413,7 +404,6 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
       // Handle Premium format (task.exercise) or BTN format (exercise.name or exercise.exercise)
       const exerciseName = item.exercise || item.name || (typeof item === 'string' ? item : null)
       if (!exerciseName) {
-        console.log(`⚠️ Exercise missing name:`, item)
         return
       }
 
@@ -498,8 +488,6 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
     })
   })
 
-  console.log(`📊 Found ${exerciseTimeMap.size} unique exercises across ${exerciseOverallMap.size} exercise variations`)
-
   // Convert to heat map format
   const result: any[] = []
   
@@ -534,8 +522,6 @@ function processRawDataToHeatmap(rawData: any[], equipmentFilter?: string, rpeQu
   timeDomainWorkoutMap.forEach((workoutKeys, timeRange) => {
     timeDomainWorkoutCounts[timeRange] = workoutKeys.size
   })
-
-  console.log(`✅ Generated ${result.length} heat map cells`)
 
   return { cells: result, timeDomainWorkoutCounts }
 }

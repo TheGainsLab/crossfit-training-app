@@ -49,9 +49,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`💾 Saving ${workouts.length} BTN workouts for user ${userData.id}`)
-    console.log('Sample workout to save:', JSON.stringify(workouts[0], null, 2))
-
     // Check incomplete workout limit (20 incomplete workouts max)
     const MAX_INCOMPLETE_WORKOUTS = 20
     const { count: incompleteWorkoutCount, error: incompleteCountError } = await supabase
@@ -70,7 +67,6 @@ export async function POST(request: NextRequest) {
     const availableSlots = MAX_INCOMPLETE_WORKOUTS - currentIncomplete
 
     if (workouts.length > availableSlots) {
-      console.log(`❌ Workout limit exceeded: ${currentIncomplete} incomplete, trying to add ${workouts.length}, limit is ${MAX_INCOMPLETE_WORKOUTS}`)
       return NextResponse.json(
         { 
           error: `You can only store ${MAX_INCOMPLETE_WORKOUTS} incomplete workouts. You currently have ${currentIncomplete} incomplete workouts. Please complete or delete some workouts to make room.`,
@@ -82,8 +78,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    console.log(`✅ Workout limit check passed: ${currentIncomplete} incomplete, ${availableSlots} slots available, adding ${workouts.length}`)
 
     // Get count of existing BTN workouts for this user to determine starting number
     const { count: existingWorkoutCount, error: countError } = await supabase
@@ -98,8 +92,6 @@ export async function POST(request: NextRequest) {
     }
 
     const startNumber = (existingWorkoutCount || 0) + 1
-    console.log(`📊 Existing workouts: ${existingWorkoutCount || 0}, starting new workouts at: ${startNumber}`)
-
     // Transform BTN workouts to database format
     const workoutRecords = workouts.map((workout: BTNWorkout, index: number) => {
       // Calculate required equipment from exercises
@@ -158,9 +150,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    console.log(`✅ Saved ${data.length} BTN workouts to database`)
-    console.log('First saved workout ID:', data[0]?.id, 'user_id:', data[0]?.user_id, 'workout_type:', data[0]?.workout_type)
 
     return NextResponse.json({ 
       success: true, 

@@ -132,14 +132,11 @@ export async function POST(
         })
 
         const pushResult = await pushResponse.json()
-        console.log('Push notification result:', JSON.stringify(pushResult))
-
         // Check for errors in Expo response
         if (pushResult.data?.[0]?.status === 'error') {
           console.error('Push notification error:', pushResult.data[0].message)
         }
       } else {
-        console.log('No push token found for user:', conversation.user_id)
       }
     } catch (pushError) {
       // Log but don't fail the request if push notification fails

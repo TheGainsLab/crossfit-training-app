@@ -93,8 +93,6 @@ export async function GET(
       )
     }
 
-    console.log(`🔥 Generating exercise heat map for User ${userIdNum} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
-
     // Step 1: Get user's most recent program
     const { data: programData, error: programError } = await supabase
       .from('programs')
@@ -112,8 +110,6 @@ export async function GET(
     }
 
     const programId = programData.id
-    console.log(`📋 Using program ${programId} for User ${userIdNum}`)
-
     // Step 2: Execute main heat map query
     const heatmapQuery = `
       WITH user_workout_exercises AS (
@@ -187,8 +183,6 @@ export async function GET(
     // If RPC doesn't work, fall back to direct query construction
     let finalHeatmapData: any[]
     if (heatmapError) {
-      console.log('🔄 RPC failed, using direct query execution')
-      
       const { data: rawData, error: directError } = await supabase
         .from('program_metcons')
         .select(`
@@ -268,8 +262,6 @@ export async function GET(
       globalFitnessScore,
       totalCompletedWorkouts: globalScoreData?.length || 0
     }
-
-    console.log(`✅ Heat map generated: ${exercises.length} exercises, ${timeDomains.length} time domains`)
 
     return NextResponse.json({
       success: true,

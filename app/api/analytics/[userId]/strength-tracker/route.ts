@@ -79,8 +79,6 @@ export async function GET(
       )
     }
 
-    console.log(`💪 Generating strength analysis for User ${userIdNum}, Movement: ${movement} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
-
     // Calculate date range
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - timeRange)
@@ -158,8 +156,6 @@ export async function GET(
         permissionLevel
       }
     }
-
-    console.log(`✅ Strength analysis generated: ${performanceData.length} sessions analyzed`)
 
     return NextResponse.json(response)
 

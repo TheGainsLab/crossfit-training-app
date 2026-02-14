@@ -21,22 +21,10 @@ export default function BTNExerciseHeatMap() {
       const url = equipmentFilter !== 'all' 
         ? `/api/btn/exercise-heatmap?equip=${equipmentFilter}`
         : '/api/btn/exercise-heatmap'
-      console.log('🔥 BTN Heatmap: Fetching data from', url)
       const response = await fetch(url)
-      console.log('📡 BTN Heatmap: Response status:', response.status, response.ok ? 'OK' : 'ERROR')
-      
       if (response.ok) {
         const result = await response.json()
-        console.log('📊 BTN Heatmap: API Response:', result)
-        
         if (result.success && result.data) {
-          console.log('✅ BTN Heatmap: Data loaded successfully')
-          console.log('  - Exercises:', result.data.exercises?.length || 0)
-          console.log('  - Time Domains:', result.data.timeDomains?.length || 0)
-          console.log('  - Cells:', result.data.heatmapCells?.length || 0)
-          console.log('  - Total Completed:', result.data.totalCompletedWorkouts || 0)
-          console.log('  - Raw data:', JSON.stringify(result.data, null, 2))
-          
           // API now returns data in SAME format as Premium - no transformation needed!
           setHeatMapData(result.data)
         } else {

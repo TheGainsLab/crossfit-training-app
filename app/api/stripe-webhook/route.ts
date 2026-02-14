@@ -26,7 +26,6 @@ async function getPlanFromPriceId(priceId: string): Promise<string> {
     }
     
     // Default to premium if not found
-    console.log(`⚠️ Price ID ${priceId} not found in subscription_tiers, defaulting to premium`)
     return 'premium'
   } catch (error) {
     console.error('❌ Error querying subscription_tiers:', error)
@@ -144,15 +143,11 @@ async function generateRenewalProgram(stripeSubscriptionId: string) {
     }
 
     const nextProgramNumber = (programData?.[0]?.program_number || 0) + 1
-    console.log(`Generating program #${nextProgramNumber} for user ${subscription.user_id} (type: ${programType})`)
-
     // Get current user data from settings
     const currentUserData = await getCurrentUserData(subscription.user_id)
 
     // Always generate 4-week programs regardless of billing interval
     const weeksToGenerate = Array.from({length: 4}, (_, i) => i + 1 + (4 * (nextProgramNumber - 1)))
-
-    console.log(`Generating program for ${weeksToGenerate.length} weeks...`)
 
     // Call program generation edge function
     const programResponse = await fetch(
@@ -215,7 +210,6 @@ async function generateRenewalProgram(stripeSubscriptionId: string) {
     )
 
     if (profileResponse.ok) {
-      console.log(`Successfully generated renewal program #${nextProgramNumber}`)
     }
 
   } catch (error) {
@@ -225,21 +219,11 @@ async function generateRenewalProgram(stripeSubscriptionId: string) {
 
 export async function POST(request: NextRequest) {
   // ADD THE DEBUG CODE HERE - FIRST THING INSIDE THE POST FUNCTION
-  console.log('=== WEBHOOK DEBUG START ===')
-  console.log('Content-Type:', request.headers.get('content-type'))
-  console.log('User-Agent:', request.headers.get('user-agent'))
-
   const body = await request.arrayBuffer()
   const bodyBuffer = Buffer.from(body)
   
-  console.log('Body length:', bodyBuffer.length)
-  console.log('Body first 200 chars:', bodyBuffer.toString().substring(0, 200))
-  
   const headersList = await headers()
   const signature = headersList.get('stripe-signature')
-  console.log('Stripe signature:', signature)
-  console.log('=== WEBHOOK DEBUG END ===')
-
   try {
     if (!signature) {
       return NextResponse.json({ error: 'No signature' }, { status: 400 })
@@ -257,8 +241,6 @@ export async function POST(request: NextRequest) {
       console.error('Webhook signature verification failed:', err)
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
     }
-
-    console.log('Processing Stripe webhook:', event.type)
 
     // Handle the event
     switch (event.type) {
@@ -291,7 +273,6 @@ export async function POST(request: NextRequest) {
         break
       
       default:
-        console.log(`Unhandled event type: ${event.type}`)
     }
 
     return NextResponse.json({ received: true })
@@ -302,15 +283,10 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  console.log('Processing checkout session completed:', session.id)
-  
   const customerEmail = session.customer_details?.email
   const customerName = session.customer_details?.name
   const stripeCustomerId = session.customer
   const amountTotal = session.amount_total
-
-  console.log(`Customer: ${customerEmail} (${customerName})`)
-  console.log(`Amount: ${amountTotal} ${session.currency}`)
 
   if (!customerEmail) {
     console.error('No customer email in session')
@@ -346,8 +322,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     if (existingUsers && existingUsers.length > 0) {
       // User exists, update subscription status
       userId = existingUsers[0].id
-      console.log(`Found existing user: ${userId}`)
-      
       const { error: updateError } = await supabase
         .from('users')
         .update({
@@ -363,17 +337,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         throw updateError
       }
       
-      console.log(`Updated existing user subscription to ${planType}`)
     } else {
       // User doesn't exist yet - API will create it when intake form submits
-      console.log('⚠️ User record not found - will be created by create-user-account API')
-      console.log('⚠️ Skipping user and subscription updates - will be handled when user is created')
       return // Skip user and subscription updates
     }
 
     // Create/update subscription record with proper Stripe data
-    console.log('Managing subscription record')
-    
     // If this is a subscription checkout, get the subscription details
     if (session.subscription) {
       const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
@@ -406,11 +375,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       if (subUpsertError) {
         console.error('Error upserting subscription:', subUpsertError)
       } else {
-        console.log('Upserted subscription with Stripe data')
       }
     }
-
-    console.log('Checkout processing complete!')
 
   } catch (dbError) {
     console.error('Database error:', dbError)
@@ -418,8 +384,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 }
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
-  console.log('Creating subscription:', subscription.id)
-  
   // Try to get user from customer metadata first
   const customer = await stripe.customers.retrieve(subscription.customer as string)
   let userId = (customer as Stripe.Customer).metadata?.user_id
@@ -470,13 +434,10 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   if (error) {
     console.error('Error upserting subscription:', error)
   } else {
-    console.log('Successfully upserted subscription record')
   }
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  console.log('Updating subscription:', subscription.id)
-  
   const { error } = await supabase
     .from('subscriptions')
     .update({
@@ -491,13 +452,10 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   if (error) {
     console.error('Error updating subscription:', error)
   } else {
-    console.log('Successfully updated subscription')
   }
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  console.log('Deleting subscription:', subscription.id)
-
   const { error } = await supabase
     .from('subscriptions')
     .update({
@@ -510,7 +468,6 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   if (error) {
     console.error('Error deleting subscription:', error)
   } else {
-    console.log('Successfully canceled subscription')
   }
 
   // Sync status to users table
@@ -529,8 +486,6 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 }
 
 async function handlePaymentSucceeded(invoice: any) {
-  console.log('Payment succeeded for invoice:', invoice.id)
-
   if (invoice.subscription) {
     const { error } = await supabase
       .from('subscriptions')
@@ -543,7 +498,6 @@ async function handlePaymentSucceeded(invoice: any) {
     if (error) {
       console.error('Error updating subscription after payment:', error)
     } else {
-      console.log('Successfully updated subscription after payment')
     }
 
     // Sync status to users table
@@ -562,15 +516,12 @@ async function handlePaymentSucceeded(invoice: any) {
 
     // NEW: Check if this is a renewal payment (not initial signup)
     if (invoice.billing_reason === 'subscription_cycle') {
-      console.log('Renewal payment detected - generating next program')
       await generateRenewalProgram(invoice.subscription as string)
     }
   }
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  console.log('Payment failed for invoice:', invoice.id)
-
   if ((invoice as any).subscription) {
     const stripeSubId = (invoice as any).subscription as string
 
@@ -585,7 +536,6 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     if (error) {
       console.error('Error updating subscription after failed payment:', error)
     } else {
-      console.log('Successfully updated subscription after failed payment')
     }
 
     // Sync status to users table
@@ -605,6 +555,5 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 }
 
 async function handleCustomerCreated(customer: Stripe.Customer) {
-  console.log('Customer created:', customer.id)
   // Store customer info if needed for future use
 }

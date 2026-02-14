@@ -31,8 +31,6 @@ export async function POST(request: NextRequest) {
 
    
 // Step 2: Call your existing Supabase edge function
-console.log(`✅ User ${userId} has active subscription (${subscriptionCheck.tierName}), generating program...`)
-
 let programData; // 👈 DECLARE HERE - outside all the blocks
 
 try {
@@ -48,14 +46,11 @@ try {
     })
   })
 
-  console.log('Edge function response status:', programResponse.status)
-  
   if (!programResponse.ok) {
     const errorText = await programResponse.text()
     console.error('Edge function error:', errorText)
     
     // If edge function fails, return a mock response so we can test the payment flow
-    console.log('Falling back to mock response for testing...')
     const mockProgramData = {
       success: true,
       program: {
@@ -93,7 +88,6 @@ try {
     programData = mockProgramData // 👈 ASSIGN (remove 'var')
   } else {
     programData = await programResponse.json() // 👈 ASSIGN (remove 'const')
-    console.log('✅ Edge function succeeded!')
   }
 } catch (fetchError) {
   console.error('Network error calling edge function:', fetchError)
@@ -138,7 +132,6 @@ try {
       console.error('Error storing program:', storeError)
       // Still return the program even if storage fails
     } else {
-      console.log('✅ Program stored successfully with ID:', storedProgram?.id)
     }
 
     return NextResponse.json({
@@ -186,7 +179,6 @@ async function checkSubscriptionStatus(userId: string) {
       .order('price_monthly', { ascending: true })
 
     if (error || !subscription) {
-      console.log('No active subscription found for user:', userId)
       return {
         hasActiveSubscription: false,
         tierId: null,
@@ -207,12 +199,6 @@ async function checkSubscriptionStatus(userId: string) {
       .eq('id', subscription.plan)
       .single()
 
-    console.log(`User ${userId} subscription check:`, {
-      status: subscription.status,
-      plan: subscription.plan,
-      isInTrial,
-      trialEnd: subscription.trial_end
-    })
 
     return {
       hasActiveSubscription: isActive || isInTrial,

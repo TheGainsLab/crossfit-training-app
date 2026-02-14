@@ -76,8 +76,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log(`📋 Getting ${status} coach invitations for athlete:`, userData.name)
-
     // Build query based on status filter
     let query = supabase
       .from('coach_athlete_relationships')
@@ -192,8 +190,6 @@ export async function GET(request: NextRequest) {
       inactive: processedInvitations.filter(inv => inv?.status === 'inactive')
     }
 
-    console.log(`✅ Retrieved ${processedInvitations.length} invitations (${summary.pending} pending, ${summary.active} active)`)
-
     return NextResponse.json({
       success: true,
       invitations: status === 'all' ? processedInvitations : processedInvitations.filter(inv => inv?.status === status),
@@ -307,8 +303,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`🔄 Bulk ${action} for ${relationshipIds.length} invitations`)
-
     // Update all specified relationships
     const newStatus = action === 'accept_all' ? 'active' : 'inactive'
     const { data: updatedRelationships, error: updateError } = await supabase
@@ -333,8 +327,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    console.log(`✅ Bulk ${action} completed: ${updatedRelationships?.length || 0} invitations processed`)
 
     return NextResponse.json({
       success: true,

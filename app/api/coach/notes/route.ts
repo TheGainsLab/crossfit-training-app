@@ -248,8 +248,6 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    console.log(`✅ Coach ${coachData.coach_name} added note for athlete ${athleteId}`)
-
     return NextResponse.json({
       success: true,
       note: newNote,

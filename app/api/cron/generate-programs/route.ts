@@ -11,8 +11,6 @@ const TEST_WINDOW_DAYS = 44
 
 export async function GET() {
   try {
-    console.log('Running scheduled program generation check...')
-
     // Get all subscribers (active or trialing) with their programs and test cycle state
     const { data: users, error } = await supabase
       .from('users')
@@ -45,11 +43,9 @@ export async function GET() {
 
         if (daysSinceWindowOpened >= TEST_WINDOW_DAYS) {
           // Fallback: Generate next cycle with existing profile data
-          console.log(`⏰ User ${user.id}: Test window expired after ${daysSinceWindowOpened} days, triggering fallback`)
           await generateFallbackProgram(user.id, user.current_cycle || 1)
           fallbacksTriggered++
         } else {
-          console.log(`⏳ User ${user.id}: Awaiting test results (${daysSinceWindowOpened}/${TEST_WINDOW_DAYS} days)`)
         }
         continue  // Skip normal time-based check for users awaiting tests
       }
@@ -74,18 +70,15 @@ export async function GET() {
         const isCycleEnd = nextProgramNumber % 3 === 0
 
         if (isCycleEnd) {
-          console.log(`🔄 User ${user.id}: Generating cycle-end program #${nextProgramNumber} with test week`)
           await generateCycleEndProgram(user.id, nextProgramNumber)
           testWindowsOpened++
         } else {
-          console.log(`📦 User ${user.id}: Generating program #${nextProgramNumber}`)
           await generateScheduledProgram(user.id, nextProgramNumber)
         }
         programsGenerated++
       }
     }
 
-    console.log(`✅ Generated ${programsGenerated} programs, ${fallbacksTriggered} fallbacks, ${testWindowsOpened} test windows opened`)
     return NextResponse.json({
       success: true,
       programsGenerated,
@@ -124,7 +117,6 @@ async function generateScheduledProgram(userId: number, programNumber: number) {
     if (insErr) {
       console.error('Failed to enqueue program generation job:', insErr)
     } else {
-      console.log(`✅ Enqueued program #${programNumber} for user ${userId} (weeks ${weeksToGenerate.join(', ')})`)
     }
   } catch (error) {
     console.error('Error enqueuing scheduled program:', error)
@@ -173,7 +165,6 @@ async function generateCycleEndProgram(userId: number, programNumber: number) {
     if (updateErr) {
       console.error('Failed to set awaiting_test_results:', updateErr)
     } else {
-      console.log(`✅ Enqueued cycle-end program #${programNumber} for user ${userId}, test window opened`)
     }
   } catch (error) {
     console.error('Error enqueuing cycle-end program:', error)
@@ -235,7 +226,6 @@ async function generateFallbackProgram(userId: number, currentCycle: number) {
         read: false
       })
 
-    console.log(`✅ Fallback: Enqueued program #${nextProgramNumber} for user ${userId}, advanced to cycle ${currentCycle + 1}`)
   } catch (error) {
     console.error('Error enqueuing fallback program:', error)
   }

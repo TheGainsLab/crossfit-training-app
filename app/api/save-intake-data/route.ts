@@ -61,8 +61,6 @@ export async function POST(request: NextRequest) {
 
     if (!effectiveUserId) effectiveUserId = userId
 
-    console.log('💾 Saving intake data for user:', effectiveUserId)
-
     // Get user's subscription tier to determine what data to save
     const { data: userData } = await supabaseAdmin
       .from('users')
@@ -71,10 +69,7 @@ export async function POST(request: NextRequest) {
       .single()
     
     const isEngineUser = userData?.subscription_tier === 'ENGINE'
-    console.log('📊 User subscription tier:', userData?.subscription_tier, '| Is Engine user:', isEngineUser)
-
     // Update user details first
-    console.log('👤 Updating user details...')
     const parsedWeight = typeof bodyWeight === 'number' ? bodyWeight : (bodyWeight ? parseFloat(bodyWeight) : null)
     const parsedHeight = typeof height === 'number' ? height : (height ? parseFloat(height) : null)
     const parsedAge = typeof age === 'number' ? age : (age ? parseInt(age) : null)
@@ -104,7 +99,6 @@ export async function POST(request: NextRequest) {
 
     // Save equipment - only update if provided
     if (equipment !== undefined && equipment !== null && !isEngineUser) {
-      console.log('🔧 Saving equipment...')
       await supabaseAdmin.from('user_equipment').delete().eq('user_id', effectiveUserId)
       
       if (equipment && equipment.length > 0) {
@@ -125,12 +119,9 @@ export async function POST(request: NextRequest) {
           }, { status: 500 })
         }
         
-        console.log('✅ Equipment saved:', equipment.length, 'items')
       }
     } else if (isEngineUser) {
-      console.log('⏭️ Skipping equipment save for Engine user')
     } else {
-      console.log('⏭️ Skipping equipment update - not provided in request')
     }
 
     // Save user preferences (with fallback for older schema and missing unique constraints)
@@ -195,12 +186,10 @@ export async function POST(request: NextRequest) {
         }
       }
     } else if (preferences && isEngineUser) {
-      console.log('⏭️ Skipping preferences save for Engine user')
     }
 
   // Save skills - only update if provided
   if (skills !== undefined && skills !== null && !isEngineUser) {
-    console.log('🎯 Saving skills...')
     await supabaseAdmin.from('user_skills').delete().eq('user_id', effectiveUserId)
 
     if (skills && skills.length > 0) {
@@ -232,10 +221,7 @@ export async function POST(request: NextRequest) {
           }, { status: 500 })
         }
         
-        console.log('✅ Skills saved:', skillRecords.length, 'records')
-        
         // Recalculate and update ability_level after skills are saved
-        console.log('🎯 Recalculating ability level...')
         try {
           const abilityResponse = await fetch(
             `${supabaseUrl}/functions/v1/determine-user-ability`,
@@ -251,8 +237,6 @@ export async function POST(request: NextRequest) {
           
           if (abilityResponse.ok) {
             const abilityResult = await abilityResponse.json()
-            console.log(`✅ Ability determined: ${abilityResult.ability} (${abilityResult.advancedCount} advanced, ${abilityResult.intermediateCount} intermediate)`)
-            
             // Update users table with new ability_level
             const { error: abilityUpdateError } = await supabaseAdmin
               .from('users')
@@ -265,7 +249,6 @@ export async function POST(request: NextRequest) {
             if (abilityUpdateError) {
               console.error('⚠️ Failed to update ability_level:', abilityUpdateError)
             } else {
-              console.log(`✅ Updated ability_level to: ${abilityResult.ability}`)
             }
           } else {
             const errorText = await abilityResponse.text()
@@ -278,14 +261,11 @@ export async function POST(request: NextRequest) {
       }
     }
   } else if (isEngineUser) {
-    console.log('⏭️ Skipping skills save for Engine user')
   } else {
-    console.log('⏭️ Skipping skills update - not provided in request')
   }
 
   // Save 1RMs - only update if provided
   if (oneRMs !== undefined && oneRMs !== null && !isEngineUser) {
-    console.log('💪 Saving 1RMs...')
     await supabaseAdmin.from('user_one_rms').delete().eq('user_id', effectiveUserId)
     
     if (oneRMs && oneRMs.length > 0) {
@@ -316,19 +296,13 @@ export async function POST(request: NextRequest) {
           }, { status: 500 })
         }
         
-        console.log('✅ 1RMs saved:', oneRMRecords.length, 'records')
       }
     }
   } else if (isEngineUser) {
-    console.log('⏭️ Skipping 1RMs save for Engine user')
   } else {
-    console.log('⏭️ Skipping 1RMs update - not provided in request')
   }
 
-    console.log('🎉 All intake data saved successfully')
-
     // Check user's subscription to determine weeks to generate and program type
-    console.log('📅 Checking subscription...')
     const { data: subscription, error: subError } = await supabaseAdmin
       .from('subscriptions')
       .select('billing_interval, status, plan')
@@ -359,10 +333,7 @@ export async function POST(request: NextRequest) {
     // Engine users don't need program generation - they use static workouts
     // But they DO need a user profile generated for /profile page access
     if (isEngine) {
-      console.log('🎯 Engine user - skipping program generation, generating profile only')
-      
       // Generate user profile (needed for /profile page)
-      console.log(`📊 Generating user profile...`)
       const profileResponse = await fetch(
         `${supabaseUrl}/functions/v1/generate-user-profile`,
         {
@@ -390,8 +361,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 })
       }
 
-      console.log(`✅ Engine user profile generated successfully!`)
-      
       return NextResponse.json({ 
         success: true,
         message: 'Intake data saved and profile generated for Engine user',
@@ -404,10 +373,7 @@ export async function POST(request: NextRequest) {
     // BTN users don't need program generation - they use the workout generator
     // But they DO need a user profile generated for /profile page access
     if (isBTN) {
-      console.log('🎯 BTN user - skipping program generation, generating profile only')
-      
       // Generate user profile (needed for /profile page)
-      console.log(`📊 Generating user profile...`)
       const profileResponse = await fetch(
         `${supabaseUrl}/functions/v1/generate-user-profile`,
         {
@@ -435,8 +401,6 @@ export async function POST(request: NextRequest) {
         }, { status: 500 })
       }
 
-      console.log(`✅ BTN user profile generated successfully!`)
-      
       return NextResponse.json({ 
         success: true,
         message: 'Intake data saved and profile generated for BTN user',
@@ -446,8 +410,6 @@ export async function POST(request: NextRequest) {
       })
     }
     
-    console.log(`🏋️ Generating ${isAppliedPower ? 'Applied Power' : 'Full'} program for ${weeksToGenerate.length} weeks...`)
-
     // Check if user already has a program - only generate if this is their first program
     const { data: existingPrograms } = await supabaseAdmin
       .from('programs')
@@ -456,9 +418,7 @@ export async function POST(request: NextRequest) {
       .limit(1)
 
     if (existingPrograms && existingPrograms.length > 0) {
-      console.log(`ℹ️ User already has program(s) - skipping program generation on intake update`)
       // Still generate profile since that can be updated
-      console.log(`📊 Generating updated user profile...`)
       const profileResponse = await fetch(
         `${supabaseUrl}/functions/v1/generate-user-profile`,
         {
@@ -479,7 +439,6 @@ export async function POST(request: NextRequest) {
         const errorText = await profileResponse.text()
         console.error('❌ Profile generation failed:', errorText)
       } else {
-        console.log(`✅ Profile regenerated successfully!`)
       }
       
       return NextResponse.json({ 
@@ -541,8 +500,6 @@ export async function POST(request: NextRequest) {
       console.error('Failed to save program to database:', programSaveError)
       // Continue anyway - program was generated successfully
     }
-
-    console.log(`✅ Program generated successfully!`)
 
     // Persist scaffold into program_workouts honoring training_days_per_week
     try {
@@ -628,15 +585,12 @@ export async function POST(request: NextRequest) {
           if (engineErr) {
             console.warn('program_metcons (Engine) insert warning:', engineErr.message)
           } else {
-            console.log(`✅ Saved ${engineRows.length} Engine workouts to program_metcons`)
           }
         }
       }
     } catch (scaffoldErr: any) {
       console.warn('Failed to persist program_workouts scaffold (non-fatal):', scaffoldErr?.message || scaffoldErr)
     }
-
-    console.log(`📊 Generating user profile...`)
 
     const profileResponse = await fetch(
       `${supabaseUrl}/functions/v1/generate-user-profile`,
@@ -658,7 +612,6 @@ export async function POST(request: NextRequest) {
       const errorText = await profileResponse.text()
       console.error('❌ Profile generation failed:', errorText)
     } else {
-      console.log(`✅ Profile generated successfully!`)
     }
 
     return NextResponse.json({
