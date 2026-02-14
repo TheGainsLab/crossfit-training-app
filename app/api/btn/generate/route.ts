@@ -39,16 +39,6 @@ export async function POST(request: NextRequest) {
       excludeExercises
     } = body
 
-    console.log('🎲 API: Generating workouts with filters:', {
-      selectedDomains,
-      barbellFilter,
-      dumbbellFilter,
-      cardioFilter,
-      exerciseCount,
-      workoutFormat,
-      includeExercises,
-      excludeExercises
-    })
 
     // Fetch user profile for personalized generation
     let userProfile: UserProfile | undefined = undefined
@@ -107,7 +97,6 @@ export async function POST(request: NextRequest) {
             gender: profileData?.gender || 'Male',
             units: 'lbs' // Default to pounds for BTN workouts
           }
-          console.log('✅ User profile loaded for generation')
         }
       }
     } catch (profileError) {
@@ -153,8 +142,6 @@ export async function POST(request: NextRequest) {
       includeExercises && includeExercises.length > 0 ? includeExercises : undefined,
       excludeExercises && excludeExercises.length > 0 ? excludeExercises : undefined
     )
-
-    console.log(`✅ Generated ${workouts.length} workouts via API`)
 
     return NextResponse.json({
       success: true,

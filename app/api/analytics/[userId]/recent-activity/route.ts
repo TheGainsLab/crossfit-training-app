@@ -70,8 +70,6 @@ export async function GET(
       )
     }
 
-    console.log(`📈 Fetching recent activity for User ${userIdNum} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
-
     // Get performance data - all-time to align with session review and dashboard semantics
     const { data: performanceData, error: perfError } = await supabase
       .from('performance_logs')
@@ -122,8 +120,6 @@ export async function GET(
         permissionLevel
       }
     }
-
-    console.log(`✅ Recent activity processed: ${recentSessions.length} active days found`)
 
     return NextResponse.json(response)
 

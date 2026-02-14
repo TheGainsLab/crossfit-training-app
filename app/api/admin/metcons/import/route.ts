@@ -106,7 +106,6 @@ export async function POST(req: NextRequest) {
       if (truncateError) {
         return NextResponse.json({ error: `Truncate failed: ${truncateError.message}` }, { status: 400 })
       }
-      console.log('Truncated metcons table')
     }
 
     let inserted = 0

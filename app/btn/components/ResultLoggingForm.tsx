@@ -86,10 +86,6 @@ export default function ResultLoggingForm({
       return
     }
 
-    console.log('📝 Form submit - exercises:', exercises, 'count:', exercises?.length || 0)
-    console.log('📝 Form submit - taskRPEs:', taskRPEs)
-    console.log('📝 Form submit - taskQualities:', taskQualities)
-
     setSaving(true)
     try {
       // Build task completions array
@@ -101,8 +97,6 @@ export default function ResultLoggingForm({
           quality: taskQualities[exerciseName] || 'C'
         }
       })
-
-      console.log('📊 Built taskCompletions:', taskCompletions, 'count:', taskCompletions.length)
 
       const response = await fetch('/api/btn/log-result', {
         method: 'POST',

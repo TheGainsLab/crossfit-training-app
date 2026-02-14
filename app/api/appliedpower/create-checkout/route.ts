@@ -11,8 +11,6 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚀 Applied Power checkout: Starting checkout session creation')
-    
     // Get Applied Power tier from subscription_tiers table
     const { data: tier, error: tierError } = await supabase
       .from('subscription_tiers')
@@ -44,8 +42,6 @@ export async function POST(request: NextRequest) {
       user = authUser
     }
     
-    console.log('👤 User logged in:', !!user, user?.email)
-
     let stripeCustomerId: string | undefined
     let userId: string | undefined
 
@@ -59,17 +55,13 @@ export async function POST(request: NextRequest) {
           .single()
 
         if (userError) {
-          console.log('⚠️ User lookup error (not fatal):', userError.message)
         }
 
         if (userData) {
           userId = userData.id.toString()
           stripeCustomerId = userData.stripe_customer_id
-          console.log('📊 User data found:', { userId, hasStripeCustomer: !!stripeCustomerId })
-
           // If they don't have a stripe customer yet, create one
           if (!stripeCustomerId) {
-            console.log('🔨 Creating new Stripe customer')
             const customer = await stripe.customers.create({
               email: userData.email,
               name: userData.name,
@@ -79,8 +71,6 @@ export async function POST(request: NextRequest) {
               }
             })
             stripeCustomerId = customer.id
-            console.log('✅ Stripe customer created:', stripeCustomerId)
-
             // Update user with stripe_customer_id
             await supabase
               .from('users')
@@ -89,14 +79,11 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (err) {
-        console.log('⚠️ User lookup error (continuing):', err)
       }
     }
 
     // Get the base URL from request origin
     const origin = request.headers.get('origin') || 'https://www.thegainsai.com'
-    console.log('🌐 Using origin for URLs:', origin)
-
     // Create Stripe Checkout session
     const sessionConfig: any = {
       payment_method_types: ['card'],
@@ -127,16 +114,11 @@ export async function POST(request: NextRequest) {
       sessionConfig.customer = stripeCustomerId
       sessionConfig.metadata.user_id = userId
       sessionConfig.subscription_data.metadata.user_id = userId
-      console.log('✅ Using existing customer:', stripeCustomerId)
     } else {
       // If not logged in, let Stripe collect email
-      console.log('📧 Stripe will collect customer email')
     }
 
-    console.log('💳 Creating Stripe checkout session...')
     const session = await stripe.checkout.sessions.create(sessionConfig)
-    console.log('✅ Checkout session created:', session.id)
-
     return NextResponse.json({ 
       sessionId: session.id, 
       url: session.url 

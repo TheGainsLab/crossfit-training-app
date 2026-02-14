@@ -63,8 +63,6 @@ export async function PATCH(
     const body = await request.json()
     const { result, notes } = body
 
-    console.log(`📝 Logging result for BTN workout ${workoutId}`)
-
     // Verify workout belongs to user
     const { data: workout, error: fetchError } = await supabase
       .from('program_metcons')
@@ -128,8 +126,6 @@ export async function PATCH(
         }
       )
     }
-
-    console.log(`✅ Logged result for BTN workout ${workoutId}: ${result}`)
 
     return NextResponse.json({ 
       success: true,
@@ -196,8 +192,6 @@ export async function DELETE(
       )
     }
 
-    console.log(`🗑️ Deleting BTN workout ${workoutId}`)
-
     // Delete workout (only if it belongs to user)
     const { error } = await supabase
       .from('program_metcons')
@@ -216,8 +210,6 @@ export async function DELETE(
         }
       )
     }
-
-    console.log(`✅ Deleted BTN workout ${workoutId}`)
 
     return NextResponse.json({ 
       success: true,

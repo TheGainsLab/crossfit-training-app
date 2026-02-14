@@ -71,8 +71,6 @@ export async function POST(request: NextRequest) {
       experienceYears = 1
     } = body
 
-    console.log('📝 Creating coach application for user:', userData.id)
-
     // Check if user already has a pending/approved application
     const { data: existingApp, error: checkError } = await supabase
       .from('coach_applications')
@@ -122,8 +120,6 @@ export async function POST(request: NextRequest) {
     }
 
     // FOR TESTING: Auto-approve the application and create coach record
-    console.log('🚀 Auto-approving application for testing...')
-
     // Update application to approved
     await supabase
       .from('coach_applications')
@@ -161,8 +157,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    console.log('✅ Coach application and approval completed!')
 
     return NextResponse.json({
       success: true,

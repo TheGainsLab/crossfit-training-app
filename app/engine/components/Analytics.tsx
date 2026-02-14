@@ -5841,11 +5841,6 @@ export default function Analytics({ onBack }: AnalyticsProps) {
     }
     
     // Debug: Log session data
-    console.log('🔍 Work:Rest Ratio Debug:', {
-      totalSessions: filteredSessions.length,
-      sessionsWithWorkoutData: filteredSessions.filter((s: WorkoutSession) => s.workout_data).length,
-      sampleSession: filteredSessions.find(s => s.workout_data)?.workout_data
-    });
     
     // Group sessions by work:rest ratio, filtering out continuous workouts
     const ratioGroups: Record<string, any[]> = {};
@@ -5868,12 +5863,6 @@ export default function Analytics({ onBack }: AnalyticsProps) {
       ratioGroups[ratioKey].push(session);
     });
     
-    console.log('🔍 Work:Rest Ratio Calculation:', {
-      ratiosFound,
-      ratiosFiltered,
-      ratioGroups: Object.keys(ratioGroups).length,
-      ratioKeys: Object.keys(ratioGroups)
-    });
 
     // Calculate stats for each ratio group
     const ratioStats = Object.entries(ratioGroups).map(([ratio, sessions]) => {

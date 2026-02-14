@@ -46,8 +46,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('🔍 Checking coach role for user:', user.id)
-
     // Get user from users table to get the internal user ID
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -56,7 +54,6 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (userError || !userData) {
-      console.log('❌ User not found in users table:', userError)
       return NextResponse.json(
         { 
           success: false, 
@@ -88,7 +85,6 @@ export async function GET(request: NextRequest) {
 
     if (coachError) {
       // Coach not found or not approved - this is normal for regular users
-      console.log('👤 User is not an approved coach')
       return NextResponse.json({
         success: true,
         isCoach: false,
@@ -101,7 +97,6 @@ export async function GET(request: NextRequest) {
     }
 
     // User is an approved coach
-    console.log('✅ User is an approved coach:', coachData.coach_name)
     return NextResponse.json({
       success: true,
       isCoach: true,

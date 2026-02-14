@@ -94,8 +94,6 @@ export async function POST(
       )
     }
 
-    console.log(`🤝 Athlete ${userData.name} ${action}ing coach invitation...`)
-
     // Get the pending relationship with coach details
     const { data: relationship, error: relationshipError } = await supabase
       .from('coach_athlete_relationships')
@@ -170,8 +168,6 @@ export async function POST(
     }
 
     if (action === 'accept') {
-      console.log('✅ Coach invitation accepted successfully')
-      
       // TODO: In production, send notification email to coach
       // await sendAcceptanceNotificationEmail(coach.users.email, userData.name)
 
@@ -198,8 +194,6 @@ export async function POST(
         }
       })
     } else {
-      console.log('❌ Coach invitation declined')
-      
       // TODO: In production, send notification email to coach
       // await sendDeclineNotificationEmail(coach.users.email, userData.name, message)
 

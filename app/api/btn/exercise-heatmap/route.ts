@@ -65,8 +65,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log(`🔥 Generating BTN exercise heat map for User ${userData.id}`)
-
     // Optional equipment filter
     const equip = new URL(request.url).searchParams.get('equip') || ''
 
@@ -111,8 +109,6 @@ export async function GET(request: NextRequest) {
     // Note: Equipment filtering is now done at the exercise/task level inside processWorkoutsToHeatmap
     // This allows filtering individual exercises within a workout (e.g., if a workout has deadlifts and burpees,
     // and "Barbell" filter is applied, only deadlifts will be shown)
-    console.log(`📊 Processing ${workouts.length} BTN workouts (filtering at exercise level)`)
-
     // Fetch RPE/Quality data from performance_logs for all BTN workouts
     const workoutIds = workouts.map(w => w.id)
     const { data: rpeQualityData, error: rpeError } = await supabase
@@ -174,8 +170,6 @@ export async function GET(request: NextRequest) {
       totalCompletedWorkouts: workouts.length,
       timeDomainWorkoutCounts
     }
-
-    console.log(`✅ Heat map generated: ${exercises.length} exercises, ${timeDomains.length} time domains, ${responseData.heatmapCells.length} cells, global fitness score: ${globalFitnessScore}%`)
 
     return NextResponse.json({
       success: true,
@@ -266,15 +260,12 @@ function processWorkoutsToHeatmap(workouts: any[], equipmentFilter?: string, rpe
     }
   })
 
-  console.log('🔍 Processing BTN workouts for heat map...')
-
   workouts.forEach(workout => {
     const percentile = parseFloat(workout.percentile)
     const avgHR = workout.avg_heart_rate ? parseFloat(workout.avg_heart_rate) : null
     const maxHR = workout.max_heart_rate ? parseFloat(workout.max_heart_rate) : null
     
     if (isNaN(percentile)) {
-      console.log(`⚠️ Workout ${workout.id} has invalid percentile: ${workout.percentile}`)
       return
     }
     
@@ -282,7 +273,6 @@ function processWorkoutsToHeatmap(workouts: any[], equipmentFilter?: string, rpe
     const timeRange = timeDomainMapping[workout.time_domain] || null
     
     if (!timeRange) {
-      console.log(`⚠️ Unknown time domain: ${workout.time_domain}`)
       return
     }
 
@@ -290,7 +280,6 @@ function processWorkoutsToHeatmap(workouts: any[], equipmentFilter?: string, rpe
     const exercises = workout.exercises || []
     
     if (!Array.isArray(exercises) || exercises.length === 0) {
-      console.log(`⚠️ Workout ${workout.id} has no exercises`)
       return
     }
 
@@ -299,7 +288,6 @@ function processWorkoutsToHeatmap(workouts: any[], equipmentFilter?: string, rpe
     exercises.forEach((exercise: any) => {
       const exerciseName = exercise.name
       if (!exerciseName) {
-        console.log(`⚠️ Exercise missing name:`, exercise)
         return
       }
 
@@ -378,8 +366,6 @@ function processWorkoutsToHeatmap(workouts: any[], equipmentFilter?: string, rpe
     })
   })
 
-  console.log(`📊 Found ${exerciseTimeMap.size} unique exercises`)
-
   // Convert to heat map cell format
   const result: ExerciseHeatmapCell[] = []
   
@@ -412,8 +398,6 @@ function processWorkoutsToHeatmap(workouts: any[], equipmentFilter?: string, rpe
   timeDomainWorkoutMap.forEach((workoutIds, timeRange) => {
     timeDomainWorkoutCounts[timeRange] = workoutIds.size
   })
-
-  console.log(`✅ Generated ${result.length} heat map cells with percentiles`)
 
   return { cells: result, timeDomainWorkoutCounts }
 }

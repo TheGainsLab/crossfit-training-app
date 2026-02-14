@@ -50,8 +50,6 @@ export async function GET(request: NextRequest) {
     const filter = searchParams.get('filter') // 'all', 'completed', 'incomplete'
     const limit = parseInt(searchParams.get('limit') || '100')
 
-    console.log(`📖 Fetching BTN workouts for user ${userData.id} (filter: ${filter || 'all'})`)
-
     // First, get ALL workouts for stats calculation (no filter applied)
     const { data: allWorkouts, error: allError } = await supabase
       .from('program_metcons')
@@ -100,11 +98,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log(`✅ Found ${workouts.length} BTN workouts (filtered), ${totalWorkouts} total workouts`)
     if (workouts.length > 0) {
-      console.log('First workout:', { id: workouts[0].id, name: workouts[0].workout_name, user_id: workouts[0].user_id, workout_type: workouts[0].workout_type })
     } else {
-      console.log('No workouts found. Query was for user_id:', userData.id, 'workout_type: btn')
     }
 
     return NextResponse.json({ 

@@ -9,8 +9,6 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🏋️ Program generation API called')
-    
     // Parse the request body
     const body = await request.json()
     const { namedValues, weeksToGenerate = [1, 2, 3, 4], userId } = body
@@ -31,13 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
 
-console.log(`📝 Generating program for user ${userId}, weeks: ${weeksToGenerate.join(', ')}`)
-
 // Add this debug logging
-console.log('🔍 Request body being sent to edge function:', JSON.stringify({
-  namedValues,
-  weeksToGenerate
-}, null, 2))
 
 const { data: programData, error: generationError } = await supabase.functions.invoke('generate-program', {
   body: {
@@ -47,8 +39,6 @@ const { data: programData, error: generationError } = await supabase.functions.i
 })
 
 // Add this too
-console.log('🔍 Edge function response:', { programData, error: generationError })
-
     if (generationError) {
       console.error('❌ Program generation failed:', generationError)
       return NextResponse.json(
@@ -64,8 +54,6 @@ console.log('🔍 Edge function response:', { programData, error: generationErro
         { status: 500 }
       )
     }
-
-    console.log('✅ Program generated successfully, saving to database...')
 
 // Store the generated program in the database
     const { data: storedProgram, error: storageError } = await supabase
@@ -94,8 +82,6 @@ console.log('🔍 Edge function response:', { programData, error: generationErro
         { status: 500 }
       )
     }
-
-    console.log(`✅ Program stored successfully with ID: ${storedProgram.id}`)
 
     // Return success response with program ID and metadata
     return NextResponse.json({

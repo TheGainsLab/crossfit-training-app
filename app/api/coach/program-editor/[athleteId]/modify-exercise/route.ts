@@ -76,10 +76,6 @@ export async function PUT(
 const requestingUserId = userData.id;
 
 // ADD THESE DEBUG LOGS HERE:
-console.log('🔍 DEBUG - Requesting user ID (coach):', requestingUserId, typeof requestingUserId);
-console.log('🔍 DEBUG - Athlete ID from URL:', athleteId, typeof athleteId);
-console.log('🔍 DEBUG - Athlete ID as int:', parseInt(athleteId));
-
 // Get coach ID from coaches table
 const { data: coachData, error: coachError } = await supabase
   .from('coaches')
@@ -92,8 +88,6 @@ if (coachError || !coachData) {
 }
 
 const coachId = coachData.id;
-console.log('🔍 DEBUG - Coach ID from coaches table:', coachId);
-
 // Check permissions - only coaches can modify
 const permissionCheck = await canAccessAthleteData(supabase, requestingUserId, parseInt(athleteId));
    
@@ -140,8 +134,6 @@ const { exerciseId, exerciseIndex, week, day, programId, block, modifications } 
         error: 'Exercise name is required' 
       }, { status: 400 });
     }
-
-console.log('🔍 DEBUG - Searching for: coach_id =', coachId, 'athlete_id =', parseInt(athleteId), 'status = active'); 
 
 // Get the coach-athlete relationship ID
 const { data: relationship, error: relationshipError } = await supabase

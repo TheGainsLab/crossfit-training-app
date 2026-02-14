@@ -103,8 +103,6 @@ export async function GET(
       )
     }
 
-    console.log(`📊 Generating analytics dashboard for User ${userIdNum} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
-
     // Calculate optional date range (all-time if rangeDays is null)
     const startDate = rangeDays ? new Date() : null
     if (startDate && rangeDays) {
@@ -233,8 +231,6 @@ export async function GET(
         permissionLevel
       }
     }
-
-    console.log(`✅ Dashboard generated successfully`)
 
     return NextResponse.json(response)
 

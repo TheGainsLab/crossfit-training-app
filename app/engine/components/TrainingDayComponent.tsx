@@ -266,27 +266,11 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
     // Check connection directly - same pattern as loadWorkoutData
     const isActuallyConnected = engineDatabaseService.isConnected();
     
-    console.log('🔍 Performance metrics useEffect:', {
-      dayNumber,
-      selectedModality,
-      workoutDayType: workout?.day_type,
-      workoutExists: !!workout,
-      workoutId: workout?.id,
-      isActuallyConnected,
-      willLoad: selectedModality && workout?.day_type && isActuallyConnected
-    });
     
     if (selectedModality && workout?.day_type && isActuallyConnected) {
-      console.log('🔄 Loading performance metrics and workout history');
       loadPerformanceMetrics();
       loadWorkoutHistory();
     } else {
-      console.log('⚠️ Not loading performance metrics - conditions:', {
-        hasModality: !!selectedModality,
-        hasDayType: !!workout?.day_type,
-        workoutExists: !!workout,
-        isConnected: isActuallyConnected
-      });
     }
   }, [dayNumber, selectedModality, workout?.day_type, connected]);
 
@@ -296,10 +280,8 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
     if (!dayNumber) return;
     
     if (selectedModality && baselines[selectedModality] && (performanceMetrics !== null || !connected)) {
-      console.log('🔄 Auto-recalculating paces due to data change');
       recalculateTargetPaces();
     } else if (!selectedModality || !baselines[selectedModality]) {
-      console.log('🔄 Cannot recalculate paces - baselines not loaded yet');
     }
   }, [dayNumber, selectedModality, baselines, performanceMetrics, connected]);
 
@@ -318,7 +300,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
     if (!dayNumber) return;
     
     const isConnected = engineDatabaseService.isConnected();
-    console.log('🔍 TrainingDay: Database connection status:', isConnected);
     setConnected(isConnected);
     
     // Check connection periodically (engineDatabaseService doesn't have subscribe)
@@ -600,14 +581,9 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
     
     const isActuallyConnected = engineDatabaseService.isConnected();
     
-    console.log('🔍 TrainingDay: Loading workout for day', dayNumber);
-    
     try {
       if (isActuallyConnected) {
-        console.log('✅ Connected - loading workout for day:', dayNumber);
         const workoutData = await engineDatabaseService.loadWorkoutForDay(dayNumber);
-        console.log('📦 Workout data received:', workoutData);
-        
         if (workoutData) {
           setWorkout(workoutData);
           initializeWorkout(workoutData);
@@ -647,18 +623,12 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
   const loadBaselineForModality = async () => {
     if (!selectedModality) return;
     
-    console.log('🔍 Loading baseline for modality:', selectedModality);
-    
     // Check connection directly - same pattern as loadWorkoutData
     const isActuallyConnected = engineDatabaseService.isConnected();
-    console.log('🔍 Connection check for baseline:', isActuallyConnected);
-    
     if (isActuallyConnected) {
       try {
         const baseline = await engineDatabaseService.loadTimeTrialBaselines(selectedModality);
-        console.log('🔍 Baseline API response:', baseline);
         if (baseline && baseline.calculated_rpm) {
-          console.log('✅ Baseline loaded successfully');
           setBaselines(prev => ({
             ...prev,
             [selectedModality]: {
@@ -703,15 +673,8 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
     // Check connection directly - same pattern as loadWorkoutData
     const isActuallyConnected = engineDatabaseService.isConnected();
     
-    console.log('🔍 loadPerformanceMetrics called:', {
-      isActuallyConnected,
-      selectedModality,
-      workoutDayType: workout?.day_type,
-      willProceed: isActuallyConnected && selectedModality && workout?.day_type
-    });
     
     if (!isActuallyConnected || !selectedModality || !workout?.day_type) {
-      console.log('⚠️ loadPerformanceMetrics: Returning early - conditions not met');
       return;
     }
     
@@ -744,18 +707,11 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
         const rocketRacesAProgramDayNumber = currentProgramDayNumber - 3;
         
         if (rocketRacesAProgramDayNumber < 1) {
-          console.log('⚠️ Rocket Races B: No Rocket Races A exists (would be < day 1)');
           setRocketRacesACompleted(false);
           setPerformanceMetrics(null);
           return;
         }
         
-        console.log('🔍 Rocket Races B: Checking for Rocket Races A', {
-          currentDay: currentProgramDayNumber,
-          sourceDay: dayNumber,
-          rocketRacesADay: rocketRacesAProgramDayNumber,
-          programVersion
-        });
         
         // Check if Rocket Races A was completed
         const rocketRacesASession = await engineDatabaseService.getWorkoutSessionByDay(
@@ -765,7 +721,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
         );
         
         if (rocketRacesASession) {
-          console.log('✅ Rocket Races B: Found completed Rocket Races A session:', rocketRacesASession);
           setRocketRacesACompleted(true);
           
           // Load performance metrics for Rocket Races A (not B)
@@ -776,23 +731,19 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
           );
           
           if (metrics) {
-            console.log('📊 Rocket Races B: Loaded inherited metrics from Rocket Races A:', metrics);
             setPerformanceMetrics(metrics);
           } else {
             // Fallback: use actual_pace from the completed session
             if (rocketRacesASession.actual_pace) {
-              console.log('📊 Rocket Races B: Using actual_pace from Rocket Races A session:', rocketRacesASession.actual_pace);
               setPerformanceMetrics({
                 learned_max_pace: rocketRacesASession.actual_pace,
                 rolling_avg_ratio: null
               });
             } else {
-              console.log('⚠️ Rocket Races B: Rocket Races A completed but no metrics/pace found');
               setPerformanceMetrics(null);
             }
           }
         } else {
-          console.log('⚠️ Rocket Races B: Rocket Races A (program day', rocketRacesAProgramDayNumber, ') not completed yet');
           setRocketRacesACompleted(false);
           setPerformanceMetrics(null);
         }
@@ -801,11 +752,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
       }
       
       // Standard loading for all other day types
-      console.log('🔍 Fetching performance metrics for:', {
-        userId,
-        dayType: workout.day_type,
-        modality: selectedModality
-      });
       
       const metrics = await engineDatabaseService.getPerformanceMetrics(
         userId,
@@ -814,14 +760,8 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
       );
       
       if (metrics) {
-        console.log('📊 Loaded performance metrics:', metrics);
-        console.log('📊 rolling_avg_ratio:', metrics.rolling_avg_ratio);
         setPerformanceMetrics(metrics);
       } else {
-        console.log('No performance metrics found yet for:', {
-          dayType: workout.day_type,
-          modality: selectedModality
-        });
         setPerformanceMetrics(null);
       }
     } catch (error) {
@@ -841,10 +781,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
       return;
     }
     
-    console.log('🔍 Loading workout history for:', {
-      modality: selectedModality,
-      day_type: workout.day_type
-    });
     
     try {
       const userId = engineDatabaseService.getUserId();
@@ -900,13 +836,10 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
           return dateB.getTime() - dateA.getTime();
         });
         
-        console.log('🔍 Final time trial history:', sortedSessions);
         setWorkoutHistory(sortedSessions);
       } else {
         // For regular workouts, use existing logic
       const allSessions = await engineDatabaseService.loadCompletedSessions();
-      console.log('🔍 All completed sessions:', allSessions);
-      
       // Filter sessions by modality and day_type
       const filteredSessions = (allSessions || []).filter((session: any) => {
         const sessionModality = session.modality;
@@ -916,20 +849,9 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
         const modalityMatch = sessionModality === selectedModality;
         const dayTypeMatch = sessionDayType === workoutDataDayType;
         
-        console.log('🔍 Session filter check:', {
-          sessionId: session.id,
-          sessionModality,
-          sessionDayType,
-          workoutDataDayType,
-          modalityMatch,
-          dayTypeMatch,
-          passes: modalityMatch && dayTypeMatch
-        });
         
         return modalityMatch && dayTypeMatch;
       });
-      
-      console.log('🔍 Filtered sessions:', filteredSessions);
       
       // Sort by date (most recent first)
       const sortedSessions = filteredSessions.sort((a: any, b: any) => {
@@ -938,7 +860,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
         return dateB.getTime() - dateA.getTime();
       });
       
-      console.log('🔍 Final workout history:', sortedSessions);
       setWorkoutHistory(sortedSessions);
       }
     } catch (error) {
@@ -1065,14 +986,10 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
       { params: workoutData.block_4_params, number: 4 }
     ].filter((block: any) => block.params && Object.keys(block.params).length > 0);
 
-    console.log(`🔍 Processing ${blocks.length} blocks for day type: ${dayType}`);
-
     blocks.forEach((block, blockIndex) => {
       const blockParams = block.params;
       const blockNumber = block.number;
       
-      console.log(`🔍 Processing Block ${blockNumber}:`, blockParams);
-
       const workDuration = blockParams.workDuration || 60;
       const restDuration = blockParams.restDuration || 0;
       const rounds = blockParams.rounds || 1;
@@ -1081,12 +998,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
 
       // Check if block has valid duration data
       const hasValidDuration = workDuration > 0;
-      console.log(`✅ Block ${blockNumber} has valid duration data:`, {
-        workDuration,
-        workDurationOptions: blockParams.workDurationOptions,
-        restDuration,
-        restDurationOptions: blockParams.restDurationOptions
-      });
 
       // Special handling for different day types
       if (dayType === 'endurance' || dayType === 'time_trial') {
@@ -2098,7 +2009,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
           };
           
           await engineDatabaseService.saveWorkoutSession(sessionData);
-          console.log('✅ Time trial workout session created');
         } catch (sessionError) {
           console.error('⚠️ Error creating workout session for time trial:', sessionError);
           // Don't fail the entire time trial save if session creation fails
@@ -2122,8 +2032,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
   };
 
   const saveWorkoutSession = async (formValues: any = null) => {
-    console.log('🚀 saveWorkoutSession called', { formValues: !!formValues, connected, selectedModality, hasBaseline: !!baselines[selectedModality] });
-    
     if (!connected) {
       console.warn('❌ Cannot save: not connected');
       return;
@@ -2239,26 +2147,10 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
         avgTargetPace = totalWeightedPace / totalDuration;
       }
       
-      console.log('🔍 Performance Ratio Calculation Debug:', {
-        totalIntervals: sessionData.intervals.length,
-        totalDuration: totalDuration,
-        hasValidPace: hasValidPace,
-        avgTargetPace: avgTargetPace,
-        averagePace: averagePace,
-        isFluxDay: sessionData.intervals.some(i => i.fluxDuration && i.baseDuration)
-      });
       
-      console.log('📊 Calculation Results:', {
-        avgTargetPace: avgTargetPace,
-        averagePace: averagePace,
-        conditionPasses: avgTargetPace !== null && avgTargetPace > 0 && averagePace > 0,
-        willCalculate: avgTargetPace !== null && avgTargetPace > 0 && averagePace > 0,
-        reasonIfNot: avgTargetPace === null ? 'no valid target paces found' : !(avgTargetPace > 0) ? 'avgTargetPace <= 0' : !(averagePace > 0) ? 'averagePace <= 0' : 'all conditions met'
-      });
       
       if (avgTargetPace !== null && avgTargetPace > 0 && averagePace > 0) {
         performanceRatio = averagePace / avgTargetPace;
-        console.log('✅ Performance Ratio Calculated:', performanceRatio);
       } else {
         console.warn('⚠️ Performance Ratio NOT Calculated:', {
           reason: avgTargetPace === null ? 'no valid target paces found (all intervals may have null targetPace, invalid paceRange, or max effort markers without pace)' : !(avgTargetPace > 0) ? 'avgTargetPace <= 0' : 'averagePace <= 0',
@@ -2376,13 +2268,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
         avg_work_rest_ratio: avgWorkRestRatio
       };
 
-      console.log('💾 Saving workout session with:', {
-        total_output: sessionDataToSave.total_output,
-        actual_pace: sessionDataToSave.actual_pace,
-        target_pace: sessionDataToSave.target_pace,
-        performance_ratio: sessionDataToSave.performance_ratio,
-        day_type: sessionDataToSave.day_type
-      });
 
       await engineDatabaseService.saveWorkoutSession(sessionDataToSave);
       
@@ -2395,13 +2280,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
       // For max effort days, update using actualPace (doesn't need performanceRatio)
       // For other days, only update if we have performanceRatio
       if (workout?.day_type && selectedModality && (isMaxEffort || performanceRatio)) {
-        console.log('🔄 Updating performance metrics:', {
-          day_type: workout.day_type,
-          modality: selectedModality,
-          performanceRatio: performanceRatio,
-          actualPace: averagePace,
-          isMaxEffort: isMaxEffort
-        });
         
         const userId = engineDatabaseService.getUserId();
         if (!userId) {
@@ -2418,7 +2296,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
           isMaxEffort
         );
         
-        console.log('✅ Performance metrics updated');
       } else {
         console.warn('⚠️ Performance metrics NOT updated:', {
           reason: !workout?.day_type ? 'no day_type' : !selectedModality ? 'no modality' : isMaxEffort ? 'max effort but no actualPace' : 'no performanceRatio',
@@ -2433,11 +2310,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
       // Mark workout as saved
       setIsWorkoutSaved(true);
       
-      console.log('Workout session saved successfully', {
-        program_day: dayNumber,
-        program_version: programVersion,
-        program_day_number: programDayNumber
-      });
     } catch (error) {
       console.error('Error saving workout session:', error);
       window.alert('Error saving workout session. Please try again.');
@@ -3129,17 +3001,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
                     
                     {/* Unit Selection - Show when modality selected */}
                     {(() => {
-                      console.log('🔍 TrainingDayComponent Unit Selection Debug:', {
-                        selectedModality,
-                        currentView,
-                        scoreUnits,
-                        scoreUnitsType: typeof scoreUnits,
-                        scoreUnitsIsArray: Array.isArray(scoreUnits),
-                        scoreUnitsLength: scoreUnits?.length,
-                        timeTrialSelectedUnit,
-                        timeTrialShowUnitSelection,
-                        conditionMet: !!selectedModality
-                      });
                       return null;
                     })()}
                     {selectedModality && (
@@ -3167,17 +3028,10 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
                           gap: '0.75rem'
                         }}>
                           {(() => {
-                            console.log('🔍 Inside unit selection grid:', {
-                              scoreUnits,
-                              isArray: Array.isArray(scoreUnits),
-                              length: scoreUnits?.length,
-                              willRenderButtons: scoreUnits && Array.isArray(scoreUnits) && scoreUnits.length > 0
-                            });
                             return null;
                           })()}
                           {scoreUnits && Array.isArray(scoreUnits) && scoreUnits.length > 0 ? (
                             scoreUnits.map((unit: any) => {
-                              console.log('🔍 Rendering unit button:', unit);
                               return (
                                 <button
                                   key={unit.value}
@@ -4270,15 +4124,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
               
               {/* Warning message when no baseline exists for selected modality */}
               {(() => {
-                console.log('🔍 Warning Check:', {
-                  selectedModality,
-                  currentView,
-                  dayType: workout?.day_type,
-                  isTimeTrial: workout?.day_type === 'time_trial',
-                  baselines,
-                  hasBaseline: !!baselines[selectedModality],
-                  shouldShow: selectedModality && workout?.day_type !== 'time_trial' && !baselines[selectedModality]
-                });
                 return null;
               })()}
               {selectedModality && workout?.day_type !== 'time_trial' && !baselines[selectedModality] && (
@@ -5005,15 +4850,6 @@ export default function TrainingDayComponent({ dayNumber, onBack, onBackToMonth 
               
               {/* Warning message when no baseline exists for selected modality */}
               {(() => {
-                console.log('🔍 Preview View Warning Check:', {
-                  selectedModality,
-                  currentView,
-                  dayType: workout?.day_type,
-                  isTimeTrial: workout?.day_type === 'time_trial',
-                  baselines,
-                  hasBaseline: !!baselines[selectedModality],
-                  shouldShow: selectedModality && workout?.day_type !== 'time_trial' && !baselines[selectedModality]
-                });
                 return null;
               })()}
               {selectedModality && workout?.day_type !== 'time_trial' && !baselines[selectedModality] && (

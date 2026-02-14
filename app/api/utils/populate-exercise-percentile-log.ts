@@ -77,7 +77,6 @@ export async function populateExercisePercentileLog(
     }
 
     if (exercises.length === 0) {
-      console.log(`⚠️ No exercises found for program_metcon ${programMetconId}`)
       return
     }
 
@@ -113,7 +112,6 @@ export async function populateExercisePercentileLog(
     if (insertError) {
       console.error('❌ Error inserting exercise_percentile_log:', insertError)
     } else {
-      console.log(`✅ Populated exercise_percentile_log: ${logEntries.length} exercises for MetCon ${programMetconId}`)
     }
   } catch (error) {
     console.error('❌ Error in populateExercisePercentileLog:', error)

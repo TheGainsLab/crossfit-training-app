@@ -112,8 +112,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('🎯 Coach', coachData.coach_name, 'inviting athlete...')
-
     // Find the athlete by email or ID
     let athleteData
     if (athleteId) {
@@ -236,8 +234,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    console.log('✅ Invitation created successfully')
 
     // TODO: In production, send email notification to athlete
     // await sendInvitationEmail(athleteData.email, coachData.coach_name, message)

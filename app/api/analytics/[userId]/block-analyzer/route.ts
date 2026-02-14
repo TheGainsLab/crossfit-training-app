@@ -78,8 +78,6 @@ export async function GET(
       )
     }
 
-    console.log(`📊 Generating block analysis for User ${userIdNum}, Block: ${blockName} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
-
     // Query weekly summaries for block analysis
     const { data: weeklySummaries, error: summaryError } = await supabase
       .from('weekly_summaries')
@@ -144,8 +142,6 @@ export async function GET(
         analysisType
       }
     }
-
-    console.log(`✅ Block analysis generated: ${weeklySummaries.length} weeks analyzed`)
 
     return NextResponse.json(response)
 

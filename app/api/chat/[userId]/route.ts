@@ -86,7 +86,6 @@ export async function POST(
     const equipment = request.headers.get('x-equipment') || null
     const level = request.headers.get('x-level') || null
     if (actionName) {
-      console.log('[CHAT][action]', { userId: parseInt(userId), actionName, domain, range, block, filterRpe, filterQuality, mode, limit, sort, pattern, timeDomain, equipment, level })
     }
     // Deterministic, view-backed answers only (no LLM SQL; no chips path)
     let assistantData: { response: string, context?: any }

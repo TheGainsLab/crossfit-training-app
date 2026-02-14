@@ -17,7 +17,6 @@ export async function createClientForRequest(request: NextRequest) {
     }
   } catch (error) {
     // If cookies don't work, try Authorization header
-    console.log('Server client failed, trying Authorization header')
   }
 
   // Fall back to Authorization header (for mobile)
@@ -45,7 +44,6 @@ export async function createClientForRequest(request: NextRequest) {
     if (user && !error) {
       return client
     } else {
-      console.log('Authorization header token invalid:', error)
     }
   }
 

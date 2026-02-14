@@ -91,8 +91,6 @@ export async function GET(
       )
     }
 
-    console.log(`📊 Generating MetCon time domain analysis for User ${userIdNum} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
-
     // Calculate date range
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - timeRange)
@@ -213,8 +211,6 @@ const timeDomainAnalysis = processMetConTimeDomainData(metconData, timeDomain)
         analysisType: 'MetCon Time Domain Analysis'
       }
     }
-
-    console.log(`✅ MetCon analysis generated: ${metconData.length} workouts analyzed`)
 
     return NextResponse.json(response)
 

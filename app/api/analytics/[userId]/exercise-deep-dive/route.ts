@@ -81,7 +81,6 @@ export async function GET(
     // Get requesting user ID from authentication
     const { userId: requestingUserId, error: authError } = await getUserIdFromAuth(supabase)
     if (authError || !requestingUserId) {
-      console.log('Auth error:', authError)
       return NextResponse.json(
         { error: authError || 'Unauthorized', details: 'Auth session missing!' },
         { status: 401 }
@@ -96,14 +95,11 @@ export async function GET(
     )
 
     if (!hasAccess) {
-      console.log('User verification error: No access')
       return NextResponse.json(
         { error: 'Unauthorized access to user data' },
         { status: 403 }
       )
     }
-
-    console.log(`📊 Generating exercise deep dive for User ${userIdNum}: ${exercise} in ${block} (${isCoach ? `Coach access - ${permissionLevel}` : 'Self access'})`)
 
     // Calculate date range
     const startDate = new Date()
@@ -214,9 +210,6 @@ if (!metrics) {
 }
 
 // ADD THIS DEBUG LOG:
-console.log('🔍 Debug - metrics.timing:', metrics.timing)
-
-
     // Generate insights and recommendations
     const insights = generateDataReflectiveInsights(metrics)
     const recommendations = generateCoachCollaborativeRecommendations(metrics)
@@ -300,8 +293,6 @@ trends: {
         blockContext: `${exercise} in ${block} block`
       }
     }
-
-    console.log(`✅ Exercise deep dive generated: ${performanceData.length} sessions, ${insights.length} insights`)
 
     return NextResponse.json(response)
 
