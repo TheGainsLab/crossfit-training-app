@@ -40,9 +40,9 @@ export default function SignIn() {
           .single()
 
         if (userData) {
-          // BTN users should go to workout history
+          // BTN users should go to the workout generator
           if (userData.subscription_tier === 'BTN') {
-            router.push('/btn/workouts')
+            router.push('/btn')
             return
           }
           

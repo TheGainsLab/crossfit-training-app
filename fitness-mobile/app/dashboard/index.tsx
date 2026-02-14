@@ -104,6 +104,13 @@ export default function Dashboard() {
       setSubscriptionTier(userData.subscription_tier)
       setUserId(userData.id)
 
+      // BTN users don't have traditional programs — skip program queries
+      if (userData.subscription_tier === 'BTN') {
+        setLoading(false)
+        setRefreshing(false)
+        return
+      }
+
       // Get user's programs
       const { data: programs, error: programsError } = await supabase
         .from('programs')
@@ -647,12 +654,25 @@ export default function Dashboard() {
       >
         {currentWeek.length === 0 ? (
           <Card style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>
-              No Workouts Found
-            </Text>
-            <Text style={styles.emptyText}>
-              Please generate your program on the web app
-            </Text>
+            {subscriptionTier === 'BTN' ? (
+              <>
+                <Text style={styles.emptyTitle}>
+                  BTN Workout Generator
+                </Text>
+                <Text style={styles.emptyText}>
+                  Generate personalized workouts at thegainsai.com/btn
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.emptyTitle}>
+                  No Workouts Found
+                </Text>
+                <Text style={styles.emptyText}>
+                  Your program is being prepared. Pull down to refresh.
+                </Text>
+              </>
+            )}
           </Card>
         ) : (
           <>
