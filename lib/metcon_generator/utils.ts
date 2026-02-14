@@ -1,5 +1,5 @@
 import { Workout, PerformancePrediction, GeneratedWorkout, Exercise } from './types';
-import { exerciseDatabase } from './data';
+import { exerciseDatabase } from '../btn/data';
 
 /**
  * BACKUP: Complete Rep Restrictions for All 21 Exercises
@@ -1203,7 +1203,7 @@ function calculateWorkoutDuration(exercises: Exercise[], format: string, rounds?
 }
 
 
-function generateWeightForExercise(exerciseName: string): string {
+function generateWeightForExercise(exerciseName: string): string | undefined {
   // Any Dumbbell Exercises (check this FIRST to catch dumbbell exercises before other checks)
   if (exerciseName.includes('Dumbbell')) {
     return '50/35'; // Fixed weight for all dumbbell exercises
@@ -1314,29 +1314,28 @@ export async function generateMLEnhancedWorkouts(): Promise<GeneratedWorkout[]> 
       
       // Step 4: Generate exercises that work with the selected pattern (if For Time)
       const exercises = generateExercisesForTimeDomain(domain.targetDuration, format, rounds, pattern);
-        
-        // Apply pattern to exercises (override the 0 reps)
-        if (pattern) {
-          const patternReps = pattern.split('-').map(Number);
-          exercises.forEach((exercise, index) => {
-            // Get the target reps from the pattern
-            const targetReps = patternReps[index % patternReps.length];
-            
-            // Use the existing rep calculation function to get a reasonable base
-            const baseReps = calculateRepsForTimeDomain(exercise.name, 5, 'AMRAP', 1, 1);
-            
-            // Scale the base reps to match the pattern proportionally
-            const scaleFactor = targetReps / baseReps;
-            const scaledReps = Math.round(baseReps * scaleFactor);
-            
-            // Use the existing function again to find the closest allowed rep count
-            const finalReps = calculateRepsForTimeDomain(exercise.name, Math.max(scaledReps, 1), 'AMRAP', 1, 1);
-            
-            exercise.reps = finalReps;
-          });
-        }
+
+      // Apply pattern to exercises (override the 0 reps)
+      if (pattern) {
+        const patternReps = pattern.split('-').map(Number);
+        exercises.forEach((exercise, index) => {
+          // Get the target reps from the pattern
+          const targetReps = patternReps[index % patternReps.length];
+
+          // Use the existing rep calculation function to get a reasonable base
+          const baseReps = calculateRepsForTimeDomain(exercise.name, 5, 'AMRAP', 1, 1);
+
+          // Scale the base reps to match the pattern proportionally
+          const scaleFactor = targetReps / baseReps;
+          const scaledReps = Math.round(baseReps * scaleFactor);
+
+          // Use the existing function again to find the closest allowed rep count
+          const finalReps = calculateRepsForTimeDomain(exercise.name, Math.max(scaledReps, 1), 'AMRAP', 1, 1);
+
+          exercise.reps = finalReps;
+        });
       }
-      
+
       // Calculate actual completion time
       let calculatedDuration = calculateWorkoutDuration(exercises, format, rounds, amrapTime, pattern);
       
@@ -1369,7 +1368,8 @@ export async function generateMLEnhancedWorkouts(): Promise<GeneratedWorkout[]> 
       };
       workouts.push(workout);
     }
-  
+  }
+
   return workouts;
 }
 

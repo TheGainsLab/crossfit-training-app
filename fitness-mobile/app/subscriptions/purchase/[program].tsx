@@ -15,6 +15,7 @@ import { PurchasesPackage } from 'react-native-purchases';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PROGRAMS, ProgramType, getOfferings, purchasePackage, PROGRAM_TO_TIER, OFFERING_IDS } from '@/lib/subscriptions';
 import { createClient } from '@/lib/supabase/client';
+import { useRevenueCat } from '@/lib/revenuecat-provider';
 
 type BillingPeriod = 'monthly' | 'quarterly' | 'yearly';
 
@@ -30,11 +31,14 @@ export default function PurchaseScreen() {
     yearly: null,
   });
 
+  const { isInitialized, initError, retryInit } = useRevenueCat();
   const program = PROGRAMS[programId as ProgramType];
 
   useEffect(() => {
-    loadOfferings();
-  }, []);
+    if (isInitialized) {
+      loadOfferings();
+    }
+  }, [isInitialized]);
 
   const loadOfferings = async () => {
     try {
@@ -181,7 +185,25 @@ export default function PurchaseScreen() {
     );
   }
 
-  if (loading) {
+  if (initError) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Ionicons name="cloud-offline-outline" size={48} color="#9CA3AF" />
+        <Text style={styles.loadingText}>Unable to connect to the store</Text>
+        <Text style={[styles.loadingText, { fontSize: 14, marginTop: 4 }]}>
+          Check your connection and try again
+        </Text>
+        <TouchableOpacity
+          style={[styles.subscribeButton, { marginTop: 24, paddingHorizontal: 32 }]}
+          onPress={retryInit}
+        >
+          <Text style={styles.subscribeButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (loading || !isInitialized) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FE5858" />
