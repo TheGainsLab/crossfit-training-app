@@ -4,11 +4,10 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 import '../global.css';
-import Purchases from 'react-native-purchases';
+import { RevenueCatProvider } from '@/lib/revenuecat-provider';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -42,28 +41,15 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  // Initialize RevenueCat
-  useEffect(() => {
-    const initializeRevenueCat = async () => {
-      if (Platform.OS === 'ios') {
-        await Purchases.configure({
-          apiKey: 'appl_umJNBJEnUpZyeMlXteBXflPGrXB',
-        });
-      } else if (Platform.OS === 'android') {
-        await Purchases.configure({
-          apiKey: 'goog_RijRQlrMpQARWJGCdKKWulDNfOj',
-        });
-      }
-    };
-
-    initializeRevenueCat().catch(err => console.error('RevenueCat init failed:', err));
-  }, []);
-
   if (!loaded) {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <RevenueCatProvider>
+      <RootLayoutNav />
+    </RevenueCatProvider>
+  );
 }
 
 function RootLayoutNav() {

@@ -97,6 +97,9 @@ export default function SignUp() {
         let subscriptionTier = null
         let hasActiveSubscription = false
 
+        // Check AsyncStorage for pending program FIRST (always available, no network needed)
+        const pendingProgram = await AsyncStorage.getItem('pending_subscription_program')
+
         try {
           console.log('[Signup] Getting RevenueCat customer info...')
           const customerInfo = await withTimeout(Purchases.getCustomerInfo(), 5000)
@@ -107,9 +110,6 @@ export default function SignUp() {
             if (activeEntitlements.length > 0) {
               hasActiveSubscription = true
 
-              // Get pending program from AsyncStorage
-              const pendingProgram = await AsyncStorage.getItem('pending_subscription_program')
-
               if (pendingProgram) {
                 subscriptionTier = PROGRAM_TO_TIER[pendingProgram]
                 console.log('[Signup] Mapped program to tier:', pendingProgram, '->', subscriptionTier)
@@ -119,10 +119,19 @@ export default function SignUp() {
               }
             }
           } else {
-            console.log('[Signup] RevenueCat getCustomerInfo timed out, continuing without subscription...')
+            console.log('[Signup] RevenueCat getCustomerInfo timed out')
           }
         } catch (error) {
           console.error('[Signup] Error getting customer info:', error)
+        }
+
+        // Fallback: if RevenueCat timed out or failed but we have a pending program,
+        // trust the pending purchase. The user completed a purchase through the App Store
+        // before signing up, so AsyncStorage has the program they paid for.
+        if (!subscriptionTier && pendingProgram) {
+          console.log('[Signup] RevenueCat unavailable, falling back to pending program:', pendingProgram)
+          subscriptionTier = PROGRAM_TO_TIER[pendingProgram]
+          hasActiveSubscription = true
         }
 
         // Create or update user record with subscription info
