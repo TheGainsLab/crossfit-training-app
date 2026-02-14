@@ -1188,7 +1188,7 @@ export default function Dashboard() {
               No Workouts Found
             </Text>
             <Text style={styles.emptyText}>
-              Please generate your program on the web app
+              Your program is being prepared. Pull down to refresh.
             </Text>
           </Card>
         ) : (
