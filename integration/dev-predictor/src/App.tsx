@@ -78,11 +78,11 @@ function getNextLevelTarget(ratio: number, thresholds: { beginner: number; inter
 }
 
   // Helper function to get next level target ratio
-  const getNextLevelRatio = (currentRatio: number, thresholds: StrengthThresholds, isMale: boolean) => {
-    if (currentRatio < thresholds.beginner) return isMale ? thresholds.beginner : thresholds.beginner;
-    if (currentRatio < thresholds.intermediate) return isMale ? thresholds.intermediate : thresholds.intermediate;
-    if (currentRatio < thresholds.advanced) return isMale ? thresholds.advanced : thresholds.advanced;
-    return isMale ? thresholds.elite : thresholds.elite;
+  const getNextLevelRatio = (currentRatio: number, thresholds: { beginner: number; intermediate: number; advanced: number; elite: number }, isMale: boolean) => {
+    if (currentRatio < thresholds.beginner) return thresholds.beginner;
+    if (currentRatio < thresholds.intermediate) return thresholds.intermediate;
+    if (currentRatio < thresholds.advanced) return thresholds.advanced;
+    return thresholds.elite;
   };
 
 // Bar Chart Component for Olympic Lift Analysis
