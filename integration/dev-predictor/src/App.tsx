@@ -171,7 +171,7 @@ function App() {
   };
 
   const exportWorkouts = () => {
-    const workouts = [];
+    const workouts: any[] = [];
     
     // Generate 100 workouts balanced across time domains (20 per domain)
     // We'll generate 10 sets of 10 workouts (2 per time domain) to ensure balance
