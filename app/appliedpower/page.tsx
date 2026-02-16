@@ -8,10 +8,7 @@ export default function AppliedPowerPage() {
           
           <div className="max-w-3xl mx-auto mb-8">
             <p className="text-lg md:text-xl mb-6">
-              You train hard. You show up for the MetCons, the skills work, the conditioning. But your lifts aren't where they should be — and the group program isn't going to fix that.
-            </p>
-            <p className="text-lg md:text-xl mb-6">
-              Strength gives you a dedicated, AI-generated lifting program built from your numbers, your movement quality, and your specific weaknesses. Same platform. Same personalization. Focused entirely on getting you stronger.
+              Applied Power is built from your numbers, your movement quality, and your specific weaknesses. Same AI-Powered platform. Same personalization. Focused entirely on getting you stronger.
             </p>
           </div>
 
