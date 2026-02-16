@@ -50,13 +50,10 @@ export default function AppliedPowerPage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">THE PROBLEM</h2>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Most strength programs work. Lift heavy, use compound movements, recover well — you'll get stronger. That's not the hard part.
+              Most strength programs work for a while. Lift heavy, use compound movements, recover well — you'll get stronger for a while. It's not magic. But lifts diverge and imbalances appear. Plateaus are inevitable, and most programs don't have an answer because they don't have your data. Applied Power sees the plateau and the underlying reason. Where do you need technical tweaks? How to adjust volume and intensity? Applied Power knows.
             </p>
             <p className="text-lg text-gray-700">
-              The hard part is knowing where your time is best spent. Which lifts need more volume. Where technique is limiting your numbers. When a progression has stalled. Most programs can't answer those questions because they don't have your data.
-            </p>
-            <p className="text-lg text-gray-700">
-              Gains AI starts by mapping your lifts — not just your maxes, but how they relate to each other and to your body weight. If your clean is lagging relative to your back squat, that points to a technical gap, not a strength gap. The diagnostic tells us where strength work pays off and where technical work or accessories will move the needle faster.
+              Applied Power starts by mapping your lifts — not just your maxes, but all key relationships. If your clean is lagging relative to your back squat, your technical work and volume reflects this. Deadlift outpacing your squat? Applied Power adjusts. As you train, AI keeps your training aligned with your progress.
             </p>
             <div className="bg-gray-100 rounded-lg p-8 mt-8">
               <p className="text-gray-400 italic text-sm text-center">
