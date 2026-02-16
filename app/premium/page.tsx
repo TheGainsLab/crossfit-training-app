@@ -50,17 +50,17 @@ export default function PremiumPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8">WHAT YOU'RE TRAINING</h2>
           <p className="text-xl text-gray-700 text-center font-semibold mb-12 max-w-3xl mx-auto">
-            Six training blocks. Each one personalized. All of them connected.
+            Personalized and integrated
           </p>
           <div className="max-w-4xl mx-auto space-y-6">
             <p className="text-lg text-gray-700">
-              Strong on cleans but still getting the hang of double unders? Your program reflects that. Crushing short workouts but gassing out on longer pieces? Every domain moves at your pace, not a template's.
+              Beast on the barbell but struggle on gymnastics? Crushing short workouts but gassing out on longer pieces? Each segment of your training moves at your pace, not a template's.
             </p>
             <p className="text-lg text-gray-700">
-              Because your training is personalized, your data becomes more valuable. As you log your results, that data feeds an AI engine that keeps your program aligned with your progress — automatically.
+              Personalized training creates valuable data. Your results feed into an AI engine that aligns your training with your progress — automatically. When you improve, AI knows.
             </p>
             <p className="text-lg text-gray-700">
-              There are no black boxes. Your analytics tab shows you exactly what the system sees, so you're never guessing what's driving your training.
+              Full transparency here. Your analytics tab shows you exactly what the system sees, so you always know what's driving your training.
             </p>
           </div>
         </div>
