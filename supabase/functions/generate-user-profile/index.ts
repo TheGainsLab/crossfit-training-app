@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { buildUserContextForProgram } from '../_shared/user-context.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -71,60 +72,17 @@ serve(async (req) => {
       }
     }
 
-    // Step 1: Fetch complete user data
-    console.log('📊 Step 1: Fetching user data...')
-    const userData = await fetchCompleteUserData(supabase, user_id)
-    console.log(`✅ User data fetched: ${userData.name}, ${userData.gender}, ${userData.equipment.length} equipment items`)
+    // Fetch user context (profile, skills, ability, ratios - all in one)
+    console.log('📊 Fetching user context (profile, skills, ability, ratios)...')
+    const userContext = await buildUserContextForProgram(supabase, user_id)
+    console.log(`✅ User context: ${userContext.name}, ability: ${userContext.ability}, Snatch level: ${(userContext as any).snatch_level}`)
 
-    // Step 2: Determine user ability
-    console.log('🎯 Step 2: Determining user ability...')
-    const abilityResponse = await fetch(`${supabaseUrl}/functions/v1/determine-user-ability`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ user_id })
-    })
-
-    if (!abilityResponse.ok) {
-      throw new Error('Failed to determine user ability: ' + await abilityResponse.text())
-    }
-
-    const abilityResult = await abilityResponse.json()
-    console.log(`✅ User ability: ${abilityResult.ability} (${abilityResult.advancedCount} advanced skills)`)
-
-    // Merge ability data with user data
-    const user = {
-      ...userData,
-      skills: abilityResult.skills,
-      ability: abilityResult.ability
-    }
-
-    // Step 3: Calculate ratios
-    console.log('🧮 Step 3: Calculating ratios...')
-    const ratiosResponse = await fetch(`${supabaseUrl}/functions/v1/calculate-ratios`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ user_id })
-    })
-
-    if (!ratiosResponse.ok) {
-      throw new Error('Failed to calculate ratios: ' + await ratiosResponse.text())
-    }
-
-    const ratiosResult = await ratiosResponse.json()
-    console.log(`✅ Ratios calculated: Snatch level: ${ratiosResult.ratios.snatch_level}`)
-
-    // Step 4: Generate profile analysis
-    console.log('📋 Step 4: Generating profile analysis...')
-    const profile = generateUserProfile(user, ratiosResult.ratios, abilityResult, sport_id)
+    // Generate profile analysis
+    console.log('📋 Generating profile analysis...')
+    const profile = generateUserProfile(userContext, sport_id)
     console.log(`✅ Profile generated with ${profile.missing_data.length} missing data items`)
 
-    // Step 5: Store in database
+    // Store in database
     console.log('💾 Step 5: Storing in database...')
     await storeUserProfile(supabase, user_id, sport_id, profile)
     console.log(`✅ Profile stored successfully`)
@@ -160,95 +118,11 @@ serve(async (req) => {
   }
 })
 
-// === FETCH COMPLETE USER DATA ===
-async function fetchCompleteUserData(supabase: any, user_id: number) {
-  console.log(`📊 Fetching complete user data for user ${user_id}`)
-
-  // Fetch basic user info
-  const { data: user, error: userError } = await supabase
-    .from('users')
-    .select(`
-      name,
-      email,
-      gender,
-      body_weight,
-      units,
-      ability_level,
-      conditioning_benchmarks
-    `)
-    .eq('id', user_id)
-    .single()
-
-  if (userError) {
-    throw new Error(`Failed to fetch user data: ${userError.message}`)
-  }
-
-  // Fetch equipment
-  const { data: equipment, error: equipmentError } = await supabase
-    .from('user_equipment')
-    .select('equipment_name')
-    .eq('user_id', user_id)
-
-  if (equipmentError) {
-    throw new Error(`Failed to fetch equipment: ${equipmentError.message}`)
-  }
-
-  // Fetch 1RMs (latest for each exercise)
-  const { data: oneRMs, error: oneRMsError } = await supabase
-    .from('latest_user_one_rms')
-    .select('one_rm_index, one_rm')
-    .eq('user_id', user_id)
-    .order('one_rm_index')
-
-  if (oneRMsError) {
-    throw new Error(`Failed to fetch 1RMs: ${oneRMsError.message}`)
-  }
-
-  // Convert equipment to array
-  const equipmentArray = equipment?.map(eq => eq.equipment_name) || []
-
-  // Convert 1RMs to array format (14 1RMs total)
-  const oneRMsArray = Array(14).fill(0)
-  oneRMs?.forEach(rm => {
-    if (rm.one_rm_index >= 0 && rm.one_rm_index < 14) {
-      oneRMsArray[rm.one_rm_index] = rm.one_rm
-    }
-  })
-
-// Convert benchmarks from JSONB to array format (7 benchmarks)
-const benchmarks = user.conditioning_benchmarks || {}
-const benchmarksArray = [
-  benchmarks.mile_run || '',           // Use snake_case to match database
-  benchmarks.five_k_run || '',          // Use snake_case to match database
-  benchmarks.ten_k_run || '',           // Use snake_case to match database
-  benchmarks.one_k_row || '',           // Use snake_case to match database
-  benchmarks.two_k_row || '',           // Use snake_case to match database
-  benchmarks.five_k_row || '',          // Use snake_case to match database
-  benchmarks.ten_min_air_bike || ''     // Use snake_case to match database
-];
-
-// DEBUG: Add this to verify the fix works
-console.log('🏃 Raw conditioning_benchmarks from database:', user.conditioning_benchmarks);
-console.log('🏃 Converted benchmarksArray:', benchmarksArray);
-console.log('🏃 Non-empty benchmarks:', benchmarksArray.filter(b => b !== '').length);
-
-
-  return {
-    name: user.name || 'Unknown User',
-    email: user.email || '',
-    gender: user.gender || 'Male',
-    units: user.units || 'Imperial (lbs)',
-    bodyWeight: user.body_weight || 0,
-    equipment: equipmentArray,
-    oneRMs: oneRMsArray,
-    benchmarks: benchmarksArray,
-    ability: user.ability_level || 'Beginner'
-  }
-}
-
 // === GENERATE USER PROFILE (Exact Google Script Logic) ===
-function generateUserProfile(user: any, ratios: any, abilityResult: any, sportId: number) {
+function generateUserProfile(userContext: any, sportId: number) {
   console.log('📋 Generating comprehensive user profile...')
+  const user = userContext
+  const ratios = userContext
 
   // Categorize skills (exact same logic as Google Script)
   const skillNames = ['Double Unders', 'Wall Balls', 'Toes to Bar', 'Pull-ups (kipping or butterfly)', 'Chest to Bar Pull-ups', 'Strict Pull-ups', 'Push-ups', 'Ring Dips', 'Strict Ring Dips', 'Strict Handstand Push-ups', 'Wall Facing Handstand Push-ups', 'Deficit Handstand Push-ups (4")', 'Alternating Pistols', 'GHD Sit-ups', 'Wall Walks', 'Ring Muscle Ups', 'Bar Muscle Ups', 'Rope Climbs', 'Wall Facing Handstand Hold', 'Freestanding Handstand Hold', 'Legless Rope Climbs', 'Pegboard Ascent', 'Handstand Walk (10m or 25")', 'Seated Legless Rope Climbs', 'Strict Ring Muscle Ups', 'Handstand Walk Obstacle Crossings']
