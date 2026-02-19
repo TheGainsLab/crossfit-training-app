@@ -1016,13 +1016,13 @@ async function assignExercises(
         user.press_level || 'Beginner'
       const out: any[] = []
       for (const exercise of selected) {
-        const programNotes = parseProgramNotes(exercise.program_notes, liftLevel, isDeload, false, week)
+        const programNotes = parseProgramNotes(exercise.program_notes, liftLevel, false, false, week)
         if (!programNotes.sets || !programNotes.reps) continue
         let weightTime = ''
         if (exercise.one_rm_reference && exercise.one_rm_reference !== 'None') {
           const oneRM = user.oneRMs?.[find1RMIndex(exercise.one_rm_reference)]
           if (oneRM) {
-            const percent = programNotes.percent1RM || (isDeload ? 0.5 : 0.65)
+            const percent = programNotes.percent1RM || 0.65
             let calculatedWeight = Math.round(oneRM * percent)
             const requiredEquipment = exercise.required_equipment || []
             if (requiredEquipment.includes('Barbell')) {
