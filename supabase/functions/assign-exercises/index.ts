@@ -26,6 +26,7 @@ interface AssignExercisesRequest {
   dailyStrengthExercises?: string[]
   usedStrengths?: string[]
   previousAccessoryCategoryDays?: string[][]
+  skillTargets?: [number, number]  // From skills scheduler: [skill_index_a, skill_index_b] per day
 }
 
 // Default bodyweight exercises fallback (exact from Google Script)
@@ -196,7 +197,8 @@ serve(async (req) => {
       dailyStrengthExercises = [],
       usedStrengths = [],
       previousAccessoryCategoryDays = [],
-      userPreferences: userPreferencesParam = null
+      userPreferences: userPreferencesParam = null,
+      skillTargets
     }: AssignExercisesRequest = await req.json()
 
     console.log(`🏗️ Assigning exercises: ${block} for ${user.name}, Week ${week}, Day ${day}`)
@@ -255,7 +257,8 @@ serve(async (req) => {
       usedStrengths,
       previousAccessoryCategoryDays,
       userPreferences,
-      supabase
+      supabase,
+      skillTargets
     )
 
     return new Response(
@@ -291,7 +294,8 @@ async function assignExercises(
   usedStrengths: string[],
   previousAccessoryCategoryDays: string[][],
   userPreferences: any,
-  supabase: any
+  supabase: any,
+  skillTargets?: [number, number]
 ) {
   console.log(`🏗️ Starting exercise assignment for ${block}`)
 
@@ -299,6 +303,101 @@ async function assignExercises(
   if (block === 'METCONS') {
     console.log('MetCon block - should be handled by assign-metcon function')
     return []
+  }
+
+  // SKILLS block with scheduler targets (skillTargets from skills-scheduler)
+  if (block === 'SKILLS' && skillTargets && skillTargets.length >= 2) {
+    console.log('🎯 SKILLS block with scheduler targets:', skillTargets)
+    const { data: defs } = await supabase
+      .from('skill_definitions')
+      .select('skill_index, progression_from_skill_index')
+
+    const progressionMap = new Map<number, number>()
+    ;(defs || []).forEach((d: any) => {
+      if (d.progression_from_skill_index != null) {
+        progressionMap.set(d.skill_index, d.progression_from_skill_index)
+      }
+    })
+
+    const resolveTarget = (target: number): number => {
+      let curr = target
+      const skills = user.skills || []
+      while ((!skills[curr] || skills[curr] === "Don't have it") && progressionMap.has(curr)) {
+        curr = progressionMap.get(curr)!
+      }
+      return curr
+    }
+
+    const resolvedTargets = skillTargets.map(resolveTarget)
+    console.log('   Resolved targets:', resolvedTargets)
+
+    const out: any[] = []
+    for (let slot = 0; slot < skillTargets.length; slot++) {
+      const targetIdx = resolvedTargets[slot]
+      const candidates = exerciseData.filter((ex: any) => {
+        if (!ex.can_be_skills) return false
+        const skillIndex = ex.skill_index
+        if (skillIndex == null || skillIndex < 0 || skillIndex > 25) return false
+        if (skillIndex !== targetIdx) return false
+
+        if (user.equipment?.length === 0 && !ex.bodyweight_accessible) return false
+        const requiredEquipment = ex.required_equipment || []
+        if (requiredEquipment.length && !requiredEquipment.every((eq: string) => (user.equipment || []).includes(eq))) return false
+        if (ex.prerequisite_1 && ex.prerequisite_1 !== 'None' && !checkPrerequisite(ex.prerequisite_1, user)) return false
+        if (ex.prerequisite_2 && ex.prerequisite_2 !== 'None' && !checkPrerequisite(ex.prerequisite_2, user)) return false
+
+        const userLevelStr = user.skills?.[targetIdx] ?? "Don't have it"
+        const userSkillLevel = userLevelStr === 'Advanced' ? 3 : userLevelStr === 'Intermediate' ? 2 : userLevelStr === 'Beginner' ? 1 : 0
+        const exerciseLevel = ex.difficulty_level === 'Elite' ? 4 : ex.difficulty_level === 'Advanced' ? 3 : ex.difficulty_level === 'Intermediate' ? 2 : ex.difficulty_level === 'Beginner' ? 1 : 0
+        if (exerciseLevel > userSkillLevel && userLevelStr !== "Don't have it") return false
+        if (exerciseLevel === 0 && userLevelStr !== "Don't have it") return false
+
+        if (previousDaySkills.length > 0) {
+          const prevIndices = new Set(
+            previousDaySkills.map((n: string) => {
+              const p = exerciseData.find((e: any) => e.name === n)
+              return p?.skill_index
+            }).filter((i: any) => i != null && i >= 0 && i <= 25)
+          )
+          if (prevIndices.has(targetIdx)) return false
+        }
+        return true
+      })
+
+      if (candidates.length === 0) {
+        const fallback = exerciseData.filter((ex: any) => ex.can_be_skills && ex.skill_index === targetIdx)
+        const chosen = fallback[Math.floor(Math.random() * Math.max(1, fallback.length))]
+        if (chosen) {
+          const effectiveLevel = (user.skills?.[targetIdx] ?? "Don't have it") === "Don't have it" ? 'Novice' :
+            (user.skills?.[targetIdx] || '').includes('Advanced') ? (user.skills?.filter((s: any) => s === 'Advanced').length >= 10 ? 'Elite' : 'Advanced') :
+            (user.skills?.[targetIdx] || '').includes('Intermediate') ? 'Intermediate' : 'Beginner'
+          const programNotes = parseProgramNotes(chosen.program_notes, effectiveLevel, isDeload, false, week)
+          let weightTime = ''
+          if (chosen.one_rm_reference && chosen.one_rm_reference !== 'None') {
+            const oneRM = user.oneRMs?.[find1RMIndex(chosen.one_rm_reference)]
+            if (oneRM) weightTime = roundWeight(Math.round(oneRM * (programNotes.percent1RM || 0.65)), user.units).toString()
+          } else weightTime = programNotes.weightTime || ''
+          out.push({ name: chosen.name, sets: programNotes.sets || 3, reps: programNotes.reps || '', weightTime, notes: truncateNotes(generateEnhancedNotes(null, user, week, block, chosen)) || effectiveLevel })
+        }
+      } else {
+        const chosen = candidates[Math.floor(Math.random() * candidates.length)]
+        const effectiveLevel = (user.skills?.[targetIdx] ?? "Don't have it") === "Don't have it" ? 'Novice' :
+          (user.skills?.[targetIdx] || '').includes('Advanced') ? (user.skills?.filter((s: any) => s === 'Advanced').length >= 10 ? 'Elite' : 'Advanced') :
+          (user.skills?.[targetIdx] || '').includes('Intermediate') ? 'Intermediate' : 'Beginner'
+        const programNotes = parseProgramNotes(chosen.program_notes, effectiveLevel, isDeload, false, week)
+        if (!programNotes.sets || !programNotes.reps) continue
+        let weightTime = ''
+        if (chosen.one_rm_reference && chosen.one_rm_reference !== 'None') {
+          const oneRM = user.oneRMs?.[find1RMIndex(chosen.one_rm_reference)]
+          if (oneRM) weightTime = roundWeight(Math.round(oneRM * (programNotes.percent1RM || 0.65)), user.units).toString()
+        } else weightTime = programNotes.weightTime || ''
+        out.push({ name: chosen.name, sets: programNotes.sets || '', reps: programNotes.reps || '', weightTime, notes: truncateNotes(generateEnhancedNotes(null, user, week, block, chosen)) || programNotes.notes || effectiveLevel })
+      }
+    }
+    if (out.length > 0) {
+      console.log(`✅ SKILLS (scheduler): ${out.map((e: any) => e.name).join(', ')}`)
+      return out
+    }
   }
 
   // STRENGTH AND POWER - FIXED VERSION (Process separately from general filtering)
@@ -505,7 +604,6 @@ async function assignExercises(
   if (block === 'SKILLS') {
     console.log('🎯 Processing SKILLS block...')
     console.log(`📊 Previous day skills: [${previousDaySkills.join(', ')}]`)
-    console.log(`📊 User ability: ${user.ability}`)
     console.log(`📊 User skills array length: ${user.skills?.length || 0}`)
   }
 
@@ -554,7 +652,7 @@ async function assignExercises(
         return false
       }
 
-      // Determine user's level for THIS skill; if index invalid, fall back to overall ability
+      // Determine user's level for THIS skill (skill_index always valid for SKILLS)
       const skillIndex = exercise.skill_index
       
       // NEW: Check if skill_index was used yesterday (prevents related exercises on consecutive days)
@@ -574,10 +672,11 @@ async function assignExercises(
           return false
         }
       }
-      const abilityLevel = user.ability === 'Advanced' ? 3 : user.ability === 'Intermediate' ? 2 : 1
+      // skill_index is always valid for SKILLS; fallback to Intermediate (2) if ever not
+      const fallbackLevel = 2
       const userSkillLevel = (skillIndex !== null && skillIndex !== undefined && skillIndex >= 0 && skillIndex <= 25)
         ? (user.skills[skillIndex]?.includes('Advanced') ? 3 : user.skills[skillIndex]?.includes('Intermediate') ? 2 : user.skills[skillIndex]?.includes('Beginner') ? 1 : 0)
-        : abilityLevel
+        : fallbackLevel
 
       const exerciseLevel = exercise.difficulty_level === 'Elite' ? 4 :
         exercise.difficulty_level === 'Advanced' ? 3 :
@@ -586,7 +685,7 @@ async function assignExercises(
 
       console.log(`  🔍 Checking ${exerciseName}:`)
       console.log(`     - skill_index: ${skillIndex}, difficulty_level: ${exercise.difficulty_level}`)
-      console.log(`     - userSkillLevel: ${userSkillLevel} (from ${skillIndex !== null && skillIndex !== undefined && skillIndex >= 0 && skillIndex <= 25 ? `skills[${skillIndex}]=${user.skills[skillIndex]}` : `ability=${user.ability}`})`)
+      console.log(`     - userSkillLevel: ${userSkillLevel} (from ${skillIndex !== null && skillIndex !== undefined && skillIndex >= 0 && skillIndex <= 25 ? `skills[${skillIndex}]=${user.skills[skillIndex]}` : 'fallback'})`)
       console.log(`     - exerciseLevel: ${exerciseLevel}`)
 
       // Only allow exercises at or below the user's level
@@ -716,7 +815,7 @@ async function assignExercises(
     filtered = exerciseData.filter(exercise => {
       const scalingFor = exercise.scaling_for
       const scalingOptions = exercise.scaling_options || []
-      const userLevel = user.ability === 'Advanced' ? 3 : user.ability === 'Intermediate' ? 2 : 1
+      const userLevel = 2 // Neutral default (Intermediate)
 
       return (scalingFor && exerciseData.some((ex: any) => ex.name === scalingFor && (
         (ex.difficulty_level === 'All' && userLevel >= 1) ||
@@ -777,10 +876,8 @@ async function assignExercises(
     // Prevent same category on same day
     const usedCategoriesToday = new Set<string>()
     
-    // Simple weighted random selection
-    const abilityIndex = user.ability === 'Advanced' ? 'advanced_weight' : 
-                         user.ability === 'Intermediate' ? 'intermediate_weight' : 
-                         'beginner_weight'
+    // Simple weighted random selection (use default_weight for all users)
+    const weightColumn = 'default_weight'
     
     const selectedExercises: any[] = []
     const usedIndices = new Set<number>()
@@ -806,7 +903,7 @@ async function assignExercises(
         
         // Use fallback pool
         const weights = fallbackAvailable.map(ex => 
-          parseFloat(ex[abilityIndex]) || parseFloat(ex.default_weight) || 5
+          parseFloat(ex[weightColumn]) || parseFloat(ex.default_weight) || 5
         )
         const totalWeight = weights.reduce((sum, w) => sum + w, 0)
         if (totalWeight <= 0) break
@@ -830,7 +927,7 @@ async function assignExercises(
       } else {
         // Weighted random selection from available pool
         const weights = available.map(ex => 
-          parseFloat(ex[abilityIndex]) || parseFloat(ex.default_weight) || 5
+          parseFloat(ex[weightColumn]) || parseFloat(ex.default_weight) || 5
         )
         const totalWeight = weights.reduce((sum, w) => sum + w, 0)
         if (totalWeight <= 0) break
@@ -1028,11 +1125,9 @@ try {
 } catch (error) {
   console.warn('Falling back to probabilistic selection:', error.message);
   
-  // Fallback to your existing probabilistic selection
-  const abilityIndex = user.ability === 'Advanced' ? 'advanced_weight' :
-    user.ability === 'Intermediate' ? 'intermediate_weight' : 'beginner_weight';
-
-  const weights = filtered.map(exercise => parseFloat(exercise[abilityIndex]) || parseFloat(exercise.default_weight) || 5);
+  // Fallback to probabilistic selection (use default_weight for all users)
+  const weightColumn = 'default_weight'
+  const weights = filtered.map(exercise => parseFloat(exercise[weightColumn]) || parseFloat(exercise.default_weight) || 5);
   const totalWeight = weights.reduce((sum, w) => sum + w, 0);
   const probabilities = weights.map(w => w / totalWeight);
 
@@ -1062,7 +1157,7 @@ try {
         }
         
         if (block === 'SKILLS') {
-          console.log(`  🎲 Selected ${exercise.name} (weight: ${filtered[j][abilityIndex] || 'default'}, probability: ${(probabilities[j] * 100).toFixed(2)}%)`)
+          console.log(`  🎲 Selected ${exercise.name} (weight: ${filtered[j][weightColumn] || 'default'}, probability: ${(probabilities[j] * 100).toFixed(2)}%)`)
         }
         
         let effectiveLevel;

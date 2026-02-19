@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { buildUserContextForProgram } from '../_shared/user-context.ts'
+import { runSkillsScheduler, type SkillGrid } from '../_shared/skills-scheduler.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -66,11 +67,11 @@ serve(async (req) => {
 
     console.log(`🚀 Starting program generation for user ${user_id}, weeks: ${weeksToGenerate.join(', ')}, programType: ${programType}, includeTestWeek: ${includeTestWeek}, blocks: ${blocks.join(', ')}`)
     
-    // Fetch user context (profile, skills, ability, ratios - all in one)
-    console.log('📊 Fetching user context (profile, skills, ability, ratios)...')
+    // Fetch user context (profile, skills, ratios - all in one)
+    console.log('📊 Fetching user context (profile, skills, ratios)...')
     const user = await buildUserContextForProgram(supabase, user_id)
     const ratios = user
-    console.log(`✅ User context: ${user.name}, ability: ${user.ability}, Snatch level: ${(user as any).snatch_level}`)
+    console.log(`✅ User context: ${user.name}, Snatch level: ${(user as any).snatch_level}`)
     
     // Generate program structure
     console.log('🏗️ Step 4: Generating program structure...')
@@ -111,6 +112,14 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
   
   const weeks: any[] = []
   let totalExercises = 0
+  
+  // Run skills scheduler once if SKILLS block is included
+  let skillGrid: SkillGrid = {}
+  if (blocks.includes('SKILLS')) {
+    console.log('📋 Running skills scheduler...')
+    skillGrid = await runSkillsScheduler(supabase, user, weeksToGenerate)
+    console.log(`✅ Skills grid generated for ${Object.keys(skillGrid).length} days`)
+  }
   
   // Initialize frequency tracking
   const weeklySkills: Record<string, number> = {}
@@ -351,6 +360,7 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
           // Call assign-exercises function
           const numExercises = getNumExercisesForBlock(block, mainLift, ratios, user?.preferences, isDeload)
           
+          const skillTargets = block === 'SKILLS' ? (skillGrid[`W${week}D${dayNumber}`] ?? []) : undefined
           const exerciseResponse = await fetch(`${supabaseUrl}/functions/v1/assign-exercises`, {
             method: 'POST',
             headers: {
@@ -372,7 +382,8 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
               previousDaySkills: previousDaySkills,
               dailyStrengthExercises: dailyStrengthExercises,
               usedStrengths: Array.from(usedWeeklyStrengths),
-              previousAccessoryCategoryDays: previousAccessoryCategoryDays
+              previousAccessoryCategoryDays: previousAccessoryCategoryDays,
+              skillTargets
             })
           })
           
