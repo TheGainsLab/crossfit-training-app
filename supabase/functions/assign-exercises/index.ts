@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { selectTechnicalExercises } from '../_shared/technical-work-selector.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -994,6 +995,59 @@ async function assignExercises(
     }
 
     return out
+  }
+
+  // TECHNICAL WORK block: deterministic selection via technical_exercise_focus
+  if (block === 'TECHNICAL WORK') {
+    const selected = await selectTechnicalExercises(
+      supabase,
+      filtered,
+      user,
+      mainLift,
+      week,
+      day,
+      numExercises,
+      dailyStrengthExercises || []
+    )
+    if (selected.length > 0) {
+      const liftLevel = mainLift === 'Snatch' ? user.snatch_level || 'Beginner' :
+        mainLift === 'Clean and Jerk' ? user.clean_jerk_level || 'Beginner' :
+        ['Back Squat', 'Front Squat'].includes(mainLift) ? user.back_squat_level || 'Beginner' :
+        user.press_level || 'Beginner'
+      const out: any[] = []
+      for (const exercise of selected) {
+        const programNotes = parseProgramNotes(exercise.program_notes, liftLevel, isDeload, false, week)
+        if (!programNotes.sets || !programNotes.reps) continue
+        let weightTime = ''
+        if (exercise.one_rm_reference && exercise.one_rm_reference !== 'None') {
+          const oneRM = user.oneRMs?.[find1RMIndex(exercise.one_rm_reference)]
+          if (oneRM) {
+            const percent = programNotes.percent1RM || (isDeload ? 0.5 : 0.65)
+            let calculatedWeight = Math.round(oneRM * percent)
+            const requiredEquipment = exercise.required_equipment || []
+            if (requiredEquipment.includes('Barbell')) {
+              const weightFloor = user.gender === 'Female' ? (user.units === 'Metric (kg)' ? 15 : 35) : (user.units === 'Metric (kg)' ? 20 : 45)
+              calculatedWeight = Math.max(calculatedWeight, weightFloor)
+            }
+            weightTime = roundWeight(calculatedWeight, user.units).toString()
+          }
+        } else {
+          weightTime = programNotes.weightTime || ''
+        }
+        out.push({
+          name: exercise.name,
+          sets: programNotes.sets || '',
+          reps: programNotes.reps || '',
+          weightTime,
+          notes: truncateNotes(generateEnhancedNotes(null, user, week, block, exercise)) || programNotes.notes || liftLevel
+        })
+      }
+      if (out.length > 0) {
+        console.log(`✅ TECHNICAL WORK (deterministic): ${out.map((e: any) => e.name).join(', ')}`)
+        return out
+      }
+    }
+    console.log('⚠️ TECHNICAL WORK selector returned empty, falling through to AI/probabilistic')
   }
 
 // Try AI contextual selection first, fallback to probabilistic
