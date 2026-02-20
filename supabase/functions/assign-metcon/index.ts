@@ -403,7 +403,7 @@ function selectMetCon(metconData: any[], user: any, userPreferences?: any): any 
       }
     }
 
-    // Prefer metcons containing preferred exercises (boost to front of list)
+    // Prefer metcons containing preferred exercises (80% chance to pick from preferred pool)
     if (preferred.length > 0) {
       const preferredLower = preferred.map((e: string) => e.toLowerCase().trim())
       const hasPreferred: any[] = []
@@ -418,10 +418,13 @@ function selectMetCon(metconData: any[], user: any, userPreferences?: any): any 
         if (matchesPreferred) hasPreferred.push(workout)
         else noPreferred.push(workout)
       }
-      // Reorder: preferred first, then rest
-      suitableWorkouts = [...hasPreferred, ...noPreferred]
       if (hasPreferred.length > 0) {
-        console.log(`Preferences: ${hasPreferred.length} workouts match preferred exercises (boosted)`)
+        // 80% chance to select from preferred pool, 20% from full pool for variety
+        const usePreferred = Math.random() < 0.8
+        const pool = usePreferred ? hasPreferred : suitableWorkouts
+        const idx = Math.floor(Math.random() * pool.length)
+        console.log(`Preferences: ${hasPreferred.length} workouts match preferred exercises, selecting from ${usePreferred ? 'preferred' : 'full'} pool`)
+        return pool[idx]
       }
     }
   }
