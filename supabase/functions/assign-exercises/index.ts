@@ -198,7 +198,7 @@ serve(async (req) => {
     }
 
     // Call the main assignment function
-    const exercises = await assignExercises(
+    const result = await assignExercises(
       exerciseData,
       user,
       block,
@@ -220,8 +220,15 @@ serve(async (req) => {
       skillTargets
     )
 
+    const exercises = Array.isArray(result) ? result : result.exercises
+    const usedAccessoryCategories = Array.isArray(result) ? undefined : result.usedAccessoryCategories
+    const response: Record<string, unknown> = { success: true, exercises }
+    if (Array.isArray(usedAccessoryCategories) && usedAccessoryCategories.length > 0) {
+      response.usedAccessoryCategories = usedAccessoryCategories
+    }
+
     return new Response(
-      JSON.stringify({ success: true, exercises }),
+      JSON.stringify(response),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
@@ -781,7 +788,6 @@ async function assignExercises(
   }
 
   // ACCESSORIES block: Enforce weekly slot allocation (simplified)
-  let usedAccessoryCategories: string[] = []
   if (block === 'ACCESSORIES') {
     // Define required weekly allocation (10 slots total: 2 per day × 5 days)
     const requiredAllocation: Record<string, number> = {
@@ -895,9 +901,8 @@ async function assignExercises(
       }
     }
     
-    // Track categories used
+    // Track categories used (returned so generate-program can update weeklyAccessoryCategories)
     const usedCats = Array.from(usedCategoriesToday)
-    usedAccessoryCategories = usedCats
     
     // Build output exercises
     const out: any[] = []
@@ -937,7 +942,7 @@ async function assignExercises(
       })
     }
 
-    return out
+    return { exercises: out, usedAccessoryCategories: usedCats }
   }
 
   // TECHNICAL WORK block: deterministic selection via technical_exercise_focus
