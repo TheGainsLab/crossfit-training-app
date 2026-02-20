@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -53,7 +53,7 @@ export async function GET() {
       // CASE 2: Normal time-based program generation
       const sortedPrograms = user.programs.sort((a: any, b: any) => a.program_number - b.program_number)
       const firstProgram = sortedPrograms[0]
-      const currentProgramCount = user.programs.length
+      let currentProgramCount = user.programs.length
 
       // Calculate how many programs should exist based on time since first program
       const firstProgramDate = new Date(firstProgram.generated_at)
@@ -63,8 +63,22 @@ export async function GET() {
       )
       const programsDue = monthsSinceFirst + 1
 
-      if (programsDue > currentProgramCount) {
+      // Loop to catch up on all overdue programs (not just one per cron run)
+      while (programsDue > currentProgramCount) {
         const nextProgramNumber = currentProgramCount + 1
+
+        // Skip if there's already a pending/processing job for this program
+        const { data: existingJob } = await supabase
+          .from('program_generation_jobs')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('program_number', nextProgramNumber)
+          .in('status', ['pending', 'processing'])
+          .limit(1)
+
+        if (existingJob && existingJob.length > 0) {
+          break // Job already in flight for this program number
+        }
 
         // Check if this is a cycle-end program (3, 6, 9, ...)
         const isCycleEnd = nextProgramNumber % 3 === 0
@@ -72,10 +86,13 @@ export async function GET() {
         if (isCycleEnd) {
           await generateCycleEndProgram(user.id, nextProgramNumber)
           testWindowsOpened++
+          programsGenerated++
+          break // Stop at cycle-end; test results needed before next cycle
         } else {
           await generateScheduledProgram(user.id, nextProgramNumber)
+          programsGenerated++
+          currentProgramCount++
         }
-        programsGenerated++
       }
     }
 
@@ -152,20 +169,9 @@ async function generateCycleEndProgram(userId: number, programNumber: number) {
       return
     }
 
-    // Open the test submission window
-    const { error: updateErr } = await supabase
-      .from('users')
-      .update({
-        awaiting_test_results: true,
-        awaiting_test_since: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId)
-
-    if (updateErr) {
-      console.error('Failed to set awaiting_test_results:', updateErr)
-    } else {
-    }
+    // NOTE: awaiting_test_results is set by the worker AFTER the program is
+    // successfully generated.  Setting it here caused users to get permanently
+    // blocked when the worker failed to process the job.
   } catch (error) {
     console.error('Error enqueuing cycle-end program:', error)
   }

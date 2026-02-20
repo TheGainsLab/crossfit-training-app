@@ -325,23 +325,24 @@ async function processProgramGenerationJob(job: any) {
   const userId = job.user_id
   const programNumber = job.program_number
   const weeksToGenerate = job.payload?.weeksToGenerate || [1, 2, 3, 4]
-  
-  console.log(`🔄 Processing program_generation job ${jobId} for user ${userId}, program #${programNumber}`)
-  
+  const includeTestWeek = job.payload?.includeTestWeek || false
+
+  console.log(`🔄 Processing program_generation job ${jobId} for user ${userId}, program #${programNumber}, includeTestWeek: ${includeTestWeek}`)
+
   // Get user's subscription tier to determine program type
   const { data: userData } = await supabase
     .from('users')
     .select('subscription_tier')
     .eq('id', userId)
     .single()
-  
+
   const normalizedTier = userData?.subscription_tier?.toUpperCase()
   const isEngineUser = normalizedTier === 'ENGINE'
   const isAppliedPower = normalizedTier === 'APPLIED_POWER'
   const programType = isEngineUser ? 'engine'
     : isAppliedPower ? 'applied_power'
     : 'full'
-  
+
   // Call generate-program Edge Function
   const generateResponse = await fetch(`${supabaseUrl}/functions/v1/generate-program`, {
     method: 'POST',
@@ -352,7 +353,8 @@ async function processProgramGenerationJob(job: any) {
     body: JSON.stringify({
       user_id: userId,
       weeksToGenerate,
-      programType
+      programType,
+      includeTestWeek
     })
   })
   
@@ -383,7 +385,26 @@ async function processProgramGenerationJob(job: any) {
   if (saveError) {
     throw new Error(`Failed to save program: ${saveError.message}`)
   }
-  
+
+  // For cycle-end programs (includeTestWeek), open the test submission window
+  // only AFTER the program is successfully saved
+  if (includeTestWeek) {
+    const { error: updateErr } = await supabase
+      .from('users')
+      .update({
+        awaiting_test_results: true,
+        awaiting_test_since: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId)
+
+    if (updateErr) {
+      console.error(`⚠️ Failed to set awaiting_test_results for user ${userId}:`, updateErr)
+    } else {
+      console.log(`✅ Opened test submission window for user ${userId}`)
+    }
+  }
+
   // Generate updated profile (non-critical)
   try {
     await fetch(`${supabaseUrl}/functions/v1/generate-user-profile`, {
