@@ -55,21 +55,28 @@ return new Response(
 )
     }
 
+// Fetch user preferences (optional)
+let userPreferences: any = null
+try {
+  const { data: prefs } = await supabase
+    .from('user_preferences')
+    .select('three_month_goals, monthly_primary_goal, preferred_metcon_exercises, avoided_exercises')
+    .eq('user_id', user.id || user.userProfile?.id)
+    .single()
+  userPreferences = prefs || null
+} catch (_) {}
+
+// Pre-filter metcons by equipment, skills, and 1RM before any selection path
+const filteredMetcons = filterMetconsForUser(metconData, user)
+console.log(`Pre-filtered ${metconData.length} metcons → ${filteredMetcons.length} suitable for user`)
+
 // Try intelligent AI selection first, fallback to original logic
 let selectedWorkout;
 try {
-  // Fetch user preferences (optional)
-  let userPreferences: any = null
-  try {
-    const { data: prefs } = await supabase
-      .from('user_preferences')
-      .select('three_month_goals, monthly_primary_goal, preferred_metcon_exercises, avoided_exercises')
-      .eq('user_id', user.id || user.userProfile?.id)
-      .single()
-    userPreferences = prefs || null
-  } catch (_) {}
+  if (filteredMetcons.length === 0) {
+    throw new Error('No suitable metcons after pre-filtering')
+  }
 
-  // Try intelligent AI selection first
   const intelligentResponse = await fetch(`${supabaseUrl}/functions/v1/intelligent-metcon-selection`, {
     method: 'POST',
     headers: {
@@ -80,7 +87,7 @@ try {
       user_id: user.id || user.userProfile?.id,
       week,
       day,
-      availableMetcons: metconData,
+      availableMetcons: filteredMetcons,
       preferences: userPreferences
     })
   });
@@ -98,7 +105,7 @@ try {
   }
 } catch (error) {
   console.warn('Falling back to original MetCon selection:', error.message);
-  selectedWorkout = selectMetCon(metconData, user); // Your existing function
+  selectedWorkout = selectMetCon(metconData, user, userPreferences);
 }
 
 
@@ -142,8 +149,9 @@ return new Response(
 })
 
 // === SKILL TO EXERCISE MAPPING ===
-// Maps exercise names in metcons to user skill indices
+// Maps exercise names in metcons to user skill indices (from skill_definitions table)
 // Skill levels: "Don't have it", "Beginner", "Intermediate", "Advanced"
+// Source of truth: skill_definitions table, cross-referenced with assign-exercises findSkillIndex/findSkillIndexForScaling
 const EXERCISE_TO_SKILL_INDEX: Record<string, number> = {
   // Basic CrossFit skills (indices 0-1)
   'double-under': 0, 'double under': 0, 'double unders': 0, 'dus': 0,
@@ -163,14 +171,20 @@ const EXERCISE_TO_SKILL_INDEX: Record<string, number> = {
   'wall facing hspu': 10, 'wall-facing hspu': 10, 'wall facing handstand push-up': 10,
   'deficit hspu': 11, 'deficit handstand push-up': 11,
 
-  // Additional Skills (indices 12-25)
-  'rope climb': 12, 'rope climbs': 12, 'legless rope climb': 13, 'legless rope climbs': 13,
-  'pistol': 14, 'pistols': 14, 'pistol squat': 14, 'pistol squats': 14,
-  'bar muscle-up': 15, 'bar muscle up': 15, 'bar muscle-ups': 15, 'bmu': 15,
-  'ring muscle-up': 16, 'ring muscle up': 16, 'ring muscle-ups': 16, 'muscle-up': 16, 'muscle up': 16, 'mu': 16,
-  'strict bar muscle-up': 17, 'strict bmu': 17,
-  'strict ring muscle-up': 18, 'strict muscle-up': 18, 'strict ring mu': 18,
-  'handstand walk': 19, 'handstand walking': 19, 'hs walk': 19,
+  // Additional Skills (indices 12-25) — corrected to match skill_definitions
+  'pistol': 12, 'pistols': 12, 'pistol squat': 12, 'pistol squats': 12, 'alternating pistol': 12, 'alternating pistols': 12,
+  'ghd sit-up': 13, 'ghd sit-ups': 13, 'ghd': 13,
+  'wall walk': 14, 'wall walks': 14,
+  'ring muscle-up': 15, 'ring muscle up': 15, 'ring muscle-ups': 15, 'muscle-up': 15, 'muscle up': 15, 'mu': 15,
+  'bar muscle-up': 16, 'bar muscle up': 16, 'bar muscle-ups': 16, 'bmu': 16,
+  'rope climb': 17, 'rope climbs': 17,
+  'wall facing handstand hold': 18,
+  'freestanding handstand hold': 19,
+  'legless rope climb': 20, 'legless rope climbs': 20,
+  'pegboard': 21, 'pegboard ascent': 21,
+  'handstand walk': 22, 'handstand walking': 22, 'hs walk': 22,
+  'seated legless rope climb': 23,
+  'strict ring muscle-up': 24, 'strict muscle-up': 24, 'strict ring mu': 24,
 }
 
 // === 1RM TO EXERCISE MAPPING ===
@@ -194,23 +208,17 @@ const EXERCISE_TO_1RM_INDEX: Record<string, number> = {
   'weighted pull-up': 13, 'weighted pullup': 13,
 }
 
-// === METCON SELECTION LOGIC ===
-function selectMetCon(metconData: any[], user: any): any | null {
-  console.log('Starting MetCon selection. Available workouts: ' + metconData.length)
+// === METCON FILTERING LOGIC (shared by AI and fallback paths) ===
 
-  if (!metconData || metconData.length === 0) {
-    console.log('No MetCon data available')
-    return null
-  }
-
+/** Filter metcons by equipment, skills, and 1RM capacity. Returns workouts the user can perform. */
+function filterMetconsForUser(metconData: any[], user: any): any[] {
   const userSkills = user.skills || []
   const userOneRMs = user.oneRMs || []
   const userEquipment = user.equipment || []
   const userGender = user.gender || 'Male'
 
-  // Step 1: Filter by equipment, skills, and 1RM capacity
+  // Step 1: Strict equipment + skills + 1RM filter
   let suitableWorkouts = metconData.filter(workout => {
-    // Skip completely empty rows
     if (!workout || !workout.workout_id || workout.workout_id === '' || !workout.format || workout.format === '') {
       return false
     }
@@ -219,23 +227,15 @@ function selectMetCon(metconData: any[], user: any): any | null {
     const requiredEquipment = workout.required_equipment || []
     if (requiredEquipment.length > 0 && !requiredEquipment.includes('None')) {
       if (userEquipment.length === 0) {
-        // User has no equipment - only allow bodyweight workouts
         const isBodyweight = requiredEquipment.every((eq: string) =>
           eq === 'None' || eq === '' || eq.toLowerCase() === 'bodyweight'
         )
-        if (!isBodyweight) {
-          console.log(`Excluding ${workout.workout_id}: User has no equipment`)
-          return false
-        }
+        if (!isBodyweight) return false
       } else {
-        // Check if user has all required equipment
         const hasAllEquipment = requiredEquipment.every((equipment: string) =>
           equipment === 'None' || equipment === '' || userEquipment.includes(equipment)
         )
-        if (!hasAllEquipment) {
-          console.log(`Excluding ${workout.workout_id}: Missing equipment`)
-          return false
-        }
+        if (!hasAllEquipment) return false
       }
     }
 
@@ -243,38 +243,24 @@ function selectMetCon(metconData: any[], user: any): any | null {
     const tasks = workout.tasks || []
     for (const task of tasks) {
       if (!task.exercise) continue
-
       const exerciseLower = task.exercise.toLowerCase().trim()
       const skillIndex = findSkillIndex(exerciseLower)
-
-      if (skillIndex !== -1 && userSkills[skillIndex] === "Don't have it") {
-        console.log(`Excluding ${workout.workout_id}: User doesn't have skill for ${task.exercise}`)
-        return false
-      }
+      if (skillIndex !== -1 && userSkills[skillIndex] === "Don't have it") return false
     }
 
-    // --- 1RM Weight Check ---
-    // Exclude if ANY weight in workout > 80% of user's 1RM
+    // --- 1RM Weight Check (exclude if weight > 80% of 1RM) ---
     for (const task of tasks) {
       if (!task.exercise) continue
-
       const exerciseLower = task.exercise.toLowerCase().trim()
       const oneRmIndex = findOneRmIndex(exerciseLower)
-
       if (oneRmIndex !== -1) {
         const userOneRm = userOneRMs[oneRmIndex]
         if (userOneRm && userOneRm > 0) {
           const maxAllowedWeight = userOneRm * 0.8
-
-          // Get weight based on gender
           const taskWeight = userGender === 'Female'
             ? parseFloat(task.weight_female || task.weight_female_lbs || '0')
             : parseFloat(task.weight_male || task.weight_male_lbs || '0')
-
-          if (taskWeight > 0 && taskWeight > maxAllowedWeight) {
-            console.log(`Excluding ${workout.workout_id}: ${task.exercise} weight ${taskWeight} > 80% of 1RM (${maxAllowedWeight.toFixed(0)})`)
-            return false
-          }
+          if (taskWeight > 0 && taskWeight > maxAllowedWeight) return false
         }
       }
     }
@@ -295,11 +281,11 @@ function selectMetCon(metconData: any[], user: any): any | null {
       const requiredEquipment = workout.required_equipment || []
       const tasks = workout.tasks || []
 
-      // Lenient equipment check with substitutions
+      // Lenient equipment check with substitutions (normalized naming)
       const hasEquipmentOrSubstitute = requiredEquipment.every((equipment: string) => {
         if (equipment === 'None' || equipment === '' || equipment.toLowerCase() === 'bodyweight') return true
-        if (equipment === 'Dumbbells' && userEquipment.includes('Kettlebells')) return true
-        if (equipment === 'Kettlebell' && userEquipment.includes('Dumbbells')) return true
+        if ((equipment === 'Dumbbells' || equipment === 'Dumbbell') && (userEquipment.includes('Kettlebells') || userEquipment.includes('Kettlebell'))) return true
+        if ((equipment === 'Kettlebells' || equipment === 'Kettlebell') && (userEquipment.includes('Dumbbells') || userEquipment.includes('Dumbbell'))) return true
         if (equipment === 'Pullup Bar or Rig' && userEquipment.includes('Pull-up Bar')) return true
         return userEquipment.includes(equipment)
       })
@@ -310,9 +296,7 @@ function selectMetCon(metconData: any[], user: any): any | null {
         if (!task.exercise) continue
         const exerciseLower = task.exercise.toLowerCase().trim()
         const skillIndex = findSkillIndex(exerciseLower)
-        if (skillIndex !== -1 && userSkills[skillIndex] === "Don't have it") {
-          return false
-        }
+        if (skillIndex !== -1 && userSkills[skillIndex] === "Don't have it") return false
       }
 
       // Still enforce 1RM check
@@ -327,9 +311,7 @@ function selectMetCon(metconData: any[], user: any): any | null {
             const taskWeight = userGender === 'Female'
               ? parseFloat(task.weight_female || task.weight_female_lbs || '0')
               : parseFloat(task.weight_male || task.weight_male_lbs || '0')
-            if (taskWeight > 0 && taskWeight > maxAllowedWeight) {
-              return false
-            }
+            if (taskWeight > 0 && taskWeight > maxAllowedWeight) return false
           }
         }
       }
@@ -348,12 +330,10 @@ function selectMetCon(metconData: any[], user: any): any | null {
       const requiredEquipment = workout.required_equipment || []
       const tasks = workout.tasks || []
 
-      // Only allow truly bodyweight workouts
       const isBodyweight = requiredEquipment.length === 0 ||
         requiredEquipment.every((eq: string) => eq === 'None' || eq === '' || eq.toLowerCase() === 'bodyweight')
       if (!isBodyweight) return false
 
-      // No weighted movements
       const hasNoWeights = tasks.every((task: any) => {
         const maleWeight = parseFloat(task.weight_male || task.weight_male_lbs || '0')
         const femaleWeight = parseFloat(task.weight_female || task.weight_female_lbs || '0')
@@ -364,10 +344,69 @@ function selectMetCon(metconData: any[], user: any): any | null {
     })
   }
 
-  // Step 4: Return null if still nothing (will trigger fallback creation)
+  return suitableWorkouts
+}
+
+// === METCON SELECTION LOGIC ===
+function selectMetCon(metconData: any[], user: any, userPreferences?: any): any | null {
+  console.log('Starting MetCon selection. Available workouts: ' + metconData.length)
+
+  if (!metconData || metconData.length === 0) {
+    console.log('No MetCon data available')
+    return null
+  }
+
+  let suitableWorkouts = filterMetconsForUser(metconData, user)
+
   if (suitableWorkouts.length === 0) {
     console.log('No suitable workouts found at all')
     return null
+  }
+
+  // Apply user preferences if available (Fix 5)
+  if (userPreferences) {
+    const avoided = userPreferences.avoided_exercises || []
+    const preferred = userPreferences.preferred_metcon_exercises || []
+
+    // Remove metcons containing avoided exercises
+    if (avoided.length > 0) {
+      const avoidedLower = avoided.map((e: string) => e.toLowerCase().trim())
+      const afterAvoid = suitableWorkouts.filter(workout => {
+        const tasks = workout.tasks || []
+        return !tasks.some((task: any) => {
+          if (!task.exercise) return false
+          const exLower = task.exercise.toLowerCase().trim()
+          return avoidedLower.some((av: string) => exLower.includes(av) || av.includes(exLower))
+        })
+      })
+      // Only apply if it doesn't eliminate all options
+      if (afterAvoid.length > 0) {
+        console.log(`Preferences: excluded ${suitableWorkouts.length - afterAvoid.length} workouts with avoided exercises`)
+        suitableWorkouts = afterAvoid
+      }
+    }
+
+    // Prefer metcons containing preferred exercises (boost to front of list)
+    if (preferred.length > 0) {
+      const preferredLower = preferred.map((e: string) => e.toLowerCase().trim())
+      const hasPreferred: any[] = []
+      const noPreferred: any[] = []
+      for (const workout of suitableWorkouts) {
+        const tasks = workout.tasks || []
+        const matchesPreferred = tasks.some((task: any) => {
+          if (!task.exercise) return false
+          const exLower = task.exercise.toLowerCase().trim()
+          return preferredLower.some((pref: string) => exLower.includes(pref) || pref.includes(exLower))
+        })
+        if (matchesPreferred) hasPreferred.push(workout)
+        else noPreferred.push(workout)
+      }
+      // Reorder: preferred first, then rest
+      suitableWorkouts = [...hasPreferred, ...noPreferred]
+      if (hasPreferred.length > 0) {
+        console.log(`Preferences: ${hasPreferred.length} workouts match preferred exercises (boosted)`)
+      }
+    }
   }
 
   // Select a random workout from suitable options

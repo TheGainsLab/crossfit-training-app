@@ -95,7 +95,10 @@ async function selectMetconWithAI(availableMetcons: any[], userContext: any, hea
   const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');
   if (!claudeApiKey) throw new Error('Claude API key not found');
 
-  const prompt = buildMetconSelectionPrompt(availableMetcons, userContext, heatMapData, week, day, preferences);
+  // Shuffle and take top 20 candidates — shared between prompt and parser
+  const candidatePool = shuffleArray(availableMetcons).slice(0, 20);
+
+  const prompt = buildMetconSelectionPrompt(candidatePool, userContext, heatMapData, week, day, preferences);
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -115,8 +118,9 @@ async function selectMetconWithAI(availableMetcons: any[], userContext: any, hea
 
   const data = await response.json();
   const aiResponse = data.content[0].text;
-  
-  return parseMetconSelectionResponse(aiResponse, availableMetcons);
+
+  // Parse against the same candidate pool the AI saw (not the full list)
+  return parseMetconSelectionResponse(aiResponse, candidatePool);
 }
 
 function buildMetconSelectionPrompt(availableMetcons: any[], userContext: any, heatMapData: any, week: number, day: number, preferences: any) {
@@ -144,8 +148,8 @@ AVOID: ${avoided.length ? avoided.join(', ') : 'none'}
 PREFER: ${preferred.length ? preferred.join(', ') : 'none'}
 
 AVAILABLE METCONS:
-${availableMetcons.slice(0, 10).map((metcon, i) => `
-${i + 1}. ${metcon.workout_id}
+${availableMetcons.map((metcon, i) => `
+${i}. ${metcon.workout_id}
    Format: ${metcon.format}
    Time Range: ${metcon.time_range}
    Equipment: ${metcon.required_equipment?.join(', ') || 'Bodyweight'}
@@ -246,4 +250,14 @@ function randomMetconSelection(availableMetcons: any[]) {
     ...availableMetcons[randomIndex],
     selectionReason: 'Random selection (AI unavailable)'
   };
+}
+
+/** Fisher-Yates shuffle — returns a new array in random order */
+function shuffleArray<T>(arr: T[]): T[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
 }
