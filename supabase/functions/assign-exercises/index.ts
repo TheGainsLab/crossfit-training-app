@@ -36,59 +36,48 @@ const defaultBodyweightExercises = [
   { name: 'Push-ups', sets: 3, reps: 12, weightTime: '', notes: 'Bodyweight' }
 ]
 
-// Version A Lifting Progressions
-// Squats table: used by Back Squat, Front Squat, and Presses (each with own 1RM)
-// Olympic Lifts table: used by Snatch and Clean & Jerk (each with own 1RM)
-// Working weeks: { week, sets, reps, percentage } → single uniform prescription
-// Deload weeks (4, 8, 12): { week, reps[], percentages[] } → descending sets (existing deload regime)
+// Version A Lifting Progressions - Squats (Back/Front Squat, Press), Olympic Lifts (Snatch, C&J)
+// Working weeks: { sets, reps, percentage } → emit one row per set (1×reps, 1×reps, ...) for UI/logs
+// Deload weeks (4, 8, 12): { reps[], percentages[] } → one row per set
 const liftingProgressions = {
   'Squats': {
     'Beginner': [
-      // Meso 1: Moderate / Lower-Heavier / High Volume / Deload
       { week: 1, sets: 4, reps: 6, percentage: 65 },
       { week: 2, sets: 3, reps: 5, percentage: 70 },
       { week: 3, sets: 4, reps: 8, percentage: 60 },
       { week: 4, reps: [6, 4, 2], percentages: [50, 60, 70] },
-      // Meso 2
       { week: 5, sets: 4, reps: 8, percentage: 65 },
       { week: 6, sets: 4, reps: 5, percentage: 75 },
       { week: 7, sets: 4, reps: 10, percentage: 60 },
       { week: 8, reps: [6, 4, 2], percentages: [50, 60, 70] },
-      // Meso 3
       { week: 9, sets: 5, reps: 6, percentage: 70 },
       { week: 10, sets: 4, reps: 5, percentage: 80 },
       { week: 11, sets: 5, reps: 8, percentage: 65 },
       { week: 12, reps: [6, 4, 2], percentages: [50, 60, 70] }
     ],
     'Intermediate': [
-      // Meso 1: Hard / Medium / Very Hard / Recovery
       { week: 1, sets: 4, reps: 5, percentage: 75 },
       { week: 2, sets: 3, reps: 5, percentage: 65 },
       { week: 3, sets: 5, reps: 3, percentage: 80 },
       { week: 4, reps: [6, 4, 2], percentages: [50, 60, 70] },
-      // Meso 2
       { week: 5, sets: 4, reps: 5, percentage: 80 },
       { week: 6, sets: 3, reps: 5, percentage: 70 },
       { week: 7, sets: 5, reps: 3, percentage: 85 },
       { week: 8, reps: [6, 4, 2], percentages: [50, 60, 70] },
-      // Meso 3
       { week: 9, sets: 4, reps: 5, percentage: 85 },
       { week: 10, sets: 3, reps: 5, percentage: 75 },
       { week: 11, sets: 5, reps: 2, percentage: 90 },
       { week: 12, reps: [6, 4, 2], percentages: [50, 60, 70] }
     ],
     'Advanced': [
-      // Meso 1: Work / Speed / Stress / Recovery
       { week: 1, sets: 5, reps: 5, percentage: 80 },
       { week: 2, sets: 6, reps: 2, percentage: 60 },
       { week: 3, sets: 7, reps: 1, percentage: 90 },
       { week: 4, reps: [4, 3, 2], percentages: [50, 60, 70] },
-      // Meso 2
       { week: 5, sets: 5, reps: 5, percentage: 83 },
       { week: 6, sets: 6, reps: 2, percentage: 63 },
       { week: 7, sets: 7, reps: 1, percentage: 93 },
       { week: 8, reps: [4, 3, 2], percentages: [50, 60, 70] },
-      // Meso 3
       { week: 9, sets: 5, reps: 5, percentage: 85 },
       { week: 10, sets: 6, reps: 2, percentage: 65 },
       { week: 11, sets: 5, reps: 1, percentage: 95 },
@@ -97,51 +86,42 @@ const liftingProgressions = {
   },
   'Olympic Lifts': {
     'Beginner': [
-      // Flat wave: Learn / Learn / Learn / Deload (no undulation)
       { week: 1, sets: 6, reps: 4, percentage: 55 },
       { week: 2, sets: 8, reps: 3, percentage: 58 },
       { week: 3, sets: 6, reps: 4, percentage: 55 },
       { week: 4, reps: [4, 3, 2], percentages: [50, 60, 70] },
-      // Meso 2
       { week: 5, sets: 8, reps: 3, percentage: 60 },
       { week: 6, sets: 6, reps: 4, percentage: 58 },
       { week: 7, sets: 8, reps: 3, percentage: 60 },
       { week: 8, reps: [4, 3, 2], percentages: [50, 60, 70] },
-      // Meso 3
       { week: 9, sets: 6, reps: 4, percentage: 63 },
       { week: 10, sets: 8, reps: 3, percentage: 60 },
       { week: 11, sets: 6, reps: 4, percentage: 65 },
       { week: 12, reps: [4, 3, 2], percentages: [50, 60, 70] }
     ],
     'Intermediate': [
-      // Hard / Medium / Very Hard / Recovery
       { week: 1, sets: 5, reps: 3, percentage: 70 },
       { week: 2, sets: 4, reps: 3, percentage: 62 },
       { week: 3, sets: 5, reps: 2, percentage: 80 },
       { week: 4, reps: [4, 3, 2], percentages: [50, 60, 70] },
-      // Meso 2
       { week: 5, sets: 5, reps: 3, percentage: 73 },
       { week: 6, sets: 4, reps: 3, percentage: 65 },
       { week: 7, sets: 5, reps: 2, percentage: 80 },
       { week: 8, reps: [4, 3, 2], percentages: [50, 60, 70] },
-      // Meso 3
       { week: 9, sets: 5, reps: 3, percentage: 76 },
       { week: 10, sets: 4, reps: 3, percentage: 68 },
       { week: 11, sets: 5, reps: 2, percentage: 85 },
       { week: 12, reps: [4, 3, 2], percentages: [50, 60, 70] }
     ],
     'Advanced': [
-      // Work / Speed / Stress / Recovery
       { week: 1, sets: 4, reps: 3, percentage: 78 },
       { week: 2, sets: 5, reps: 3, percentage: 65 },
       { week: 3, sets: 3, reps: 3, percentage: 85 },
       { week: 4, reps: [4, 3, 2], percentages: [50, 60, 70] },
-      // Meso 2
       { week: 5, sets: 4, reps: 3, percentage: 80 },
       { week: 6, sets: 5, reps: 3, percentage: 67 },
       { week: 7, sets: 3, reps: 3, percentage: 87 },
       { week: 8, reps: [4, 3, 2], percentages: [50, 60, 70] },
-      // Meso 3
       { week: 9, sets: 4, reps: 3, percentage: 82 },
       { week: 10, sets: 5, reps: 3, percentage: 70 },
       { week: 11, sets: 3, reps: 3, percentage: 90 },
@@ -436,44 +416,32 @@ async function assignExercises(
     if (strengthExercises.length === 0) {
       console.log('❌ No strength exercises found for:', mainLift, '- generating synthetic main-lift sets')
 
-      // Use progression based on mainLift type/level to synthesize sets for the main lift itself
       const liftType = ['Snatch', 'Clean and Jerk'].includes(mainLift) ? 'Olympic Lifts' : 'Squats'
-
       const liftLevel = mainLift === 'Snatch' ? (user.snatch_level || 'Beginner') :
         mainLift === 'Clean and Jerk' ? (user.clean_jerk_level || 'Beginner') :
         ['Back Squat', 'Front Squat'].includes(mainLift) ? (user.back_squat_level || 'Beginner') :
         (user.press_level || 'Beginner')
 
       const progression = liftingProgressions[liftType][liftLevel].find(p => p.week === week)
-
       if (!progression) {
         console.log('❌ No progression data for week in synthetic path:', week)
-        // As an absolute last resort, return a single BW placeholder to avoid empty array
-        // Try to find exercise in database to get performance cues
         const syntheticExercise = exerciseData.find(ex => ex.name === mainLift)
         const syntheticCue = syntheticExercise ? getPerformanceCue(syntheticExercise) : null
-        const syntheticNotes = syntheticCue || `${liftLevel} - Synthetic`
-        return [{ name: mainLift, sets: 1, reps: 5, weightTime: '', notes: syntheticNotes }]
+        return [{ name: mainLift, sets: 1, reps: 5, weightTime: '', notes: syntheticCue || `${liftLevel} - Synthetic` }]
       }
 
       const oneRMIndex = find1RMIndex(mainLift)
       const oneRM = user.oneRMs && user.oneRMs[oneRMIndex]
-
-      // Try to find exercise in database to get performance cues
       const syntheticExercise = exerciseData.find(ex => ex.name === mainLift)
-      const performanceCue = syntheticExercise ? getPerformanceCue(syntheticExercise) : null
-      const notesText = performanceCue || liftLevel
-
-      const strengthSets = []
+      const notesText = syntheticExercise ? getPerformanceCue(syntheticExercise) : liftLevel
+      const strengthSets: any[] = []
 
       if (Array.isArray(progression.reps)) {
-        // Deload format: descending sets with varying reps/percentages
         for (let setIndex = 0; setIndex < progression.reps.length; setIndex++) {
           let weightTime = ''
           if (oneRM && oneRM > 0) {
             const percent = progression.percentages[setIndex] / 100
-            const rawWeight = oneRM * percent
-            weightTime = roundWeight(rawWeight, user.units).toString()
+            weightTime = roundWeight(oneRM * percent, user.units).toString()
           }
           strengthSets.push({
             name: mainLift,
@@ -484,20 +452,20 @@ async function assignExercises(
           })
         }
       } else {
-        // Working week: uniform sets × reps @ single percentage
-        let weightTime = ''
-        if (oneRM && oneRM > 0) {
-          const percent = progression.percentage / 100
-          const rawWeight = oneRM * percent
-          weightTime = roundWeight(rawWeight, user.units).toString()
+        for (let setIndex = 0; setIndex < progression.sets; setIndex++) {
+          let weightTime = ''
+          if (oneRM && oneRM > 0) {
+            const percent = progression.percentage / 100
+            weightTime = roundWeight(oneRM * percent, user.units).toString()
+          }
+          strengthSets.push({
+            name: mainLift,
+            sets: 1,
+            reps: progression.reps,
+            weightTime,
+            notes: `${notesText} - Set ${setIndex + 1}`
+          })
         }
-        strengthSets.push({
-          name: mainLift,
-          sets: progression.sets,
-          reps: progression.reps,
-          weightTime,
-          notes: notesText
-        })
       }
 
       console.log(`✅ (synthetic) Created ${strengthSets.length} strength entry for ${mainLift}`)
@@ -518,35 +486,27 @@ async function assignExercises(
     const selectedExercise = candidate
     console.log('✅ Selected strength exercise:', selectedExercise.name)
 
-    // Get progression data (Presses inherit Squats table per Version A design)
     const liftType = ['Snatch', 'Clean and Jerk'].includes(mainLift) ? 'Olympic Lifts' : 'Squats'
-
     const liftLevel = mainLift === 'Snatch' ? (user.snatch_level || 'Beginner') :
       mainLift === 'Clean and Jerk' ? (user.clean_jerk_level || 'Beginner') :
       ['Back Squat', 'Front Squat'].includes(mainLift) ? (user.back_squat_level || 'Beginner') :
       (user.press_level || 'Beginner')
 
-    console.log('💪 Using progression:', { liftType, liftLevel, week })
-
     const progression = liftingProgressions[liftType][liftLevel].find(p => p.week === week)
-
     if (!progression) {
       console.log('❌ No progression data for week:', week)
       return defaultBodyweightExercises.slice(0, 1)
     }
 
-    // Generate strength sets from progression data
-    const strengthSets = []
+    const strengthSets: any[] = []
     const enhancedNote = generateEnhancedNotes(null, user, week, block, selectedExercise)
     const notesText = enhancedNote || liftLevel
 
     if (Array.isArray(progression.reps)) {
-      // Deload format: descending sets with varying reps/percentages
       for (let setIndex = 0; setIndex < progression.reps.length; setIndex++) {
         let weightTime = ''
         if (selectedExercise.one_rm_reference && selectedExercise.one_rm_reference !== 'None') {
-          const oneRMIndex = find1RMIndex(selectedExercise.one_rm_reference)
-          const oneRM = user.oneRMs && user.oneRMs[oneRMIndex]
+          const oneRM = user.oneRMs?.[find1RMIndex(selectedExercise.one_rm_reference)]
           if (oneRM && oneRM > 0) {
             const percent = progression.percentages[setIndex] / 100
             weightTime = roundWeight(oneRM * percent, user.units).toString()
@@ -561,23 +521,23 @@ async function assignExercises(
         })
       }
     } else {
-      // Working week: uniform sets × reps @ single percentage
-      let weightTime = ''
-      if (selectedExercise.one_rm_reference && selectedExercise.one_rm_reference !== 'None') {
-        const oneRMIndex = find1RMIndex(selectedExercise.one_rm_reference)
-        const oneRM = user.oneRMs && user.oneRMs[oneRMIndex]
-        if (oneRM && oneRM > 0) {
-          const percent = progression.percentage / 100
-          weightTime = roundWeight(oneRM * percent, user.units).toString()
+      for (let setIndex = 0; setIndex < progression.sets; setIndex++) {
+        let weightTime = ''
+        if (selectedExercise.one_rm_reference && selectedExercise.one_rm_reference !== 'None') {
+          const oneRM = user.oneRMs?.[find1RMIndex(selectedExercise.one_rm_reference)]
+          if (oneRM && oneRM > 0) {
+            const percent = progression.percentage / 100
+            weightTime = roundWeight(oneRM * percent, user.units).toString()
+          }
         }
+        strengthSets.push({
+          name: selectedExercise.name,
+          sets: 1,
+          reps: progression.reps,
+          weightTime,
+          notes: `${notesText} - Set ${setIndex + 1}`
+        })
       }
-      strengthSets.push({
-        name: selectedExercise.name,
-        sets: progression.sets,
-        reps: progression.reps,
-        weightTime,
-        notes: notesText
-      })
     }
 
     console.log(`✅ Created strength entry: ${selectedExercise.name}, ${strengthSets.length} row(s)`)
