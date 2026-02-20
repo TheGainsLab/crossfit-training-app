@@ -1238,7 +1238,6 @@ try {
         }
 
         selectedIndices.push(j);
-        probabilities.splice(j, 1);
         selected = true;
         break;
       }
