@@ -108,6 +108,23 @@ try {
   selectedWorkout = selectMetCon(metconData, user, userPreferences);
 }
 
+    // If no workout was selected by either path, return fallback
+    if (!selectedWorkout) {
+      console.warn('No suitable MetCon found, returning fallback workout')
+      const fallbackResult = createFallbackMetCon(user)
+      return new Response(
+        JSON.stringify({
+          success: true,
+          exercises: fallbackResult.exercises,
+          workoutId: fallbackResult.workoutId,
+          workoutFormat: fallbackResult.format,
+          timeRange: fallbackResult.timeRange,
+          percentileGuidance: fallbackResult.percentileGuidance,
+          workoutNotes: ''
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Convert MetCon to exercises (exact Google Script logic)
     const conversionResult = convertMetConToExercises(selectedWorkout, user)
