@@ -18,6 +18,8 @@ import { Button } from '@/components/ui/Button'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import ProgramSelector from '@/components/engine/ProgramSelector'
 import { getUserCurrentProgram, type EngineProgram } from '@/lib/api/enginePrograms'
+import { deleteAccount } from '@/lib/api/account'
+import { logoutRevenueCat } from '@/lib/subscriptions'
 
 interface UserSettings {
   name: string
@@ -111,6 +113,7 @@ export default function SettingsPage() {
   const [skills, setSkills] = useState<string[]>([])
   const [userId, setUserId] = useState<number | null>(null)
   const [message, setMessage] = useState('')
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showProgramSelector, setShowProgramSelector] = useState(false)
   const [currentProgram, setCurrentProgram] = useState<EngineProgram | null>(null)
@@ -362,9 +365,10 @@ export default function SettingsPage() {
   }
 
   const handleSignOut = async () => {
-    console.log('Sign out button pressed') // Debug log
     try {
-      console.log('Attempting sign out...') // Debug log
+      // Clear RevenueCat session so next sign-in isn't linked to this user
+      try { await logoutRevenueCat() } catch {}
+
       const supabase = createClient()
       const { error } = await supabase.auth.signOut()
       if (error) {
@@ -372,11 +376,56 @@ export default function SettingsPage() {
         Alert.alert('Error', 'Failed to sign out. Please try again.')
         return
       }
-      console.log('Sign out successful, navigating...') // Debug log
       router.replace('/auth/signin')
     } catch (err) {
       console.error('Sign out exception:', err)
       Alert.alert('Error', 'Failed to sign out. Please try again.')
+    }
+  }
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This will permanently remove all your data including workouts, performance history, and settings. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: () => confirmDeleteAccount(),
+        },
+      ]
+    )
+  }
+
+  const confirmDeleteAccount = () => {
+    // Second confirmation to prevent accidental deletion
+    Alert.alert(
+      'This is permanent',
+      'Your subscription will remain active until its expiration date but your account and all data will be deleted immediately. Are you absolutely sure?',
+      [
+        { text: 'Go Back', style: 'cancel' },
+        {
+          text: 'Yes, Delete Everything',
+          style: 'destructive',
+          onPress: () => performDeleteAccount(),
+        },
+      ]
+    )
+  }
+
+  const performDeleteAccount = async () => {
+    setDeleting(true)
+    const result = await deleteAccount()
+    setDeleting(false)
+
+    if (result.success) {
+      router.replace('/auth/signin')
+    } else {
+      Alert.alert(
+        'Deletion Failed',
+        result.error || 'Something went wrong. Please contact support at support@thegainslab.com to have your account deleted.',
+      )
     }
   }
 
@@ -974,6 +1023,24 @@ export default function SettingsPage() {
             <Text style={styles.signOutButtonText}>Sign Out</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Delete Account */}
+        <View style={styles.deleteAccountSection}>
+          <TouchableOpacity
+            style={styles.deleteAccountButton}
+            onPress={handleDeleteAccount}
+            disabled={deleting}
+          >
+            {deleting ? (
+              <ActivityIndicator color="#DC2626" />
+            ) : (
+              <Text style={styles.deleteAccountButtonText}>Delete Account</Text>
+            )}
+          </TouchableOpacity>
+          <Text style={styles.deleteAccountHint}>
+            Permanently removes your account and all associated data.
+          </Text>
+        </View>
       </ScrollView>
     </View>
   )
@@ -1363,5 +1430,30 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  deleteAccountSection: {
+    alignItems: 'center',
+    marginBottom: 48,
+    paddingHorizontal: 16,
+  },
+  deleteAccountButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DC2626',
+    minWidth: 180,
+    alignItems: 'center',
+  },
+  deleteAccountButtonText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  deleteAccountHint: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 8,
+    textAlign: 'center',
   },
 })
