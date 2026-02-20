@@ -29,25 +29,51 @@ export async function GET() {
     let programsGenerated = 0
     let fallbacksTriggered = 0
     let testWindowsOpened = 0
+    let usersUnstuck = 0
 
     for (const user of users || []) {
       if (!user.programs || user.programs.length === 0) continue
 
       // CASE 1: User is awaiting test results - check for fallback
       if (user.awaiting_test_results && user.awaiting_test_since) {
-        const windowOpenedAt = new Date(user.awaiting_test_since)
-        const now = new Date()
-        const daysSinceWindowOpened = Math.floor(
-          (now.getTime() - windowOpenedAt.getTime()) / (24 * 60 * 60 * 1000)
-        )
+        // Self-healing: detect users stuck with awaiting_test_results=true but
+        // no cycle-end program actually exists. This happens when the worker
+        // failed to generate the program after the flag was set (pre-fix).
+        const programNumbers = user.programs.map((p: any) => p.program_number)
+        const currentCycle = user.current_cycle || 1
+        const expectedCycleEndProgram = currentCycle * 3 // Program 3, 6, 9...
+        const hasCycleEndProgram = programNumbers.includes(expectedCycleEndProgram)
 
-        if (daysSinceWindowOpened >= TEST_WINDOW_DAYS) {
-          // Fallback: Generate next cycle with existing profile data
-          await generateFallbackProgram(user.id, user.current_cycle || 1)
-          fallbacksTriggered++
+        if (!hasCycleEndProgram) {
+          // User is stuck: reset the flag so they fall through to CASE 2
+          // and the normal generation loop picks up the missing programs
+          console.log(`Unsticking user ${user.id}: awaiting_test_results=true but program #${expectedCycleEndProgram} not found`)
+          await supabase
+            .from('users')
+            .update({
+              awaiting_test_results: false,
+              awaiting_test_since: null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+
+          usersUnstuck++
+          // Fall through to CASE 2 instead of continuing
         } else {
+          // Legitimately awaiting test results — check for timeout fallback
+          const windowOpenedAt = new Date(user.awaiting_test_since)
+          const now = new Date()
+          const daysSinceWindowOpened = Math.floor(
+            (now.getTime() - windowOpenedAt.getTime()) / (24 * 60 * 60 * 1000)
+          )
+
+          if (daysSinceWindowOpened >= TEST_WINDOW_DAYS) {
+            // Fallback: Generate next cycle with existing profile data
+            await generateFallbackProgram(user.id, user.current_cycle || 1)
+            fallbacksTriggered++
+          }
+          continue  // Skip normal time-based check for users awaiting tests
         }
-        continue  // Skip normal time-based check for users awaiting tests
       }
 
       // CASE 2: Normal time-based program generation
@@ -101,7 +127,8 @@ export async function GET() {
       programsGenerated,
       fallbacksTriggered,
       testWindowsOpened,
-      message: `Generated ${programsGenerated} programs, ${fallbacksTriggered} fallbacks, ${testWindowsOpened} test windows`
+      usersUnstuck,
+      message: `Generated ${programsGenerated} programs, ${fallbacksTriggered} fallbacks, ${testWindowsOpened} test windows, ${usersUnstuck} users unstuck`
     })
 
   } catch (error) {
