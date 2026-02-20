@@ -5,127 +5,60 @@ import { logoutRevenueCat } from '../subscriptions'
 /**
  * Delete all user data and account.
  *
- * Deletes child tables first (to respect foreign key constraints),
- * then the parent `users` row, then the Supabase auth user,
- * and finally clears local state.
+ * Calls the server-side `delete_user_account` RPC which runs every
+ * delete in a single Postgres transaction (all-or-nothing).
+ * The RPC also removes the auth.users row so the account is fully gone.
  *
- * Returns { success, error? } so the caller can show appropriate UI.
+ * After the server-side work succeeds we clean up local state:
+ * RevenueCat logout, AsyncStorage clear, Supabase sign-out.
  */
 export async function deleteAccount(): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = createClient()
 
-    // Get current auth user
+    // Verify the user is authenticated before attempting deletion
     const { data: { user: authUser } } = await supabase.auth.getUser()
     if (!authUser) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    // Get the internal user ID (needed for most table deletions)
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('auth_id', authUser.id)
-      .single()
-
-    if (userError || !userData) {
-      return { success: false, error: 'User record not found' }
-    }
-
-    const userId = userData.id
-
-    // -------------------------------------------------------
-    // Delete child tables first, then parent tables.
-    // Each deletion is best-effort — we continue even if a
-    // table doesn't exist or has no rows for this user.
-    // -------------------------------------------------------
-
-    // 1. Support / chat
-    // Delete messages for all conversations owned by this user
-    const { data: conversations } = await supabase
-      .from('support_conversations')
-      .select('id')
-      .eq('user_id', userId)
-
-    if (conversations && conversations.length > 0) {
-      const conversationIds = conversations.map(c => c.id)
-      await supabase
-        .from('support_messages')
-        .delete()
-        .in('conversation_id', conversationIds)
-    }
-
-    await supabase
-      .from('support_conversations')
-      .delete()
-      .eq('user_id', userId)
-
-    // Delete chat attachment files from storage
+    // Delete chat attachment files from storage (not covered by the RPC)
     try {
-      const { data: files } = await supabase.storage
-        .from('chat-attachments')
-        .list(`${userId}`)
-      if (files && files.length > 0) {
-        const paths = files.map(f => `${userId}/${f.name}`)
-        await supabase.storage.from('chat-attachments').remove(paths)
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', authUser.id)
+        .single()
+
+      if (userData) {
+        const { data: files } = await supabase.storage
+          .from('chat-attachments')
+          .list(`${userData.id}`)
+        if (files && files.length > 0) {
+          const paths = files.map(f => `${userData.id}/${f.name}`)
+          await supabase.storage.from('chat-attachments').remove(paths)
+        }
       }
     } catch {
-      // Storage bucket may not exist or be empty — continue
+      // Storage cleanup is best-effort — continue even if it fails
     }
 
-    // 2. Nutrition data (child → parent order)
-    await supabase.from('meal_template_items').delete().eq('user_id', userId)
-    await supabase.from('meal_templates').delete().eq('user_id', userId)
-    await supabase.from('food_entries').delete().eq('user_id', userId)
-    await supabase.from('food_favorites').delete().eq('user_id', userId)
-    await supabase.from('favorite_restaurants').delete().eq('user_id', userId)
-    await supabase.from('hidden_restaurants').delete().eq('user_id', userId)
-    await supabase.from('favorite_brands').delete().eq('user_id', userId)
-    await supabase.from('hidden_brands').delete().eq('user_id', userId)
+    // Single RPC call deletes all user data + auth record in one transaction
+    const { error: rpcError } = await supabase.rpc('delete_user_account')
 
-    // 3. Training / workout data
-    await supabase.from('performance_logs').delete().eq('user_id', userId)
-    await supabase.from('workout_sessions').delete().eq('user_id', userId)
-    await supabase.from('program_metcons').delete().eq('user_id', userId)
-    await supabase.from('programs').delete().eq('user_id', userId)
-
-    // 4. Engine-specific data
-    await supabase.from('engine_program_day_assignments').delete().eq('user_id', userId)
-    await supabase.from('time_trials').delete().eq('user_id', userId)
-    await supabase.from('user_modality_preferences').delete().eq('user_id', userId)
-    await supabase.from('user_performance_metrics').delete().eq('user_id', userId)
-
-    // 5. User preferences & profile
-    await supabase.from('user_equipment').delete().eq('user_id', userId)
-    await supabase.from('user_one_rms').delete().eq('user_id', userId)
-    await supabase.from('user_skills').delete().eq('user_id', userId)
-    await supabase.from('user_preferences').delete().eq('user_id', userId)
-    await supabase.from('user_profiles').delete().eq('user_id', userId)
-    await supabase.from('intake_drafts').delete().eq('user_id', userId)
-
-    // 6. Delete the parent users row
-    await supabase.from('users').delete().eq('id', userId)
-
-    // 7. Log out of RevenueCat (unlinks device from this user)
-    try {
-      await logoutRevenueCat()
-    } catch {
-      // Non-blocking — continue even if RevenueCat fails
+    if (rpcError) {
+      console.error('delete_user_account RPC error:', rpcError)
+      return { success: false, error: rpcError.message }
     }
 
-    // 8. Clear all local storage
-    try {
-      await AsyncStorage.clear()
-    } catch {
-      // Non-blocking
-    }
+    // Server-side deletion succeeded — clean up local state
 
-    // 9. Delete the Supabase auth user and sign out
-    // Note: supabase.auth.admin.deleteUser requires a service role key,
-    // which should NOT be on the client. Instead we sign out and rely on
-    // a Supabase database trigger or Edge Function to clean up auth.users.
-    // For now, signing out is sufficient — the users row is already gone,
-    // so even if the auth record persists the account is non-functional.
+    try { await logoutRevenueCat() } catch {}
+
+    try { await AsyncStorage.clear() } catch {}
+
+    // Sign out locally (the auth user is already deleted server-side,
+    // but this clears the local session tokens)
     await supabase.auth.signOut()
 
     return { success: true }
