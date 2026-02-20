@@ -129,9 +129,9 @@ async function generateScheduledProgram(userId: number, programNumber: number) {
  */
 async function generateCycleEndProgram(userId: number, programNumber: number) {
   try {
-    // Cycle-end programs have 5 weeks (4 regular + 1 test week)
-    // Program #3: weeks [9, 10, 11, 12, 13]
-    // Program #6: weeks [22, 23, 24, 25, 26]
+    // Cycle-end programs have 4 regular weeks; test week is appended by generate-program
+    // Program #3: weeks [9, 10, 11, 12] + test week 13 (via includeTestWeek)
+    // Program #6: weeks [22, 23, 24, 25] + test week 26 (via includeTestWeek)
     const weeksToGenerate = getWeeksForProgram(programNumber)
 
     const { error: insErr } = await supabase
@@ -233,16 +233,18 @@ async function generateFallbackProgram(userId: number, currentCycle: number) {
 
 /**
  * Calculate which weeks belong to a given program number
- * Accounts for test weeks (week 13, 26, 39, ...) being part of cycle-end programs
+ * Each cycle is 13 weeks: 4 + 4 + 4 regular weeks, plus a test week (13, 26, 39, ...)
+ * The test week is NOT included here — it's generated separately via includeTestWeek flag
  */
 function getWeeksForProgram(programNumber: number): number[] {
   const cycleNumber = Math.ceil(programNumber / 3)
   const positionInCycle = ((programNumber - 1) % 3) + 1  // 1, 2, or 3
 
-  // Each cycle has 13 weeks (4 + 4 + 5 with test week)
+  // Each cycle has 13 weeks (4 + 4 + 4 regular + 1 test week)
   const cycleStartWeek = (cycleNumber - 1) * 13 + 1
 
-  // Position 1: weeks 1-4, Position 2: weeks 5-8, Position 3: weeks 9-13
+  // Position 1: weeks 1-4, Position 2: weeks 5-8, Position 3: weeks 9-12
+  // Test week (13, 26, 39...) is appended by generate-program when includeTestWeek = true
   let programStartWeek: number
   if (positionInCycle === 1) {
     programStartWeek = cycleStartWeek
@@ -252,8 +254,6 @@ function getWeeksForProgram(programNumber: number): number[] {
     programStartWeek = cycleStartWeek + 8
   }
 
-  // Cycle-end programs (position 3) have 5 weeks including test week
-  const weekCount = positionInCycle === 3 ? 5 : 4
-
-  return Array.from({ length: weekCount }, (_, i) => programStartWeek + i)
+  // All programs generate 4 regular weeks; test week is handled separately
+  return Array.from({ length: 4 }, (_, i) => programStartWeek + i)
 }
