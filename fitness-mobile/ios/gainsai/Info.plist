@@ -49,10 +49,8 @@
     </dict>
     <key>NSCameraUsageDescription</key>
     <string>We need access to your camera to scan barcodes and take photos of food for nutrition tracking.</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>We need microphone access to capture audio when recording videos of food for nutrition tracking.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>We need access to your photo library to select food photos for nutrition tracking.</string>
+    <string>We need access to your photo library to select photos for nutrition tracking and support messages.</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>

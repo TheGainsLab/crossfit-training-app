@@ -86,12 +86,6 @@ export default function Index() {
 
         // Check for NULL subscription_tier - indicates purchase flow issue
         if (userData && !userData.subscription_tier) {
-          console.warn('⚠️ User has NULL subscription_tier at app entry')
-          Alert.alert(
-            'Subscription Required',
-            'Please select a program to get started.',
-            [{ text: 'Choose Program', onPress: () => router.replace('/subscriptions') }]
-          )
           router.replace('/subscriptions')
           return
         }

@@ -13,14 +13,6 @@ export function createClient() {
   const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
 
-  console.log('🔑 SUPABASE CLIENT INIT:', { 
-    url: supabaseUrl,
-    urlDefined: !!supabaseUrl,
-    keyDefined: !!supabaseAnonKey,
-    keyLength: supabaseAnonKey?.length,
-    keyPreview: supabaseAnonKey?.substring(0, 20) + '...'
-  })
-
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Supabase environment variables are not configured')
   }
@@ -48,7 +40,7 @@ export function createClient() {
             
             // If it's a server error (5xx) or timeout, retry
             if (attempt < maxRetries && (response.status >= 500 || response.status === 408)) {
-              console.log(`⚠️ Supabase retry ${attempt}/${maxRetries} - Status ${response.status}`)
+              if (__DEV__) console.log(`Supabase retry ${attempt}/${maxRetries} - Status ${response.status}`)
               await new Promise(resolve => setTimeout(resolve, retryDelay * attempt))
               continue
             }
@@ -58,7 +50,7 @@ export function createClient() {
           } catch (error) {
             // Network error (e.g., "Network request failed") - retry
             if (attempt < maxRetries) {
-              console.log(`⚠️ Supabase network error, retry ${attempt}/${maxRetries}`)
+              if (__DEV__) console.log(`Supabase network error, retry ${attempt}/${maxRetries}`)
               await new Promise(resolve => setTimeout(resolve, retryDelay * attempt))
               continue
             }

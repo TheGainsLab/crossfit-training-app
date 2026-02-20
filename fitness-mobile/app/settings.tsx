@@ -287,35 +287,47 @@ export default function SettingsPage() {
 
       if (updateError) throw updateError
 
-      // Update equipment
-      await supabase.from('user_equipment').delete().eq('user_id', userId)
-      if (equipment.length > 0) {
-        const equipmentRecords = equipment.map(equipmentName => ({
-          user_id: userId,
-          equipment_name: equipmentName
-        }))
-        const { error: equipmentError } = await supabase
+      // Update equipment — build new records first, only delete after
+      // successful insert so we don't lose data on failure
+      const equipmentRecords = equipment.map(equipmentName => ({
+        user_id: userId,
+        equipment_name: equipmentName
+      }))
+      if (equipmentRecords.length > 0) {
+        const { error: equipmentInsertError } = await supabase
           .from('user_equipment')
-          .insert(equipmentRecords)
-        if (equipmentError) throw equipmentError
+          .upsert(equipmentRecords, { onConflict: 'user_id,equipment_name' })
+        if (equipmentInsertError) throw equipmentInsertError
+      }
+      // Remove equipment the user unchecked
+      const { data: existingEquipment } = await supabase
+        .from('user_equipment')
+        .select('equipment_name')
+        .eq('user_id', userId)
+      const uncheckedEquipment = (existingEquipment || [])
+        .map(e => e.equipment_name)
+        .filter(name => !equipment.includes(name))
+      if (uncheckedEquipment.length > 0) {
+        await supabase
+          .from('user_equipment')
+          .delete()
+          .eq('user_id', userId)
+          .in('equipment_name', uncheckedEquipment)
       }
 
-      // Update skills
-      await supabase.from('user_skills').delete().eq('user_id', userId)
+      // Update skills — same approach: upsert new, then remove stale
       let skillIndex = 0
       const skillRecords: any[] = []
-      
+
       skillCategories.forEach(category => {
         category.skills.forEach(skillName => {
           const skillLevel = skills[skillIndex]
-          if (skillLevel && skillLevel !== "Don't have it" && skillLevel !== 'Unable to perform') {
-            skillRecords.push({
-              user_id: userId,
-              skill_index: skillIndex,
-              skill_name: skillName,
-              skill_level: skillLevel
-            })
-          }
+          skillRecords.push({
+            user_id: userId,
+            skill_index: skillIndex,
+            skill_name: skillName,
+            skill_level: skillLevel || "Don't have it"
+          })
           skillIndex++
         })
       })
@@ -323,7 +335,7 @@ export default function SettingsPage() {
       if (skillRecords.length > 0) {
         const { error: skillsError } = await supabase
           .from('user_skills')
-          .insert(skillRecords)
+          .upsert(skillRecords, { onConflict: 'user_id,skill_index' })
         if (skillsError) throw skillsError
       }
 

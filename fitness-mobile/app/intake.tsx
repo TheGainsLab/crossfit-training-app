@@ -264,10 +264,29 @@ export default function IntakePage() {
   // ============================================
   // POLL INTAKE STATUS WHEN GENERATING
   // ============================================
+  const GENERATION_TIMEOUT_MS = 10 * 60 * 1000 // 10 minutes
+
   useEffect(() => {
     if (intakeStatus === 'generating' && userId) {
       setIsGenerating(true)
+      const startTime = Date.now()
+
       const pollInterval = setInterval(async () => {
+        // Timeout: if generation has been running too long, let the user retry
+        if (Date.now() - startTime > GENERATION_TIMEOUT_MS) {
+          setIsGenerating(false)
+          clearInterval(pollInterval)
+          Alert.alert(
+            'Generation Timed Out',
+            'Program generation is taking longer than expected. You can retry or contact support.',
+            [
+              { text: 'OK', style: 'default' },
+              { text: 'Retry', onPress: () => completeIntake() }
+            ]
+          )
+          return
+        }
+
         try {
           const supabase = createClient()
           const { data: userData } = await supabase
@@ -283,10 +302,10 @@ export default function IntakePage() {
               setIsGenerating(false)
               clearInterval(pollInterval)
               // Route based on subscription tier
-              const destination = userData.subscription_tier === 'BTN' 
-                ? '/btn/workouts' 
+              const destination = userData.subscription_tier === 'BTN'
+                ? '/btn/workouts'
                 : '/(tabs)'
-              
+
               Alert.alert(
                 'Success!',
                 userData.subscription_tier === 'BTN'
