@@ -166,7 +166,9 @@ async function generateProgramStructure(user: any, ratios: any, weeksToGenerate:
 
     for (let day = 0; day < days.length; day++) {
       const dayNumber = day + 1
-      const isDeload = [4, 8, 12].includes(week)
+      // Normalize to 1-12 cycle position: deload falls on every 4th week within the cycle
+      const weekInCycle = ((week - 1) % 12) + 1
+      const isDeload = [4, 8, 12].includes(weekInCycle)
       const mainLift = getEquipmentGatedMainLift(mainLifts, day, user?.equipment || [])
       const expectedLift = mainLifts[day % mainLifts.length]
       

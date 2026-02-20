@@ -321,8 +321,9 @@ export async function POST(request: NextRequest) {
     const hasSub = !(subError || !subscription)
 
     // Determine weeks to generate based on subscription
-    const weeksToGenerate = hasSub && subscription.billing_interval === 'quarter' 
-      ? Array.from({length: 13}, (_, i) => i + 1)  // Weeks 1-13
+    // Quarterly subscribers get weeks 1-12; test week 13 is appended by generate-program via includeTestWeek
+    const weeksToGenerate = hasSub && subscription.billing_interval === 'quarter'
+      ? Array.from({length: 12}, (_, i) => i + 1)  // Weeks 1-12
       : [1, 2, 3, 4]  // Weeks 1-4 for monthly or no subscription
 
     // Determine program type based on subscription tier
@@ -460,10 +461,12 @@ export async function POST(request: NextRequest) {
           'Authorization': `Bearer ${supabaseServiceKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
-          user_id: effectiveUserId, 
+        body: JSON.stringify({
+          user_id: effectiveUserId,
           weeksToGenerate,
-          programType: isAppliedPower ? 'applied_power' : 'full' // NEW: Pass program type
+          programType: isAppliedPower ? 'applied_power' : 'full',
+          // Quarterly subscribers get the full cycle including test week
+          ...(hasSub && subscription.billing_interval === 'quarter' ? { includeTestWeek: true } : {})
         })
       }
     )

@@ -144,7 +144,7 @@ serve(async (req) => {
       user,
       block,
       mainLift,
-      week,
+      week: rawWeek,
       day,
       isDeload,
       numExercises,
@@ -159,6 +159,10 @@ serve(async (req) => {
       userPreferences: userPreferencesParam = null,
       skillTargets
     }: AssignExercisesRequest = await req.json()
+
+    // Normalize week number to 1-12 cycle position for lifting progressions
+    // Each 13-week cycle (12 training + 1 test) repeats the same progression pattern
+    const week = ((rawWeek - 1) % 12) + 1
 
     console.log(`🏗️ Assigning exercises: ${block} for ${user.name}, Week ${week}, Day ${day}`)
 
@@ -1238,7 +1242,6 @@ try {
         }
 
         selectedIndices.push(j);
-        probabilities.splice(j, 1);
         selected = true;
         break;
       }
