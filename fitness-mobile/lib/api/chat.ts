@@ -293,10 +293,16 @@ export async function uploadAttachment(
   try {
     const supabase = createClient()
 
-    // Get file info
+    // Get file info and enforce size limits
     const fileInfo = await FileSystem.getInfoAsync(fileUri)
     if (!fileInfo.exists) {
       return { success: false, error: 'File not found' }
+    }
+
+    const maxSize = fileType === 'image' ? MAX_IMAGE_SIZE_BYTES : MAX_VIDEO_SIZE_BYTES
+    if (fileInfo.size && fileInfo.size > maxSize) {
+      const limitMB = Math.round(maxSize / (1024 * 1024))
+      return { success: false, error: `File is too large. Maximum size is ${limitMB}MB.` }
     }
 
     // Generate unique filename

@@ -171,20 +171,13 @@ export default function SignUp() {
         }
         console.log('[Signup] AsyncStorage cleanup complete')
 
-        // Navigate based on subscription status
-        console.log('[Signup] Preparing to navigate, hasActiveSubscription:', hasActiveSubscription)
-        setLoading(false)
-
-        // Use setTimeout to ensure state updates before navigation
-        setTimeout(() => {
-          if (hasActiveSubscription) {
-            console.log('[Signup] Navigating to /intake')
-            router.replace('/intake')
-          } else {
-            console.log('[Signup] Navigating to /subscriptions')
-            router.replace('/subscriptions')
-          }
-        }, 100)
+        // Navigate based on subscription status — keep loading=true
+        // until after navigation so the button stays disabled
+        if (hasActiveSubscription) {
+          router.replace('/intake')
+        } else {
+          router.replace('/subscriptions')
+        }
         return // Exit early - navigation will handle the rest
       }
     } catch (error) {
