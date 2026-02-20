@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getActiveSubscriptions, restorePurchases, PROGRAMS } from '@/lib/subscriptions';
+import { getActiveSubscriptions, restorePurchases, PROGRAMS, PROGRAM_TO_TIER, ProgramType } from '@/lib/subscriptions';
 import { CustomerInfo } from 'react-native-purchases';
 import Purchases from 'react-native-purchases';
+import { createClient } from '@/lib/supabase/client';
 
 export default function SubscriptionStatusScreen() {
   const router = useRouter();
@@ -42,7 +43,25 @@ export default function SubscriptionStatusScreen() {
   const handleRestore = async () => {
     try {
       setLoading(true);
-      await restorePurchases();
+      const customerInfo = await restorePurchases();
+
+      // Sync restored entitlements back to the database
+      const activeEntitlements = Object.keys(customerInfo.entitlements.active);
+      if (activeEntitlements.length > 0) {
+        const supabase = createClient();
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          const tier = PROGRAM_TO_TIER[activeEntitlements[0] as ProgramType] || activeEntitlements[0].toUpperCase();
+          await supabase
+            .from('users')
+            .update({
+              subscription_tier: tier,
+              subscription_status: 'active',
+            })
+            .eq('auth_id', authUser.id);
+        }
+      }
+
       await loadSubscriptionStatus();
       Alert.alert('Success', 'Subscriptions restored successfully!');
     } catch (error) {
