@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.thegainslab.gainsai",
       "infoPlist": {
-        "NSCameraUsageDescription": "We need access to your camera to take photos of food for nutrition tracking.",
+        "NSCameraUsageDescription": "We need access to your camera to scan barcodes and take photos of food for nutrition tracking.",
         "NSPhotoLibraryUsageDescription": "We need access to your photo library to select photos for nutrition tracking and support messages.",
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -47,7 +47,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "We need access to your camera to take photos of food for nutrition tracking."
+          "cameraPermission": "We need access to your camera to scan barcodes and take photos of food for nutrition tracking."
         }
       ],
       [

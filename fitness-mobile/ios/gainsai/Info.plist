@@ -48,7 +48,7 @@
       <true/>
     </dict>
     <key>NSCameraUsageDescription</key>
-    <string>We need access to your camera to take photos of food for nutrition tracking.</string>
+    <string>We need access to your camera to scan barcodes and take photos of food for nutrition tracking.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>We need access to your photo library to select photos for nutrition tracking and support messages.</string>
     <key>NSUserActivityTypes</key>
