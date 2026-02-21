@@ -8,7 +8,7 @@ import { calculateUserRatios } from './ratios.ts'
 export async function buildUserContextForProgram(supabase: any, user_id: number): Promise<Record<string, unknown>> {
   // Fetch all user data in one batch (parallel)
   const [usersResult, equipmentResult, oneRMsResult, skillsResult, prefsResult] = await Promise.all([
-    supabase.from('users').select('name, email, gender, body_weight, units, ability_level, conditioning_benchmarks').eq('id', user_id).single(),
+    supabase.from('users').select('name, email, gender, body_weight, units, conditioning_benchmarks').eq('id', user_id).single(),
     supabase.from('user_equipment').select('equipment_name').eq('user_id', user_id),
     supabase.from('latest_user_one_rms').select('one_rm_index, one_rm').eq('user_id', user_id).order('one_rm_index'),
     supabase.from('latest_user_skills').select('skill_index, skill_level').eq('user_id', user_id).order('skill_index'),
