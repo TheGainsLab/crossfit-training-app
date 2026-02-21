@@ -95,7 +95,20 @@ serve(async (req) => {
             generatedAt: new Date().toISOString(),
             totalExercises: program.totalExercises,
             executionTime: executionTime,
-            userSnapshot: user,
+            userSnapshot: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              gender: user.gender,
+              units: user.units,
+              bodyWeight: user.bodyWeight,
+              equipment: user.equipment,
+              oneRMs: user.oneRMs,
+              benchmarks: user.benchmarks,
+              skills: user.skills,
+              ability: user.ability,
+              preferences: user.preferences
+            },
             ratioSnapshot: ratios,
             weeksGenerated: weeksToGenerate
           }
