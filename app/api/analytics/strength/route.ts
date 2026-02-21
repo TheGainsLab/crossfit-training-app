@@ -37,6 +37,10 @@ export async function GET(req: NextRequest) {
     } catch {}
     if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
 
+    // Fetch user's unit preference for labeling output
+    const { data: userPref } = await supabase.from('users').select('units').eq('id', userId).single()
+    const units = userPref?.units || 'Imperial (lbs)'
+
     const { searchParams } = new URL(req.url)
     const range = searchParams.get('range')
     const block = searchParams.get('block') || 'STRENGTH AND POWER'
@@ -52,17 +56,15 @@ export async function GET(req: NextRequest) {
     const { data: rows, error } = await q
     if (error) throw error
 
-    // Deterministic parsers
+    // Deterministic parsers — return raw value in user's native units (no lbs conversion)
     const toNumber = (s: any): number => {
       if (s === null || s === undefined) return 0
       const str = String(s).trim()
       if (!str) return 0
-      const kg = /kg/i.test(str)
       if (/\d+:\d{2}/.test(str)) return 0 // looks like time, not weight
       const match = str.match(/([0-9]+(?:\.[0-9]+)?)/)
       if (!match) return 0
-      const val = parseFloat(match[1])
-      return kg ? Math.round(val * 2.20462) : val
+      return parseFloat(match[1])
     }
     const parseIntSafe = (s: any): number => {
       if (s === null || s === undefined) return 0
@@ -154,7 +156,7 @@ export async function GET(req: NextRequest) {
     const sorter = sorters[sort] || sorters.total_volume
     movements.sort(sorter)
 
-    return NextResponse.json({ success: true, summary: { block, movements: movements.slice(0, limit) } })
+    return NextResponse.json({ success: true, summary: { block, units, movements: movements.slice(0, limit) } })
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e?.message || 'Failed' }, { status: 500 })
   }

@@ -94,8 +94,8 @@ export function calculateUserRatios(user: {
       if (snatchBodyWeightRatio >= 0.5) snatchLevel = 'Intermediate'
       if (cleanJerkBodyWeightRatio >= 0.6) cleanJerkLevel = 'Intermediate'
     } else {
-      if (snatchBodyWeightRatio >= 0.5) snatchLevel = 'Intermediate'
-      if (cleanJerkBodyWeightRatio >= 0.6) cleanJerkLevel = 'Intermediate'
+      if (snatchBodyWeightRatio >= 0.35) snatchLevel = 'Intermediate'
+      if (cleanJerkBodyWeightRatio >= 0.45) cleanJerkLevel = 'Intermediate'
     }
   }
 
