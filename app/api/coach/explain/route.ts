@@ -189,26 +189,26 @@ async function handle(req: Request) {
               const m = String(x.reps||'').match(/(\d+)\s*[-–]\s*(\d+)/)
               const repsN = m ? Number(m[2]) : (Number(String(x.reps||'').replace(/[^0-9]/g,'')) || 0)
               const rawW = (() => { const s = String(x.weight_time||''); if (s.includes(':')) return 0; const num = Number(s.replace(/[^0-9\.]/g,'')) || 0; return num })()
-              const wLbs = metricUnits ? Math.round(rawW * 2.20462 * 100)/100 : rawW
-              if (wLbs > maxWeight) maxWeight = wLbs
-              dayMax[dstr] = Math.max(dayMax[dstr]||0, wLbs)
+              if (rawW > maxWeight) maxWeight = rawW
+              dayMax[dstr] = Math.max(dayMax[dstr]||0, rawW)
               setsSum += setsN
               repsSum += setsN * repsN
-              volume += (setsN * repsN) * wLbs
+              volume += (setsN * repsN) * rawW
               if (!lastAt || String(x.logged_at) > lastAt) lastAt = String(x.logged_at)
             })
             const avgTop = (() => { const arr = Object.values(dayMax); if (!arr.length) return 0; const s = arr.reduce((a,b)=>a+b,0); return Math.round((s/arr.length)*100)/100 })()
+            const unitLabel = metricUnits ? 'kg' : 'lbs'
             return {
               user_id: userId,
               exercise_name,
               distinct_days_in_range: daySet.size,
               avg_rpe: rpeN ? Math.round((rpeSum/rpeN)*100)/100 : 0,
               avg_quality: qN ? Math.round((qSum/qN)*100)/100 : 0,
-              max_weight_lbs: maxWeight,
-              avg_top_set_weight_lbs: avgTop,
+              [`max_weight_${unitLabel}`]: maxWeight,
+              [`avg_top_set_weight_${unitLabel}`]: avgTop,
               total_sets: setsSum,
               total_reps: repsSum,
-              total_volume_lbs: Math.round(volume*100)/100,
+              [`total_volume_${unitLabel}`]: Math.round(volume*100)/100,
               last_session_at: lastAt || null
             }
           })

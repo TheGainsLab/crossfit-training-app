@@ -233,6 +233,7 @@ function filterMetconsForUser(metconData: any[], user: any): any[] {
   const userOneRMs = user.oneRMs || []
   const userEquipment = user.equipment || []
   const userGender = user.gender || 'Male'
+  const userUnits = user.units || 'Imperial (lbs)'
 
   // Step 1: Strict equipment + skills + 1RM filter
   let suitableWorkouts = metconData.filter(workout => {
@@ -274,9 +275,13 @@ function filterMetconsForUser(metconData: any[], user: any): any[] {
         const userOneRm = userOneRMs[oneRmIndex]
         if (userOneRm && userOneRm > 0) {
           const maxAllowedWeight = userOneRm * 0.8
-          const taskWeight = userGender === 'Female'
+          let taskWeight = userGender === 'Female'
             ? parseFloat(task.weight_female || task.weight_female_lbs || '0')
             : parseFloat(task.weight_male || task.weight_male_lbs || '0')
+          // Rx weights are stored in lbs — convert to kg for metric users so comparison matches 1RM units
+          if (userUnits === 'Metric (kg)') {
+            taskWeight = taskWeight / 2.20462
+          }
           if (taskWeight > 0 && taskWeight > maxAllowedWeight) return false
         }
       }
@@ -325,9 +330,13 @@ function filterMetconsForUser(metconData: any[], user: any): any[] {
           const userOneRm = userOneRMs[oneRmIndex]
           if (userOneRm && userOneRm > 0) {
             const maxAllowedWeight = userOneRm * 0.8
-            const taskWeight = userGender === 'Female'
+            let taskWeight = userGender === 'Female'
               ? parseFloat(task.weight_female || task.weight_female_lbs || '0')
               : parseFloat(task.weight_male || task.weight_male_lbs || '0')
+            // Rx weights are stored in lbs — convert to kg for metric users so comparison matches 1RM units
+            if (userUnits === 'Metric (kg)') {
+              taskWeight = taskWeight / 2.20462
+            }
             if (taskWeight > 0 && taskWeight > maxAllowedWeight) return false
           }
         }
@@ -507,7 +516,12 @@ function convertMetConToExercises(workout: any, user: any): { exercises: any[] }
       let weightTime = ''
 
       if (selectedWeight && selectedWeight !== '') {
-        const roundedWeight = roundWeight(parseFloat(selectedWeight), user.units)
+        let parsedWeight = parseFloat(selectedWeight)
+        // Metcon Rx weights are stored in lbs — convert to kg for metric users
+        if (user.units === 'Metric (kg)') {
+          parsedWeight = parsedWeight / 2.20462
+        }
+        const roundedWeight = roundWeight(parsedWeight, user.units)
         weightTime += roundedWeight.toString()
       }
 
