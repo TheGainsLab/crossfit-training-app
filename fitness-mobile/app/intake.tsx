@@ -275,6 +275,7 @@ export default function IntakePage() {
         // Timeout: if generation has been running too long, let the user retry
         if (Date.now() - startTime > GENERATION_TIMEOUT_MS) {
           setIsGenerating(false)
+          setIntakeStatus('timeout') // Prevent useEffect from restarting the poll loop
           clearInterval(pollInterval)
           Alert.alert(
             'Generation Timed Out',

@@ -150,7 +150,6 @@ function generateUserProfile(userContext: any, sportId: number) {
       units: user.units,
       body_weight: user.bodyWeight || null,
       equipment: user.equipment,
-      ability_level: user.ability,
       sport_id: sportId
     },
 

@@ -82,7 +82,7 @@ async function gatherAnalysisData(supabase: any, user_id: number) {
 
     supabase
       .from('users')
-      .select('name, ability_level, gender, body_weight, units')
+      .select('name, gender, body_weight, units')
       .eq('id', user_id)
       .single(),
 
@@ -152,7 +152,6 @@ You are an expert CrossFit coach providing personalized training insights to an 
 
 ATHLETE PROFILE:
 - Name: ${userProfile.name || 'Athlete'}
-- Experience Level: ${userProfile.ability_level || 'Developing'}
 - Gender: ${userProfile.gender || 'Unknown'}
 - Body Weight: ${userProfile.body_weight || 'Unknown'} ${userProfile.units || 'lbs'}
 

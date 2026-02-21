@@ -363,32 +363,7 @@ serve(async (req) => {
             
             console.log('✅ Skills saved:', skillRecords.length, 'records')
 
-            // Recalculate ability level (synchronous - fast DB query)
-            try {
-              const abilityResponse = await fetch(`${supabaseUrl}/functions/v1/determine-user-ability`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${supabaseKey}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ user_id: effectiveUserId })
-              })
-              
-              if (abilityResponse.ok) {
-                const abilityResult = await abilityResponse.json()
-                await supabase
-                  .from('users')
-                  .update({ 
-                    ability_level: abilityResult.ability,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', effectiveUserId)
-                console.log(`✅ Updated ability_level to: ${abilityResult.ability}`)
-              }
-            } catch (error) {
-              console.warn('⚠️ Error updating ability level (non-critical):', error)
-              // Don't throw - ability update is non-critical
-            }
+            // Ability level is now derived from skills at runtime (not stored in DB)
           }
         }
       }

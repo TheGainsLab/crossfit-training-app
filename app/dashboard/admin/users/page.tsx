@@ -19,7 +19,6 @@ interface UserData {
   email: string
   name: string | null
   role: string
-  ability_level: string | null
   subscription_tier: string | null
   subscription_status: string | null
   created_at: string

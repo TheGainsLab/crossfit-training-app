@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     if (athleteId) {
       const { data, error } = await supabase
         .from('users')
-        .select('id, name, email, ability_level')
+        .select('id, name, email')
         .eq('id', athleteId)
         .single()
       
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     } else {
       const { data, error } = await supabase
         .from('users')
-        .select('id, name, email, ability_level')
+        .select('id, name, email')
         .eq('email', athleteEmail)
         .single()
       
@@ -246,8 +246,7 @@ export async function POST(request: NextRequest) {
         athlete: {
           id: athleteData.id,
           name: athleteData.name,
-          email: athleteData.email,
-          abilityLevel: athleteData.ability_level
+          email: athleteData.email
         },
         coach: {
           id: coachData.id,
@@ -333,7 +332,7 @@ export async function GET(request: NextRequest) {
     // Search for users by name or email
     const { data: users, error: searchError } = await supabase
       .from('users')
-      .select('id, name, email, ability_level, created_at')
+      .select('id, name, email, created_at')
       .or(`name.ilike.%${search}%,email.ilike.%${search}%`)
       .limit(20)
 

@@ -72,22 +72,36 @@ async function claimJob(jobId: number): Promise<boolean> {
   return data && data.length > 0
 }
 
-// Check if all intake jobs for a user are complete
+// Check if all jobs for a user are complete (and user is in 'generating' state)
 async function checkIntakeJobsComplete(userId: number): Promise<{ allComplete: boolean; hasFailed: boolean; errorMessage?: string }> {
+  // Only relevant when user is waiting for generation to finish
+  const { data: userData } = await supabase
+    .from('users')
+    .select('intake_status')
+    .eq('id', userId)
+    .single()
+
+  if (!userData || userData.intake_status !== 'generating') {
+    return { allComplete: false, hasFailed: false }
+  }
+
+  // Check ALL pending/in-flight jobs for this user (no job_type filter —
+  // the column may not exist in older schemas, which would make the query
+  // silently return zero rows and leave intake_status stuck at 'generating')
   const { data: jobs, error } = await supabase
     .from('program_generation_jobs')
-    .select('status, error_message, job_type')
+    .select('status, error_message')
     .eq('user_id', userId)
-    .in('job_type', ['intake_program', 'intake_profile'])
-  
+    .in('status', ['pending', 'processing', 'completed', 'failed'])
+
   if (error || !jobs || jobs.length === 0) {
     return { allComplete: false, hasFailed: false }
   }
-  
+
   const allComplete = jobs.every(job => job.status === 'completed' || job.status === 'failed')
   const hasFailed = jobs.some(job => job.status === 'failed')
   const failedJob = jobs.find(job => job.status === 'failed')
-  
+
   return {
     allComplete,
     hasFailed,
@@ -465,12 +479,10 @@ async function processJob(job: any) {
     
     console.log(`✅ Job ${jobId} completed successfully`)
     
-    // Check if all intake jobs for this user are complete (only for intake jobs)
-    if (jobType === 'intake_program' || jobType === 'intake_profile') {
-      const { allComplete, hasFailed, errorMessage } = await checkIntakeJobsComplete(userId)
-      if (allComplete) {
-        await updateIntakeStatus(userId, allComplete, hasFailed, errorMessage)
-      }
+    // Check if all jobs for this user are done (checks user.intake_status internally)
+    const { allComplete, hasFailed, errorMessage } = await checkIntakeJobsComplete(userId)
+    if (allComplete) {
+      await updateIntakeStatus(userId, allComplete, hasFailed, errorMessage)
     }
     
   } catch (error) {
@@ -491,9 +503,8 @@ async function processJob(job: any) {
       })
       .eq('id', jobId)
     
-    // If this is an intake job and it failed permanently, check if all jobs are done
-    const jobType = job.job_type || 'program_generation'
-    if ((jobType === 'intake_program' || jobType === 'intake_profile') && retryCount >= maxRetries) {
+    // If job failed permanently, check if all user jobs are done
+    if (retryCount >= maxRetries) {
       const { allComplete, hasFailed } = await checkIntakeJobsComplete(userId)
       if (allComplete) {
         await updateIntakeStatus(userId, allComplete, hasFailed, errorMessage)

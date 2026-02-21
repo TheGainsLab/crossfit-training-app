@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     // Build query
     let query = supabase
       .from('users')
-      .select('id, email, name, role, ability_level, subscription_tier, subscription_status, created_at', { count: 'exact' })
+      .select('id, email, name, role, subscription_tier, subscription_status, created_at', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
     

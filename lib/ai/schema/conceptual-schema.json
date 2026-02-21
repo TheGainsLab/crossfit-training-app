@@ -181,7 +181,6 @@
       "key_columns": [
         "user_id (integer)",
         "name (character varying)",
-        "ability_level (character varying)",
         "body_weight (numeric)",
         "units (character varying)",
         "training_days_per_week (integer)",
