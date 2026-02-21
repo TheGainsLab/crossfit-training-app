@@ -90,6 +90,7 @@ serve(async (req) => {
             totalExercises: program.totalExercises,
             executionTime: executionTime,
             userSnapshot: user,
+            ratioSnapshot: ratios,
             weeksGenerated: weeksToGenerate
           }
         }
