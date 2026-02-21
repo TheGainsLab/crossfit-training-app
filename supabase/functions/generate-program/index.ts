@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { buildUserContextForProgram } from '../_shared/user-context.ts'
+import { calculateUserRatios } from '../_shared/ratios.ts'
 import { runSkillsScheduler, type SkillGrid } from '../_shared/skills-scheduler.ts'
 
 const corsHeaders = {
@@ -70,7 +71,12 @@ serve(async (req) => {
     // Fetch user context (profile, skills, ratios - all in one)
     console.log('📊 Fetching user context (profile, skills, ratios)...')
     const user = await buildUserContextForProgram(supabase, user_id)
-    const ratios = user
+    const ratios = calculateUserRatios({
+      name: user.name as string,
+      gender: user.gender as string,
+      bodyWeight: user.bodyWeight as number,
+      oneRMs: user.oneRMs as number[]
+    })
     console.log(`✅ User context: ${user.name}, Snatch level: ${(user as any).snatch_level}`)
     
     // Generate program structure
