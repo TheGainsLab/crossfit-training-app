@@ -56,7 +56,7 @@ const [
       userProfile: {
         id: user_id,
         name: userData.name,
-        ability: userData.ability_level || 'Beginner',
+        ability: 'Intermediate',
         bodyWeight: userData.body_weight || 0,
         gender: userData.gender || 'Male',
         units: userData.units || 'Imperial (lbs)'
@@ -88,7 +88,7 @@ metadata: {
       userContext,
       summary: {
         userId: user_id,
-        ability: userData.ability_level,
+        ability: 'Intermediate',
         weaknessFlags: Object.keys(ratiosData).filter(key => 
           key.startsWith('needs_') && ratiosData[key] === true
         ).length,
@@ -115,7 +115,7 @@ metadata: {
 async function fetchUserProfile(supabase: any, user_id: number) {
   const { data, error } = await supabase
     .from('users')
-    .select('name, ability_level, body_weight, gender, units')
+    .select('name, body_weight, gender, units')
     .eq('id', user_id)
     .single();
   

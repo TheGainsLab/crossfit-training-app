@@ -28,7 +28,6 @@ interface ProfileData {
     units: string
     body_weight: number | null
     equipment: string[]
-    ability_level: string
   }
   one_rms: {
     snatch: number | null

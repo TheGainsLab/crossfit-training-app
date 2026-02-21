@@ -221,43 +221,7 @@ export async function POST(request: NextRequest) {
           }, { status: 500 })
         }
         
-        // Recalculate and update ability_level after skills are saved
-        try {
-          const abilityResponse = await fetch(
-            `${supabaseUrl}/functions/v1/determine-user-ability`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ user_id: effectiveUserId })
-            }
-          )
-          
-          if (abilityResponse.ok) {
-            const abilityResult = await abilityResponse.json()
-            // Update users table with new ability_level
-            const { error: abilityUpdateError } = await supabaseAdmin
-              .from('users')
-              .update({ 
-                ability_level: abilityResult.ability,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', effectiveUserId)
-            
-            if (abilityUpdateError) {
-              console.error('⚠️ Failed to update ability_level:', abilityUpdateError)
-            } else {
-            }
-          } else {
-            const errorText = await abilityResponse.text()
-            console.error('⚠️ Failed to determine ability:', errorText)
-          }
-        } catch (error) {
-          console.error('⚠️ Error updating ability level (continuing):', error)
-          // Don't fail the whole save if this fails
-        }
+        // Ability level is now derived from skills at runtime (not stored in DB)
       }
     }
   } else if (isEngineUser) {

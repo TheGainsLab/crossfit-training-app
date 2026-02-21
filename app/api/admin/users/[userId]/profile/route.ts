@@ -48,7 +48,6 @@ export async function GET(
         email,
         name,
         role,
-        ability_level,
         subscription_tier,
         subscription_status,
         created_at,

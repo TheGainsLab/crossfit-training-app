@@ -380,17 +380,16 @@ async function getBasicUserContextInternal(userSb: any, userId: number) {
   try {
     const { data } = await userSb
       .from('user_complete_profile')
-      .select('name, ability_level, units, current_program_id')
+      .select('name, units, current_program_id')
       .eq('user_id', userId)
       .single()
     return {
       name: data?.name || 'Athlete',
-      ability_level: data?.ability_level || 'Unknown',
       units: data?.units || 'Unknown',
       current_program_id: data?.current_program_id || null,
     }
   } catch {
-    return { name: 'Athlete', ability_level: 'Unknown', units: 'Unknown', current_program_id: null }
+    return { name: 'Athlete', units: 'Unknown', current_program_id: null }
   }
 }
 

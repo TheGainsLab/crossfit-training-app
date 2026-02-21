@@ -174,7 +174,6 @@ export async function POST(request: NextRequest) {
         gender: userData.gender,
         body_weight: userData.bodyWeight ? parseFloat(userData.bodyWeight) : null,
         units: userData.units,
-        ability_level: 'Beginner',
         conditioning_benchmarks: userData.conditioningBenchmarks,
         // Preserve 'active'/'trialing' status if webhook already set it;
         // otherwise set to 'pending' (will be upgraded when subscription is verified below)

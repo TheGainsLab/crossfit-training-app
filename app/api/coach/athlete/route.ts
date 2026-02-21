@@ -94,7 +94,6 @@ export async function GET(request: NextRequest) {
           id,
           name,
           email,
-          ability_level,
           created_at
         )
       `)
@@ -180,7 +179,6 @@ const athlete = Array.isArray(rel.users) ? rel.users[0] : rel.users
           id: athlete.id,
           name: athlete.name,
           email: athlete.email,
-          abilityLevel: athlete.ability_level,
           joinedAt: athlete.created_at
         },
         coachingDetails: {

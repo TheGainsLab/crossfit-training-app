@@ -42,7 +42,6 @@ interface UserProfile {
   email: string
   name: string | null
   role: string
-  ability_level: string | null
   subscription_tier: string | null
   subscription_status: string | null
   created_at: string
@@ -568,7 +567,7 @@ export default function UserDetailPage() {
       const userLevel = getUserLevelForExercise(
         editContext.blockName,
         exercise.name,
-        data.user.ability_level,
+        null,
         data.athleteProfile.skillsAssessment
       )
 
@@ -982,7 +981,6 @@ export default function UserDetailPage() {
           <InfoRow label="User ID" value={user.id} />
           <InfoRow label="Email" value={user.email} />
           <InfoRow label="Role" value={user.role} />
-          <InfoRow label="Ability Level" value={user.ability_level || '-'} />
           <InfoRow
             label="Joined"
             value={new Date(user.created_at).toLocaleDateString('en-US', {
@@ -1574,10 +1572,6 @@ export default function UserDetailPage() {
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-500 mb-1">Ability Level</p>
-                  <p className="font-semibold text-gray-900">{user.ability_level || 'Not set'}</p>
-                </div>
                 <div className="bg-gray-50 rounded-lg p-4">
                   <p className="text-sm text-gray-500 mb-1">Workouts (30d)</p>
                   <p className="font-semibold text-gray-900">{engagement.workouts_30d}</p>

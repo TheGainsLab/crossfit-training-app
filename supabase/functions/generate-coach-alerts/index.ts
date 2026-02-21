@@ -65,7 +65,7 @@ async function gatherCoachAthleteData(supabase: any, coach_id: number) {
       permission_level,
       created_at,
       users!coach_athlete_relationships_athlete_id_fkey (
-        id, name, ability_level, created_at
+        id, name, created_at
       )
     `)
     .eq('coach_id', coach_id)
@@ -107,7 +107,6 @@ supabase
   return relationships.map(rel => ({
     athleteId: rel.athlete_id,
     name: rel.users.name,
-    abilityLevel: rel.users.ability_level,
     permissionLevel: rel.permission_level,
     coachingSince: rel.created_at,
     accountAge: rel.users.created_at,
@@ -271,7 +270,6 @@ function buildInterventionContextPrompt(athlete: any, triggers: any[]) {
 You are an expert coach advisor analyzing when human coaching intervention is needed beyond automated program adjustments.
 
 ATHLETE: ${athlete.name}
-EXPERIENCE LEVEL: ${athlete.abilityLevel}
 COACHING RELATIONSHIP: ${Math.floor((Date.now() - new Date(athlete.coachingSince).getTime()) / (1000 * 60 * 60 * 24))} days
 
 INTERVENTION TRIGGERS DETECTED:

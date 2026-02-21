@@ -52,7 +52,6 @@ export async function GET(request: NextRequest) {
         email,
         name,
         role,
-        ability_level,
         subscription_tier,
         subscription_status,
         created_at

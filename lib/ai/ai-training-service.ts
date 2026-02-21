@@ -9,7 +9,7 @@ export interface TrainingAssistantRequest {
   userQuestion: string
   userId: number
   conversationHistory?: Array<{ role: string; content: string }>
-  userContext?: { name?: string; ability_level?: string; units?: string; current_program_id?: number }
+  userContext?: { name?: string; units?: string; current_program_id?: number }
   // Optional context from UI chips (logs-only)
   range?: string | null
   block?: string | null
@@ -382,7 +382,7 @@ MODE SELECTION (if provided):
   ${explicitLimit}
 
 USER QUESTION: "${req.userQuestion}"
-USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'}, ${req.userContext?.units || 'Unknown'})
+USER: ${req.userContext?.name || 'Athlete'} (${req.userContext?.units || 'Unknown'})
 
 ${subsetSchema}
 
@@ -470,7 +470,7 @@ IMPORTANT HARD CONSTRAINTS:
 - If the datasets contain zero rows relevant to the user's question, reply with exactly: "no data".
 
 USER: "${req.userQuestion}"
-USER CONTEXT: ${req.userContext?.name || 'Athlete'} (${req.userContext?.ability_level || 'Unknown'} level, ${req.userContext?.units || 'Unknown'} units)
+USER CONTEXT: ${req.userContext?.name || 'Athlete'} (${req.userContext?.units || 'Unknown'} units)
 
 ALLOWED_ENTITIES: ${allowedEntitiesText}
 
