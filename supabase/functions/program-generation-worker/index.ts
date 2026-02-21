@@ -473,6 +473,41 @@ async function processJob(job: any) {
       }
     }
 
+    // Fallback: if a program was just generated/saved and intake_status is still 'generating',
+    // update it directly. This handles cases where job_type routing or multi-job checks fail.
+    if (jobType === 'intake_program' || jobType === 'program_generation') {
+      try {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('intake_status')
+          .eq('id', userId)
+          .single()
+
+        if (userData?.intake_status === 'generating') {
+          // Verify the program actually exists in the DB
+          const { data: program } = await supabase
+            .from('programs')
+            .select('id')
+            .eq('user_id', userId)
+            .limit(1)
+
+          if (program && program.length > 0) {
+            await supabase
+              .from('users')
+              .update({
+                intake_status: 'complete',
+                intake_completed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', userId)
+            console.log(`✅ Fallback: Updated user ${userId} intake_status to 'complete' (program exists in DB)`)
+          }
+        }
+      } catch (fallbackErr) {
+        console.warn(`⚠️ intake_status fallback check failed for user ${userId}:`, fallbackErr)
+      }
+    }
+
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     const retryCount = (job.retry_count || 0) + 1
