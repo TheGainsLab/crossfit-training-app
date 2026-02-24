@@ -876,8 +876,8 @@ export default function ProfilePage() {
       // Map profile field names to database structure
       const liftMap: {[key: string]: {index: number, name: string}} = {
         'snatch': { index: 0, name: 'Snatch' },
-        'clean_and_jerk': { index: 1, name: 'Clean and Jerk' },
-        'power_snatch': { index: 2, name: 'Power Snatch' },
+        'power_snatch': { index: 1, name: 'Power Snatch' },
+        'clean_and_jerk': { index: 2, name: 'Clean and Jerk' },
         'power_clean': { index: 3, name: 'Power Clean' },
         'clean_only': { index: 4, name: 'Clean (clean only)' },
         'jerk_only': { index: 5, name: 'Jerk (from rack or blocks, max Split or Power Jerk)' },
@@ -1832,222 +1832,208 @@ export default function ProfilePage() {
               {/* Running */}
               <View style={styles.benchmarkSubsection}>
                 <Text style={styles.benchmarkSubsectionTitle}>RUNNING</Text>
-                {profile.benchmarks.mile_run && (
-                  <View style={styles.benchmarkRow}>
-                    <Text style={styles.benchmarkLabel}>Mile</Text>
-                    {editingBenchmark === 'mile_run' ? (
-                      <View style={styles.benchmarkEditingContainer}>
-                        <TextInput
-                          value={benchmarkValues['mile_run'] !== undefined ? benchmarkValues['mile_run'] : (profile.benchmarks.mile_run || '')}
-                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, mile_run: value})}
-                          onBlur={() => {
-                            const value = benchmarkValues['mile_run'] || profile.benchmarks.mile_run || ''
-                            saveBenchmark('mile_run', value)
-                          }}
-                          placeholder="MM:SS"
-                          style={styles.benchmarkInput}
-                          autoFocus
-                          editable={!savingBenchmark}
-                        />
-                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
-                      </View>
-                    ) : (
-                      <TouchableOpacity onPress={() => {
-                        setEditingBenchmark('mile_run')
-                        setBenchmarkValues({...benchmarkValues, mile_run: profile.benchmarks.mile_run || ''})
-                      }}>
-                        <Text style={styles.benchmarkValue}>{profile.benchmarks.mile_run}</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-                {profile.benchmarks.five_k_run && (
-                  <View style={styles.benchmarkRow}>
-                    <Text style={styles.benchmarkLabel}>5K</Text>
-                    {editingBenchmark === 'five_k_run' ? (
-                      <View style={styles.benchmarkEditingContainer}>
-                        <TextInput
-                          value={benchmarkValues['five_k_run'] !== undefined ? benchmarkValues['five_k_run'] : (profile.benchmarks.five_k_run || '')}
-                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, five_k_run: value})}
-                          onBlur={() => {
-                            const value = benchmarkValues['five_k_run'] || profile.benchmarks.five_k_run || ''
-                            saveBenchmark('five_k_run', value)
-                          }}
-                          placeholder="MM:SS"
-                          style={styles.benchmarkInput}
-                          autoFocus
-                          editable={!savingBenchmark}
-                        />
-                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
-                      </View>
-                    ) : (
-                      <TouchableOpacity onPress={() => {
-                        setEditingBenchmark('five_k_run')
-                        setBenchmarkValues({...benchmarkValues, five_k_run: profile.benchmarks.five_k_run || ''})
-                      }}>
-                        <Text style={styles.benchmarkValue}>{profile.benchmarks.five_k_run}</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-                {profile.benchmarks.ten_k_run && (
-                  <View style={styles.benchmarkRow}>
-                    <Text style={styles.benchmarkLabel}>10K</Text>
-                    {editingBenchmark === 'ten_k_run' ? (
-                      <View style={styles.benchmarkEditingContainer}>
-                        <TextInput
-                          value={benchmarkValues['ten_k_run'] !== undefined ? benchmarkValues['ten_k_run'] : (profile.benchmarks.ten_k_run || '')}
-                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, ten_k_run: value})}
-                          onBlur={() => {
-                            const value = benchmarkValues['ten_k_run'] || profile.benchmarks.ten_k_run || ''
-                            saveBenchmark('ten_k_run', value)
-                          }}
-                          placeholder="MM:SS"
-                          style={styles.benchmarkInput}
-                          autoFocus
-                          editable={!savingBenchmark}
-                        />
-                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
-                      </View>
-                    ) : (
-                      <TouchableOpacity onPress={() => {
-                        setEditingBenchmark('ten_k_run')
-                        setBenchmarkValues({...benchmarkValues, ten_k_run: profile.benchmarks.ten_k_run || ''})
-                      }}>
-                        <Text style={styles.benchmarkValue}>{profile.benchmarks.ten_k_run}</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
+                <View style={styles.benchmarkRow}>
+                  <Text style={styles.benchmarkLabel}>Mile</Text>
+                  {editingBenchmark === 'mile_run' ? (
+                    <View style={styles.benchmarkEditingContainer}>
+                      <TextInput
+                        value={benchmarkValues['mile_run'] !== undefined ? benchmarkValues['mile_run'] : (profile.benchmarks.mile_run || '')}
+                        onChangeText={(value) => setBenchmarkValues({...benchmarkValues, mile_run: value})}
+                        onBlur={() => {
+                          const value = benchmarkValues['mile_run'] || profile.benchmarks.mile_run || ''
+                          saveBenchmark('mile_run', value)
+                        }}
+                        placeholder="MM:SS"
+                        style={styles.benchmarkInput}
+                        autoFocus
+                        editable={!savingBenchmark}
+                      />
+                      {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                    </View>
+                  ) : (
+                    <TouchableOpacity onPress={() => {
+                      setEditingBenchmark('mile_run')
+                      setBenchmarkValues({...benchmarkValues, mile_run: profile.benchmarks.mile_run || ''})
+                    }}>
+                      <Text style={styles.benchmarkValue}>{profile.benchmarks.mile_run || 'Not set'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <View style={styles.benchmarkRow}>
+                  <Text style={styles.benchmarkLabel}>5K</Text>
+                  {editingBenchmark === 'five_k_run' ? (
+                    <View style={styles.benchmarkEditingContainer}>
+                      <TextInput
+                        value={benchmarkValues['five_k_run'] !== undefined ? benchmarkValues['five_k_run'] : (profile.benchmarks.five_k_run || '')}
+                        onChangeText={(value) => setBenchmarkValues({...benchmarkValues, five_k_run: value})}
+                        onBlur={() => {
+                          const value = benchmarkValues['five_k_run'] || profile.benchmarks.five_k_run || ''
+                          saveBenchmark('five_k_run', value)
+                        }}
+                        placeholder="MM:SS"
+                        style={styles.benchmarkInput}
+                        autoFocus
+                        editable={!savingBenchmark}
+                      />
+                      {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                    </View>
+                  ) : (
+                    <TouchableOpacity onPress={() => {
+                      setEditingBenchmark('five_k_run')
+                      setBenchmarkValues({...benchmarkValues, five_k_run: profile.benchmarks.five_k_run || ''})
+                    }}>
+                      <Text style={styles.benchmarkValue}>{profile.benchmarks.five_k_run || 'Not set'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <View style={styles.benchmarkRow}>
+                  <Text style={styles.benchmarkLabel}>10K</Text>
+                  {editingBenchmark === 'ten_k_run' ? (
+                    <View style={styles.benchmarkEditingContainer}>
+                      <TextInput
+                        value={benchmarkValues['ten_k_run'] !== undefined ? benchmarkValues['ten_k_run'] : (profile.benchmarks.ten_k_run || '')}
+                        onChangeText={(value) => setBenchmarkValues({...benchmarkValues, ten_k_run: value})}
+                        onBlur={() => {
+                          const value = benchmarkValues['ten_k_run'] || profile.benchmarks.ten_k_run || ''
+                          saveBenchmark('ten_k_run', value)
+                        }}
+                        placeholder="MM:SS"
+                        style={styles.benchmarkInput}
+                        autoFocus
+                        editable={!savingBenchmark}
+                      />
+                      {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                    </View>
+                  ) : (
+                    <TouchableOpacity onPress={() => {
+                      setEditingBenchmark('ten_k_run')
+                      setBenchmarkValues({...benchmarkValues, ten_k_run: profile.benchmarks.ten_k_run || ''})
+                    }}>
+                      <Text style={styles.benchmarkValue}>{profile.benchmarks.ten_k_run || 'Not set'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
 
               {/* Rowing */}
               <View style={styles.benchmarkSubsection}>
                 <Text style={styles.benchmarkSubsectionTitle}>ROWING</Text>
-                {profile.benchmarks.one_k_row && (
-                  <View style={styles.benchmarkRow}>
-                    <Text style={styles.benchmarkLabel}>1K</Text>
-                    {editingBenchmark === 'one_k_row' ? (
-                      <View style={styles.benchmarkEditingContainer}>
-                        <TextInput
-                          value={benchmarkValues['one_k_row'] !== undefined ? benchmarkValues['one_k_row'] : (profile.benchmarks.one_k_row || '')}
-                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, one_k_row: value})}
-                          onBlur={() => {
-                            const value = benchmarkValues['one_k_row'] || profile.benchmarks.one_k_row || ''
-                            saveBenchmark('one_k_row', value)
-                          }}
-                          placeholder="MM:SS"
-                          style={styles.benchmarkInput}
-                          autoFocus
-                          editable={!savingBenchmark}
-                        />
-                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
-                      </View>
-                    ) : (
-                      <TouchableOpacity onPress={() => {
-                        setEditingBenchmark('one_k_row')
-                        setBenchmarkValues({...benchmarkValues, one_k_row: profile.benchmarks.one_k_row || ''})
-                      }}>
-                        <Text style={styles.benchmarkValue}>{profile.benchmarks.one_k_row}</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-                {profile.benchmarks.two_k_row && (
-                  <View style={styles.benchmarkRow}>
-                    <Text style={styles.benchmarkLabel}>2K</Text>
-                    {editingBenchmark === 'two_k_row' ? (
-                      <View style={styles.benchmarkEditingContainer}>
-                        <TextInput
-                          value={benchmarkValues['two_k_row'] !== undefined ? benchmarkValues['two_k_row'] : (profile.benchmarks.two_k_row || '')}
-                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, two_k_row: value})}
-                          onBlur={() => {
-                            const value = benchmarkValues['two_k_row'] || profile.benchmarks.two_k_row || ''
-                            saveBenchmark('two_k_row', value)
-                          }}
-                          placeholder="MM:SS"
-                          style={styles.benchmarkInput}
-                          autoFocus
-                          editable={!savingBenchmark}
-                        />
-                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
-                      </View>
-                    ) : (
-                      <TouchableOpacity onPress={() => {
-                        setEditingBenchmark('two_k_row')
-                        setBenchmarkValues({...benchmarkValues, two_k_row: profile.benchmarks.two_k_row || ''})
-                      }}>
-                        <Text style={styles.benchmarkValue}>{profile.benchmarks.two_k_row}</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-                {profile.benchmarks.five_k_row && (
-                  <View style={styles.benchmarkRow}>
-                    <Text style={styles.benchmarkLabel}>5K</Text>
-                    {editingBenchmark === 'five_k_row' ? (
-                      <View style={styles.benchmarkEditingContainer}>
-                        <TextInput
-                          value={benchmarkValues['five_k_row'] !== undefined ? benchmarkValues['five_k_row'] : (profile.benchmarks.five_k_row || '')}
-                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, five_k_row: value})}
-                          onBlur={() => {
-                            const value = benchmarkValues['five_k_row'] || profile.benchmarks.five_k_row || ''
-                            saveBenchmark('five_k_row', value)
-                          }}
-                          placeholder="MM:SS"
-                          style={styles.benchmarkInput}
-                          autoFocus
-                          editable={!savingBenchmark}
-                        />
-                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
-                      </View>
-                    ) : (
-                      <TouchableOpacity onPress={() => {
-                        setEditingBenchmark('five_k_row')
-                        setBenchmarkValues({...benchmarkValues, five_k_row: profile.benchmarks.five_k_row || ''})
-                      }}>
-                        <Text style={styles.benchmarkValue}>{profile.benchmarks.five_k_row}</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
+                <View style={styles.benchmarkRow}>
+                  <Text style={styles.benchmarkLabel}>1K</Text>
+                  {editingBenchmark === 'one_k_row' ? (
+                    <View style={styles.benchmarkEditingContainer}>
+                      <TextInput
+                        value={benchmarkValues['one_k_row'] !== undefined ? benchmarkValues['one_k_row'] : (profile.benchmarks.one_k_row || '')}
+                        onChangeText={(value) => setBenchmarkValues({...benchmarkValues, one_k_row: value})}
+                        onBlur={() => {
+                          const value = benchmarkValues['one_k_row'] || profile.benchmarks.one_k_row || ''
+                          saveBenchmark('one_k_row', value)
+                        }}
+                        placeholder="MM:SS"
+                        style={styles.benchmarkInput}
+                        autoFocus
+                        editable={!savingBenchmark}
+                      />
+                      {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                    </View>
+                  ) : (
+                    <TouchableOpacity onPress={() => {
+                      setEditingBenchmark('one_k_row')
+                      setBenchmarkValues({...benchmarkValues, one_k_row: profile.benchmarks.one_k_row || ''})
+                    }}>
+                      <Text style={styles.benchmarkValue}>{profile.benchmarks.one_k_row || 'Not set'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <View style={styles.benchmarkRow}>
+                  <Text style={styles.benchmarkLabel}>2K</Text>
+                  {editingBenchmark === 'two_k_row' ? (
+                    <View style={styles.benchmarkEditingContainer}>
+                      <TextInput
+                        value={benchmarkValues['two_k_row'] !== undefined ? benchmarkValues['two_k_row'] : (profile.benchmarks.two_k_row || '')}
+                        onChangeText={(value) => setBenchmarkValues({...benchmarkValues, two_k_row: value})}
+                        onBlur={() => {
+                          const value = benchmarkValues['two_k_row'] || profile.benchmarks.two_k_row || ''
+                          saveBenchmark('two_k_row', value)
+                        }}
+                        placeholder="MM:SS"
+                        style={styles.benchmarkInput}
+                        autoFocus
+                        editable={!savingBenchmark}
+                      />
+                      {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                    </View>
+                  ) : (
+                    <TouchableOpacity onPress={() => {
+                      setEditingBenchmark('two_k_row')
+                      setBenchmarkValues({...benchmarkValues, two_k_row: profile.benchmarks.two_k_row || ''})
+                    }}>
+                      <Text style={styles.benchmarkValue}>{profile.benchmarks.two_k_row || 'Not set'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <View style={styles.benchmarkRow}>
+                  <Text style={styles.benchmarkLabel}>5K</Text>
+                  {editingBenchmark === 'five_k_row' ? (
+                    <View style={styles.benchmarkEditingContainer}>
+                      <TextInput
+                        value={benchmarkValues['five_k_row'] !== undefined ? benchmarkValues['five_k_row'] : (profile.benchmarks.five_k_row || '')}
+                        onChangeText={(value) => setBenchmarkValues({...benchmarkValues, five_k_row: value})}
+                        onBlur={() => {
+                          const value = benchmarkValues['five_k_row'] || profile.benchmarks.five_k_row || ''
+                          saveBenchmark('five_k_row', value)
+                        }}
+                        placeholder="MM:SS"
+                        style={styles.benchmarkInput}
+                        autoFocus
+                        editable={!savingBenchmark}
+                      />
+                      {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                    </View>
+                  ) : (
+                    <TouchableOpacity onPress={() => {
+                      setEditingBenchmark('five_k_row')
+                      setBenchmarkValues({...benchmarkValues, five_k_row: profile.benchmarks.five_k_row || ''})
+                    }}>
+                      <Text style={styles.benchmarkValue}>{profile.benchmarks.five_k_row || 'Not set'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
 
               {/* Bike */}
-              {profile.benchmarks.air_bike_10_min && (
-                <View>
-                  <Text style={styles.benchmarkSubsectionTitle}>BIKE</Text>
-                  <View style={styles.benchmarkRow}>
-                    <Text style={styles.benchmarkLabel}>10-Minute Air Bike</Text>
-                    {editingBenchmark === 'air_bike_10_min' ? (
-                      <View style={styles.benchmarkEditingContainer}>
-                        <TextInput
-                          value={benchmarkValues['air_bike_10_min'] !== undefined ? benchmarkValues['air_bike_10_min'] : (profile.benchmarks.air_bike_10_min || '')}
-                          onChangeText={(value) => setBenchmarkValues({...benchmarkValues, air_bike_10_min: value})}
-                          onBlur={() => {
-                            const value = benchmarkValues['air_bike_10_min'] || profile.benchmarks.air_bike_10_min || ''
-                            saveBenchmark('air_bike_10_min', value)
-                          }}
-                          keyboardType="numeric"
-                          placeholder="185"
-                          style={styles.benchmarkInput}
-                          autoFocus
-                          editable={!savingBenchmark}
-                        />
-                        <Text style={styles.unitText}>cal</Text>
-                        {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
-                      </View>
-                    ) : (
-                      <TouchableOpacity onPress={() => {
-                        setEditingBenchmark('air_bike_10_min')
-                        setBenchmarkValues({...benchmarkValues, air_bike_10_min: profile.benchmarks.air_bike_10_min || ''})
-                      }}>
-                        <Text style={styles.benchmarkValue}>{profile.benchmarks.air_bike_10_min} cal</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
+              <View>
+                <Text style={styles.benchmarkSubsectionTitle}>BIKE</Text>
+                <View style={styles.benchmarkRow}>
+                  <Text style={styles.benchmarkLabel}>10-Minute Air Bike</Text>
+                  {editingBenchmark === 'air_bike_10_min' ? (
+                    <View style={styles.benchmarkEditingContainer}>
+                      <TextInput
+                        value={benchmarkValues['air_bike_10_min'] !== undefined ? benchmarkValues['air_bike_10_min'] : (profile.benchmarks.air_bike_10_min || '')}
+                        onChangeText={(value) => setBenchmarkValues({...benchmarkValues, air_bike_10_min: value})}
+                        onBlur={() => {
+                          const value = benchmarkValues['air_bike_10_min'] || profile.benchmarks.air_bike_10_min || ''
+                          saveBenchmark('air_bike_10_min', value)
+                        }}
+                        keyboardType="numeric"
+                        placeholder="185"
+                        style={styles.benchmarkInput}
+                        autoFocus
+                        editable={!savingBenchmark}
+                      />
+                      <Text style={styles.unitText}>cal</Text>
+                      {savingBenchmark && <Text style={styles.savingText}>Saving...</Text>}
+                    </View>
+                  ) : (
+                    <TouchableOpacity onPress={() => {
+                      setEditingBenchmark('air_bike_10_min')
+                      setBenchmarkValues({...benchmarkValues, air_bike_10_min: profile.benchmarks.air_bike_10_min || ''})
+                    }}>
+                      <Text style={styles.benchmarkValue}>{profile.benchmarks.air_bike_10_min ? `${profile.benchmarks.air_bike_10_min} cal` : 'Not set'}</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-              )}
+              </View>
             </View>
           )}
         </View>

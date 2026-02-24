@@ -341,6 +341,7 @@ export default function SettingsPage() {
 
       // Update 1RMs
       const validOneRMs = oneRMs.filter(rm => rm.one_rm > 0)
+      const clearedOneRMs = oneRMs.filter(rm => !rm.one_rm || rm.one_rm <= 0)
       for (const rm of validOneRMs) {
         const { error: rmError } = await supabase
           .from('user_one_rms')
@@ -354,6 +355,16 @@ export default function SettingsPage() {
             onConflict: 'user_id,one_rm_index'
           })
         if (rmError) throw rmError
+      }
+      // Delete 1RMs that were cleared to 0
+      if (clearedOneRMs.length > 0) {
+        const clearedIndices = clearedOneRMs.map(rm => oneRMExercises.indexOf(rm.exercise_name))
+        const { error: deleteRmError } = await supabase
+          .from('user_one_rms')
+          .delete()
+          .eq('user_id', userId)
+          .in('one_rm_index', clearedIndices)
+        if (deleteRmError) throw deleteRmError
       }
 
       setMessage('Settings saved successfully!')
