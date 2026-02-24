@@ -25,6 +25,8 @@ interface UserSettings {
   name: string
   email: string
   body_weight: number | null
+  height: number | null
+  age: number | null
   units: string
   gender: string
   conditioning_benchmarks: any
@@ -104,6 +106,8 @@ export default function SettingsPage() {
     name: '',
     email: '',
     body_weight: null,
+    height: null,
+    age: null,
     units: 'Imperial (lbs)',
     gender: '',
     conditioning_benchmarks: {}
@@ -136,7 +140,7 @@ export default function SettingsPage() {
 
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, name, email, body_weight, units, gender, conditioning_benchmarks, subscription_tier')
+        .select('id, name, email, body_weight, height, age, units, gender, conditioning_benchmarks, subscription_tier')
         .eq('auth_id', user.id)
         .single()
 
@@ -152,6 +156,8 @@ export default function SettingsPage() {
         name: userData.name || '',
         email: userData.email || '',
         body_weight: userData.body_weight,
+        height: userData.height,
+        age: userData.age,
         units: userData.units || 'Imperial (lbs)',
         gender: userData.gender || '',
         conditioning_benchmarks: userData.conditioning_benchmarks || {}
@@ -278,6 +284,8 @@ export default function SettingsPage() {
         .update({
           name: settings.name,
           body_weight: settings.body_weight,
+          height: settings.height,
+          age: settings.age,
           units: settings.units,
           gender: settings.gender,
           conditioning_benchmarks: settings.conditioning_benchmarks,
@@ -341,6 +349,7 @@ export default function SettingsPage() {
 
       // Update 1RMs
       const validOneRMs = oneRMs.filter(rm => rm.one_rm > 0)
+      const clearedOneRMs = oneRMs.filter(rm => !rm.one_rm || rm.one_rm <= 0)
       for (const rm of validOneRMs) {
         const { error: rmError } = await supabase
           .from('user_one_rms')
@@ -354,6 +363,16 @@ export default function SettingsPage() {
             onConflict: 'user_id,one_rm_index'
           })
         if (rmError) throw rmError
+      }
+      // Delete 1RMs that were cleared to 0
+      if (clearedOneRMs.length > 0) {
+        const clearedIndices = clearedOneRMs.map(rm => oneRMExercises.indexOf(rm.exercise_name))
+        const { error: deleteRmError } = await supabase
+          .from('user_one_rms')
+          .delete()
+          .eq('user_id', userId)
+          .in('one_rm_index', clearedIndices)
+        if (deleteRmError) throw deleteRmError
       }
 
       setMessage('Settings saved successfully!')
@@ -552,6 +571,30 @@ export default function SettingsPage() {
               keyboardType="numeric"
               style={styles.input}
               placeholder={settings.units === 'Metric (kg)' ? 'e.g., 70.5' : 'e.g., 155.5'}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>
+              Height ({settings.units === 'Metric (kg)' ? 'cm' : 'inches'})
+            </Text>
+            <TextInput
+              value={settings.height?.toString() || ''}
+              onChangeText={(value) => handleSettingsChange('height', value ? parseFloat(value) : null)}
+              keyboardType="numeric"
+              style={styles.input}
+              placeholder={settings.units === 'Metric (kg)' ? 'e.g., 175' : 'e.g., 69'}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Age</Text>
+            <TextInput
+              value={settings.age?.toString() || ''}
+              onChangeText={(value) => handleSettingsChange('age', value ? parseInt(value, 10) || null : null)}
+              keyboardType="numeric"
+              style={styles.input}
+              placeholder="e.g., 30"
             />
           </View>
 
